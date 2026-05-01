@@ -21,3 +21,6 @@ scheduler:
 
 early_stopping:
   patience: 0  # set to > 0 to enable; number of epochs to wait without improvement
+
+# Method-specific overrides for this recipe live in
+# configs/override/<method>_resnet18_cifar10.yaml.
