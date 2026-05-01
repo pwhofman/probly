@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
+from laplace.baselaplace import BaseLaplace
 import torch
 from torch import nn, optim
 from torch.amp import GradScaler, autocast
@@ -1018,6 +1019,37 @@ def _(
     probs = torch.cat(all_probs)
     labels = torch.cat(all_labels)
 
+    return _compute_metrics(probs, labels, n_bins)
+
+
+@evaluate.register(BaseLaplace)
+@torch.no_grad()
+def evaluate_laplace(
+    model: BaseLaplace,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    pred_type: str = "glm",
+    link_approx: str = "probit",
+    n_samples: int = 100,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate a fitted Laplace predictor via the closed-form GLM (or NN MC) predictive distribution."""
+    if model.n_data == 0:
+        msg = "Laplace approximation is not fitted; .fit(loader) must run before evaluate."
+        raise RuntimeError(msg)
+    model.model.eval()
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            probs = model(inputs, pred_type=pred_type, link_approx=link_approx, n_samples=n_samples)
+        all_probs.append(probs)  # ty: ignore[invalid-argument-type]
+        all_labels.append(targets)
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
     return _compute_metrics(probs, labels, n_bins)
 
 
