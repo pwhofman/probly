@@ -3,5 +3,8 @@ recipe: "resnet18_cifar10"
 filename: "sp_arc_cifar10.pdf"
 
 methods:
-  - name: "dropconnect"
-  - name: "dropout"
+    -   name: "dropconnect"
+    -   name: "dropout"
+    -   name: "ensemble"
+    -   name: "credal_wrapper"
+    -   name: "credal_ensembling"

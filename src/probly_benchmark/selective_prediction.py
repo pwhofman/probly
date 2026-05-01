@@ -15,7 +15,32 @@ from probly_benchmark import calibration, data, utils
 from probly_benchmark.utils import init_wandb_for_evaluation, load_model_for_evaluation
 
 if TYPE_CHECKING:
+    import numpy as np
+
     from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+
+_SUPPORTED_PERFORMANCE_MEASURES = ("zero_one",)
+_SUPPORTED_DECOMPOSITIONS = ("aleatoric", "epistemic", "total")
+
+
+def _compute_loss(mean_probs: np.ndarray, labels: np.ndarray, performance_measure: str) -> np.ndarray:
+    """Compute the per-sample loss for selective prediction.
+
+    Args:
+        mean_probs: Mean predicted probabilities of shape (n_instances, n_classes).
+        labels: True labels of shape (n_instances,).
+        performance_measure: Loss function identifier. One of ``_SUPPORTED_PERFORMANCE_MEASURES``.
+
+    Returns:
+        Per-sample loss values of shape (n_instances,).
+
+    Raises:
+        ValueError: If ``performance_measure`` is not supported.
+    """
+    if performance_measure == "zero_one":
+        return (mean_probs.argmax(axis=-1) != labels).astype(float)
+    msg = f"Unsupported performance measure: {performance_measure!r}. Choose from {_SUPPORTED_PERFORMANCE_MEASURES}."
+    raise ValueError(msg)
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="selective_prediction")
@@ -54,13 +79,17 @@ def main(cfg: DictConfig) -> None:
         device,
         cfg.get("amp", False),
     )
+    if cfg.decomposition not in _SUPPORTED_DECOMPOSITIONS:
+        msg = f"Unsupported decomposition: {cfg.decomposition!r}. Choose from {_SUPPORTED_DECOMPOSITIONS}."
+        raise ValueError(msg)
+
     decomposition = quantify(outputs)
-    uncertainties = decomposition.total.detach().cpu().numpy()  # ty: ignore[unresolved-attribute]
+    uncertainties = decomposition[cfg.decomposition].detach().cpu().numpy()  # ty:ignore[not-subscriptable]
 
     mean_probs = cast("TorchCategoricalDistribution", categorical_from_mean(outputs)).cpu().numpy()
 
     labels = targets.numpy()
-    loss = (mean_probs.argmax(axis=-1) != labels).astype(float)
+    loss = _compute_loss(mean_probs, labels, cfg.performance_measure)
     auroc, bin_losses = selective_prediction(uncertainties, loss, n_bins=cfg.n_bins)
     print(f"Selective prediction AUROC: {auroc:.4f}")
 

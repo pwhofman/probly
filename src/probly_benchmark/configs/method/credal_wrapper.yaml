@@ -3,6 +3,6 @@ name: "credal_wrapper"
 label: "Credal Wrapper"
 load_from: "ensemble"
 params:
-  num_members: 5
+  num_members: 10
   reset_params: true
 train:

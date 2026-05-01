@@ -6,5 +6,5 @@ wandb:
   entity: "probly"
   project: "test"
 
-seeds: [0, 1, 2]
+seeds: [1, 2, 3]
 show: false

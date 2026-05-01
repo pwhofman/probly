@@ -1,7 +1,8 @@
 # @package method
 name: "credal_ensembling"
 label: "Credal Ensembling"
+load_from: "ensemble"
 params:
-  num_members: 5
+  num_members: 10
   reset_params: true
 train:
