@@ -870,7 +870,7 @@ def _(
     """Fine-tune the underlying network, then fit the Laplace posterior post-hoc.
 
     Phase 1 runs the standard supervised loop on the underlying ``nn.Module`` (laplace-torch's wrapped model).
-    Phase 2 calls ``BaseLaplace.fit(train_loader)`` and, if ``cfg.method.params.optimize_prior`` is set, tunes
+    Phase 2 calls ``BaseLaplace.fit(train_loader)`` and, if ``train_kwargs["optimize_prior"]`` is set, tunes
     the prior precision by marginal-likelihood maximization.
     """
     _training_loop(
@@ -886,15 +886,14 @@ def _(
     )
     model.fit(train_loader)
     run.summary["laplace_fitted"] = True
-    params = cfg.method.params
-    if params.get("optimize_prior", False):
+    if train_kwargs.get("optimize_prior", False):
         # ``pred_type`` is required by laplace-torch's signature but unused when ``method='marglik'``
         # (marglik works directly on the closed-form log-marginal-likelihood); any value is fine.
         model.optimize_prior_precision(
             pred_type="glm",
             method="marglik",
-            n_steps=params.get("n_steps", 100),
-            lr=params.get("lr", 0.1),
+            n_steps=train_kwargs.get("n_steps", 100),
+            lr=train_kwargs.get("lr", 0.1),
         )
         run.summary["laplace_prior_precision"] = float(model.prior_precision)
 
