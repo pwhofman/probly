@@ -1,0 +1,23 @@
+# @package method
+name: "deup"
+label: "DEUP"
+params:
+  # Width of each hidden layer in the error head MLP (feature_dim -> hidden_size^n -> 1).
+  # Reference implementation uses 1024:
+  # Lahlou et al., "DEUP: Direct Epistemic Uncertainty Prediction", 2022
+  # (https://arxiv.org/abs/2102.08501), examples/ood_detection/ood_train_deup.py.
+  hidden_size: 1024
+  # Number of hidden layers in the error head MLP (minimum 1).
+  # Reference implementation uses 5.
+  n_hidden_layers: 5
+train:
+  # Number of epochs for phase-2 error-head training.
+  # The reference implementation trains for 1 epoch per call in a streaming
+  # active-learning loop; for batch post-training after a full classifier run
+  # a higher value is appropriate.
+  error_head_epochs: 20
+  # Learning rate for the phase-2 error-head optimizer.
+  # Reference implementation: SGD with lr=0.005, momentum=0.9.
+  error_head_lr: 0.005
+  # Momentum for the SGD optimizer used in phase-2 error-head training.
+  error_head_momentum: 0.9

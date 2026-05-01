@@ -8,3 +8,4 @@ methods:
     -   name: "ensemble"
     -   name: "credal_wrapper"
     -   name: "credal_ensembling"
+    -   name: "het_net"

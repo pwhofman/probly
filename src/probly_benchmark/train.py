@@ -34,6 +34,7 @@ from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
+from probly.method.deup import DEUPPredictor
 from probly.method.duq import DUQPredictor
 from probly.method.efficient_credal_prediction import (
     EfficientCredalPredictor,
@@ -52,9 +53,11 @@ from probly_benchmark.train_funcs import (
     train_epoch_batchensemble,
     train_epoch_cross_entropy,
     train_epoch_dare,
+    train_epoch_deup,
     validate,
     validate_batchensemble,
     validate_cross_entropy,
+    validate_deup,
 )
 
 torch.set_float32_matmul_precision("high")
@@ -869,6 +872,148 @@ def _(
     amp_enabled = cfg.get("amp", False)
     _fit_ddu_density_head(model, train_loader, device, amp_enabled)
     run.summary["ddu_gmm_fitted"] = True
+
+
+def _fit_deup_error_head(
+    model: DEUPPredictor,
+    val_loader: DataLoader,
+    device: torch.device,
+    train_kwargs: dict[str, Any],
+    run: Any,  # noqa: ANN401
+    amp_enabled: bool = False,
+) -> None:
+    """Train the DEUP error head on per-sample cross-entropy from the validation set.
+
+    Phase-2 training of DEUP :cite:`lahlouDirectEpistemicUncertainty2023`.
+    The ``encoder`` and ``classification_head`` are frozen; only
+    ``error_head`` is updated.
+
+    The function collects ``(features, per-sample CE)`` pairs from
+    ``val_loader`` by running the frozen main model in inference mode, then
+    trains ``error_head`` with Adam and MSE loss for a configurable number of
+    epochs.  The validation set is the natural source of out-of-sample losses
+    because the main model never updated its weights on those samples.
+
+    Args:
+        model: Trained DEUP predictor with frozen ``encoder`` and
+            ``classification_head`` and an untrained ``error_head``.
+        val_loader: Validation data loader providing out-of-sample inputs and
+            labels used to compute the error-head training targets.
+        device: Device to run inference and training on.
+        train_kwargs: Method-specific training keyword arguments extracted from
+            ``cfg.method.train``; reads ``error_head_epochs`` (default 20),
+            ``error_head_lr`` (default 0.005) and ``error_head_momentum``
+            (default 0.9) matching the reference implementation.
+        run: Wandb run object used to log phase-2 metrics.
+        amp_enabled: Whether to use automatic mixed precision.
+    """
+    model_ = cast("Any", model)
+    error_head_epochs: int = int(train_kwargs.get("error_head_epochs", 20))
+    error_head_lr: float = float(train_kwargs.get("error_head_lr", 0.005))
+    error_head_momentum: float = float(train_kwargs.get("error_head_momentum", 0.9))
+    criterion = nn.CrossEntropyLoss(reduction="none")
+
+    # -- Collect (features, per-sample CE) pairs from the validation set ------
+    model_.eval()
+    all_features: list[torch.Tensor] = []
+    all_targets: list[torch.Tensor] = []
+    with torch.no_grad():
+        for inputs_, targets_ in tqdm(val_loader, desc="Collecting DEUP error targets"):
+            inputs = inputs_.to(device, non_blocking=True)
+            if device.type == "cuda" and inputs.ndim >= 4:
+                inputs = inputs.contiguous(memory_format=torch.channels_last)
+            targets = targets_.to(device, non_blocking=True)
+            with torch.amp.autocast(device.type, enabled=amp_enabled):
+                features = model_.encoder(inputs)
+                logits = model_.classification_head(features)
+                per_sample_ce = criterion(logits, targets)
+            all_features.append(features.detach().cpu())
+            all_targets.append(per_sample_ce.detach().cpu())
+
+    features_all = torch.cat(all_features)  # (N, feature_dim)
+    targets_all = torch.cat(all_targets)  # (N,)
+
+    # -- Train error_head with MSE on the collected pairs ----------------------
+    model_.error_head.train()
+    model_.error_head.to(device)
+    optimizer = torch.optim.SGD(model_.error_head.parameters(), lr=error_head_lr, momentum=error_head_momentum)
+    dataset = torch.utils.data.TensorDataset(features_all, targets_all)
+    loader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=val_loader.batch_size or 256,
+        shuffle=True,
+        drop_last=False,
+    )
+    for epoch in range(error_head_epochs):
+        epoch_loss = 0.0
+        n_batches = 0
+        for feat_batch_cpu, tgt_batch_cpu in loader:
+            feat_batch = feat_batch_cpu.to(device, non_blocking=True)
+            tgt_batch = tgt_batch_cpu.to(device, non_blocking=True)
+            optimizer.zero_grad()
+            predicted = model_.error_head(feat_batch)
+            loss = nn.functional.mse_loss(predicted, tgt_batch)
+            loss.backward()
+            optimizer.step()
+            epoch_loss += loss.item()
+            n_batches += 1
+        mean_loss = epoch_loss / max(n_batches, 1)
+        run.log({"deup/error_head_mse": mean_loss, "deup/error_head_epoch": epoch})
+
+    model_.error_head.eval()
+    run.summary["deup_error_head_fitted"] = True
+
+
+@train_model.register(DEUPPredictor)
+def _(
+    model: nn.Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Train a DEUP predictor :cite:`lahlouDirectEpistemicUncertainty2023`.
+
+    Phase 1 trains ``encoder`` and ``classification_head`` end-to-end with
+    standard cross-entropy, identical to a plain classifier.  The
+    ``error_head`` parameters are excluded from the optimizer so they receive
+    no gradient updates in this phase.
+
+    Phase 2 freezes the main model and trains ``error_head`` on per-sample
+    cross-entropy targets computed from the validation set (see
+    ``_fit_deup_error_head``).  Using the validation set provides
+    out-of-sample losses -- the key requirement -- without wasting any
+    training data.
+
+    A ``val_loader`` is required for phase 2; if none is provided a
+    ``ValueError`` is raised.
+    """
+    if val_loader is None:
+        msg = "DEUP requires a validation loader for phase-2 error-head training."
+        raise ValueError(msg)
+
+    # Phase 1: train encoder + classification_head only (exclude error_head).
+    # Pass their parameters explicitly so the optimizer never touches error_head.
+    phase1_params = [{"params": list(model.encoder.parameters()) + list(model.classification_head.parameters())}]  # ty:ignore[unresolved-attribute]
+
+    _training_loop(
+        model,
+        train_loader,
+        val_loader,
+        cfg,
+        device,
+        run,
+        train_kwargs,
+        train_fn=train_epoch_deup,  # ty: ignore[invalid-argument-type]
+        val_fn=validate_deup,  # ty: ignore[invalid-argument-type]
+        param_groups=phase1_params,
+    )
+
+    # Phase 2: fit error_head on out-of-sample losses from the validation set.
+    amp_enabled = cfg.get("amp", False)
+    _fit_deup_error_head(model, val_loader, device, train_kwargs, run, amp_enabled)
 
 
 @train_model.register(BaseLaplace)

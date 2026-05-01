@@ -20,6 +20,7 @@ from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPre
 from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
+from probly.method.deup import DEUPPredictor
 from probly.method.dropconnect import DropConnectPredictor
 from probly.method.dropout import DropoutPredictor
 from probly.method.duq import DUQPredictor
@@ -479,6 +480,49 @@ def train_epoch_ddu(
     return loss.item()
 
 
+@train_epoch.register(DEUPPredictor)
+def train_epoch_deup(
+    model: nn.Module,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> torch.Tensor | float:
+    """Train a DEUP predictor for one step with cross-entropy on the classification logits.
+
+    Phase-1 training: only ``encoder`` and ``classification_head`` are updated.
+    The ``error_head`` is excluded from the optimizer parameter group and is
+    trained separately after phase 1 completes (see ``_fit_deup_error_head``
+    in ``probly_benchmark/train.py``).
+
+    Lahlou et al., "DEUP: Direct Epistemic Uncertainty Prediction", 2022
+    (https://arxiv.org/abs/2102.08501), Section 3.
+    """
+    model_ = cast("Any", model)
+    criterion = nn.CrossEntropyLoss()
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        features = model_.encoder(inputs)
+        logits = model_.classification_head(features)
+        loss = criterion(logits, targets)
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        optimizer.step()
+    return loss.item()
+
+
 def _duq_bce_loss(kernel_values: torch.Tensor, targets_onehot: torch.Tensor) -> torch.Tensor:
     r"""Binary cross-entropy on per-class RBF kernel values.
 
@@ -805,6 +849,33 @@ def validate_ddu(
     return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
+@validate.register(DEUPPredictor)
+@torch.no_grad()
+def validate_deup(
+    model: nn.Module,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> ValidationMetrics:
+    """Validate a DEUP predictor with cross-entropy loss on the classification logits."""
+    model_ = cast("Any", model)
+    criterion = nn.CrossEntropyLoss()
+    model_.eval()
+    val_loss = 0.0
+    val_acc = 0.0
+    num_instances = 0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            features = model_.encoder(inputs)
+            logits = model_.classification_head(features)
+            val_loss += criterion(logits, targets).item()
+            val_acc += _accuracy(logits, targets) * inputs.shape[0]
+            num_instances += inputs.shape[0]
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
+
+
 @validate.register(DUQPredictor)
 @torch.no_grad()
 def validate_duq(
@@ -1110,6 +1181,36 @@ def evaluate_ddu(
         with autocast(device.type, enabled=amp_enabled):
             features = model.encoder(inputs)  # ty:ignore[call-non-callable]
             logits = model.classification_head(features)  # ty:ignore[call-non-callable]
+        all_probs.append(F.softmax(logits, dim=1))
+        all_labels.append(targets)
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
+    return _compute_metrics(probs, labels, n_bins)
+
+
+@evaluate.register(DEUPPredictor)
+@torch.no_grad()
+def evaluate_deup(
+    model: nn.Module,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate a DEUP predictor on the test set.
+
+    Uses softmax of the classification logits as class probabilities.
+    """
+    model_ = cast("Any", model)
+    model_.eval()
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            features = model_.encoder(inputs)
+            logits = model_.classification_head(features)
         all_probs.append(F.softmax(logits, dim=1))
         all_labels.append(targets)
     probs = torch.cat(all_probs)

@@ -31,6 +31,7 @@ from probly.method.credal_relative_likelihood import credal_relative_likelihood
 from probly.method.credal_wrapper import credal_wrapper
 from probly.method.dare import dare
 from probly.method.ddu import ddu
+from probly.method.deup import deup
 from probly.method.dropconnect import dropconnect
 from probly.method.dropout import dropout
 from probly.method.duq import duq
@@ -57,6 +58,7 @@ METHODS = {
     "bayesian": bayesian,
     "dare": dare,
     "ddu": ddu,
+    "deup": deup,
     "dropout": dropout,
     "dropconnect": dropconnect,
     "duq": duq,
