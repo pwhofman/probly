@@ -60,6 +60,7 @@ def main(cfg: DictConfig) -> None:
 
     if cfg.wandb.enabled:
         run = init_wandb_for_evaluation(cfg, run_id)
+        run.config.update({"ood_dataset": cfg.ood_dataset, "decomposition": cfg.decomposition}, allow_val_change=True)
         for metric_name, value in ood_metrics.items():
             run.summary[f"ood/{metric_name}"] = value
         run.summary["ood/id_scores"] = id_uncertainties.tolist()
