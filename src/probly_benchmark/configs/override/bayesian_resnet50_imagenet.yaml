@@ -11,3 +11,4 @@ optimizer:
 method:
   params:
     posterior_std: 0.001
+    prior_std: 0.05
