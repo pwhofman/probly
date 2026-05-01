@@ -56,3 +56,26 @@ def efficient_credal_prediction[**In, Out: CategoricalDistribution](
         bounds.
     """
     return efficient_credal_prediction_generator(base)
+
+
+def _validate_alpha(alpha: float) -> None:
+    """Validate that ``alpha`` lies in ``[0, 1]``; raise ``ValueError`` otherwise."""
+    if not 0.0 <= alpha <= 1.0:
+        msg = f"alpha must be in [0, 1], got {alpha}"
+        raise ValueError(msg)
+
+
+@flexdispatch
+def compute_efficient_credal_prediction_bounds[T: ArrayLike](
+    logits_train: T,
+    targets_train: T,
+    num_classes: int,
+    alpha: float,
+    **_kwargs,  # noqa: ANN003
+) -> tuple[T, T]:
+    """Compute per-class additive logit bounds via classwise relative-likelihood optimization.
+
+    Dispatches to backend-specific implementations based on the array type.
+    """
+    msg = f"No credal bounds computation registered for array type {type(logits_train)}"
+    raise NotImplementedError(msg)
