@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
 
-class HetNetsRepresentation[T: CategoricalDistribution](CategoricalDistributionSample[T]):
+class HetNetRepresentation[T: CategoricalDistribution](CategoricalDistributionSample[T]):
     """A sample of categorical distributions produced by a HetNets model.
 
     HetNets only capture aleatoric uncertainty, so the method-local registration
@@ -29,11 +29,11 @@ class HetNetsRepresentation[T: CategoricalDistribution](CategoricalDistributionS
 
 
 @runtime_checkable
-class HetNetsPredictor[**In, Out: CategoricalDistribution](RandomPredictor[In, Out], Protocol):
+class HetNetPredictor[**In, Out: CategoricalDistribution](RandomPredictor[In, Out], Protocol):
     """A predictor with a heteroscedastic classification head."""
 
 
-het_nets_traverser = flexdispatch_traverser[object](name="het_nets_traverser")
+het_net_traverser = flexdispatch_traverser[object](name="het_nets_traverser")
 
 LAST_LAYER = GlobalVariable[bool]("LAST_LAYER")
 NUM_FACTORS = GlobalVariable[int]("NUM_FACTORS")
@@ -48,13 +48,13 @@ IS_PARAMETER_EFFICIENT = GlobalVariable[bool]("IS_PARAMETER_EFFICIENT")
     ),
     preserve_predictor_type=False,
 )  # ty:ignore[invalid-argument-type]
-@HetNetsPredictor.register_factory
-def het_nets[**In, Out: CategoricalDistribution](
+@HetNetPredictor.register_factory
+def het_net[**In, Out: CategoricalDistribution](
     base: Predictor[In, Out],
     num_factors: int = 10,
     temperature: float = 1.0,
     is_parameter_efficient: bool = False,
-) -> HetNetsPredictor[In, Out]:
+) -> HetNetPredictor[In, Out]:
     """Create a HetNets predictor from a base predictor base on :cite:`collier2021hetnets`.
 
     Args:
@@ -68,7 +68,7 @@ def het_nets[**In, Out: CategoricalDistribution](
     """
     return traverse(
         base,
-        nn_compose(het_nets_traverser),
+        nn_compose(het_net_traverser),
         init={
             CLONE: True,
             LAST_LAYER: True,
@@ -80,9 +80,9 @@ def het_nets[**In, Out: CategoricalDistribution](
     )
 
 
-@predict.register(HetNetsPredictor)
+@predict.register(HetNetPredictor)
 def _[**In](
-    predictor: HetNetsPredictor[In, CategoricalDistribution],
+    predictor: HetNetPredictor[In, CategoricalDistribution],
     *args: In.args,
     **kwargs: In.kwargs,
 ) -> CategoricalDistribution:
@@ -90,9 +90,9 @@ def _[**In](
     return create_categorical_distribution_from_logits(predict_raw(predictor, *args, **kwargs))
 
 
-def create_het_nets_sample[Out: CategoricalDistribution](
+def create_het_net_sample[Out: CategoricalDistribution](
     predictions: Iterable[Out], sample_axis: int = -1
-) -> HetNetsRepresentation:
+) -> HetNetRepresentation:
     """Create a HetNets sample representation from repeated predictions.
 
     Args:
@@ -103,17 +103,17 @@ def create_het_nets_sample[Out: CategoricalDistribution](
         The created sample marked as a HetNets representation.
     """
     return cast(
-        "HetNetsRepresentation",
-        HetNetsRepresentation.register_instance(create_sample(predictions, sample_axis=sample_axis)),
+        "HetNetRepresentation",
+        HetNetRepresentation.register_instance(create_sample(predictions, sample_axis=sample_axis)),
     )
 
 
-class HetNetsRepresenter[**In, Out: CategoricalDistribution](Sampler[In, Out, HetNetsRepresentation]):
+class HetNetRepresenter[**In, Out: CategoricalDistribution](Sampler[In, Out, HetNetRepresentation]):
     """Representer that draws samples from a HetNets predictor."""
 
     def __init__(
         self,
-        predictor: HetNetsPredictor[In, Out],
+        predictor: HetNetPredictor[In, Out],
         num_samples: int,
         sampling_strategy: Literal["sequential"] = "sequential",
         sample_axis: int = -1,
@@ -126,8 +126,8 @@ class HetNetsRepresenter[**In, Out: CategoricalDistribution](Sampler[In, Out, He
             sampling_strategy: How repeated predictions should be computed.
             sample_axis: Axis along which samples are organized.
         """
-        super().__init__(predictor, num_samples, sampling_strategy, create_het_nets_sample, sample_axis)
+        super().__init__(predictor, num_samples, sampling_strategy, create_het_net_sample, sample_axis)
 
 
-representer.register(HetNetsPredictor, HetNetsRepresenter)
-decompose.register(HetNetsRepresentation, LabelNoiseEntropyDecomposition)
+representer.register(HetNetPredictor, HetNetRepresenter)
+decompose.register(HetNetRepresentation, LabelNoiseEntropyDecomposition)

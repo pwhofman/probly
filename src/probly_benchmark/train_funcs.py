@@ -25,7 +25,7 @@ from probly.method.duq import DUQPredictor
 from probly.method.efficient_credal_prediction import EfficientCredalPredictor
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.evidential.classification import EvidentialClassificationPredictor
-from probly.method.het_nets import HetNetsPredictor
+from probly.method.het_net import HetNetPredictor
 from probly.method.natural_posterior_network import NaturalPosteriorNetworkPredictor
 from probly.method.posterior_network import PosteriorNetworkPredictor
 from probly.method.subensemble import SubensemblePredictor
@@ -203,7 +203,7 @@ def train_epoch_cross_entropy(
     return loss.item()
 
 
-@train_epoch.register(HetNetsPredictor)
+@train_epoch.register(HetNetPredictor)
 def train_epoch_het_net(
     model: Predictor,
     inputs: torch.Tensor,
@@ -633,7 +633,7 @@ def validate_batchensemble(
     return val_loss, val_acc
 
 
-@validate.register((BasePredictor, DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetsPredictor))
+@validate.register((BasePredictor, DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetPredictor))
 @torch.no_grad()
 def validate_cross_entropy(
     model: Predictor,
@@ -878,7 +878,7 @@ def _(
     return _compute_metrics(probs, labels, n_bins)
 
 
-@evaluate.register((BasePredictor, EfficientCredalPredictor, HetNetsPredictor))
+@evaluate.register((BasePredictor, EfficientCredalPredictor, HetNetPredictor))
 @torch.no_grad()
 def evaluate_single_model(
     model: Predictor,

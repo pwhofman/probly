@@ -37,7 +37,7 @@ from probly.method.duq import duq
 from probly.method.efficient_credal_prediction import efficient_credal_prediction
 from probly.method.ensemble import ensemble
 from probly.method.evidential.classification import evidential_classification
-from probly.method.het_nets import het_nets
+from probly.method.het_net import het_net
 from probly.method.natural_posterior_network import natural_posterior_network
 from probly.method.posterior_network import posterior_network
 from probly.method.subensemble import subensemble
@@ -70,7 +70,7 @@ METHODS = {
     "credal_relative_likelihood": credal_relative_likelihood,
     "credal_wrapper": credal_wrapper,
     "efficient_credal_prediction": efficient_credal_prediction,
-    "het_nets": het_nets,
+    "het_net": het_net,
     "subensemble": subensemble,
 }
 

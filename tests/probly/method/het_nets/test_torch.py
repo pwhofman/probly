@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method.het_nets import HetNetsRepresentation, het_nets
+from probly.method.het_net import HetNetRepresentation, het_net
 from probly.quantification import decompose, measure, quantify
 from probly.quantification.decomposition.entropy import LabelNoiseEntropyDecomposition
 from probly.representer import representer
@@ -14,20 +14,20 @@ torch = pytest.importorskip("torch")
 from torch import nn  # noqa: E402
 
 
-def _hetnets_sample() -> HetNetsRepresentation:
+def _hetnets_sample() -> HetNetRepresentation:
     model = nn.Sequential(
         nn.Linear(2, 4),
         nn.ReLU(),
         nn.Linear(4, 3),
     )
-    predictor = het_nets(model, num_factors=2, predictor_type="logit_classifier")
+    predictor = het_net(model, num_factors=2, predictor_type="logit_classifier")
     return representer(predictor, num_samples=3).represent(torch.ones(2, 2))
 
 
 def test_hetnets_representer_marks_sample_as_hetnets_representation() -> None:
     sample = _hetnets_sample()
 
-    assert isinstance(sample, HetNetsRepresentation)
+    assert isinstance(sample, HetNetRepresentation)
 
 
 def test_decompose_dispatches_hetnets_sample_to_label_noise_decomposition() -> None:
