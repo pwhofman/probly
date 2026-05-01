@@ -11,26 +11,12 @@ import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
 from probly_benchmark.paths import FIGURE_PATH
-from probly_benchmark.plot.utils import fetch_sp_runs
+from probly_benchmark.plot.utils import fetch_sp_runs, resolve_label
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
 _CONFIG_DIR = Path(__file__).parent.parent / "configs"
-_METHOD_CONFIG_DIR = _CONFIG_DIR / "method"
-
-
-def _resolve_label(entry: DictConfig) -> str:
-    if entry.get("label"):
-        return str(entry.label)
-    cfg_path = _METHOD_CONFIG_DIR / f"{entry.name}.yaml"
-    if cfg_path.exists():
-        raw = OmegaConf.load(cfg_path)
-        if isinstance(raw, DictConfig):
-            label = raw.get("label") or raw.get("method", DictConfig({})).get("label")
-            if label:
-                return str(label)
-    return str(entry.name)
 
 
 @hydra.main(version_base=None, config_path="../plot_configs", config_name="sp_arc")
@@ -74,7 +60,7 @@ def main(cfg: DictConfig) -> Figure:
 
         n_bins = len(mean_acc)
         rejection_rates = np.linspace(0.0, 1.0, n_bins)
-        label = f"{_resolve_label(entry)} (AUROC={auroc_acc:.3f})"
+        label = f"{resolve_label(entry)} (AUROC={auroc_acc:.3f})"
 
         (line,) = ax.plot(rejection_rates, mean_acc, label=label)
         if len(runs) > 1:
@@ -92,9 +78,9 @@ def main(cfg: DictConfig) -> Figure:
     ax.legend()
     fig.tight_layout()
 
-    if cfg.get("filename"):
+    if cfg.get("filename") and cfg.get("filename_prefix"):
         FIGURE_PATH.mkdir(parents=True, exist_ok=True)
-        fig.savefig(FIGURE_PATH / cfg.filename)
+        fig.savefig(FIGURE_PATH / f"{cfg.filename_prefix}_{cfg.filename}")
     if cfg.get("show", False):
         plt.show()
 

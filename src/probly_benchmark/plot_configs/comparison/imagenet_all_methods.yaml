@@ -1,6 +1,6 @@
 # @package _global_
-recipe: "resnet18_cifar10"
-filename: "cifar10_all_methods.pdf"
+recipe: "resnet50_imagenet"
+filename: "iamgenet_all_methods.pdf"
 
 methods:
     -   name: "dropconnect"

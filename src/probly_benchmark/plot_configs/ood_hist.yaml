@@ -6,6 +6,7 @@ wandb:
   entity: "probly"
   project: "test"
 
+filename_prefix: "ood_hist"
 bins: 50
 seeds: [1, 2, 3]
 show: false

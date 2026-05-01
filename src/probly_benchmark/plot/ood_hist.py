@@ -12,26 +12,12 @@ from omegaconf import DictConfig, OmegaConf
 
 from probly.plot.ood import plot_histogram
 from probly_benchmark.paths import FIGURE_PATH
-from probly_benchmark.plot.utils import fetch_ood_runs
+from probly_benchmark.plot.utils import fetch_ood_runs, resolve_label
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
 _CONFIG_DIR = Path(__file__).parent.parent / "configs"
-_METHOD_CONFIG_DIR = _CONFIG_DIR / "method"
-
-
-def _resolve_label(entry: DictConfig) -> str:
-    if entry.get("label"):
-        return str(entry.label)
-    cfg_path = _METHOD_CONFIG_DIR / f"{entry.name}.yaml"
-    if cfg_path.exists():
-        raw = OmegaConf.load(cfg_path)
-        if isinstance(raw, DictConfig):
-            label = raw.get("label") or raw.get("method", DictConfig({})).get("label")
-            if label:
-                return str(label)
-    return str(entry.name)
 
 
 @hydra.main(version_base=None, config_path="../plot_configs", config_name="ood_hist")
@@ -50,9 +36,15 @@ def main(cfg: DictConfig) -> list[Figure]:
     """
     recipe_raw = OmegaConf.load(_CONFIG_DIR / "recipe" / f"{cfg.recipe}.yaml")
     recipe = recipe_raw if isinstance(recipe_raw, DictConfig) else DictConfig({})
+    ood_detection_defaults_raw = OmegaConf.load(_CONFIG_DIR / "ood_detection.yaml")
+    ood_detection_defaults = (
+        ood_detection_defaults_raw if isinstance(ood_detection_defaults_raw, DictConfig) else DictConfig({})
+    )
     dataset: str = cfg.get("dataset") or recipe.dataset
     base_model: str = cfg.get("base_model") or recipe.base_model
-    ood_dataset: str = cfg.get("ood_dataset") or recipe.get("ood_dataset", "")
+    ood_dataset: str = (
+        cfg.get("ood_dataset") or recipe.get("ood_dataset") or ood_detection_defaults.get("ood_dataset", "")
+    )
 
     bins: int = cfg.get("bins", 50)
     figures: list[Figure] = []
@@ -71,7 +63,7 @@ def main(cfg: DictConfig) -> list[Figure]:
         id_scores = np.concatenate([r["id_scores"] for r in runs])
         ood_scores = np.concatenate([r["ood_scores"] for r in runs])
 
-        label = _resolve_label(entry)
+        label = resolve_label(entry)
         fig = cast(
             "Figure",
             plot_histogram(
@@ -83,11 +75,9 @@ def main(cfg: DictConfig) -> list[Figure]:
         )
         figures.append(fig)
 
-        if cfg.get("filename"):
+        if cfg.get("filename_prefix"):
             FIGURE_PATH.mkdir(parents=True, exist_ok=True)
-            stem = Path(cfg.filename).stem
-            suffix = Path(cfg.filename).suffix
-            fig.savefig(FIGURE_PATH / f"{stem}_{entry.name}{suffix}")
+            fig.savefig(FIGURE_PATH / f"{cfg.filename_prefix}_{entry.name}.pdf")
 
     if cfg.get("show", False):
         plt.show()
