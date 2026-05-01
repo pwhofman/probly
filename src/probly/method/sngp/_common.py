@@ -2,13 +2,22 @@
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 
+from flextype import flexdispatch
 from probly.predictor import Predictor, RandomPredictor, predict, predict_raw
-from probly.representation.distribution import GaussianDistribution, create_gaussian_distribution
+from probly.representation.distribution import (
+    CategoricalDistributionSample,
+    GaussianDistribution,
+    create_gaussian_distribution,
+)
+from probly.representer import Representer, representer
 from probly.transformation.transformation import predictor_transformation
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser, traverse
+
+if TYPE_CHECKING:
+    from probly.representation.sample import Sample
 
 sngp_traverser = flexdispatch_traverser[object](name="sngp_traverser")
 
@@ -39,6 +48,41 @@ MOMENTUM = GlobalVariable[float](
 @runtime_checkable
 class SNGPPredictor[**In, Out: GaussianDistribution](RandomPredictor[In, Out], Protocol):
     """A predictor that applies the SNGP representer."""
+
+
+@flexdispatch
+def compute_categorical_sample_from_logits(sample: Sample[Any]) -> CategoricalDistributionSample[Any]:
+    """Convert a sample of SNGP logits to a categorical distribution sample."""
+    msg = f"compute_categorical_sample_from_logits not implemented for type {type(sample)}."
+    raise NotImplementedError(msg)
+
+
+class SNGPRepresenter[**In, Out](Representer[Any, In, Out, CategoricalDistributionSample[Any]]):
+    """Representer that samples SNGP logits and converts them to categorical samples."""
+
+    num_samples: int
+
+    def __init__(
+        self,
+        predictor: Predictor[In, Out],
+        num_samples: int = 10,
+        *args: In.args,
+        **kwargs: In.kwargs,
+    ) -> None:
+        """Initialize the SNGP representer."""
+        super().__init__(predictor, *args, **kwargs)
+        self.num_samples = num_samples
+
+    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Out:
+        """Predict the outputs from the SNGP predictor."""
+        return predict(self.predictor, *args, **kwargs)
+
+    @override
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> CategoricalDistributionSample[Any]:
+        distribution = self._predict(*args, **kwargs)
+        sampled_logits = distribution.sample(self.num_samples)  # ty:ignore[unresolved-attribute]
+
+        return compute_categorical_sample_from_logits(sampled_logits)
 
 
 def register(cls: type, traverser: flexdispatch_traverser) -> None:
@@ -84,3 +128,6 @@ def _[**In](
     logits, variance = predict_raw(predictor, *args, **kwargs)
     distribution = create_gaussian_distribution(logits, variance)
     return distribution
+
+
+representer.register(SNGPPredictor, SNGPRepresenter)
