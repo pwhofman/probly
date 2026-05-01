@@ -8,6 +8,7 @@ from .credal_set import (
     compute_representative_sample,
 )
 from .sampler import IterableSampler, Sampler
+from .sngp import SNGPRepresenter
 
 __all__ = [
     "ConvexCredalSetRepresenter",
@@ -16,6 +17,7 @@ __all__ = [
     "ProbabilityIntervalsRepresenter",
     "RepresentativeConvexCredalSetRepresenter",
     "Representer",
+    "SNGPRepresenter",
     "Sampler",
     "compute_representative_sample",
     "representer",
