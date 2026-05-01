@@ -9,7 +9,10 @@ from ._common import (
     DirichletConformalCredalSetPredictor,
     conformal_credal_set_generator,
     conformal_dirichlet_relative_likelihood,
+    conformal_inner_product,
+    conformal_kullback_leibler,
     conformal_total_variation,
+    conformal_wasserstein_distance,
 )
 
 
@@ -23,5 +26,8 @@ __all__ = [
     "DirichletConformalCredalSetPredictor",
     "conformal_credal_set_generator",
     "conformal_dirichlet_relative_likelihood",
+    "conformal_inner_product",
+    "conformal_kullback_leibler",
     "conformal_total_variation",
+    "conformal_wasserstein_distance",
 ]

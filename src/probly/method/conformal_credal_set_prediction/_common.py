@@ -7,10 +7,14 @@ from typing import TYPE_CHECKING, Any, Protocol, Self, cast, runtime_checkable
 
 from flextype import flexdispatch
 from probly.conformal_scores.dirichlet_relative_likelihood._common import dirichlet_rl_score
+from probly.conformal_scores.inner_product._common import inner_product_score
+from probly.conformal_scores.kullback_leibler._common import kl_divergence_score
 from probly.conformal_scores.total_variation._common import tv_score
+from probly.conformal_scores.wasserstein_distance._common import wasserstein_distance_score
 from probly.method.method import predictor_transformation
 from probly.predictor import CredalPredictor, DirichletDistributionPredictor, Predictor, predict
 from probly.representation.credal_set._common import (
+    CredalSet,
     DirichletLevelSetCredalSet,
     DistanceBasedCredalSet,
     create_dirichlet_level_set_credal_set,
@@ -23,7 +27,7 @@ if TYPE_CHECKING:
 
 
 @runtime_checkable
-class ConformalCredalSetPredictor[**In, Out: DistanceBasedCredalSet](CredalPredictor[In, Out], Protocol):
+class ConformalCredalSetPredictor[**In, Out: CredalSet](CredalPredictor[In, Out], Protocol):
     """Protocol for predictors that output conformalized credal sets."""
 
     predictor: Predictor
@@ -40,7 +44,36 @@ class TVConformalCredalSetPredictor[**In, Out: DistanceBasedCredalSet](Conformal
     """Conformal Credal Set predictor for TV."""
 
 
-class _ConformalCredalSetPredictorBase[**In, Out](ABC):
+@runtime_checkable
+class WassersteinConformalCredalSetPredictor[**In, Out: DistanceBasedCredalSet](
+    ConformalCredalSetPredictor[In, Out], Protocol
+):
+    """Conformal Credal Set predictor for Wasserstein distance."""
+
+
+@runtime_checkable
+class InnerProductConformalCredalSetPredictor[**In, Out: DistanceBasedCredalSet](
+    ConformalCredalSetPredictor[In, Out], Protocol
+):
+    """Conformal Credal Set predictor for inner product score."""
+
+
+@runtime_checkable
+class KullbackLeiblerConformalCredalSetPredictor[**In, Out: DistanceBasedCredalSet](
+    ConformalCredalSetPredictor[In, Out], Protocol
+):
+    """Conformal Credal Set predictor for KL divergence score."""
+
+
+@runtime_checkable
+class DirichletConformalCredalSetPredictor[**In, Out: DirichletLevelSetCredalSet](
+    ConformalCredalSetPredictor[In, Out],
+    Protocol,
+):
+    """Conformal Credal Set predictor for Dirichlet."""
+
+
+class _ConformalCredalSetPredictorBase[**In, Out: CredalSet](ABC):
     """Concrete implementation of a ConformalCredalSetPredictor."""
 
     predictor: Predictor[In, Out]
@@ -83,7 +116,7 @@ def calibrated_state(_: object) -> tuple[float, NonConformityScore[Any, Any]]:
 
 
 @calibrated_state.register(_ConformalCredalSetPredictorBase)
-def _[**In, Out](
+def _[**In, Out: CredalSet](
     predictor: _ConformalCredalSetPredictorBase[In, Out],
 ) -> tuple[float, NonConformityScore[Out, Out]]:
     return predictor._require_calibrated()  # noqa: SLF001
@@ -101,11 +134,60 @@ def predict_total_variation_conformal_credal_set[**In, Out: DistanceBasedCredalS
     return create_distance_based_credal_set_from_center_and_radius(prediction, quantile)
 
 
+@predict.register(WassersteinConformalCredalSetPredictor)
+def predict_wasserstein_distance_conformal_credal_set[**In, Out: DistanceBasedCredalSet](
+    predictor: WassersteinConformalCredalSetPredictor,
+    *args: In.args,
+    **kwargs: In.kwargs,
+) -> DistanceBasedCredalSet:
+    """Predict a wasserstein distance conformal credal set."""
+    quantile, _ = calibrated_state(predictor)
+    prediction = predict(cast("Any", predictor).predictor, *args, **kwargs)
+    return create_distance_based_credal_set_from_center_and_radius(prediction, quantile)
+
+
+@predict.register(InnerProductConformalCredalSetPredictor)
+def predict_inner_product_conformal_credal_set[**In, Out: DistanceBasedCredalSet](
+    predictor: InnerProductConformalCredalSetPredictor,
+    *args: In.args,
+    **kwargs: In.kwargs,
+) -> DistanceBasedCredalSet:
+    """Predict an inner product conformal credal set."""
+    quantile, _ = calibrated_state(predictor)
+    prediction = predict(cast("Any", predictor).predictor, *args, **kwargs)
+    return create_distance_based_credal_set_from_center_and_radius(prediction, quantile)
+
+
+@predict.register(KullbackLeiblerConformalCredalSetPredictor)
+def predict_kl_divergence_conformal_credal_set[**In, Out: DistanceBasedCredalSet](
+    predictor: KullbackLeiblerConformalCredalSetPredictor,
+    *args: In.args,
+    **kwargs: In.kwargs,
+) -> DistanceBasedCredalSet:
+    """Predict a KL divergence conformal credal set."""
+    quantile, _ = calibrated_state(predictor)
+    prediction = predict(cast("Any", predictor).predictor, *args, **kwargs)
+    return create_distance_based_credal_set_from_center_and_radius(prediction, quantile)
+
+
+@predict.register(DirichletConformalCredalSetPredictor)
+def predict_dirichlet_conformal_credal_set[**In, Out: DirichletLevelSetCredalSet](
+    predictor: DirichletConformalCredalSetPredictor[In, Out],
+    *args: In.args,
+    **kwargs: In.kwargs,
+) -> DirichletLevelSetCredalSet:
+    """Predict a Dirichlet level set conformal credal set."""
+    quantile, _ = calibrated_state(predictor)
+    dirichlet_pred = predict(cast("Any", predictor).predictor, *args, **kwargs)
+    threshold = quantile
+    return create_dirichlet_level_set_credal_set(dirichlet_pred.alphas, threshold)
+
+
 @flexdispatch
-def conformal_credal_set_generator[**In, T, Out](
+def conformal_credal_set_generator[**In, T, Out: CredalSet](
     base: Predictor[In, Out],
     non_conformity_score: NonConformityScore[Out, T],
-) -> ConformalCredalSetPredictor[In, DistanceBasedCredalSet]:
+) -> ConformalCredalSetPredictor[In, Out]:
     """Generate a backend-specific conformal set predictor wrapper."""
     msg = f"No conformal generator is registered for type {type(base)}"
     raise NotImplementedError(msg)
@@ -119,34 +201,28 @@ def conformal_total_variation[**In, Out: DistanceBasedCredalSet](
     return conformal_credal_set_generator(base, tv_score)
 
 
-@runtime_checkable
-class DirichletConformalCredalSetPredictor[**In, Out: DirichletLevelSetCredalSet](CredalPredictor[In, Out], Protocol):
-    """Conformal credal set predictor using Dirichlet relative likelihood.
-
-    Produces instance-adaptive credal sets based on the Dirichlet density
-    level set of a second-order predictor.
-    """
-
-    predictor: Predictor
-    conformal_quantile: float | None
-    non_conformity_score: NonConformityScore | None
-
-    def calibrate(self, alpha: float, y_calib: Out, *calib_args: In.args, **calib_kwargs: In.kwargs) -> Self:
-        """Calibrate the predictor on calibration data."""
-        ...
+@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
+@WassersteinConformalCredalSetPredictor.register_factory
+def conformal_wasserstein_distance[**In, Out: DistanceBasedCredalSet](
+    base: Predictor[In, Out],
+) -> WassersteinConformalCredalSetPredictor[In, Out]:
+    return conformal_credal_set_generator(base, wasserstein_distance_score)
 
 
-@predict.register(DirichletConformalCredalSetPredictor)
-def predict_dirichlet_conformal_credal_set[**In, Out: DirichletLevelSetCredalSet](
-    predictor: DirichletConformalCredalSetPredictor[In, Out],
-    *args: In.args,
-    **kwargs: In.kwargs,
-) -> DirichletLevelSetCredalSet:
-    """Predict a Dirichlet level set conformal credal set."""
-    quantile, _ = calibrated_state(predictor)
-    dirichlet_pred = predict(cast("Any", predictor).predictor, *args, **kwargs)
-    threshold = 1.0 - quantile
-    return create_dirichlet_level_set_credal_set(dirichlet_pred.alphas, threshold)
+@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
+@InnerProductConformalCredalSetPredictor.register_factory
+def conformal_inner_product[**In, Out: DistanceBasedCredalSet](
+    base: Predictor[In, Out],
+) -> InnerProductConformalCredalSetPredictor[In, Out]:
+    return conformal_credal_set_generator(base, inner_product_score)
+
+
+@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
+@KullbackLeiblerConformalCredalSetPredictor.register_factory
+def conformal_kullback_leibler[**In, Out: DistanceBasedCredalSet](
+    base: Predictor[In, Out],
+) -> KullbackLeiblerConformalCredalSetPredictor[In, Out]:
+    return conformal_credal_set_generator(base, kl_divergence_score)
 
 
 @predictor_transformation(permitted_predictor_types=(DirichletDistributionPredictor,), preserve_predictor_type=False)
@@ -154,26 +230,21 @@ def predict_dirichlet_conformal_credal_set[**In, Out: DirichletLevelSetCredalSet
 def conformal_dirichlet_relative_likelihood[**In, Out: DirichletLevelSetCredalSet](
     base: Predictor[In, Out],
 ) -> DirichletConformalCredalSetPredictor[In, Out]:
-    """Create a conformalized credal set predictor using Dirichlet relative likelihood.
-
-    Wraps a Dirichlet predictor (e.g., from :func:`~probly.method.prior_network.prior_network`)
-    and produces instance-adaptive credal sets at prediction time.
-
-    Args:
-        base: A predictor that outputs Dirichlet distributions.
-
-    Returns:
-        A conformalized credal set predictor.
-    """
     return conformal_credal_set_generator(base, dirichlet_rl_score)
 
 
 __all__ = [
     "ConformalCredalSetPredictor",
     "DirichletConformalCredalSetPredictor",
+    "InnerProductConformalCredalSetPredictor",
+    "KullbackLeiblerConformalCredalSetPredictor",
     "TVConformalCredalSetPredictor",
+    "WassersteinConformalCredalSetPredictor",
     "_ConformalCredalSetPredictorBase",
     "conformal_credal_set_generator",
     "conformal_dirichlet_relative_likelihood",
+    "conformal_inner_product",
+    "conformal_kullback_leibler",
     "conformal_total_variation",
+    "conformal_wasserstein_distance",
 ]
