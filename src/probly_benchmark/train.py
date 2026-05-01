@@ -265,6 +265,8 @@ def _maybe_compile_forward(model: nn.Module, device: torch.device) -> None:
     if device.type == "mps" or isinstance(model, DUQPredictor):
         print("Skipping torch.compile on MPS (Inductor's Metal backend unsupported); using eager forward.")
         return
+    if getattr(model, "_probly_skip_compile", False):
+        return
     model.forward = torch.compile(model.forward)
 
 
@@ -886,6 +888,8 @@ def _(
     """
     # Extract model from BaseLaplace, if we do last layer mode, model.model is a FeatureExtractor, so unwrap it
     inner_model = model.model.model if isinstance(model.model, FeatureExtractor) else model.model
+    # Problems with cuda + triton + compile if we compile this model, so we set a flag to skip it.
+    inner_model._probly_skip_compile = True  # ty: ignore[unresolved-attribute]  # noqa: SLF001
     _training_loop(
         inner_model,
         train_loader,
@@ -899,7 +903,6 @@ def _(
     )
     model.fit(train_loader)
     run.summary["laplace_fitted"] = True
-    print(f"[laplace] Fitted: n_data={model.n_data}, n_outputs={model.n_outputs}, n_params={model.n_params}")
     if train_kwargs.get("optimize_prior", False):
         # ``pred_type`` is required by laplace-torch's signature but unused when ``method='marglik'``
         # (marglik works directly on the closed-form log-marginal-likelihood); any value is fine.
@@ -910,7 +913,6 @@ def _(
             lr=train_kwargs.get("lr", 0.1),
         )
         run.summary["laplace_prior_precision"] = float(model.prior_precision)
-        print(f"[laplace] Marglik tuned prior precision: {float(model.prior_precision):.4f}")
 
 
 @train_model.register(EfficientCredalPredictor)
