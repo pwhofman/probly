@@ -27,7 +27,7 @@ from sklearn.model_selection import KFold, train_test_split
 from probly.calibrator import calibrate
 from probly.metrics._common import average_interval_size, empirical_coverage_regression
 from probly.method.conformal import conformal_cqr, conformal_cqr_r, conformal_uacqr
-from probly.method.ensemble._common import EnsemblePredictor, ensemble
+from probly.method.ensemble import EnsemblePredictor, ensemble
 from probly.representer import representer
 
 torch.manual_seed(42)

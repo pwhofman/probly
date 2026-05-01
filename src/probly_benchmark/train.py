@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
-from probly.method.efficient_credal_prediction import EfficientCredalPredictor
-
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
@@ -18,11 +16,10 @@ import pathlib
 import tempfile
 
 import hydra
-import numpy as np
+from laplace.baselaplace import BaseLaplace
+from laplace.utils.feature_extractor import FeatureExtractor
 from omegaconf import DictConfig, OmegaConf
 from pytorch_optimizer import Lamb
-import scipy.optimize
-import scipy.special
 import torch
 from torch import nn, optim
 from torch.amp import GradScaler
@@ -34,12 +31,14 @@ from flextype import flexdispatch
 from probly.layers.torch import BatchEnsembleConv2d, BatchEnsembleLinear
 from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.bayesian import BayesianPredictor
-from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
-from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
 from probly.method.duq import DUQPredictor
+from probly.method.efficient_credal_prediction import (
+    EfficientCredalPredictor,
+    compute_efficient_credal_prediction_bounds,
+)
 from probly.method.ensemble import EnsemblePredictor
 from probly_benchmark import conformal, data, metadata, utils
 from probly_benchmark.builders import BuildContext, build_model
@@ -72,6 +71,17 @@ def _get_state_dict(model: nn.Module | list[nn.Module]) -> dict | list[dict]:
     if isinstance(model, list):
         return [cast("nn.Module", m).state_dict() for m in model]
     return model.state_dict()
+
+
+def _move_to_device(model: nn.Module | EnsemblePredictor | BaseLaplace, device: torch.device) -> None:
+    """Move model to device in-place, handling type-specific things."""
+    if isinstance(model, EnsemblePredictor):
+        for member in model:
+            member.to(device)
+    elif isinstance(model, BaseLaplace):
+        model.model.to(device)
+    else:
+        model.to(device)
 
 
 def _log_artifact_file(path: pathlib.Path, artifact_name: str, metadata: dict[str, Any]) -> None:
@@ -161,7 +171,7 @@ SUPERVISED_LOSS_METHODS = {
     "dropout",
     "efficient_credal_prediction",
     "ensemble",
-    "het_nets",
+    "het_net",
     "subensemble",
 }
 """The set of method names that support non-default supervised losses."""
@@ -254,6 +264,8 @@ def _maybe_compile_forward(model: nn.Module, device: torch.device) -> None:
     """
     if device.type == "mps" or isinstance(model, DUQPredictor):
         print("Skipping torch.compile on MPS (Inductor's Metal backend unsupported); using eager forward.")
+        return
+    if getattr(model, "_probly_skip_compile", False):
         return
     model.forward = torch.compile(model.forward)
 
@@ -409,7 +421,7 @@ def train_model(
     )
 
 
-@train_model.register((EnsemblePredictor, CredalEnsemblingPredictor, CredalWrapperPredictor))
+@train_model.register(EnsemblePredictor)
 def _(
     model: EnsemblePredictor,
     train_loader: DataLoader,
@@ -858,72 +870,49 @@ def _(
     run.summary["ddu_gmm_fitted"] = True
 
 
-def _compute_efficient_credal_prediction_bounds(
-    logits_train: torch.Tensor,
-    targets_train: torch.Tensor,
-    num_classes: int,
-    alpha: float,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Compute per-class additive logit bounds via classwise relative-likelihood optimisation.
+@train_model.register(BaseLaplace)
+def _(
+    model: BaseLaplace,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Fine-tune the underlying network, then fit the Laplace posterior post-hoc.
 
-    For each class ``k`` and each direction (min/max), find the optimal additive
-    logit perturbation ``x`` on column ``k`` that keeps the mean training
-    relative likelihood at least ``alpha``. The relative likelihood is
-    ``exp(ll(logits + x * e_k) - ll(logits))`` where ``ll`` is the mean
-    per-sample log-likelihood.
-
-    Based on :cite:`hofmanefficient` and the reference implementation at
-    https://github.com/pwhofman/efficient-credal-prediction/blob/main/models.py.
-
-    Args:
-        logits_train: Training logits, shape ``(N, num_classes)``.
-        targets_train: Integer training targets, shape ``(N,)``.
-        num_classes: Number of classes.
-        alpha: Relative-likelihood threshold in ``[0, 1]``.
-
-    Returns:
-        Tuple ``(lower, upper)`` of ``numpy.ndarray`` with shape ``(num_classes,)``
-        and dtype ``float64``. ``lower[k]`` is the most-negative logit
-        perturbation on class ``k`` that keeps the relative likelihood at least
-        ``alpha``; ``upper[k]`` is the most-positive.
+    Phase 1 runs the standard supervised loop on the underlying ``nn.Module`` (laplace-torch's wrapped model).
+    Phase 2 calls ``BaseLaplace.fit(train_loader)`` and, if ``train_kwargs["optimize_prior"]`` is set, tunes
+    the prior precision by marginal-likelihood maximization.
     """
-    logits_np = logits_train.detach().cpu().numpy().astype(np.float64)
-    targets_np = targets_train.detach().cpu().numpy().astype(np.int64)
-
-    def _mean_log_likelihood(logits: np.ndarray, targets: np.ndarray) -> float:
-        log_probs = scipy.special.log_softmax(logits, axis=1)
-        return float(log_probs[np.arange(len(targets)), targets].mean())
-
-    mll = _mean_log_likelihood(logits_np, targets_np)
-
-    lower = np.zeros(num_classes, dtype=np.float64)
-    upper = np.zeros(num_classes, dtype=np.float64)
-
-    for k in tqdm(range(num_classes), desc="Credal bounds"):
-        for direction in (1, -1):
-
-            def fun(x: np.ndarray, direction: int = direction) -> float:
-                return float(direction * x[0])
-
-            def const(x: np.ndarray, k: int = k) -> float:
-                perturbed = logits_np.copy()
-                perturbed[:, k] += x[0]
-                return float(np.exp(_mean_log_likelihood(perturbed, targets_np) - mll) - alpha)
-
-            res = scipy.optimize.minimize(
-                fun,
-                x0=np.array([0.0]),
-                constraints=[{"type": "ineq", "fun": const}],
-                bounds=[(-1e4, 1e4)],
-            )
-            if not res.success:
-                print(f"scipy.optimize.minimize did not converge for class {k} direction {direction}: {res.message}")
-            if direction == 1:
-                lower[k] = float(res.x[0])
-            else:
-                upper[k] = float(res.x[0])
-
-    return lower, upper
+    # Extract model from BaseLaplace, if we do last layer mode, model.model is a FeatureExtractor, so unwrap it
+    inner_model = model.model.model if isinstance(model.model, FeatureExtractor) else model.model
+    # Problems with cuda + triton + compile if we compile this model, so we set a flag to skip it.
+    inner_model._probly_skip_compile = True  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+    _training_loop(
+        inner_model,
+        train_loader,
+        val_loader,
+        cfg,
+        device,
+        run,
+        train_kwargs,
+        train_fn=train_epoch_cross_entropy,
+        val_fn=validate_cross_entropy,
+    )
+    model.fit(train_loader)
+    run.summary["laplace_fitted"] = True
+    if train_kwargs.get("optimize_prior", False):
+        # ``pred_type`` is required by laplace-torch's signature but unused when ``method='marglik'``
+        # (marglik works directly on the closed-form log-marginal-likelihood); any value is fine.
+        model.optimize_prior_precision(
+            pred_type="glm",
+            method="marglik",
+            n_steps=train_kwargs.get("n_steps", 100),
+            lr=train_kwargs.get("lr", 0.1),
+        )
+        run.summary["laplace_prior_precision"] = float(model.prior_precision)
 
 
 @train_model.register(EfficientCredalPredictor)
@@ -964,14 +953,23 @@ def _(
         device,
         amp_enabled,
     )
-    lower, upper = _compute_efficient_credal_prediction_bounds(
+    lower, upper = compute_efficient_credal_prediction_bounds(
         logits_train,
         targets_train,
         num_classes=num_classes,
         alpha=alpha,
     )
-    model_.lower.copy_(torch.from_numpy(lower).to(model_.lower))
-    model_.upper.copy_(torch.from_numpy(upper).to(model_.upper))
+    lower_t = lower.to(device)
+    upper_t = upper.to(device)
+
+    # Initialize the buffers if they are None, otherwise copy in-place
+    if model_.lower is None:
+        model_.lower = lower_t
+        model_.upper = upper_t
+    else:
+        model_.lower.copy_(lower_t)
+        model_.upper.copy_(upper_t)
+
     run.summary["efficient_credal_alpha"] = alpha
 
 
@@ -1043,11 +1041,7 @@ def main(cfg: DictConfig) -> None:
         train_loader=train_loader,
     )
     model = build_model(cfg.method.name, method_kwargs, context)
-    if isinstance(model, EnsemblePredictor):
-        for member in model:
-            member.to(device)
-    else:
-        model = model.to(device)
+    _move_to_device(model, device)
 
     if cfg.val_split == 0:
         if cfg.scheduler.name.lower() == "plateau":

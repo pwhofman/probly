@@ -1,0 +1,11 @@
+# @package _global_
+dataset:
+  name: "openml"
+  openml_id: 6
+
+# TabularMLP on letter recognition (16k train, 26 classes):
+# Adam 1e-3 works well; 100 epochs ensures convergence on small labeled sets.
+epochs: 100
+initial_size: 1000
+query_size: 1000
+n_iterations: 10

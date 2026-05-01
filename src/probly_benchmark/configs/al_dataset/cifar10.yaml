@@ -1,0 +1,21 @@
+# @package _global_
+dataset:
+  name: "cifar10"
+
+# ResNet18 on CIFAR-10: SGD + cosine is standard (He et al.)
+epochs: 100
+batch_size: 128
+optimizer:
+  name: "sgd"
+  params:
+    lr: 0.1
+    momentum: 0.9
+    weight_decay: 5e-4
+scheduler:
+  name: "cosine"
+  params: {}
+
+# CIFAR-10 has 50k train samples — can start with more labels
+initial_size: 1000
+query_size: 1000
+n_iterations: 10

@@ -16,8 +16,8 @@ from probly.method.calibration import (
     temperature_scaling,
     vector_scaling,
 )
-from probly.method.calibration.sklearn import SklearnVectorScalingPredictor
 from probly.method.conformal import conformal_lac
+from probly.transformation.calibration.sklearn import SklearnVectorScalingPredictor
 
 pytest.importorskip("sklearn")
 from sklearn.base import BaseEstimator
