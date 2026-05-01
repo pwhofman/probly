@@ -19,6 +19,7 @@ import tempfile
 
 import hydra
 from laplace.baselaplace import BaseLaplace
+from laplace.utils.feature_extractor import FeatureExtractor
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
 from pytorch_optimizer import Lamb
@@ -884,8 +885,10 @@ def _(
     Phase 2 calls ``BaseLaplace.fit(train_loader)`` and, if ``train_kwargs["optimize_prior"]`` is set, tunes
     the prior precision by marginal-likelihood maximization.
     """
+    # Extract model from BaseLaplace, if we do last layer mode, model.model is a FeatureExtractor, so unwrap it
+    inner_model = model.model.model if isinstance(model.model, FeatureExtractor) else model.model
     _training_loop(
-        model.model,
+        inner_model,
         train_loader,
         val_loader,
         cfg,
