@@ -1,6 +1,6 @@
 # @package method
 name: "credal_ensembling"
-label: "Credal Ensembling"
+label: "CreEns"
 load_from: "ensemble"
 params:
   num_members: 10

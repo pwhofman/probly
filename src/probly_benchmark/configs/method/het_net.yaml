@@ -1,5 +1,5 @@
 # @package method
-name: "het_nets"
+name: "het_net"
 label: "HetNet"
 params:
   num_factors: 10
@@ -8,6 +8,6 @@ params:
 train:
   samples: 1
 selective_prediction:
-  num_samples: 10
+  num_samples: 100
 ood_detection:
-  num_samples: 10
+  num_samples: 100

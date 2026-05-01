@@ -1,5 +1,5 @@
 # @package method
 name: "credal_net"
-label: "Credal Net"
+label: "CreNet"
 params:
 train:

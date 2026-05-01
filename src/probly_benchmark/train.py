@@ -158,7 +158,7 @@ SUPERVISED_LOSS_METHODS = {
     "dropout",
     "efficient_credal_prediction",
     "ensemble",
-    "het_nets",
+    "het_net",
     "subensemble",
 }
 """The set of method names that support non-default supervised losses."""

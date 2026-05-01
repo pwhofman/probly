@@ -1,6 +1,6 @@
 # @package method
 name: "credal_relative_likelihood"
-label: "Credal RL"
+label: "CreRL"
 params:
     num_members: 10
     reset_params: true
