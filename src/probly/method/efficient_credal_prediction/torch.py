@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from typing import cast
 
 import torch
 from torch import nn
@@ -29,6 +30,16 @@ class TorchEfficientCredalPredictor(nn.Module):
         self.predictor = predictor
         self.register_buffer("lower", None)
         self.register_buffer("upper", None)
+
+    @property
+    def lower_bounds(self) -> torch.Tensor:
+        """Per-class lower probability bounds."""
+        return cast("torch.Tensor", self.lower)
+
+    @property
+    def upper_bounds(self) -> torch.Tensor:
+        """Per-class upper probability bounds."""
+        return cast("torch.Tensor", self.upper)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass through the predictor."""

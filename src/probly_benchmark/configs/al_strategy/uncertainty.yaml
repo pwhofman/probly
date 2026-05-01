@@ -1,0 +1,5 @@
+name: "uncertainty"
+notion: EU
+permitted_notions:
+    - EU
+    - TU

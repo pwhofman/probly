@@ -1,0 +1,14 @@
+# @package method
+name: "het_nets"
+params:
+  num_factors: 10
+  temperature: 1.0
+  is_parameter_efficient: false
+train:
+  samples: 1
+selective_prediction:
+  num_samples: 10
+ood_detection:
+  num_samples: 10
+active_learning:
+  num_samples: 10

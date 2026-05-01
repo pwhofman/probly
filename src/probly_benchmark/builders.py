@@ -105,6 +105,9 @@ class BuildContext:
         num_classes: Number of classes for the dataset being used.
         pretrained: Whether to load pretrained weights for the base model.
         train_loader: Training loader, or ``None`` when building for load.
+        in_features: Number of input features for tabular base models. Ignored
+            by base models that infer their input shape (e.g. CNN backbones);
+            required by ``TabularMLP``.
     """
 
     base_model_name: str
@@ -112,6 +115,7 @@ class BuildContext:
     num_classes: int
     pretrained: bool
     train_loader: DataLoader | None = None
+    in_features: int | None = None
 
 
 Builder = Callable[[Callable[..., nn.Module], dict[str, Any], BuildContext], nn.Module]
@@ -140,7 +144,8 @@ def _default_builder(
     ctx: BuildContext,
 ) -> nn.Module:
     """Build a model using only the YAML hyperparameters and a base network."""
-    base = models.get_base_model(ctx.base_model_name, ctx.num_classes, ctx.pretrained)
+    extra = {"in_features": ctx.in_features} if ctx.in_features is not None else {}
+    base = models.get_base_model(ctx.base_model_name, ctx.num_classes, ctx.pretrained, **extra)
     return method_fn(base, predictor_type=ctx.model_type, **_filter_params(method_fn, params))
 
 
@@ -164,10 +169,12 @@ def _posterior_network_builder(
     restored by ``load_state_dict`` since ``class_counts`` is a buffer on
     the underlying module.
     """
+    extra = {"in_features": ctx.in_features} if ctx.in_features is not None else {}
     encoder = models.get_base_model(
         f"{ctx.base_model_name}_encoder",
         ctx.num_classes,
         ctx.pretrained,
+        **extra,
     )
     if ctx.train_loader is not None:
         class_counts = _class_counts(ctx.train_loader, ctx.num_classes)
@@ -206,6 +213,16 @@ def _natural_posterior_network_builder(
         predictor_type=ctx.model_type,
         **_filter_params(method_fn, params),
     )
+
+
+def _credal_relative_likelihood_builder(
+    method_fn: Callable[..., nn.Module],
+    params: dict[str, Any],
+    ctx: BuildContext,
+) -> nn.Module:
+    """Build credal relative likelihood and wrap the plain list in nn.ModuleList."""
+    model = _default_builder(method_fn, params, ctx)
+    return nn.ModuleList(model) if isinstance(model, list) else model  # ty: ignore[invalid-argument-type]
 
 
 def _subensemble_builder(
@@ -267,6 +284,7 @@ BUILDERS: dict[str, Builder] = {
     "laplace": _laplace_builder,
     "natural_posterior_network": _natural_posterior_network_builder,
     "posterior_network": _posterior_network_builder,
+    "credal_relative_likelihood": _credal_relative_likelihood_builder,
     "subensemble": _subensemble_builder,
 }
 

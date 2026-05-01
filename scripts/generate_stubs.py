@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -81,8 +82,14 @@ def main() -> int:
 
     command = build_command(src_root, stub_root)
 
+    # Workaround for macOS where ``os.sysconf("SC_SEM_NSEMS_MAX")`` raises
+    # ``PermissionError`` and breaks joblib/loky's executor initialization
+    # (used internally by sigx-gen). Force single-process execution; harmless
+    # on platforms that don't trigger the bug.
+    env = {**os.environ, "LOKY_MAX_CPU_COUNT": os.environ.get("LOKY_MAX_CPU_COUNT", "1")}
+
     try:
-        subprocess.run(command, cwd=repo_root, check=True)  # noqa: S603
+        subprocess.run(command, cwd=repo_root, check=True, env=env)  # noqa: S603
     except FileNotFoundError:
         return 127
     except subprocess.CalledProcessError as exc:
