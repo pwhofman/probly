@@ -6,7 +6,7 @@ import logging
 
 import torch
 
-from probly.method.het_nets import het_nets
+from probly.method.het_net import het_net
 from probly.quantification import quantify
 from probly.representer import representer
 from probly_benchmark.models import LeNet
@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 model = LeNet(n_classes=5)
-cep = het_nets(model, predictor_type="probabilistic_classifier")
+cep = het_net(model, predictor_type="probabilistic_classifier")  # ty:ignore[unknown-argument, invalid-argument-type]
 rep = representer(cep, num_samples=10)
 logger.info(rep)
 inputs = torch.randn(3, 1, 28, 28)

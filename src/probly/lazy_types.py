@@ -19,3 +19,5 @@ SKLEARN_CALIBRATED_CLASSIFIER_CV = "sklearn.calibration.CalibratedClassifierCV"
 
 RIVER_ARF_CLASSIFIER = "river.forest.adaptive_random_forest.ARFClassifier"
 RIVER_ARF_REGRESSOR = "river.forest.adaptive_random_forest.ARFRegressor"
+
+LAPLACE_BASE = "laplace.baselaplace.BaseLaplace"

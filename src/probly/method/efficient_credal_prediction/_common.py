@@ -12,16 +12,24 @@ from probly.representation.credal_set import (
     create_probability_intervals_from_lower_upper_array,
 )
 from probly.representation.distribution import CategoricalDistribution
-from probly.representer import Representer, representer
+from probly.representer._representer import Representer, representer
 from probly.transformation.transformation import predictor_transformation
 
 if TYPE_CHECKING:
     from probly.predictor import Predictor
+    from probly.representation.array_like import ArrayLike
 
 
 @runtime_checkable
 class EfficientCredalPredictor[**In, Out: CategoricalDistribution](LogitClassifier[In, Out], Protocol):
-    """Logit classifier wrapped with calibrated lower and upper logit offsets."""
+    """Logit classifier wrapped with calibrated lower/upper bounds, based on :cite:`hofmanefficient`.
+
+    Wraps a base :class:`LogitClassifier` together with externally-calibrated
+    per-class lower and upper bound offsets. ``predict`` returns the base's
+    :class:`CategoricalDistribution`; the credal-set view (combining the
+    distribution with the bounds) is available via the registered
+    representer.
+    """
 
     predictor: Predictor
     lower: ArrayLike[float]
@@ -32,7 +40,7 @@ class EfficientCredalPredictor[**In, Out: CategoricalDistribution](LogitClassifi
 def efficient_credal_prediction_generator[**In, Out: CategoricalDistribution](
     base: Predictor,
 ) -> EfficientCredalPredictor[In, Out]:
-    """Generate an efficient credal prediction predictor from a base model."""
+    """Generate an efficient credal predictor from a base model."""
     msg = f"No efficient credal prediction generator is registered for type {type(base)}"
     raise NotImplementedError(msg)
 
@@ -42,21 +50,53 @@ def efficient_credal_prediction_generator[**In, Out: CategoricalDistribution](
 def efficient_credal_prediction[**In, Out: CategoricalDistribution](
     base: Predictor,
 ) -> EfficientCredalPredictor[In, Out]:
-    """Create a predictor that stores calibrated lower and upper logit offsets.
+    """Create an efficient credal predictor from a base predictor based on :cite:`hofmanefficient`.
 
     Args:
-        base: The base logit classifier to wrap.
+        base: The base ``LogitClassifier`` to wrap.
 
     Returns:
-        The efficient credal prediction predictor. Use ``representer(...)`` to get
-        the credal-set view that combines logits with the calibrated offsets.
+        The efficient credal predictor; ``predict`` returns the base's
+        :class:`CategoricalDistribution`. Use ``representer(...)`` to get the
+        credal-set view that combines the distribution with the calibrated
+        bounds.
     """
     return efficient_credal_prediction_generator(base)
 
 
+def _validate_alpha(alpha: float) -> None:
+    """Validate that ``alpha`` lies in ``[0, 1]``; raise ``ValueError`` otherwise."""
+    if not 0.0 <= alpha <= 1.0:
+        msg = f"alpha must be in [0, 1], got {alpha}"
+        raise ValueError(msg)
+
+
+@flexdispatch
+def compute_efficient_credal_prediction_bounds[T: ArrayLike](
+    logits_train: T,
+    targets_train: T,
+    num_classes: int,
+    alpha: float,
+    **_kwargs,  # noqa: ANN003
+) -> tuple[T, T]:
+    """Compute per-class additive logit bounds via classwise relative-likelihood optimization.
+
+    Dispatches to backend-specific implementations based on the array type.
+    """
+    msg = f"No credal bounds computation registered for array type {type(logits_train)}"
+    raise NotImplementedError(msg)
+
+
 @flexdispatch
 def compute_efficient_credal_bounds[T: ArrayLike](logits: T, lower: T, upper: T) -> T:
-    """Compute packed interval probability bounds via 2K logit perturbations.
+    """Compute packed ``(B, 2C)`` interval probability bounds via 2K logit perturbations.
+
+    Implements the inference step of :cite:`hofmanefficient`: for each class
+    ``k``, the kth logit is perturbed by ``lower[k]`` (signed non-positive)
+    and ``upper[k]`` (signed non-negative) independently of the others, and
+    each perturbed logit vector is softmaxed. The packed result has the
+    per-class min of the 2K resulting distributions in the first half and
+    the per-class max in the second.
 
     Args:
         logits: Base classifier output of shape ``(B, C)``.
@@ -70,27 +110,35 @@ def compute_efficient_credal_bounds[T: ArrayLike](logits: T, lower: T, upper: T)
     raise NotImplementedError(msg)
 
 
+@representer.register(EfficientCredalPredictor)
 class EfficientCredalRepresenter[**In, Out: CategoricalDistribution, C: ProbabilityIntervalsCredalSet](
     Representer[Any, In, Out, C]
 ):
-    """Build a credal set from base logits and calibrated logit-space offsets."""
+    """Builds a credal set from the base logits and the calibrated logit-space offsets.
+
+    For each class ``k``, the kth logit is perturbed by ``lower[k]`` and
+    ``upper[k]`` (signed: ``lower`` is non-positive, ``upper`` is non-negative)
+    independently of the others, and the result is softmaxed. The credal set's
+    ``i``th lower (resp. upper) bound is the min (resp. max) of the ``i``th
+    coordinate across the 2K resulting distributions.
+    """
 
     predictor: EfficientCredalPredictor[In, Out]
 
     def __init__(self, predictor: EfficientCredalPredictor[In, Out]) -> None:
-        """Initialize the representer with an efficient credal predictor.
-
-        Args:
-            predictor: The efficient credal prediction predictor to represent.
-        """
+        """Initialize the representer with an efficient credal predictor."""
         super().__init__(predictor)
 
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:
-        """Run the base, perturb each logit by the calibrated offsets, and reduce to intervals."""
+        """Run the base, perturb each logit by the calibrated offsets, and reduce to credal bounds."""
+        if self.predictor.lower is None or self.predictor.upper is None:
+            msg = (
+                "EfficientCredalPredictor has uninitialized bounds; call "
+                "compute_efficient_credal_prediction_bounds and assign the result to "
+                "predictor.lower / predictor.upper before requesting a representation."
+            )
+            raise RuntimeError(msg)
         logits = predict_raw(self.predictor, *args, **kwargs)
         packed = compute_efficient_credal_bounds(logits, self.predictor.lower, self.predictor.upper)
         return create_probability_intervals_from_lower_upper_array(packed)  # ty:ignore[invalid-return-type]
-
-
-representer.register(EfficientCredalPredictor, EfficientCredalRepresenter)

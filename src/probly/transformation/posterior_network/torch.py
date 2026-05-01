@@ -41,5 +41,5 @@ class TorchPosteriorNetwork(nn.Module, PosteriorNetworkPredictor):
         log_density = self.norm_flow.log_prob(x)
         # Compute alphas in fp32: under AMP, exp() of a moderately negative
         # log_density underflows to 0 in fp16 and kills the learning signal.
-        alphas = 1.0 + torch.exp(log_density.float()) * self.class_counts.float()  # ty: ignore
+        alphas = 1.0 + torch.exp(log_density.float()) * self.class_counts.float()
         return alphas

@@ -13,20 +13,20 @@ from ._common import (
     LAST_LAYER,
     NUM_FACTORS,
     TEMPERATURE,
-    het_nets_traverser,
+    het_net_traverser,
 )
 
 if TYPE_CHECKING:
     from pytraverse import State
 
 
-@het_nets_traverser.register(nn.Module)
+@het_net_traverser.register(nn.Module)
 def skip_layer(obj: nn.Module, state: State) -> tuple[nn.Module, State]:
     """Traverser for unchanged torch layers."""
     return obj, state
 
 
-@het_nets_traverser.register(nn.Linear)
+@het_net_traverser.register(nn.Linear)
 def drop_in_place_het_layer(obj: nn.Linear, state: State) -> tuple[nn.Module, State]:
     """Replace the last linear layer with a HeteroscedasticLayer."""
     if state[LAST_LAYER]:
@@ -41,7 +41,7 @@ def drop_in_place_het_layer(obj: nn.Linear, state: State) -> tuple[nn.Module, St
     return obj, state
 
 
-@het_nets_traverser.register(nn.Softmax)
+@het_net_traverser.register(nn.Softmax)
 def remove_layer(obj: nn.Softmax, state: State) -> tuple[nn.Module, State]:
     """Remove the softmax layer."""
     if state[LAST_LAYER]:

@@ -1,5 +1,6 @@
 # @package method
 name: "ddu"
+label: "DDU"
 params:
   # Lipschitz coefficient for spectral normalization applied to all Conv2d and
   # Linear layers except the classification head. Weights whose spectral norm

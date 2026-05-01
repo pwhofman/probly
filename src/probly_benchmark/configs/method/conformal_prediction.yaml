@@ -2,3 +2,4 @@
 cal_split: 0.1
 method:
   name: "conformal_prediction"
+  label: "Conformal Prediction"

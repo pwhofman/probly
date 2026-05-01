@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
+from laplace.baselaplace import BaseLaplace
 import torch
 from torch import nn, optim
 from torch.amp import GradScaler, autocast
@@ -24,7 +25,7 @@ from probly.method.duq import DUQPredictor
 from probly.method.efficient_credal_prediction import EfficientCredalPredictor
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.evidential.classification import EvidentialClassificationPredictor
-from probly.method.het_nets import HetNetsPredictor
+from probly.method.het_net import HetNetPredictor
 from probly.method.natural_posterior_network import NaturalPosteriorNetworkPredictor
 from probly.method.posterior_network import PosteriorNetworkPredictor
 from probly.method.subensemble import SubensemblePredictor
@@ -169,9 +170,7 @@ def train_epoch_batchensemble(
     return loss.item()
 
 
-@train_epoch.register(
-    (BasePredictor, DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetsPredictor)
-)
+@train_epoch.register((BasePredictor, DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor))
 def train_epoch_cross_entropy(
     model: Predictor,
     inputs: torch.Tensor,
@@ -189,6 +188,45 @@ def train_epoch_cross_entropy(
     with autocast(inputs.device.type, enabled=amp_enabled):
         outputs = model(inputs)  # ty: ignore[call-non-callable]
         loss = criterion(outputs, targets)
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        optimizer.step()
+    return loss.item()
+
+
+@train_epoch.register(HetNetPredictor)
+def train_epoch_het_net(
+    model: Predictor,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    samples: int = 1,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> float:
+    """Train a HetNets predictor by averaging softmax probabilities over MC samples.
+
+    Each forward pass draws a fresh noise sample from the heteroscedastic layer.
+    Averaging S such samples before computing NLL loss reduces gradient variance
+    compared to a single-sample estimate, following :cite:`collier2021hetnets`.
+    """
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        avg_probs = torch.stack(
+            [F.softmax(model(inputs), dim=1) for _ in range(samples)]  # ty: ignore[call-non-callable]
+        ).mean(0)
+        loss = F.nll_loss(avg_probs.log(), targets)
     if scaler is not None:
         scaler.scale(loss).backward()
         if grad_clip_norm is not None:
@@ -342,19 +380,19 @@ def _(
     lambda_t = _evidential_lambda_t(kl_weight, annealing_epochs, epoch)
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
-        alpha = model(inputs)  # ty: ignore[call-non-callable]
+        alpha = model(inputs)
         loss_val = base_loss_fn(alpha, targets) + lambda_t * evidential_kl_divergence(alpha, targets)
     if scaler is not None:
         scaler.scale(loss_val).backward()
         if grad_clip_norm is not None:
             scaler.unscale_(optimizer)
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
         scaler.step(optimizer)
         scaler.update()
     else:
         loss_val.backward()
         if grad_clip_norm is not None:
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
         optimizer.step()
     return loss_val.item()
 
@@ -595,7 +633,7 @@ def validate_batchensemble(
     return val_loss, val_acc
 
 
-@validate.register((BasePredictor, DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetsPredictor))
+@validate.register((BasePredictor, DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetPredictor))
 @torch.no_grad()
 def validate_cross_entropy(
     model: Predictor,
@@ -692,14 +730,14 @@ def _(
     """Validate an evidential classifier using the same loss as training at the current epoch."""
     base_loss_fn = EVIDENTIAL_LOSSES[loss]
     lambda_t = _evidential_lambda_t(kl_weight, annealing_epochs, epoch)
-    model.eval()  # ty: ignore[unresolved-attribute]
+    model.eval()
     val_loss = 0.0
     val_acc = 0.0
     num_instances = 0
     for inputs_, targets_ in val_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            alpha = model(inputs)  # ty: ignore[call-non-callable]
+            alpha = model(inputs)
             batch_loss = base_loss_fn(alpha, targets) + lambda_t * evidential_kl_divergence(alpha, targets)
         val_loss += batch_loss.item()
         val_acc += _accuracy(alpha, targets) * inputs.shape[0]
@@ -719,7 +757,7 @@ def _(
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> tuple[float, float]:
     """Validate a credal net."""
-    model.eval()  # ty:ignore[unresolved-attribute]
+    model.eval()
     val_loss = 0.0
     val_acc = 0.0
     num_instances = 0
@@ -840,7 +878,7 @@ def _(
     return _compute_metrics(probs, labels, n_bins)
 
 
-@evaluate.register((BasePredictor, EfficientCredalPredictor, HetNetsPredictor))
+@evaluate.register((BasePredictor, EfficientCredalPredictor, HetNetPredictor))
 @torch.no_grad()
 def evaluate_single_model(
     model: Predictor,
@@ -975,13 +1013,13 @@ def _(
 
     Uses the mean of the predicted Dirichlet (alpha / alpha.sum) as class probabilities.
     """
-    model.eval()  # ty: ignore[unresolved-attribute]
+    model.eval()
     all_probs: list[torch.Tensor] = []
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in test_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            alpha = model(inputs)  # ty: ignore[call-non-callable]
+            alpha = model(inputs)
             probs_ = alpha / alpha.sum(dim=1, keepdim=True)
         all_probs.append(probs_)
         all_labels.append(targets)
@@ -1003,7 +1041,7 @@ def _(
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> dict[str, float]:
     """Evaluate a credal net on accuracy/NLL/ECE using the intersection probability."""
-    model.eval()  # ty:ignore[unresolved-attribute]
+    model.eval()
     all_probs: list[torch.Tensor] = []
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in test_loader:
@@ -1018,6 +1056,37 @@ def _(
     probs = torch.cat(all_probs)
     labels = torch.cat(all_labels)
 
+    return _compute_metrics(probs, labels, n_bins)
+
+
+@evaluate.register(BaseLaplace)
+@torch.no_grad()
+def evaluate_laplace(
+    model: BaseLaplace,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    pred_type: str = "glm",
+    link_approx: str = "probit",
+    n_samples: int = 100,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate a fitted Laplace predictor via the closed-form GLM (or NN MC) predictive distribution."""
+    if model.n_data == 0:
+        msg = "Laplace approximation is not fitted; .fit(loader) must run before evaluate."
+        raise RuntimeError(msg)
+    model.model.eval()
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            probs = model(inputs, pred_type=pred_type, link_approx=link_approx, n_samples=n_samples)
+        all_probs.append(probs)  # ty: ignore[invalid-argument-type]
+        all_labels.append(targets)
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
     return _compute_metrics(probs, labels, n_bins)
 
 

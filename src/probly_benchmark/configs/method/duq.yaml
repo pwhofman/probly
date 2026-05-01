@@ -1,8 +1,9 @@
 # @package method
 name: "duq"
+label: "DUQ"
 params:
   # Embedding dimension n of the per-class projection W_c.
-  centroid_size: 256
+  centroid_size: 512
   # RBF kernel length scale sigma. Controls the width of the per-class
   # Gaussian kernel; smaller values produce sharper kernel responses.
   length_scale: 0.1

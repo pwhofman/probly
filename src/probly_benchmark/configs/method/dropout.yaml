@@ -1,5 +1,6 @@
 # @package method
 name: "dropout"
+label: "MC Dropout"
 params:
   p: 0.5
 train:

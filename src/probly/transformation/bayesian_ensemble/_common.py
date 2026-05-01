@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from probly.predictor import ProbabilisticClassifier
+from probly.predictor import LogitClassifier, ProbabilisticClassifier
 from probly.transformation.bayesian._common import bayesian
 from probly.transformation.ensemble import EnsemblePredictor, register_ensemble_members
 from probly.transformation.transformation import predictor_transformation
@@ -43,7 +43,7 @@ def _resolve_param(
 
 
 @predictor_transformation(
-    permitted_predictor_types=(ProbabilisticClassifier,), post_transform=register_ensemble_members
+    permitted_predictor_types=((ProbabilisticClassifier, LogitClassifier)), post_transform=register_ensemble_members
 )
 @BayesianEnsemblePredictor.register_factory(autocast_builtins=True)
 def bayesian_ensemble[**In, Out](

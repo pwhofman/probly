@@ -39,3 +39,7 @@ method:
     # so for D much larger than ~32 the alpha = 1 + exp(log p(z)) * N_c term
     # underflows to 1 and there is no learning signal. Paper uses 6 for CIFAR-10.
     latent_dim: 16
+  train:
+    # Laplace approximation. pred_type="nn" (Monte-Carlo sampling) is required at
+    # ImageNet scale because the GLM Jacobian for last-layer Laplace is intractable here
+    pred_type: "nn"

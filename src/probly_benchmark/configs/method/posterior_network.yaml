@@ -1,5 +1,6 @@
 # @package method
 name: "posterior_network"
+label: "PostNet"
 params:
     latent_dim: 6
     num_flows: 6
