@@ -1534,6 +1534,7 @@ class HeteroscedasticLayer(nn.Module):
         self.num_factors = num_factors
         self.temperature = temperature
         self.is_parameter_efficient = is_parameter_efficient
+        self.training_samples: int = 1
 
         self.mu_layer = nn.Linear(in_features, num_classes)
         self.diag_layer = nn.Linear(in_features, num_classes)
@@ -1558,37 +1559,50 @@ class HeteroscedasticLayer(nn.Module):
             nn.init.xavier_normal_(self.V_matrix)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Draw a single utility sample and return temperature-scaled logits.
+        """Sample utility logits and return temperature-scaled logits or averaged log-probs.
 
-        Samples once from a multivariate normal whose covariance is parameterized by a low-rank
-        factor plus a diagonal term derived from the input. Each call yields a different sample
-        because ``torch.randn`` is invoked fresh; the outer sampler turns repeated calls into a
-        Monte Carlo sample of categorical distributions.
+        When ``training_samples == 1`` (default), draws a single noise sample and returns
+        temperature-scaled logits of shape ``(batch_size, num_classes)``.  When
+        ``training_samples > 1``, draws S noise samples in a single vectorized operation —
+        the backbone-derived statistics (mu, diag_scale, v_x) are computed only once — and
+        returns the log of the softmax-averaged utilities of shape ``(batch_size, num_classes)``.
 
         Args:
             x: Input tensor of shape (batch_size, in_features).
 
         Returns:
-            Temperature-scaled utility logits of shape (batch_size, num_classes).
+            Temperature-scaled logits ``(B, K)`` when ``training_samples == 1``, or averaged
+            log-probabilities ``(B, K)`` when ``training_samples > 1``.
         """
         batch_size = x.size(0)
 
         mu = self.mu_layer(x)
         diag_scale = F.softplus(self.diag_layer(x))
 
-        eps_k = torch.randn(batch_size, self.num_classes, device=x.device, dtype=x.dtype)
-        eps_r = torch.randn(batch_size, self.num_factors, device=x.device, dtype=x.dtype)
+        if self.training_samples == 1:
+            eps_k = torch.randn(batch_size, self.num_classes, device=x.device, dtype=x.dtype)
+            eps_r = torch.randn(batch_size, self.num_factors, device=x.device, dtype=x.dtype)
+            if self.is_parameter_efficient:
+                v_x = self.v_layer(x)
+                scaled_eps_r = (eps_r * v_x).unsqueeze(-1)
+                low_rank_noise = torch.matmul(self.V_matrix, scaled_eps_r).squeeze(-1)
+            else:
+                v_x_full = self.v_layer(x).view(batch_size, self.num_classes, self.num_factors)
+                low_rank_noise = torch.matmul(v_x_full, eps_r.unsqueeze(-1)).squeeze(-1)
+            utilities = mu + diag_scale * eps_k + low_rank_noise
+            return utilities / self.temperature
 
+        n_samples = self.training_samples
+        eps_k = torch.randn(n_samples, batch_size, self.num_classes, device=x.device, dtype=x.dtype)
+        eps_r = torch.randn(n_samples, batch_size, self.num_factors, device=x.device, dtype=x.dtype)
         if self.is_parameter_efficient:
             v_x = self.v_layer(x)
-            scaled_eps_r = (eps_r * v_x).unsqueeze(-1)
-            low_rank_noise = torch.matmul(self.V_matrix, scaled_eps_r).squeeze(-1)
+            low_rank_noise = torch.einsum("kr,sbr->sbk", self.V_matrix, eps_r * v_x)
         else:
             v_x_full = self.v_layer(x).view(batch_size, self.num_classes, self.num_factors)
-            low_rank_noise = torch.matmul(v_x_full, eps_r.unsqueeze(-1)).squeeze(-1)
-
-        utilities = mu + diag_scale * eps_k + low_rank_noise
-        return utilities / self.temperature
+            low_rank_noise = torch.einsum("bkr,sbr->sbk", v_x_full, eps_r)
+        utilities = mu + diag_scale * eps_k + low_rank_noise  # [n_samples, B, K]
+        return F.softmax(utilities / self.temperature, dim=-1).mean(0).log()
 
 
 class SpectralNormWithMultiplier(nn.Module):
