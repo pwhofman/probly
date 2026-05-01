@@ -396,38 +396,6 @@ def _(
     return loss.item()
 
 
-@train_epoch.register(BaseLaplace)
-def train_epoch_laplace(
-    model: BaseLaplace,
-    inputs: torch.Tensor,
-    targets: torch.Tensor,
-    optimizer: optim.Optimizer,
-    grad_clip_norm: float | None = None,
-    amp_enabled: bool = False,
-    scaler: GradScaler | None = None,
-    **kwargs: Any,  # noqa: ANN401, ARG001
-) -> torch.Tensor | float:
-    """Fine-tune the underlying network with cross-entropy. Laplace is post-hoc; the wrapper itself is not trained."""
-    criterion = nn.CrossEntropyLoss()
-    optimizer.zero_grad()
-    with autocast(inputs.device.type, enabled=amp_enabled):
-        logits = model.model(inputs)
-        loss = criterion(logits, targets)
-    if scaler is not None:
-        scaler.scale(loss).backward()
-        if grad_clip_norm is not None:
-            scaler.unscale_(optimizer)
-            nn.utils.clip_grad_norm_(model.model.parameters(), grad_clip_norm)
-        scaler.step(optimizer)
-        scaler.update()
-    else:
-        loss.backward()
-        if grad_clip_norm is not None:
-            nn.utils.clip_grad_norm_(model.model.parameters(), grad_clip_norm)
-        optimizer.step()
-    return loss.item()
-
-
 @train_epoch.register(DDUPredictor)
 def train_epoch_ddu(
     model: nn.Module,
@@ -766,33 +734,6 @@ def _(
         val_loss += batch_loss.item()
         val_acc += _accuracy(q_int, targets) * inputs.shape[0]
         num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
-
-
-@validate.register(BaseLaplace)
-@torch.no_grad()
-def validate_laplace(
-    model: BaseLaplace,
-    val_loader: DataLoader,
-    device: torch.device,
-    amp_enabled: bool = False,
-    **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
-    """Validate the underlying network with cross-entropy; the Laplace approximation is not yet fitted at this stage."""
-    criterion = nn.CrossEntropyLoss()
-    model.model.eval()
-    val_loss = 0.0
-    val_acc = 0.0
-    num_instances = 0
-    for inputs_, targets_ in val_loader:
-        inputs, targets = inputs_.to(device), targets_.to(device)
-        with autocast(device.type, enabled=amp_enabled):
-            outputs = model.model(inputs)
-            val_loss += criterion(outputs, targets).item()
-            val_acc += _accuracy(outputs, targets) * inputs.shape[0]
-            num_instances += inputs.shape[0]
     val_loss /= len(val_loader)
     val_acc /= num_instances
     return val_loss, val_acc

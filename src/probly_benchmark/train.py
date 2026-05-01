@@ -73,6 +73,17 @@ def _get_state_dict(model: nn.Module | list[nn.Module]) -> dict | list[dict]:
     return model.state_dict()
 
 
+def _move_to_device(model: nn.Module | EnsemblePredictor | BaseLaplace, device: torch.device) -> None:
+    """Move model to device in-place, handling type-specific things."""
+    if isinstance(model, EnsemblePredictor):
+        for member in model:
+            member.to(device)
+    elif isinstance(model, BaseLaplace):
+        model.model.to(device)
+    else:
+        model.to(device)
+
+
 def _log_artifact_file(path: pathlib.Path, artifact_name: str, metadata: dict[str, Any]) -> None:
     """Log a checkpoint file as a wandb model artifact."""
     artifact = wandb.Artifact(name=artifact_name, type="model", metadata=metadata)
@@ -1083,11 +1094,7 @@ def main(cfg: DictConfig) -> None:
         train_loader=train_loader,
     )
     model = build_model(cfg.method.name, method_kwargs, context)
-    if isinstance(model, EnsemblePredictor):
-        for member in model:
-            member.to(device)
-    else:
-        model = model.to(device)
+    _move_to_device(model, device)
 
     if cfg.val_split == 0:
         if cfg.scheduler.name.lower() == "plateau":
