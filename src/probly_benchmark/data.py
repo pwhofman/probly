@@ -271,6 +271,7 @@ def get_data_train(
         A NamedTuple of (train_loader, val_loader, cal_loader, test_loader),
             where val_loader and cal_loader may be None if their splits are 0.
     """
+    ssl._create_default_https_context = ssl._create_unverified_context  # ty:ignore[invalid-assignment]  # noqa: SLF001
     name = name.lower()
     match name:
         case "cifar10":
@@ -335,6 +336,7 @@ def _get_test_dataset(name: str, transform: T.Compose) -> torchvision.datasets.V
     Returns:
         A torch.utils.data.Dataset over the named dataset's test split.
     """
+    ssl._create_default_https_context = ssl._create_unverified_context  # ty:ignore[invalid-assignment]  # noqa: SLF001
     name = name.lower()
     match name:
         case "cifar10":
