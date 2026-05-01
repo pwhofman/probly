@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
-from probly.predictor import ProbabilisticClassifier
+from probly.predictor import LogitClassifier, ProbabilisticClassifier
 from probly.representer import ProbabilityIntervalsRepresenter, representer
 from probly.transformation.ensemble import EnsemblePredictor, ensemble
 from probly.transformation.transformation import predictor_transformation
@@ -17,7 +17,9 @@ class CredalWrapperPredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
     """A predictor routed through the credal wrapper representer."""
 
 
-@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,), preserve_predictor_type=False)
+@predictor_transformation(
+    permitted_predictor_types=((ProbabilisticClassifier, LogitClassifier)), preserve_predictor_type=False
+)
 @CredalWrapperPredictor.register_factory(autocast_builtins=True)
 def credal_wrapper[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True
@@ -27,6 +29,5 @@ def credal_wrapper[**In, Out](
 
 
 representer.register(CredalWrapperPredictor, ProbabilityIntervalsRepresenter)
-
 
 __all__ = ["CredalWrapperPredictor", "credal_wrapper"]
