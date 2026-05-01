@@ -16,6 +16,8 @@ import pathlib
 import tempfile
 
 import hydra
+from laplace.baselaplace import BaseLaplace
+from laplace.utils.feature_extractor import FeatureExtractor
 from omegaconf import DictConfig, OmegaConf
 from pytorch_optimizer import Lamb
 import torch
@@ -69,6 +71,17 @@ def _get_state_dict(model: nn.Module | list[nn.Module]) -> dict | list[dict]:
     if isinstance(model, list):
         return [cast("nn.Module", m).state_dict() for m in model]
     return model.state_dict()
+
+
+def _move_to_device(model: nn.Module | EnsemblePredictor | BaseLaplace, device: torch.device) -> None:
+    """Move model to device in-place, handling type-specific things."""
+    if isinstance(model, EnsemblePredictor):
+        for member in model:
+            member.to(device)
+    elif isinstance(model, BaseLaplace):
+        model.model.to(device)
+    else:
+        model.to(device)
 
 
 def _log_artifact_file(path: pathlib.Path, artifact_name: str, metadata: dict[str, Any]) -> None:
@@ -251,6 +264,8 @@ def _maybe_compile_forward(model: nn.Module, device: torch.device) -> None:
     """
     if device.type == "mps" or isinstance(model, DUQPredictor):
         print("Skipping torch.compile on MPS (Inductor's Metal backend unsupported); using eager forward.")
+        return
+    if getattr(model, "_probly_skip_compile", False):
         return
     model.forward = torch.compile(model.forward)
 
@@ -855,6 +870,51 @@ def _(
     run.summary["ddu_gmm_fitted"] = True
 
 
+@train_model.register(BaseLaplace)
+def _(
+    model: BaseLaplace,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Fine-tune the underlying network, then fit the Laplace posterior post-hoc.
+
+    Phase 1 runs the standard supervised loop on the underlying ``nn.Module`` (laplace-torch's wrapped model).
+    Phase 2 calls ``BaseLaplace.fit(train_loader)`` and, if ``train_kwargs["optimize_prior"]`` is set, tunes
+    the prior precision by marginal-likelihood maximization.
+    """
+    # Extract model from BaseLaplace, if we do last layer mode, model.model is a FeatureExtractor, so unwrap it
+    inner_model = model.model.model if isinstance(model.model, FeatureExtractor) else model.model
+    # Problems with cuda + triton + compile if we compile this model, so we set a flag to skip it.
+    inner_model._probly_skip_compile = True  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+    _training_loop(
+        inner_model,
+        train_loader,
+        val_loader,
+        cfg,
+        device,
+        run,
+        train_kwargs,
+        train_fn=train_epoch_cross_entropy,
+        val_fn=validate_cross_entropy,
+    )
+    model.fit(train_loader)
+    run.summary["laplace_fitted"] = True
+    if train_kwargs.get("optimize_prior", False):
+        # ``pred_type`` is required by laplace-torch's signature but unused when ``method='marglik'``
+        # (marglik works directly on the closed-form log-marginal-likelihood); any value is fine.
+        model.optimize_prior_precision(
+            pred_type="glm",
+            method="marglik",
+            n_steps=train_kwargs.get("n_steps", 100),
+            lr=train_kwargs.get("lr", 0.1),
+        )
+        run.summary["laplace_prior_precision"] = float(model.prior_precision)
+
+
 @train_model.register(EfficientCredalPredictor)
 def _(
     model: nn.Module,
@@ -981,11 +1041,7 @@ def main(cfg: DictConfig) -> None:
         train_loader=train_loader,
     )
     model = build_model(cfg.method.name, method_kwargs, context)
-    if isinstance(model, EnsemblePredictor):
-        for member in model:
-            member.to(device)
-    else:
-        model = model.to(device)
+    _move_to_device(model, device)
 
     if cfg.val_split == 0:
         if cfg.scheduler.name.lower() == "plateau":

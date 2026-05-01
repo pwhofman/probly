@@ -17,6 +17,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 import warnings
 
+from laplace import Laplace
 import torch
 from torch import nn
 from torch.utils.data import Subset
@@ -59,6 +60,7 @@ METHODS = {
     "dropout": dropout,
     "dropconnect": dropconnect,
     "duq": duq,
+    "laplace": Laplace,
     "evidential_classification": evidential_classification,
     "natural_posterior_network": natural_posterior_network,
     "posterior_network": posterior_network,
@@ -247,7 +249,22 @@ def _subensemble_builder(
     )
 
 
+def _laplace_builder(
+    method_fn: Callable[..., nn.Module],
+    params: dict[str, Any],
+    ctx: BuildContext,
+) -> nn.Module:
+    """Build a Laplace approximation.
+
+    ``Laplace(...)`` is laplace-torch's factory function (not a class) and does not accept ``predictor_type``;
+    we drop it and forward the remaining yaml params as keyword arguments.
+    """
+    base = models.get_base_model(ctx.base_model_name, ctx.num_classes, ctx.pretrained)
+    return method_fn(base, **_filter_params(method_fn, params))
+
+
 BUILDERS: dict[str, Builder] = {
+    "laplace": _laplace_builder,
     "natural_posterior_network": _natural_posterior_network_builder,
     "posterior_network": _posterior_network_builder,
     "subensemble": _subensemble_builder,
