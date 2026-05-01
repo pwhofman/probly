@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method.het_nets import het_nets
+from probly.method.het_nets import HetNetsRepresentation, het_nets
 from probly.quantification import decompose, measure, quantify
 from probly.quantification.decomposition.entropy import LabelNoiseEntropyDecomposition
-from probly.representation.het_nets import HetNetsRepresentation
 from probly.representer import representer
 
 torch = pytest.importorskip("torch")

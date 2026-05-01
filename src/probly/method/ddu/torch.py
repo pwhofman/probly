@@ -1,9 +1,11 @@
-"""Torch implementation of Deep Deterministic Uncertainty (DDU)."""
+"""Torch implementation of the DDU transformation."""
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import math
 import operator
+from typing import TYPE_CHECKING, ClassVar
 import warnings
 
 import torch
@@ -11,13 +13,38 @@ from torch import nn
 import torch.nn.functional as F
 from torch.nn.utils import parametrize
 
-from probly.method.ddu import DDUPredictor
-from probly.representation.ddu.torch import TorchDDURepresentation
+from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.traverse_nn import nn_compose, nn_traverser
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, singledispatch_traverser, traverse_with_state
 
-from ._common import ddu_generator
+from ._common import (
+    DDUPredictor,
+    DDURepresentation,
+    create_ddu_representation,
+    ddu_generator,
+    negative_log_density,
+)
+
+if TYPE_CHECKING:
+    from torch import Tensor
+
+
+@create_ddu_representation.register(TorchCategoricalDistribution)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
+class TorchDDURepresentation(DDURepresentation, TorchAxisProtected):
+    """DDU representation backed by torch tensors."""
+
+    softmax: TorchCategoricalDistribution
+    densities: Tensor
+    protected_axes: ClassVar[dict[str, int]] = {"softmax": 0, "densities": 1}
+
+
+@negative_log_density.register(torch.Tensor)
+def torch_negative_log_density(densities: torch.Tensor) -> torch.Tensor:
+    """Convert class-weighted log densities to negative GMM log density."""
+    return -torch.logsumexp(densities, dim=-1)
+
 
 SN_COEFF = GlobalVariable[float]("SN_COEFF", default=3.0)
 HAS_RESIDUAL = GlobalVariable[bool]("HAS_RESIDUAL", default=False)
@@ -262,8 +289,8 @@ class GaussianMixtureHead(nn.Module):
 
 
 @ddu_generator.register(nn.Module)
-class TorchDDUPredictor(nn.Module, DDUPredictor[[torch.Tensor], torch.Tensor]):
-    """Torch version of DDU predictor.
+class TorchDDUPredictor(nn.Module, DDUPredictor[[torch.Tensor], TorchDDURepresentation]):
+    """Torch version of a DDU predictor.
 
     The traversal replaces the last ``nn.Linear`` (the classification head) with
     ``nn.Identity()``, producing a pure feature encoder.  The head is stored

@@ -1,18 +1,45 @@
-"""Torch implementation of Deterministic Uncertainty Quantification (DUQ)."""
+"""Torch implementation of the DUQ transformation."""
 
 from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, ClassVar
 
 import torch
 from torch import nn
 
-from probly.method.duq import DUQPredictor
-from probly.representation.duq.torch import TorchDUQRepresentation
+from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.traverse_nn import nn_compose, nn_traverser
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, singledispatch_traverser, traverse_with_state
 
-from ._common import duq_generator
+from ._common import (
+    DUQPredictor,
+    DUQRepresentation,
+    create_duq_representation,
+    duq_generator,
+    duq_uncertainty,
+)
 
-HEAD_MODULE: GlobalVariable[nn.Module | None] = GlobalVariable("DUQ_HEAD_MODULE", default=None)
+if TYPE_CHECKING:
+    from torch import Tensor
+
+
+@create_duq_representation.register(torch.Tensor)
+@dataclass(frozen=True, slots=True)
+class TorchDUQRepresentation(DUQRepresentation, TorchAxisProtected):
+    """DUQ representation backed by a torch tensor."""
+
+    kernel_values: Tensor
+    protected_axes: ClassVar[dict[str, int]] = {"kernel_values": 1}
+
+
+@duq_uncertainty.register(torch.Tensor)
+def torch_duq_uncertainty(kernel_values: torch.Tensor) -> torch.Tensor:
+    r"""Per-sample DUQ uncertainty :math:`1 - \max_c K_c(x)` for torch tensors."""
+    return 1.0 - kernel_values.max(dim=-1).values
+
+
+HEAD_MODULE: GlobalVariable[nn.Module | None] = GlobalVariable("RBF_CENTROID_HEAD_MODULE", default=None)
 
 
 @singledispatch_traverser
@@ -137,8 +164,8 @@ class RBFCentroidHead(nn.Module):
 
 
 @duq_generator.register(nn.Module)
-class TorchDUQPredictor(nn.Module, DUQPredictor[[torch.Tensor], torch.Tensor]):
-    """Torch implementation of a DUQ predictor.
+class TorchDUQPredictor(nn.Module, DUQPredictor[[torch.Tensor], TorchDUQRepresentation]):
+    """Torch implementation of an DUQ predictor.
 
     The traversal replaces the last ``nn.Linear`` (the classification head) with
     ``nn.Identity()``, producing a pure feature encoder. A fresh
