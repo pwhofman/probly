@@ -6,3 +6,8 @@
 optimizer:
   params:
     weight_decay: 0
+
+# Smaller posterior std such that pretrained weights are not perturbed too much at start
+method:
+  params:
+    posterior_std: 0.001
