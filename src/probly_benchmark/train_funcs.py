@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 from laplace.baselaplace import BaseLaplace
 import torch
@@ -569,6 +569,13 @@ def train_epoch_duq(
     return loss.item()
 
 
+class ValidationMetrics(TypedDict):
+    """Metrics returned by ``validate``, must include loss and acc."""
+
+    loss: float
+    acc: float
+
+
 @flexdispatch
 def validate(
     model: Predictor,
@@ -576,7 +583,7 @@ def validate(
     device: torch.device,
     amp_enabled: bool = False,
     **kwargs: Any,  # noqa: ANN401
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate a model."""
     msg = f"No validation function for {type(model)}"
     raise NotImplementedError(msg)
@@ -589,10 +596,9 @@ def _(
     val_loader: DataLoader,
     device: torch.device,
     amp_enabled: bool = False,
-    **kwargs: Any,  # noqa: ANN401
-) -> tuple[float, float]:
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> ValidationMetrics:
     """Validate a Bayesian predictor."""
-    criterion = ELBOLoss(kl_penalty=kwargs.get("kl_penalty", 1e-5))
     model.eval()
     val_loss, val_acc = 0.0, 0.0
     num_instances = 0
@@ -600,13 +606,15 @@ def _(
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
             outputs = model(inputs)
-            kl = collect_kl_divergence(model)
-            val_loss += criterion(outputs, targets, kl).item()
+            val_loss += F.cross_entropy(outputs, targets).item()
             val_acc += _accuracy(outputs, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    kl_value = collect_kl_divergence(model).item()
+    return {  # ty: ignore[invalid-return-type]
+        "loss": val_loss / len(val_loader),
+        "acc": val_acc / num_instances,
+        "kl": kl_value,  # ty: ignore[invalid-key]
+    }
 
 
 @validate.register(BatchEnsemblePredictor)
@@ -617,7 +625,7 @@ def validate_batchensemble(
     device: torch.device,
     amp_enabled: bool = False,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate a BatchEnsemble predictor with per-member CE loss and ensemble-averaged accuracy."""
     num_members = int(model.num_members)  # ty: ignore[unresolved-attribute]
     criterion = nn.CrossEntropyLoss()
@@ -634,9 +642,7 @@ def validate_batchensemble(
             ensemble_probs = F.softmax(outputs.view(num_members, -1, outputs.shape[-1]), dim=-1).mean(dim=0)
             val_acc += _accuracy(ensemble_probs, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @validate.register((BasePredictor, DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetPredictor))
@@ -647,7 +653,7 @@ def validate_cross_entropy(
     device: torch.device,
     amp_enabled: bool = False,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate a dropout/dropconnect predictor with cross-entropy loss."""
     criterion = nn.CrossEntropyLoss()
     model.eval()  # ty: ignore[unresolved-attribute]
@@ -661,9 +667,7 @@ def validate_cross_entropy(
             val_loss += criterion(outputs, targets).item()
             val_acc += _accuracy(outputs, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @validate.register(PosteriorNetworkPredictor)
@@ -675,7 +679,7 @@ def _(
     amp_enabled: bool = False,
     entropy_weight: float = 1e-5,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate a posterior network with the PostNet loss."""
     model.eval()
     val_loss = 0.0
@@ -688,9 +692,7 @@ def _(
             val_loss += postnet_loss(alpha, targets, entropy_weight=entropy_weight).item()
             val_acc += _accuracy(alpha, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @validate.register(NaturalPosteriorNetworkPredictor)
@@ -702,7 +704,7 @@ def _(
     amp_enabled: bool = False,
     entropy_weight: float = 1e-5,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate a natural posterior network with the mean-reduced Bayesian loss."""
     model.eval()
     val_loss = 0.0
@@ -715,9 +717,7 @@ def _(
             val_loss += postnet_loss(alpha, targets, entropy_weight=entropy_weight, reduction="mean").item()
             val_acc += _accuracy(alpha, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @validate.register(EvidentialClassificationPredictor)
@@ -732,7 +732,7 @@ def _(
     annealing_epochs: int = 10,
     epoch: int = 0,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate an evidential classifier using the same loss as training at the current epoch."""
     base_loss_fn = EVIDENTIAL_LOSSES[loss]
     lambda_t = _evidential_lambda_t(kl_weight, annealing_epochs, epoch)
@@ -748,9 +748,7 @@ def _(
         val_loss += batch_loss.item()
         val_acc += _accuracy(alpha, targets) * inputs.shape[0]
         num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @validate.register(CredalNetPredictor)
@@ -761,7 +759,7 @@ def _(
     device: torch.device,
     amp_enabled: bool = False,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate a credal net."""
     model.eval()
     val_loss = 0.0
@@ -777,9 +775,7 @@ def _(
         val_loss += batch_loss.item()
         val_acc += _accuracy(q_int, targets) * inputs.shape[0]
         num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @validate.register(DDUPredictor)
@@ -790,7 +786,7 @@ def validate_ddu(
     device: torch.device,
     amp_enabled: bool = False,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate a DDU predictor with cross-entropy loss on the classification logits."""
     model_ = cast("Any", model)
     criterion = nn.CrossEntropyLoss()
@@ -806,9 +802,7 @@ def validate_ddu(
             val_loss += criterion(logits, targets).item()
             val_acc += _accuracy(logits, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @validate.register(DUQPredictor)
@@ -819,7 +813,7 @@ def validate_duq(
     device: torch.device,
     amp_enabled: bool = False,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate a DUQ predictor with BCE on kernel values and argmax accuracy."""
     model_ = cast("Any", model)
     num_classes = int(model_.centroid_head.num_classes)
@@ -835,9 +829,7 @@ def validate_duq(
             val_loss += _duq_bce_loss(kernel_values, targets_onehot).item()
         val_acc += _accuracy(kernel_values, targets) * inputs.shape[0]
         num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @flexdispatch

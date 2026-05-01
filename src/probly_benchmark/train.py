@@ -46,6 +46,7 @@ from probly_benchmark.paths import CHECKPOINT_PATH
 from probly_benchmark.train_funcs import (
     BestModelTracker,
     EarlyStopping,
+    ValidationMetrics,
     evaluate,
     train_epoch,
     train_epoch_batchensemble,
@@ -279,7 +280,7 @@ def _training_loop(  # noqa: PLR0912, PLR0915
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
     train_fn: Callable[..., float],
-    val_fn: Callable[..., tuple[float, float]],
+    val_fn: Callable[..., ValidationMetrics],
     log_prefix: str = "",
     param_groups: list[dict[str, Any]] | None = None,
     extra_metrics: dict[str, Any] | None = None,
@@ -371,9 +372,9 @@ def _training_loop(  # noqa: PLR0912, PLR0915
         if extra_metrics:
             log_data.update(extra_metrics)
         if val_loader:
-            val_loss, val_acc = val_fn(model, val_loader, device, amp_enabled, epoch=epoch, **train_kwargs)
-            log_data[f"{log_prefix}val_loss"] = val_loss
-            log_data[f"{log_prefix}val_acc"] = val_acc
+            metrics = val_fn(model, val_loader, device, amp_enabled, epoch=epoch, **train_kwargs)
+            log_data.update({f"{log_prefix}val_{k}": v for k, v in metrics.items()})
+            val_loss = metrics["loss"]
         run.log(data=log_data)
 
         if best_tracker is not None and val_loss is not None:
@@ -571,7 +572,7 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
     device: torch.device,
     run: Any,  # noqa: ANN401
     train_fn: Callable[..., float],
-    val_fn: Callable[..., tuple[float, float]],
+    val_fn: Callable[..., ValidationMetrics],
     max_ll: float,
     alpha: float,
     batch_check: bool = False,
@@ -644,9 +645,9 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
             f"{log_prefix}relative_likelihood": relative_likelihood,
         }
         if val_loader:
-            val_loss, val_acc = val_fn(model, val_loader, device, amp_enabled)
-            log_data[f"{log_prefix}val_loss"] = val_loss
-            log_data[f"{log_prefix}val_acc"] = val_acc
+            metrics = val_fn(model, val_loader, device, amp_enabled)
+            log_data.update({f"{log_prefix}val_{k}": v for k, v in metrics.items()})
+            val_loss = metrics["loss"]
         run.log(data=log_data)
 
         if scheduler is not None and not step_per_iter:
