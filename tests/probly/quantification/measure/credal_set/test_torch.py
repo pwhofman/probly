@@ -182,13 +182,9 @@ def test_generalized_hartley_base_consistency() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _distance_credal_set(
-    nominal: list[float], radius: float
-) -> TorchDistanceBasedCredalSet:
+def _distance_credal_set(nominal: list[float], radius: float) -> TorchDistanceBasedCredalSet:
     return TorchDistanceBasedCredalSet(
-        nominal=TorchCategoricalDistribution(
-            torch.tensor(nominal, dtype=torch.float64)
-        ),
+        nominal=TorchCategoricalDistribution(torch.tensor(nominal, dtype=torch.float64)),
         radius=torch.tensor(radius, dtype=torch.float64),
     )
 

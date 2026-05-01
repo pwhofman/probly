@@ -104,7 +104,9 @@ class TestConformalCredalSetPrediction:
         x_test = torch.randn(5, 4)
         result = predict(calibrated_predictor, x_test)
         with torch.no_grad():
-            base_output = calibrated_predictor.predictor(x_test)
+            base_model = calibrated_predictor.predictor
+            assert isinstance(base_model, nn.Module)
+            base_output = base_model(x_test)
         assert torch.allclose(result.nominal.probabilities, base_output, atol=1e-6)
 
     def test_uncalibrated_predict_raises(self) -> None:
