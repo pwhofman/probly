@@ -19,27 +19,27 @@ if TYPE_CHECKING:
 
     from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 
-_SUPPORTED_PERFORMANCE_MEASURES = ("zero_one",)
+_SUPPORTED_LOSSES = ("zero_one",)
 _SUPPORTED_DECOMPOSITIONS = ("aleatoric", "epistemic", "total")
 
 
-def _compute_loss(mean_probs: np.ndarray, labels: np.ndarray, performance_measure: str) -> np.ndarray:
+def _compute_loss(mean_probs: np.ndarray, labels: np.ndarray, loss: str) -> np.ndarray:
     """Compute the per-sample loss for selective prediction.
 
     Args:
         mean_probs: Mean predicted probabilities of shape (n_instances, n_classes).
         labels: True labels of shape (n_instances,).
-        performance_measure: Loss function identifier. One of ``_SUPPORTED_PERFORMANCE_MEASURES``.
+        loss: Loss function identifier. One of ``_SUPPORTED_LOSSES``.
 
     Returns:
         Per-sample loss values of shape (n_instances,).
 
     Raises:
-        ValueError: If ``performance_measure`` is not supported.
+        ValueError: If ``loss`` is not supported.
     """
-    if performance_measure == "zero_one":
+    if loss == "zero_one":
         return (mean_probs.argmax(axis=-1) != labels).astype(float)
-    msg = f"Unsupported performance measure: {performance_measure!r}. Choose from {_SUPPORTED_PERFORMANCE_MEASURES}."
+    msg = f"Unsupported loss: {loss!r}. Choose from {_SUPPORTED_LOSSES}."
     raise ValueError(msg)
 
 
@@ -89,7 +89,7 @@ def main(cfg: DictConfig) -> None:
     mean_probs = cast("TorchCategoricalDistribution", categorical_from_mean(outputs)).cpu().numpy()
 
     labels = targets.numpy()
-    loss = _compute_loss(mean_probs, labels, cfg.performance_measure)
+    loss = _compute_loss(mean_probs, labels, cfg.loss)
     auroc, bin_losses = selective_prediction(uncertainties, loss, n_bins=cfg.n_bins)
     print(f"Selective prediction AUROC: {auroc:.4f}")
 
