@@ -11,7 +11,7 @@ from torch import nn
 
 from probly.calibrator import calibrate
 from probly.conformal_scores.total_variation._common import tv_score_func
-from probly.method.conformal_credal_set_prediction import conformal_total_variation
+from probly.method.conformal_credal_set import conformal_total_variation
 from probly.predictor import predict
 from probly.representation.credal_set.torch import TorchDistanceBasedCredalSet
 from probly.utils.quantile._common import calculate_quantile

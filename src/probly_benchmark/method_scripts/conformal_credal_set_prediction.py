@@ -6,7 +6,7 @@ import logging
 
 import torch
 
-from probly.method.conformal_credal_set_prediction._common import (
+from probly.method.conformal_credal_set import (
     conformal_dirichlet_relative_likelihood,
     conformal_inner_product,
     conformal_kullback_leibler,

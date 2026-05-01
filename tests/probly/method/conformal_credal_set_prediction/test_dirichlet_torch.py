@@ -10,7 +10,7 @@ import torch
 from torch import nn
 
 from probly.calibrator import calibrate
-from probly.method.conformal_credal_set_prediction import conformal_dirichlet_relative_likelihood
+from probly.method.conformal_credal_set import conformal_dirichlet_relative_likelihood
 from probly.method.prior_network import prior_network
 from probly.predictor import LogitClassifier, predict
 from probly.representation.credal_set.torch import TorchDirichletLevelSetCredalSet

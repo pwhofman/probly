@@ -11,7 +11,6 @@ from probly.conformal_scores.inner_product._common import inner_product_score
 from probly.conformal_scores.kullback_leibler._common import kl_divergence_score
 from probly.conformal_scores.total_variation._common import tv_score
 from probly.conformal_scores.wasserstein_distance._common import wasserstein_distance_score
-from probly.method.method import predictor_transformation
 from probly.predictor import CredalPredictor, DirichletDistributionPredictor, Predictor, predict
 from probly.representation.credal_set._common import (
     CredalSet,
@@ -20,6 +19,7 @@ from probly.representation.credal_set._common import (
     create_dirichlet_level_set_credal_set,
     create_distance_based_credal_set_from_center_and_radius,
 )
+from probly.transformation.transformation import predictor_transformation
 from probly.utils.quantile._common import calculate_quantile
 
 if TYPE_CHECKING:
