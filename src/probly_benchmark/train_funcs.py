@@ -11,6 +11,7 @@ from torch.amp import GradScaler, autocast
 import torch.nn.functional as F
 
 from flextype import flexdispatch
+from probly.layers.torch import HeteroscedasticLayer
 from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
@@ -215,30 +216,35 @@ def train_epoch_het_net(
     samples: int = 1,
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> float:
-    """Train a HetNets predictor by averaging softmax probabilities over MC samples.
+    """Train a HetNet predictor by averaging softmax probabilities over MC samples.
 
-    Each forward pass draws a fresh noise sample from the heteroscedastic layer.
-    Averaging S such samples before computing NLL loss reduces gradient variance
-    compared to a single-sample estimate, following :cite:`collier2021hetnets`.
+    Sets ``training_samples`` on every HeteroscedasticLayer so sampling is vectorized
+    inside a single forward pass: the backbone runs once and the het layer draws S noise
+    samples in one GPU op, following :cite:`collier2021hetnets`.
     """
-    optimizer.zero_grad()
-    with autocast(inputs.device.type, enabled=amp_enabled):
-        avg_probs = torch.stack(
-            [F.softmax(model(inputs), dim=1) for _ in range(samples)]  # ty: ignore[call-non-callable]
-        ).mean(0)
-        loss = F.nll_loss(avg_probs.log(), targets)
-    if scaler is not None:
-        scaler.scale(loss).backward()
-        if grad_clip_norm is not None:
-            scaler.unscale_(optimizer)
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
-        scaler.step(optimizer)
-        scaler.update()
-    else:
-        loss.backward()
-        if grad_clip_norm is not None:
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
-        optimizer.step()
+    het_layers = [m for m in cast("nn.Module", model).modules() if isinstance(m, HeteroscedasticLayer)]
+    for layer in het_layers:
+        layer.training_samples = samples
+    try:
+        optimizer.zero_grad()
+        with autocast(inputs.device.type, enabled=amp_enabled):
+            output = model(inputs)  # ty: ignore[call-non-callable]
+            loss = F.cross_entropy(output, targets) if samples == 1 else F.nll_loss(output, targets)
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            if grad_clip_norm is not None:
+                scaler.unscale_(optimizer)
+                nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            loss.backward()
+            if grad_clip_norm is not None:
+                nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            optimizer.step()
+    finally:
+        for layer in het_layers:
+            layer.training_samples = 1
     return loss.item()
 
 
