@@ -170,9 +170,7 @@ def train_epoch_batchensemble(
     return loss.item()
 
 
-@train_epoch.register(
-    (BasePredictor, DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetsPredictor)
-)
+@train_epoch.register((BasePredictor, DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor))
 def train_epoch_cross_entropy(
     model: Predictor,
     inputs: torch.Tensor,
@@ -190,6 +188,45 @@ def train_epoch_cross_entropy(
     with autocast(inputs.device.type, enabled=amp_enabled):
         outputs = model(inputs)  # ty: ignore[call-non-callable]
         loss = criterion(outputs, targets)
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        optimizer.step()
+    return loss.item()
+
+
+@train_epoch.register(HetNetsPredictor)
+def train_epoch_het_net(
+    model: Predictor,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    samples: int = 1,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> float:
+    """Train a HetNets predictor by averaging softmax probabilities over MC samples.
+
+    Each forward pass draws a fresh noise sample from the heteroscedastic layer.
+    Averaging S such samples before computing NLL loss reduces gradient variance
+    compared to a single-sample estimate, following :cite:`collier2021hetnets`.
+    """
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        avg_probs = torch.stack(
+            [F.softmax(model(inputs), dim=1) for _ in range(samples)]  # ty: ignore[call-non-callable]
+        ).mean(0)
+        loss = F.nll_loss(avg_probs.log(), targets)
     if scaler is not None:
         scaler.scale(loss).backward()
         if grad_clip_norm is not None:

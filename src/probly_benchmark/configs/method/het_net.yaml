@@ -2,11 +2,11 @@
 name: "het_net"
 label: "HetNet"
 params:
-  num_factors: 10
-  temperature: 1.0
+  num_factors: 15
+  temperature: 0.9
   is_parameter_efficient: false
 train:
-  samples: 1
+  samples: 100
 selective_prediction:
   num_samples: 100
 ood_detection:
