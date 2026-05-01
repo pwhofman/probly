@@ -10,11 +10,8 @@ from probly.transformation.dirichlet_softplus_activation import dirichlet_softpl
 from probly.transformation.dropconnect import dropconnect
 from probly.transformation.dropout import dropout
 from probly.transformation.ensemble import ensemble
-from probly.transformation.heteroscedastic_classification import heteroscedastic_classification
 from probly.transformation.interval_classifier import interval_classifier
 from probly.transformation.normal_inverse_gamma_head import normal_inverse_gamma_head
-from probly.transformation.rbf_centroid_head import rbf_centroid_head
-from probly.transformation.spectral_gmm import spectral_gmm
 from probly.transformation.subensemble import subensemble
 
 __all__ = [
@@ -28,10 +25,7 @@ __all__ = [
     "dropconnect",
     "dropout",
     "ensemble",
-    "heteroscedastic_classification",
     "interval_classifier",
     "normal_inverse_gamma_head",
-    "rbf_centroid_head",
-    "spectral_gmm",
     "subensemble",
 ]

@@ -7,8 +7,8 @@ import pytest
 torch = pytest.importorskip("torch")
 
 from probly.decider import categorical_from_mean  # noqa: E402
-from probly.representation.ddu import DDURepresentation, create_ddu_representation  # noqa: E402
-from probly.representation.ddu.torch import TorchDDURepresentation  # noqa: E402
+from probly.method.ddu import DDURepresentation, create_ddu_representation  # noqa: E402
+from probly.method.ddu.torch import TorchDDURepresentation  # noqa: E402
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution  # noqa: E402
 
 

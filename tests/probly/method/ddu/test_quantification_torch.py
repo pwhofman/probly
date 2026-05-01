@@ -6,10 +6,10 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from probly.quantification import DDUDensityDecomposition, measure, quantify  # noqa: E402
-from probly.quantification.decomposition.ddu import negative_log_density  # noqa: E402
+from probly.method.ddu import DDUDensityDecomposition, negative_log_density  # noqa: E402
+from probly.method.ddu.torch import TorchDDURepresentation  # noqa: E402
+from probly.quantification import measure, quantify  # noqa: E402
 from probly.quantification.measure.distribution import entropy  # noqa: E402
-from probly.representation.ddu.torch import TorchDDURepresentation  # noqa: E402
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution  # noqa: E402
 
 

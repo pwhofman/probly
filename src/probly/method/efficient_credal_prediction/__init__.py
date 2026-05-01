@@ -28,5 +28,4 @@ __all__ = [
     "EfficientCredalRepresenter",
     "compute_efficient_credal_bounds",
     "efficient_credal_prediction",
-    "efficient_credal_prediction_generator",
 ]

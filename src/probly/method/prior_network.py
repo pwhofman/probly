@@ -8,7 +8,6 @@ from probly.representation.distribution import DirichletDistribution
 from probly.transformation.dirichlet_exp_activation import (
     DirichletExpActivationPredictor,
     dirichlet_exp_activation,
-    register,
 )
 
 
@@ -19,4 +18,4 @@ class PriorNetworkPredictor[**In, Out: DirichletDistribution](DirichletExpActiva
 
 prior_network = PriorNetworkPredictor.register_factory(dirichlet_exp_activation)
 
-__all__ = ["PriorNetworkPredictor", "prior_network", "register"]
+__all__ = ["PriorNetworkPredictor", "prior_network"]

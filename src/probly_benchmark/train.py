@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
     from torch.utils.data import DataLoader
 
-    from probly.transformation.spectral_gmm.torch import GaussianMixtureHead
+    from probly.method.ddu.torch import GaussianMixtureHead
 
 
 import pathlib

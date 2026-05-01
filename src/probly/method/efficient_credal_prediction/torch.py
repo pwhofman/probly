@@ -12,6 +12,8 @@ from ._common import EfficientCredalPredictor, compute_efficient_credal_bounds, 
 class TorchEfficientCredalPredictor(nn.Module, EfficientCredalPredictor):
     """Torch module that wraps a softmax-free model and stores credal offsets."""
 
+    predictor: nn.Module
+
     def __init__(self, predictor: nn.Module) -> None:
         """Initialize the predictor.
 

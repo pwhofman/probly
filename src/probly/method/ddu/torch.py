@@ -1,9 +1,11 @@
-"""Torch implementation of the spectral-GMM transformation."""
+"""Torch implementation of the DDU transformation."""
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import math
 import operator
+from typing import TYPE_CHECKING, ClassVar
 import warnings
 
 import torch
@@ -11,13 +13,38 @@ from torch import nn
 import torch.nn.functional as F
 from torch.nn.utils import parametrize
 
-from probly.representation.ddu.torch import TorchDDURepresentation
+from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
-from probly.transformation.spectral_gmm import SpectralGMMPredictor
 from probly.traverse_nn import nn_compose, nn_traverser
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, singledispatch_traverser, traverse_with_state
 
-from ._common import spectral_gmm_generator
+from ._common import (
+    DDUPredictor,
+    DDURepresentation,
+    create_ddu_representation,
+    ddu_generator,
+    negative_log_density,
+)
+
+if TYPE_CHECKING:
+    from torch import Tensor
+
+
+@create_ddu_representation.register(TorchCategoricalDistribution)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
+class TorchDDURepresentation(DDURepresentation, TorchAxisProtected):
+    """DDU representation backed by torch tensors."""
+
+    softmax: TorchCategoricalDistribution
+    densities: Tensor
+    protected_axes: ClassVar[dict[str, int]] = {"softmax": 0, "densities": 1}
+
+
+@negative_log_density.register(torch.Tensor)
+def torch_negative_log_density(densities: torch.Tensor) -> torch.Tensor:
+    """Convert class-weighted log densities to negative GMM log density."""
+    return -torch.logsumexp(densities, dim=-1)
+
 
 SN_COEFF = GlobalVariable[float]("SN_COEFF", default=3.0)
 HAS_RESIDUAL = GlobalVariable[bool]("HAS_RESIDUAL", default=False)
@@ -93,12 +120,12 @@ def residual_detection_traverser(obj: nn.Module, state: State) -> tuple[nn.Modul
 
 
 @singledispatch_traverser
-def torch_spectral_gmm_traverser(obj: nn.Module, state: State) -> tuple[nn.Module, State]:
+def torch_ddu_traverser(obj: nn.Module, state: State) -> tuple[nn.Module, State]:
     """Default handler: return module unchanged."""
     return obj, state
 
 
-@torch_spectral_gmm_traverser.register
+@torch_ddu_traverser.register
 def _(obj: nn.Linear, state: State) -> tuple[nn.Module, State]:
     """Replace the classification head with Identity; apply spectral normalization to others.
 
@@ -113,7 +140,7 @@ def _(obj: nn.Linear, state: State) -> tuple[nn.Module, State]:
     return obj, state
 
 
-@torch_spectral_gmm_traverser.register
+@torch_ddu_traverser.register
 def _(obj: nn.Conv2d, state: State) -> tuple[nn.Module, State]:
     """Apply spectral normalization to Conv2d layers.
 
@@ -145,13 +172,13 @@ def _(obj: nn.Conv2d, state: State) -> tuple[nn.Module, State]:
     return obj, state
 
 
-@torch_spectral_gmm_traverser.register
+@torch_ddu_traverser.register
 def _(obj: nn.ReLU, state: State) -> tuple[nn.Module, State]:  # noqa: ARG001
     """Replace ReLU with LeakyReLU(0.01)."""
     return nn.LeakyReLU(negative_slope=0.01, inplace=False), state
 
 
-@torch_spectral_gmm_traverser.register
+@torch_ddu_traverser.register
 def _(obj: nn.ReLU6, state: State) -> tuple[nn.Module, State]:  # noqa: ARG001
     """Replace ReLU6 with LeakyReLU(0.01)."""
     return nn.LeakyReLU(negative_slope=0.01, inplace=False), state
@@ -261,9 +288,9 @@ class GaussianMixtureHead(nn.Module):
         return self.log_pi + dist.log_prob(features.unsqueeze(1))
 
 
-@spectral_gmm_generator.register(nn.Module)
-class TorchSpectralGMMPredictor(nn.Module, SpectralGMMPredictor[[torch.Tensor], TorchDDURepresentation]):
-    """Torch version of a spectral-GMM predictor.
+@ddu_generator.register(nn.Module)
+class TorchDDUPredictor(nn.Module, DDUPredictor[[torch.Tensor], TorchDDURepresentation]):
+    """Torch version of a DDU predictor.
 
     The traversal replaces the last ``nn.Linear`` (the classification head) with
     ``nn.Identity()``, producing a pure feature encoder.  The head is stored
@@ -291,7 +318,7 @@ class TorchSpectralGMMPredictor(nn.Module, SpectralGMMPredictor[[torch.Tensor], 
         super().__init__()
         encoder, state = traverse_with_state(
             model,
-            nn_compose(residual_detection_traverser, torch_spectral_gmm_traverser, nn_traverser=nn_traverser),
+            nn_compose(residual_detection_traverser, torch_ddu_traverser, nn_traverser=nn_traverser),
             init={HAS_RESIDUAL: False, TRAVERSE_REVERSED: True, SN_COEFF: sn_coeff, HEAD_MODULE: None},
         )
         head: nn.Linear | None = state[HEAD_MODULE]  # ty: ignore[invalid-assignment]

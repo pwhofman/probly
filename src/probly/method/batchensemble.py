@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from probly.transformation.batchensemble import BatchEnsemblePredictor, batchensemble, batchensemble_traverser, register
+from probly.transformation.batchensemble import BatchEnsemblePredictor, batchensemble
 
-__all__ = ["BatchEnsemblePredictor", "batchensemble", "batchensemble_traverser", "register"]
+__all__ = ["BatchEnsemblePredictor", "batchensemble"]

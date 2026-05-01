@@ -8,7 +8,6 @@ from probly.transformation.ensemble import (
     EnsemblePredictor,
     ensemble,
     ensemble_generator,
-    register_ensemble_members,
 )
 
 __all__ = [
@@ -17,5 +16,4 @@ __all__ = [
     "EnsemblePredictor",
     "ensemble",
     "ensemble_generator",
-    "register_ensemble_members",
 ]
