@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 @het_nets_traverser.register(nn.Module)
 def skip_layer(obj: nn.Module, state: State) -> tuple[nn.Module, State]:
-    """Traverser for torch HetNets."""
+    """Traverser for unchanged torch layers."""
     return obj, state
 
 
@@ -31,11 +31,9 @@ def drop_in_place_het_layer(obj: nn.Linear, state: State) -> tuple[nn.Module, St
     """Replace the last linear layer with a HeteroscedasticLayer."""
     if state[LAST_LAYER]:
         state[LAST_LAYER] = False
-        in_features = obj.in_features
-        num_classes = obj.out_features
         return HeteroscedasticLayer(
-            in_features=in_features,
-            num_classes=num_classes,
+            in_features=obj.in_features,
+            num_classes=obj.out_features,
             num_factors=state[NUM_FACTORS],
             temperature=state[TEMPERATURE],
             is_parameter_efficient=state[IS_PARAMETER_EFFICIENT],

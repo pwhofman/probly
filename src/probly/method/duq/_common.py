@@ -1,26 +1,42 @@
-"""Shared DUQ implementation."""
+"""Shared Deterministic Uncertainty Quantification method implementation."""
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
-from probly.method.method import predictor_transformation
 from probly.predictor import LogitClassifier, Predictor, RepresentationPredictor
-from probly.representation.duq import DUQRepresentation
+from probly.quantification._quantification import decompose
+from probly.quantification.decomposition.decomposition import CachingDecomposition, TotalDecomposition
+from probly.representation.representation import Representation
+from probly.transformation.transformation import predictor_transformation
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from probly.representation.array_like import ArrayLike
+
+
+@runtime_checkable
+class DUQRepresentation(Representation, Protocol):
+    r"""Representation of a DUQ model output."""
+
+    @property
+    def kernel_values(self) -> ArrayLike:
+        """Per-class RBF kernel values, shape ``(..., num_classes)``."""
+
+
+@flexdispatch
+def create_duq_representation(kernel_values: ArrayLike) -> DUQRepresentation:
+    """Create a DUQ representation from per-class kernel values."""
+    msg = f"No DUQ representation factory registered for kernel values of type {type(kernel_values)}"
+    raise NotImplementedError(msg)
 
 
 @runtime_checkable
 class DUQPredictor[**In, Out: DUQRepresentation](RepresentationPredictor[In, Out], Protocol):
-    """A predictor that produces RBF-kernel DUQ uncertainty scores.
-
-    Components:
-        encoder: Feature extractor obtained by stripping the original
-            classification head from the base model.
-        centroid_head: RBF centroid head mapping features to per-class kernel
-            values via a learnable per-class projection and EMA-updated class
-            centroids.
-    """
+    """A predictor that produces RBF-kernel centroid-head uncertainty scores."""
 
     encoder: Predictor[In, Out]
     centroid_head: Predictor[In, Out]
@@ -33,7 +49,7 @@ def duq_generator[**In, Out: DUQRepresentation](
     length_scale: float,
     gamma: float,
 ) -> DUQPredictor[In, Out]:
-    """Generate a DUQ model from a base model."""
+    """Generate an DUQ model from a base model."""
     msg = f"No DUQ generator is registered for type {type(base)}"
     raise NotImplementedError(msg)
 
@@ -46,31 +62,36 @@ def duq[**In, Out: DUQRepresentation](
     length_scale: float = 0.1,
     gamma: float = 0.999,
 ) -> DUQPredictor[In, Out]:
-    r"""Transform a model for Deterministic Uncertainty Quantification :cite:`vanAmersfoortDUQ2020`.
-
-    Replaces the original classification head (the last ``nn.Linear`` layer)
-    with an RBF centroid head. For each class :math:`c`, a learnable projection
-    :math:`W_c \in \mathbb{R}^{n \times d}` maps the feature vector
-    :math:`f_\theta(x) \in \mathbb{R}^d` to an embedding
-    :math:`z_c = W_c f_\theta(x)`. The kernel value
-    :math:`K_c(x) = \exp\left(-\|z_c - e_c\|^2 / (2 n \sigma^2)\right)` is
-    computed against an EMA-updated class centroid :math:`e_c`. The predicted
-    class is :math:`\arg\max_c K_c(x)` and the uncertainty score is
-    :math:`1 - \max_c K_c(x)`.
-
-    The transformed predictor is intended to be trained from scratch with the
-    binary cross-entropy loss on the kernel values and a two-sided gradient
-    penalty on the inputs, as in the reference implementation. Class centroids
-    must be updated each step via
-    :meth:`TorchDUQPredictor.update_centroids`.
-
-    Args:
-        base: Base classification model to be transformed.
-        centroid_size: Embedding dimension :math:`n` of the per-class projections.
-        length_scale: RBF kernel length scale :math:`\\sigma`.
-        gamma: Exponential moving-average decay for the class centroids.
-
-    Returns:
-        The transformed DUQ predictor.
-    """
+    r"""Replace the final classifier head with an RBF centroid head."""
     return duq_generator(base, centroid_size, length_scale, gamma)
+
+
+@flexdispatch
+def duq_uncertainty(kernel_values: Iterable) -> ArrayLike:
+    r"""Compute the DUQ uncertainty score :math:`1 - \max_c K_c(x)`."""
+    msg = f"DUQ uncertainty is not implemented for kernel values of type {type(kernel_values)}"
+    raise NotImplementedError(msg)
+
+
+@decompose.register(DUQRepresentation)
+@dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
+class DUQDecomposition[T](CachingDecomposition, TotalDecomposition[T]):
+    """DUQ total-uncertainty decomposition."""
+
+    representation: DUQRepresentation
+
+    @override
+    @property
+    def _total(self) -> T:
+        """The total uncertainty of the decomposition."""
+        return duq_uncertainty(self.representation.kernel_values)  # ty:ignore[invalid-return-type]
+
+
+__all__ = [
+    "DUQDecomposition",
+    "DUQPredictor",
+    "DUQRepresentation",
+    "create_duq_representation",
+    "duq",
+    "duq_uncertainty",
+]
