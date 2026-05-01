@@ -899,6 +899,7 @@ def _(
     )
     model.fit(train_loader)
     run.summary["laplace_fitted"] = True
+    print(f"[laplace] Fitted: n_data={model.n_data}, n_outputs={model.n_outputs}, n_params={model.n_params}")
     if train_kwargs.get("optimize_prior", False):
         # ``pred_type`` is required by laplace-torch's signature but unused when ``method='marglik'``
         # (marglik works directly on the closed-form log-marginal-likelihood); any value is fine.
@@ -909,6 +910,7 @@ def _(
             lr=train_kwargs.get("lr", 0.1),
         )
         run.summary["laplace_prior_precision"] = float(model.prior_precision)
+        print(f"[laplace] Marglik tuned prior precision: {float(model.prior_precision):.4f}")
 
 
 @train_model.register(EfficientCredalPredictor)
