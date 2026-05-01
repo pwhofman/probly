@@ -7,7 +7,7 @@ import math
 import torch
 from torch import nn
 
-from ._common import compute_efficient_credal_prediction_bounds, efficient_credal_prediction_generator
+from ._common import _validate_alpha, compute_efficient_credal_prediction_bounds, efficient_credal_prediction_generator
 
 
 @efficient_credal_prediction_generator.register(nn.Module)
@@ -54,6 +54,7 @@ def _compute_bounds_torch(
     Solved by parallel bisection across all classes on the GPU after an
     analytical rewrite of the constraint.
     """
+    _validate_alpha(alpha)
     with torch.no_grad():
         device = logits_train.device
         n_samples = logits_train.shape[0]

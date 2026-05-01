@@ -32,11 +32,11 @@ from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
+from probly.method.duq import DUQPredictor
 from probly.method.efficient_credal_prediction import (
     EfficientCredalPredictor,
     compute_efficient_credal_prediction_bounds,
 )
-from probly.method.duq import DUQPredictor
 from probly.method.ensemble import EnsemblePredictor
 from probly_benchmark import conformal, data, metadata, utils
 from probly_benchmark.builders import BuildContext, build_model
@@ -899,8 +899,8 @@ def _(
         num_classes=num_classes,
         alpha=alpha,
     )
-    lower_t = torch.from_numpy(lower).to(device)
-    upper_t = torch.from_numpy(upper).to(device)
+    lower_t = lower.to(device)
+    upper_t = upper.to(device)
 
     # Initialize the buffers if they are None, otherwise copy in-place
     if model_.lower is None:

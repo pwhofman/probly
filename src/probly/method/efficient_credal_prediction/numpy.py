@@ -9,7 +9,7 @@ import scipy.optimize
 import scipy.special
 from tqdm import tqdm
 
-from ._common import compute_efficient_credal_prediction_bounds
+from ._common import _validate_alpha, compute_efficient_credal_prediction_bounds
 
 
 def _is_torch_available() -> bool:
@@ -49,8 +49,7 @@ def _compute_bounds_numpy(
         perturbation on class ``k`` that keeps the relative likelihood at least
         ``alpha``; ``upper[k]`` is the most-positive.
     """
-    logits_np = logits_train.astype(np.float64)
-    targets_np = targets_train.astype(np.int64)
+    _validate_alpha(alpha)
 
     if _is_torch_available():
         import torch  # noqa: PLC0415
@@ -71,6 +70,9 @@ def _compute_bounds_numpy(
         UserWarning,
         stacklevel=2,
     )
+
+    logits_np = logits_train.astype(np.float64)
+    targets_np = targets_train.astype(np.int64)
 
     def _mean_log_likelihood(logits: np.ndarray, targets: np.ndarray) -> float:
         log_probs = scipy.special.log_softmax(logits, axis=1)

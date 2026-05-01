@@ -58,6 +58,13 @@ def efficient_credal_prediction[**In, Out: CategoricalDistribution](
     return efficient_credal_prediction_generator(base)
 
 
+def _validate_alpha(alpha: float) -> None:
+    """Validate that ``alpha`` lies in ``[0, 1]``; raise ``ValueError`` otherwise."""
+    if not 0.0 <= alpha <= 1.0:
+        msg = f"alpha must be in [0, 1], got {alpha}"
+        raise ValueError(msg)
+
+
 @flexdispatch
 def compute_efficient_credal_prediction_bounds[T: ArrayLike](
     logits_train: T,
