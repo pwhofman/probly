@@ -17,7 +17,6 @@ from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistribution,
     TorchCategoricalDistributionSample,
 )
-from probly.representation.het_nets import HetNetsRepresentation
 
 
 def _torch_categorical_sample() -> TorchCategoricalDistributionSample:
@@ -41,12 +40,6 @@ def test_quantify_dispatches_to_entropy_decomposition_for_torch_distribution_sam
     decomposition = quantify(sample)
 
     assert isinstance(decomposition, SecondOrderEntropyDecomposition)
-
-
-def test_torch_categorical_distribution_sample_is_not_hetnets_representation() -> None:
-    sample = _torch_categorical_sample()
-
-    assert not isinstance(sample, HetNetsRepresentation)
 
 
 def test_torch_distribution_sample_decomposition_matches_measure_functions() -> None:

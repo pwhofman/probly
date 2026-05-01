@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 from flextype import flexdispatch
 from probly.representation.credal_set._common import CategoricalCredalSet
-from probly.representation.ddu._common import DDURepresentation
 from probly.representation.distribution import CategoricalDistribution, CategoricalDistributionSample
 from probly.representation.distribution._common import DirichletDistribution
 
@@ -34,11 +33,6 @@ def _(sample: CategoricalDistributionSample) -> CategoricalDistribution:
 @categorical_from_mean.register(DirichletDistribution)
 def _(distribution: DirichletDistribution) -> CategoricalDistribution:
     return distribution.mean
-
-
-@categorical_from_mean.register(DDURepresentation)
-def _(representation: DDURepresentation) -> CategoricalDistribution:
-    return representation.softmax
 
 
 @categorical_from_mean.register(CategoricalCredalSet)

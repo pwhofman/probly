@@ -14,6 +14,7 @@ from probly import (
     representation as representation,
     representer as representer,
     train as train,
+    transformation as transformation,
     traverse_nn as traverse_nn,
     utils as utils,
 )

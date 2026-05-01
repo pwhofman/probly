@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 
 from probly.method.calibration import vector_scaling
-from probly.method.calibration._common import CalibrationMethodConfig, calibration_generator
 from probly.predictor import LogitClassifier, Predictor
+from probly.transformation.calibration._common import CalibrationMethodConfig, calibration_generator
 
 
 def test_unregistered_calibration_generator_raises(dummy_predictor: Predictor) -> None:

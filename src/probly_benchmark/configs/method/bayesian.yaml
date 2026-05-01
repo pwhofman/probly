@@ -1,5 +1,6 @@
 # @package method
 name: "bayesian"
+label: "BNN (MFVI)"
 params:
   posterior_std: 0.002
   prior_mean: 0.0

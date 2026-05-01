@@ -19,7 +19,6 @@ from probly.quantification.measure.distribution import (
 )
 from probly.representation.credal_set import CategoricalCredalSet
 from probly.representation.distribution import DistributionSample, SecondOrderDistribution
-from probly.representation.het_nets._common import HetNetsRepresentation
 
 if TYPE_CHECKING:
     from probly.quantification.measure.distribution import SecondOrderDistributionLike
@@ -76,7 +75,6 @@ class CredalSetEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
         return lower_entropy(self.credal_set, base=self.base)  # ty:ignore[invalid-return-type]
 
 
-@decompose.register(HetNetsRepresentation)
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
 class LabelNoiseEntropyDecomposition[T](CachingDecomposition, AleatoricDecomposition[T]):
     """Entropy decomposition for HetNets representations.

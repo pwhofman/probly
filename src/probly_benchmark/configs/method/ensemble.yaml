@@ -1,5 +1,6 @@
 # @package method
 name: "ensemble"
+label: "Deep Ensemble"
 params:
   num_members: 10
   reset_params: true

@@ -13,6 +13,25 @@ from probly.predictor import LogitDistributionPredictor
 from probly_benchmark.resnet import ResNet18
 
 
+def get_encoder_head(name: str, feature_dim: int, num_classes: int) -> nn.Module:
+    """Get a classifier head to stack on top of an ``<base>_encoder`` backbone.
+
+    Args:
+        name: Head name as it appears in the method config (e.g. ``"linear"``).
+        feature_dim: Output feature dim of the encoder (e.g. from ``get_output_dim``).
+        num_classes: Number of classes in the dataset.
+
+    Returns:
+        A classifier head as a PyTorch module.
+    """
+    match name:
+        case "linear":
+            return nn.Linear(feature_dim, num_classes)
+        case _:
+            msg = f"Encoder head {name} not recognized"
+            raise ValueError(msg)
+
+
 @LogitDistributionPredictor.register_factory
 def get_base_model(  # noqa: PLR0912, PLR0915, C901
     name: str,

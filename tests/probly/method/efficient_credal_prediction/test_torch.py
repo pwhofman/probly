@@ -1,63 +1,54 @@
-"""Tests for the torch backend of efficient credal prediction.
-
-These tests guard against a subtle Protocol-default-implementation gap:
-:class:`probly.method.efficient_credal_prediction.EfficientCredalPredictor`
-declares ``lower_bounds`` / ``upper_bounds`` as ``@property`` defaults that
-return ``self.lower`` / ``self.upper``. Python ``Protocol`` defaults do **not**
-transfer to classes that satisfy the Protocol structurally (via
-``runtime_checkable``) without explicit inheritance, so the concrete
-:class:`~probly.method.efficient_credal_prediction.torch.TorchEfficientCredalPredictor`
-must implement these properties itself. Without them, ``predict()`` crashes
-with ``AttributeError`` because its dispatch reads
-``predictor.lower_bounds`` / ``predictor.upper_bounds`` directly.
-"""
+"""Tests for the PyTorch implementation of efficient credal prediction calibration."""
 
 from __future__ import annotations
 
 import pytest
 
-pytest.importorskip("torch")
-import torch
-from torch import nn
+torch = pytest.importorskip("torch")
+import numpy as np  # noqa: E402
 
-from probly.method.efficient_credal_prediction import efficient_credal_prediction
-from probly.predictor import predict
-from probly.representation.credal_set.torch import TorchProbabilityIntervalsCredalSet
+from probly.method.efficient_credal_prediction import compute_efficient_credal_prediction_bounds  # noqa: E402
 
 
-class _TinyClassifier(nn.Module):
-    """Minimal logit classifier for testing."""
+class TestTorchCredalBounds:
+    """Tests the basic properties of the optimized PyTorch bisection solver."""
 
-    def __init__(self, in_features: int = 4, num_classes: int = 3) -> None:
-        super().__init__()
-        self.fc = nn.Linear(in_features, num_classes)
+    @pytest.fixture
+    def dummy_data(self) -> tuple[torch.Tensor, torch.Tensor, int]:
+        torch.manual_seed(42)
+        n_samples, n_classes = 100, 5
+        logits = torch.randn(n_samples, n_classes)
+        targets = torch.randint(0, n_classes, (n_samples,))
+        return logits, targets, n_classes
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.fc(x)
+    def test_bounds_shape_and_type(self, dummy_data: tuple[torch.Tensor, torch.Tensor, int]) -> None:
+        """Ensure the outputs correctly return numpy arrays from the torch input."""
+        logits, targets, num_classes = dummy_data
+        lower, upper = compute_efficient_credal_prediction_bounds(logits, targets, num_classes=num_classes, alpha=0.5)
 
+        assert isinstance(lower, torch.Tensor)
+        assert isinstance(upper, torch.Tensor)
+        assert lower.shape == (num_classes,)
+        assert upper.shape == (num_classes,)
+        assert lower.dtype == torch.float64
+        assert upper.dtype == torch.float64
 
-def test_predict_uses_lower_upper_bounds_properties() -> None:
-    """``predict()`` accesses ``lower_bounds`` / ``upper_bounds`` and must not crash.
+    def test_bounds_sign_invariants(self, dummy_data: tuple[torch.Tensor, torch.Tensor, int]) -> None:
+        """The unperturbed logits always satisfy alpha=0; so lower <= 0 <= upper."""
+        logits, targets, num_classes = dummy_data
+        lower, upper = compute_efficient_credal_prediction_bounds(logits, targets, num_classes=num_classes, alpha=0.5)
 
-    Regression test: see module docstring. Sets the buffers manually rather
-    than running real bound estimation since this test only verifies the
-    property-access path, not the bound-fitting algorithm.
-    """
-    base = _TinyClassifier(in_features=4, num_classes=3)
-    cep = efficient_credal_prediction(base, predictor_type="logit_classifier")
+        assert torch.all(lower <= 0.0), "Lower bounds must be <= 0"
+        assert torch.all(upper >= 0.0), "Upper bounds must be >= 0"
 
-    # Replace the None buffers with dummy bounds. Real training would compute
-    # these via the credal-bounds optimization step.
-    num_classes = 3
-    cep.lower = torch.full((num_classes,), 0.05)
-    cep.upper = torch.full((num_classes,), 0.05)
+    def test_chunk_size_invariance(self, dummy_data: tuple[torch.Tensor, torch.Tensor, int]) -> None:
+        """Chunk size is a memory optimization; it should not affect the math."""
+        logits, targets, num_classes = dummy_data
 
-    # Property access path: this is the regression check.
-    assert torch.equal(cep.lower_bounds, cep.lower)
-    assert torch.equal(cep.upper_bounds, cep.upper)
+        lower_1, upper_1 = compute_efficient_credal_prediction_bounds(logits, targets, num_classes, 0.5, chunk_size=1)
+        lower_all, upper_all = compute_efficient_credal_prediction_bounds(
+            logits, targets, num_classes, 0.5, chunk_size=num_classes
+        )
 
-    x = torch.zeros(2, 4)
-    rep = predict(cep, x)
-    assert isinstance(rep, TorchProbabilityIntervalsCredalSet)
-    assert rep.lower_bounds.shape == (2, num_classes)
-    assert rep.upper_bounds.shape == (2, num_classes)
+        np.testing.assert_allclose(lower_1, lower_all, rtol=1e-12, atol=1e-12)
+        np.testing.assert_allclose(upper_1, upper_all, rtol=1e-12, atol=1e-12)

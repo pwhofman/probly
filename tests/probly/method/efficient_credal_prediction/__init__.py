@@ -1,1 +1,1 @@
-"""Tests for efficient credal prediction."""
+"""Tests for the efficient credal prediction method."""

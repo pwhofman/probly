@@ -1,6 +1,8 @@
 # @package method
 name: "credal_wrapper"
+label: "CreWra"
+load_from: "ensemble"
 params:
-  num_members: 5
+  num_members: 10
   reset_params: true
 train:

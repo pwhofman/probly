@@ -69,6 +69,24 @@ def torch_dropout_model() -> nn.Module:
 
 
 @pytest.fixture
+def torch_tiny_encoder() -> nn.Module:
+    """Return a small non-Sequential encoder with BatchNorm, ending in 4-D features."""
+
+    class TinyEncoder(nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.conv = nn.Conv2d(1, 4, 3, padding=1)
+            self.bn = nn.BatchNorm2d(4)
+            self.pool = nn.AdaptiveAvgPool2d(1)
+            self.flatten = nn.Flatten()
+
+        def forward(self, x: Tensor) -> Tensor:
+            return self.flatten(self.pool(self.bn(self.conv(x))))
+
+    return TinyEncoder()
+
+
+@pytest.fixture
 def torch_custom_model() -> nn.Module:
     """Return a small custom model."""
 

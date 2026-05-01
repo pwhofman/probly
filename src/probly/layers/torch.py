@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 import torch
 from torch import nn
@@ -1589,3 +1589,164 @@ class HeteroscedasticLayer(nn.Module):
 
         utilities = mu + diag_scale * eps_k + low_rank_noise
         return utilities / self.temperature
+
+
+class SpectralNormWithMultiplier(nn.Module):
+    """Applies spectral normalization with a bounded multiplier to a module's weight suggested by :cite:`liu2020SNGP`.
+
+    Attributes:
+        module: nn.Module, the module to which spectral normalization is applied.
+        name: str, the name of the weight parameter to normalize (default: "weight").
+        n_power_iterations: int, number of power iterations to perform (default: 1).
+        norm_multiplier: float, the upper bound for the spectral norm multiplier (default: 1.0).
+        eps: float, small constant for numerical stability (default: 1e-12).
+    """
+
+    weight_u: torch.Tensor
+    weight_v: torch.Tensor
+
+    def __init__(
+        self,
+        module: nn.Module,
+        name: str = "weight",
+        n_power_iterations: int = 1,
+        norm_multiplier: float = 1.0,
+        eps: float = 1e-12,
+    ) -> None:
+        """Initialize the SpectralNormWithMultiplier wrapper.
+
+        Args:
+            module: nn.Module, the module to which spectral normalization is applied.
+            name: str, the name of the weight parameter to normalize (default: "weight").
+            n_power_iterations: int, number of power iterations to perform (default: 1).
+            norm_multiplier: float, the upper bound for the spectral norm multiplier (default: 1.0).
+            eps: float, small constant for numerical stability (default: 1e-12).
+        """
+        super().__init__()
+        self.module = module
+        self.name = name
+        self.n_power_iterations = n_power_iterations
+        self.norm_multiplier = norm_multiplier
+        self.eps = eps
+
+        weight = getattr(self.module, self.name)
+        u = torch.randn(weight.shape[0])
+        v = torch.randn(weight.view(weight.shape[0], -1).shape[1])
+        self.register_buffer("weight_u", F.normalize(u, dim=0))
+        self.register_buffer("weight_v", F.normalize(v, dim=0))
+
+        delattr(self.module, self.name)
+        self.register_parameter(f"{self.name}_orig", nn.Parameter(weight.detach()))
+
+    def compute_weight(self) -> torch.Tensor:
+        """Compute the spectrally normalized weight."""
+        weight_orig = getattr(self, f"{self.name}_orig")
+        weight_matrix = weight_orig.view(weight_orig.shape[0], -1)
+
+        with torch.no_grad():
+            for _ in range(self.n_power_iterations):
+                v = F.normalize(torch.mv(weight_matrix.t(), self.weight_u), dim=0, eps=self.eps)
+                u = F.normalize(torch.mv(weight_matrix, v), dim=0, eps=self.eps)
+            self.weight_u.copy_(u)
+            self.weight_v.copy_(v)
+
+        sigma = torch.dot(self.weight_u, torch.mv(weight_matrix, self.weight_v))
+        # Apply the norm multiplier bound
+        factor = torch.clamp(self.norm_multiplier / (sigma + self.eps), max=1.0)
+        return weight_orig * factor
+
+    def forward(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+        """Apply the module with the spectrally normalized weight.
+
+        Returns:
+            The output of the wrapped module with the spectrally normalized weight.
+        """
+        setattr(self.module, self.name, self.compute_weight())
+        return self.module(*args, **kwargs)
+
+
+class SNGPLayer(nn.Module):
+    """Spectral-normalized Neural Gaussian Process (SNGP) layer based on :cite:`liu2020SNGP`.
+
+    Attributes:
+        num_inducing: int, number of inducing points.
+        ridge_penalty: float, ridge penalty for numerical stability (default: 1e-6).
+        momentum: float, momentum for the precision matrix (default: 0.999).
+        W_L: nn.Parameter, random Fourier feature weights.
+        b_L: nn.Parameter, random Fourier feature biases.
+        sngp: nn.Linear, Bayesian linear classifier.
+    """
+
+    precision_matrix: torch.Tensor
+
+    def __init__(
+        self,
+        in_features: int,
+        num_classes: int,
+        num_inducing: int = 1024,
+        ridge_penalty: float = 1e-6,
+        momentum: float = 0.999,
+    ) -> None:
+        """Initialize the SNGPLayer."""
+        super().__init__()
+        self.num_inducing = num_inducing
+        self.momentum = momentum
+
+        # Frozen Random Fourier Features
+        self.W_L = nn.Parameter(torch.randn(num_inducing, in_features), requires_grad=False)
+        self.b_L = nn.Parameter(torch.empty(num_inducing).uniform_(0, 2 * math.pi), requires_grad=False)
+
+        # Bayesian Linear Classifier
+        self.sngp = nn.Linear(num_inducing, num_classes)
+
+        # Precision Matrix Buffer (Non-gradient state)
+        self.register_buffer("precision_matrix", torch.eye(num_inducing) * ridge_penalty)
+
+    def compute_rff(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute Random Fourier Features."""
+        projection = F.linear(x, self.W_L, self.b_L)
+        return torch.cos(projection) * math.sqrt(2.0 / self.num_inducing)
+
+    def update_precision_matrix(self, phi: torch.Tensor, logits: torch.Tensor) -> None:
+        """Update the precision matrix."""
+        with torch.no_grad():
+            probs = F.softmax(logits, dim=-1)
+            prob_variance = probs * (1.0 - probs)
+            max_variance, _ = torch.max(prob_variance, dim=-1)
+
+            phi_scaled = phi * max_variance.unsqueeze(-1)
+            batch_update_matrix = torch.matmul(phi.t(), phi_scaled)
+
+            if self.momentum > 0:
+                self.precision_matrix.copy_(
+                    self.momentum * self.precision_matrix + (1 - self.momentum) * batch_update_matrix
+                )
+            else:
+                self.precision_matrix.copy_(self.precision_matrix + batch_update_matrix)
+
+    def forward(self, x: torch.Tensor, update_covariance: bool = True) -> tuple[torch.Tensor, torch.Tensor]:
+        """Forward pass of the SNGP layer.
+
+        Args:
+            x: Input tensor of shape (batch_size, in_features).
+            update_covariance: Whether to update the precision matrix during training.
+
+        Returns:
+            Tuple of logits and variance.
+        """
+        phi = self.compute_rff(x)
+        logits = self.sngp(phi)
+
+        if self.training and update_covariance:
+            self.update_precision_matrix(phi, logits)
+
+        with torch.amp.autocast(device_type="cuda", enabled=False):
+            precision_fp32 = self.precision_matrix.float()
+            covariance_matrix = torch.linalg.inv(precision_fp32)
+            phi_fp32 = phi.float()
+            variance = torch.sum(phi_fp32 * torch.matmul(phi_fp32, covariance_matrix), dim=-1)
+
+        # Expand the variance to match the shape of the mean (logits)
+        variance = variance.unsqueeze(-1).expand_as(logits)
+
+        return logits, variance

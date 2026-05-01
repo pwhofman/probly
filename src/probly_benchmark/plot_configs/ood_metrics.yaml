@@ -1,0 +1,14 @@
+defaults:
+  - comparison: ???
+  - _self_
+
+wandb:
+  entity: "probly"
+  project: "test"
+
+filename_prefix: "ood_metrics"
+higher_is_better:
+  - "auroc"
+  - "aupr"
+seeds: [1, 2, 3]
+show: false
