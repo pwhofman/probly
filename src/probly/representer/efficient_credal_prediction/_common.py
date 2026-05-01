@@ -61,6 +61,13 @@ class EfficientCredalRepresenter[**In, Out: CategoricalDistribution, C: Probabil
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:
         """Run the base, perturb each logit by the calibrated offsets, and reduce to credal bounds."""
+        if self.predictor.lower is None or self.predictor.upper is None:
+            msg = (
+                "EfficientCredalPredictor has uninitialized bounds; call "
+                "compute_efficient_credal_prediction_bounds and assign the result to "
+                "predictor.lower / predictor.upper before requesting a representation."
+            )
+            raise RuntimeError(msg)
         logits = predict_raw(self.predictor, *args, **kwargs)
         packed = compute_efficient_credal_bounds(logits, self.predictor.lower, self.predictor.upper)
         return create_probability_intervals_from_lower_upper_array(packed)  # ty:ignore[invalid-return-type]
