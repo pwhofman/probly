@@ -2,9 +2,9 @@
 name: "bayesian"
 label: "BNN (MFVI)"
 params:
-  posterior_std: 0.002
+  posterior_std: 0.05
   prior_mean: 0.0
-  prior_std: 0.002
+  prior_std: 0.5
   # Initialize the posterior mean from the base model weights so that
   # finetuning starts from the pretrained optimum rather than from scratch.
   # Osawa et al., "Practical Deep Learning with Bayesian Principles", NeurIPS 2019
