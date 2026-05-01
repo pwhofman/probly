@@ -7,7 +7,7 @@ from typing import Any
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
-from probly.evaluation.ood import out_of_distribution_detection_auroc
+from probly.evaluation.ood import evaluate_ood
 from probly.quantification import quantify
 from probly.representer import representer
 from probly_benchmark import calibration, data, utils
@@ -54,12 +54,16 @@ def main(cfg: DictConfig) -> None:
     id_uncertainties = quantify(id_outputs)[cfg.decomposition].detach().cpu().numpy()  # ty:ignore[not-subscriptable]
     ood_uncertainties = quantify(ood_outputs)[cfg.decomposition].detach().cpu().numpy()  # ty:ignore[not-subscriptable]
 
-    auroc = out_of_distribution_detection_auroc(id_uncertainties, ood_uncertainties)
+    ood_metrics = evaluate_ood(id_uncertainties, ood_uncertainties, metrics=cfg.get("metrics", "all"))
+    auroc = ood_metrics["auroc"]
     print(f"OOD detection AUROC: {auroc:.4f}")
 
     if cfg.wandb.enabled:
         run = init_wandb_for_evaluation(cfg, run_id)
-        run.summary["ood/auroc"] = auroc
+        for metric_name, value in ood_metrics.items():
+            run.summary[f"ood/{metric_name}"] = value
+        run.summary["ood/id_scores"] = id_uncertainties.tolist()
+        run.summary["ood/ood_scores"] = ood_uncertainties.tolist()
         run.finish()
 
 
