@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 
 from probly.predictor import ProbabilisticClassifier
+from probly.representer import ProbabilityIntervalsRepresenter, representer
 from probly.transformation.ensemble import EnsemblePredictor, ensemble
 from probly.transformation.transformation import predictor_transformation
 
@@ -23,6 +24,9 @@ def credal_wrapper[**In, Out](
 ) -> CredalWrapperPredictor[In, Out]:
     """Create a credal wrapper predictor from a base predictor."""
     return ensemble(base, num_members=num_members, reset_params=reset_params)
+
+
+representer.register(CredalWrapperPredictor, ProbabilityIntervalsRepresenter)
 
 
 __all__ = ["CredalWrapperPredictor", "credal_wrapper"]

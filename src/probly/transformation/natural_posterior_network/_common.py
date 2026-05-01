@@ -14,13 +14,18 @@ if TYPE_CHECKING:
     from probly.predictor import Predictor
 
 
-CertaintyBudget = Literal["constant", "exp-half", "exp", "normal"]
+type CertaintyBudget = Literal["constant", "exp-half", "exp", "normal"]
 """Named schemes for the certainty budget added to ``log p(z)`` before exponentiation.
 
 See :cite:`charpentierNaturalPosteriorNetwork2022` and the official reference
 implementation (`borchero/natural-posterior-network`). ``"normal"`` keeps the
 evidence ``O(1)`` regardless of the latent dimension and is the default.
 """
+
+
+@runtime_checkable
+class NaturalPosteriorNetworkPredictor[**In, Out: DirichletDistribution](EvidentialPredictor, Protocol):
+    """Protocol for natural posterior network predictors."""
 
 
 def budget_log_scale(budget: CertaintyBudget, dim: int) -> float:
@@ -56,11 +61,6 @@ def budget_log_scale(budget: CertaintyBudget, dim: int) -> float:
         return 0.5 * math.log(4 * math.pi) * dim
     msg = f"Unknown certainty budget {budget!r}"
     raise ValueError(msg)
-
-
-@runtime_checkable
-class NaturalPosteriorNetworkPredictor[**In, Out: DirichletDistribution](EvidentialPredictor, Protocol):
-    """Protocol for natural posterior network predictors."""
 
 
 @flexdispatch

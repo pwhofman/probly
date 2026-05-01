@@ -76,6 +76,9 @@ def main() -> int:
     src_root = (repo_root / "src").resolve()
     stub_root = (repo_root / "stubs").resolve()
 
+    if stub_root.exists():
+        shutil.rmtree(stub_root)
+
     command = build_command(src_root, stub_root)
 
     try:

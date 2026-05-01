@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from probly.predictor import LogitClassifier, ProbabilisticClassifier
 from probly.representation.distribution import CategoricalDistribution
+from probly.representer import RepresentativeConvexCredalSetRepresenter, representer
 from probly.transformation.ensemble import EnsembleCategoricalDistributionPredictor, ensemble
 from probly.transformation.transformation import predictor_transformation
 
@@ -30,6 +31,9 @@ def credal_ensembling[**In, Out: CategoricalDistribution](
 ) -> CredalEnsemblingPredictor[In, Out]:
     """Create a credal ensembling predictor from a base predictor."""
     return ensemble(base, num_members=num_members, reset_params=reset_params)
+
+
+representer.register(CredalEnsemblingPredictor, RepresentativeConvexCredalSetRepresenter)
 
 
 __all__ = ["CredalEnsemblingPredictor", "credal_ensembling"]

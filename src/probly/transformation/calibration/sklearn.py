@@ -15,6 +15,7 @@ from sklearn.frozen import FrozenEstimator
 
 from probly.calibrator import calibrate
 from probly.predictor import LogitClassifier
+from probly.transformation.calibration import CalibrationPredictor
 
 from ._common import CalibrationMethodConfig, calibration_generator
 
@@ -25,6 +26,9 @@ def _extract_calibration_inputs(
 ) -> tuple[object, object]:
     if not calib_args:
         msg = "Expected calibration inputs after y_calib, but none were provided."
+        raise ValueError(msg)
+    if len(calib_args) != 1:
+        msg = f"Expected exactly one calibration input after y_calib, but got {len(calib_args)} positional arguments."
         raise ValueError(msg)
     return calib_args[0], y_calib
 
@@ -48,6 +52,7 @@ class _VectorScalingState:
     bias: np.ndarray
 
 
+@LogitClassifier.register
 class SklearnIdentityLogitEstimator(ClassifierMixin, BaseEstimator):
     """Pass-through sklearn estimator returning provided logits unchanged."""
 
@@ -99,10 +104,7 @@ class SklearnIdentityLogitEstimator(ClassifierMixin, BaseEstimator):
         return self.classes_[indices]
 
 
-LogitClassifier.register(SklearnIdentityLogitEstimator)
-
-
-class SklearnVectorScalingPredictor(BaseEstimator):
+class SklearnVectorScalingPredictor(BaseEstimator, CalibrationPredictor):
     """sklearn estimator wrapper implementing vector scaling calibration."""
 
     predictor: BaseEstimator

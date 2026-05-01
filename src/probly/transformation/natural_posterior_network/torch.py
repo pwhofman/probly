@@ -7,13 +7,14 @@ from torch import nn
 from torch.nn import functional as F
 
 from probly.layers.torch import RadialNormalizingFlowStack
+from probly.transformation.natural_posterior_network import NaturalPosteriorNetworkPredictor
 from probly.traverse_nn.utils import get_output_dim
 
 from ._common import CertaintyBudget, budget_log_scale, natural_posterior_network_generator
 
 
 @natural_posterior_network_generator.register(nn.Module)
-class TorchNaturalPosteriorNetwork(nn.Module):
+class TorchNaturalPosteriorNetwork(nn.Module, NaturalPosteriorNetworkPredictor):
     """Torch implementation of the Natural Posterior Network.
 
     Computes a Bayesian posterior update over a Dirichlet distribution per

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from probly.representer import ProbabilityIntervalsRepresenter, representer
 from probly.transformation.class_bias_ensemble import ClassBiasEnsemblePredictor, class_bias_ensemble
 
 
@@ -15,5 +16,7 @@ credal_relative_likelihood = CredalRelativeLikelihoodPredictor.register_factory(
     class_bias_ensemble,
     autocast_builtins=True,
 )
+representer.register(CredalRelativeLikelihoodPredictor, ProbabilityIntervalsRepresenter)
+
 
 __all__ = ["CredalRelativeLikelihoodPredictor", "credal_relative_likelihood"]

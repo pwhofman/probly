@@ -33,13 +33,13 @@ class CalibrationPredictor[**In, T](
     """Protocol for logit calibration wrappers."""
 
     predictor: Predictor[In, T]
-    config: CalibrationMethodConfig
 
     def calibrate(self, y_calib: T, *calib_args: In.args, **calib_kwargs: In.kwargs) -> Self:
         """Calibrate scaling parameters on calibration data."""
         ...
 
 
+@CalibrationPredictor.register
 class _CalibrationPredictorBase[**In, Out](ABC):
     """Backend-agnostic metadata for affine scaling wrappers."""
 

@@ -6,13 +6,14 @@ import torch
 from torch import nn
 
 from probly.layers.torch import RadialNormalizingFlowStack
+from probly.transformation.posterior_network import PosteriorNetworkPredictor
 from probly.traverse_nn.utils import get_output_dim
 
 from ._common import posterior_network_generator
 
 
 @posterior_network_generator.register(nn.Module)
-class TorchPosteriorNetwork(nn.Module):
+class TorchPosteriorNetwork(nn.Module, PosteriorNetworkPredictor):
     """Torch version of Posterior Network."""
 
     def __init__(

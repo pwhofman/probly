@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from probly.lazy_types import SKLEARN_MODULE, TORCH_MODULE
+from probly.calibrator._common import calibrate
+from probly.lazy_types import SKLEARN_CALIBRATED_CLASSIFIER_CV, SKLEARN_MODULE, TORCH_MODULE
 
 from ._common import (
     CalibrationPredictor,
@@ -18,6 +19,13 @@ from ._common import (
 if TYPE_CHECKING:
     from .sklearn import SklearnIdentityLogitEstimator
     from .torch import TorchIdentityLogitModel
+
+CalibrationPredictor.register(SKLEARN_CALIBRATED_CLASSIFIER_CV)
+
+
+@calibrate.delayed_register(SKLEARN_CALIBRATED_CLASSIFIER_CV)
+def _(_: type[object]) -> None:
+    from . import sklearn as sklearn  # noqa: PLC0415
 
 
 @calibration_generator.delayed_register(TORCH_MODULE)

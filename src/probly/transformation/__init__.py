@@ -5,7 +5,6 @@ from probly.transformation.bayesian import bayesian
 from probly.transformation.bayesian_ensemble import bayesian_ensemble
 from probly.transformation.cast import cast
 from probly.transformation.class_bias_ensemble import class_bias_ensemble
-from probly.transformation.credal_bounds import credal_bounds
 from probly.transformation.dirichlet_exp_activation import dirichlet_exp_activation
 from probly.transformation.dirichlet_softplus_activation import dirichlet_softplus_activation
 from probly.transformation.dropconnect import dropconnect
@@ -24,7 +23,6 @@ __all__ = [
     "bayesian_ensemble",
     "cast",
     "class_bias_ensemble",
-    "credal_bounds",
     "dirichlet_exp_activation",
     "dirichlet_softplus_activation",
     "dropconnect",
