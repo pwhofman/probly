@@ -6,5 +6,5 @@ methods:
     -   name: "dropconnect"
     -   name: "dropout"
     -   name: "ensemble"
-    #-   name: "credal_wrapper"
-    #-   name: "credal_ensembling"
+    -   name: "credal_wrapper"
+    -   name: "credal_ensembling"

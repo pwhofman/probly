@@ -225,7 +225,7 @@ def evaluate_ood(
     if isinstance(metrics, str):
         if metrics == "auroc":
             return {"auroc": STATIC_METRICS["auroc"](in_s, out_s)}
-        metric_list = [*STATIC_METRICS.keys(), "fpr", "fnr"] if metrics == "all" else [metrics]
+        metric_list = [*STATIC_METRICS.keys(), "fpr"] if metrics == "all" else [metrics]
     else:
         # metrics is a list list[str]
         metric_list = list(metrics)
