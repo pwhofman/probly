@@ -11,8 +11,7 @@ from probly.representation.distribution import CategoricalDistribution, create_c
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistributionSample
 from probly.representation.sample import Sample, SampleFactory, create_sample
 from probly.representer._representer import representer
-
-from ._common import Sampler, SamplingStrategy
+from probly.representer.sampler._common import Sampler, SamplingStrategy
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

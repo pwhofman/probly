@@ -11,10 +11,10 @@ from laplace import Laplace  # noqa: E402
 from torch import nn  # noqa: E402
 from torch.utils.data import DataLoader, TensorDataset  # noqa: E402
 
+from probly.method.laplace.laplace import LaplaceSampler  # noqa: E402
 from probly.representation.distribution import CategoricalDistribution  # noqa: E402
 from probly.representation.sample import Sample  # noqa: E402
 from probly.representer import representer  # noqa: E402
-from probly.representer.sampler.laplace import LaplaceSampler  # noqa: E402
 
 
 @pytest.fixture
