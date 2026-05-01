@@ -885,15 +885,15 @@ def _(
     the prior precision by marginal-likelihood maximization.
     """
     _training_loop(
-        model,  # ty: ignore[invalid-argument-type]
+        model.model,
         train_loader,
         val_loader,
         cfg,
         device,
         run,
         train_kwargs,
-        train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
-        val_fn=validate,
+        train_fn=train_epoch_cross_entropy,
+        val_fn=validate_cross_entropy,
     )
     model.fit(train_loader)
     run.summary["laplace_fitted"] = True
