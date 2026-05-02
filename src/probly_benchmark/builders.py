@@ -25,6 +25,7 @@ from tqdm import tqdm
 
 from probly.method.batchensemble import batchensemble
 from probly.method.bayesian import bayesian
+from probly.method.credal_bnn import credal_bnn
 from probly.method.credal_ensembling import credal_ensembling
 from probly.method.credal_net import credal_net
 from probly.method.credal_relative_likelihood import credal_relative_likelihood
@@ -67,6 +68,7 @@ METHODS = {
     "natural_posterior_network": natural_posterior_network,
     "posterior_network": posterior_network,
     "ensemble": ensemble,
+    "credal_bnn": credal_bnn,
     "credal_ensembling": credal_ensembling,
     "credal_net": credal_net,
     "credal_relative_likelihood": credal_relative_likelihood,

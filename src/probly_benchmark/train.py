@@ -31,6 +31,7 @@ from flextype import flexdispatch
 from probly.layers.torch import BatchEnsembleConv2d, BatchEnsembleLinear
 from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.bayesian import BayesianPredictor
+from probly.method.credal_bnn import CredalBNNPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
@@ -669,7 +670,7 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
 
 
 @train_model.register(BayesianPredictor)
-def _(
+def train_model_bayesian(
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader | None,
@@ -677,11 +678,23 @@ def _(
     device: torch.device,
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
+    log_prefix: str = "",
 ) -> None:
     """Train a BayesianPredictor with ELBO loss.
 
     The KL penalty is set to 1/N (N = dataset size) following
     Blundell et al., "Weight Uncertainty in Neural Networks", ICML 2015.
+
+    Args:
+        model: The Bayesian predictor to train.
+        train_loader: Training data loader.
+        val_loader: Validation data loader, or ``None`` to skip validation.
+        cfg: Hydra config with training hyperparameters.
+        device: Device to train on.
+        run: Weights & Biases run for logging.
+        train_kwargs: Method-specific training keyword arguments.
+        log_prefix: Prefix for W&B log keys (e.g. ``"member_0/"``). Defaults to empty
+            so dispatched calls retain the original single-BNN logging behavior.
     """
     dataset = getattr(train_loader, "dataset", None)
     dataset_size = len(dataset) if dataset is not None else len(train_loader) * cfg.batch_size
@@ -696,7 +709,38 @@ def _(
         {**train_kwargs, "kl_penalty": kl_penalty},
         train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
         val_fn=validate,
+        log_prefix=log_prefix,
     )
+
+
+@train_model.register(CredalBNNPredictor)
+def _(
+    model: CredalBNNPredictor,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Train a credal BNN by training each member as an independent Bayesian predictor.
+
+    Each member is trained with the same ELBO + KL-penalty recipe as a single
+    :class:`BayesianPredictor` via :func:`train_model_bayesian`, and gets its own
+    W&B namespace via ``log_prefix=f"member_{i}/"`` so per-member learning curves
+    do not clobber each other.
+    """
+    for i, member in enumerate(model):
+        train_model_bayesian(
+            member,
+            train_loader,
+            val_loader,
+            cfg,
+            device,
+            run,
+            train_kwargs,
+            log_prefix=f"member_{i}/",
+        )
 
 
 @train_model.register(CredalRelativeLikelihoodPredictor)
