@@ -8,10 +8,19 @@ import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 from sklearn.ensemble import GradientBoostingClassifier, HistGradientBoostingClassifier
+from sklearn.gaussian_process import GaussianProcessClassifier, GaussianProcessRegressor
 from sklearn.linear_model import LogisticRegression, LogisticRegressionCV, SGDClassifier
 from sklearn.neighbors import NearestCentroid
 
-from ._common import CategoricalDistributionPredictor, LogitDistributionPredictor, predict_raw
+from ._common import (
+    CategoricalDistributionPredictor,
+    GaussianDistributionPredictor,
+    LogitDistributionPredictor,
+    predict_raw,
+)
+
+GaussianDistributionPredictor.register(GaussianProcessRegressor)
+LogitDistributionPredictor.register(GaussianProcessClassifier)
 
 _SAFE_DECISION_FUNCTION_TYPES = (
     GradientBoostingClassifier,
@@ -75,6 +84,10 @@ def predict_sklearn[**In](predictor: BaseEstimator, /, *args: In.args, **kwargs:
         predict_proba = _callable_attribute(predictor, "predict_proba")
         if predict_proba is not None:
             return predict_proba(*args, **kwargs)
+
+    if isinstance(predictor, GaussianDistributionPredictor) and hasattr(predictor, "predict"):
+        mean, std = predictor.predict(*args, return_std=True, **kwargs)
+        return mean, np.square(std)
 
     predict = _callable_attribute(predictor, "predict")
     if predict is not None:
