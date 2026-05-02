@@ -1725,6 +1725,7 @@ class SNGPLayer(nn.Module):
         num_random_features: int,
         ridge_penalty: float = 1.0,
         momentum: float = -1.0,
+        random_feature_init_std: float = 1.0,
     ) -> None:
         """Initialize the SNGPLayer.
 
@@ -1745,6 +1746,9 @@ class SNGPLayer(nn.Module):
                 the start of each training epoch. Otherwise the precision
                 matrix grows unboundedly across epochs and the variance
                 shrinks toward zero.
+            random_feature_init_std: Standard deviation of the Gaussian used
+                to initialize the frozen random projection ``W_L``. Defaults
+                to ``1.0``.
         """
         super().__init__()
         self.num_random_features = num_random_features
@@ -1752,7 +1756,14 @@ class SNGPLayer(nn.Module):
         self.momentum = momentum
 
         # Frozen Random Fourier Features (paper Eq. 7).
-        self.W_L = nn.Parameter(torch.randn(num_random_features, in_features), requires_grad=False)
+        # `random_feature_init_std` scales `W_L`. With std=1.0 (paper) `cos` operates
+        # over many full cycles per feature variation; with std=0.05 it
+        # operates near-linearly, preserving pretrained signal at the cost of a
+        # longer effective kernel lengthscale.
+        self.W_L = nn.Parameter(
+            torch.randn(num_random_features, in_features) * random_feature_init_std,
+            requires_grad=False,
+        )
         self.b_L = nn.Parameter(torch.empty(num_random_features).uniform_(0, 2 * math.pi), requires_grad=False)
 
         # Bayesian linear classifier - no bias (paper has no bias term;

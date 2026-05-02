@@ -358,6 +358,18 @@ def test_sngp_factory_defaults_match_imagenet_recipe() -> None:
     assert defaults["n_power_iterations"] == 1
     assert defaults["eps"] == 1e-12
     assert defaults["name"] == "weight"
+    assert defaults["random_feature_init_std"] == 1.0
+
+
+def test_sngp_layer_random_feature_init_std_scales_w_l() -> None:
+    """W_L's std should match the requested random_feature_init_std (paper default 1.0)."""
+    torch.manual_seed(0)
+    layer = SNGPLayer(in_features=64, num_classes=3, num_random_features=2048, random_feature_init_std=1.0)
+    assert abs(layer.W_L.std().item() - 1.0) < 0.05
+
+    torch.manual_seed(0)
+    layer_small = SNGPLayer(in_features=64, num_classes=3, num_random_features=2048, random_feature_init_std=0.05)
+    assert abs(layer_small.W_L.std().item() - 0.05) < 0.005
 
 
 import warnings  # noqa: E402

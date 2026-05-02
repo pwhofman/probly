@@ -19,6 +19,7 @@ from ._common import (
     NAME,
     NORM_MULTIPLIER,
     NUM_RANDOM_FEATURES,
+    RANDOM_FEATURE_INIT_STD,
     RIDGE_PENALTY,
     _collect_skipped_param_bearing_layer_classes,
     compute_categorical_sample_from_logits,
@@ -56,6 +57,7 @@ def replace_linear_with_sngp(obj: nn.Linear, state: State) -> tuple[nn.Module, S
             num_random_features=state[NUM_RANDOM_FEATURES],
             ridge_penalty=state[RIDGE_PENALTY],
             momentum=state[MOMENTUM],
+            random_feature_init_std=state[RANDOM_FEATURE_INIT_STD],
         ), state
     _register_spectral_norm(obj, state)
     return obj, state

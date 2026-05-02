@@ -38,6 +38,9 @@ NUM_RANDOM_FEATURES = GlobalVariable[int](
     "Dimensionality of the random Fourier feature map (D_L in the SNGP paper, Eq. 7). "
     "Independent of the replaced Linear's in_features. Default is 1024 (imagenet recipe).",
 )
+RANDOM_FEATURE_INIT_STD = GlobalVariable[float](
+    "RANDOM_FEATURE_INIT_STD", "Standard deviation of the Gaussian used to init the frozen random projection W_L. "
+)
 RIDGE_PENALTY = GlobalVariable[float](
     "RIDGE_PENALTY",
     "The ridge penalty to apply to the covariance matrix in the Gaussian process layer. Default is 1e-6.",
@@ -104,6 +107,7 @@ def sngp[**In, Out: GaussianDistribution](
     num_random_features: int = 1024,
     ridge_penalty: float = 1.0,
     momentum: float = -1.0,
+    random_feature_init_std: float = 1.0,
 ) -> SNGPPredictor[In, Out]:
     """Wrap a model with SNGP (Spectral-normalized Neural Gaussian Process).
 
@@ -136,6 +140,15 @@ def sngp[**In, Out: GaussianDistribution](
             epoch in this mode. Pass ``momentum > 0`` for EMA mode (no
             reset needed; matches the CLINC reference's
             ``gp_cov_momentum=0.999``).
+        random_feature_init_std: Standard deviation of the Gaussian used to
+            initialize the frozen random projection ``W_L``. Defaults to
+            ``1.0`` (paper / imagenet / Edward2; full RFF kernel
+            approximation, expects from-scratch training). Set to ``0.05``
+            (matching ``untangle.wrappers.sngp_wrapper``) when fine-tuning
+            from a pretrained backbone: keeps ``W_L^T h`` in the near-linear
+            regime of ``cos`` so pretrained-feature signal flows through
+            the RFF, at the cost of a longer effective kernel lengthscale
+            and weaker distance-aware uncertainty.
 
     Returns:
         An ``SNGPPredictor`` whose ``predict(...)`` returns a
@@ -155,6 +168,7 @@ def sngp[**In, Out: GaussianDistribution](
             NUM_RANDOM_FEATURES: num_random_features,
             RIDGE_PENALTY: ridge_penalty,
             MOMENTUM: momentum,
+            RANDOM_FEATURE_INIT_STD: random_feature_init_std,
         },
     )
     skipped = _collect_skipped_param_bearing_layer_classes(transformed)

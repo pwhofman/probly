@@ -6,6 +6,9 @@ params:
   num_random_features: 1024
   norm_multiplier: 6.0
   ridge_penalty: 1.0
+  # `random_feature_init_std` controls the std of the frozen random projection W_L: 1.0 for cifar10 (non-pretrained),
+  # 0.05 for pretrained imagenet
+  random_feature_init_std: 1.0
 
 selective_prediction:
   num_samples: 10
