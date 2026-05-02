@@ -1153,6 +1153,11 @@ def _(
     # swap to torch version of dataset for fit of laplace
     fit_loader = train_loader
     if cfg.dataset == "imagenet":
+        print(
+            "[laplace-fit] cfg.dataset='imagenet' uses webdataset, which doesn't satisfy "
+            "laplace-torch's `len(loader.dataset)` requirement, hence switching to the torchvision version. "
+            "Please consider whether splits are still correct."
+        )
         # swap to loader of torch
         fit_loader = data.get_data_train(
             "imagenet_torch",
