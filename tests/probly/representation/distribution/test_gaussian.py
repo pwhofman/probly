@@ -70,6 +70,25 @@ def test_array_properties() -> None:
     assert dist.__array_namespace__() is np
 
 
+def test_std() -> None:
+    """Test standard deviation calculation."""
+    dist = ArrayGaussianDistribution(np.array([0.0, 1.0]), np.array([1.0, 4.0]))
+
+    np.testing.assert_array_equal(dist.std, np.array([1.0, 2.0]))
+
+
+def test_quantile() -> None:
+    """Test Gaussian quantile calculation."""
+    dist = ArrayGaussianDistribution(np.array([0.0, 1.0]), np.array([1.0, 4.0]))
+
+    scalar_quantile = dist.quantile(0.5)
+    vector_quantile = dist.quantile(np.array([0.5, 0.8413447]))
+
+    np.testing.assert_allclose(scalar_quantile, dist.mean)
+    assert vector_quantile.shape == (2, 2)
+    np.testing.assert_allclose(vector_quantile[:, 0], dist.mean)
+
+
 def test_transpose_property() -> None:
     """Test the .T property."""
     mean = np.array([[1.0, 2.0], [3.0, 4.0]])
