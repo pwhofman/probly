@@ -42,6 +42,7 @@ from probly.method.evidential.classification import evidential_classification
 from probly.method.het_net import het_net
 from probly.method.natural_posterior_network import natural_posterior_network
 from probly.method.posterior_network import posterior_network
+from probly.method.sngp import sngp
 from probly.method.subensemble import subensemble
 from probly.traverse_nn.utils import get_output_dim
 from probly_benchmark import models
@@ -75,6 +76,7 @@ METHODS = {
     "credal_wrapper": credal_wrapper,
     "efficient_credal_prediction": efficient_credal_prediction,
     "het_net": het_net,
+    "sngp": sngp,
     "subensemble": subensemble,
 }
 

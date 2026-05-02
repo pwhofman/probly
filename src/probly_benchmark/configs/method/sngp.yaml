@@ -1,0 +1,15 @@
+# @package method
+name: "sngp"
+label: "SNGP"
+params:
+  # Imagenet-baseline defaults; see probly.method.sngp.sngp docstring for caveats.
+  num_inducing: 1024
+  norm_multiplier: 6.0
+  ridge_penalty: 1.0
+
+selective_prediction:
+  num_samples: 10
+ood_detection:
+  num_samples: 10
+active_learning:
+  num_samples: 10
