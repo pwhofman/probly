@@ -73,6 +73,10 @@ laplace = [
     "laplace-torch>=0.2.0",
     "curvlinops-for-pytorch>=2.0,<3.0"  # laplace-torch 0.2.2.2 imports curvlinops._base._LinearOperator, removed in 3.x
 ]
+bayesian_optimization = [
+    "botorch>=0.14.0",
+    "gpytorch>=1.14"
+]
 all_ml = [{ include-group = "torch" }, { include-group = "jax" }, { include-group = "sklearn" }, { include-group = "river" }, { include-group = "laplace" }]
 test = [
     "pytest>=8.3.5",       # for testing
