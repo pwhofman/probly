@@ -2,8 +2,8 @@
 name: "sngp"
 label: "SNGP"
 params:
-  # Imagenet-baseline defaults; see probly.method.sngp.sngp docstring for caveats.
-  num_inducing: 1024
+  # Imagenet/CLINC-baseline defaults; see probly.method.sngp.sngp docstring for caveats. Also works for CIFAR10
+  num_random_features: 1024
   norm_multiplier: 6.0
   ridge_penalty: 1.0
 

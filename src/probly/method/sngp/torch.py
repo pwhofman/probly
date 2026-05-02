@@ -18,7 +18,7 @@ from ._common import (
     N_POWER_ITERATIONS,
     NAME,
     NORM_MULTIPLIER,
-    NUM_INDUCING,
+    NUM_RANDOM_FEATURES,
     RIDGE_PENALTY,
     _collect_skipped_param_bearing_layer_classes,
     compute_categorical_sample_from_logits,
@@ -53,7 +53,7 @@ def replace_linear_with_sngp(obj: nn.Linear, state: State) -> tuple[nn.Module, S
         return SNGPLayer(
             in_features=obj.in_features,
             num_classes=obj.out_features,
-            num_inducing=state[NUM_INDUCING],
+            num_random_features=state[NUM_RANDOM_FEATURES],
             ridge_penalty=state[RIDGE_PENALTY],
             momentum=state[MOMENTUM],
         ), state

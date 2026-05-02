@@ -33,8 +33,10 @@ EPS = GlobalVariable[float](
     "EPS", "A small value to prevent division by zero in spectral normalization. Default is 1e-12."
 )
 
-NUM_INDUCING = GlobalVariable[int](
-    "NUM_INDUCING", "The number of inducing points to use for the Gaussian process layer. Default is 128."
+NUM_RANDOM_FEATURES = GlobalVariable[int](
+    "NUM_RANDOM_FEATURES",
+    "Dimensionality of the random Fourier feature map (D_L in the SNGP paper, Eq. 7). "
+    "Independent of the replaced Linear's in_features. Default is 1024 (imagenet recipe).",
 )
 RIDGE_PENALTY = GlobalVariable[float](
     "RIDGE_PENALTY",
@@ -99,7 +101,7 @@ def sngp[**In, Out: GaussianDistribution](
     n_power_iterations: int = 1,
     norm_multiplier: float = 6.0,
     eps: float = 1e-12,
-    num_inducing: int = 1024,
+    num_random_features: int = 1024,
     ridge_penalty: float = 1.0,
     momentum: float = -1.0,
 ) -> SNGPPredictor[In, Out]:
@@ -108,8 +110,8 @@ def sngp[**In, Out: GaussianDistribution](
     Replaces the last ``nn.Linear`` with an :class:`SNGPLayer` (random
     Fourier features + Laplace-approximated Gaussian process) and registers
     a spectral-norm parametrization on every preceding ``nn.Linear`` and
-    ``nn.Conv2d``. Defaults match the ImageNet ResNet-50 baseline at
-    ``google/uncertainty-baselines/baselines/imagenet/sngp.py``.
+    ``nn.Conv2d``. Defaults match the ImageNet ResNet-50
+    baseline at ``google/uncertainty-baselines/baselines/imagenet/sngp.py``.
 
     Args:
         base: The model to wrap.
@@ -123,8 +125,8 @@ def sngp[**In, Out: GaussianDistribution](
             applies its own Lipschitz scaling).
         eps: Small constant to stabilize the spectral-norm denominator.
             Defaults to 1e-12.
-        num_inducing: Number of random Fourier features in the GP layer.
-            Defaults to 1024.
+        num_random_features: Dimensionality of the random Fourier feature
+            map. Defaults to ``1024``.
         ridge_penalty: Ridge factor used inside the covariance inversion
             ``inv(ridge * I + precision)``. Defaults to 1.0.
         momentum: Discount factor for the precision-matrix update. Default
@@ -150,7 +152,7 @@ def sngp[**In, Out: GaussianDistribution](
             N_POWER_ITERATIONS: n_power_iterations,
             NORM_MULTIPLIER: norm_multiplier,
             EPS: eps,
-            NUM_INDUCING: num_inducing,
+            NUM_RANDOM_FEATURES: num_random_features,
             RIDGE_PENALTY: ridge_penalty,
             MOMENTUM: momentum,
         },

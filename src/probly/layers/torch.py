@@ -1697,7 +1697,7 @@ class SNGPLayer(nn.Module):
     ``baselines/imagenet/sngp.py`` reference implementation.
 
     Attributes:
-        num_inducing: Number of random Fourier features (``D_L`` in paper Eq. 7).
+        num_random_features: Dimensionality of the random Fourier feature map.
         ridge_penalty: Ridge factor used inside the covariance inversion
             ``inv(ridge * I + precision)``.
         momentum: Discount factor for the precision-matrix update. Negative
@@ -1721,7 +1721,7 @@ class SNGPLayer(nn.Module):
         self,
         in_features: int,
         num_classes: int,
-        num_inducing: int = 1024,
+        num_random_features: int,
         ridge_penalty: float = 1.0,
         momentum: float = -1.0,
     ) -> None:
@@ -1730,8 +1730,7 @@ class SNGPLayer(nn.Module):
         Args:
             in_features: Hidden dimension of the penultimate features.
             num_classes: Output dimensionality.
-            num_inducing: Number of random Fourier features. Defaults to 1024
-                to match the imagenet baseline.
+            num_random_features: Dimensionality of the random Fourier feature map.
             ridge_penalty: Ridge factor used inside the covariance inversion
                 ``inv(ridge * I + precision)``. Defaults to 1.0 (imagenet).
             momentum: Discount factor for the precision-matrix update. With
@@ -1747,29 +1746,29 @@ class SNGPLayer(nn.Module):
                 shrinks toward zero.
         """
         super().__init__()
-        self.num_inducing = num_inducing
+        self.num_random_features = num_random_features
         self.ridge_penalty = ridge_penalty
         self.momentum = momentum
 
         # Frozen Random Fourier Features (paper Eq. 7).
-        self.W_L = nn.Parameter(torch.randn(num_inducing, in_features), requires_grad=False)
-        self.b_L = nn.Parameter(torch.empty(num_inducing).uniform_(0, 2 * math.pi), requires_grad=False)
+        self.W_L = nn.Parameter(torch.randn(num_random_features, in_features), requires_grad=False)
+        self.b_L = nn.Parameter(torch.empty(num_random_features).uniform_(0, 2 * math.pi), requires_grad=False)
 
         # Bayesian linear classifier - no bias (paper has no bias term;
         # Edward2 default is gp_output_bias_trainable=False).
-        self.sngp = nn.Linear(num_inducing, num_classes, bias=False)
+        self.sngp = nn.Linear(num_random_features, num_classes, bias=False)
 
         # Precision matrix starts at zero. Ridge is added at inversion time.
-        self.register_buffer("precision_matrix", torch.zeros(num_inducing, num_inducing))
+        self.register_buffer("precision_matrix", torch.zeros(num_random_features, num_random_features))
         # Cached covariance: inv(ridge * I + 0) = I / ridge initially. Recomputed
         # lazily on the first eval-mode forward after a precision update.
-        self.register_buffer("covariance_matrix", torch.eye(num_inducing) / ridge_penalty)
+        self.register_buffer("covariance_matrix", torch.eye(num_random_features) / ridge_penalty)
         self.register_buffer("covariance_is_stale", torch.tensor(True))
 
     def compute_rff(self, x: torch.Tensor) -> torch.Tensor:
         """Compute Random Fourier Features (paper Eq. 7)."""
         projection = F.linear(x, self.W_L, self.b_L)
-        return torch.cos(projection) * math.sqrt(2.0 / self.num_inducing)
+        return torch.cos(projection) * math.sqrt(2.0 / self.num_random_features)
 
     def reset_precision_matrix(self) -> None:
         """Zero the precision matrix and mark the cached covariance stale.
@@ -1791,10 +1790,10 @@ class SNGPLayer(nn.Module):
         (paper Eq. 9) are not implemented.
 
         Args:
-            phi: Random Fourier features of shape ``(batch_size, num_inducing)``.
+            phi: Random Fourier features of shape ``(batch_size, num_random_features)``.
         """
         with torch.no_grad():
-            batch_update = phi.t() @ phi  # (num_inducing, num_inducing)
+            batch_update = phi.t() @ phi  # (num_random_features, num_random_features)
             if self.momentum > 0:
                 batch_size = phi.shape[0]
                 batch_update = batch_update / batch_size

@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 model = LeNet(n_classes=5)
-cep = sngp(model, num_inducing=64)
+cep = sngp(model, num_random_features=64)
 rep = representer(cep, num_samples=10)
 logger.info(rep)
 inputs = torch.randn(3, 1, 28, 28)

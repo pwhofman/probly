@@ -21,7 +21,7 @@ def _sngp_sample() -> TorchCategoricalDistributionSample:
         nn.ReLU(),
         nn.Linear(4, 3),
     )
-    predictor = sngp(model, num_inducing=128)
+    predictor = sngp(model, num_random_features=128)
     # Run a couple of training-mode forward passes so the precision matrix is
     # populated, then switch to eval mode to exercise the actual inference path.
     predictor.train()
@@ -146,31 +146,39 @@ def test_spectral_norm_warmup_initial_u_v_are_dominant_singular_vectors() -> Non
 from probly.layers.torch import SNGPLayer  # noqa: E402
 
 
-def test_sngp_layer_constructor_uses_imagenet_defaults() -> None:
-    layer = SNGPLayer(in_features=4, num_classes=3)
-    assert layer.num_inducing == 1024
+def test_sngp_layer_constructor_uses_imagenet_defaults_for_optional_args() -> None:
+    # `num_random_features` is required (no default) - the sngp(...) factory
+    # passes the replaced Linear's `in_features`. ridge_penalty and momentum
+    # carry the imagenet defaults.
+    layer = SNGPLayer(in_features=4, num_classes=3, num_random_features=8)
+    assert layer.num_random_features == 8
     assert layer.ridge_penalty == 1.0
     assert layer.momentum == -1.0
 
 
+def test_sngp_layer_constructor_requires_num_random_features() -> None:
+    with pytest.raises(TypeError, match="num_random_features"):
+        SNGPLayer(in_features=4, num_classes=3)  # ty: ignore[missing-argument]
+
+
 def test_sngp_layer_initializes_precision_to_zeros() -> None:
-    layer = SNGPLayer(in_features=4, num_classes=3, num_inducing=8)
+    layer = SNGPLayer(in_features=4, num_classes=3, num_random_features=8)
     assert torch.equal(layer.precision_matrix, torch.zeros(8, 8))
 
 
 def test_sngp_layer_initializes_covariance_buffer_and_stale_flag() -> None:
-    layer = SNGPLayer(in_features=4, num_classes=3, num_inducing=8, ridge_penalty=1.0)
+    layer = SNGPLayer(in_features=4, num_classes=3, num_random_features=8, ridge_penalty=1.0)
     assert layer.covariance_matrix.shape == (8, 8)
     assert bool(layer.covariance_is_stale) is True
 
 
 def test_sngp_layer_output_classifier_has_no_bias() -> None:
-    layer = SNGPLayer(in_features=4, num_classes=3, num_inducing=8)
+    layer = SNGPLayer(in_features=4, num_classes=3, num_random_features=8)
     assert layer.sngp.bias is None
 
 
 def test_sngp_layer_w_l_and_b_l_are_frozen() -> None:
-    layer = SNGPLayer(in_features=4, num_classes=3, num_inducing=8)
+    layer = SNGPLayer(in_features=4, num_classes=3, num_random_features=8)
     assert layer.W_L.requires_grad is False
     assert layer.b_L.requires_grad is False
     assert layer.W_L.shape == (8, 4)
@@ -178,7 +186,7 @@ def test_sngp_layer_w_l_and_b_l_are_frozen() -> None:
 
 
 def test_sngp_layer_train_mode_returns_placeholder_variance() -> None:
-    layer = SNGPLayer(in_features=4, num_classes=3, num_inducing=8, momentum=-1.0)
+    layer = SNGPLayer(in_features=4, num_classes=3, num_random_features=8, momentum=-1.0)
     layer.train()
     x = torch.randn(2, 4)
 
@@ -191,7 +199,7 @@ def test_sngp_layer_train_mode_returns_placeholder_variance() -> None:
 
 
 def test_sngp_layer_train_mode_accumulates_precision_matrix() -> None:
-    layer = SNGPLayer(in_features=4, num_classes=3, num_inducing=8, momentum=-1.0)
+    layer = SNGPLayer(in_features=4, num_classes=3, num_random_features=8, momentum=-1.0)
     layer.train()
     assert torch.equal(layer.precision_matrix, torch.zeros(8, 8))
 
@@ -207,7 +215,7 @@ def test_sngp_layer_train_mode_accumulates_precision_matrix() -> None:
 
 
 def test_sngp_layer_train_mode_marks_covariance_stale() -> None:
-    layer = SNGPLayer(in_features=4, num_classes=3, num_inducing=8, momentum=-1.0)
+    layer = SNGPLayer(in_features=4, num_classes=3, num_random_features=8, momentum=-1.0)
     layer.train()
     layer.covariance_is_stale.fill_(False)
 
@@ -217,7 +225,7 @@ def test_sngp_layer_train_mode_marks_covariance_stale() -> None:
 
 
 def test_sngp_layer_eval_mode_returns_meaningful_variance() -> None:
-    layer = SNGPLayer(in_features=4, num_classes=3, num_inducing=8, ridge_penalty=1.0)
+    layer = SNGPLayer(in_features=4, num_classes=3, num_random_features=8, ridge_penalty=1.0)
     # Run a few training steps so the precision matrix is populated.
     layer.train()
     for _ in range(3):
@@ -232,7 +240,7 @@ def test_sngp_layer_eval_mode_returns_meaningful_variance() -> None:
 
 
 def test_sngp_layer_eval_mode_clears_stale_flag() -> None:
-    layer = SNGPLayer(in_features=4, num_classes=3, num_inducing=8)
+    layer = SNGPLayer(in_features=4, num_classes=3, num_random_features=8)
     layer.eval()
     assert bool(layer.covariance_is_stale) is True
 
@@ -242,7 +250,7 @@ def test_sngp_layer_eval_mode_clears_stale_flag() -> None:
 
 
 def test_sngp_layer_eval_mode_lazy_covariance_refresh(monkeypatch) -> None:
-    layer = SNGPLayer(in_features=4, num_classes=3, num_inducing=8)
+    layer = SNGPLayer(in_features=4, num_classes=3, num_random_features=8)
     call_counter = {"n": 0}
     real_inv = torch.linalg.inv
 
@@ -263,7 +271,7 @@ def test_sngp_layer_eval_mode_lazy_covariance_refresh(monkeypatch) -> None:
 
 
 def test_sngp_layer_eval_variance_is_per_sample_broadcast_across_classes() -> None:
-    layer = SNGPLayer(in_features=4, num_classes=5, num_inducing=8)
+    layer = SNGPLayer(in_features=4, num_classes=5, num_random_features=8)
     layer.eval()
     _, variance = layer(torch.randn(3, 4))
 
@@ -273,7 +281,7 @@ def test_sngp_layer_eval_variance_is_per_sample_broadcast_across_classes() -> No
 
 
 def test_sngp_layer_ema_normalizes_by_batch_size() -> None:
-    layer = SNGPLayer(in_features=4, num_classes=3, num_inducing=8, momentum=0.5)
+    layer = SNGPLayer(in_features=4, num_classes=3, num_random_features=8, momentum=0.5)
     layer.train()
     phi_t = torch.randn(6, 8)
 
@@ -285,7 +293,7 @@ def test_sngp_layer_ema_normalizes_by_batch_size() -> None:
 
 
 def test_sngp_layer_ema_combines_old_and_new_precision() -> None:
-    layer = SNGPLayer(in_features=4, num_classes=3, num_inducing=8, momentum=0.9)
+    layer = SNGPLayer(in_features=4, num_classes=3, num_random_features=8, momentum=0.9)
     layer.train()
     phi_a = torch.randn(4, 8)
     phi_b = torch.randn(4, 8)
@@ -299,7 +307,7 @@ def test_sngp_layer_ema_combines_old_and_new_precision() -> None:
 
 
 def test_sngp_layer_reset_precision_matrix_zeros_state() -> None:
-    layer = SNGPLayer(in_features=4, num_classes=3, num_inducing=8)
+    layer = SNGPLayer(in_features=4, num_classes=3, num_random_features=8)
     layer.train()
     _ = layer(torch.randn(5, 4))
     assert not torch.equal(layer.precision_matrix, torch.zeros(8, 8))
@@ -315,7 +323,7 @@ from probly.method.sngp import reset_precision_matrix as reset_helper  # noqa: E
 
 def test_reset_precision_matrix_helper_walks_predictor() -> None:
     model = nn.Sequential(nn.Linear(2, 4), nn.ReLU(), nn.Linear(4, 3))
-    predictor = sngp(model, num_inducing=128)
+    predictor = sngp(model, num_random_features=128)
     predictor.train()
     _ = predictor(torch.randn(5, 2))
 
@@ -343,7 +351,7 @@ def test_sngp_factory_defaults_match_imagenet_recipe() -> None:
     sig = inspect.signature(sngp)
     defaults = {name: p.default for name, p in sig.parameters.items() if p.default is not inspect.Parameter.empty}
 
-    assert defaults["num_inducing"] == 1024
+    assert defaults["num_random_features"] == 1024
     assert defaults["norm_multiplier"] == 6.0
     assert defaults["ridge_penalty"] == 1.0
     assert defaults["momentum"] == -1.0
@@ -363,7 +371,7 @@ def test_sngp_warns_on_skipped_param_bearing_layer_types() -> None:
     )
 
     with pytest.warns(UserWarning, match="LSTM"):
-        sngp(model, num_inducing=64)
+        sngp(model)
 
 
 def test_sngp_silent_for_pure_linear_conv2d_norm_models() -> None:
@@ -380,4 +388,4 @@ def test_sngp_silent_for_pure_linear_conv2d_norm_models() -> None:
 
     with warnings.catch_warnings():
         warnings.simplefilter("error")  # turn any warning into an exception
-        sngp(model, num_inducing=64)
+        sngp(model)
