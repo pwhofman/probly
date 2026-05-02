@@ -21,7 +21,7 @@ DATASETS = {
     "cifar10": DatasetMeta(num_classes=10, input_dim=(32, 32, 3), base_model="resnet18"),
     "fashion_mnist": DatasetMeta(num_classes=10, input_dim=(28, 28, 1), base_model="lenet"),
     "imagenet": _IMAGENET_META,
-    "imagenet_shards": _IMAGENET_META,
+    "imagenet_torch": _IMAGENET_META,
 }
 
 # Active learning datasets keyed by Hydra config name (al_dataset/*.yaml).

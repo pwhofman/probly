@@ -16,7 +16,7 @@ from torchvision import datasets, transforms
 import torchvision.transforms.v2 as T
 import webdataset as wds
 
-from probly_benchmark.paths import DATA_PATH, IMAGENET_SHARD_PATH
+from probly_benchmark.paths import DATA_PATH, IMAGENET_SHARD_PATH, IMAGENET_TORCH_PATH
 
 # Ignore a warning from WebDataset about the use of length
 warnings.filterwarnings("ignore", message=".*with_length\\(\\).*")
@@ -339,6 +339,14 @@ def get_data_train(
                 prefetch_factor=kwargs.get("prefetch_factor", 4),
                 seed=seed,
             )
+        case "imagenet_torch":
+            train = torchvision.datasets.ImageNet(
+                root=IMAGENET_TORCH_PATH,
+                split="train",
+                transform=TRANSFORMS_TEST["imagenet"],
+            )
+            train_loader = DataLoader(train, **kwargs)
+            return DataLoaders(train_loader, None, None, None)  # ty: ignore
         case _:
             msg = f"Dataset {name} not recognized"
             raise ValueError(msg)

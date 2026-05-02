@@ -1150,7 +1150,23 @@ def _(
         train_fn=train_epoch_cross_entropy,
         val_fn=validate_cross_entropy,
     )
-    model.fit(train_loader)
+    # swap to torch version of dataset for fit of laplace
+    fit_loader = train_loader
+    if cfg.dataset == "imagenet":
+        # swap to loader of torch
+        fit_loader = data.get_data_train(
+            "imagenet_torch",
+            cfg.seed,
+            val_split=cfg.val_split,
+            cal_split=cfg.get("cal_split", 0.0),
+            batch_size=cfg.batch_size,
+            num_workers=cfg.num_workers,
+            pin_memory=cfg.pin_memory,
+            persistent_workers=cfg.persistent_workers,
+            prefetch_factor=cfg.get("prefetch_factor", 4),
+            shuffle=True,
+        ).train
+    model.fit(fit_loader)
     run.summary["laplace_fitted"] = True
     if train_kwargs.get("optimize_prior", False):
         # ``pred_type`` is required by laplace-torch's signature but unused when ``method='marglik'``
