@@ -97,6 +97,14 @@ class TorchConvexCredalSet(
         """Get the number of classes."""
         return self.tensor.num_classes
 
+    def lower(self) -> torch.Tensor:
+        """Return the element-wise lower probabilities of the credal set."""
+        return self.tensor.probabilities.min(dim=-2).values
+
+    def upper(self) -> torch.Tensor:
+        """Return the element-wise upper probabilities of the credal set."""
+        return self.tensor.probabilities.max(dim=-2).values
+
     @override
     @property
     def barycenter(self) -> TorchCategoricalDistribution:

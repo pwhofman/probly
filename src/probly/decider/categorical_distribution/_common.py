@@ -20,6 +20,17 @@ def categorical_from_mean(representation: Representation) -> CategoricalDistribu
     raise NotImplementedError(msg)
 
 
+@flexdispatch
+def categorical_from_maximin(representation: Representation) -> CategoricalDistribution:
+    """Create a one-hot categorical distribution via the maximin decision rule.
+
+    For each batch element, the maximin rule selects the class whose lower probability is highest,
+    returning a degenerate categorical distribution that puts mass one on that class.
+    """
+    msg = f"categorical_from_maximin decider not supported for {type(representation).__name__}."
+    raise NotImplementedError(msg)
+
+
 @categorical_from_mean.register(CategoricalDistribution)
 def _(distribution: CategoricalDistribution) -> CategoricalDistribution:
     return distribution
