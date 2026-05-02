@@ -3,7 +3,13 @@
 from probly.method.batchensemble import batchensemble
 from probly.method.bayesian import bayesian
 from probly.method.cast import cast
-from probly.method.conformal_credal_set import conformal_total_variation
+from probly.method.conformal_credal_set import (
+    conformal_dirichlet_relative_likelihood,
+    conformal_inner_product,
+    conformal_kullback_leibler,
+    conformal_total_variation,
+    conformal_wasserstein_distance,
+)
 from probly.method.credal_bnn import credal_bnn
 from probly.method.credal_ensembling import credal_ensembling
 from probly.method.credal_relative_likelihood import credal_relative_likelihood
@@ -25,7 +31,11 @@ __all__ = [
     "batchensemble",
     "bayesian",
     "cast",
+    "conformal_dirichlet_relative_likelihood",
+    "conformal_inner_product",
+    "conformal_kullback_leibler",
     "conformal_total_variation",
+    "conformal_wasserstein_distance",
     "credal_bnn",
     "credal_ensembling",
     "credal_relative_likelihood",

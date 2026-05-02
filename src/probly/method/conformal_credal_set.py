@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from probly.transformation.conformal_credal_set_prediction import (
+from probly.transformation.conformal_credal_set import (
     ConformalCredalSetPredictor,
     DirichletConformalCredalSetPredictor,
     conformal_credal_set_generator,
