@@ -1,6 +1,6 @@
-"""=============================================
-Active Learning with PyTorch — BADGE Selection
-=============================================
+"""============================================================
+Active Learning with PyTorch - BADGE Selection
+============================================================
 
 Demonstrate the :class:`~probly.evaluation.active_learning.BADGEQuery`
 strategy using a PyTorch MLP on the Digits dataset.
