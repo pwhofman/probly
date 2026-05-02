@@ -69,6 +69,25 @@ def test_torch_properties() -> None:
     assert dist.ndim == 2
 
 
+def test_std() -> None:
+    """Test standard deviation calculation."""
+    dist = TorchGaussianDistribution(torch.tensor([0.0, 1.0]), torch.tensor([1.0, 4.0]))
+
+    torch.testing.assert_close(dist.std, torch.tensor([1.0, 2.0]))
+
+
+def test_quantile() -> None:
+    """Test Gaussian quantile calculation."""
+    dist = TorchGaussianDistribution(torch.tensor([0.0, 1.0]), torch.tensor([1.0, 4.0]))
+
+    scalar_quantile = dist.quantile(0.5)
+    vector_quantile = dist.quantile(torch.tensor([0.5, 0.8413447]))
+
+    torch.testing.assert_close(scalar_quantile, dist.mean)
+    assert vector_quantile.shape == (2, 2)
+    torch.testing.assert_close(vector_quantile[:, 0], dist.mean)
+
+
 def test_transpose_property() -> None:
     """Test the .T property."""
     mean = torch.tensor([[1.0, 2.0], [3.0, 4.0]])

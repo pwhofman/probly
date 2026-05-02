@@ -63,6 +63,7 @@ autoclass_content = "both"  # class docstring AND __init__ docstring
 autodoc_typehints = "signature"  # show type hints only in the signature,
 # Only show types for parameters that are actually documented
 autodoc_typehints_description_target = "documented_params"  # only params that are actually documented
+napoleon_use_ivar = True
 autodoc_default_options = {
     "members": True,
     "undoc-members": True,

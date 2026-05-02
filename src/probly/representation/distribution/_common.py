@@ -121,6 +121,15 @@ class GaussianDistribution[D](Distribution[D], ABC):
     def var(self) -> D:
         """Get the var parameters."""
 
+    @property
+    @abstractmethod
+    def std(self) -> D:
+        """Get the standard deviation."""
+
+    @abstractmethod
+    def quantile(self, q: float | list[float] | Any) -> Any:  # noqa: ANN401
+        """Calculate the quantile function at the given points."""
+
 
 class GaussianDistributionSample[T: GaussianDistribution](DistributionSample[T]):
     """Sample type for empirical second-order Gaussian distributions."""
