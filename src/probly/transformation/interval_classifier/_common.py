@@ -27,6 +27,7 @@ class IntervalClassifierPredictor[**In, Out: ProbabilityIntervalsCredalSet](Repr
 
 
 REPLACED = GlobalVariable[bool]("REPLACED", default=False)
+USE_BASE_WEIGHTS = GlobalVariable[bool]("USE_BASE_WEIGHTS", default=False)
 
 interval_classifier_traverser = flexdispatch_traverser[object](name="interval_classifier_traverser")
 
@@ -38,6 +39,7 @@ interval_classifier_traverser = flexdispatch_traverser[object](name="interval_cl
 @IntervalClassifierPredictor.register_factory
 def interval_classifier[**In, Out: ProbabilityIntervalsCredalSet](
     base: Predictor[In, Out],
+    use_base_weights: bool = USE_BASE_WEIGHTS.default,
 ) -> IntervalClassifierPredictor[In, Out]:
     """Create an interval classifier from a base classifier.
 
@@ -50,6 +52,11 @@ def interval_classifier[**In, Out: ProbabilityIntervalsCredalSet](
     Args:
         base: Base predictor; must be a ``ProbabilisticClassifier`` or
             ``LogitClassifier``.
+        use_base_weights: If True, copy each replaced layer's weights, biases
+            and (for BatchNorm) running statistics into the new layer's
+            ``center_*`` slots. The radius parameters keep their fresh
+            initialization. If False, every interval layer starts from
+            scratch (matching how methods like dropout behave by default).
 
     Returns:
         The transformed interval classifier predictor.
@@ -59,7 +66,9 @@ def interval_classifier[**In, Out: ProbabilityIntervalsCredalSet](
             to replace.
     """
     new_model, final_state = traverse_with_state(
-        base, nn_compose(interval_classifier_traverser), init={REPLACED: False, TRAVERSE_REVERSED: True}
+        base,
+        nn_compose(interval_classifier_traverser),
+        init={REPLACED: False, USE_BASE_WEIGHTS: use_base_weights, TRAVERSE_REVERSED: True},
     )
     if not final_state[REPLACED]:
         msg = (
