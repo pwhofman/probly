@@ -15,14 +15,13 @@ from .decomposition import (
     AleatoricEpistemicTotalDecomposition,
     CachingDecomposition,
     CredalSetEntropyDecomposition,
-    DDUDensityDecomposition,
     Decomposition,
     EpistemicDecomposition,
     SecondOrderEntropyDecomposition,
     SecondOrderZeroOneDecomposition,
     TotalDecomposition,
 )
-from .measure import measure_sample_variance
+from .measure import measure_conformal_set_size, measure_sample_variance
 from .notion import (
     AleatoricUncertainty,
     EpistemicUncertainty,
@@ -40,7 +39,6 @@ __all__ = [
     "AleatoricUncertainty",
     "CachingDecomposition",
     "CredalSetEntropyDecomposition",
-    "DDUDensityDecomposition",
     "Decomposition",
     "EpistemicDecomposition",
     "EpistemicUncertainty",
@@ -54,6 +52,7 @@ __all__ = [
     "decompose",
     "measure",
     "measure_atomic",
+    "measure_conformal_set_size",
     "measure_sample_variance",
     "notion_registry",
     "quantify",

@@ -1,0 +1,11 @@
+defaults:
+  - comparison: ???
+  - _self_
+
+wandb:
+  entity: "probly"
+  project: "test"
+
+filename_prefix: "sp_arc"
+seeds: [1, 2, 3]
+show: false

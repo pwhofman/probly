@@ -1,0 +1,6 @@
+# @package conformal
+name: "conformal_raps"
+alpha: 0.1
+params:
+    lambda_reg: 0.1
+    k_reg: 5

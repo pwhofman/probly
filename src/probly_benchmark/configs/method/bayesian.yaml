@@ -1,5 +1,6 @@
 # @package method
 name: "bayesian"
+label: "BNN (MFVI)"
 params:
   posterior_std: 0.002
   prior_mean: 0.0
@@ -11,3 +12,5 @@ params:
   use_base_weights: true
 train:
   samples: 1
+active_learning:
+  num_samples: 50

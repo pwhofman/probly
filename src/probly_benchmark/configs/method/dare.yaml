@@ -1,5 +1,6 @@
 # @package method
 name: "dare"
+label: "DARE"
 params:
   num_members: 10
   reset_params: true

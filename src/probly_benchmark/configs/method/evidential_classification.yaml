@@ -1,5 +1,6 @@
 # @package method
 name: "evidential_classification"
+label: "Evidential"
 train:
   loss: "mse"              # one of: "mse", "ce", "log"
   kl_weight: 1.0           # final KL weight after annealing

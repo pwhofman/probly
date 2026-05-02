@@ -1,0 +1,10 @@
+# @package _global_
+recipe: "resnet50_imagenet"
+filename: "iamgenet_all_methods.pdf"
+
+methods:
+    -   name: "dropconnect"
+    -   name: "dropout"
+    -   name: "ensemble"
+    #-   name: "credal_wrapper"
+    #-   name: "credal_ensembling"

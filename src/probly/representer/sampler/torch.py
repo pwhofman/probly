@@ -29,10 +29,7 @@ def register_forced_train_mode(cls: LazyType) -> None:
     This enables Monte Carlo sampling techniques like MC Dropout :cite:`galDropoutBayesian2016` or DropConnect :cite:
     `mobinyDropConnectEffective2019`.
     """
-    sampling_preparation_traverser.register(
-        cls,
-        _enforce_train_mode,
-    )
+    sampling_preparation_traverser.register(cls, _enforce_train_mode)
 
 
 register_forced_train_mode(

@@ -1,0 +1,3 @@
+# @package supervised_loss
+name: "cross_entropy"
+params: {}

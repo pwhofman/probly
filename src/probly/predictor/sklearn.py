@@ -20,7 +20,6 @@ from ._common import (
 )
 
 GaussianDistributionPredictor.register(GaussianProcessRegressor)
-
 LogitDistributionPredictor.register(GaussianProcessClassifier)
 
 _SAFE_DECISION_FUNCTION_TYPES = (

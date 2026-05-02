@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
+from laplace.baselaplace import BaseLaplace
 import torch
 from torch import nn, optim
 from torch.amp import GradScaler, autocast
@@ -11,24 +12,27 @@ import torch.nn.functional as F
 
 from flextype import flexdispatch
 from probly.method.batchensemble import BatchEnsemblePredictor
-from probly.method.batchensemble.torch import tile_inputs as tile_be_inputs
 from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
+from probly.method.credal_net import CredalNetPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
 from probly.method.dropconnect import DropConnectPredictor
 from probly.method.dropout import DropoutPredictor
+from probly.method.duq import DUQPredictor
 from probly.method.efficient_credal_prediction import EfficientCredalPredictor
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.evidential.classification import EvidentialClassificationPredictor
-from probly.method.het_nets import HetNetsPredictor
+from probly.method.het_net import HetNetPredictor
 from probly.method.natural_posterior_network import NaturalPosteriorNetworkPredictor
 from probly.method.posterior_network import PosteriorNetworkPredictor
 from probly.method.subensemble import SubensemblePredictor
+from probly.predictor import predict_raw
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
-from probly.train.calibration.torch import ExpectedCalibrationError
+from probly.train.calibration.torch import ExpectedCalibrationError, LabelRelaxationLoss, LabelSmoothingLoss
+from probly.train.credal.torch import intersection_probability_ce_loss
 from probly.train.dare.torch import dare_regularizer
 from probly.train.evidential.torch import (
     evidential_ce_loss,
@@ -37,6 +41,9 @@ from probly.train.evidential.torch import (
     evidential_mse_loss,
     postnet_loss,
 )
+from probly.transformation.batchensemble.torch import tile_inputs as tile_be_inputs
+from probly.utils.torch import intersection_probability
+from probly_benchmark.base import BasePredictor
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
@@ -49,6 +56,25 @@ EVIDENTIAL_LOSSES = {
     "ce": evidential_ce_loss,
     "log": evidential_log_loss,
 }
+
+
+def _get_supervised_criterion(supervised_loss: dict[str, Any] | None = None) -> nn.Module:
+    """Build the training criterion for CE-compatible supervised classifiers."""
+    if supervised_loss is None:
+        return nn.CrossEntropyLoss()
+    name = supervised_loss.get("name", "cross_entropy").lower()
+    params = dict(supervised_loss.get("params") or {})
+    match name:
+        case "cross_entropy":
+            params.pop("alpha", None)
+            return nn.CrossEntropyLoss(**params)
+        case "label_relaxation":
+            return LabelRelaxationLoss(**params)
+        case "label_smoothing":
+            return LabelSmoothingLoss(**params)
+        case _:
+            msg = f"Unknown supervised loss: {name}"
+            raise ValueError(msg)
 
 
 def _evidential_lambda_t(kl_weight: float, annealing_epochs: int, epoch: int) -> float:
@@ -113,16 +139,17 @@ def train_epoch_batchensemble(
     grad_clip_norm: float | None = None,
     amp_enabled: bool = False,
     scaler: GradScaler | None = None,
+    supervised_loss: dict[str, Any] | None = None,
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> torch.Tensor | float:
-    """Train a BatchEnsemble predictor for one step with per-member cross-entropy on a tiled batch.
+    """Train a BatchEnsemble predictor for one step with the configured supervised loss.
 
     Mirrors the imagenet baseline: tile ``inputs`` by ``num_members``, run the forward,
-    take mean CE on the ``[E*B, num_classes]`` output. Called directly (not via ``predict``)
-    so the loss operates on a plain tensor.
+    take the mean supervised loss on the ``[E*B, num_classes]`` output. Called directly
+    (not via ``predict``) so the loss operates on a plain tensor.
     """
     num_members = int(model.num_members)  # ty: ignore[unresolved-attribute]
-    criterion = nn.CrossEntropyLoss()
+    criterion = _get_supervised_criterion(supervised_loss)
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
         inputs_tiled = torch.tile(inputs, (num_members,) + (1,) * (inputs.dim() - 1))
@@ -143,7 +170,7 @@ def train_epoch_batchensemble(
     return loss.item()
 
 
-@train_epoch.register((DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetsPredictor))
+@train_epoch.register((BasePredictor, DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor))
 def train_epoch_cross_entropy(
     model: Predictor,
     inputs: torch.Tensor,
@@ -152,14 +179,54 @@ def train_epoch_cross_entropy(
     grad_clip_norm: float | None = None,
     amp_enabled: bool = False,
     scaler: GradScaler | None = None,
+    supervised_loss: dict[str, Any] | None = None,
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> torch.Tensor | float:
-    """Train a stochastic NN (dropout/dropconnect) for one epoch with cross-entropy."""
-    criterion = nn.CrossEntropyLoss()
+    """Train a stochastic NN with the configured CE-compatible supervised loss."""
+    criterion = _get_supervised_criterion(supervised_loss)
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
         outputs = model(inputs)  # ty: ignore[call-non-callable]
         loss = criterion(outputs, targets)
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        optimizer.step()
+    return loss.item()
+
+
+@train_epoch.register(HetNetPredictor)
+def train_epoch_het_net(
+    model: Predictor,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    samples: int = 1,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> float:
+    """Train a HetNets predictor by averaging softmax probabilities over MC samples.
+
+    Each forward pass draws a fresh noise sample from the heteroscedastic layer.
+    Averaging S such samples before computing NLL loss reduces gradient variance
+    compared to a single-sample estimate, following :cite:`collier2021hetnets`.
+    """
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        avg_probs = torch.stack(
+            [F.softmax(model(inputs), dim=1) for _ in range(samples)]  # ty: ignore[call-non-callable]
+        ).mean(0)
+        loss = F.nll_loss(avg_probs.log(), targets)
     if scaler is not None:
         scaler.scale(loss).backward()
         if grad_clip_norm is not None:
@@ -313,21 +380,57 @@ def _(
     lambda_t = _evidential_lambda_t(kl_weight, annealing_epochs, epoch)
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
-        alpha = model(inputs)  # ty: ignore[call-non-callable]
+        alpha = model(inputs)
         loss_val = base_loss_fn(alpha, targets) + lambda_t * evidential_kl_divergence(alpha, targets)
     if scaler is not None:
         scaler.scale(loss_val).backward()
         if grad_clip_norm is not None:
             scaler.unscale_(optimizer)
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
         scaler.step(optimizer)
         scaler.update()
     else:
         loss_val.backward()
         if grad_clip_norm is not None:
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
         optimizer.step()
     return loss_val.item()
+
+
+@train_epoch.register(CredalNetPredictor)
+def _(
+    model: CredalNetPredictor,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> torch.Tensor | float:
+    """Train a credal net for one step with the intersection-probability cross-entropy loss.
+
+    Reference:
+        Wang et al., "Credal-Set Interval Neural Networks", 2024.
+        https://arxiv.org/abs/2401.05043
+    """
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        output = predict_raw(model, inputs)
+        loss = intersection_probability_ce_loss(output, targets)
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        optimizer.step()
+    return loss.item()
 
 
 @train_epoch.register(DDUPredictor)
@@ -367,6 +470,96 @@ def train_epoch_ddu(
         if grad_clip_norm is not None:
             nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
         optimizer.step()
+    return loss.item()
+
+
+def _duq_bce_loss(kernel_values: torch.Tensor, targets_onehot: torch.Tensor) -> torch.Tensor:
+    r"""Binary cross-entropy on per-class RBF kernel values.
+
+    Each kernel value :math:`K_c(x) \in [0, 1]` is treated as an independent
+    Bernoulli probability and compared against the one-hot target. Matches the
+    reference DUQ training objective :cite:`vanamersfoortDUQ2020`.
+    """
+    return F.binary_cross_entropy(kernel_values, targets_onehot, reduction="mean")
+
+
+def _duq_gradient_penalty(inputs: torch.Tensor, kernel_values: torch.Tensor) -> torch.Tensor:
+    r"""Two-sided gradient penalty :math:`(\|\nabla_x \sum_c K_c(x)\|_2 - 1)^2`.
+
+    ``inputs`` must have ``requires_grad=True`` and the forward pass that
+    produced ``kernel_values`` must be part of the active autograd graph.
+    """
+    gradients = torch.autograd.grad(
+        outputs=kernel_values,
+        inputs=inputs,
+        grad_outputs=torch.ones_like(kernel_values),
+        create_graph=True,
+        retain_graph=True,
+    )[0]
+    flat_gradients = gradients.flatten(start_dim=1)
+    grad_norm = flat_gradients.norm(2, dim=1)
+    return ((grad_norm - 1.0) ** 2).mean()
+
+
+@train_epoch.register(DUQPredictor)
+def train_epoch_duq(
+    model: nn.Module,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,  # noqa: ARG001
+    gradient_penalty: float = 0.5,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> torch.Tensor | float:
+    """Train a DUQ predictor for one step :cite:`vanamersfoortDUQ2020`.
+
+    Combines binary cross-entropy on the per-class kernel values with the
+    two-sided input-gradient penalty, then performs an EMA update of the class
+    centroids using the same batch. When ``amp_enabled`` is ``True``, the
+    forward pass runs under ``bfloat16`` autocast (no loss scaling needed).
+    ``fp16`` autocast is not used because ``GradScaler`` is incompatible with
+    the second-order graph required by the gradient penalty. The loss returned
+    is the BCE component only so the logged training loss stays comparable to
+    other methods.
+
+    Args:
+        model: DUQ predictor.
+        inputs: Input batch.
+        targets: Integer class labels of shape ``(batch,)``.
+        optimizer: Optimizer to step.
+        grad_clip_norm: Optional gradient clipping norm.
+        amp_enabled: When ``True``, wraps the forward pass in ``bfloat16``
+            autocast. Requires a GPU with native bf16 support (e.g. H200, B200).
+        scaler: Ignored. Retained for API compatibility with other training
+            functions; DUQ does not use loss scaling.
+        gradient_penalty: Coefficient ``lambda`` for the gradient penalty.
+            ``0.0`` disables the penalty (and the second-order graph).
+        **kwargs: Forwarded by the training loop and ignored here.
+    """
+    model_ = cast("Any", model)
+    num_classes = int(model_.centroid_head.num_classes)
+    targets_onehot = F.one_hot(targets, num_classes).float()
+
+    use_gp = gradient_penalty > 0.0
+    if use_gp:
+        inputs = inputs.detach().requires_grad_(True)
+
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, dtype=torch.bfloat16, enabled=amp_enabled):
+        kernel_values = model(inputs)
+        loss = _duq_bce_loss(kernel_values, targets_onehot)
+        total = loss + gradient_penalty * _duq_gradient_penalty(inputs, kernel_values) if use_gp else loss
+
+    total.backward()
+    if grad_clip_norm is not None:
+        nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+    optimizer.step()
+
+    # EMA update of class centroids using the (now-updated) encoder.
+    inputs_for_update = inputs.detach()
+    model_.update_centroids(inputs_for_update, targets_onehot)
     return loss.item()
 
 
@@ -440,7 +633,7 @@ def validate_batchensemble(
     return val_loss, val_acc
 
 
-@validate.register((DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetsPredictor))
+@validate.register((BasePredictor, DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetPredictor))
 @torch.no_grad()
 def validate_cross_entropy(
     model: Predictor,
@@ -537,17 +730,46 @@ def _(
     """Validate an evidential classifier using the same loss as training at the current epoch."""
     base_loss_fn = EVIDENTIAL_LOSSES[loss]
     lambda_t = _evidential_lambda_t(kl_weight, annealing_epochs, epoch)
-    model.eval()  # ty: ignore[unresolved-attribute]
+    model.eval()
     val_loss = 0.0
     val_acc = 0.0
     num_instances = 0
     for inputs_, targets_ in val_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            alpha = model(inputs)  # ty: ignore[call-non-callable]
+            alpha = model(inputs)
             batch_loss = base_loss_fn(alpha, targets) + lambda_t * evidential_kl_divergence(alpha, targets)
         val_loss += batch_loss.item()
         val_acc += _accuracy(alpha, targets) * inputs.shape[0]
+        num_instances += inputs.shape[0]
+    val_loss /= len(val_loader)
+    val_acc /= num_instances
+    return val_loss, val_acc
+
+
+@validate.register(CredalNetPredictor)
+@torch.no_grad()
+def _(
+    model: CredalNetPredictor,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> tuple[float, float]:
+    """Validate a credal net."""
+    model.eval()
+    val_loss = 0.0
+    val_acc = 0.0
+    num_instances = 0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            output = predict_raw(model, inputs)
+            batch_loss = intersection_probability_ce_loss(output, targets)
+            n_classes = output.shape[-1] // 2
+            q_int = intersection_probability(output[..., :n_classes], output[..., n_classes:])
+        val_loss += batch_loss.item()
+        val_acc += _accuracy(q_int, targets) * inputs.shape[0]
         num_instances += inputs.shape[0]
     val_loss /= len(val_loader)
     val_acc /= num_instances
@@ -578,6 +800,35 @@ def validate_ddu(
             val_loss += criterion(logits, targets).item()
             val_acc += _accuracy(logits, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
+    val_loss /= len(val_loader)
+    val_acc /= num_instances
+    return val_loss, val_acc
+
+
+@validate.register(DUQPredictor)
+@torch.no_grad()
+def validate_duq(
+    model: nn.Module,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> tuple[float, float]:
+    """Validate a DUQ predictor with BCE on kernel values and argmax accuracy."""
+    model_ = cast("Any", model)
+    num_classes = int(model_.centroid_head.num_classes)
+    model_.eval()
+    val_loss = 0.0
+    val_acc = 0.0
+    num_instances = 0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            kernel_values = model(inputs)
+            targets_onehot = F.one_hot(targets, num_classes).float()
+            val_loss += _duq_bce_loss(kernel_values, targets_onehot).item()
+        val_acc += _accuracy(kernel_values, targets) * inputs.shape[0]
+        num_instances += inputs.shape[0]
     val_loss /= len(val_loader)
     val_acc /= num_instances
     return val_loss, val_acc
@@ -627,7 +878,7 @@ def _(
     return _compute_metrics(probs, labels, n_bins)
 
 
-@evaluate.register((EfficientCredalPredictor, HetNetsPredictor))
+@evaluate.register((BasePredictor, EfficientCredalPredictor, HetNetPredictor))
 @torch.no_grad()
 def evaluate_single_model(
     model: Predictor,
@@ -762,13 +1013,13 @@ def _(
 
     Uses the mean of the predicted Dirichlet (alpha / alpha.sum) as class probabilities.
     """
-    model.eval()  # ty: ignore[unresolved-attribute]
+    model.eval()
     all_probs: list[torch.Tensor] = []
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in test_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            alpha = model(inputs)  # ty: ignore[call-non-callable]
+            alpha = model(inputs)
             probs_ = alpha / alpha.sum(dim=1, keepdim=True)
         all_probs.append(probs_)
         all_labels.append(targets)
@@ -776,6 +1027,66 @@ def _(
     probs = torch.cat(all_probs)
     labels = torch.cat(all_labels)
 
+    return _compute_metrics(probs, labels, n_bins)
+
+
+@evaluate.register(CredalNetPredictor)
+@torch.no_grad()
+def _(
+    model: CredalNetPredictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate a credal net on accuracy/NLL/ECE using the intersection probability."""
+    model.eval()
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            output = predict_raw(model, inputs)
+            n_classes = output.shape[-1] // 2
+            q_int = intersection_probability(output[..., :n_classes], output[..., n_classes:])
+        all_probs.append(q_int)
+        all_labels.append(targets)
+
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
+
+    return _compute_metrics(probs, labels, n_bins)
+
+
+@evaluate.register(BaseLaplace)
+@torch.no_grad()
+def evaluate_laplace(
+    model: BaseLaplace,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    pred_type: str = "glm",
+    link_approx: str = "probit",
+    n_samples: int = 100,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate a fitted Laplace predictor via the closed-form GLM (or NN MC) predictive distribution."""
+    if model.n_data == 0:
+        msg = "Laplace approximation is not fitted; .fit(loader) must run before evaluate."
+        raise RuntimeError(msg)
+    model.model.eval()
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            probs = model(inputs, pred_type=pred_type, link_approx=link_approx, n_samples=n_samples)
+        all_probs.append(probs)  # ty: ignore[invalid-argument-type]
+        all_labels.append(targets)
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
     return _compute_metrics(probs, labels, n_bins)
 
 
@@ -802,6 +1113,40 @@ def evaluate_ddu(
             features = model.encoder(inputs)  # ty:ignore[call-non-callable]
             logits = model.classification_head(features)  # ty:ignore[call-non-callable]
         all_probs.append(F.softmax(logits, dim=1))
+        all_labels.append(targets)
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
+    return _compute_metrics(probs, labels, n_bins)
+
+
+@evaluate.register(DUQPredictor)
+@torch.no_grad()
+def evaluate_duq(
+    model: nn.Module,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate a DUQ predictor on the test set.
+
+    Per-class kernel values are normalised to a categorical distribution so the
+    standard accuracy / NLL / ECE metrics can be reused. Argmax (and therefore
+    accuracy) is unaffected by this rescaling; NLL/ECE are reported as
+    informative diagnostics rather than the headline DUQ uncertainty score.
+    """
+    model.eval()
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            kernel_values = model(inputs)
+            probs = kernel_values / kernel_values.sum(dim=-1, keepdim=True).clamp(
+                min=torch.finfo(kernel_values.dtype).eps
+            )
+        all_probs.append(probs)
         all_labels.append(targets)
     probs = torch.cat(all_probs)
     labels = torch.cat(all_labels)

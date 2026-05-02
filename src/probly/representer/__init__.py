@@ -1,23 +1,22 @@
 """Representation builders that create representations from predictor outputs."""
 
-from ._representer import Representer, representer
-from .credal_ensembler import (
-    CredalBNNRepresenter,
-    CredalEnsemblingRepresenter,
-    CredalRelativeLikelihoodRepresenter,
-    CredalWrapperRepresenter,
+from ._representer import DummyRepresenter, Representer, representer
+from .credal_set import (
+    ConvexCredalSetRepresenter,
+    ProbabilityIntervalsRepresenter,
+    RepresentativeConvexCredalSetRepresenter,
+    compute_representative_sample,
 )
-from .het_nets import HetNetsRepresenter
 from .sampler import IterableSampler, Sampler
 
 __all__ = [
-    "CredalBNNRepresenter",
-    "CredalEnsemblingRepresenter",
-    "CredalRelativeLikelihoodRepresenter",
-    "CredalWrapperRepresenter",
-    "HetNetsRepresenter",
+    "ConvexCredalSetRepresenter",
+    "DummyRepresenter",
     "IterableSampler",
+    "ProbabilityIntervalsRepresenter",
+    "RepresentativeConvexCredalSetRepresenter",
     "Representer",
     "Sampler",
+    "compute_representative_sample",
     "representer",
 ]

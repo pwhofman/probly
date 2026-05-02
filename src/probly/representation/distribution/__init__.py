@@ -38,6 +38,11 @@ def _(_: type) -> None:
     from . import torch_dirichlet as torch_dirichlet  # noqa: PLC0415
 
 
+@create_gaussian_distribution.delayed_register(TORCH_TENSOR)
+def _(_: type) -> None:
+    from . import torch_gaussian as torch_gaussian  # noqa: PLC0415
+
+
 __all__ = [
     "ArrayCategoricalDistribution",
     "ArrayCategoricalDistributionSample",

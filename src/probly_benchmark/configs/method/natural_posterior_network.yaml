@@ -1,5 +1,6 @@
 # @package method
 name: "natural_posterior_network"
+label: "NatPN"
 params:
     latent_dim: 16
     num_flows: 8

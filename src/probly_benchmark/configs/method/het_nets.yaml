@@ -10,3 +10,5 @@ selective_prediction:
   num_samples: 10
 ood_detection:
   num_samples: 10
+active_learning:
+  num_samples: 10

@@ -24,7 +24,7 @@ class TestInvalidArgs:
     def test_invalid_init(self, dummy_predictor: ValidPredictor) -> None:
         msg = "init must be 'normal' or 'random_sign', got 'gaussian'."
         with pytest.raises(ValueError, match=msg):
-            batchensemble(dummy_predictor, num_members=2, init="gaussian")  # ty: ignore[invalid-argument-type]
+            batchensemble(dummy_predictor, num_members=2, init="gaussian")
 
     def test_normal_r_std_must_be_positive(self, dummy_predictor: ValidPredictor) -> None:
         r_std = -0.1
