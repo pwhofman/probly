@@ -1,9 +1,13 @@
-r"""Run BO on Rosenbrock and Hartmann6 with GP and ensemble surrogates.
+r"""Run BO on Rosenbrock and Hartmann6 with GP, random-forest, MC-Dropout, and BNN surrogates.
 
-Compares :class:`BotorchGPSurrogate` against :class:`EnsembleSurrogate` under
-:class:`UpperConfidenceBound` acquisition. Both surrogates implement the
-same protocol; the only thing that changes between runs is which
-uncertainty estimator drives the acquisition.
+Compares :class:`BotorchGPSurrogate`, :class:`RandomForestSurrogate`,
+:class:`MCDropoutSurrogate`, and :class:`BNNSurrogate` under
+:class:`UpperConfidenceBound` acquisition. All four expose the same
+probly representation-predictor interface (``predict(surrogate, x)``
+returns a Gaussian distribution); the NN-based ones go through probly's
+canonical UQ stack (``dropout()`` / ``bayesian()`` transformation +
+``representer(num_samples=N)`` Sampler), the same wiring used by the
+active-learning benchmark for these methods.
 
 By default the per-objective budget (initial Sobol design + acquisition
 rounds) is read from :func:`default_budget` -- a dimension-dependent table
@@ -18,7 +22,7 @@ Override seeds, budget, and output location::
 
     uv run python -m probly_benchmark.bayesian_optimization \
         --n-init 10 --n-iterations 30 --seeds 0 1 2 \
-        --surrogates gp ensemble --output-dir runs/bo-2026-05
+        --surrogates gp rf --output-dir runs/bo-2026-05
 """
 
 from __future__ import annotations
@@ -34,9 +38,11 @@ from typing import TYPE_CHECKING, Any
 import torch
 
 from probly.evaluation.bayesian_optimization import (
+    BNNSurrogate,
     BotorchGPSurrogate,
-    EnsembleSurrogate,
+    MCDropoutSurrogate,
     Objective,
+    RandomForestSurrogate,
     Surrogate,
     UpperConfidenceBound,
     bayesian_optimization_steps,
@@ -167,10 +173,14 @@ def _make_surrogate(name: str, seed: int) -> Surrogate:
     match name:
         case "gp":
             return BotorchGPSurrogate()
-        case "ensemble":
-            return EnsembleSurrogate(num_members=5, epochs=200, seed=seed)
+        case "rf":
+            return RandomForestSurrogate(n_estimators=200, seed=seed)
+        case "dropout":
+            return MCDropoutSurrogate(seed=seed)
+        case "bnn":
+            return BNNSurrogate(seed=seed)
         case _:
-            msg = f"Unknown surrogate {name!r}. Available: 'gp', 'ensemble'."
+            msg = f"Unknown surrogate {name!r}. Available: 'gp', 'rf', 'dropout', 'bnn'."
             raise ValueError(msg)
 
 
@@ -360,7 +370,7 @@ def main(argv: list[str] | None = None) -> None:
         help="Override the dim-dependent number of acquisition rounds.",
     )
     parser.add_argument("--beta", type=float, default=2.0)
-    parser.add_argument("--surrogates", nargs="+", default=["gp", "ensemble"])
+    parser.add_argument("--surrogates", nargs="+", default=["gp", "rf", "dropout", "bnn"])
     parser.add_argument("--seeds", nargs="+", type=int, default=[0])
     parser.add_argument(
         "--output-dir",

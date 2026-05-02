@@ -299,3 +299,8 @@ data/
 
 # Paper (synced via Overleaf git)
 paper/
+
+# Bayesian optimization benchmark outputs
+bo_outputs/
+bo_results.json
+bo_results.png

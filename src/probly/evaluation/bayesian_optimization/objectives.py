@@ -73,3 +73,31 @@ def hartmann() -> Objective:
         optimal_value=float(fn.optimal_value),
         fn=lambda x: fn.evaluate_true(x.to(torch.float64)),
     )
+
+
+def forrester() -> Objective:
+    """Return the 1-D Forrester objective on ``[0, 1]``.
+
+    ``f(x) = (6 x - 2)^2 * sin(12 x - 4)``. The global minimum is
+    approximately ``-6.02074`` at ``x ~ 0.7572``. Standard 1-D benchmark
+    from :cite:`forresterEngineeringDesign2008`; useful for demonstrating
+    surrogate posteriors visually.
+
+    Returns:
+        An :class:`Objective` wrapping the scalar Forrester function.
+    """
+
+    def _forrester(x: torch.Tensor) -> torch.Tensor:
+        x_d = x.to(torch.float64).view(-1)
+        return ((6.0 * x_d - 2.0) ** 2) * torch.sin(12.0 * x_d - 4.0)
+
+    bounds = torch.tensor([[0.0], [1.0]], dtype=torch.float64)
+    # Approximate global minimum; computed analytically to ~1e-5.
+    optimal_value = -6.020740
+    return Objective(
+        name="forrester-1d",
+        dim=1,
+        bounds=bounds,
+        optimal_value=optimal_value,
+        fn=_forrester,
+    )

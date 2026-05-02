@@ -1,9 +1,13 @@
 """Acquisition functions for Bayesian optimization.
 
-Acquisition optimization uses multi-start L-BFGS-B with analytic gradients
-obtained via PyTorch autograd through the surrogate. The starts are taken
-from the lowest-scoring entries of a Sobol candidate sweep so that the
-optimizer is initialized in promising regions before refining locally.
+Acquisition optimization picks its strategy based on whether the surrogate's
+posterior is differentiable through autograd:
+
+* Differentiable surrogates (GP, MC-Dropout) use multi-start L-BFGS-B with
+  analytic gradients flowing through ``predict_representation``. Starts
+  come from the lowest-scoring entries of a Sobol candidate sweep.
+* Non-differentiable surrogates (random forest) use a wider Sobol-only
+  sweep and return the best raw candidate.
 """
 
 from __future__ import annotations
@@ -14,6 +18,9 @@ from botorch.utils.sampling import draw_sobol_samples
 import numpy as np
 from scipy.optimize import minimize as scipy_minimize
 import torch
+
+from probly.evaluation.bayesian_optimization.surrogate import posterior_mean_std
+from probly.predictor import predict
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -33,7 +40,7 @@ class Acquisition(Protocol):
         """Pick the next input to evaluate.
 
         Args:
-            surrogate: Fitted surrogate exposing ``posterior_mean_std``.
+            surrogate: Fitted surrogate exposing ``predict_representation``.
             bounds: Feasible region as a ``(2, dim)`` tensor.
 
         Returns:
@@ -52,33 +59,45 @@ def _optimize_acqf(
     score_fn: Callable[[torch.Tensor], torch.Tensor],
     bounds: torch.Tensor,
     *,
+    differentiable: bool = True,
     n_restarts: int = 10,
     n_raw_samples: int = 1024,
     seed: int | None = None,
 ) -> torch.Tensor:
-    """Minimize an acquisition score over a box using L-BFGS-B with restarts.
+    """Minimize an acquisition score over a box.
 
-    Strategy:
+    For differentiable score functions: Sobol sweep, take the
+    ``n_restarts`` lowest-scoring candidates as starting points for local
+    L-BFGS-B optimization with autograd-derived gradients, return the
+    overall minimizer.
 
-    1. Sample ``n_raw_samples`` Sobol candidates inside ``bounds`` and
-       score them in a single batched forward pass.
-    2. Use the ``n_restarts`` lowest-scoring candidates as starting points
-       for local L-BFGS-B optimization. Gradients are obtained from the
-       PyTorch autograd graph through ``score_fn``.
-    3. Return the single best optimized point as a ``(1, dim)`` tensor.
+    For non-differentiable score functions: a single Sobol sweep of size
+    ``max(n_raw_samples, 4096)``; return the best raw candidate.
 
     Args:
         score_fn: Callable mapping ``(n, dim)`` inputs to ``(n,)`` scores.
-            Lower scores are better. Must be differentiable through autograd.
+            Lower scores are better. Must be differentiable through
+            autograd if ``differentiable`` is True.
         bounds: ``(2, dim)`` tensor with row 0 = lower, row 1 = upper bounds.
-        n_restarts: Number of L-BFGS-B restarts.
-        n_raw_samples: Sobol sweep size for selecting starting points.
+        differentiable: Whether ``score_fn`` is differentiable in its input.
+        n_restarts: Number of L-BFGS-B restarts (differentiable case only).
+        n_raw_samples: Sobol sweep size; bumped to at least 4096 in the
+            non-differentiable case.
         seed: Optional seed for the Sobol sweep.
 
     Returns:
         A ``(1, dim)`` tensor giving the best minimizer found.
     """
     bounds64 = bounds.to(torch.float64)
+
+    if not differentiable:
+        n_raw = max(n_raw_samples, 4096)
+        raw = _sobol_candidates(bounds64, n=n_raw, seed=seed)
+        with torch.no_grad():
+            scores = score_fn(raw)
+        best_idx = int(torch.argmin(scores).item())
+        return raw[best_idx : best_idx + 1].detach()
+
     lo = bounds64[0].detach().cpu().numpy().astype(np.float64)
     hi = bounds64[1].detach().cpu().numpy().astype(np.float64)
     bounds_list = list(zip(lo.tolist(), hi.tolist(), strict=True))
@@ -143,9 +162,11 @@ class RandomAcquisition:
 class UpperConfidenceBound:
     """UCB acquisition for **minimization**: pick ``argmin(mean - beta * std)``.
 
-    The acquisition is optimized with multi-restart L-BFGS-B using analytic
-    gradients flowing through the surrogate's ``posterior_mean_std``. Larger
-    ``beta`` favors exploration of high-uncertainty regions; smaller ``beta``
+    Differentiable surrogates (GP, MC-Dropout) are optimized with
+    multi-restart L-BFGS-B using analytic gradients flowing through
+    ``predict_representation``. Non-differentiable surrogates (random
+    forest) fall back to a Sobol-only sweep automatically. Larger ``beta``
+    favors exploration of high-uncertainty regions; smaller ``beta``
     favors exploitation of regions with low predicted mean.
 
     Attributes:
@@ -182,12 +203,13 @@ class UpperConfidenceBound:
         beta = self.beta
 
         def score(x: torch.Tensor) -> torch.Tensor:
-            mean, std = surrogate.posterior_mean_std(x)
+            mean, std = posterior_mean_std(predict(surrogate, x))
             return mean - beta * std
 
         return _optimize_acqf(
             score,
             bounds,
+            differentiable=surrogate.differentiable,
             n_restarts=self.n_restarts,
             n_raw_samples=self.n_raw_samples,
             seed=seed,

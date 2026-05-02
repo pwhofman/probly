@@ -28,7 +28,9 @@ from probly_benchmark.bayesian_optimization import DEFAULT_OUTPUT_DIR
 # Surrogate -> (linestyle, marker, color-index).
 _SURROGATE_STYLE: dict[str, tuple[str, str | None, int]] = {
     "gp": ("-", "o", 0),
-    "ensemble": ("--", "s", 1),
+    "rf": ("--", "s", 1),
+    "dropout": (":", "^", 2),
+    "bnn": ("-.", "D", 3),
 }
 
 
