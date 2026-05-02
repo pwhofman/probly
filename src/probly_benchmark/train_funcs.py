@@ -11,7 +11,7 @@ from torch.amp import GradScaler, autocast
 import torch.nn.functional as F
 
 from flextype import flexdispatch
-from probly.layers.torch import HeteroscedasticLayer
+from probly.layers.torch import HeteroscedasticLayer, SNGPLayer
 from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
@@ -30,6 +30,7 @@ from probly.method.evidential.classification import EvidentialClassificationPred
 from probly.method.het_net import HetNetPredictor
 from probly.method.natural_posterior_network import NaturalPosteriorNetworkPredictor
 from probly.method.posterior_network import PosteriorNetworkPredictor
+from probly.method.sngp import SNGPPredictor
 from probly.method.subensemble import SubensemblePredictor
 from probly.predictor import predict_raw
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
@@ -1349,6 +1350,105 @@ def evaluate_ensemble(
     metrics.update(_compute_metrics(ensemble_probs, labels, n_bins))
 
     return metrics
+
+
+def _maybe_reset_sngp_precision_for_new_epoch(model: nn.Module, epoch: int) -> None:
+    """Reset every ``SNGPLayer`` precision matrix the first time an epoch is seen.
+
+    Tracks ``_last_reset_epoch`` per layer, an attribute.
+    """
+    for layer in model.modules():
+        if isinstance(layer, SNGPLayer) and getattr(layer, "_last_reset_epoch", -1) != epoch:
+            layer.reset_precision_matrix()
+            layer._last_reset_epoch = epoch  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+
+
+@train_epoch.register(SNGPPredictor)
+def train_epoch_sngp(
+    model: SNGPPredictor,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    supervised_loss: dict[str, Any] | None = None,
+    epoch: int = 0,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> torch.Tensor | float:
+    """Train an SNGP predictor for one step with cross-entropy on the GP MAP logits."""
+    _maybe_reset_sngp_precision_for_new_epoch(model, epoch)  # ty: ignore[invalid-argument-type]
+    criterion = _get_supervised_criterion(supervised_loss)
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        logits, _variance = model(inputs)  # ty: ignore[call-non-callable]
+        loss = criterion(logits, targets)
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        optimizer.step()
+    return loss.item()
+
+
+@validate.register(SNGPPredictor)
+@torch.no_grad()
+def validate_sngp(
+    model: SNGPPredictor,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> ValidationMetrics:
+    """Validate an SNGP predictor with cross-entropy and argmax accuracy on logit means."""
+    criterion = nn.CrossEntropyLoss()
+    model.eval()  # ty: ignore[unresolved-attribute]
+    val_loss = 0.0
+    val_acc = 0.0
+    num_instances = 0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            logits, _variance = model(inputs)  # ty: ignore[call-non-callable]
+            val_loss += criterion(logits, targets).item()
+            val_acc += _accuracy(logits, targets) * inputs.shape[0]
+            num_instances += inputs.shape[0]
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
+
+
+@evaluate.register(SNGPPredictor)
+@torch.no_grad()
+def evaluate_sngp(
+    model: SNGPPredictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    mean_field_factor: float = 1.0,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate an SNGP predictor on accuracy/NLL/ECE via the closed-form mean-field correction."""
+    model.eval()  # ty: ignore[unresolved-attribute]
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            logits, variance = model(inputs)  # ty: ignore[call-non-callable]
+            scale = (1.0 + mean_field_factor * variance) ** 0.5
+            probs = F.softmax(logits / scale, dim=-1)
+        all_probs.append(probs)
+        all_labels.append(targets)
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
+    return _compute_metrics(probs, labels, n_bins)
 
 
 def _compute_metrics(probs: torch.Tensor, labels: torch.Tensor, n_bins: int) -> dict[str, float]:

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
-from probly.decider import categorical_from_mean
+from probly.decider import categorical_from_mean, mean_field_categorical
 from probly.representation.conformal_set.array import ArrayOneHotConformalSet
 from probly.representation.credal_set.array import (
     ArrayDistanceBasedCredalSet,
@@ -82,3 +83,20 @@ def test_categorical_from_mean_reduces_one_hot_conformal_set_to_categorical_dist
 
     assert isinstance(single, ArrayCategoricalDistribution)
     np.testing.assert_allclose(single.probabilities, np.array([[1.0, 0.0, 0.0], [0.5, 0.0, 0.5]]))
+
+
+torch_module = pytest.importorskip("torch")
+
+from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution  # noqa: E402
+
+
+def test_categorical_from_mean_dispatches_gaussian_to_mean_field_with_default_factor() -> None:
+    gaussian = TorchGaussianDistribution(
+        mean=torch_module.tensor([[2.0, -1.0, 0.5]], dtype=torch_module.float32),
+        var=torch_module.tensor([[0.2, 0.4, 0.6]], dtype=torch_module.float32),
+    )
+
+    via_default = categorical_from_mean(gaussian)
+    via_mean_field = mean_field_categorical(gaussian, mean_field_factor=1.0)
+
+    assert torch_module.allclose(via_default.probabilities, via_mean_field.probabilities, atol=1e-6)
