@@ -18,6 +18,7 @@ class QNetwork(nn.Module):
     """Small MLP Q-network."""
 
     def __init__(self, state_dim: int, n_actions: int, hidden: int = 64) -> None:
+        """Initialize Q-network layers."""
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(state_dim, hidden),
@@ -28,11 +29,14 @@ class QNetwork(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass through the network."""
         return self.net(x)
 
 
 @dataclass
 class Transition:
+    """Single environment transition for replay buffer."""
+
     state: np.ndarray
     action: int
     reward: float
@@ -72,6 +76,7 @@ class DQNAgent:
     _rng: np.random.Generator = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
+        """Initialize networks, optimizer, and replay buffer."""
         torch.manual_seed(self.seed)
         self._rng = np.random.default_rng(self.seed)
         self._q_net = QNetwork(self.state_dim, self.n_actions, self.hidden)
@@ -144,8 +149,10 @@ class DQNAgent:
         return self._q_net
 
     def save(self, path: str) -> None:
+        """Save Q-network weights to file."""
         torch.save(self._q_net.state_dict(), path)
 
     def load(self, path: str) -> None:
+        """Load Q-network weights from file."""
         self._q_net.load_state_dict(torch.load(path, weights_only=True))
         self._target_net.load_state_dict(self._q_net.state_dict())

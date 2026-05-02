@@ -21,31 +21,50 @@ def _draw_env(
     goal: np.ndarray | None = None,
     goal_radius: float = 0.05,
     start: np.ndarray | None = None,
+    bounds: tuple[np.ndarray, np.ndarray] | None = None,
 ) -> None:
     """Draw obstacles, goal, and start markers."""
     if obstacles:
         for center, radius in obstacles:
-            circle = patches.Circle(center, radius, color="#546e7a", alpha=0.8, zorder=2)
+            circle = patches.Circle((float(center[0]), float(center[1])), radius, color="#546e7a", alpha=0.8, zorder=2)
             ax.add_patch(circle)
 
     if goal is not None:
-        circle = patches.Circle(goal, goal_radius, color="#4caf50", alpha=0.8, zorder=2)
+        circle = patches.Circle((float(goal[0]), float(goal[1])), goal_radius, color="#4caf50", alpha=0.8, zorder=2)
         ax.add_patch(circle)
         ax.text(
-            goal[0], goal[1], "G",
-            ha="center", va="center", fontsize=7, color="white", fontweight="bold", zorder=3,
+            goal[0],
+            goal[1],
+            "G",
+            ha="center",
+            va="center",
+            fontsize=7,
+            color="white",
+            fontweight="bold",
+            zorder=3,
         )
 
     if start is not None:
-        circle = patches.Circle(start, 0.02, color="#2196f3", alpha=0.8, zorder=2)
+        circle = patches.Circle((float(start[0]), float(start[1])), 0.02, color="#2196f3", alpha=0.8, zorder=2)
         ax.add_patch(circle)
         ax.text(
-            start[0], start[1], "S",
-            ha="center", va="center", fontsize=6, color="white", fontweight="bold", zorder=3,
+            start[0],
+            start[1],
+            "S",
+            ha="center",
+            va="center",
+            fontsize=6,
+            color="white",
+            fontweight="bold",
+            zorder=3,
         )
 
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
+    if bounds is not None:
+        ax.set_xlim(float(bounds[0][0]), float(bounds[1][0]))
+        ax.set_ylim(float(bounds[0][1]), float(bounds[1][1]))
+    else:
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
     ax.set_aspect("equal")
     ax.tick_params(labelsize=6)
 
@@ -85,10 +104,14 @@ def plot_trajectories(
     n_crash_risky = sum(1 for t in risky_trajs if t["event"] in ("collision", "wall"))
     n_crash_safe = sum(1 for t in safe_trajs if t["event"] in ("collision", "wall"))
     ax.text(
-        0.5, -0.08,
+        0.5,
+        -0.08,
         f"Risk-neutral crashes: {n_crash_risky}/{len(risky_trajs)}  |  "
         f"Risk-averse crashes: {n_crash_safe}/{len(safe_trajs)}",
-        transform=ax.transAxes, ha="center", fontsize=6, color="#666",
+        transform=ax.transAxes,
+        ha="center",
+        fontsize=6,
+        color="#666",
     )
 
     ax.set_title(title, fontsize=9, fontweight="bold")

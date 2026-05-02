@@ -98,14 +98,18 @@ class RacetrackEnv:
         self._rng = np.random.default_rng(seed)
         mid_a = (self.outer_a + self.inner_a) / 2
         mid_b = (self.outer_b + self.inner_b) / 2
-        self._pos = self.center + np.array([
-            mid_a * np.cos(self.start_angle),
-            mid_b * np.sin(self.start_angle),
-        ])
-        tangent = np.array([
-            -np.sin(self.start_angle),
-            np.cos(self.start_angle),
-        ])
+        self._pos = self.center + np.array(
+            [
+                mid_a * np.cos(self.start_angle),
+                mid_b * np.sin(self.start_angle),
+            ]
+        )
+        tangent = np.array(
+            [
+                -np.sin(self.start_angle),
+                np.cos(self.start_angle),
+            ]
+        )
         self._vel = tangent * 0.01
         self._t = 0
         self._angle_traveled = 0.0
@@ -121,8 +125,8 @@ class RacetrackEnv:
 
         Returns:
             StepResult with next_state, reward, done flag, and info dict.
-            Reward is +1.0 per step on track, +20.0 on finish, -10.0 on
-            wall collision, and 0.0 on timeout.
+            Reward is angle_shaping * forward_progress per step on track,
+            +50.0 on finish, -25.0 on wall collision, and 0.0 on timeout.
         """
         speed = np.linalg.norm(self._vel)
         if speed > 1e-8:
@@ -146,7 +150,8 @@ class RacetrackEnv:
         noise = self._rng.normal(0, self.noise_std, size=2)
         self._vel = np.clip(
             (self._vel + accel + noise) * _FRICTION,
-            -_MAX_SPEED, _MAX_SPEED,
+            -_MAX_SPEED,
+            _MAX_SPEED,
         )
         self._pos = self._pos + self._vel
         self._t += 1

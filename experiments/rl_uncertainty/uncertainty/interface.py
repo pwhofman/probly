@@ -7,9 +7,10 @@ uncertainty scalars. Swappable without changing anything in the RL or viz layers
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
-import numpy as np
+if TYPE_CHECKING:
+    import numpy as np
 
 
 @dataclass(frozen=True)

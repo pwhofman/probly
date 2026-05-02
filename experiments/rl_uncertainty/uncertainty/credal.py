@@ -14,16 +14,17 @@ import torch
 from probly.method.credal_relative_likelihood import credal_relative_likelihood
 from probly.predictor import predict_raw
 from probly.quantification import quantify
-from probly.quantification.decomposition import AleatoricEpistemicTotalDecomposition
 from probly.representation.distribution.array_categorical import (
     ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
 )
 
+from . import _softmax
 from .interface import UncertaintyResult
 
 if TYPE_CHECKING:
     from experiments.rl_uncertainty.agents.dqn import DQNAgent
+    from probly.quantification.decomposition import AleatoricEpistemicTotalDecomposition
 
 
 class CredalEstimator:
@@ -47,6 +48,7 @@ class CredalEstimator:
         tobias_value: int = 100,
         seed: int = 0,
     ) -> None:
+        """Initialize credal ensemble from a single agent's Q-network."""
         self._agent = agent
         torch.manual_seed(seed)
         q_net = agent.get_network()
@@ -96,9 +98,3 @@ class CredalEstimator:
             total[i] = float(decomp.total)
 
         return UncertaintyResult(epistemic=epi, aleatoric=alea, total=total)
-
-
-def _softmax(x: np.ndarray) -> np.ndarray:
-    """Numerically stable softmax along last axis."""
-    e = np.exp(x - x.max(axis=-1, keepdims=True))
-    return e / e.sum(axis=-1, keepdims=True)

@@ -38,15 +38,24 @@ def plot_eu_heatmap(
         cmap: Colormap name.
     """
     im = ax.imshow(
-        eu_grid, origin="lower", extent=[xs[0], xs[-1], ys[0], ys[-1]],
-        cmap=cmap, aspect="equal", interpolation="bilinear",
+        eu_grid,
+        origin="lower",
+        extent=(float(xs[0]), float(xs[-1]), float(ys[0]), float(ys[-1])),
+        cmap=cmap,
+        aspect="equal",
+        interpolation="bilinear",
     )
 
     if obstacles:
         for center, radius in obstacles:
             circle = patches.Circle(
-                center, radius, fill=False,
-                edgecolor="white", linewidth=1.0, linestyle="--", zorder=2,
+                (float(center[0]), float(center[1])),
+                radius,
+                fill=False,
+                edgecolor="white",
+                linewidth=1.0,
+                linestyle="--",
+                zorder=2,
             )
             ax.add_patch(circle)
 

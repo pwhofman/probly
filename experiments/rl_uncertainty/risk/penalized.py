@@ -9,11 +9,14 @@ This makes the agent learn to avoid high-uncertainty regions.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from experiments.rl_uncertainty.envs.base import Env, StepResult
-from experiments.rl_uncertainty.uncertainty.interface import UncertaintyEstimator
+
+if TYPE_CHECKING:
+    from experiments.rl_uncertainty.uncertainty.interface import UncertaintyEstimator
 
 
 @dataclass
@@ -32,20 +35,25 @@ class PenalizedRewardWrapper:
 
     @property
     def state_dim(self) -> int:
+        """Dimensionality of the state vector."""
         return self.env.state_dim
 
     @property
     def n_actions(self) -> int:
+        """Number of discrete actions."""
         return self.env.n_actions
 
     @property
     def bounds(self) -> tuple[np.ndarray, np.ndarray]:
+        """State space bounds from the wrapped environment."""
         return self.env.bounds
 
     def reset(self, seed: int | None = None) -> np.ndarray:
+        """Reset the wrapped environment."""
         return self.env.reset(seed=seed)
 
     def step(self, action: int) -> StepResult:
+        """Step with uncertainty-penalized reward."""
         result = self.env.step(action)
         eu = float(self.estimator.estimate(result.next_state[np.newaxis]).epistemic[0])
         shaped_reward = result.reward - self.lambda_ * eu

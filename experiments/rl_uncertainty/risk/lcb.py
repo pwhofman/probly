@@ -8,9 +8,12 @@ beta=0 is vanilla (risk-neutral), beta>0 is cautious.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 
-from experiments.rl_uncertainty.uncertainty.interface import UncertaintyEstimator
+if TYPE_CHECKING:
+    from experiments.rl_uncertainty.uncertainty.interface import UncertaintyEstimator
 
 
 def lcb_action(

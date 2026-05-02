@@ -54,20 +54,30 @@ def make_triptych(
     if member_path.exists():
         member_trajs = json.loads(member_path.read_text())
         plot_member_trajectories(
-            axes[0], member_trajs,
-            obstacles=obstacles, goal=goal, goal_radius=goal_radius, start=start,
+            axes[0],
+            member_trajs,
+            obstacles=obstacles,
+            goal=goal,
+            goal_radius=goal_radius,
+            start=start,
             title="(a) Ensemble Member Trajectories",
         )
     else:
         plot_trajectories(
-            axes[0], risky_trajs, safe_trajs,
-            obstacles=obstacles, goal=goal, goal_radius=goal_radius, start=start,
+            axes[0],
+            risky_trajs,
+            safe_trajs,
+            obstacles=obstacles,
+            goal=goal,
+            goal_radius=goal_radius,
+            start=start,
             title="(a) Trajectories",
         )
 
     # Panel (b): EU Heatmap
     plot_eu_heatmap(
-        axes[1], fig,
+        axes[1],
+        fig,
         xs=np.array(eu_grid_data["xs"]),
         ys=np.array(eu_grid_data["ys"]),
         eu_grid=np.array(eu_grid_data["epistemic"]),

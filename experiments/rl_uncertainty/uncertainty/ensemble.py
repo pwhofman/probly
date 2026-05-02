@@ -13,16 +13,17 @@ from typing import TYPE_CHECKING, cast
 import numpy as np
 
 from probly.quantification import quantify
-from probly.quantification.decomposition import AleatoricEpistemicTotalDecomposition
 from probly.representation.distribution.array_categorical import (
     ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
 )
 
+from . import _softmax
 from .interface import UncertaintyResult
 
 if TYPE_CHECKING:
     from experiments.rl_uncertainty.agents.dqn import DQNAgent
+    from probly.quantification.decomposition import AleatoricEpistemicTotalDecomposition
 
 
 class EnsembleEstimator:
@@ -33,6 +34,7 @@ class EnsembleEstimator:
     """
 
     def __init__(self, agents: list[DQNAgent]) -> None:
+        """Initialize with a list of trained DQN agents."""
         self._agents = agents
 
     def _stacked_q(self, states: np.ndarray) -> np.ndarray:
@@ -71,9 +73,3 @@ class EnsembleEstimator:
             total[i] = float(decomp.total)
 
         return UncertaintyResult(epistemic=epi, aleatoric=alea, total=total)
-
-
-def _softmax(x: np.ndarray) -> np.ndarray:
-    """Numerically stable softmax along last axis."""
-    e = np.exp(x - x.max(axis=-1, keepdims=True))
-    return e / e.sum(axis=-1, keepdims=True)
