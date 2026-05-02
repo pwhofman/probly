@@ -5,6 +5,7 @@ from .credal_set import (
     ConvexCredalSetRepresenter,
     ProbabilityIntervalsRepresenter,
     RepresentativeConvexCredalSetRepresenter,
+    SampleMeanConvexCredalSetRepresenter,
     compute_representative_sample,
 )
 from .sampler import IterableSampler, Sampler
@@ -16,6 +17,7 @@ __all__ = [
     "ProbabilityIntervalsRepresenter",
     "RepresentativeConvexCredalSetRepresenter",
     "Representer",
+    "SampleMeanConvexCredalSetRepresenter",
     "Sampler",
     "compute_representative_sample",
     "representer",
