@@ -1381,19 +1381,19 @@ def train_epoch_sngp(
     criterion = _get_supervised_criterion(supervised_loss)
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
-        logits, _variance = model(inputs)  # ty: ignore[call-non-callable]
+        logits, _variance = model(inputs)
         loss = criterion(logits, targets)
     if scaler is not None:
         scaler.scale(loss).backward()
         if grad_clip_norm is not None:
             scaler.unscale_(optimizer)
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
         scaler.step(optimizer)
         scaler.update()
     else:
         loss.backward()
         if grad_clip_norm is not None:
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
         optimizer.step()
     return loss.item()
 
@@ -1409,14 +1409,14 @@ def validate_sngp(
 ) -> ValidationMetrics:
     """Validate an SNGP predictor with cross-entropy and argmax accuracy on logit means."""
     criterion = nn.CrossEntropyLoss()
-    model.eval()  # ty: ignore[unresolved-attribute]
+    model.eval()
     val_loss = 0.0
     val_acc = 0.0
     num_instances = 0
     for inputs_, targets_ in val_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            logits, _variance = model(inputs)  # ty: ignore[call-non-callable]
+            logits, _variance = model(inputs)
             val_loss += criterion(logits, targets).item()
             val_acc += _accuracy(logits, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
@@ -1435,13 +1435,13 @@ def evaluate_sngp(
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> dict[str, float]:
     """Evaluate an SNGP predictor on accuracy/NLL/ECE via the closed-form mean-field correction."""
-    model.eval()  # ty: ignore[unresolved-attribute]
+    model.eval()
     all_probs: list[torch.Tensor] = []
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in test_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            logits, variance = model(inputs)  # ty: ignore[call-non-callable]
+            logits, variance = model(inputs)
             scale = (1.0 + mean_field_factor * variance) ** 0.5
             probs = F.softmax(logits / scale, dim=-1)
         all_probs.append(probs)

@@ -107,6 +107,8 @@ benchmark = [
     "torch<2.11.0",
     "torchvision<0.26.0",
     "pytorch-optimizer>=3.0",
+    "nflows>=0.14",
+    "gpytorch>=1.11",
 ]
 dev = [
     { include-group = "test" },

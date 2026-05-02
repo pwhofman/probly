@@ -9,6 +9,7 @@ import torch
 from torch import nn
 from torch.nn import init
 import torch.nn.functional as F
+from torch.nn.utils import parametrize
 
 
 def _init_fast_weight(
@@ -1866,3 +1867,203 @@ class SNGPLayer(nn.Module):
         # Broadcast scalar-per-sample variance across the class axis.
         variance = variance.unsqueeze(-1).expand_as(logits)
         return logits, variance
+
+
+class GaussianMixtureHead(nn.Module):
+    """Per-class Gaussian density head (Gaussian Discriminant Analysis).
+
+    One full-covariance Gaussian per class with class-frequency mixing
+    weights, fitted post-hoc on encoder features.  Used as the density
+    estimator for DDU :cite:`mukhotiDeepDeterministicUncertainty2023`
+    and as a feature-space density estimate in other methods that need
+    one (e.g. as a stationarizing feature for DEUP).
+
+    After fitting, ``forward`` returns the per-class log-densities
+    ``log(pi_c * N(z; mu_c, Sigma_c))``; downstream code can either
+    take the marginal ``logsumexp`` over classes or pick the
+    class-conditional value.
+
+    Buffers:
+        means: Per-class mean vectors, shape ``(num_classes, feature_dim)``.
+        scale_tril: Lower-triangular Cholesky factor of each per-class
+            covariance, shape ``(num_classes, feature_dim, feature_dim)``.
+        log_pi: Log class-frequency priors, shape ``(num_classes,)``.
+    """
+
+    means: torch.Tensor
+    scale_tril: torch.Tensor
+    log_pi: torch.Tensor
+
+    def __init__(self, num_classes: int, feature_dim: int) -> None:
+        """Initialize with uniform priors, identity covariance, and zero means.
+
+        Args:
+            num_classes: Number of classes (one Gaussian component per class).
+            feature_dim: Dimensionality of the feature vectors.
+        """
+        super().__init__()
+        self.num_classes = num_classes
+        self.feature_dim = feature_dim
+        self.register_buffer("means", torch.zeros(num_classes, feature_dim))
+        self.register_buffer(
+            "scale_tril",
+            torch.eye(feature_dim).unsqueeze(0).repeat(num_classes, 1, 1),
+        )
+        self.register_buffer(
+            "log_pi",
+            torch.full((num_classes,), -math.log(num_classes)),
+        )
+        # Jitter schedule for making sample covariances positive definite.
+        # Start from 0, try increasingly large values until torch.linalg.cholesky succeeds.
+        self._jitters = [0.0] + [10**exp for exp in range(-308, 0, 1)]
+
+    def fit(self, features: torch.Tensor, labels: torch.Tensor) -> None:
+        """Estimate per-class means, covariances, and mixing weights.
+
+        Per-class means and unbiased sample covariances are computed from the
+        provided features.  The class-frequency prior ``pi_c = N_c / N`` is
+        stored as ``log_pi``.  The minimum jitter ``eps * I`` that makes the
+        Cholesky decomposition succeed is added to each covariance matrix
+        before factorising.
+
+        Args:
+            features: Feature vectors of shape ``(N, feature_dim)``.
+            labels: Integer class labels of shape ``(N,)``.
+        """
+        n_total = len(labels)
+        means = torch.zeros_like(self.means)
+        scale_trils = torch.eye(self.feature_dim, device=features.device).unsqueeze(0).repeat(self.num_classes, 1, 1)
+        log_pi = torch.full((self.num_classes,), float("-inf"), device=features.device)
+        eye = torch.eye(self.feature_dim, device=features.device)
+        for c in range(self.num_classes):
+            mask = labels == c
+            count = int(mask.sum().item())
+            if count == 0:
+                continue
+            log_pi[c] = torch.tensor(count / n_total, device=features.device).log()
+            if count < 2:
+                continue
+            z = features[mask]
+            mu = z.mean(0)
+            centered = z - mu
+            cov = (centered.T @ centered) / (count - 1)
+            means[c] = mu
+            for jitter_eps in self._jitters:
+                try:
+                    scale_trils[c] = torch.linalg.cholesky(cov + jitter_eps * eye)
+                    break
+                except torch.linalg.LinAlgError:
+                    continue
+        self.means.copy_(means)
+        self.scale_tril.copy_(scale_trils)
+        self.log_pi.copy_(log_pi)
+
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        """Compute per-class log-densities for each sample.
+
+        Returns ``log(pi_c * N(z; mu_c, Sigma_c))`` for every class *c*.
+
+        Args:
+            features: Feature vectors of shape ``(N, feature_dim)``.
+
+        Returns:
+            Per-class log-density scores of shape ``(N, num_classes)``.
+        """
+        dist = torch.distributions.MultivariateNormal(loc=self.means, scale_tril=self.scale_tril, validate_args=False)
+        return self.log_pi + dist.log_prob(features.unsqueeze(1))
+
+
+class SNCoeffParametrization(nn.Module):
+    """Weight parametrization that clips the spectral norm to at most ``coeff``.
+
+    Uses one step of power iteration to estimate the spectral norm, then scales
+    the weight so that ``||W||_2 <= coeff``.  Compatible with
+    ``torch.nn.utils.parametrize`` and supports ``state_dict`` round-tripping
+    via :meth:`right_inverse`.
+
+    Used by DDU (:cite:`mukhotiDeepDeterministicUncertainty2023`) and DEUP
+    (:cite:`lahlou2021deup`) to enforce Lipschitz
+    continuity on the encoder.
+    """
+
+    def __init__(self, coeff: float, weight: torch.Tensor) -> None:
+        """Initialize with the Lipschitz coefficient and a reference weight.
+
+        Args:
+            coeff: Maximum allowed spectral norm.
+            weight: Reference weight used for shape and device.
+        """
+        super().__init__()
+        self.coeff = coeff
+        self._u: torch.Tensor
+        self.register_buffer("_u", F.normalize(torch.randn(weight.shape[0], device=weight.device), dim=0))
+
+    def forward(self, weight: torch.Tensor) -> torch.Tensor:
+        """Return weight rescaled so its spectral norm is at most ``coeff``.
+
+        Args:
+            weight: The raw weight tensor.
+
+        Returns:
+            Rescaled weight tensor with ``||W||_2 <= coeff``.
+        """
+        w_mat = weight.reshape(weight.shape[0], -1)
+        with torch.no_grad():
+            v = F.normalize(w_mat.T @ self._u, dim=0)
+            u = F.normalize(w_mat @ v, dim=0)
+            self._u.copy_(u)
+        sigma = u @ (w_mat @ v)
+        return weight * (self.coeff / sigma.clamp(min=self.coeff))
+
+    def right_inverse(self, weight: torch.Tensor) -> torch.Tensor:
+        """Identity right-inverse to support ``state_dict`` loading.
+
+        Args:
+            weight: The parametrized weight.
+
+        Returns:
+            The weight unchanged.
+        """
+        return weight
+
+
+def apply_spectral_norm_to_encoder(module: nn.Module, sn_coeff: float = 3.0) -> None:
+    """Apply spectral normalization in-place to all Conv2d and Linear layers.
+
+    For stride-2 ``1x1`` Conv2d (typical ResNet downsampling shortcuts),
+    an ``AvgPool2d`` is inserted before a stride-1 copy to remove aliasing,
+    matching the approach of DDU :cite:`mukhotiDeepDeterministicUncertainty2023`.
+
+    Args:
+        module: Encoder module to modify in-place.
+        sn_coeff: Lipschitz coefficient — spectral norm of each weight is
+            clipped to at most this value.
+    """
+    for name, child in list(module.named_children()):
+        if isinstance(child, nn.Linear):
+            parametrize.register_parametrization(child, "weight", SNCoeffParametrization(sn_coeff, child.weight))
+        elif isinstance(child, nn.Conv2d):
+            stride = child.stride[0] if isinstance(child.stride, (tuple, list)) else child.stride
+            kernel = child.kernel_size[0] if isinstance(child.kernel_size, (tuple, list)) else child.kernel_size
+            if stride > 1 and kernel == 1:
+                avg_pool = nn.AvgPool2d(kernel_size=stride, stride=stride)
+                new_conv = nn.Conv2d(
+                    child.in_channels,
+                    child.out_channels,
+                    kernel_size=1,
+                    stride=1,
+                    padding=child.padding if isinstance(child.padding, int) else child.padding[0],
+                    bias=child.bias is not None,
+                )
+                with torch.no_grad():
+                    new_conv.weight.copy_(child.weight)
+                    if child.bias is not None and new_conv.bias is not None:
+                        new_conv.bias.copy_(child.bias)
+                parametrize.register_parametrization(
+                    new_conv, "weight", SNCoeffParametrization(sn_coeff, new_conv.weight)
+                )
+                setattr(module, name, nn.Sequential(avg_pool, new_conv))
+            else:
+                parametrize.register_parametrization(child, "weight", SNCoeffParametrization(sn_coeff, child.weight))
+        else:
+            apply_spectral_norm_to_encoder(child, sn_coeff)
