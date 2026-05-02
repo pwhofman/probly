@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
+import warnings
 
 from flextype import flexdispatch
 from probly.predictor import Predictor, RandomPredictor, predict, predict_raw
@@ -96,13 +97,49 @@ def sngp[**In, Out: GaussianDistribution](
     base: Predictor[In, Out],
     name: str = "weight",
     n_power_iterations: int = 1,
-    norm_multiplier: float = 1.0,
+    norm_multiplier: float = 6.0,
     eps: float = 1e-12,
-    num_inducing: int = 128,
-    ridge_penalty: float = 1e-6,
-    momentum: float = 0.999,
+    num_inducing: int = 1024,
+    ridge_penalty: float = 1.0,
+    momentum: float = -1.0,
 ) -> SNGPPredictor[In, Out]:
-    return traverse(
+    """Wrap a model with SNGP (Spectral-normalized Neural Gaussian Process).
+
+    Replaces the last ``nn.Linear`` with an :class:`SNGPLayer` (random
+    Fourier features + Laplace-approximated Gaussian process) and registers
+    a spectral-norm parametrization on every preceding ``nn.Linear`` and
+    ``nn.Conv2d``. Defaults match the ImageNet ResNet-50 baseline at
+    ``google/uncertainty-baselines/baselines/imagenet/sngp.py``.
+
+    Args:
+        base: The model to wrap.
+        name: The name of the weight parameter to spectrally normalize on
+            non-output layers. Defaults to ``"weight"``.
+        n_power_iterations: Power iterations per training step for the
+            spectral-norm estimate. Defaults to 1. (A 15-iteration warmup
+            runs once at construction time, independent of this value.)
+        norm_multiplier: Upper bound on each non-output layer's spectral
+            norm. Defaults to 6.0 (high because ResNet's BatchNorm already
+            applies its own Lipschitz scaling).
+        eps: Small constant to stabilize the spectral-norm denominator.
+            Defaults to 1e-12.
+        num_inducing: Number of random Fourier features in the GP layer.
+            Defaults to 1024.
+        ridge_penalty: Ridge factor used inside the covariance inversion
+            ``inv(ridge * I + precision)``. Defaults to 1.0.
+        momentum: Discount factor for the precision-matrix update. Default
+            ``-1.0`` triggers accumulate mode (paper Algorithm 1; imagenet
+            ``gp_cov_discount_factor=-1``); the user **must** call
+            :func:`reset_precision_matrix` at the start of each training
+            epoch in this mode. Pass ``momentum > 0`` for EMA mode (no
+            reset needed; matches the CLINC reference's
+            ``gp_cov_momentum=0.999``).
+
+    Returns:
+        An ``SNGPPredictor`` whose ``predict(...)`` returns a
+        ``GaussianDistribution`` over logits.
+    """
+    transformed = traverse(
         base,
         nn_compose(sngp_traverser),
         init={
@@ -118,6 +155,16 @@ def sngp[**In, Out: GaussianDistribution](
             MOMENTUM: momentum,
         },
     )
+    skipped = _collect_skipped_param_bearing_layer_classes(transformed)
+    if skipped:
+        warnings.warn(
+            f"sngp(): the following parameter-bearing layer types were not "
+            f"spectrally normalized and will violate the bi-Lipschitz "
+            f"property of the hidden mapping (paper Eq. 5): {skipped}. "
+            f"SNGP currently only wraps nn.Linear and nn.Conv2d.",
+            stacklevel=2,
+        )
+    return transformed
 
 
 @predict.register(SNGPPredictor)
@@ -131,3 +178,43 @@ def _[**In](
 
 
 representer.register(SNGPPredictor, SNGPRepresenter)
+
+
+@flexdispatch
+def _collect_skipped_param_bearing_layer_classes(predictor: Any) -> list[str]:  # noqa: ANN401
+    """Return sorted unique names of param-bearing layer classes the SNGP traverser skipped.
+
+    Backend-agnostic dispatch. Each backend (torch, future flax) registers its
+    own walker that knows how to enumerate submodules and detect which ones
+    are "handled" (either wrapped by the SNGP traverser or intentionally
+    excluded, like norm layers).
+
+    Anything with direct parameters that is **not** in the handled set is
+    "skipped" - i.e., its weights are not spectrally normalized - and is
+    reported so the caller knows the bi-Lipschitz property of the hidden
+    mapping (paper Eq. 5) is not enforced for those layers.
+    """
+    msg = f"_collect_skipped_param_bearing_layer_classes not implemented for type {type(predictor).__name__}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def reset_precision_matrix(predictor: Any) -> None:  # noqa: ANN401
+    """Zero the precision matrix of every SNGP layer in ``predictor``.
+
+    Call at the start of each training epoch when using the default
+    ``momentum=-1`` (accumulate) mode. With ``momentum > 0`` (EMA mode) this
+    is rarely needed; the EMA naturally bounds the precision matrix.
+
+    Backend-agnostic dispatch. The torch implementation walks
+    ``predictor.modules()`` and resets every
+    :class:`probly.layers.torch.SNGPLayer` it finds. If no SNGP layers are
+    present the implementation emits a DEBUG log message and returns
+    silently (common cause: caller passed an un-wrapped model rather than
+    the result of :func:`sngp`).
+
+    Args:
+        predictor: A predictor returned by :func:`sngp`.
+    """
+    msg = f"reset_precision_matrix not implemented for type {type(predictor).__name__}."
+    raise NotImplementedError(msg)
