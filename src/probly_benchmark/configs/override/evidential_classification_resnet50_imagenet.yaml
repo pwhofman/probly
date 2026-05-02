@@ -1,0 +1,8 @@
+# @package _global_
+
+# Sensoy's default kl_weight=1.0 is tuned for MNIST; on ImageNet the regularizer
+# overpowers the data fit term and prevents alphas from sharpening. Drop the
+# final annealed weight to 0.001.
+method:
+  train:
+    kl_weight: 0.001
