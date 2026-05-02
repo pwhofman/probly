@@ -15,6 +15,7 @@ import wandb
 
 from probly_benchmark import calibration, conformal, metadata
 from probly_benchmark.builders import BuildContext, build_model
+from probly_benchmark.decision import decide
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
@@ -103,6 +104,55 @@ def collect_outputs_targets(
         targets.append(targets_)
 
     return torch.cat(outputs), torch.cat(targets)
+
+
+@torch.no_grad()
+def collect_outputs_decisions_targets(
+    model: nn.Module,
+    rep: Representer,
+    loader: DataLoader,
+    device: torch.device,
+    rep_kwargs: dict[str, Any] | None = None,
+    amp_enabled: bool = False,
+) -> tuple[Representation, np.ndarray, torch.Tensor]:
+    """Collect representer outputs, decisions, and targets from a data loader.
+
+    Runs a single pass over the data loader, producing both the uncertainty
+    representation (for quantification) and the per-sample class-probability
+    decision (for loss computation) in one go.
+
+    Args:
+        model: The model passed to :func:`~probly_benchmark.decision.decide`.
+        rep: A representer to produce uncertainty representations.
+        loader: DataLoader to iterate over.
+        device: Device to run inference on.
+        rep_kwargs: Representer parameters forwarded to ``decide``.
+        amp_enabled: Whether to use automatic mixed precision.
+
+    Returns:
+        A tuple containing:
+            - outputs: Concatenated representer outputs.
+            - mean_probs: Class probabilities of shape ``(n, n_classes)`` as a numpy array.
+            - targets: Concatenated target tensor.
+    """
+    all_outputs = []
+    all_mean_probs = []
+    all_targets = []
+
+    for inputs, targets_ in tqdm(loader, desc="Batch"):
+        inputs_dev = inputs.to(device)
+        if amp_enabled:
+            with torch.amp.autocast(device.type):
+                outputs_ = rep.predict(inputs_dev)
+                decision = decide(model, inputs_dev, rep_kwargs=rep_kwargs)
+        else:
+            outputs_ = rep.predict(inputs_dev)
+            decision = decide(model, inputs_dev, rep_kwargs=rep_kwargs)
+        all_outputs.append(outputs_)
+        all_mean_probs.append(decision.numpy(force=True))  # ty:ignore[unresolved-attribute]
+        all_targets.append(targets_)
+
+    return torch.cat(all_outputs), np.concatenate(all_mean_probs, axis=0), torch.cat(all_targets)
 
 
 @torch.no_grad()

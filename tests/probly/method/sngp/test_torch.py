@@ -158,7 +158,7 @@ def test_sngp_layer_constructor_uses_imagenet_defaults_for_optional_args() -> No
 
 def test_sngp_layer_constructor_requires_num_random_features() -> None:
     with pytest.raises(TypeError, match="num_random_features"):
-        SNGPLayer(in_features=4, num_classes=3)  # ty: ignore[missing-argument]
+        SNGPLayer(in_features=4, num_classes=3)
 
 
 def test_sngp_layer_initializes_precision_to_zeros() -> None:

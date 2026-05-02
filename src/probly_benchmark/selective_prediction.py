@@ -2,22 +2,23 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
-from probly.decider import categorical_from_mean
 from probly.evaluation.tasks import selective_prediction
 from probly.quantification import quantify
 from probly.representer import representer
 from probly_benchmark import calibration, data, utils
-from probly_benchmark.utils import init_wandb_for_evaluation, load_model_for_evaluation
+from probly_benchmark.utils import (
+    collect_outputs_decisions_targets,
+    init_wandb_for_evaluation,
+    load_model_for_evaluation,
+)
 
 if TYPE_CHECKING:
     import numpy as np
-
-    from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 
 _SUPPORTED_LOSSES = ("zero_one",)
 _SUPPORTED_DECOMPOSITIONS = ("aleatoric", "epistemic", "total")
@@ -73,20 +74,21 @@ def main(cfg: DictConfig) -> None:
     )  # ty: ignore[invalid-assignment]
     rep = representer(model, **rep_kwargs)
 
-    outputs, targets = utils.collect_outputs_targets(
-        rep,
-        test_loader,
-        device,
-        cfg.get("amp", False),
-    )
     if cfg.decomposition not in _SUPPORTED_DECOMPOSITIONS:
         msg = f"Unsupported decomposition: {cfg.decomposition!r}. Choose from {_SUPPORTED_DECOMPOSITIONS}."
         raise ValueError(msg)
 
+    outputs, mean_probs, targets = collect_outputs_decisions_targets(
+        model,
+        rep,
+        test_loader,
+        device,
+        rep_kwargs=rep_kwargs or None,
+        amp_enabled=cfg.get("amp", False),
+    )
+
     decomposition = quantify(outputs)
     uncertainties = decomposition[cfg.decomposition].detach().cpu().numpy()  # ty:ignore[not-subscriptable]
-
-    mean_probs = cast("TorchCategoricalDistribution", categorical_from_mean(outputs)).cpu().numpy()
 
     labels = targets.numpy()
     loss = _compute_loss(mean_probs, labels, cfg.loss)
