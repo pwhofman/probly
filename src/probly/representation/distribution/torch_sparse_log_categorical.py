@@ -78,7 +78,7 @@ class TorchSparseLogCategoricalDistribution(
     @override
     @property
     def log_probabilities(self) -> torch.Tensor:
-        return self.logits - torch.logsumexp(self.logits, dim=-1, keepdim=True)
+        return self.to_categorical_distribution().log_probabilities
 
     @override
     @property
