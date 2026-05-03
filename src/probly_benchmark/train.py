@@ -42,6 +42,7 @@ from probly.method.efficient_credal_prediction import (
     compute_efficient_credal_prediction_bounds,
 )
 from probly.method.ensemble import EnsemblePredictor
+from probly.method.subensemble import SubensemblePredictor
 from probly_benchmark import conformal, data, metadata, utils
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.paths import CHECKPOINT_PATH
@@ -449,6 +450,39 @@ def _(
             train_fn=train_epoch_cross_entropy,
             val_fn=validate_cross_entropy,
             log_prefix=f"member_{i}/",
+        )
+
+
+@train_model.register(SubensemblePredictor)
+def _(
+    model: SubensemblePredictor,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Train a subensemble by training each head independently on a shared frozen backbone.
+
+    Only the head (trainable) parameters are passed to the optimizer; the frozen
+    backbone parameters are excluded to avoid inflating optimizer state and to
+    prevent incorrect gradient-norm computations on zero-gradient parameters.
+    """
+    for i, member in enumerate(model):
+        trainable = [p for p in member.parameters() if p.requires_grad]
+        _training_loop(
+            member,
+            train_loader,
+            val_loader,
+            cfg,
+            device,
+            run,
+            train_kwargs,
+            train_fn=train_epoch_cross_entropy,
+            val_fn=validate_cross_entropy,
+            log_prefix=f"member_{i}/",
+            param_groups=[{"params": trainable}],
         )
 
 
