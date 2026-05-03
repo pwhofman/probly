@@ -3,3 +3,22 @@ results/
 __pycache__/
 *.pyc
 .pytest_cache/
+.ruff_cache/
+
+# Model checkpoints / weights (HuggingFace cache lives in ~/.cache/huggingface,
+# but anything that lands under this experiment by accident should not be tracked).
+*.safetensors
+*.pt
+*.bin
+*.ckpt
+*.onnx
+hf_cache/
+model_cache/
+
+# Run artefacts.
+wandb/
+outputs/
+artifacts/
+
+# uv venv (keep uv.lock at the experiment root tracked).
+.venv/
