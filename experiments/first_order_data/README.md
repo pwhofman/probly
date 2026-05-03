@@ -339,7 +339,7 @@ uv run python summarize_dcic_ensemble_results.py \
   --convex-hull-epsilon 0.01
 ```
 
-`conformal_eval.py` uses the cached `ensemble_predictions.csv` files in one run directory and evaluates conformal prediction methods without retraining. It currently uses the public split-conformal API. It evaluates LAC / APS / RAPS over repeated calibration/test splits and reports:
+`conformal_eval.py` uses the cached `ensemble_predictions.csv` files in one run directory and evaluates conformal prediction methods without retraining. It currently uses the public split-conformal API. It evaluates LAC / APS / SAPS / RAPS over repeated calibration/test splits and reports:
 
 - hard empirical coverage against a sampled or argmax hard label
 - soft empirical coverage against the full target distribution
@@ -353,7 +353,7 @@ uv run python conformal_eval.py \
   --label-mode sample
 ```
 
-To also check whether the calibration splits have the same mean target distribution as the cached ensemble probabilities, add:
+To also check per-sample calibration distances between the target distributions and cached ensemble probabilities, add:
 
 ```bash
 uv run python conformal_eval.py \
@@ -362,4 +362,4 @@ uv run python conformal_eval.py \
   --calibration-check
 ```
 
-This prints per-sample KL and total-variation summaries across the same random calibration splits used for CP, and writes `calibration_tv_hist.png` and `calibration_kl_hist.png` to `out/calibration_checks/<run-dir>/<dataset>/<fold>/`. The histograms use bins (0.05 for TV, 0.1 for KL) over per-sample total-variation distance or KL divergence between the target distribution and ensemble prediction, with percentage of calibration rows on the y-axis.
+This prints per-sample KL and total-variation summaries across the same random calibration splits used for CP, and writes one combined `calibration_tv_hist.png` and one combined `calibration_kl_hist.png` to `out/calibration_checks/<run-dir>/`. The histograms use 0.05-wide bins over per-sample total-variation distance or KL divergence between the target distribution and ensemble prediction, with percentage of calibration rows on the y-axis.

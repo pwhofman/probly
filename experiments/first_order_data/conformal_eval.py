@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Mapping
+import math
 from pathlib import Path
 
 from summarize_dcic_ensemble_results import (
@@ -17,7 +18,7 @@ import matplotlib.pyplot as plt
 
 from probly.calibrator import calibrate
 from probly.metrics import average_set_size, empirical_coverage_classification
-from probly.method.conformal import conformal_aps, conformal_lac, conformal_raps
+from probly.method.conformal import conformal_aps, conformal_lac, conformal_raps, conformal_saps
 from probly.representer import representer
 
 type FloatArray = npt.NDArray[np.floating]
@@ -47,11 +48,13 @@ class CachedProbsModel(nn.Module):
         return self.probs[np.asarray(x, dtype=int)]
 
 
-def make_predictor(name: str, model: CachedProbsModel) -> object:
+def make_predictor(name: str, model: CachedProbsModel, args: argparse.Namespace) -> object:
     if name == "lac":
         return conformal_lac(model)
     if name == "aps":
         return conformal_aps(model, randomized=True)
+    if name == "saps":
+        return conformal_saps(model, randomized=True, lambda_val=args.saps_lambda)
     if name == "raps":
         return conformal_raps(model, randomized=True)
     msg = f"Unknown method '{name}'"
@@ -107,7 +110,7 @@ def calibration_check(
     calibration_kl_distances = []
     rows = []
 
-    for idx_cal, idx_test in calibration_splits(len(targets_soft), args):
+    for idx_cal, _idx_test in calibration_splits(len(targets_soft), args):
         sample_tv = 0.5 * np.abs(targets_soft[idx_cal] - probs[idx_cal]).sum(axis=1)
         sample_kl = kl_divergence_rows(targets_soft[idx_cal], probs[idx_cal])
         calibration_tv_distances.append(sample_tv)
@@ -127,31 +130,62 @@ def print_calibration_summary(fold_name: str, rows: list[CalibrationCheckRow]):
     print(f"  sample TV       {means[1]:<12.4f} {stds[1]:.4f}")
 
 
-def save_calibration_histogram(
+def save_combined_calibration_histogram(
     output_dir: Path,
-    dataset_name: str,
-    fold_name: str,
-    values: FloatArray,
+    rows: list[tuple[str, str, FloatArray]],
     filename: str,
     xlabel: str,
+    mean_label: str,
     bins: FloatArray,
     xlim: tuple[float, float] | None = None,
+    overflow_at: float | None = None,
 ) -> Path:
-    """Save a calibration-sample distance histogram for one dataset fold."""
-    path = output_dir / dataset_name / fold_name / filename
-    path.parent.mkdir(parents=True, exist_ok=True)
-    weights = np.full_like(values, 100 / len(values), dtype=float)
-    fig, ax = plt.subplots(figsize=(7, 4))
-    ax.hist(values, bins=bins, weights=weights, edgecolor="black")
-    ax.axvline(float(values.mean()), color="black", linestyle="--", linewidth=1, label="mean")
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel("Calibration samples (%)")
-    ax.set_title(f"{dataset_name} / {fold_name}")
-    if xlim is not None:
-        ax.set_xlim(*xlim)
-    ax.legend()
-    fig.tight_layout()
+    """Save all dataset calibration histograms in one subplot grid."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = output_dir / filename
+    n_cols = 2
+    n_rows = math.ceil(len(rows) / n_cols)
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 2.8 * n_rows), squeeze=False)
 
+    for ax, (dataset_name, fold_name, values) in zip(axes.ravel(), rows, strict=False):
+        weights = np.full_like(values, 100 / len(values), dtype=float)
+        mean = float(values.mean())
+        ax.hist(values, bins=bins, weights=weights, edgecolor="black")
+        ax.axvline(mean, color="black", linestyle="--", linewidth=1)
+        ax.set_title(f"{dataset_name} / {fold_name}")
+        ax.set_ylabel("%")
+        ax.text(
+            0.98,
+            0.92,
+            f"{mean_label}={mean:.3f}",
+            transform=ax.transAxes,
+            ha="right",
+            va="top",
+            bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.8, "pad": 2},
+        )
+        if overflow_at is not None:
+            overflow = float(np.mean(values > overflow_at) * 100)
+            if overflow > 0:
+                ax.text(
+                    0.98,
+                    0.78,
+                    f">{overflow_at:.2f}: {overflow:.1f}%",
+                    transform=ax.transAxes,
+                    ha="right",
+                    va="top",
+                    bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.8, "pad": 2},
+                )
+        if xlim is not None:
+            ax.set_xlim(*xlim)
+
+    for ax in axes.ravel()[len(rows) :]:
+        ax.axis("off")
+
+    for ax in axes[-1, :]:
+        if ax.has_data():
+            ax.set_xlabel(xlabel)
+
+    fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)
     return path
@@ -182,7 +216,7 @@ def fold_coverage(
         targets_soft_test = targets_soft[idx_test]
 
         for method in args.methods:
-            predictor = make_predictor(method, model)
+            predictor = make_predictor(method, model, args)
             calibrated = calibrate(predictor, args.alpha, y_cal, idx_cal)
             sets = np.asarray(representer(calibrated).predict(idx_test).array, dtype=bool)
             rows[(method, "split")].append(
@@ -212,7 +246,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--alpha", type=float, default=0.1)  # miscoverage rate, target coverage = 1 - alpha
     parser.add_argument("--num-splits", type=int, default=20)  # number of CAL/TEST splits to average over
     parser.add_argument("--seed", type=int, default=0)  # seed for the bootstrap RNG
-    parser.add_argument("--methods", nargs="+", choices=("lac", "aps", "raps"), default=("lac", "aps", "raps"))
+    parser.add_argument(
+        "--methods",
+        nargs="+",
+        choices=("lac", "aps", "saps", "raps"),
+        default=("lac", "aps", "saps", "raps"),
+    )
+    parser.add_argument("--saps-lambda", type=float, default=0.1)
     parser.add_argument(
         "--conditioning",
         nargs="+",
@@ -239,6 +279,9 @@ def parse_args() -> argparse.Namespace:
 
 def main():
     args = parse_args()
+    calibration_plot_rows_tv = []
+    calibration_plot_rows_kl = []
+
     for dataset_result in load_json(args.run_dir / "results.json"):
         for fold_result in dataset_result["folds"]:
             targets_soft, probs, uncertainty = load_prediction_csv(
@@ -256,30 +299,46 @@ def main():
                     f"{dataset_result['dataset_name']} / {fold_result['test_fold']}",
                     calibration_rows,
                 )
-                plot_dir = (args.calibration_plot_dir or Path("out/calibration_checks")) / args.run_dir
-                tv_path = save_calibration_histogram(
-                    plot_dir,
-                    dataset_result["dataset_name"],
-                    fold_result["test_fold"],
-                    tv_distances,
-                    "calibration_tv_hist.png",
-                    "Per-sample TV(target, ensemble)",
-                    np.arange(0, 1.05, 0.05),
-                    xlim=(0, 1),
+                calibration_plot_rows_tv.append(
+                    (
+                        dataset_result["dataset_name"],
+                        fold_result["test_fold"],
+                        tv_distances,
+                    )
                 )
-                kl_upper = max(0.05, float(np.ceil(kl_distances.max() / 0.05) * 0.05))
-                kl_path = save_calibration_histogram(
-                    plot_dir,
-                    dataset_result["dataset_name"],
-                    fold_result["test_fold"],
-                    kl_distances,
-                    "calibration_kl_hist.png",
-                    "Per-sample KL(target || ensemble)",
-                    np.arange(0, kl_upper + 0.05, 0.1),
-                    xlim=(0, kl_upper),
+                calibration_plot_rows_kl.append(
+                    (
+                        dataset_result["dataset_name"],
+                        fold_result["test_fold"],
+                        kl_distances,
+                    )
                 )
-                print(f"  TV histogram: {tv_path}")
-                print(f"  KL histogram: {kl_path}")
+
+    if args.calibration_check:
+        plot_dir = (args.calibration_plot_dir or Path("out/calibration_checks")) / args.run_dir
+        tv_path = save_combined_calibration_histogram(
+            plot_dir,
+            calibration_plot_rows_tv,
+            "calibration_tv_hist.png",
+            "Per-sample TV(target, ensemble)",
+            "mean TV",
+            np.arange(0, 1.05, 0.05),
+            xlim=(0, 1),
+        )
+        all_kl_values = np.concatenate([values for _dataset, _fold, values in calibration_plot_rows_kl])
+        kl_upper = max(0.05, float(np.ceil(float(np.quantile(all_kl_values, 0.99)) / 0.05) * 0.05))
+        kl_path = save_combined_calibration_histogram(
+            plot_dir,
+            calibration_plot_rows_kl,
+            "calibration_kl_hist.png",
+            "Per-sample KL(target || ensemble)",
+            "mean KL",
+            np.arange(0, kl_upper + 0.05, 0.05),
+            xlim=(0, kl_upper),
+            overflow_at=kl_upper,
+        )
+        print(f"\nCombined TV histogram: {tv_path}")
+        print(f"Combined KL histogram: {kl_path}")
 
 
 if __name__ == "__main__":
