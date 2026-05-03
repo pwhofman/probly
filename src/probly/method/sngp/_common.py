@@ -17,7 +17,11 @@ from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser, traverse
 
 if TYPE_CHECKING:
+    from flax.nnx.rnglib import Rngs, RngStream
+
     from probly.representation.sample import Sample
+
+type RNG = int | Rngs | RngStream
 
 sngp_traverser = flexdispatch_traverser[object](name="sngp_traverser")
 
@@ -43,6 +47,8 @@ MOMENTUM = GlobalVariable[float](
     "MOMENTUM",
     "The momentum to use for updating the covariance matrix in the Gaussian process layer. Default is 0.999.",
 )
+
+RNGS = GlobalVariable[RNG]("RNGS", "rngs for flax SNGP layer initialization.", default=1)
 
 
 @runtime_checkable
@@ -101,7 +107,28 @@ def sngp[**In, Out: GaussianDistribution](
     num_inducing: int = 128,
     ridge_penalty: float = 1e-6,
     momentum: float = 0.999,
+    rngs: RNG = 1,
 ) -> SNGPPredictor[In, Out]:
+    """Create an SNGP predictor from a base predictor based on :cite:`liu2020SNGP`.
+
+    Args:
+        base: The base model to be transformed.
+        name: The name of the kernel/weight parameter on wrapped layers used by the
+            spectral-norm wrapper. Defaults to ``"weight"`` for torch and is mapped
+            to ``"kernel"`` by the flax backend.
+        n_power_iterations: Number of power-iteration steps for spectral norm.
+        norm_multiplier: Upper bound for the spectral-norm multiplier.
+        eps: Numerical-stability floor for division by ``sigma`` in spectral norm.
+        num_inducing: Number of inducing features for the Gaussian-process head.
+        ridge_penalty: Ridge penalty added to the precision matrix at initialization.
+        momentum: EMA momentum for the precision-matrix update.
+        rngs: Optional rngs for the flax SNGP layer initialization (types:
+            ``rnglib.Rngs | rnglib.RngStream | int``). Ignored by the torch backend.
+            Default is ``1``.
+
+    Returns:
+        The SNGP predictor.
+    """
     return traverse(
         base,
         nn_compose(sngp_traverser),
@@ -116,6 +143,7 @@ def sngp[**In, Out: GaussianDistribution](
             NUM_INDUCING: num_inducing,
             RIDGE_PENALTY: ridge_penalty,
             MOMENTUM: momentum,
+            RNGS: rngs,
         },
     )
 
