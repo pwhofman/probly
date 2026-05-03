@@ -57,5 +57,7 @@ def _run(
 ) -> np.ndarray:
     """Run one batch and return its pooled embedding as a numpy array."""
     inputs = processor(images=batch, return_tensors="pt").to(device)  # ty: ignore[unresolved-attribute]
-    out = model.get_image_features(**inputs)  # ty: ignore[unresolved-attribute]
+    # transformers 5.x returns a BaseModelOutputWithPooling here; we want the
+    # pooled image embedding (shape ``(B, D)``).
+    out = model.get_image_features(**inputs).pooler_output  # ty: ignore[unresolved-attribute]
     return out.detach().to(torch.float32).cpu().numpy()
