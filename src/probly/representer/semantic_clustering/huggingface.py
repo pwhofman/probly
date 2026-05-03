@@ -24,7 +24,6 @@ if TYPE_CHECKING:
 DEFAULT_NLI_MODEL = "microsoft/deberta-base-mnli"
 
 type SemanticClusterInput = TorchTextGeneration | TorchTextGenerationSample
-type SemanticClusterOutput = TorchSparseLogCategoricalDistribution
 
 _CONTRADICTION = 0
 _NEUTRAL = 1
@@ -66,7 +65,7 @@ def _label_id_to_canonical(model: PreTrainedModel) -> dict[int, int]:
     return {_CONTRADICTION: _CONTRADICTION, _NEUTRAL: _NEUTRAL, _ENTAILMENT: _ENTAILMENT}
 
 
-class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOutput], ABC):
+class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, TorchSparseLogCategoricalDistribution], ABC):
     """Base semantic clusterer using a Hugging Face NLI model."""
 
     model: PreTrainedModel
@@ -289,7 +288,7 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOut
         generation: SemanticClusterInput,
         *,
         axis: int | None = None,
-    ) -> SemanticClusterOutput:
+    ) -> TorchSparseLogCategoricalDistribution:
         """Cluster text generations into semantic equivalence classes.
 
         Args:

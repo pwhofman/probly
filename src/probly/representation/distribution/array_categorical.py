@@ -17,7 +17,7 @@ from probly.representation.distribution._common import (
 from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable
 
 
 @create_categorical_distribution.register(np.ndarray)
@@ -117,10 +117,6 @@ class ArrayCategoricalDistribution(
 
         samples = flat_samples.reshape((num_samples, *self.shape))
         return ArraySample(array=samples, sample_axis=0)
-
-    @override
-    def __iter__(self) -> Iterator[Any]:
-        return self.unnormalized_probabilities.__iter__()
 
     @override
     def __eq__(self, value: Any) -> np.ndarray:  # ty: ignore[invalid-method-override]  # noqa: PYI032

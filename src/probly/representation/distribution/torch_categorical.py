@@ -18,7 +18,7 @@ from probly.representation.sample.torch import TorchSample
 from probly.representation.torch_functions import torch_average
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable
 
     import numpy as np
 
@@ -132,10 +132,6 @@ class TorchCategoricalDistribution(
     def numpy(self, *, force: bool = False) -> np.ndarray:
         """Convert to a numpy array."""
         return self.probabilities.numpy(force=force)
-
-    @override
-    def __iter__(self) -> Iterator[Any]:
-        return self.probabilities.__iter__()
 
     @override
     def __eq__(self, value: Any) -> torch.Tensor:  # ty: ignore[invalid-method-override]  # noqa: PYI032
