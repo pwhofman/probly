@@ -48,6 +48,10 @@ MOMENTUM = GlobalVariable[float](
     "The momentum to use for updating the covariance matrix in the Gaussian process layer. Default is 0.999.",
 )
 
+# RNGS is the rngs source threaded through ``traverse`` for flax SNGP handlers.
+# The integer default mirrors ``het_net/_common.py``: it is harmless on torch (the
+# torch backend ignores the value) and is coerced to ``nnx.Rngs(default)`` by the
+# flax handlers (``replace_linear_with_sngp``, ``wrap_conv_with_spectral_norm``).
 RNGS = GlobalVariable[RNG]("RNGS", "rngs for flax SNGP layer initialization.", default=1)
 
 

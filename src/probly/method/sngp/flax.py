@@ -33,6 +33,11 @@ if TYPE_CHECKING:
 # from a trailing position in a Sequential. The SNGPLayer returns logits-and-
 # variance directly, so a bare softmax callable on the tail would corrupt the
 # expected (logits, variance) signature.
+#
+# Note: matching here is by object identity. Lambdas, ``functools.partial``
+# wrappers, or otherwise-rewrapped softmax callables are not detected and will
+# remain in place. Users in such cases should remove the trailing softmax
+# manually before applying ``sngp``.
 _SOFTMAX_TAILS: frozenset[object] = frozenset(
     {
         jax.nn.softmax,

@@ -13,7 +13,7 @@ import jax.numpy as jnp  # noqa: E402
 
 from probly.layers.flax import SNGPLayer, SpectralNormWithMultiplier  # noqa: E402
 from probly.method.sngp import sngp  # noqa: E402
-from probly.quantification import decompose  # noqa: E402
+from probly.quantification import decompose, measure, quantify  # noqa: E402
 from probly.quantification.decomposition.entropy import SecondOrderEntropyDecomposition  # noqa: E402
 from probly.representation.distribution.jax_categorical import JaxCategoricalDistributionSample  # noqa: E402
 from probly.representation.distribution.jax_gaussian import JaxGaussianDistribution  # noqa: E402
@@ -127,7 +127,7 @@ class TestSNGPRngsParameter:
         layer_1 = self._find_sngp_layer(cast("nnx.Module", m1))
         layer_2 = self._find_sngp_layer(cast("nnx.Module", m2))
 
-        assert not jnp.allclose(layer_1.W_L.value, layer_2.W_L.value)
+        assert not jnp.allclose(layer_1.W_L[...], layer_2.W_L[...])
 
 
 class TestSNGPInferenceMode:
@@ -140,9 +140,9 @@ class TestSNGPInferenceMode:
 
         # Call the SNGPLayer directly with ``update_covariance=False`` since
         # ``nnx.Sequential.__call__`` does not propagate keyword arguments.
-        precision_before = jnp.array(sngp_layer.precision_matrix.value)
+        precision_before = jnp.array(sngp_layer.precision_matrix[...])
         sngp_layer(jnp.ones((4, sngp_layer.in_features)), update_covariance=False)
-        precision_after = jnp.array(sngp_layer.precision_matrix.value)
+        precision_after = jnp.array(sngp_layer.precision_matrix[...])
 
         assert jnp.array_equal(precision_before, precision_after)
 
@@ -151,9 +151,9 @@ class TestSNGPInferenceMode:
         new_model = cast("nnx.Sequential", sngp(flax_regression_model_2d, num_inducing=16))
         sngp_layer = next(layer for layer in new_model.layers if isinstance(layer, SNGPLayer))
 
-        precision_before = jnp.array(sngp_layer.precision_matrix.value)
+        precision_before = jnp.array(sngp_layer.precision_matrix[...])
         sngp_layer(jnp.ones((4, sngp_layer.in_features)), update_covariance=True)
-        precision_after = jnp.array(sngp_layer.precision_matrix.value)
+        precision_after = jnp.array(sngp_layer.precision_matrix[...])
 
         assert not jnp.array_equal(precision_before, precision_after)
 
@@ -183,3 +183,47 @@ class TestSNGPRepresenter:
         decomposition = decompose(sample)
 
         assert isinstance(decomposition, SecondOrderEntropyDecomposition)
+
+    def _sngp_sample(self, flax_rngs: nnx.Rngs) -> JaxCategoricalDistributionSample:
+        """Build an SNGP categorical distribution sample for arithmetic tests."""
+        model = nnx.Sequential(
+            nnx.Linear(2, 4, rngs=flax_rngs),
+            nnx.Linear(4, 3, rngs=flax_rngs),
+        )
+        predictor = sngp(model, num_inducing=16)
+        sample = representer(predictor, num_samples=3).represent(jnp.ones((2, 2)))
+        return cast("JaxCategoricalDistributionSample", sample)
+
+    def test_decomposition_components_are_finite_jax_arrays(self, flax_rngs: nnx.Rngs) -> None:
+        """``total``/``aleatoric``/``epistemic`` return finite ``jax.Array`` of shape ``(2,)``."""
+        sample = self._sngp_sample(flax_rngs)
+        decomposition = decompose(sample)
+
+        for component in (decomposition.total, decomposition.aleatoric, decomposition.epistemic):
+            assert isinstance(component, jax.Array)
+            assert component.shape == (2,)
+            assert bool(jnp.all(jnp.isfinite(component)))
+
+    def test_sngp_decomposition_total_equals_sum_of_components(self, flax_rngs: nnx.Rngs) -> None:
+        """The total uncertainty matches the sum of aleatoric and epistemic components."""
+        sample = self._sngp_sample(flax_rngs)
+        decomposition = decompose(sample)
+
+        assert jnp.allclose(decomposition.total, decomposition.aleatoric + decomposition.epistemic, atol=1e-5)
+
+    def test_quantify_returns_entropy_decomposition(self, flax_rngs: nnx.Rngs) -> None:
+        """``quantify`` of an SNGP sample also returns a ``SecondOrderEntropyDecomposition``."""
+        sample = self._sngp_sample(flax_rngs)
+        quantification = quantify(sample)
+
+        assert isinstance(quantification, SecondOrderEntropyDecomposition)
+
+    def test_measure_returns_total_uncertainty(self, flax_rngs: nnx.Rngs) -> None:
+        """``measure`` returns a finite ``jax.Array`` matching the decomposition total."""
+        sample = self._sngp_sample(flax_rngs)
+        decomposition = decompose(sample)
+        uncertainty = measure(sample)
+
+        assert isinstance(uncertainty, jax.Array)
+        assert uncertainty.shape == (2,)
+        assert jnp.allclose(uncertainty, decomposition.total)

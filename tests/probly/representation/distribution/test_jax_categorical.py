@@ -120,12 +120,24 @@ def test_getitem_keeps_protected_class_axis() -> None:
     assert sliced.unnormalized_probabilities.shape == (3, 4)
 
 
-def test_sample_default_rng_is_deterministic() -> None:
-    """Calling ``sample`` without an explicit rng uses a deterministic default key."""
+def test_sample_with_same_key_is_deterministic() -> None:
+    """Two ``sample`` calls with the same ``rng`` key return identical samples."""
+    probabilities = jnp.array([[0.2, 0.3, 0.5]], dtype=jnp.float32)
+    dist = JaxCategoricalDistribution(probabilities)
+    key = jax.random.key(7)
+
+    sample_a = dist.sample(num_samples=8, rng=key)
+    sample_b = dist.sample(num_samples=8, rng=key)
+
+    assert jnp.array_equal(sample_a.array, sample_b.array)
+
+
+def test_sample_with_different_keys_differs() -> None:
+    """Two ``sample`` calls with distinct ``rng`` keys return distinct samples."""
     probabilities = jnp.array([[0.2, 0.3, 0.5]], dtype=jnp.float32)
     dist = JaxCategoricalDistribution(probabilities)
 
-    sample_a = dist.sample(num_samples=8)
-    sample_b = dist.sample(num_samples=8)
+    sample_a = dist.sample(num_samples=64, rng=jax.random.key(0))
+    sample_b = dist.sample(num_samples=64, rng=jax.random.key(1))
 
-    assert jnp.array_equal(sample_a.array, sample_b.array)
+    assert not jnp.array_equal(sample_a.array, sample_b.array)

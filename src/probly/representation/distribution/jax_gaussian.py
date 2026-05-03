@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, Unpack, override
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, cast, override
 
 import jax
 import jax.numpy as jnp
@@ -15,11 +15,10 @@ from probly.representation.distribution._common import (
     GaussianDistributionSample,
     create_gaussian_distribution,
 )
-from probly.representation.sample._common import Sample, SampleParams
 from probly.representation.sample.jax import JaxArraySample
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Iterator
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -106,57 +105,36 @@ class JaxGaussianDistribution(JaxAxisProtected[Any], GaussianDistribution[jax.Ar
         return object.__hash__(self)
 
 
-@dataclass(frozen=True)  # ty:ignore[conflicting-metaclass]
-class JaxGaussianDistributionSample(
-    GaussianDistributionSample[JaxGaussianDistribution],
-    Sample[JaxGaussianDistribution],
+class JaxGaussianDistributionSample(  # ty:ignore[conflicting-metaclass]
+    GaussianDistributionSample,
+    JaxArraySample,
 ):
-    """Sample type for empirical second-order Gaussian distributions."""
+    """Sample type for empirical second-order Gaussian distributions.
 
-    array: JaxGaussianDistribution
-    sample_axis: int
+    See the corresponding note on :class:`JaxCategoricalDistributionSample`
+    for why the generic parameter is omitted here.
+    """
+
     sample_space: ClassVar[type[GaussianDistribution]] = JaxGaussianDistribution
 
-    @override
-    @classmethod
-    def from_iterable(
-        cls,
-        samples: Iterable[JaxGaussianDistribution],
-        weights: Iterable[float] | None = None,
-        **_kwargs: Unpack[SampleParams],
-    ) -> Self:
-        """Create a JaxGaussianDistributionSample from an iterable of distributions."""
-        del weights
-        sample_list = list(samples)
-        if not sample_list:
-            msg = "Cannot construct JaxGaussianDistributionSample from an empty iterable."
-            raise ValueError(msg)
-        means = jnp.stack([s.mean for s in sample_list], axis=0)
-        variances = jnp.stack([s.var for s in sample_list], axis=0)
-        return cls(array=JaxGaussianDistribution(mean=means, var=variances), sample_axis=0)
-
     @property
     @override
-    def samples(self) -> Iterable[JaxGaussianDistribution]:
-        """Iterate over per-sample Gaussian distributions along ``sample_axis``."""
-        sample_axis = self.sample_axis
-        means = self.array.mean
-        variances = self.array.var
-        if sample_axis != 0:
-            means = jnp.moveaxis(means, sample_axis, 0)
-            variances = jnp.moveaxis(variances, sample_axis, 0)
-        return [JaxGaussianDistribution(mean=means[i], var=variances[i]) for i in range(means.shape[0])]
+    def samples(self) -> JaxGaussianDistribution:
+        """Return the wrapped distribution with ``sample_axis`` rotated to position 0.
 
-    @property
-    @override
-    def weights(self) -> Iterable[float] | None:
-        """Return the (optional) sample weights."""
-        return None
-
-    @property
-    def sample_size(self) -> int:
-        """Return the number of samples."""
-        return self.array.mean.shape[self.sample_axis]
+        Overridden because :class:`JaxArraySample`'s implementation calls
+        ``jnp.moveaxis`` directly on ``self.array``, which fails for protected-axis
+        types (``jnp`` does not accept :class:`JaxGaussianDistribution`). We
+        instead permute the underlying ``mean``/``var`` and rebuild the distribution.
+        """
+        # ``self.array`` is annotated as ``jax.Array`` on :class:`JaxArraySample` but
+        # specialized to a :class:`JaxGaussianDistribution` here.
+        array = cast("JaxGaussianDistribution", self.array)
+        if self.sample_axis == 0:
+            return array
+        mean = jnp.moveaxis(array.mean, self.sample_axis, 0)
+        var = jnp.moveaxis(array.var, self.sample_axis, 0)
+        return JaxGaussianDistribution(mean=mean, var=var)
 
     @override
     @classmethod

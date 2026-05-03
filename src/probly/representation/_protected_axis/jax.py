@@ -192,7 +192,13 @@ class JaxAxisProtected[T: JaxLikeImplementation | jax.Array](JaxLikeImplementati
 
     @property
     def T(self) -> Self:  # noqa: N802
-        """Transposed view across batch dimensions."""
+        """Transposed view across batch dimensions.
+
+        For ``ndim < 2`` this is a no-op and returns ``self``. This intentionally
+        differs from :attr:`mT` (which raises) because ``T`` is defined for any
+        rank in the array API, whereas matrix transpose requires at least two
+        dimensions. The asymmetry mirrors the torch-side ``TorchAxisProtected``.
+        """
         if self.ndim < 2:
             return self
         values = self.protected_values()
@@ -268,7 +274,14 @@ class JaxAxisProtected[T: JaxLikeImplementation | jax.Array](JaxLikeImplementati
         return self.with_protected_values(updates)
 
     def numpy(self, *, force: bool = False) -> np.ndarray:
-        """Convert the primary protected value to a numpy array."""
+        """Convert the primary protected value to a numpy array.
+
+        Args:
+            force: Ignored on JAX (kept for API parity with the torch backend).
+
+        Returns:
+            The primary protected value as a NumPy array.
+        """
         del force
         if len(type(self).protected_axes) != 1:
             msg = "Cannot convert multi-field protected object to a single numpy array."

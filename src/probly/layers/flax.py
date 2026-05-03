@@ -487,13 +487,28 @@ def _l2_normalize(x: jax.Array, eps: float = 1e-12) -> jax.Array:
     return x / jnp.maximum(norm, eps)
 
 
+def _kernel_to_matrix(kernel: jax.Array, *, is_conv: bool) -> jax.Array:
+    """Reshape a layer kernel into a ``(out_features, fan_in)`` matrix for spectral norm.
+
+    ``nnx.Linear`` stores ``(in_features, out_features)`` so we transpose to put
+    ``out_features`` first. ``nnx.Conv`` stores ``(*kernel_size, in_features // groups,
+    out_features)`` so we move the last axis to the front and then flatten the rest.
+    """
+    if is_conv:
+        return jnp.moveaxis(kernel, -1, 0).reshape(kernel.shape[-1], -1)
+    return kernel.T
+
+
 class SpectralNormWithMultiplier(nnx.Module):
     """Apply spectral normalization with a bounded multiplier based on :cite:`liu2020SNGP`.
 
-    The wrapped layer's kernel is reparameterized as ``weight_orig`` with the
-    forward pass applying the spectrally-normalized weight ``weight_orig * factor``,
-    where ``factor = min(norm_multiplier / (sigma + eps), 1.0)`` and ``sigma`` is the
-    leading singular value estimated by power iteration.
+    The wrapped layer's kernel is reparameterized as ``weight_orig`` (a trainable
+    ``nnx.Param``) with the forward pass applying the spectrally-normalized weight
+    ``weight_orig * factor``, where ``factor = min(norm_multiplier / (sigma + eps), 1.0)``
+    and ``sigma`` is the leading singular value estimated by power iteration. The
+    wrapped module's original kernel attribute is replaced by an ``nnx.Variable``
+    (mutable but not picked up by ``nnx.state(..., nnx.Param)``), so optimizer
+    state filtering correctly sees a single trainable copy.
 
     Attributes:
         module: The wrapped layer (``nnx.Linear`` or ``nnx.Conv``).
@@ -538,8 +553,9 @@ class SpectralNormWithMultiplier(nnx.Module):
         self.eps = eps
 
         weight = getattr(module, name)
-        weight_value = weight.value if hasattr(weight, "value") else weight
-        weight_matrix = weight_value.reshape(weight_value.shape[0], -1)
+        weight_value = weight[...] if hasattr(weight, "__getitem__") else weight
+        is_conv = isinstance(module, nnx.Conv)
+        weight_matrix = _kernel_to_matrix(weight_value, is_conv=is_conv)
 
         u_key = rngs.params()
         v_key = rngs.params()
@@ -548,22 +564,35 @@ class SpectralNormWithMultiplier(nnx.Module):
 
         self.weight_u = nnx.Variable(_l2_normalize(u_init))
         self.weight_v = nnx.Variable(_l2_normalize(v_init))
-        self.weight_orig = nnx.Param(jnp.asarray(weight_value))
+        self.weight_orig = nnx.Param(weight_value)
+
+        # Replace the wrapped module's original kernel ``Param`` with an
+        # ``nnx.Variable``. ``nnx.state(..., nnx.Param)`` filters on the strict
+        # ``Param`` type, so the wrapped kernel no longer appears in the trainable
+        # parameter tree. ``self.weight_orig`` (still an ``nnx.Param``) is the
+        # canonical trainable copy.
+        setattr(module, name, nnx.Variable(weight_value))
 
     def _compute_weight(self) -> jax.Array:
-        """Compute the spectrally-normalized weight tensor."""
-        weight_orig = self.weight_orig.value
-        weight_matrix = weight_orig.reshape(weight_orig.shape[0], -1)
+        """Compute the spectrally-normalized weight tensor.
+
+        Applies one or more power iterations to refresh ``weight_u``/``weight_v``,
+        scales ``weight_orig`` by ``min(norm_multiplier / sigma, 1.0)``, and
+        returns the result with the kernel's original tensor layout.
+        """
+        weight_orig = self.weight_orig[...]
+        is_conv = isinstance(self.module, nnx.Conv)
+        weight_matrix = _kernel_to_matrix(weight_orig, is_conv=is_conv)
         weight_matrix_stop = jax.lax.stop_gradient(weight_matrix)
 
-        u = self.weight_u.value
-        v = self.weight_v.value
+        u = self.weight_u[...]
+        v = self.weight_v[...]
         for _ in range(self.n_power_iterations):
             v = _l2_normalize(jnp.matmul(weight_matrix_stop.T, u), self.eps)
             u = _l2_normalize(jnp.matmul(weight_matrix_stop, v), self.eps)
 
-        self.weight_u.value = jax.lax.stop_gradient(u)
-        self.weight_v.value = jax.lax.stop_gradient(v)
+        self.weight_u[...] = jax.lax.stop_gradient(u)
+        self.weight_v[...] = jax.lax.stop_gradient(v)
 
         sigma = jnp.dot(u, jnp.matmul(weight_matrix, v))
         factor = jnp.minimum(self.norm_multiplier / (sigma + self.eps), 1.0)
@@ -595,7 +624,7 @@ class SpectralNormWithMultiplier(nnx.Module):
     def _call_linear(self, inputs: jax.Array, kernel: jax.Array) -> jax.Array:
         """Apply a wrapped ``nnx.Linear`` with the spectrally-normalized kernel."""
         linear = cast("nnx.Linear", self.module)
-        bias = linear.bias.value if linear.bias is not None else None
+        bias = linear.bias[...] if linear.bias is not None else None
 
         inputs_p, kernel_p, bias_p = linear.promote_dtype((inputs, kernel, bias), dtype=linear.dtype)
 
@@ -617,18 +646,25 @@ class SpectralNormWithMultiplier(nnx.Module):
     def _call_conv(self, inputs: jax.Array, kernel: jax.Array) -> jax.Array:
         """Apply a wrapped ``nnx.Conv`` with the spectrally-normalized kernel.
 
-        Temporarily swaps in ``kernel`` for the convolution and restores the
-        original parameter afterwards. ``nnx.Conv``'s call signature already
-        handles padding, dilation, and feature-group bookkeeping; reusing it
-        avoids duplicating that logic.
+        Temporarily swaps the normalized ``kernel`` into the wrapped module's
+        kernel attribute (now an ``nnx.Variable``) and restores the original
+        value afterwards. ``nnx.Conv``'s call signature already handles padding,
+        dilation, and feature-group bookkeeping, so reusing it avoids
+        duplicating that logic.
+
+        Note: the in-place attribute swap is not jit-friendly. Calls to this
+        wrapped module are not currently jit-tested; a fully functional
+        implementation would inline ``jax.lax.conv_general_dilated`` and skip
+        the temporary mutation.
         """
         conv = cast("nnx.Conv", self.module)
-        original_kernel = conv.kernel.value
-        conv.kernel.value = kernel
+        kernel_var = conv.kernel
+        original_kernel = kernel_var[...]
+        kernel_var[...] = kernel
         try:
             return conv(inputs)
         finally:
-            conv.kernel.value = original_kernel
+            kernel_var[...] = original_kernel
 
 
 class SNGPLayer(nnx.Module):
@@ -696,7 +732,7 @@ class SNGPLayer(nnx.Module):
 
     def _compute_rff(self, x: jax.Array) -> jax.Array:
         """Compute random Fourier features for ``x``."""
-        projection = jnp.matmul(x, self.W_L.value.T) + self.b_L.value
+        projection = jnp.matmul(x, self.W_L[...].T) + self.b_L[...]
         return jnp.cos(projection) * math.sqrt(2.0 / self.num_inducing)
 
     def _update_precision_matrix(self, phi: jax.Array, logits: jax.Array) -> None:
@@ -710,11 +746,12 @@ class SNGPLayer(nnx.Module):
         phi_scaled = phi_stop * max_variance[..., None]
         batch_update_matrix = jnp.matmul(phi_stop.T, phi_scaled)
 
+        precision_current = self.precision_matrix[...]
         if self.momentum > 0:
-            new_precision = self.momentum * self.precision_matrix.value + (1.0 - self.momentum) * batch_update_matrix
+            new_precision = self.momentum * precision_current + (1.0 - self.momentum) * batch_update_matrix
         else:
-            new_precision = self.precision_matrix.value + batch_update_matrix
-        self.precision_matrix.value = new_precision
+            new_precision = precision_current + batch_update_matrix
+        self.precision_matrix[...] = new_precision
 
     def __call__(
         self,
@@ -739,7 +776,7 @@ class SNGPLayer(nnx.Module):
         if update_covariance:
             self._update_precision_matrix(phi, logits)
 
-        precision_fp32 = jnp.asarray(self.precision_matrix.value, dtype=jnp.float32)
+        precision_fp32 = jnp.asarray(self.precision_matrix[...], dtype=jnp.float32)
         covariance_matrix = jnp.linalg.inv(precision_fp32)
         phi_fp32 = jnp.asarray(phi, dtype=jnp.float32)
         variance = jnp.sum(phi_fp32 * jnp.matmul(phi_fp32, covariance_matrix), axis=-1)
