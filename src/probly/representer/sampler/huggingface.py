@@ -348,61 +348,16 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
             setattr(config, key, value)
         return {"generation_config": config}
 
-    def _completion_stop_token_ids(self) -> set[int]:
+    def _model_stop_token_ids(self) -> set[int]:
         token_ids: set[int] = set()
         for config in (
             self.generation_config,
             getattr(self.model, "generation_config", None),
             getattr(self.model, "config", None),
-            self.tokenizer,
         ):
             token_ids.update(_as_token_id_set(getattr(config, "eos_token_id", None)))
             token_ids.update(_as_token_id_set(getattr(config, "pad_token_id", None)))
         return token_ids
-
-    def _completion_log_likelihood(
-        self,
-        sequences: torch.Tensor,
-        transition_scores: torch.Tensor,
-    ) -> torch.Tensor:
-        if sequences.ndim != 2:
-            msg = "Generated sequences must have shape (batch_size, sequence_length)."
-            raise ValueError(msg)
-        if transition_scores.ndim != 2:
-            msg = "Transition scores must have shape (batch_size, generated_length)."
-            raise ValueError(msg)
-        if sequences.shape[0] != transition_scores.shape[0]:
-            msg = "Generated sequences and transition scores must share the same batch size."
-            raise ValueError(msg)
-        if sequences.shape[-1] < transition_scores.shape[-1]:
-            msg = "Generated sequences cannot be shorter than transition scores."
-            raise ValueError(msg)
-
-        scores = transition_scores.float()
-        if scores.shape[-1] == 0:
-            return torch.zeros((scores.shape[0],), dtype=scores.dtype, device=scores.device)
-
-        generated_tokens = sequences[:, -scores.shape[-1] :].to(device=scores.device)
-        stop_token_ids = self._completion_stop_token_ids()
-        if len(stop_token_ids) == 0:
-            scored_mask = torch.ones_like(scores, dtype=torch.bool)
-        else:
-            stop_tokens = torch.tensor(
-                sorted(stop_token_ids), dtype=generated_tokens.dtype, device=generated_tokens.device
-            )
-            stop_mask = torch.isin(generated_tokens, stop_tokens)
-            scored_mask = torch.cumsum(stop_mask.to(dtype=torch.long), dim=-1) == 0
-
-        summed = torch.where(scored_mask, scores, torch.zeros_like(scores)).sum(dim=-1)
-        if not self.length_normalization:
-            return summed
-
-        lengths = scored_mask.sum(dim=-1)
-        return torch.where(
-            lengths > 0,
-            summed / lengths.clamp_min(1).to(dtype=scores.dtype),
-            torch.zeros_like(summed),
-        )
 
     def _generate_chunk(self, prompts: Sequence[str], chunk_size: int) -> TorchTextGeneration:
         is_encoder_decoder = _is_encoder_decoder_model(self.model)
@@ -438,20 +393,19 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
                 beam_indices=getattr(outputs, "beam_indices", None),
                 normalize_logits=True,
             )
-            log_likelihood = self._completion_log_likelihood(sequences, transition_scores)
         else:
-            log_likelihood = torch.zeros((sequences.shape[0],), dtype=torch.float32, device=sequences.device)
-            transition_scores = log_likelihood.new_empty((sequences.shape[0], 0))
+            transition_scores = torch.empty((sequences.shape[0], 0), dtype=torch.float32, device=sequences.device)
 
         if self.strip_inputs and not is_encoder_decoder:
             sequences = sequences[:, input_ids.shape[-1] :]
 
         token_generation = TorchTokenGeneration(sequences=sequences, transition_scores=transition_scores)
-        text_generation = token_generation.to_text(self.tokenizer)
-        return TorchTextGeneration(
-            text=text_generation.text.reshape((len(prompts), chunk_size)),
-            log_likelihood=log_likelihood.reshape((len(prompts), chunk_size)),
-        )
+        model_stop_token_ids = self._model_stop_token_ids()
+        return token_generation.to_text(
+            self.tokenizer,
+            length_normalization=self.length_normalization,
+            stop_token_ids=model_stop_token_ids if len(model_stop_token_ids) > 0 else None,
+        ).reshape(len(prompts), chunk_size)
 
     def represent(self, inputs: Sequence[TextGenerationInput]) -> TorchTextGenerationSample:
         """Sample completions for each input.

@@ -17,6 +17,9 @@ from probly.representation.text_generation import (
 
 
 class FakeTokenizer:
+    eos_token_id = None
+    pad_token_id = None
+
     def batch_decode(
         self,
         sequences: list[list[int]],
@@ -28,6 +31,11 @@ class FakeTokenizer:
             " ".join(str(token) for token in sequence if not skip_special_tokens or token != 0)
             for sequence in sequences
         ]
+
+
+class FakeTokenizerWithDistinctStops(FakeTokenizer):
+    eos_token_id = 9
+    pad_token_id = 8
 
 
 def test_token_generation_to_text_decodes_and_sums_log_likelihoods() -> None:
@@ -42,6 +50,50 @@ def test_token_generation_to_text_decodes_and_sums_log_likelihoods() -> None:
     assert text.text.dtype == object
     assert text.text.tolist() == ["1 2 3", "4 5"]
     assert torch.allclose(text.log_likelihood, torch.tensor([-0.3, -0.7]))
+
+
+def test_token_generation_to_text_can_length_normalize_log_likelihoods() -> None:
+    generation = TorchTokenGeneration(
+        sequences=torch.tensor([[1, 2, 3], [4, 5, 6]]),
+        transition_scores=torch.tensor([[-0.1, -0.3], [-0.6, -0.9]]),
+    )
+
+    text = generation.to_text(FakeTokenizer(), length_normalization=True)
+
+    assert torch.allclose(text.log_likelihood, torch.tensor([-0.2, -0.75]))
+
+
+def test_token_generation_log_likelihood_uses_tokenizer_stop_ids_as_fallback() -> None:
+    generation = TorchTokenGeneration(
+        sequences=torch.tensor([[1, 9, 2], [3, 4, 8]]),
+        transition_scores=torch.tensor([[-0.1, -0.2, -0.3], [-0.4, -0.5, -0.6]]),
+    )
+
+    text = generation.to_text(FakeTokenizerWithDistinctStops(), length_normalization=True)
+
+    assert torch.allclose(text.log_likelihood, torch.tensor([-0.1, -0.45]))
+
+
+def test_token_generation_explicit_stop_ids_override_tokenizer_fallback() -> None:
+    generation = TorchTokenGeneration(
+        sequences=torch.tensor([[1, 9, 2], [3, 4, 8]]),
+        transition_scores=torch.tensor([[-0.1, -0.2, -0.3], [-0.4, -0.5, -0.6]]),
+    )
+
+    text = generation.to_text(FakeTokenizerWithDistinctStops(), length_normalization=True, stop_token_ids=[])
+
+    assert torch.allclose(text.log_likelihood, torch.tensor([-0.2, -0.5]))
+
+
+def test_token_generation_empty_transition_scores_return_zero_log_likelihoods() -> None:
+    generation = TorchTokenGeneration(
+        sequences=torch.tensor([[1, 2], [3, 4]]),
+        transition_scores=torch.empty((2, 0)),
+    )
+
+    text = generation.to_text(FakeTokenizer(), length_normalization=True)
+
+    assert torch.equal(text.log_likelihood, torch.zeros(2))
 
 
 def test_text_generation_validates_object_text_shape() -> None:

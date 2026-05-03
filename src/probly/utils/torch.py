@@ -76,7 +76,8 @@ def torch_entropy(p: torch.Tensor) -> torch.Tensor:
         Entropy of probabilities p
     """
     log_p = torch.where(p > 0, p.log(), p.new_zeros(()))
-    return -(p * log_p).sum(-1)
+    result = -(p * log_p).sum(-1)
+    return torch.clamp_min(result, 0.0) + 0.0  # Ensure non-negativity
 
 
 def intersection_probability(lower: torch.Tensor, upper: torch.Tensor) -> torch.Tensor:

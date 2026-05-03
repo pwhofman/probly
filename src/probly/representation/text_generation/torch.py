@@ -109,6 +109,15 @@ class TorchTextGeneration(TorchAxisProtected[torch.Tensor]):
             return self
         return replace(self, log_likelihood=log_likelihood)
 
+    def reshape(self, *shape: int | tuple[int, ...]) -> Self:
+        """Return a copy with reshaped text and log likelihood fields."""
+        target_shape: tuple[int] = shape[0] if len(shape) == 1 and isinstance(shape[0], tuple) else shape  # ty:ignore[invalid-assignment]
+
+        return type(self)(
+            log_likelihood=torch.reshape(self.log_likelihood, target_shape),
+            text=np.reshape(self.text, target_shape),
+        )
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class TorchTokenGeneration(TorchAxisProtected[torch.Tensor]):
@@ -139,10 +148,65 @@ class TorchTokenGeneration(TorchAxisProtected[torch.Tensor]):
             raise ValueError(msg)
         self.protected_values()
 
+    def _text_log_likelihood(
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        *,
+        length_normalization: bool,
+        stop_token_ids: set[int] | None = None,
+    ) -> torch.Tensor:
+        """Compute sequence log likelihoods for decoded generated text.
+
+        Args:
+            tokenizer: Tokenizer providing fallback EOS and padding token ids.
+            length_normalization: Whether to average over scored tokens instead of summing.
+            stop_token_ids: Explicit stop token ids. If omitted, tokenizer EOS and padding ids are used.
+
+        Returns:
+            Per-sequence log likelihoods with shape ``batch_shape``.
+        """
+        if self.sequences.shape[-1] < self.transition_scores.shape[-1]:
+            msg = "Generated sequences cannot be shorter than transition scores."
+            raise ValueError(msg)
+
+        scores = self.transition_scores.float()
+        if scores.shape[-1] == 0:
+            return torch.zeros(self.shape, dtype=scores.dtype, device=scores.device)
+
+        generated_tokens = self.sequences[..., -scores.shape[-1] :].to(device=scores.device)
+        if stop_token_ids is None:
+            stop_token_ids: set[int | None] = {
+                getattr(tokenizer, "eos_token_id", None),
+                getattr(tokenizer, "pad_token_id", None),
+            }
+            stop_token_ids: set[int] = {token_id for token_id in stop_token_ids if token_id is not None}
+
+        if len(stop_token_ids) == 0:
+            scored_mask = torch.ones_like(scores, dtype=torch.bool)
+        else:
+            stop_tokens = torch.tensor(
+                sorted(stop_token_ids), dtype=generated_tokens.dtype, device=generated_tokens.device
+            )
+            stop_mask = torch.isin(generated_tokens, stop_tokens)
+            scored_mask = torch.cumsum(stop_mask.to(dtype=torch.long), dim=-1) == 0
+
+        summed = torch.where(scored_mask, scores, torch.zeros_like(scores)).sum(dim=-1)
+        if not length_normalization:
+            return summed
+
+        lengths = scored_mask.sum(dim=-1)
+        return torch.where(
+            lengths > 0,
+            summed / lengths.clamp_min(1).to(dtype=scores.dtype),
+            torch.zeros_like(summed),
+        )
+
     def to_text(
         self,
         tokenizer: PreTrainedTokenizerBase,
         *,
+        length_normalization: bool = False,
+        stop_token_ids: set[int] | None = None,
         skip_special_tokens: bool = True,
         **decode_kwargs: Any,  # noqa: ANN401
     ) -> TorchTextGeneration:
@@ -150,6 +214,8 @@ class TorchTokenGeneration(TorchAxisProtected[torch.Tensor]):
 
         Args:
             tokenizer: Tokenizer exposing ``batch_decode``.
+            length_normalization: Whether log likelihoods should be averaged over scored tokens.
+            stop_token_ids: Explicit stop token ids. If omitted, tokenizer EOS and padding ids are used.
             skip_special_tokens: Whether special tokens should be omitted while decoding.
             **decode_kwargs: Additional keyword arguments forwarded to ``batch_decode``.
 
@@ -164,7 +230,11 @@ class TorchTokenGeneration(TorchAxisProtected[torch.Tensor]):
             **decode_kwargs,
         )
         text = np.asarray(decoded, dtype=object).reshape(batch_shape)
-        log_likelihood = torch.sum(self.transition_scores, dim=-1)
+        log_likelihood = self._text_log_likelihood(
+            tokenizer,
+            length_normalization=length_normalization,
+            stop_token_ids=stop_token_ids,
+        )
         return TorchTextGeneration(log_likelihood=log_likelihood, text=text)
 
 
