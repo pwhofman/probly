@@ -17,6 +17,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 import warnings
 
+from laplace import Laplace
 import torch
 from torch import nn
 from torch.utils.data import Subset
@@ -25,19 +26,24 @@ from tqdm import tqdm
 from probly.method.batchensemble import batchensemble
 from probly.method.bayesian import bayesian
 from probly.method.credal_ensembling import credal_ensembling
+from probly.method.credal_net import credal_net
 from probly.method.credal_relative_likelihood import credal_relative_likelihood
 from probly.method.credal_wrapper import credal_wrapper
 from probly.method.dare import dare
 from probly.method.ddu import ddu
 from probly.method.dropconnect import dropconnect
 from probly.method.dropout import dropout
+from probly.method.duq import duq
 from probly.method.efficient_credal_prediction import efficient_credal_prediction
 from probly.method.ensemble import ensemble
 from probly.method.evidential.classification import evidential_classification
+from probly.method.het_net import het_net
 from probly.method.natural_posterior_network import natural_posterior_network
 from probly.method.posterior_network import posterior_network
 from probly.method.subensemble import subensemble
+from probly.traverse_nn.utils import get_output_dim
 from probly_benchmark import models
+from probly_benchmark.base import base
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
@@ -46,20 +52,25 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 METHODS = {
+    "base": base,
     "batchensemble": batchensemble,
     "bayesian": bayesian,
     "dare": dare,
     "ddu": ddu,
     "dropout": dropout,
     "dropconnect": dropconnect,
+    "duq": duq,
+    "laplace": Laplace,
     "evidential_classification": evidential_classification,
     "natural_posterior_network": natural_posterior_network,
     "posterior_network": posterior_network,
     "ensemble": ensemble,
     "credal_ensembling": credal_ensembling,
+    "credal_net": credal_net,
     "credal_relative_likelihood": credal_relative_likelihood,
     "credal_wrapper": credal_wrapper,
     "efficient_credal_prediction": efficient_credal_prediction,
+    "het_net": het_net,
     "subensemble": subensemble,
 }
 
@@ -94,6 +105,9 @@ class BuildContext:
         num_classes: Number of classes for the dataset being used.
         pretrained: Whether to load pretrained weights for the base model.
         train_loader: Training loader, or ``None`` when building for load.
+        in_features: Number of input features for tabular base models. Ignored
+            by base models that infer their input shape (e.g. CNN backbones);
+            required by ``TabularMLP``.
     """
 
     base_model_name: str
@@ -101,6 +115,7 @@ class BuildContext:
     num_classes: int
     pretrained: bool
     train_loader: DataLoader | None = None
+    in_features: int | None = None
 
 
 Builder = Callable[[Callable[..., nn.Module], dict[str, Any], BuildContext], nn.Module]
@@ -129,7 +144,8 @@ def _default_builder(
     ctx: BuildContext,
 ) -> nn.Module:
     """Build a model using only the YAML hyperparameters and a base network."""
-    base = models.get_base_model(ctx.base_model_name, ctx.num_classes, ctx.pretrained)
+    extra = {"in_features": ctx.in_features} if ctx.in_features is not None else {}
+    base = models.get_base_model(ctx.base_model_name, ctx.num_classes, ctx.pretrained, **extra)
     return method_fn(base, predictor_type=ctx.model_type, **_filter_params(method_fn, params))
 
 
@@ -153,10 +169,12 @@ def _posterior_network_builder(
     restored by ``load_state_dict`` since ``class_counts`` is a buffer on
     the underlying module.
     """
+    extra = {"in_features": ctx.in_features} if ctx.in_features is not None else {}
     encoder = models.get_base_model(
         f"{ctx.base_model_name}_encoder",
         ctx.num_classes,
         ctx.pretrained,
+        **extra,
     )
     if ctx.train_loader is not None:
         class_counts = _class_counts(ctx.train_loader, ctx.num_classes)
@@ -197,9 +215,77 @@ def _natural_posterior_network_builder(
     )
 
 
+def _credal_relative_likelihood_builder(
+    method_fn: Callable[..., nn.Module],
+    params: dict[str, Any],
+    ctx: BuildContext,
+) -> nn.Module:
+    """Build credal relative likelihood and wrap the plain list in nn.ModuleList."""
+    model = _default_builder(method_fn, params, ctx)
+    return nn.ModuleList(model) if isinstance(model, list) else model  # ty: ignore[invalid-argument-type]
+
+
+def _subensemble_builder(
+    method_fn: Callable[..., nn.Module],
+    params: dict[str, Any],
+    ctx: BuildContext,
+) -> nn.Module:
+    """Build a Subensemble: shared ``<base>_encoder`` plus a configurable head copied per member.
+
+    Three things this builder needs that don't belong in the YAML:
+
+    - An encoder that outputs features instead of class logits. We ask
+      ``get_base_model`` for the ``<name>_encoder`` variant.
+    - The encoder's output feature dimension, inferred via :func:`get_output_dim`.
+    - A freshly constructed head module sized to ``feature_dim -> num_classes``,
+      built by :func:`models.get_encoder_head` from the ``head`` name in the
+      method config (defaults to ``"linear"``).
+
+    The head name is popped from a copy of ``params`` before forwarding the
+    remaining hyperparameters to ``method_fn`` so the resolved ``nn.Module`` is
+    passed as the ``head=`` kwarg without colliding with the YAML key.
+    ``method_fn`` (typically :func:`probly.method.subensemble.subensemble`)
+    then duplicates the head ``num_heads`` times; with ``reset_params=True``
+    each copy is re-initialized independently while the encoder stays
+    untouched and frozen.
+    """
+    encoder = models.get_base_model(
+        f"{ctx.base_model_name}_encoder",
+        ctx.num_classes,
+        ctx.pretrained,
+    )
+    feature_dim = get_output_dim(encoder)
+    method_params = dict(params)
+    head_name = method_params.pop("head", "linear")
+    head = models.get_encoder_head(head_name, feature_dim, ctx.num_classes)
+    return method_fn(
+        encoder,
+        head=head,
+        predictor_type=ctx.model_type,
+        **_filter_params(method_fn, method_params),
+    )
+
+
+def _laplace_builder(
+    method_fn: Callable[..., nn.Module],
+    params: dict[str, Any],
+    ctx: BuildContext,
+) -> nn.Module:
+    """Build a Laplace approximation.
+
+    ``Laplace(...)`` is laplace-torch's factory function (not a class) and does not accept ``predictor_type``;
+    we drop it and forward the remaining yaml params as keyword arguments.
+    """
+    base = models.get_base_model(ctx.base_model_name, ctx.num_classes, ctx.pretrained)
+    return method_fn(base, **_filter_params(method_fn, params))
+
+
 BUILDERS: dict[str, Builder] = {
+    "laplace": _laplace_builder,
     "natural_posterior_network": _natural_posterior_network_builder,
     "posterior_network": _posterior_network_builder,
+    "credal_relative_likelihood": _credal_relative_likelihood_builder,
+    "subensemble": _subensemble_builder,
 }
 
 

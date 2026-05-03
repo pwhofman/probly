@@ -1,5 +1,13 @@
 """Entropy-based decompositions of uncertainty."""
 
-from ._common import CredalSetEntropyDecomposition, SecondOrderEntropyDecomposition
+from ._common import (
+    CredalSetEntropyDecomposition,
+    LabelNoiseEntropyDecomposition,
+    SecondOrderEntropyDecomposition,
+)
 
-__all__ = ["CredalSetEntropyDecomposition", "SecondOrderEntropyDecomposition"]
+__all__ = [
+    "CredalSetEntropyDecomposition",
+    "LabelNoiseEntropyDecomposition",
+    "SecondOrderEntropyDecomposition",
+]

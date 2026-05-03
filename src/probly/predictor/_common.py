@@ -13,8 +13,10 @@ from probly.representation.distribution import (
     CategoricalDistribution,
     DirichletDistribution,
     Distribution,
+    GaussianDistribution,
     create_categorical_distribution,
     create_categorical_distribution_from_logits,
+    create_gaussian_distribution,
 )
 from probly.utils.switchdispatch import switch
 
@@ -25,6 +27,7 @@ type PredictorName = Literal[
     "logit_classifier",
     "dirichlet_distribution_predictor",
     "evidential_classifier",
+    "gaussian_distribution_predictor",
 ]
 
 
@@ -74,7 +77,11 @@ class RepresentationPredictor[**In, Out: Representation](Predictor[In, Out], Pro
 class RandomRepresentationPredictor[**In, Out: Representation](
     RepresentationPredictor[In, Out], RandomPredictor[In, Out], Protocol
 ):
-    """Protocol for non-deterministic predictors that return a distribution over outputs."""
+    """Protocol for non-deterministic predictors that return a distribution over outputs.
+
+    The reason this intersection type is defined explicitly is to allow of representer dispatch precedence for random
+    representation predictors over regular representation predictors.
+    """
 
     _running_instancehook: ClassVar[ContextVar[object]] = ContextVar(
         "RandomRepresentationPredictor._running_instancehook", default=NotImplemented
@@ -127,6 +134,12 @@ class LogitDistributionPredictor[**In, Out: CategoricalDistribution](Distributio
 @runtime_checkable
 class DirichletDistributionPredictor[**In, Out: DirichletDistribution](DistributionPredictor[In, Out], Protocol):
     """Protocol for predictors that return a Dirichlet distribution over outputs."""
+
+
+@predictor_registry.register("gaussian_distribution_predictor")
+@runtime_checkable
+class GaussianDistributionPredictor[**In, Out: GaussianDistribution](DistributionPredictor[In, Out], Protocol):
+    """Protocol for predictors that return a gaussian distribution over outputs."""
 
 
 @runtime_checkable
@@ -198,3 +211,14 @@ def predict_categorical_distribution_from_logit[**In, Out: CategoricalDistributi
 ) -> Out:
     """Predict for a categorical distribution predictor."""
     return create_categorical_distribution_from_logits(predict_raw(predictor, *args, **kwargs))  # ty:ignore[invalid-return-type]
+
+
+@predict.register(GaussianDistributionPredictor)
+def predict_gaussian_distribution[**In, Out: GaussianDistribution](
+    predictor: GaussianDistributionPredictor[In, Out], *args: In.args, **kwargs: In.kwargs
+) -> Out:
+    """Predict for a gaussian distribution predictor."""
+    raw = predict_raw(predictor, *args, **kwargs)
+    if isinstance(raw, tuple) and len(raw) == 2:
+        return create_gaussian_distribution(*raw)  # ty:ignore[invalid-return-type]
+    return create_gaussian_distribution(raw)  # ty:ignore[invalid-return-type]

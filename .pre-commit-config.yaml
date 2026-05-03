@@ -1,3 +1,5 @@
+exclude: '^\.claude/'
+
 repos:
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.10.10
@@ -36,9 +38,9 @@ repos:
     -   id: sigx-generate
         name: sigx-generate
         language: system
-        entry: uv run python scripts/generate_method_stubs.py
+        entry: uv run python scripts/generate_stubs.py
         pass_filenames: false
-        files: ^src/probly/method(?:/[^/]+/_common\.py|/method\.py|/_sigx_transforms\.py)$
+        files: ^src/probly/(method|transformation)(?:/[^/]+/_common\.py|/transformation\.py|/_sigx_transforms\.py)$
     -   id: ty-check
         name: ty-check
         language: system

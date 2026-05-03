@@ -6,15 +6,10 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from probly.metrics import auc, average_precision_score, precision_recall_curve, roc_auc_score, roc_curve
-from probly.plot.ood import plot_histogram, plot_pr_curve, plot_roc_curve
+from probly.metrics import average_precision_score, roc_auc_score, roc_curve
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-    from matplotlib.figure import Figure
-
-    from probly.plot.config import PlotConfig
 
 
 def out_of_distribution_detection_auroc(in_distribution: np.ndarray, out_distribution: np.ndarray) -> float:
@@ -230,7 +225,7 @@ def evaluate_ood(
     if isinstance(metrics, str):
         if metrics == "auroc":
             return {"auroc": STATIC_METRICS["auroc"](in_s, out_s)}
-        metric_list = [*STATIC_METRICS.keys(), "fpr", "fnr"] if metrics == "all" else [metrics]
+        metric_list = [*STATIC_METRICS.keys(), "fpr"] if metrics == "all" else [metrics]
     else:
         # metrics is a list list[str]
         metric_list = list(metrics)
@@ -255,63 +250,3 @@ def evaluate_ood(
             )
             raise ValueError(msg)
     return results
-
-
-def visualize_ood(
-    in_distribution: np.ndarray | list[float],
-    out_distribution: np.ndarray | list[float],
-    plot_types: list[str] | None = None,
-    invert_scores: bool = True,
-    config: PlotConfig | None = None,
-) -> dict[str, Figure]:
-    """Generate visualization plots from OOD scores.
-
-    Args:
-        in_distribution: Scores for in-distribution samples.
-        out_distribution: Scores for out-of-distribution samples.
-        plot_types: List of specific plots to return (e.g. ['roc', 'hist', 'pr']).
-            If None, all plots are generated.
-        invert_scores: If True (default), assumes scores are 'Confidence' (High = ID).
-            They will be inverted (1.0 - score) for metrics where OOD is the positive class.
-            If False, assumes scores are 'Anomaly Scores' (High = OOD).
-        config: Plot configuration shared across all generated figures.  Defaults
-            to ``PlotConfig()`` when ``None``.
-
-    Returns:
-        A dict containing matplotlib Figures for the requested plots.
-
-    """
-    id_s = np.asarray(in_distribution)
-    ood_s = np.asarray(out_distribution)
-
-    available_plots = {"hist", "roc", "pr"}
-    requested_plots = available_plots if plot_types is None else set(plot_types).intersection(available_plots)
-    figures = {}
-
-    if "hist" in requested_plots:
-        figures["hist"] = plot_histogram(id_scores=id_s, ood_scores=ood_s, config=config)
-
-    if "roc" in requested_plots or "pr" in requested_plots:
-        if invert_scores:
-            id_s_eval = 1.0 - id_s
-            ood_s_eval = 1.0 - ood_s
-        else:
-            id_s_eval = id_s
-            ood_s_eval = ood_s
-
-        labels = np.concatenate([np.zeros(len(id_s_eval)), np.ones(len(ood_s_eval))])
-        preds = np.concatenate([id_s_eval, ood_s_eval])
-
-        if "roc" in requested_plots:
-            fpr, tpr, _ = roc_curve(labels, preds)
-            auroc = auc(fpr, tpr)
-            idx_95 = np.where(tpr >= 0.95)[0]  # ty:ignore[unsupported-operator]
-            fpr95 = fpr[idx_95[0]] if len(idx_95) > 0 else None  # ty:ignore[not-subscriptable]
-            figures["roc"] = plot_roc_curve(fpr=fpr, tpr=tpr, auroc=auroc, fpr95=fpr95, config=config)  # ty:ignore[invalid-argument-type]
-
-        if "pr" in requested_plots:
-            precision, recall, _ = precision_recall_curve(labels, preds)
-            aupr = auc(recall, precision)
-            figures["pr"] = plot_pr_curve(recall=recall, precision=precision, aupr=aupr, config=config)  # ty:ignore[invalid-argument-type]
-
-    return figures

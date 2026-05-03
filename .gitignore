@@ -293,9 +293,11 @@ artifacts/
 # Experiments scratch env
 experiments/uv.lock
 experiments/**/model_cache/
+experiments/**/*.pdf
 
 # Local data / model caches
 data/
 
 # Paper (synced via Overleaf git)
 paper/
+paper_artifacts/

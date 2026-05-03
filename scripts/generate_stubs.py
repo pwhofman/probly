@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""Generate method stubs via sigx."""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+
+INCLUDES = (
+    "probly/transformation/*/_common.py",
+    "probly/transformation/transformation.py",
+    "probly/transformation/_sigx_transforms.py",
+    "probly/method/*/_common.py",
+)
+STUB_PATHSPEC = "stubs/probly/**/*.pyi"
+
+
+def build_command(src_root: Path, out_root: Path) -> list[str]:
+    """Build the sigx generate command."""
+    sigx_executable = shutil.which("sigx-gen")
+    if sigx_executable is None:
+        sigx_executable = str(Path(sys.executable).with_name("sigx-gen"))
+
+    command = [
+        sigx_executable,
+        "generate",
+        "--src-root",
+        str(src_root),
+        "--out-root",
+        str(out_root),
+        "--fail-on-errors",
+    ]
+    for include in INCLUDES:
+        command.extend(["--include", include])
+    return command
+
+
+def has_stub_drift(repo_root: Path) -> bool:
+    """Return whether generated method stubs differ from git state."""
+    git_executable = shutil.which("git")
+    if git_executable is None:
+        return True
+    result = subprocess.run(  # noqa: S603
+        [
+            git_executable,
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+            "--",
+            STUB_PATHSPEC,
+        ],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return bool(result.stdout.strip())
+
+
+def main() -> int:
+    """Run stub generation through sigx-gen."""
+    args = sys.argv[1:]
+    check_mode = False
+    if args and args[0] == "check":
+        check_mode = True
+        args = args[1:]
+
+    # Remaining positional args may be file paths passed by pre-commit.
+    # They are intentionally ignored because the hook-level `files` filter
+    # determines when this script should run.
+    _ = args
+
+    repo_root = Path(__file__).resolve().parents[1]
+    src_root = (repo_root / "src").resolve()
+    stub_root = (repo_root / "stubs").resolve()
+
+    if stub_root.exists():
+        shutil.rmtree(stub_root)
+
+    command = build_command(src_root, stub_root)
+
+    # Workaround for macOS where ``os.sysconf("SC_SEM_NSEMS_MAX")`` raises
+    # ``PermissionError`` and breaks joblib/loky's executor initialization
+    # (used internally by sigx-gen). Force single-process execution; harmless
+    # on platforms that don't trigger the bug.
+    env = {**os.environ, "LOKY_MAX_CPU_COUNT": os.environ.get("LOKY_MAX_CPU_COUNT", "1")}
+
+    try:
+        subprocess.run(command, cwd=repo_root, check=True, env=env)  # noqa: S603
+    except FileNotFoundError:
+        return 127
+    except subprocess.CalledProcessError as exc:
+        return exc.returncode
+
+    if check_mode and has_stub_drift(repo_root):
+        return 1
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

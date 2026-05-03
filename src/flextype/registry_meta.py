@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from abc import ABCMeta
 import functools
-from typing import TYPE_CHECKING, Any, Protocol, is_protocol, runtime_checkable
-from weakref import WeakSet
+from typing import TYPE_CHECKING, Any, Protocol, is_protocol, overload, runtime_checkable
+from weakref import ReferenceType, WeakSet, ref
 
 from flextype.isinstance import _find_closest_string_type, _split_lazy_type
 
@@ -25,7 +25,7 @@ EXCLUDED_ATTRS = frozenset(
 )
 
 
-def iter_registry_classes() -> list[RegistryMeta[Any]]:
+def _iter_registry_classes() -> list[RegistryMeta[Any]]:
     """Return all currently alive classes that use RegistryMeta."""
     classes = [
         registry_class
@@ -34,6 +34,21 @@ def iter_registry_classes() -> list[RegistryMeta[Any]]:
     ]
     classes.sort(key=lambda cls: (cls.__module__, cls.__qualname__))
     return classes
+
+
+def get_explicit_registry_classes(instance: object) -> list[RegistryMeta[Any]]:
+    """Collect all registry classes where `instance` was explicitly registered."""
+    return [
+        registry_class
+        for registry_class in _iter_registry_classes()
+        if registry_class.is_explicit_instance_registered(instance)
+    ]
+
+
+def copy_explicit_registry_classes(source: object, target: object) -> None:
+    """Copy explicit registry registrations from `source` to `target`."""
+    for registry_class in get_explicit_registry_classes(source):
+        registry_class.register_instance(target)
 
 
 class RegistrationError(Exception):
@@ -45,9 +60,59 @@ class RegistrationError(Exception):
         self.target_type = type(target)
         super().__init__(
             f"Registration failed for registry class {registry.__qualname__!r} and target type "
-            f"{self.target_type.__qualname__!r}: "
-            "Registered instances must be weak-referenceable and hashable."
+            f"{self.target_type.__qualname__!r}: Registered instances must be weak-referenceable."
         )
+
+
+class _IdentityWeakSet[T: object]:
+    """Weak set that tracks objects by identity rather than equality/hash."""
+
+    __slots__ = (
+        "__weakref__",
+        "_refs",
+    )
+    _refs: dict[int, ReferenceType[T]]
+
+    def __init__(self) -> None:
+        self._refs = {}
+
+    def add(self, instance: T) -> None:
+        """Add `instance` without requiring it to be hashable."""
+        key = id(instance)
+        registry_ref = ref(self)
+
+        def remove(instance_ref: ReferenceType[T], /, *, key: int = key) -> None:
+            registry = registry_ref()
+            if registry is not None:
+                registry.discard_ref(key, instance_ref)
+
+        self._refs[key] = ref(instance, remove)
+
+    def discard_ref(self, key: int, instance_ref: ReferenceType[T]) -> None:
+        """Discard a weak reference if it is still the one registered for `key`."""
+        if self._refs.get(key) is instance_ref:
+            self._refs.pop(key, None)
+
+    def discard(self, instance: object) -> None:
+        """Discard `instance` if this exact object is registered."""
+        key = id(instance)
+        instance_ref = self._refs.get(key)
+        if instance_ref is not None and instance_ref() is instance:
+            self._refs.pop(key, None)
+
+    def __contains__(self, instance: object) -> bool:
+        """Return whether this exact object is registered."""
+        key = id(instance)
+        instance_ref = self._refs.get(key)
+        if instance_ref is None:
+            return False
+
+        registered_instance = instance_ref()
+        if registered_instance is instance:
+            return True
+        if registered_instance is None:
+            self._refs.pop(key, None)
+        return False
 
 
 @classmethod
@@ -88,12 +153,35 @@ def _lazy_subclass_hook_with_pre_hook[T](
     return hook
 
 
+class List(list):
+    """A wrapper around list that allows weak references, to allow lists to be registered in registries."""
+
+
+class Dict(dict):
+    """A wrapper around dict that allows weak references, to allow dicts to be registered in registries."""
+
+
+class Set(set):
+    """A wrapper around set that allows weak references, to allow sets to be registered in registries."""
+
+
+def make_builtin_weakrefable[T: object](obj: T) -> T:
+    """Wrap built-in types in a weak-referenceable wrapper to allow them to be registered in registries."""
+    if type(obj) is list:
+        return List(obj)  # ty:ignore[invalid-return-type]
+    if type(obj) is dict:
+        return Dict(obj)  # ty:ignore[invalid-return-type]
+    if type(obj) is set:
+        return Set(obj)  # ty:ignore[invalid-return-type]
+    return obj
+
+
 class RegistryMeta[T: object](ABCMeta):
     """Metaclass for registry classes."""
 
     _subclass_registry: WeakSet[type]
-    _instance_registry: WeakSet[T]
-    _negative_instance_registry: WeakSet[object]
+    _instance_registry: _IdentityWeakSet[T]
+    _negative_instance_registry: _IdentityWeakSet[object]
     _string_registry: set[str]
     known_registry_classes: WeakSet[type] = WeakSet()
 
@@ -108,8 +196,8 @@ class RegistryMeta[T: object](ABCMeta):
         """Create a new class with a registry."""
         super().__init__(name, bases, namespace, **kwargs)
         cls._subclass_registry: WeakSet[type] = WeakSet()
-        cls._instance_registry: WeakSet[T] = WeakSet()
-        cls._negative_instance_registry: WeakSet[object] = WeakSet()
+        cls._instance_registry: _IdentityWeakSet[T] = _IdentityWeakSet()
+        cls._negative_instance_registry: _IdentityWeakSet[object] = _IdentityWeakSet()
         cls._string_registry: set[str] = set()
 
         if not is_protocol(cls):
@@ -154,7 +242,7 @@ class RegistryMeta[T: object](ABCMeta):
             cls._register(t)
 
         cls._register_lazy(strings)
-        cls._negative_instance_registry = WeakSet()
+        cls._negative_instance_registry = _IdentityWeakSet()
 
         if isinstance(subclass, type):
             return subclass
@@ -174,7 +262,7 @@ class RegistryMeta[T: object](ABCMeta):
     def _negative_register_instance[Q](cls: RegistryMeta[T], instance: Q) -> Q:
         try:
             cls._negative_instance_registry.add(instance)
-            cls._instance_registry.discard(instance)  # ty:ignore[invalid-argument-type]
+            cls._instance_registry.discard(instance)
         except TypeError as err:
             raise RegistrationError(
                 registry=cls,
@@ -182,16 +270,51 @@ class RegistryMeta[T: object](ABCMeta):
             ) from err
         return instance
 
-    def register_instance[Q](cls: RegistryMeta[T], instance: Q) -> Q:
+    def register_instance[Q](cls: RegistryMeta[T], instance: Q, autocast_builtins: bool = False) -> Q:
         """Register an instance in the registry."""
         if isinstance(instance, cls):
             return instance
 
+        if autocast_builtins:
+            instance = make_builtin_weakrefable(instance)
+
         return cls._register_instance(instance)
 
-    def register_factory[**In, Q](cls: RegistryMeta[T], func: Callable[In, Q]) -> Callable[In, Q]:
+    @overload
+    def register_factory[**In, Q](
+        cls: RegistryMeta[T],
+        func: Callable[In, Q],
+        *,
+        autocast_builtins: bool = False,
+        raise_on_failure: bool = True,
+    ) -> Callable[In, Q]: ...
+
+    @overload
+    def register_factory[**In, Q](
+        cls: RegistryMeta[T],
+        *,
+        autocast_builtins: bool = False,
+        raise_on_failure: bool = True,
+    ) -> Callable[[Callable[In, Q]], Callable[In, Q]]: ...
+
+    def register_factory[**In, Q](
+        cls: RegistryMeta[T],
+        func: Callable[In, Q] | None = None,
+        *,
+        autocast_builtins: bool = False,
+        raise_on_failure: bool = True,
+    ) -> Callable[In, Q] | Callable[[Callable[In, Q]], Callable[In, Q]]:
         """Decorator to annotate the results of a function with the registry type."""
-        return annotator(cls)(func)
+        if func is None:
+
+            def decorator(func: Callable[In, Q]) -> Callable[In, Q]:
+                return cls.register_factory(
+                    func, autocast_builtins=autocast_builtins, raise_on_failure=raise_on_failure
+                )
+
+            return decorator
+
+        return annotator(cls, autocast_builtins=autocast_builtins, raise_on_failure=raise_on_failure)(func)
 
     def _non_registered_instancecheck(cls, instance: object) -> bool:
         """Check if an instance is an instance of cls without checking the registry."""
@@ -340,7 +463,11 @@ class _RegistryAnnotator[T: object](Protocol):
         """Decorate `func` while preserving its parameters."""
 
 
-def annotator[T: object](registry_type: RegistryMeta[T]) -> _RegistryAnnotator[T]:
+def annotator[T: object](
+    registry_type: RegistryMeta[T],
+    autocast_builtins: bool = False,
+    raise_on_failure: bool = True,
+) -> _RegistryAnnotator[T]:
     """Decorator to annotate the result of a function with a registry type.
 
     This is useful for functions that return instances of a registry, but where the return type is not known statically,
@@ -352,8 +479,10 @@ def annotator[T: object](registry_type: RegistryMeta[T]) -> _RegistryAnnotator[T
         def wrapper(*args: In.args, **kwargs: In.kwargs) -> Q:
             res = func(*args, **kwargs)
             try:
-                return registry_type.register_instance(res)
+                return registry_type.register_instance(res, autocast_builtins=autocast_builtins)
             except RegistrationError:
+                if raise_on_failure:
+                    raise
                 return res  # If the result cannot be registered, return it as is.
 
         return wrapper

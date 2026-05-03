@@ -4,11 +4,15 @@ from __future__ import annotations
 
 import pytest
 
+from probly.decider import categorical_from_mean
 from probly.method.ddu import ddu
+from probly.predictor import predict
 
 torch = pytest.importorskip("torch")
 
 from torch import nn  # noqa: E402
+
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Test models
@@ -165,6 +169,16 @@ class TestForwardPass:
         logits, densities = out(test_input)
         assert logits.shape == (test_input.shape[0], NUM_CLASSES)
         assert densities.shape == (test_input.shape[0], NUM_CLASSES)
+
+    def test_categorical_from_mean_returns_ddu_softmax(self, mlp_model: SimpleMLP, test_input: torch.Tensor) -> None:
+        """The categorical mean decider should reduce DDU representations to their softmax distribution."""
+        out = ddu(mlp_model)
+
+        single = categorical_from_mean(predict(out, test_input))
+        logits, _ = out(test_input)
+
+        assert isinstance(single, TorchCategoricalDistribution)
+        assert torch.allclose(single.probabilities, torch.softmax(logits, dim=-1))
 
     def test_output_shape_downsample(self, downsample_model: DownsampleNet) -> None:
         """Transformed DownsampleNet should produce logits of correct shape."""

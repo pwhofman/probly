@@ -2,18 +2,20 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import FLAX_MODULE, SKLEARN_MODULE, TORCH_MODULE
+from probly.lazy_types import FLAX_MODULE, LAPLACE_BASE, SKLEARN_MODULE, TORCH_MODULE
 
 from ._common import (
     CategoricalDistributionPredictor,
     CredalPredictor,
     DirichletDistributionPredictor,
     DistributionPredictor,
+    GaussianDistributionPredictor,
     IterablePredictor,
     LogitDistributionPredictor,
     Predictor,
     PredictorName,
     RandomPredictor,
+    RandomRepresentationPredictor,
     RepresentationPredictor,
     predict,
     predict_raw,
@@ -39,12 +41,18 @@ def _(_: type[object]) -> None:
     from . import sklearn as sklearn  # noqa: PLC0415
 
 
+@predict.delayed_register(LAPLACE_BASE)
+def _(_: type[object]) -> None:
+    from . import laplace as laplace  # noqa: PLC0415
+
+
 __all__ = [
     "CategoricalDistributionPredictor",
     "CredalPredictor",
     "DirichletDistributionPredictor",
     "DistributionPredictor",
     "EvidentialPredictor",
+    "GaussianDistributionPredictor",
     "IterablePredictor",
     "LogitClassifier",
     "LogitDistributionPredictor",
@@ -52,6 +60,7 @@ __all__ = [
     "PredictorName",
     "ProbabilisticClassifier",
     "RandomPredictor",
+    "RandomRepresentationPredictor",
     "RepresentationPredictor",
     "predict",
     "predict_raw",

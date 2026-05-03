@@ -1,5 +1,8 @@
 defaults:
   - _self_
+  - supervised_loss: cross_entropy
+  - calibration: none
+  - conformal: none
   - recipe: ???
   - method: ???
 
@@ -7,6 +10,8 @@ dataset: "cifar10"
 ood_dataset: "cifar100"
 base_model: "resnet18"
 seed: 1
+decomposition: "epistemic"
+metrics: "all"
 batch_size: 512
 amp: true
 wandb:

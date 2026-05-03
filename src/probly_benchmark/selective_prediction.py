@@ -2,18 +2,45 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-import wandb
 
+from probly.decider import categorical_from_mean
 from probly.evaluation.tasks import selective_prediction
 from probly.quantification import quantify
-from probly.representation._helpers import compute_mean_probs
 from probly.representer import representer
-from probly_benchmark import data, utils
-from probly_benchmark.utils import load_model_from_wandb, resolve_artifact_name
+from probly_benchmark import calibration, data, utils
+from probly_benchmark.utils import init_wandb_for_evaluation, load_model_for_evaluation
+
+if TYPE_CHECKING:
+    import numpy as np
+
+    from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+
+_SUPPORTED_LOSSES = ("zero_one",)
+_SUPPORTED_DECOMPOSITIONS = ("aleatoric", "epistemic", "total")
+
+
+def _compute_loss(mean_probs: np.ndarray, labels: np.ndarray, loss: str) -> np.ndarray:
+    """Compute the per-sample loss for selective prediction.
+
+    Args:
+        mean_probs: Mean predicted probabilities of shape (n_instances, n_classes).
+        labels: True labels of shape (n_instances,).
+        loss: Loss function identifier. One of ``_SUPPORTED_LOSSES``.
+
+    Returns:
+        Per-sample loss values of shape (n_instances,).
+
+    Raises:
+        ValueError: If ``loss`` is not supported.
+    """
+    if loss == "zero_one":
+        return (mean_probs.argmax(axis=-1) != labels).astype(float)
+    msg = f"Unsupported loss: {loss!r}. Choose from {_SUPPORTED_LOSSES}."
+    raise ValueError(msg)
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="selective_prediction")
@@ -26,15 +53,10 @@ def main(cfg: DictConfig) -> None:
     print(f"Running on device: {device}")
 
     utils.set_seed(cfg.seed)
+    calibration.validate_calibration_config(cfg)
 
-    artifact_name = resolve_artifact_name(cfg)
-    model, _, run_id = load_model_from_wandb(
-        artifact_name,
-        cfg.wandb.entity,
-        cfg.wandb.project,
-        device,
-    )
-    print(f"Loaded model {artifact_name} from wandb run: {run_id}")
+    model, _, run_id = load_model_for_evaluation(cfg, device)
+    print(f"Loaded model for {cfg.method.name} from wandb run: {run_id}")
 
     test_loader = data.get_data_selective_prediction(
         cfg.dataset,
@@ -57,23 +79,22 @@ def main(cfg: DictConfig) -> None:
         device,
         cfg.get("amp", False),
     )
-    decomposition = quantify(outputs)
-    uncertainties = decomposition.total.detach().cpu().numpy()  # ty: ignore[unresolved-attribute]
+    if cfg.decomposition not in _SUPPORTED_DECOMPOSITIONS:
+        msg = f"Unsupported decomposition: {cfg.decomposition!r}. Choose from {_SUPPORTED_DECOMPOSITIONS}."
+        raise ValueError(msg)
 
-    mean_probs = compute_mean_probs(outputs).cpu().numpy()
+    decomposition = quantify(outputs)
+    uncertainties = decomposition[cfg.decomposition].detach().cpu().numpy()  # ty:ignore[not-subscriptable]
+
+    mean_probs = cast("TorchCategoricalDistribution", categorical_from_mean(outputs)).cpu().numpy()
 
     labels = targets.numpy()
-    loss = (mean_probs.argmax(axis=1) != labels).astype(float)
+    loss = _compute_loss(mean_probs, labels, cfg.loss)
     auroc, bin_losses = selective_prediction(uncertainties, loss, n_bins=cfg.n_bins)
     print(f"Selective prediction AUROC: {auroc:.4f}")
 
     if cfg.wandb.enabled:
-        run = wandb.init(
-            id=run_id,
-            entity=cfg.wandb.entity,
-            project=cfg.wandb.project,
-            resume="must",
-        )
+        run = init_wandb_for_evaluation(cfg, run_id)
         run.summary["sp/auroc"] = auroc
         run.summary["sp/bin_losses"] = bin_losses.tolist()
         run.finish()

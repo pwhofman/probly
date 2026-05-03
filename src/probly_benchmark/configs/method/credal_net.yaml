@@ -1,0 +1,5 @@
+# @package method
+name: "credal_net"
+label: "CreNet"
+params:
+train:

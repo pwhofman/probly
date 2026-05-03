@@ -1,0 +1,17 @@
+# @package method
+name: "duq"
+label: "DUQ"
+params:
+  # Embedding dimension n of the per-class projection W_c.
+  centroid_size: 512
+  # RBF kernel length scale sigma. Controls the width of the per-class
+  # Gaussian kernel; smaller values produce sharper kernel responses.
+  length_scale: 0.1
+  # Exponential moving-average decay for the centroid statistics.
+  gamma: 0.999
+train:
+  # Coefficient lambda of the two-sided input-gradient penalty
+  # (||grad_x sum_c K_c||_2 - 1)^2. Set to 0.0 to disable the penalty.
+  # van Amersfoort et al., "Uncertainty Estimation Using a Single Deep
+  # Deterministic Neural Network", ICML 2020 (https://arxiv.org/abs/2003.02037).
+  gradient_penalty: 0.5

@@ -159,6 +159,9 @@ class Flexdispatch[**In, Out]:
             # Check if an instance-level registry registration applies.
             registry_meta_matches: set[type] = set()
             for registry_meta_type in self.registry_meta_types:
+                if issubclass(cls, registry_meta_type):
+                    continue
+
                 if isinstance(registry_meta_lookup, registry_meta_type):
                     should_add = True
                     if len(registry_meta_matches) > 0:

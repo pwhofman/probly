@@ -49,6 +49,13 @@ class CategoricalCredalSet[T: CategoricalDistribution](CredalSet, ABC):
         msg = "num_classes property not implemented."
         raise NotImplementedError(msg)
 
+    @property
+    @abstractmethod
+    def barycenter(self) -> T:
+        """Return the barycenter of the credal set."""
+        msg = "barycenter property not implemented."
+        raise NotImplementedError(msg)
+
 
 class DiscreteCredalSet[T: CategoricalDistribution](CategoricalCredalSet[T]):
     """A credal set over a finite set of distributions."""

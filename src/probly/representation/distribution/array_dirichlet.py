@@ -60,6 +60,12 @@ class ArrayDirichletDistribution(
         """Create a Dirichlet distribution from an array or list."""
         return cls(alphas=np.asarray(alphas, dtype=dtype))
 
+    @property
+    def mean(self) -> ArrayCategoricalDistribution:
+        """Return the mean of the Dirichlet distribution."""
+        mean_alphas = self.alphas / np.sum(self.alphas, axis=-1, keepdims=True)
+        return ArrayCategoricalDistribution(mean_alphas)
+
     @override
     def sample(
         self,

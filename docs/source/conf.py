@@ -63,6 +63,7 @@ autoclass_content = "both"  # class docstring AND __init__ docstring
 autodoc_typehints = "signature"  # show type hints only in the signature,
 # Only show types for parameters that are actually documented
 autodoc_typehints_description_target = "documented_params"  # only params that are actually documented
+napoleon_use_ivar = True
 autodoc_default_options = {
     "members": True,
     "undoc-members": True,
@@ -119,7 +120,7 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy", None),
     "matplotlib": ("https://matplotlib.org/stable", None),
     "PIL": ("https://pillow.readthedocs.io/en/stable/", None),
-    "torch": ("https://pytorch.org/docs/stable/", None),
+    "torch": ("https://docs.pytorch.org/docs/2.10/", None),
     "sklearn": ("https://scikit-learn.org/stable/", None),
 }
 

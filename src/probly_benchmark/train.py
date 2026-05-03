@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
-from probly.method.efficient_credal_prediction import EfficientCredalPredictor
-
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
@@ -18,11 +16,10 @@ import pathlib
 import tempfile
 
 import hydra
-import numpy as np
+from laplace.baselaplace import BaseLaplace
+from laplace.utils.feature_extractor import FeatureExtractor
 from omegaconf import DictConfig, OmegaConf
 from pytorch_optimizer import Lamb
-import scipy.optimize
-import scipy.special
 import torch
 from torch import nn, optim
 from torch.amp import GradScaler
@@ -34,14 +31,16 @@ from flextype import flexdispatch
 from probly.layers.torch import BatchEnsembleConv2d, BatchEnsembleLinear
 from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.bayesian import BayesianPredictor
-from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
-from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
+from probly.method.duq import DUQPredictor
+from probly.method.efficient_credal_prediction import (
+    EfficientCredalPredictor,
+    compute_efficient_credal_prediction_bounds,
+)
 from probly.method.ensemble import EnsemblePredictor
-from probly.method.subensemble import SubensemblePredictor
-from probly_benchmark import data, metadata, utils
+from probly_benchmark import conformal, data, metadata, utils
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.paths import CHECKPOINT_PATH
 from probly_benchmark.train_funcs import (
@@ -72,6 +71,45 @@ def _get_state_dict(model: nn.Module | list[nn.Module]) -> dict | list[dict]:
     if isinstance(model, list):
         return [cast("nn.Module", m).state_dict() for m in model]
     return model.state_dict()
+
+
+def _move_to_device(model: nn.Module | EnsemblePredictor | BaseLaplace, device: torch.device) -> None:
+    """Move model to device in-place, handling type-specific things."""
+    if isinstance(model, EnsemblePredictor):
+        for member in model:
+            member.to(device)
+    elif isinstance(model, BaseLaplace):
+        model.model.to(device)
+    else:
+        model.to(device)
+
+
+def _log_artifact_file(path: pathlib.Path, artifact_name: str, metadata: dict[str, Any]) -> None:
+    """Log a checkpoint file as a wandb model artifact."""
+    artifact = wandb.Artifact(name=artifact_name, type="model", metadata=metadata)
+    artifact.add_file(str(path))
+    wandb.log_artifact(artifact)
+
+
+def _save_checkpoint_artifact(model: nn.Module, cfg: DictConfig, test_metrics: dict[str, float]) -> None:
+    """Save and log the trained model checkpoint artifact."""
+    metadata = cast("dict[str, Any]", OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True))
+    checkpoint = {
+        "model_state_dict": _get_state_dict(model),
+        "config": metadata,
+        "metrics": test_metrics,
+    }
+    artifact_name = utils.resolve_artifact_name(cfg)
+
+    if cfg.save_to_disk:
+        path = pathlib.Path(CHECKPOINT_PATH).joinpath(f"{artifact_name}.pt")
+        torch.save(checkpoint, path)
+        _log_artifact_file(path, artifact_name, metadata)
+    else:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp).joinpath(f"{artifact_name}.pt")
+            torch.save(checkpoint, path)
+            _log_artifact_file(path, artifact_name, metadata)
 
 
 def get_optimizer(
@@ -124,6 +162,62 @@ SCHEDULERS: dict[str, Callable[..., optim.lr_scheduler.LRScheduler] | None] = {
     "warmup_cosine": _make_warmup_cosine,
 }
 
+SUPERVISED_LOSS_METHODS = {
+    "base",  # Special "method" for training a predictor without applying a method.
+    "batchensemble",
+    "credal_ensembling",
+    "credal_wrapper",
+    "dropconnect",
+    "dropout",
+    "efficient_credal_prediction",
+    "ensemble",
+    "het_net",
+    "subensemble",
+}
+"""The set of method names that support non-default supervised losses."""
+
+
+def _validate_supervised_loss_config(cfg: DictConfig) -> None:
+    """Validate that non-default supervised losses are only used with supported methods."""
+    supervised_loss_name = utils.get_supervised_loss_name(cfg)
+    if supervised_loss_name == utils.DEFAULT_SUPERVISED_LOSS:
+        return
+    if cfg.method.name not in SUPERVISED_LOSS_METHODS:
+        supported = ", ".join(sorted(SUPERVISED_LOSS_METHODS))
+        msg = (
+            f"supervised_loss.name={supervised_loss_name!r} is only supported for CE-compatible methods "
+            f"({supported}); got method={cfg.method.name!r}."
+        )
+        raise ValueError(msg)
+
+
+def _validate_conformal_config(cfg: DictConfig) -> None:
+    """Reject split-conformal methods during training."""
+    conformal_name = conformal.get_conformal_name(cfg)
+    if conformal_name == conformal.DEFAULT_CONFORMAL:
+        return
+    conformal.validate_conformal_config(cfg)
+    msg = (
+        f"conformal.name={conformal_name!r} is a split-conformal post-hoc method. "
+        "Train the base model first, then apply split-conformal prediction with conformalize.py."
+    )
+    raise ValueError(msg)
+
+
+def _build_train_kwargs(cfg: DictConfig) -> dict[str, Any]:
+    """Build keyword arguments forwarded to method-specific training and evaluation functions."""
+    train_kwargs: dict[str, Any] = (
+        OmegaConf.to_container(cfg.method.train, resolve=True) if cfg.method.get("train") else {}
+    )  # ty: ignore[invalid-assignment]
+    if cfg.method.name in SUPERVISED_LOSS_METHODS:
+        train_kwargs["supervised_loss"] = OmegaConf.to_container(cfg.supervised_loss, resolve=True)
+    return train_kwargs
+
+
+def _build_method_kwargs(cfg: DictConfig) -> dict[str, Any]:
+    """Build keyword arguments forwarded to the method constructor."""
+    return OmegaConf.to_container(cfg.method.params, resolve=True) if cfg.method.get("params") else {}  # ty: ignore
+
 
 def get_scheduler(
     name: str,
@@ -168,13 +262,15 @@ def _maybe_compile_forward(model: nn.Module, device: torch.device) -> None:
     so compilation is skipped on MPS and a message is printed to surface the
     deviation from the default CUDA/CPU path.
     """
-    if device.type == "mps":
+    if device.type == "mps" or isinstance(model, DUQPredictor):
         print("Skipping torch.compile on MPS (Inductor's Metal backend unsupported); using eager forward.")
+        return
+    if getattr(model, "_probly_skip_compile", False):
         return
     model.forward = torch.compile(model.forward)
 
 
-def _training_loop(  # noqa: PLR0912
+def _training_loop(  # noqa: PLR0912, PLR0915
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader | None,
@@ -186,6 +282,7 @@ def _training_loop(  # noqa: PLR0912
     val_fn: Callable[..., tuple[float, float]],
     log_prefix: str = "",
     param_groups: list[dict[str, Any]] | None = None,
+    extra_metrics: dict[str, Any] | None = None,
 ) -> None:
     """Run the training loop for a single model.
 
@@ -205,6 +302,8 @@ def _training_loop(  # noqa: PLR0912
             in place of ``model.parameters()``. Each dict can override the optimizer's
             default ``lr`` / ``weight_decay`` for a subset of parameters; used by
             BatchEnsemble to apply a slower lr and disable weight decay on fast weights.
+        extra_metrics: Optional dict of additional fixed metrics logged every epoch
+            alongside the standard loss/accuracy keys (e.g. ``{"member_0/relative_likelihood": 1.0}``).
     """
     _maybe_compile_forward(model, device)
 
@@ -233,19 +332,21 @@ def _training_loop(  # noqa: PLR0912
     amp_enabled = cfg.get("amp", False)
     scaler = GradScaler(device.type) if amp_enabled else None
 
-    epoch_key = "epoch"
+    # Each prefixed member gets its own hidden epoch counter as x-axis so that
+    # all member charts share a 0..n_epochs range rather than a global step.
     if log_prefix:
+        epoch_key: str | None = f"{log_prefix.rstrip('/')}_epoch"
+        wandb.define_metric(epoch_key, hidden=True)
         wandb.define_metric(f"{log_prefix}*", step_metric=epoch_key)
     else:
-        for _m in ("train_loss", "val_loss", "val_acc"):
-            wandb.define_metric(_m, step_metric=epoch_key)
+        epoch_key = None
 
     for epoch in tqdm(range(cfg.epochs), desc=f"{log_prefix}Epoch"):
         model.train()
         running_loss = 0.0
         for inputs_, targets_ in tqdm(train_loader):
             inputs = inputs_.to(device, non_blocking=True)
-            if device.type == "cuda":
+            if device.type == "cuda" and inputs.ndim >= 4:
                 inputs = inputs.contiguous(memory_format=torch.channels_last)
             targets = targets_.to(device, non_blocking=True)
             running_loss += train_fn(
@@ -264,7 +365,11 @@ def _training_loop(  # noqa: PLR0912
         running_loss /= len(train_loader)
 
         val_loss: float | None = None
-        log_data = {epoch_key: epoch, f"{log_prefix}train_loss": running_loss}
+        log_data: dict[str, Any] = {f"{log_prefix}train_loss": running_loss}
+        if epoch_key is not None:
+            log_data[epoch_key] = epoch
+        if extra_metrics:
+            log_data.update(extra_metrics)
         if val_loader:
             val_loss, val_acc = val_fn(model, val_loader, device, amp_enabled, epoch=epoch, **train_kwargs)
             log_data[f"{log_prefix}val_loss"] = val_loss
@@ -316,7 +421,7 @@ def train_model(
     )
 
 
-@train_model.register((EnsemblePredictor, CredalEnsemblingPredictor, CredalWrapperPredictor, SubensemblePredictor))
+@train_model.register(EnsemblePredictor)
 def _(
     model: EnsemblePredictor,
     train_loader: DataLoader,
@@ -458,7 +563,7 @@ def _compute_log_likelihood(
     return -total_loss / total_samples
 
 
-def _training_loop_relative_likelihood(  # noqa: PLR0912
+def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader | None,
@@ -491,7 +596,8 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912
     amp_enabled = cfg.get("amp", False)
     scaler = GradScaler(device.type) if amp_enabled else None
 
-    epoch_key = "epoch"
+    epoch_key = f"{log_prefix.rstrip('/')}_epoch"
+    wandb.define_metric(epoch_key, hidden=True)
     wandb.define_metric(f"{log_prefix}*", step_metric=epoch_key)
 
     stopped = False
@@ -500,7 +606,7 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912
         running_loss = 0.0
         for inputs_, targets_ in tqdm(train_loader):
             inputs = inputs_.to(device, non_blocking=True)
-            if device.type == "cuda":
+            if device.type == "cuda" and inputs.ndim >= 4:
                 inputs = inputs.contiguous(memory_format=torch.channels_last)
             targets = targets_.to(device, non_blocking=True)
             running_loss += train_fn(
@@ -605,7 +711,7 @@ def _(
     batch_check = train_kwargs.get("batch_check", False)
     num_remaining = len(members) - 1
 
-    # Train first member fully (standard training loop)
+    # Train first member fully; relative_likelihood is 1.0 by definition for the reference model
     _training_loop(
         members[0],
         train_loader,
@@ -617,6 +723,7 @@ def _(
         train_fn=train_epoch_cross_entropy,
         val_fn=validate_cross_entropy,
         log_prefix="member_0/",
+        extra_metrics={"member_0/relative_likelihood": 1.0},
     )
 
     # Compute reference log-likelihood from the fully trained first member
@@ -672,7 +779,7 @@ def _fit_ddu_density_head(
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in tqdm(train_loader, desc="Fitting DDU density head"):
         inputs = inputs_.to(device, non_blocking=True)
-        if device.type == "cuda":
+        if device.type == "cuda" and inputs.ndim >= 4:
             inputs = inputs.contiguous(memory_format=torch.channels_last)
         targets = targets_.to(device, non_blocking=True)
         with torch.amp.autocast(device.type, enabled=amp_enabled):
@@ -686,6 +793,41 @@ def _fit_ddu_density_head(
     density_head.cpu()
     density_head.fit(features_cat, labels_cat)
     density_head.to(density_head_device)
+
+
+@train_model.register(DUQPredictor)
+def _(
+    model: nn.Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Train a DUQ predictor :cite:`vanamersfoortDUQ2020`.
+
+    Disables AMP because the gradient penalty requires a stable second-order
+    autograd graph that ``torch.amp.autocast`` does not support across all
+    backends. The standard training loop is otherwise reused: it dispatches to
+    ``train_epoch_duq`` (BCE on kernel values + gradient penalty + EMA
+    centroid update) and ``validate_duq`` via the flexdispatch registry.
+    """
+    cfg_ = cfg.copy()
+    if cfg_.get("amp", False):
+        print("DUQ: disabling AMP (incompatible with the second-order gradient penalty).")
+        cfg_.amp = False
+    _training_loop(
+        model,
+        train_loader,
+        val_loader,
+        cfg_,
+        device,
+        run,
+        train_kwargs,
+        train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
+        val_fn=validate,
+    )
 
 
 @train_model.register(DDUPredictor)
@@ -706,6 +848,10 @@ def _(
     density estimator (GDA) on all training features extracted from the frozen
     encoder, which is used at inference time for epistemic uncertainty scoring.
     """
+    # The density head buffer is ~16 GB at ImageNet scale and is unused during training
+    # Parking it on CPU during training decreases footprint sufficiently to use H200 cards
+    density_device = next(model.density_head.buffers()).device  # ty: ignore[unresolved-attribute]
+    model.density_head.to("cpu")
     _training_loop(
         model,
         train_loader,
@@ -717,77 +863,56 @@ def _(
         train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
         val_fn=validate,
     )
+    model.density_head.to(density_device)
+
     amp_enabled = cfg.get("amp", False)
     _fit_ddu_density_head(model, train_loader, device, amp_enabled)
     run.summary["ddu_gmm_fitted"] = True
 
 
-def _compute_efficient_credal_prediction_bounds(
-    logits_train: torch.Tensor,
-    targets_train: torch.Tensor,
-    num_classes: int,
-    alpha: float,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Compute per-class additive logit bounds via classwise relative-likelihood optimisation.
+@train_model.register(BaseLaplace)
+def _(
+    model: BaseLaplace,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Fine-tune the underlying network, then fit the Laplace posterior post-hoc.
 
-    For each class ``k`` and each direction (min/max), find the optimal additive
-    logit perturbation ``x`` on column ``k`` that keeps the mean training
-    relative likelihood at least ``alpha``. The relative likelihood is
-    ``exp(ll(logits + x * e_k) - ll(logits))`` where ``ll`` is the mean
-    per-sample log-likelihood.
-
-    Based on :cite:`hofmanefficient` and the reference implementation at
-    https://github.com/pwhofman/efficient-credal-prediction/blob/main/models.py.
-
-    Args:
-        logits_train: Training logits, shape ``(N, num_classes)``.
-        targets_train: Integer training targets, shape ``(N,)``.
-        num_classes: Number of classes.
-        alpha: Relative-likelihood threshold in ``[0, 1]``.
-
-    Returns:
-        Tuple ``(lower, upper)`` of ``numpy.ndarray`` with shape ``(num_classes,)``
-        and dtype ``float64``. ``lower[k]`` is the most-negative logit
-        perturbation on class ``k`` that keeps the relative likelihood at least
-        ``alpha``; ``upper[k]`` is the most-positive.
+    Phase 1 runs the standard supervised loop on the underlying ``nn.Module`` (laplace-torch's wrapped model).
+    Phase 2 calls ``BaseLaplace.fit(train_loader)`` and, if ``train_kwargs["optimize_prior"]`` is set, tunes
+    the prior precision by marginal-likelihood maximization.
     """
-    logits_np = logits_train.detach().cpu().numpy().astype(np.float64)
-    targets_np = targets_train.detach().cpu().numpy().astype(np.int64)
-
-    def _mean_log_likelihood(logits: np.ndarray, targets: np.ndarray) -> float:
-        log_probs = scipy.special.log_softmax(logits, axis=1)
-        return float(log_probs[np.arange(len(targets)), targets].mean())
-
-    mll = _mean_log_likelihood(logits_np, targets_np)
-
-    lower = np.zeros(num_classes, dtype=np.float64)
-    upper = np.zeros(num_classes, dtype=np.float64)
-
-    for k in tqdm(range(num_classes), desc="Credal bounds"):
-        for direction in (1, -1):
-
-            def fun(x: np.ndarray, direction: int = direction) -> float:
-                return float(direction * x[0])
-
-            def const(x: np.ndarray, k: int = k) -> float:
-                perturbed = logits_np.copy()
-                perturbed[:, k] += x[0]
-                return float(np.exp(_mean_log_likelihood(perturbed, targets_np) - mll) - alpha)
-
-            res = scipy.optimize.minimize(
-                fun,
-                x0=np.array([0.0]),
-                constraints=[{"type": "ineq", "fun": const}],
-                bounds=[(-1e4, 1e4)],
-            )
-            if not res.success:
-                print(f"scipy.optimize.minimize did not converge for class {k} direction {direction}: {res.message}")
-            if direction == 1:
-                lower[k] = float(res.x[0])
-            else:
-                upper[k] = float(res.x[0])
-
-    return lower, upper
+    # Extract model from BaseLaplace, if we do last layer mode, model.model is a FeatureExtractor, so unwrap it
+    inner_model = model.model.model if isinstance(model.model, FeatureExtractor) else model.model
+    # Problems with cuda + triton + compile if we compile this model, so we set a flag to skip it.
+    inner_model._probly_skip_compile = True  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+    _training_loop(
+        inner_model,
+        train_loader,
+        val_loader,
+        cfg,
+        device,
+        run,
+        train_kwargs,
+        train_fn=train_epoch_cross_entropy,
+        val_fn=validate_cross_entropy,
+    )
+    model.fit(train_loader)
+    run.summary["laplace_fitted"] = True
+    if train_kwargs.get("optimize_prior", False):
+        # ``pred_type`` is required by laplace-torch's signature but unused when ``method='marglik'``
+        # (marglik works directly on the closed-form log-marginal-likelihood); any value is fine.
+        model.optimize_prior_precision(
+            pred_type="glm",
+            method="marglik",
+            n_steps=train_kwargs.get("n_steps", 100),
+            lr=train_kwargs.get("lr", 0.1),
+        )
+        run.summary["laplace_prior_precision"] = float(model.prior_precision)
 
 
 @train_model.register(EfficientCredalPredictor)
@@ -820,7 +945,7 @@ def _(
     model_ = cast("Any", model)
     amp_enabled = cfg.get("amp", False)
     alpha = train_kwargs.get("alpha", 0.5)
-    num_classes = int(model_.lower.shape[0])
+    num_classes = metadata.DATASETS[cfg.dataset].num_classes
 
     logits_train, targets_train = utils.collect_outputs_targets_raw(
         model_.predictor,
@@ -828,14 +953,23 @@ def _(
         device,
         amp_enabled,
     )
-    lower, upper = _compute_efficient_credal_prediction_bounds(
+    lower, upper = compute_efficient_credal_prediction_bounds(
         logits_train,
         targets_train,
         num_classes=num_classes,
         alpha=alpha,
     )
-    model_.lower.copy_(torch.from_numpy(lower).to(model_.lower))
-    model_.upper.copy_(torch.from_numpy(upper).to(model_.upper))
+    lower_t = lower.to(device)
+    upper_t = upper.to(device)
+
+    # Initialize the buffers if they are None, otherwise copy in-place
+    if model_.lower is None:
+        model_.lower = lower_t
+        model_.upper = upper_t
+    else:
+        model_.lower.copy_(lower_t)
+        model_.upper.copy_(upper_t)
+
     run.summary["efficient_credal_alpha"] = alpha
 
 
@@ -849,20 +983,24 @@ def _adjust_batch_size_for_method(cfg: DictConfig) -> None:
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="train")
-def main(cfg: DictConfig) -> None:  # noqa: PLR0915
+def main(cfg: DictConfig) -> None:
     """Run the training script."""
     _adjust_batch_size_for_method(cfg)
 
     print("=== Training configuration ===")
     print(OmegaConf.to_yaml(cfg))
 
+    _validate_supervised_loss_config(cfg)
+    _validate_conformal_config(cfg)
+
     run_id = wandb.util.generate_id()
     seed = cfg.get("seed", None)
     utils.set_seed(seed)
 
+    run_name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}{utils.supervised_loss_name_suffix(cfg)}_{run_id}"
     run = wandb.init(
         id=run_id,
-        name=f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{run_id}",
+        name=run_name,
         entity=cfg.wandb.get("entity", None),
         project=cfg.wandb.project,
         config=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
@@ -892,12 +1030,8 @@ def main(cfg: DictConfig) -> None:  # noqa: PLR0915
 
     num_classes = metadata.DATASETS[cfg.dataset].num_classes
 
-    method_kwargs: dict[str, Any] = (
-        OmegaConf.to_container(cfg.method.params, resolve=True) if cfg.method.get("params") else {}
-    )  # ty: ignore[invalid-assignment]
-    train_kwargs: dict[str, Any] = (
-        OmegaConf.to_container(cfg.method.train, resolve=True) if cfg.method.get("train") else {}
-    )  # ty: ignore[invalid-assignment]
+    method_kwargs = _build_method_kwargs(cfg)
+    train_kwargs = _build_train_kwargs(cfg)
 
     context = BuildContext(
         base_model_name=cfg.base_model,
@@ -907,11 +1041,7 @@ def main(cfg: DictConfig) -> None:  # noqa: PLR0915
         train_loader=train_loader,
     )
     model = build_model(cfg.method.name, method_kwargs, context)
-    if isinstance(model, EnsemblePredictor):
-        for member in model:
-            member.to(device)
-    else:
-        model = model.to(device)
+    _move_to_device(model, device)
 
     if cfg.val_split == 0:
         if cfg.scheduler.name.lower() == "plateau":
@@ -930,37 +1060,7 @@ def main(cfg: DictConfig) -> None:  # noqa: PLR0915
     run.summary.update(test_metrics)
     run.log(data=test_metrics)
 
-    checkpoint = {
-        "model_state_dict": _get_state_dict(model),
-        "config": OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),
-        "metrics": test_metrics,
-    }
-
-    artifact_name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{seed}"
-
-    if cfg.save_to_disk:
-        path = pathlib.Path(CHECKPOINT_PATH).joinpath(f"{artifact_name}.pt")
-        torch.save(checkpoint, path)
-
-        artifact = wandb.Artifact(
-            name=artifact_name,
-            type="model",
-            metadata=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
-        )
-        artifact.add_file(str(path))
-        wandb.log_artifact(artifact)
-    else:
-        with tempfile.TemporaryDirectory() as tmp:
-            path = pathlib.Path(tmp).joinpath(f"{artifact_name}.pt")
-            torch.save(checkpoint, path)
-
-            artifact = wandb.Artifact(
-                name=artifact_name,
-                type="model",
-                metadata=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
-            )
-            artifact.add_file(str(path))
-            wandb.log_artifact(artifact)
+    _save_checkpoint_artifact(model, cfg, test_metrics)
 
     run.finish()
 

@@ -1,0 +1,9 @@
+# @package method
+name: "subensemble"
+label: "SubEnsemble"
+params:
+  num_heads: 10
+  # Heads starts from independent random init. If false, all heads start from same params, and data order is only random
+  reset_params: true
+  # Head name resolved by `models.get_encoder_head`. Defaults to "linear" if omitted.
+  head: "linear"

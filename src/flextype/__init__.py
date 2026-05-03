@@ -6,9 +6,12 @@ from .load import lazy_callable, lazy_import
 from .registry_meta import (
     ProtocolRegistry,
     ProtocolRegistryMeta,
+    RegistrationError,
     Registry,
     RegistryMeta,
     annotator,
+    copy_explicit_registry_classes,
+    get_explicit_registry_classes,
 )
 from .singledispatch import Flexdispatch, flexdispatch, is_valid_dispatch_type
 
@@ -17,10 +20,13 @@ __all__ = [
     "LazyType",
     "ProtocolRegistry",
     "ProtocolRegistryMeta",
+    "RegistrationError",
     "Registry",
     "RegistryMeta",
     "annotator",
+    "copy_explicit_registry_classes",
     "flexdispatch",
+    "get_explicit_registry_classes",
     "is_valid_dispatch_type",
     "lazy_callable",
     "lazy_import",

@@ -20,6 +20,7 @@ from probly.representation.credal_set._common import (
 )
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.sample.torch import TorchSample
+from probly.utils.torch import intersection_probability
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -96,6 +97,12 @@ class TorchConvexCredalSet(
         """Get the number of classes."""
         return self.tensor.num_classes
 
+    @override
+    @property
+    def barycenter(self) -> TorchCategoricalDistribution:
+        """Compute the barycenter of the convex credal set as the mean of the vertices."""
+        return torch.mean(self.tensor, dim=-1)  # ty:ignore[no-matching-overload]
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class TorchProbabilityIntervalsCredalSet(
@@ -145,6 +152,11 @@ class TorchProbabilityIntervalsCredalSet(
         """Check whether probabilities are inside the intervals."""
         within_bounds = (probabilities >= self.lower_bounds) & (probabilities <= self.upper_bounds)
         return torch.all(within_bounds, dim=-1)
+
+    @override
+    @property
+    def barycenter(self) -> TorchCategoricalDistribution:
+        return TorchCategoricalDistribution(intersection_probability(self.lower_bounds, self.upper_bounds))
 
 
 create_probability_intervals.register(TorchCategoricalDistribution, TorchProbabilityIntervalsCredalSet.from_sample)

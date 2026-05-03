@@ -100,6 +100,11 @@ class DirichletDistribution[T: CategoricalDistribution](SecondOrderDistribution[
     def alphas(self) -> Any:  # noqa: ANN401
         """Get the concentration parameters of the Dirichlet distribution."""
 
+    @property
+    @abstractmethod
+    def mean(self) -> T:
+        """Get the mean of the Dirichlet distribution."""
+
 
 class GaussianDistribution[D](Distribution[D], ABC):
     """Base class for Gaussian distributions."""
@@ -115,6 +120,15 @@ class GaussianDistribution[D](Distribution[D], ABC):
     @abstractmethod
     def var(self) -> D:
         """Get the var parameters."""
+
+    @property
+    @abstractmethod
+    def std(self) -> D:
+        """Get the standard deviation."""
+
+    @abstractmethod
+    def quantile(self, q: float | list[float] | Any) -> Any:  # noqa: ANN401
+        """Calculate the quantile function at the given points."""
 
 
 class GaussianDistributionSample[T: GaussianDistribution](DistributionSample[T]):
@@ -151,4 +165,11 @@ def create_categorical_distribution_from_logits[T](data: T) -> CategoricalDistri
 def create_dirichlet_distribution_from_alphas[T](alphas: T) -> DirichletDistribution:
     """Create a Dirichlet distribution from backend-specific alpha data."""
     msg = f"No Dirichlet distribution factory registered for alphas type {type(alphas)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def create_gaussian_distribution[T](mean: T, var: T | None = None) -> GaussianDistribution:
+    """Create a Gaussian distribution from backend-specific mean and variance data."""
+    msg = f"No Gaussian distribution factory registered for mean type {type(mean)}"
     raise NotImplementedError(msg)

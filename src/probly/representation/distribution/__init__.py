@@ -15,6 +15,7 @@ from ._common import (
     create_categorical_distribution,
     create_categorical_distribution_from_logits,
     create_dirichlet_distribution_from_alphas,
+    create_gaussian_distribution,
 )
 from .array_categorical import ArrayCategoricalDistribution, ArrayCategoricalDistributionSample
 from .array_dirichlet import ArrayDirichletDistribution
@@ -37,6 +38,11 @@ def _(_: type) -> None:
     from . import torch_dirichlet as torch_dirichlet  # noqa: PLC0415
 
 
+@create_gaussian_distribution.delayed_register(TORCH_TENSOR)
+def _(_: type) -> None:
+    from . import torch_gaussian as torch_gaussian  # noqa: PLC0415
+
+
 __all__ = [
     "ArrayCategoricalDistribution",
     "ArrayCategoricalDistributionSample",
@@ -55,4 +61,5 @@ __all__ = [
     "create_categorical_distribution",
     "create_categorical_distribution_from_logits",
     "create_dirichlet_distribution_from_alphas",
+    "create_gaussian_distribution",
 ]
