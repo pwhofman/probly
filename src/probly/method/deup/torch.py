@@ -554,6 +554,33 @@ class LogDUEVariance(StationarizingFeatureProvider):
         self._gp_model: Any | None = None
         self._likelihood: Any | None = None
 
+    def _build_svgp(self, inducing_points: torch.Tensor) -> tuple[Any, Any]:
+        """Build the SVGP model and SoftmaxLikelihood from a set of inducing points."""
+        gpytorch = _gpytorch
+        num_classes = self.num_classes
+
+        class _SVGPModel(gpytorch.models.ApproximateGP):
+            def __init__(self, inducing_pts: torch.Tensor) -> None:
+                var_dist = gpytorch.variational.CholeskyVariationalDistribution(
+                    inducing_pts.size(-2), batch_shape=torch.Size([num_classes])
+                )
+                var_strat = gpytorch.variational.IndependentMultitaskVariationalStrategy(
+                    gpytorch.variational.VariationalStrategy(
+                        self, inducing_pts, var_dist, learn_inducing_locations=False
+                    ),
+                    num_tasks=num_classes,
+                )
+                super().__init__(var_strat)
+                self.mean_module = gpytorch.means.ConstantMean(batch_shape=torch.Size([num_classes]))
+                self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
+
+            def forward(self, x: torch.Tensor) -> gpytorch.distributions.MultivariateNormal:
+                return gpytorch.distributions.MultivariateNormal(self.mean_module(x), self.covar_module(x))
+
+        model = _SVGPModel(inducing_points)
+        likelihood = gpytorch.likelihoods.SoftmaxLikelihood(num_features=num_classes, num_classes=num_classes)
+        return model, likelihood
+
     def _fit_internal(
         self,
         encoder: nn.Module,
@@ -566,7 +593,6 @@ class LogDUEVariance(StationarizingFeatureProvider):
         if not _GPYTORCH_AVAILABLE:
             msg = "gpytorch is required for LogDUEVariance. Install with: pip install gpytorch"
             raise ImportError(msg)
-        gpytorch = _gpytorch
 
         encoder.eval()
         all_features: list[torch.Tensor] = []
@@ -584,46 +610,27 @@ class LogDUEVariance(StationarizingFeatureProvider):
         labels_cat = torch.cat(all_labels).long()
 
         perm = torch.randperm(features_cat.size(0))[: self.n_inducing]
-        inducing_points = features_cat[perm].unsqueeze(0).expand(self.num_classes, -1, -1)
-
-        num_classes = self.num_classes
-
-        class _SVGPModel(gpytorch.models.ApproximateGP):
-            def __init__(self, inducing_pts: torch.Tensor) -> None:
-                var_dist = gpytorch.variational.CholeskyVariationalDistribution(
-                    inducing_pts.size(-2), batch_shape=torch.Size([num_classes])
-                )
-                var_strat = gpytorch.variational.IndependentMultitaskVariationalStrategy(
-                    gpytorch.variational.VariationalStrategy(
-                        self, inducing_pts, var_dist, learn_inducing_locations=True
-                    ),
-                    num_tasks=num_classes,
-                )
-                super().__init__(var_strat)
-                self.mean_module = gpytorch.means.ConstantMean(batch_shape=torch.Size([num_classes]))
-                self.covar_module = gpytorch.kernels.ScaleKernel(
-                    gpytorch.kernels.RBFKernel(batch_shape=torch.Size([num_classes])),
-                    batch_shape=torch.Size([num_classes]),
-                )
-
-            def forward(self, x: torch.Tensor) -> gpytorch.distributions.MultivariateNormal:
-                return gpytorch.distributions.MultivariateNormal(self.mean_module(x), self.covar_module(x))
-
-        model = _SVGPModel(inducing_points).to(device)
-        likelihood = gpytorch.likelihoods.SoftmaxLikelihood(
-            num_features=self.num_classes, num_classes=self.num_classes
-        ).to(device)
-        mll = gpytorch.mlls.VariationalELBO(likelihood, model, num_data=features_cat.size(0))
+        inducing_points = features_cat[perm]
+        model, likelihood = self._build_svgp(inducing_points)
+        model = model.to(device)
+        likelihood = likelihood.to(device)
+        mll = _gpytorch.mlls.VariationalELBO(likelihood, model, num_data=features_cat.size(0))
         optimizer = torch.optim.Adam([*model.parameters(), *likelihood.parameters()], lr=self.gp_lr)
 
         batch_size = 256
+        n_total = features_cat.size(0)
         for epoch in range(self.gp_epochs):
             model.train()
             likelihood.train()
-            perm = torch.randperm(features_cat.size(0))
+            perm = torch.randperm(n_total)
             epoch_loss = torch.zeros(1, device=device)
             n_batches = 0
-            for i in range(0, features_cat.size(0), batch_size):
+            batch_iter = tqdm(
+                range(0, n_total, batch_size),
+                desc=f"DUE GP epoch {epoch + 1}/{self.gp_epochs}",
+                leave=False,
+            )
+            for i in batch_iter:
                 idx = perm[i : i + batch_size]
                 bf = features_cat[idx].to(device, non_blocking=True)
                 bl = labels_cat[idx].to(device, non_blocking=True)
