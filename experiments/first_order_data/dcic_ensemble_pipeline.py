@@ -13,7 +13,7 @@ from entmax import entmax_bisect
 import numpy as np
 import torch
 from torch import nn
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader, Dataset, Subset
 from torchvision import transforms
 from torchvision.models import get_model, get_model_weights
 
@@ -369,7 +369,7 @@ def build_transform(
 
 
 def make_dataloader(
-    dataset: Subset[DCICDataset],
+    dataset: Dataset[Any],
     batch_size: int,
     shuffle: bool,
     num_workers: int,
@@ -492,8 +492,8 @@ def run_epoch(
 def train_single_model(
     *,
     model: nn.Module,
-    train_dataset: Subset[DCICDataset],
-    val_dataset: Subset[DCICDataset],
+    train_dataset: Dataset[Any],
+    val_dataset: Dataset[Any],
     config: EntmaxImageExperimentConfig,
     seed: int,
 ) -> tuple[nn.Module, dict[str, list[float]]]:
@@ -555,8 +555,9 @@ def train_single_model(
 def predict_dataset(
     *,
     model: nn.Module,
-    dataset: Subset[DCICDataset],
+    dataset: Dataset[Any],
     config: EntmaxImageExperimentConfig,
+    image_paths: list[str],
 ) -> tuple[np.ndarray, np.ndarray, list[str]]:
     loader = make_dataloader(
         dataset=dataset,
@@ -579,8 +580,6 @@ def predict_dataset(
             n_iter=50,
             ensure_sum_one=True,
         )
-    image_paths = [dataset.dataset.image_paths[index] for index in dataset.indices]
-
     return (
         probabilities.cpu().numpy().astype(np.float32, copy=False),
         targets.cpu().numpy(),
@@ -595,9 +594,10 @@ def train_single_member(
     member_seed: int,
     member_dir: Path,
     test_fold: str,
-    train_dataset: Subset[DCICDataset],
-    val_dataset: Subset[DCICDataset],
-    test_dataset: Subset[DCICDataset],
+    train_dataset: Dataset[Any],
+    val_dataset: Dataset[Any],
+    test_dataset: Dataset[Any],
+    test_image_paths: list[str],
     class_names: list[str],
     config: EntmaxImageExperimentConfig,
 ) -> tuple[np.ndarray, np.ndarray, dict[str, Any], list[str]]:
@@ -612,6 +612,7 @@ def train_single_member(
         model=model,
         dataset=test_dataset,
         config=config,
+        image_paths=test_image_paths,
     )
     member_loss = mean_cross_entropy(targets, probabilities)
 
@@ -641,70 +642,33 @@ def train_single_member(
     return probabilities, targets, summary, image_paths
 
 
-def run_dataset_experiment(
+def run_soft_label_image_experiment(
+    *,
     dataset_name: str,
+    train_dataset: Dataset[Any],
+    val_dataset: Dataset[Any],
+    test_dataset: Dataset[Any],
+    test_image_paths: list[str],
+    class_names: list[str],
     config: EntmaxImageExperimentConfig,
 ) -> DatasetResult:
+    """Run the ensemble experiment for image datasets with soft labels.
+
+    Args:
+        dataset_name: Name used for output directories and result summaries.
+        train_dataset: Training dataset returning `(image, soft_target)` pairs.
+        val_dataset: Validation dataset returning `(image, soft_target)` pairs.
+        test_dataset: Test dataset returning `(image, soft_target)` pairs.
+        test_image_paths: Test sample identifiers used in exported CSV files.
+        class_names: Class names in the same order as the target vector.
+        config: Experiment configuration.
+
+    Returns:
+        Dataset-level experiment result.
+    """
     output_dir = config.output_root / dataset_name / config.encoder_name
     fold_dir = output_dir / config.test_fold
     fold_dir.mkdir(parents=True, exist_ok=True)
-
-    dataset_loader, class_names = load_dcic_dataset(config.data_root / dataset_name)
-    split_dataset = dataset_loader(config.data_root)
-    fold_indices: dict[str, list[int]] = {}
-    for index, image_path in enumerate(split_dataset.image_paths):
-        fold_name = extract_fold_name(image_path)
-        fold_indices.setdefault(fold_name, []).append(index)
-
-    test_indices = fold_indices.get(config.test_fold, [])
-
-    if not test_indices:
-        raise ValueError(f"Fold '{config.test_fold}' was not found in dataset '{dataset_name}'.")
-
-    train_indices = [
-        index for fold_name, indices in fold_indices.items() if fold_name != config.test_fold for index in indices
-    ]
-    train_indices, val_indices = split_train_validation_indices(
-        train_indices,
-        validation_size=config.validation_size,
-        seed=config.seed,
-    )
-    train_dataset = Subset(
-        build_dataset(
-            dataset_name,
-            config.data_root,
-            transform=build_transform(
-                config.encoder_name,
-                train=True,
-                augmentation=config.augmentation,
-            ),
-        ),
-        train_indices,
-    )
-    val_dataset = Subset(
-        build_dataset(
-            dataset_name,
-            config.data_root,
-            transform=build_transform(
-                config.encoder_name,
-                train=False,
-                augmentation=config.augmentation,
-            ),
-        ),
-        val_indices,
-    )
-    test_dataset = Subset(
-        build_dataset(
-            dataset_name,
-            config.data_root,
-            transform=build_transform(
-                config.encoder_name,
-                train=False,
-                augmentation=config.augmentation,
-            ),
-        ),
-        test_indices,
-    )
 
     # Builds the ensemble via probly
     set_seed(config.seed)
@@ -740,6 +704,7 @@ def run_dataset_experiment(
             train_dataset=train_dataset,
             val_dataset=val_dataset,
             test_dataset=test_dataset,
+            test_image_paths=test_image_paths,
             class_names=class_names,
             config=config,
         )
@@ -806,3 +771,76 @@ def run_dataset_experiment(
     write_json(output_dir / "config.json", config_to_dict(config))
     write_json(output_dir / "summary.json", result.to_dict())
     return result
+
+
+def run_dataset_experiment(
+    dataset_name: str,
+    config: EntmaxImageExperimentConfig,
+) -> DatasetResult:
+    dataset_loader, class_names = load_dcic_dataset(config.data_root / dataset_name)
+    split_dataset = dataset_loader(config.data_root)
+    fold_indices: dict[str, list[int]] = {}
+    for index, image_path in enumerate(split_dataset.image_paths):
+        fold_name = extract_fold_name(image_path)
+        fold_indices.setdefault(fold_name, []).append(index)
+
+    test_indices = fold_indices.get(config.test_fold, [])
+
+    if not test_indices:
+        raise ValueError(f"Fold '{config.test_fold}' was not found in dataset '{dataset_name}'.")
+
+    train_indices = [
+        index for fold_name, indices in fold_indices.items() if fold_name != config.test_fold for index in indices
+    ]
+    train_indices, val_indices = split_train_validation_indices(
+        train_indices,
+        validation_size=config.validation_size,
+        seed=config.seed,
+    )
+    train_dataset = Subset(
+        build_dataset(
+            dataset_name,
+            config.data_root,
+            transform=build_transform(
+                config.encoder_name,
+                train=True,
+                augmentation=config.augmentation,
+            ),
+        ),
+        train_indices,
+    )
+    val_dataset = Subset(
+        build_dataset(
+            dataset_name,
+            config.data_root,
+            transform=build_transform(
+                config.encoder_name,
+                train=False,
+                augmentation=config.augmentation,
+            ),
+        ),
+        val_indices,
+    )
+    test_dataset = Subset(
+        build_dataset(
+            dataset_name,
+            config.data_root,
+            transform=build_transform(
+                config.encoder_name,
+                train=False,
+                augmentation=config.augmentation,
+            ),
+        ),
+        test_indices,
+    )
+    test_image_paths = [split_dataset.image_paths[index] for index in test_indices]
+
+    return run_soft_label_image_experiment(
+        dataset_name=dataset_name,
+        train_dataset=train_dataset,
+        val_dataset=val_dataset,
+        test_dataset=test_dataset,
+        test_image_paths=test_image_paths,
+        class_names=class_names,
+        config=config,
+    )
