@@ -52,6 +52,8 @@ def _train_hetnet(
     *,
     epochs: int,
     samples: int,
+    lr: float,
+    grad_clip: float,
     device: torch.device,
 ) -> None:
     """Train a HetNet end-to-end with NLL on mean-of-MC-softmax.
@@ -59,11 +61,14 @@ def _train_hetnet(
     Mirrors :func:`probly_benchmark.train_funcs.train_epoch_het_net` minus
     the optimizer/AMP plumbing: average ``S`` softmax samples per step
     (each forward draws a fresh noise sample from the het head), then
-    NLL.
+    NLL. Adam + global gradient clipping keeps the heteroscedastic head's
+    low-rank covariance from blowing up on differently scaled feature
+    distributions (raw DINOv2 embeddings, in particular, diverge with
+    the larger learning rates that work for SigLIP2).
     """
     model.train()
     model.to(device)
-    opt = torch.optim.Adam(model.parameters(), lr=1e-2)
+    opt = torch.optim.Adam(model.parameters(), lr=lr)
     for _ in range(epochs):
         opt.zero_grad()
         avg_probs = torch.stack(
@@ -71,6 +76,8 @@ def _train_hetnet(
         ).mean(0)
         loss = F.nll_loss(avg_probs.log(), y)
         loss.backward()
+        if grad_clip > 0:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
         opt.step()
 
 
@@ -127,6 +134,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--train-samples", type=int, default=10)
     parser.add_argument("--inf-samples", type=int, default=10)
     parser.add_argument("--epochs", type=int, default=200)
+    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--grad-clip", type=float, default=1.0)
     parser.add_argument("--alpha", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--device", default="auto")
@@ -167,6 +176,8 @@ def main() -> None:
         y_train,
         epochs=args.epochs,
         samples=args.train_samples,
+        lr=args.lr,
+        grad_clip=args.grad_clip,
         device=device,
     )
 
