@@ -11,6 +11,7 @@ from collections.abc import Iterable
 import numpy as np
 from PIL import Image
 import torch
+from tqdm.auto import tqdm
 from transformers import AutoImageProcessor, AutoModel
 
 from stacking.embed import EncoderFn
@@ -34,15 +35,19 @@ def build() -> EncoderFn:
 
     @torch.no_grad()
     def encode(images: Iterable[Image.Image]) -> np.ndarray:
+        total = len(images) if hasattr(images, "__len__") else None
         batch: list[Image.Image] = []
         chunks: list[np.ndarray] = []
-        for img in images:
-            batch.append(img.convert("RGB"))
-            if len(batch) >= BATCH_SIZE:
+        with tqdm(total=total, unit="img", desc="dinov2") as bar:
+            for img in images:
+                batch.append(img.convert("RGB"))
+                if len(batch) >= BATCH_SIZE:
+                    chunks.append(_run(batch, processor, model, device))
+                    bar.update(len(batch))
+                    batch = []
+            if batch:
                 chunks.append(_run(batch, processor, model, device))
-                batch = []
-        if batch:
-            chunks.append(_run(batch, processor, model, device))
+                bar.update(len(batch))
         return np.concatenate(chunks, axis=0).astype(np.float32)
 
     return encode
