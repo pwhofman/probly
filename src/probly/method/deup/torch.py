@@ -194,7 +194,7 @@ class StationarizingFeatureProvider(nn.Module):
         was_training = self.training
         self.eval()
         all_out: list[torch.Tensor] = []
-        for inputs_, _ in train_loader:
+        for inputs_, _ in tqdm(train_loader, desc=f"Fitting {type(self).__name__} scaler"):
             inputs = inputs_.to(device, non_blocking=True)
             if device.type == "cuda" and inputs.ndim >= 4:
                 inputs = inputs.contiguous(memory_format=torch.channels_last)
@@ -473,7 +473,7 @@ class LogMAFDensity(StationarizingFeatureProvider):
                 all_features.append(features.detach().cpu().float())
         features_cat = torch.cat(all_features)
 
-        flow = self._build_flow()
+        flow = self._build_flow().to(device)
         optimizer = torch.optim.Adam(flow.parameters(), lr=self.flow_lr)
         batch_size = 256
         for epoch in range(self.flow_epochs):
@@ -483,7 +483,7 @@ class LogMAFDensity(StationarizingFeatureProvider):
             total_loss = 0.0
             n_batches = 0
             for i in range(0, features_cat.size(0), batch_size):
-                batch = features_shuffled[i : i + batch_size]
+                batch = features_shuffled[i : i + batch_size].to(device)
                 optimizer.zero_grad()
                 loss = -flow.log_prob(batch.float()).mean()  # ty: ignore[call-non-callable]
                 loss.backward()
@@ -638,6 +638,39 @@ class LogDUEVariance(StationarizingFeatureProvider):
         likelihood.eval()
         self._gp_model = model
         self._likelihood = likelihood
+        self._fit_scaler_from_features(features_cat)
+
+    @torch.no_grad()
+    def _fit_scaler_from_features(self, features_cat: torch.Tensor) -> None:
+        """Compute MinMax scaler from already-extracted CPU features.
+
+        Avoids a second full pass through the training loader in ``_fit_scaler``.
+        """
+        if self._gp_model is None:
+            msg = "LogDUEVariance._gp_model must be set before calling _fit_scaler_from_features."
+            raise RuntimeError(msg)
+        model = self._gp_model
+        all_log_var: list[torch.Tensor] = []
+        batch_size = 256
+        for i in tqdm(range(0, features_cat.size(0), batch_size), desc="Fitting DUE variance scaler"):
+            bf = features_cat[i : i + batch_size]
+            pred = model(bf)
+            var = pred.variance.sum(dim=-1, keepdim=True)
+            all_log_var.append(torch.log(var + self.eps))
+        stacked = torch.cat(all_log_var)
+        self._scale_min = stacked.min(dim=0).values
+        self._scale_max = stacked.max(dim=0).values
+
+    @torch.no_grad()
+    def _fit_scaler(
+        self,
+        encoder: nn.Module,
+        classification_head: nn.Module,
+        train_loader: DataLoader,
+        device: torch.device,
+        amp_enabled: bool = False,
+    ) -> None:
+        """Skip: scaler already computed at the end of ``_fit_internal``."""
 
     def forward(self, features: torch.Tensor, logits: torch.Tensor) -> torch.Tensor:  # noqa: ARG002
         r"""Return :math:`\log(\sum_c \hat{V}_c(x) + \varepsilon)` from GP posterior variance."""
