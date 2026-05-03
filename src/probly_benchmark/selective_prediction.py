@@ -97,8 +97,9 @@ def main(cfg: DictConfig) -> None:
 
     if cfg.wandb.enabled:
         run = init_wandb_for_evaluation(cfg, run_id)
-        run.summary["sp/auroc"] = auroc
-        run.summary["sp/bin_losses"] = bin_losses.tolist()
+        prefix = f"sp/{cfg.measure}/{cfg.decomposition}"
+        run.summary[f"{prefix}/auroc"] = auroc
+        run.summary[f"{prefix}/bin_losses"] = bin_losses.tolist()
         run.finish()
 
 
