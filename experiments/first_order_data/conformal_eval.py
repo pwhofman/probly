@@ -13,6 +13,7 @@ from summarize_dcic_ensemble_results import (
 import numpy as np
 import numpy.typing as npt
 from torch import nn
+import matplotlib.pyplot as plt
 
 from probly.calibrator import calibrate
 from probly.metrics import average_set_size, empirical_coverage_classification
@@ -25,6 +26,8 @@ type BoolArray = npt.NDArray[np.bool_]
 type UncertaintyValues = Mapping[str, FloatArray]
 type MetricRow = tuple[float, float, float]  # (marginal_coverage, conditional_coverage, avg_set_size)
 type ResultRows = dict[tuple[str, str], list[MetricRow]]
+type CalibrationCheckRow = tuple[float, float]  # (sample_kl, sample_tv)
+type CalibrationSplit = tuple[IntArray, IntArray]  # (calibration_indices, test_indices)
 
 
 class CachedProbsModel(nn.Module):
@@ -72,6 +75,88 @@ def sample_labels(targets_soft: FloatArray, rng: np.random.Generator) -> IntArra
     return (u < cum).argmax(axis=1)
 
 
+def calibration_splits(n_samples: int, args: argparse.Namespace) -> list[CalibrationSplit]:
+    """Return the splits used by repeated split conformal evaluation."""
+    rng = np.random.default_rng(args.seed)
+    splits = []
+    for _ in range(args.num_splits):
+        seed = int(rng.integers(0, 2**31 - 1))
+        perm = np.random.default_rng(seed).permutation(n_samples)
+        split_at = n_samples // 2
+        splits.append((perm[:split_at], perm[split_at:]))
+    return splits
+
+
+def kl_divergence_rows(targets: FloatArray, predictions: FloatArray) -> FloatArray:
+    """Computes KL(target || prediction) for each row."""
+    targets = np.asarray(targets, dtype=np.float64)
+    predictions = np.clip(np.asarray(predictions, dtype=np.float64), 1e-8, 1.0)
+    terms = np.zeros_like(targets, dtype=np.float64)
+    mask = targets > 0
+    terms[mask] = targets[mask] * np.log(targets[mask] / predictions[mask])
+    return terms.sum(axis=1)
+
+
+def calibration_check(
+    probs: FloatArray,
+    targets_soft: FloatArray,
+    args: argparse.Namespace,
+) -> tuple[list[CalibrationCheckRow], FloatArray, FloatArray]:
+    """Computes per-sample calibration distance between targets and ensemble predictions."""
+    calibration_tv_distances = []
+    calibration_kl_distances = []
+    rows = []
+
+    for idx_cal, idx_test in calibration_splits(len(targets_soft), args):
+        sample_tv = 0.5 * np.abs(targets_soft[idx_cal] - probs[idx_cal]).sum(axis=1)
+        sample_kl = kl_divergence_rows(targets_soft[idx_cal], probs[idx_cal])
+        calibration_tv_distances.append(sample_tv)
+        calibration_kl_distances.append(sample_kl)
+        rows.append((float(sample_kl.mean()), float(sample_tv.mean())))
+
+    return rows, np.concatenate(calibration_tv_distances), np.concatenate(calibration_kl_distances)
+
+
+def print_calibration_summary(fold_name: str, rows: list[CalibrationCheckRow]):
+    """Print a compact calibration distribution check table."""
+    arr = np.asarray(rows, dtype=float)
+    means, stds = arr.mean(axis=0), arr.std(axis=0)
+    print(f"\n{fold_name} calibration check:")
+    print("  metric          mean         std")
+    print(f"  sample KL       {means[0]:<12.4f} {stds[0]:.4f}")
+    print(f"  sample TV       {means[1]:<12.4f} {stds[1]:.4f}")
+
+
+def save_calibration_histogram(
+    output_dir: Path,
+    dataset_name: str,
+    fold_name: str,
+    values: FloatArray,
+    filename: str,
+    xlabel: str,
+    bins: FloatArray,
+    xlim: tuple[float, float] | None = None,
+) -> Path:
+    """Save a calibration-sample distance histogram for one dataset fold."""
+    path = output_dir / dataset_name / fold_name / filename
+    path.parent.mkdir(parents=True, exist_ok=True)
+    weights = np.full_like(values, 100 / len(values), dtype=float)
+    fig, ax = plt.subplots(figsize=(7, 4))
+    ax.hist(values, bins=bins, weights=weights, edgecolor="black")
+    ax.axvline(float(values.mean()), color="black", linestyle="--", linewidth=1, label="mean")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel("Calibration samples (%)")
+    ax.set_title(f"{dataset_name} / {fold_name}")
+    if xlim is not None:
+        ax.set_xlim(*xlim)
+    ax.legend()
+    fig.tight_layout()
+
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    return path
+
+
 def fold_coverage(
     probs: FloatArray,
     targets_soft: FloatArray,
@@ -90,14 +175,9 @@ def fold_coverage(
         y_calibration = targets_soft.argmax(axis=1)
     model = CachedProbsModel(probs)
     n_samples = len(y_calibration)
-    rng = np.random.default_rng(args.seed)
 
     rows: ResultRows = {(method, strategy): [] for method in args.methods for strategy in args.conditioning}
-    for _ in range(args.num_splits):
-        seed = int(rng.integers(0, 2**31 - 1))
-        perm = np.random.default_rng(seed).permutation(n_samples)
-        split_at = n_samples // 2
-        idx_cal, idx_test = perm[:split_at], perm[split_at:]
+    for idx_cal, idx_test in calibration_splits(n_samples, args):
         y_cal, y_test = y_calibration[idx_cal], y_marginal[idx_test]
         targets_soft_test = targets_soft[idx_test]
 
@@ -115,7 +195,7 @@ def fold_coverage(
     return rows
 
 
-def print_summary(fold_name: str, rows: ResultRows) -> None:
+def print_summary(fold_name: str, rows: ResultRows):
     headers = ("marginal", "conditional", "size")
     print(f"\n{fold_name}:")
     print(f"  {'method':<5} {'strategy':<12} " + " ".join(f"{h:<13}" for h in headers))
@@ -144,10 +224,20 @@ def parse_args() -> argparse.Namespace:
         choices=("argmax", "sample"),
         default="argmax",
     )
+    parser.add_argument(
+        "--calibration-check",
+        action="store_true",
+        help="Print per-sample KL/TV checks on the calibration rows + histograms.",
+    )
+    parser.add_argument(
+        "--calibration-plot-dir",
+        type=Path,
+        help="Root directory for calibration histogram saving. Defaults to out/calibration_checks.",
+    )
     return parser.parse_args()
 
 
-def main() -> None:
+def main():
     args = parse_args()
     for dataset_result in load_json(args.run_dir / "results.json"):
         for fold_result in dataset_result["folds"]:
@@ -160,6 +250,36 @@ def main() -> None:
             )
             rows = fold_coverage(probs, targets_soft, uncertainty, args)
             print_summary(f"{dataset_result['dataset_name']} / {fold_result['test_fold']}", rows)
+            if args.calibration_check:
+                calibration_rows, tv_distances, kl_distances = calibration_check(probs, targets_soft, args)
+                print_calibration_summary(
+                    f"{dataset_result['dataset_name']} / {fold_result['test_fold']}",
+                    calibration_rows,
+                )
+                plot_dir = (args.calibration_plot_dir or Path("out/calibration_checks")) / args.run_dir
+                tv_path = save_calibration_histogram(
+                    plot_dir,
+                    dataset_result["dataset_name"],
+                    fold_result["test_fold"],
+                    tv_distances,
+                    "calibration_tv_hist.png",
+                    "Per-sample TV(target, ensemble)",
+                    np.arange(0, 1.05, 0.05),
+                    xlim=(0, 1),
+                )
+                kl_upper = max(0.05, float(np.ceil(kl_distances.max() / 0.05) * 0.05))
+                kl_path = save_calibration_histogram(
+                    plot_dir,
+                    dataset_result["dataset_name"],
+                    fold_result["test_fold"],
+                    kl_distances,
+                    "calibration_kl_hist.png",
+                    "Per-sample KL(target || ensemble)",
+                    np.arange(0, kl_upper + 0.05, 0.1),
+                    xlim=(0, kl_upper),
+                )
+                print(f"  TV histogram: {tv_path}")
+                print(f"  KL histogram: {kl_path}")
 
 
 if __name__ == "__main__":

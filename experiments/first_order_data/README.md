@@ -352,3 +352,14 @@ uv run python conformal_eval.py \
   --run-dir out/image/resnet18_softmax_finetune_pretrained_ens25_ep25_bs32_lr0-001_wd0-0001_seed42_test-fold1_alpha-1 \
   --label-mode sample
 ```
+
+To also check whether the calibration splits have the same mean target distribution as the cached ensemble probabilities, add:
+
+```bash
+uv run python conformal_eval.py \
+  --run-dir out/image/resnet18_softmax_finetune_pretrained_ens25_ep25_bs32_lr0-001_wd0-0001_seed42_test-fold1_alpha-1 \
+  --label-mode sample \
+  --calibration-check
+```
+
+This prints per-sample KL and total-variation summaries across the same random calibration splits used for CP, and writes `calibration_tv_hist.png` and `calibration_kl_hist.png` to `out/calibration_checks/<run-dir>/<dataset>/<fold>/`. The histograms use bins (0.05 for TV, 0.1 for KL) over per-sample total-variation distance or KL divergence between the target distribution and ensemble prediction, with percentage of calibration rows on the y-axis.
