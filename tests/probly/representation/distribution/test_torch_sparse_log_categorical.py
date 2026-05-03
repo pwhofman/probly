@@ -79,6 +79,20 @@ def test_sparse_log_categorical_allows_explicit_extra_dense_classes() -> None:
     assert torch.allclose(dense.probabilities, torch.tensor([0.4, 0.0, 0.6, 0.0, 0.0]))
 
 
+def test_sparse_log_categorical_uniform_logits_reuses_groups() -> None:
+    distribution = TorchSparseLogCategoricalDistribution(
+        group_ids=torch.tensor([0, 0, 1]),
+        logits=torch.tensor([-10.0, -20.0, 5.0]),
+    )
+
+    uniform = distribution.uniform_logits()
+
+    assert uniform is not distribution
+    assert uniform.group_ids is distribution.group_ids
+    assert torch.equal(uniform.logits, torch.zeros_like(distribution.logits))
+    assert torch.allclose(uniform.probabilities, torch.tensor([2 / 3, 1 / 3]))
+
+
 def test_sparse_log_categorical_rejects_too_few_dense_classes() -> None:
     distribution = TorchSparseLogCategoricalDistribution(
         group_ids=torch.tensor([0, 2]),

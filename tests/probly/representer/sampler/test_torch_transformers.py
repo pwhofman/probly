@@ -85,6 +85,7 @@ class FakeModel:
     def __init__(self) -> None:
         """Initialize the fake model."""
         self.generate_calls: list[dict[str, object]] = []
+        self.transition_score_calls = 0
         self.eval_calls = 0
 
     def eval(self) -> FakeModel:
@@ -122,6 +123,7 @@ class FakeModel:
         beam_indices: torch.Tensor | None = None,
         normalize_logits: bool = True,
     ) -> torch.Tensor:
+        self.transition_score_calls += 1
         assert beam_indices is None
         assert normalize_logits is True
         return torch.full((sequences.shape[0], len(scores)), -0.5)
@@ -256,6 +258,21 @@ def test_sampler_chunks_samples_and_returns_text_generation_sample() -> None:
     assert tokenizer.pad_token == "<pad>"  # noqa: S105
 
 
+def test_sampler_can_skip_log_likelihood_scoring() -> None:
+    model = FakeModel()
+    sample = HFTextGenerationSampler(
+        model=model,
+        tokenizer=FakeTokenizer(),
+        num_samples=1,
+        apply_chat_template=False,
+        with_log_likelihood=False,
+    ).represent(["prompt words"])
+
+    assert torch.equal(sample.tensor.log_likelihood, torch.zeros((1, 1)))
+    assert model.transition_score_calls == 0
+    assert model.generate_calls[0]["output_scores"] is False
+
+
 def test_sampler_uses_gemma_style_non_eos_mean_log_likelihood() -> None:
     sample = HFTextGenerationSampler(
         model=FakePostEOSScoreModel(),
@@ -267,6 +284,18 @@ def test_sampler_uses_gemma_style_non_eos_mean_log_likelihood() -> None:
     assert sample.tensor.text.tolist() == [["tok100"], [""]]
     assert torch.isfinite(sample.tensor.log_likelihood).all()
     assert torch.equal(sample.tensor.log_likelihood, torch.tensor([[-0.25], [0.0]]))
+
+
+def test_sampler_can_return_summed_log_likelihood() -> None:
+    sample = HFTextGenerationSampler(
+        model=FakeModel(),
+        tokenizer=FakeTokenizer(),
+        num_samples=1,
+        apply_chat_template=False,
+        length_normalization=False,
+    ).represent(["prompt words"])
+
+    assert torch.equal(sample.tensor.log_likelihood, torch.tensor([[-1.0]]))
 
 
 def test_sampler_uses_generation_config_stop_ids_for_log_likelihood() -> None:
@@ -462,6 +491,8 @@ def test_sampler_from_model_name_loads_model_and_tokenizer(monkeypatch: pytest.M
         temperature=0.7,
         max_new_tokens=4,
         top_k=5,
+        with_log_likelihood=False,
+        length_normalization=False,
     )
 
     assert sampler.model is model
@@ -476,6 +507,8 @@ def test_sampler_from_model_name_loads_model_and_tokenizer(monkeypatch: pytest.M
     assert sampler.temperature == 0.7
     assert sampler.max_new_tokens == 4
     assert sampler.top_k == 5
+    assert sampler.with_log_likelihood is False
+    assert sampler.length_normalization is False
     assert calls == [
         {
             "model_name": "fake/model",

@@ -147,6 +147,8 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
     max_new_tokens: int | None
     top_k: int | None
     generation_config: GenerationConfig | None
+    with_log_likelihood: bool
+    length_normalization: bool
 
     def __init__(
         self,
@@ -162,6 +164,8 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
         max_new_tokens: int | None = None,
         top_k: int | None = None,
         generation_config: GenerationConfig | None = None,
+        with_log_likelihood: bool = True,
+        length_normalization: bool = True,
     ) -> None:
         """Initialize the text generation sampler.
 
@@ -179,6 +183,8 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
             max_new_tokens: Optional maximum number of generated tokens.
             top_k: Optional top-k sampling cutoff.
             generation_config: Optional generation config for less common generation options.
+            with_log_likelihood: Whether to compute generated-sequence log likelihoods.
+            length_normalization: Whether log likelihoods should be averaged over scored tokens.
         """
         if num_samples <= 0:
             msg = "num_samples must be positive."
@@ -208,6 +214,8 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
         self.max_new_tokens = max_new_tokens
         self.top_k = top_k
         self.generation_config = generation_config
+        self.with_log_likelihood = with_log_likelihood
+        self.length_normalization = length_normalization
 
     @classmethod
     def from_model_name(
@@ -228,6 +236,8 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
         max_new_tokens: int | None = None,
         top_k: int | None = None,
         generation_config: GenerationConfig | None = None,
+        with_log_likelihood: bool = True,
+        length_normalization: bool = True,
     ) -> Self:
         """Load a model by name and initialize a text generation sampler.
 
@@ -248,6 +258,8 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
             max_new_tokens: Optional maximum number of generated tokens.
             top_k: Optional top-k sampling cutoff.
             generation_config: Optional generation config for less common generation options.
+            with_log_likelihood: Whether to compute generated-sequence log likelihoods.
+            length_normalization: Whether log likelihoods should be averaged over scored tokens.
 
         Returns:
             A sampler backed by the loaded model and tokenizer.
@@ -273,6 +285,8 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
             max_new_tokens=max_new_tokens,
             top_k=top_k,
             generation_config=generation_config,
+            with_log_likelihood=with_log_likelihood,
+            length_normalization=length_normalization,
         )
 
     @property
@@ -310,7 +324,7 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
         values: dict[str, object] = {
             "do_sample": self.do_sample,
             "return_dict_in_generate": True,
-            "output_scores": True,
+            "output_scores": self.with_log_likelihood,
         }
         if self.temperature is not None:
             values["temperature"] = self.temperature
@@ -379,8 +393,11 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
             stop_mask = torch.isin(generated_tokens, stop_tokens)
             scored_mask = torch.cumsum(stop_mask.to(dtype=torch.long), dim=-1) == 0
 
-        lengths = scored_mask.sum(dim=-1)
         summed = torch.where(scored_mask, scores, torch.zeros_like(scores)).sum(dim=-1)
+        if not self.length_normalization:
+            return summed
+
+        lengths = scored_mask.sum(dim=-1)
         return torch.where(
             lengths > 0,
             summed / lengths.clamp_min(1).to(dtype=scores.dtype),
@@ -409,18 +426,23 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
             if isinstance(outputs, torch.Tensor):
                 msg = "model.generate must return a generation output when return_dict_in_generate=True."
                 raise TypeError(msg)
+
+        sequences = outputs.sequences
+        if self.with_log_likelihood:
             if outputs.scores is None:
                 msg = "model.generate must return scores when output_scores=True."
                 raise TypeError(msg)
             transition_scores = self.model.compute_transition_scores(
-                outputs.sequences,
+                sequences,
                 outputs.scores,
                 beam_indices=getattr(outputs, "beam_indices", None),
                 normalize_logits=True,
             )
+            log_likelihood = self._completion_log_likelihood(sequences, transition_scores)
+        else:
+            log_likelihood = torch.zeros((sequences.shape[0],), dtype=torch.float32, device=sequences.device)
+            transition_scores = log_likelihood.new_empty((sequences.shape[0], 0))
 
-        sequences = outputs.sequences
-        log_likelihood = self._completion_log_likelihood(sequences, transition_scores)
         if self.strip_inputs and not is_encoder_decoder:
             sequences = sequences[:, input_ids.shape[-1] :]
 

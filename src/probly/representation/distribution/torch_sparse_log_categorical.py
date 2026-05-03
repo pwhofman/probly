@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any, ClassVar, override
 
 import torch
@@ -84,6 +84,14 @@ class TorchSparseLogCategoricalDistribution(
     @property
     def num_classes(self) -> int:
         return int(torch.max(self.group_ids).item()) + 1
+
+    def uniform_logits(self) -> TorchSparseLogCategoricalDistribution:
+        """Return a copy with identical groups and uniform sparse logits.
+
+        Returns:
+            A sparse categorical distribution with shared ``group_ids`` and zero logits.
+        """
+        return replace(self, logits=torch.zeros_like(self.logits))
 
     def to_categorical_distribution(self, num_classes: int | None = None) -> TorchCategoricalDistribution:
         """Convert sparse grouped logits to a dense categorical distribution.
