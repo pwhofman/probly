@@ -11,7 +11,7 @@ from probly.predictor._common import predict, predict_raw
 from probly.traverse_nn import nn_compose, nn_traverser, reset_traverser
 from pytraverse import CLONE, traverse
 
-from ._common import ensemble_generator
+from ._common import RNG, ensemble_generator
 
 if TYPE_CHECKING:
     from probly.representation.torch_like import TorchLike
@@ -30,6 +30,7 @@ def generate_torch_ensemble(
     obj: nn.Module,
     num_members: int,
     reset_params: bool = True,
+    rngs: RNG = 1,  # noqa: ARG001
 ) -> nn.ModuleList:
     """Build a torch ensemble based on :cite:`lakshminarayananSimpleScalable2017`."""
     if reset_params:
