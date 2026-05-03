@@ -43,7 +43,7 @@ def main(cfg: DictConfig) -> None:
         OmegaConf.to_container(cfg.method.ood_detection, resolve=True) if cfg.method.get("ood_detection") else {}
     )  # ty: ignore[invalid-assignment]
     rep = representer(model, **rep_kwargs)
-    print(f"Getting outputs...")
+    print("Getting outputs...")
     id_outputs, _ = utils.collect_outputs_targets(rep, id_loader, device, cfg.get("amp", False))
     ood_outputs, _ = utils.collect_outputs_targets(rep, ood_loader, device, cfg.get("amp", False))
 
