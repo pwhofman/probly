@@ -453,45 +453,61 @@ def _save(fig: Figure, path: Path) -> None:
     print(f"Wrote {path}")
 
 
-def _process_one(json_path: Path, out_dir: Path, smooth_win: int) -> None:
+def _process_one(json_path: Path, out_dir: Path, smooth_win: int, *, notitle: bool) -> None:
     with json_path.open() as fh:
         data = json.load(fh)
     stream = data["stream"]
+    show_title = not notitle
+    suffix = "_notitle" if notitle else ""
 
     # decomposition (TU / AU / EU)
-    _save(plot_decomposition(data, smooth_win=smooth_win), out_dir / f"{stream}_decomposition.pdf")
     _save(
-        plot_decomposition(data, smooth_win=smooth_win, show_legend=False),
-        out_dir / f"{stream}_decomposition_nolegend.pdf",
+        plot_decomposition(data, smooth_win=smooth_win, show_title=show_title),
+        out_dir / f"{stream}_decomposition{suffix}.pdf",
+    )
+    _save(
+        plot_decomposition(data, smooth_win=smooth_win, show_legend=False, show_title=show_title),
+        out_dir / f"{stream}_decomposition_nolegend{suffix}.pdf",
     )
 
     # epi + accuracy
-    _save(plot_epi_accuracy(data, smooth_win=smooth_win), out_dir / f"{stream}_accuracy.pdf")
     _save(
-        plot_epi_accuracy(data, smooth_win=smooth_win, show_legend=False),
-        out_dir / f"{stream}_accuracy_nolegend.pdf",
+        plot_epi_accuracy(data, smooth_win=smooth_win, show_title=show_title),
+        out_dir / f"{stream}_accuracy{suffix}.pdf",
+    )
+    _save(
+        plot_epi_accuracy(data, smooth_win=smooth_win, show_legend=False, show_title=show_title),
+        out_dir / f"{stream}_accuracy_nolegend{suffix}.pdf",
     )
 
     # combined (TU / AU / EU + ACC)
     _save(
-        plot_decomposition_accuracy(data, smooth_win=smooth_win),
-        out_dir / f"{stream}_combined.pdf",
+        plot_decomposition_accuracy(data, smooth_win=smooth_win, show_title=show_title),
+        out_dir / f"{stream}_combined{suffix}.pdf",
     )
     _save(
-        plot_decomposition_accuracy(data, smooth_win=smooth_win, show_legend=False),
-        out_dir / f"{stream}_combined_nolegend.pdf",
+        plot_decomposition_accuracy(
+            data, smooth_win=smooth_win, show_legend=False, show_title=show_title
+        ),
+        out_dir / f"{stream}_combined_nolegend{suffix}.pdf",
     )
 
     # combined alt (TU = green)
     _save(
-        plot_decomposition_accuracy(data, smooth_win=smooth_win, tu_color="#2ecc71"),
-        out_dir / f"{stream}_combined_alt.pdf",
+        plot_decomposition_accuracy(
+            data, smooth_win=smooth_win, tu_color="#2ecc71", show_title=show_title
+        ),
+        out_dir / f"{stream}_combined_alt{suffix}.pdf",
     )
     _save(
         plot_decomposition_accuracy(
-            data, smooth_win=smooth_win, tu_color="#2ecc71", show_legend=False
+            data,
+            smooth_win=smooth_win,
+            tu_color="#2ecc71",
+            show_legend=False,
+            show_title=show_title,
         ),
-        out_dir / f"{stream}_combined_alt_nolegend.pdf",
+        out_dir / f"{stream}_combined_alt_nolegend{suffix}.pdf",
     )
 
 
@@ -534,6 +550,12 @@ def _parse_args() -> argparse.Namespace:
         default=DEFAULT_SMOOTH_WIN,
         help="Rolling-mean window applied per seed before aggregation.",
     )
+    parser.add_argument(
+        "--notitle",
+        action="store_true",
+        help="Drop the figure title and append '_notitle' to every output filename. "
+        "Useful for batches that go straight into a paper layout.",
+    )
     return parser.parse_args()
 
 
@@ -558,7 +580,7 @@ def main() -> None:
         json_paths = [args.json_path]
 
     for path in json_paths:
-        _process_one(path, out_dir, args.smooth_win)
+        _process_one(path, out_dir, args.smooth_win, notitle=args.notitle)
 
     _save_standalone_legends(out_dir)
 
