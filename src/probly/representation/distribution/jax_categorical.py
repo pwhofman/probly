@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, cast, override
+from typing import TYPE_CHECKING, Any, ClassVar, override
 
 import jax
 import jax.numpy as jnp
@@ -37,6 +37,9 @@ class JaxCategoricalDistribution(
 
     unnormalized_probabilities: jax.Array
     protected_axes: ClassVar[dict[str, int]] = {"unnormalized_probabilities": 1}
+    # Reserved: not currently consulted because JAX has no __jax_function__-equivalent
+    # dispatch hook. Kept for parity with torch/array; will activate if such a hook
+    # is added in the future.
     permitted_functions: ClassVar[set[Callable]] = {jnp.mean, jnp.average}
 
     def __post_init__(self) -> None:
@@ -64,6 +67,18 @@ class JaxCategoricalDistribution(
             values["unnormalized_probabilities"] = self.probabilities
 
         return values
+
+    @override
+    def _rotate_sample_axis(self, source_axis: int, dest_axis: int) -> JaxCategoricalDistribution:
+        """Rotate the batch sample axis of ``unnormalized_probabilities``.
+
+        The trailing class axis (protected) is left untouched; only batch axes
+        are permuted via ``jnp.moveaxis``.
+        """
+        if source_axis == dest_axis:
+            return self
+        rotated = jnp.moveaxis(self.unnormalized_probabilities, source_axis, dest_axis)
+        return JaxCategoricalDistribution(rotated)
 
     @property
     def _is_bernoulli(self) -> bool:
@@ -177,40 +192,25 @@ class JaxCategoricalDistribution(
 
 
 class JaxCategoricalDistributionSample(  # ty:ignore[conflicting-metaclass]
-    CategoricalDistributionSample,
+    CategoricalDistributionSample,  # intentionally parameterless: T propagates as unbound
     JaxArraySample,
 ):
-    """Sample type for empirical second-order categorical distributions.
+    """Sample of categorical distributions stored as JAX arrays.
 
-    Stores a ``JaxCategoricalDistribution`` whose protected fields hold the
-    per-sample probabilities along ``sample_axis``. Note that we omit the
-    generic parameter on ``CategoricalDistributionSample`` (compared to the
-    torch-side ``TorchCategoricalDistributionSample[TorchCategoricalDistribution]``)
-    because :class:`JaxArraySample` is non-generic and binds the ``Sample`` type
-    parameter to ``jax.Array``. Keeping the generic argument here would produce
-    inconsistent ``Sample`` type arguments across the MRO.
+    Stores a :class:`JaxCategoricalDistribution` whose protected fields hold the
+    per-sample probabilities along ``sample_axis``. Rotation of ``sample_axis``
+    is handled by :meth:`JaxArraySample.samples`, which delegates to
+    ``JaxCategoricalDistribution._rotate_sample_axis``.
+
+    Note: this class intentionally does not parametrize
+    ``CategoricalDistributionSample`` because :class:`JaxArraySample` is
+    non-generic and binds the ``Sample`` type parameter to ``jax.Array``;
+    the unbound type variable from the parent class is left unbound rather
+    than dropped from the MRO. Keeping the generic argument here would
+    produce inconsistent ``Sample`` type arguments across the MRO.
     """
 
     sample_space: ClassVar[type[CategoricalDistribution]] = JaxCategoricalDistribution
-
-    @property
-    @override
-    def samples(self) -> JaxCategoricalDistribution:
-        """Return the wrapped distribution with ``sample_axis`` rotated to position 0.
-
-        Overridden because :class:`JaxArraySample`'s implementation calls
-        ``jnp.moveaxis`` directly on ``self.array``, which fails for protected-axis
-        types (``jnp`` does not accept :class:`JaxCategoricalDistribution`). We
-        instead permute the underlying ``unnormalized_probabilities`` and rebuild
-        the distribution so the protected class axis stays in place.
-        """
-        # ``self.array`` is annotated as ``jax.Array`` on :class:`JaxArraySample` but
-        # specialized to a :class:`JaxCategoricalDistribution` here.
-        array = cast("JaxCategoricalDistribution", self.array)
-        if self.sample_axis == 0:
-            return array
-        unnormalized = jnp.moveaxis(array.unnormalized_probabilities, self.sample_axis, 0)
-        return JaxCategoricalDistribution(unnormalized)
 
     @override
     @classmethod

@@ -10,6 +10,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+from probly.representation._protected_axis.jax import JaxAxisProtected
 from probly.representation.jax_like import JaxLikeImplementation
 from probly.representation.sample._common import Sample, SampleAxis, create_sample
 
@@ -165,10 +166,20 @@ class JaxArraySample(Sample[jax.Array]):
         return self.array.shape[self.sample_axis]
 
     @property
-    def samples(self) -> jax.Array:
-        """Return an iterator over the samples."""
+    def samples(self) -> jax.Array | JaxLikeImplementation:
+        """Return an iterator over the samples.
+
+        For protected-axis wrappers (subclasses of :class:`JaxAxisProtected`),
+        this delegates to ``_rotate_sample_axis`` so the wrapper type is
+        preserved and ``jnp.moveaxis`` never sees the wrapper directly. JAX
+        has no ``__array_function__``-equivalent dispatch hook, so the
+        rotation has to be explicit on the wrapper rather than implicit
+        through a numpy/torch-style protocol.
+        """
         if self.sample_axis == 0:
             return self.array
+        if isinstance(self.array, JaxAxisProtected):
+            return self.array._rotate_sample_axis(self.sample_axis, 0)  # noqa: SLF001
         return jnp.moveaxis(self.array, self.sample_axis, 0)
 
     def sample_mean(self) -> jax.Array:

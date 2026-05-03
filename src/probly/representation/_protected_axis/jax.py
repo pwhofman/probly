@@ -39,6 +39,9 @@ class JaxAxisProtected[T: JaxLikeImplementation | jax.Array](JaxLikeImplementati
     """ABC for representations with one or multiple protected JAX-array fields."""
 
     protected_axes: ClassVar[dict[str, int]] = {}
+    # Reserved: not currently consulted because JAX has no __jax_function__-equivalent
+    # dispatch hook. Kept for parity with torch/array; will activate if such a hook
+    # is added in the future.
     permitted_functions: ClassVar[set[Callable[..., Any]]] = set()
 
     def __init_subclass__(cls, **kwargs: object) -> None:
@@ -75,9 +78,33 @@ class JaxAxisProtected[T: JaxLikeImplementation | jax.Array](JaxLikeImplementati
         return next(iter(cls.protected_axes))
 
     def _postprocess_protected_values[V: JaxProtectedValue](self, values: dict[str, V], func: Callable) -> dict[str, V]:
-        """Optionally postprocess protected values based on the triggering function."""
+        """Optionally postprocess protected values based on the triggering function.
+
+        Reserved: not currently consulted because JAX has no
+        ``__jax_function__``-equivalent dispatch hook. Kept for parity with
+        torch/array; will activate if such a hook is added in the future.
+        """
         del func
         return values
+
+    def _rotate_sample_axis(self, source_axis: int, dest_axis: int) -> Self:
+        """Return a copy with batch axis permuted, preserving protected trailing axes.
+
+        Subclasses must override this to permute their underlying protected
+        value(s) and rebuild the wrapper. This mirrors what
+        ``__torch_function__`` / ``__array_function__`` do implicitly on
+        torch/array: it lets generic ``JaxArraySample.samples`` rotate the
+        sample axis without ``jnp.moveaxis`` ever seeing the wrapper.
+
+        Args:
+            source_axis: Current batch axis to rotate from.
+            dest_axis: Target batch axis to rotate to.
+
+        Returns:
+            A new instance of the same type with the batch axis rotated.
+        """
+        msg = f"{type(self).__name__} must override _rotate_sample_axis."
+        raise NotImplementedError(msg)
 
     @overload
     def protected_values(self) -> dict[str, JaxProtectedValue]: ...

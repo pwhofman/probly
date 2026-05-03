@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, cast, override
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, override
 
 import jax
 import jax.numpy as jnp
@@ -62,6 +62,19 @@ class JaxGaussianDistribution(JaxAxisProtected[Any], GaussianDistribution[jax.Ar
         return res
 
     @override
+    def _rotate_sample_axis(self, source_axis: int, dest_axis: int) -> JaxGaussianDistribution:
+        """Rotate the batch sample axis of ``mean`` and ``var``.
+
+        Both fields share the same shape (no protected trailing axes), so the
+        rotation is a straight ``jnp.moveaxis`` on each.
+        """
+        if source_axis == dest_axis:
+            return self
+        mean = jnp.moveaxis(self.mean, source_axis, dest_axis)
+        var = jnp.moveaxis(self.var, source_axis, dest_axis)
+        return JaxGaussianDistribution(mean=mean, var=var)
+
+    @override
     def sample(
         self,
         num_samples: int = 1,
@@ -106,35 +119,23 @@ class JaxGaussianDistribution(JaxAxisProtected[Any], GaussianDistribution[jax.Ar
 
 
 class JaxGaussianDistributionSample(  # ty:ignore[conflicting-metaclass]
-    GaussianDistributionSample,
+    GaussianDistributionSample,  # intentionally parameterless: T propagates as unbound
     JaxArraySample,
 ):
-    """Sample type for empirical second-order Gaussian distributions.
+    """Sample of Gaussian distributions stored as JAX arrays.
 
-    See the corresponding note on :class:`JaxCategoricalDistributionSample`
-    for why the generic parameter is omitted here.
+    Note: this class intentionally does not parametrize
+    ``GaussianDistributionSample`` because :class:`JaxArraySample` is
+    non-generic and binds the ``Sample`` type parameter to ``jax.Array``;
+    the unbound type variable from the parent class is left unbound rather
+    than dropped from the MRO. See the corresponding note on
+    :class:`JaxCategoricalDistributionSample` for the same rationale.
+
+    Rotation of ``sample_axis`` is handled by :meth:`JaxArraySample.samples`,
+    which delegates to ``JaxGaussianDistribution._rotate_sample_axis``.
     """
 
     sample_space: ClassVar[type[GaussianDistribution]] = JaxGaussianDistribution
-
-    @property
-    @override
-    def samples(self) -> JaxGaussianDistribution:
-        """Return the wrapped distribution with ``sample_axis`` rotated to position 0.
-
-        Overridden because :class:`JaxArraySample`'s implementation calls
-        ``jnp.moveaxis`` directly on ``self.array``, which fails for protected-axis
-        types (``jnp`` does not accept :class:`JaxGaussianDistribution`). We
-        instead permute the underlying ``mean``/``var`` and rebuild the distribution.
-        """
-        # ``self.array`` is annotated as ``jax.Array`` on :class:`JaxArraySample` but
-        # specialized to a :class:`JaxGaussianDistribution` here.
-        array = cast("JaxGaussianDistribution", self.array)
-        if self.sample_axis == 0:
-            return array
-        mean = jnp.moveaxis(array.mean, self.sample_axis, 0)
-        var = jnp.moveaxis(array.var, self.sample_axis, 0)
-        return JaxGaussianDistribution(mean=mean, var=var)
 
     @override
     @classmethod
@@ -143,7 +144,9 @@ class JaxGaussianDistributionSample(  # ty:ignore[conflicting-metaclass]
 
 
 @create_gaussian_distribution.register(jax.Array)
-def _(mean: jax.Array, var: jax.Array | None = None) -> JaxGaussianDistribution:
+def _create_jax_gaussian_distribution_from_array(
+    mean: jax.Array, var: jax.Array | None = None
+) -> JaxGaussianDistribution:
     """Create a JaxGaussianDistribution from JAX arrays."""
     if var is None:
         if mean.shape[-1] != 2:
