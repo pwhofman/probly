@@ -1037,6 +1037,7 @@ def _fit_deup_error_head(
     train_kwargs: dict[str, Any],
     run: Any,  # noqa: ANN401
     amp_enabled: bool = False,
+    batch_size: int = 256,
 ) -> None:
     """Train the DEUP error head on out-of-sample log10-scaled CE targets.
 
@@ -1063,6 +1064,7 @@ def _fit_deup_error_head(
             (default 0.9).
         run: Wandb run object used to log phase-2 metrics.
         amp_enabled: Whether to use automatic mixed precision.
+        batch_size: Mini-batch size for phase-2 error-head training.
     """
     model_ = cast("Any", model)
     providers: list[Any] = list(getattr(model_, "providers", []))
@@ -1078,7 +1080,7 @@ def _fit_deup_error_head(
         phi_all,
         targets_all,
         device,
-        batch_size=error_head_loader.batch_size or 256,
+        batch_size=batch_size,
         epochs=int(train_kwargs.get("error_head_epochs", 5)),
         lr=float(train_kwargs.get("error_head_lr", 0.005)),
         momentum=float(train_kwargs.get("error_head_momentum", 0.9)),
@@ -1151,7 +1153,9 @@ def _(
     # Phase 2: fit any stationarizing-feature providers on training data,
     # then the error head on out-of-sample losses.
     amp_enabled = cfg.get("amp", False)
-    _fit_deup_error_head(model, train_loader, error_head_loader, device, inner_train_kwargs, run, amp_enabled)
+    _fit_deup_error_head(
+        model, train_loader, error_head_loader, device, inner_train_kwargs, run, amp_enabled, cfg.batch_size
+    )
 
 
 @train_model.register(BaseLaplace)
