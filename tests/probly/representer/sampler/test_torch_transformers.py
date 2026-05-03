@@ -29,6 +29,10 @@ class FakeTokenizer:
     def pad_token_id(self) -> int | None:
         return 0 if self.pad_token is not None else None
 
+    @property
+    def eos_token_id(self) -> int:
+        return 0
+
     def apply_chat_template(
         self,
         interaction: list[dict[str, str]],
@@ -123,6 +127,78 @@ class FakeModel:
         return torch.full((sequences.shape[0], len(scores)), -0.5)
 
 
+class FakePostEOSScoreModel(FakeModel):
+    def generate(self, **kwargs: object) -> FakeGenerationOutput:
+        input_ids = kwargs["input_ids"]
+        if not isinstance(input_ids, torch.Tensor):
+            msg = "input_ids must be a torch tensor."
+            raise TypeError(msg)
+        self.generate_calls.append(kwargs)
+        generated = torch.tensor([[100, 0, 0], [0, 0, 0]], dtype=torch.long)
+        sequences = torch.cat((input_ids, generated[: input_ids.shape[0]]), dim=1)
+        scores = (torch.zeros((input_ids.shape[0], 256)),) * 3
+        return FakeGenerationOutput(sequences=sequences, scores=scores)
+
+    def compute_transition_scores(
+        self,
+        sequences: torch.Tensor,
+        scores: tuple[torch.Tensor, ...],
+        *,
+        beam_indices: torch.Tensor | None = None,
+        normalize_logits: bool = True,
+    ) -> torch.Tensor:
+        assert beam_indices is None
+        assert normalize_logits is True
+        assert len(scores) == 3
+        return torch.tensor(
+            [
+                [-0.25, -0.5, -torch.inf],
+                [-torch.inf, -torch.inf, -torch.inf],
+            ],
+            dtype=torch.float32,
+        )[: sequences.shape[0]]
+
+
+class FakeGemmaTokenizer(FakeTokenizer):
+    @property
+    def eos_token_id(self) -> int:
+        return 1
+
+
+class FakeGemmaStopScoreModel(FakeModel):
+    generation_config = SimpleNamespace(eos_token_id=[1, 106, 50], pad_token_id=0)
+
+    def generate(self, **kwargs: object) -> FakeGenerationOutput:
+        input_ids = kwargs["input_ids"]
+        if not isinstance(input_ids, torch.Tensor):
+            msg = "input_ids must be a torch tensor."
+            raise TypeError(msg)
+        self.generate_calls.append(kwargs)
+        generated = torch.tensor([[100, 106, 0], [101, 102, 103]], dtype=torch.long)
+        sequences = torch.cat((input_ids, generated[: input_ids.shape[0]]), dim=1)
+        scores = (torch.zeros((input_ids.shape[0], 256)),) * 3
+        return FakeGenerationOutput(sequences=sequences, scores=scores)
+
+    def compute_transition_scores(
+        self,
+        sequences: torch.Tensor,
+        scores: tuple[torch.Tensor, ...],
+        *,
+        beam_indices: torch.Tensor | None = None,
+        normalize_logits: bool = True,
+    ) -> torch.Tensor:
+        assert beam_indices is None
+        assert normalize_logits is True
+        assert len(scores) == 3
+        return torch.tensor(
+            [
+                [-0.2, -0.4, -torch.inf],
+                [-0.3, -0.6, -0.9],
+            ],
+            dtype=torch.float32,
+        )[: sequences.shape[0]]
+
+
 class FakeEncoderDecoderModel(FakeModel):
     config = SimpleNamespace(is_encoder_decoder=True)
 
@@ -164,7 +240,7 @@ def test_sampler_chunks_samples_and_returns_text_generation_sample() -> None:
     assert sample.sample_dim == 1
     assert sample.shape == (2, 3)
     assert sample.tensor.text.shape == (2, 3)
-    assert torch.equal(sample.tensor.log_likelihood, torch.full((2, 3), -1.0))
+    assert torch.equal(sample.tensor.log_likelihood, torch.full((2, 3), -0.5))
     assert len(model.generate_calls) == 2
     assert cast("torch.Tensor", model.generate_calls[0]["input_ids"]).shape[0] == 2
     assert cast("torch.Tensor", model.generate_calls[1]["input_ids"]).shape[0] == 2
@@ -178,6 +254,32 @@ def test_sampler_chunks_samples_and_returns_text_generation_sample() -> None:
     assert len(set(sample.tensor.text[0].tolist())) == 3
     assert tokenizer.padding_side == "left"
     assert tokenizer.pad_token == "<pad>"  # noqa: S105
+
+
+def test_sampler_uses_gemma_style_non_eos_mean_log_likelihood() -> None:
+    sample = HFTextGenerationSampler(
+        model=FakePostEOSScoreModel(),
+        tokenizer=FakeTokenizer(),
+        num_samples=1,
+        apply_chat_template=False,
+    ).represent(["first question", "second question"])
+
+    assert sample.tensor.text.tolist() == [["tok100"], [""]]
+    assert torch.isfinite(sample.tensor.log_likelihood).all()
+    assert torch.equal(sample.tensor.log_likelihood, torch.tensor([[-0.25], [0.0]]))
+
+
+def test_sampler_uses_generation_config_stop_ids_for_log_likelihood() -> None:
+    sample = HFTextGenerationSampler(
+        model=FakeGemmaStopScoreModel(),
+        tokenizer=FakeGemmaTokenizer(),
+        num_samples=1,
+        apply_chat_template=False,
+    ).represent(["first question", "second question"])
+
+    assert sample.tensor.text.tolist() == [["tok100 tok106"], ["tok101 tok102 tok103"]]
+    assert torch.isfinite(sample.tensor.log_likelihood).all()
+    assert torch.allclose(sample.tensor.log_likelihood, torch.tensor([[-0.2], [-0.6]]))
 
 
 def test_sampler_merges_options_into_explicit_generation_config() -> None:

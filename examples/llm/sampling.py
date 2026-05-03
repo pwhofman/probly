@@ -7,8 +7,8 @@ import torch
 from probly.representer.sampler.huggingface import HFTextGenerationSampler
 
 
-MODEL_NAME = "HuggingFaceTB/SmolLM2-135M-Instruct"
-# MODEL_NAME = "google/gemma-4-E2B-it"
+# MODEL_NAME = "HuggingFaceTB/SmolLM2-135M-Instruct"
+MODEL_NAME = "google/gemma-4-E2B-it"
 
 
 def main() -> None:

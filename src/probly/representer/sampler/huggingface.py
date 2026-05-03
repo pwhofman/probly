@@ -40,6 +40,22 @@ type HFGenerationOutput = (
 )
 
 
+def _as_token_id_set(value: int | Sequence[int] | None) -> set[int]:
+    if value is None:
+        return set()
+    if isinstance(value, int):
+        return {value}
+    if isinstance(value, torch.Tensor):
+        return {int(token_id) for token_id in value.detach().cpu().flatten().tolist()}
+    if isinstance(value, Sequence) and not isinstance(value, str):
+        token_ids: set[int] = set()
+        for token_id in value:
+            if token_id is not None:
+                token_ids.add(int(token_id))
+        return token_ids
+    return set()
+
+
 def _is_encoder_decoder_model(model: GenerativePreTrainedModel) -> bool:
     model_config = getattr(model, "config", None)
     return bool(getattr(model_config, "is_encoder_decoder", False))
@@ -290,7 +306,7 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
         msg = "Tokenizer must return a mapping of model inputs."
         raise TypeError(msg)
 
-    def _generation_kwargs(self) -> dict[str, object]:
+    def _generation_kwargs(self, num_return_samples: int | None = None) -> dict[str, object]:
         values: dict[str, object] = {
             "do_sample": self.do_sample,
             "return_dict_in_generate": True,
@@ -307,6 +323,9 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
         if pad_token_id is not None:
             values["pad_token_id"] = pad_token_id
 
+        if num_return_samples is not None:
+            values["num_return_sequences"] = num_return_samples
+
         if self.generation_config is None:
             return values
 
@@ -314,6 +333,59 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
         for key, value in values.items():
             setattr(config, key, value)
         return {"generation_config": config}
+
+    def _completion_stop_token_ids(self) -> set[int]:
+        token_ids: set[int] = set()
+        for config in (
+            self.generation_config,
+            getattr(self.model, "generation_config", None),
+            getattr(self.model, "config", None),
+            self.tokenizer,
+        ):
+            token_ids.update(_as_token_id_set(getattr(config, "eos_token_id", None)))
+            token_ids.update(_as_token_id_set(getattr(config, "pad_token_id", None)))
+        return token_ids
+
+    def _completion_log_likelihood(
+        self,
+        sequences: torch.Tensor,
+        transition_scores: torch.Tensor,
+    ) -> torch.Tensor:
+        if sequences.ndim != 2:
+            msg = "Generated sequences must have shape (batch_size, sequence_length)."
+            raise ValueError(msg)
+        if transition_scores.ndim != 2:
+            msg = "Transition scores must have shape (batch_size, generated_length)."
+            raise ValueError(msg)
+        if sequences.shape[0] != transition_scores.shape[0]:
+            msg = "Generated sequences and transition scores must share the same batch size."
+            raise ValueError(msg)
+        if sequences.shape[-1] < transition_scores.shape[-1]:
+            msg = "Generated sequences cannot be shorter than transition scores."
+            raise ValueError(msg)
+
+        scores = transition_scores.float()
+        if scores.shape[-1] == 0:
+            return torch.zeros((scores.shape[0],), dtype=scores.dtype, device=scores.device)
+
+        generated_tokens = sequences[:, -scores.shape[-1] :].to(device=scores.device)
+        stop_token_ids = self._completion_stop_token_ids()
+        if len(stop_token_ids) == 0:
+            scored_mask = torch.ones_like(scores, dtype=torch.bool)
+        else:
+            stop_tokens = torch.tensor(
+                sorted(stop_token_ids), dtype=generated_tokens.dtype, device=generated_tokens.device
+            )
+            stop_mask = torch.isin(generated_tokens, stop_tokens)
+            scored_mask = torch.cumsum(stop_mask.to(dtype=torch.long), dim=-1) == 0
+
+        lengths = scored_mask.sum(dim=-1)
+        summed = torch.where(scored_mask, scores, torch.zeros_like(scores)).sum(dim=-1)
+        return torch.where(
+            lengths > 0,
+            summed / lengths.clamp_min(1).to(dtype=scores.dtype),
+            torch.zeros_like(summed),
+        )
 
     def _generate_chunk(self, prompts: Sequence[str], chunk_size: int) -> TorchTextGeneration:
         is_encoder_decoder = _is_encoder_decoder_model(self.model)
@@ -330,14 +402,7 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
             msg = "Tokenizer output must include an input_ids tensor."
             raise TypeError(msg)
 
-        generation_kwargs = self._generation_kwargs()
-        if use_num_return_sequences:
-            raw_generation_config = generation_kwargs.get("generation_config")
-            if raw_generation_config is None:
-                generation_kwargs["num_return_sequences"] = chunk_size
-            else:
-                generation_config = cast("Any", raw_generation_config)
-                generation_config.num_return_sequences = chunk_size
+        generation_kwargs = self._generation_kwargs(chunk_size if use_num_return_sequences else None)
 
         with torch.inference_mode():
             outputs = self.model.generate(**tokenized, **generation_kwargs)
@@ -355,6 +420,7 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
             )
 
         sequences = outputs.sequences
+        log_likelihood = self._completion_log_likelihood(sequences, transition_scores)
         if self.strip_inputs and not is_encoder_decoder:
             sequences = sequences[:, input_ids.shape[-1] :]
 
@@ -362,7 +428,7 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
         text_generation = token_generation.to_text(self.tokenizer)
         return TorchTextGeneration(
             text=text_generation.text.reshape((len(prompts), chunk_size)),
-            log_likelihood=text_generation.log_likelihood.reshape((len(prompts), chunk_size)),
+            log_likelihood=log_likelihood.reshape((len(prompts), chunk_size)),
         )
 
     def represent(self, inputs: Sequence[TextGenerationInput]) -> TorchTextGenerationSample:
@@ -394,15 +460,3 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
             tensor=TorchTextGeneration(text=text, log_likelihood=log_likelihood),
             sample_dim=1,
         )
-
-    def predict_representation(self, inputs: Sequence[TextGenerationInput]) -> TorchTextGenerationSample:
-        """Alias for :meth:`represent`."""
-        return self.represent(inputs)
-
-    def predict(self, inputs: Sequence[TextGenerationInput]) -> TorchTextGenerationSample:
-        """Alias for :meth:`represent`."""
-        return self.represent(inputs)
-
-    def __call__(self, inputs: Sequence[TextGenerationInput]) -> TorchTextGenerationSample:
-        """Alias for :meth:`represent`."""
-        return self.represent(inputs)
