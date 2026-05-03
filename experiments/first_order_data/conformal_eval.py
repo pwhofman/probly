@@ -15,7 +15,7 @@ import numpy.typing as npt
 from torch import nn
 
 from probly.calibrator import calibrate
-from probly.metrics._common import average_set_size, empirical_coverage_classification
+from probly.metrics import average_set_size, empirical_coverage_classification
 from probly.method.conformal import conformal_aps, conformal_lac, conformal_raps
 from probly.representer import representer
 
@@ -23,7 +23,7 @@ type FloatArray = npt.NDArray[np.floating]
 type IntArray = npt.NDArray[np.integer]
 type BoolArray = npt.NDArray[np.bool_]
 type UncertaintyValues = Mapping[str, FloatArray]
-type MetricRow = tuple[float, float, float]  # (hard_coverage, soft_coverage, avg_set_size)
+type MetricRow = tuple[float, float, float]  # (marginal_coverage, conditional_coverage, avg_set_size)
 type ResultRows = dict[tuple[str, str], list[MetricRow]]
 
 
@@ -55,9 +55,21 @@ def make_predictor(name: str, model: CachedProbsModel) -> object:
     raise ValueError(msg)
 
 
-def soft_empirical_coverage(prediction_sets: BoolArray, targets_soft: FloatArray) -> float:
-    """Compute the target probability mass covered by each prediction set."""
-    return float(np.mean(np.sum(prediction_sets * targets_soft, axis=1)))
+def conditional_coverage(prediction_sets: BoolArray, targets_soft: FloatArray, alpha: float) -> float:
+    """Compute the fraction of sets covering at least the target probability mass."""
+    return float(np.mean(np.sum(prediction_sets * targets_soft, axis=1) >= 1 - alpha))
+
+
+def marginal_coverage(prediction_sets: BoolArray, y_true: IntArray) -> float:
+    """Compute marginal empirical coverage against hard labels."""
+    return float(empirical_coverage_classification(prediction_sets, y_true))
+
+
+def sample_labels(targets_soft: FloatArray, rng: np.random.Generator) -> IntArray:
+    """Draw one hard label per row from soft target probabilities."""
+    cum = targets_soft.cumsum(axis=1)
+    u = rng.random(len(targets_soft))[:, None]
+    return (u < cum).argmax(axis=1)
 
 
 def fold_coverage(
@@ -70,16 +82,14 @@ def fold_coverage(
 
     Returns a dict mapping (method, strategy) to per-split metric tuples.
     """
+    label_rng = np.random.default_rng(args.seed)
+    y_marginal = sample_labels(targets_soft, label_rng)
     if args.label_mode == "sample":
-        # draw one label per row from the soft target distribution
-        label_rng = np.random.default_rng(args.seed)
-        cum = targets_soft.cumsum(axis=1)
-        u = label_rng.random(len(targets_soft))[:, None]
-        y_hard = (u < cum).argmax(axis=1)
+        y_calibration = y_marginal
     else:
-        y_hard = targets_soft.argmax(axis=1)
+        y_calibration = targets_soft.argmax(axis=1)
     model = CachedProbsModel(probs)
-    n_samples = len(y_hard)
+    n_samples = len(y_calibration)
     rng = np.random.default_rng(args.seed)
 
     rows: ResultRows = {(method, strategy): [] for method in args.methods for strategy in args.conditioning}
@@ -88,7 +98,7 @@ def fold_coverage(
         perm = np.random.default_rng(seed).permutation(n_samples)
         split_at = n_samples // 2
         idx_cal, idx_test = perm[:split_at], perm[split_at:]
-        y_cal, y_test = y_hard[idx_cal], y_hard[idx_test]
+        y_cal, y_test = y_calibration[idx_cal], y_marginal[idx_test]
         targets_soft_test = targets_soft[idx_test]
 
         for method in args.methods:
@@ -97,16 +107,16 @@ def fold_coverage(
             sets = np.asarray(representer(calibrated).predict(idx_test).array, dtype=bool)
             rows[(method, "split")].append(
                 (
-                    float(empirical_coverage_classification(sets, y_test)),
-                    soft_empirical_coverage(sets, targets_soft_test),
+                    marginal_coverage(sets, y_test),
+                    conditional_coverage(sets, targets_soft_test, alpha=args.alpha),
                     float(average_set_size(sets)),
                 )
-                    )
+            )
     return rows
 
 
 def print_summary(fold_name: str, rows: ResultRows) -> None:
-    headers = ("hard_cover", "soft_cover", "size")
+    headers = ("marginal", "conditional", "size")
     print(f"\n{fold_name}:")
     print(f"  {'method':<5} {'strategy':<12} " + " ".join(f"{h:<13}" for h in headers))
     for (method, strategy), seed_rows in rows.items():
