@@ -46,4 +46,6 @@ OOD_DATASETS: dict[str, DatasetMeta] = {
     "eurosat": DatasetMeta(num_classes=10, input_dim=(64, 64, 3)),
     "sun397": DatasetMeta(num_classes=397, input_dim=()),
     "inaturalist": DatasetMeta(num_classes=10000, input_dim=()),
+    "ninco": DatasetMeta(num_classes=64, input_dim=()),
+    "ssb_hard": DatasetMeta(num_classes=980, input_dim=()),
 }

@@ -109,6 +109,7 @@ benchmark = [
     "pytorch-optimizer>=3.0",
     "nflows>=0.14",
     "gpytorch>=1.11",
+    "datasets>=3.0.0",
 ]
 dev = [
     { include-group = "test" },

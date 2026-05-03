@@ -356,6 +356,30 @@ def get_data_train(
 _GRAYSCALE_OOD_DATASETS = frozenset({"mnist", "fashion_mnist"})
 
 
+class _HfOodDataset(torchvision.datasets.VisionDataset):
+    """Torchvision-style wrapper for a HuggingFace OOD dataset.
+
+    Labels are returned as ``0`` because OOD evaluation does not consume them
+    and some HF mirrors ship a broken ``ClassLabel`` schema.
+    """
+
+    def __init__(self, repo: str, transform: T.Compose) -> None:
+        super().__init__(root="", transform=transform)
+        from datasets import load_dataset  # noqa: PLC0415
+
+        self._hf = load_dataset(repo, split="train").select_columns(["image"])
+        self._transform = transform
+
+    def __len__(self) -> int:
+        return len(self._hf)
+
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, int]:
+        img = self._hf[index]["image"]
+        if hasattr(img, "convert"):
+            img = img.convert("RGB")
+        return self._transform(img), 0
+
+
 def _get_test_dataset(name: str, transform: T.Compose) -> torchvision.datasets.VisionDataset:  # noqa: PLR0911, PLR0912
     """Return the test view of a map-style dataset with the given transform.
 
@@ -369,13 +393,15 @@ def _get_test_dataset(name: str, transform: T.Compose) -> torchvision.datasets.V
     Args:
         name: Dataset name. One of ``cifar10``, ``cifar100``, ``svhn``,
             ``textures``, ``places365``, ``mnist``, ``fashion_mnist``,
-            ``stl10``, ``eurosat``, ``sun397``, ``inaturalist``.
+            ``stl10``, ``eurosat``, ``sun397``, ``inaturalist``, ``ninco``,
+            ``ssb_hard``.
         transform: Test transform to apply to all returned samples.
 
     Returns:
         A torch.utils.data.Dataset over the named dataset's test split. For
         ``eurosat`` and ``sun397``, which do not ship with a train/test split,
-        the full dataset is returned.
+        the full dataset is returned. ``ninco`` and ``ssb_hard`` are loaded
+        from HuggingFace mirrors of the original ImageNet near-OOD benchmarks.
     """
     ssl._create_default_https_context = ssl._create_unverified_context  # ty:ignore[invalid-assignment]  # noqa: SLF001
     name = name.lower()
@@ -408,6 +434,10 @@ def _get_test_dataset(name: str, transform: T.Compose) -> torchvision.datasets.V
             return torchvision.datasets.INaturalist(
                 root=DATA_PATH, version="2021_valid", download=True, transform=transform
             )
+        case "ninco":
+            return _HfOodDataset("Rxzh/NINCO", transform)
+        case "ssb_hard":
+            return _HfOodDataset("torch-uncertainty/SSB_hard", transform)
         case _:
             msg = f"Dataset {name} not recognized for test loading"
             raise ValueError(msg)
@@ -466,7 +496,7 @@ def get_data_ood(
         name_id: In-distribution dataset name. cifar10 or imagenet.
         name_ood: Out-of-distribution dataset name. One of cifar10, cifar100,
             svhn, textures, places365, mnist, fashion_mnist, stl10, eurosat,
-            sun397, inaturalist.
+            sun397, inaturalist, ninco, ssb_hard.
         seed: Seed driving the random subset selection on both sides.
         val_split: Fraction allocated to validation during training. Used to
             ensure ID test excludes those samples (no-op for cifar10).
