@@ -8,8 +8,12 @@ import pytest
 pytest.importorskip("torch")
 import torch
 
+from probly.representation.credal_set._common import (
+    create_distance_based_credal_set_from_center_and_radius,
+)
 from probly.representation.credal_set.torch import (
     TorchConvexCredalSet,
+    TorchDistanceBasedCredalSet,
     TorchProbabilityIntervalsCredalSet,
 )
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
@@ -68,3 +72,16 @@ def test_torch_probability_intervals_numpy_and_shape_ops() -> None:
     assert isinstance(expanded, TorchProbabilityIntervalsCredalSet)
     assert tuple(expanded.lower_bounds.shape) == (1, 2, 2)
     assert tuple(expanded.upper_bounds.shape) == (1, 2, 2)
+
+
+def test_distance_credal_set_from_categorical_distribution() -> None:
+    """Factory should accept TorchCategoricalDistribution directly."""
+    probs = torch.tensor([[0.5, 0.3, 0.2], [0.4, 0.4, 0.2]], dtype=torch.float64)
+    center = TorchCategoricalDistribution(probs)
+    radius = torch.tensor(0.1, dtype=torch.float64)
+
+    result = create_distance_based_credal_set_from_center_and_radius(center, radius)
+
+    assert isinstance(result, TorchDistanceBasedCredalSet)
+    assert result.nominal is center  # should reuse, not re-wrap
+    assert torch.equal(result.radius, radius)
