@@ -41,8 +41,8 @@ class JaxArraySample(Sample[jax.Array]):
                 raise ValueError(msg)
             super().__setattr__("sample_axis", self.array.ndim + self.sample_axis)
 
-        if not isinstance(self.array, jax.Array):
-            msg = "array must be a JAX array."
+        if not isinstance(self.array, JaxLikeImplementation):
+            msg = "array must be a JaxLikeImplementation (or jax.Array)."
             raise TypeError(msg)
 
         if self.weights is not None and self.weights.shape != (self.sample_size,):

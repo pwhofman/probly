@@ -15,10 +15,8 @@ from probly.layers.flax import SNGPLayer, SpectralNormWithMultiplier  # noqa: E4
 from probly.method.sngp import sngp  # noqa: E402
 from probly.quantification import decompose  # noqa: E402
 from probly.quantification.decomposition.entropy import SecondOrderEntropyDecomposition  # noqa: E402
-from probly.representation.distribution import (  # noqa: E402
-    ArrayCategoricalDistributionSample,
-    ArrayGaussianDistribution,
-)
+from probly.representation.distribution.jax_categorical import JaxCategoricalDistributionSample  # noqa: E402
+from probly.representation.distribution.jax_gaussian import JaxGaussianDistribution  # noqa: E402
 from probly.representer import representer  # noqa: E402
 from tests.probly.flax_utils import count_layers  # noqa: E402
 
@@ -88,7 +86,7 @@ class TestSNGPForwardPass:
         predictor = sngp(flax_regression_model_2d, num_inducing=16)
         distribution = predict(predictor, jnp.ones((5, 4)))
 
-        assert isinstance(distribution, ArrayGaussianDistribution)
+        assert isinstance(distribution, JaxGaussianDistribution)
         assert distribution.mean.shape == (5, 2)
         assert distribution.var.shape == (5, 2)
 
@@ -164,7 +162,7 @@ class TestSNGPRepresenter:
     """Smoke tests for the SNGP representer/decomposition chain on the flax backend."""
 
     def test_representer_returns_categorical_sample(self, flax_rngs: nnx.Rngs) -> None:
-        """Sampling through the representer yields an ``ArrayCategoricalDistributionSample``."""
+        """Sampling through the representer yields a ``JaxCategoricalDistributionSample``."""
         model = nnx.Sequential(
             nnx.Linear(2, 4, rngs=flax_rngs),
             nnx.Linear(4, 3, rngs=flax_rngs),
@@ -172,7 +170,7 @@ class TestSNGPRepresenter:
         predictor = sngp(model, num_inducing=16)
         sample = representer(predictor, num_samples=3).represent(jnp.ones((2, 2)))
 
-        assert isinstance(sample, ArrayCategoricalDistributionSample)
+        assert isinstance(sample, JaxCategoricalDistributionSample)
 
     def test_decompose_dispatches_to_second_order_entropy(self, flax_rngs: nnx.Rngs) -> None:
         """``decompose`` of an SNGP sample routes to ``SecondOrderEntropyDecomposition``."""
