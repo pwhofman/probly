@@ -16,9 +16,18 @@ from river_uq.prequential import run_prequential
 from river_uq.streams import STREAM_NAMES, get_drift_window
 
 DEFAULT_STREAMS: Final[tuple[str, ...]] = (
-    "agrawal_drift_7to4",
+    "agrawal_drift",
+    "agrawal_drift_0to9",
     "agrawal_drift_4to0",
+    "agrawal_drift_7to4",
     "agrawal_drift_9to2",
+    "agrawal_covariate_drift",
+    "agrawal_gradual_drift_500",
+    "agrawal_gradual_drift_1000",
+    "agrawal_virtual_drift_join",
+    "agrawal_virtual_drift_replace",
+    "agrawal_virtual_drift_stacked",
+    "agrawal_virtual_drift_stacked_gradual_1000",
 )
 DEFAULT_SEEDS: Final[tuple[int, ...]] = (0, 1, 2)
 DEFAULT_N_STEPS: Final[int] = 3000

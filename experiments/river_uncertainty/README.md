@@ -8,12 +8,19 @@ Two scripts, with a JSON between them, so plotting is decoupled from training.
 
 ```
 uv sync -p 3.13
-uv run python scripts/run_stream.py     # ~minutes; 3 streams x 3 seeds x 3000 steps
+uv run python scripts/run_stream.py     # 12 streams x 3 seeds x 3000 steps
 uv run python scripts/plot_stream.py --all
 ```
 
-This reproduces the paper figures into `results/`. Run `--help` on either
-script for the full flag list.
+The defaults are reviewer-fast (~minutes). Paper-quality figures used 10 seeds
+at 8000 steps:
+
+```
+uv run python scripts/run_stream.py --seeds 0 1 2 3 4 5 6 7 8 9 --n-steps 8000
+uv run python scripts/plot_stream.py --all
+```
+
+Run `--help` on either script for the full flag list.
 
 ## What it does
 
@@ -39,30 +46,33 @@ All plots use `probly.plot.PlotConfig` for fonts and colors.
 
 ## Streams
 
-Run defaults are the three Agrawal abrupt drifts shown in the paper:
+Run defaults cover every Agrawal variant exercised in the paper figures:
 
-| name | what changes at `t=2000` |
-|---|---|
-| `agrawal_drift_7to4` | classification fn 7 -> 4 (EU detects: members disagree post-drift) |
-| `agrawal_drift_4to0` | classification fn 4 -> 0 (EU misses: confidently wrong regime) |
-| `agrawal_drift_9to2` | classification fn 9 -> 2 (EU detects strongly: epi 0.0 -> 0.30) |
+- abrupt label drifts: `agrawal_drift`, `agrawal_drift_0to9`,
+  `agrawal_drift_4to0`, `agrawal_drift_7to4`, `agrawal_drift_9to2`;
+- gradual label drifts: `agrawal_gradual_drift_500`, `agrawal_gradual_drift_1000`;
+- covariate / virtual drifts: `agrawal_covariate_drift`,
+  `agrawal_virtual_drift_join`, `agrawal_virtual_drift_replace`,
+  `agrawal_virtual_drift_stacked`, `agrawal_virtual_drift_stacked_gradual_1000`.
 
-Other streams (covariate drift, virtual drift, gradual drift, electricity,
-…) are registered in `src/river_uq/streams.py::STREAM_NAMES` and selectable
-via `--streams`. They are not run by default.
+All drifts land at `t=2000` (gradual variants fade in over a window — see
+`get_drift_window` in `streams.py`).
+
+Non-Agrawal streams (`stagger_drift`, `sea_drift`, `agrawal_stationary`,
+`electricity`) are registered in `src/river_uq/streams.py::STREAM_NAMES` for
+exploration via `--streams`, but are not part of the paper grid.
 
 ## Layout
 
 ```
 src/river_uq/
     streams.py       build_stream(name, seed); STREAM_NAMES
-    models.py        build_model(kind, seed); paper uses kind="arf"
-    detectors.py     drift detectors (label-free + tailored)
+    models.py        build_model(kind, seed); only kind="arf" is implemented
     prequential.py   run_prequential(...) -> DataFrame
 scripts/
     run_stream.py    paper runner: writes <stream>.json per stream
     plot_stream.py   paper plotter: JSON -> PDFs
-tests/               smoke tests for streams, models, prequential, detectors
+tests/               smoke tests for streams, models, prequential
 results/             JSON inputs + PDF outputs (PDFs are gitignored)
 ```
 
