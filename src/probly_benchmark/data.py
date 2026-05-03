@@ -34,6 +34,7 @@ class DataLoaders(NamedTuple):
 TRANSFORMS_TEST = {
     "cifar10": T.Compose(
         [
+            T.Resize((32, 32), antialias=True),
             T.ToImage(),
             T.ToDtype(torch.float32, scale=True),
             T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
@@ -352,21 +353,34 @@ def get_data_train(
             raise ValueError(msg)
 
 
-def _get_test_dataset(name: str, transform: T.Compose) -> torchvision.datasets.VisionDataset:
+_GRAYSCALE_OOD_DATASETS = frozenset({"mnist", "fashion_mnist"})
+
+
+def _get_test_dataset(name: str, transform: T.Compose) -> torchvision.datasets.VisionDataset:  # noqa: PLR0911, PLR0912
     """Return the test view of a map-style dataset with the given transform.
 
     Used by get_data_ood for both ID and OOD sides. Imagenet is not registered
     here; it goes through _allocate_imagenet_shards + _make_imagenet_loader.
 
+    For grayscale OOD sources (see ``_GRAYSCALE_OOD_DATASETS``), an RGB
+    conversion is prepended to the supplied transform so the ID-side normalize
+    (which assumes 3 channels) applies without crashing.
+
     Args:
-        name: Dataset name. One of cifar10, cifar100, svhn, textures, places365.
+        name: Dataset name. One of ``cifar10``, ``cifar100``, ``svhn``,
+            ``textures``, ``places365``, ``mnist``, ``fashion_mnist``,
+            ``stl10``, ``eurosat``, ``sun397``, ``inaturalist``.
         transform: Test transform to apply to all returned samples.
 
     Returns:
-        A torch.utils.data.Dataset over the named dataset's test split.
+        A torch.utils.data.Dataset over the named dataset's test split. For
+        ``eurosat`` and ``sun397``, which do not ship with a train/test split,
+        the full dataset is returned.
     """
     ssl._create_default_https_context = ssl._create_unverified_context  # ty:ignore[invalid-assignment]  # noqa: SLF001
     name = name.lower()
+    if name in _GRAYSCALE_OOD_DATASETS:
+        transform = T.Compose([T.RGB(), *transform.transforms])
     match name:
         case "cifar10":
             return torchvision.datasets.CIFAR10(root=DATA_PATH, train=False, download=True, transform=transform)
@@ -379,6 +393,20 @@ def _get_test_dataset(name: str, transform: T.Compose) -> torchvision.datasets.V
         case "places365":
             return torchvision.datasets.Places365(
                 root=DATA_PATH, split="val", small=True, download=True, transform=transform
+            )
+        case "mnist":
+            return torchvision.datasets.MNIST(root=DATA_PATH, train=False, download=True, transform=transform)
+        case "fashion_mnist":
+            return torchvision.datasets.FashionMNIST(root=DATA_PATH, train=False, download=True, transform=transform)
+        case "stl10":
+            return torchvision.datasets.STL10(root=DATA_PATH, split="test", download=True, transform=transform)
+        case "eurosat":
+            return torchvision.datasets.EuroSAT(root=DATA_PATH, download=True, transform=transform)
+        case "sun397":
+            return torchvision.datasets.SUN397(root=DATA_PATH, download=True, transform=transform)
+        case "inaturalist":
+            return torchvision.datasets.INaturalist(
+                root=DATA_PATH, version="2021_valid", download=True, transform=transform
             )
         case _:
             msg = f"Dataset {name} not recognized for test loading"
@@ -436,8 +464,9 @@ def get_data_ood(
 
     Args:
         name_id: In-distribution dataset name. cifar10 or imagenet.
-        name_ood: Out-of-distribution dataset name. One of cifar100, svhn,
-            textures, places365.
+        name_ood: Out-of-distribution dataset name. One of cifar10, cifar100,
+            svhn, textures, places365, mnist, fashion_mnist, stl10, eurosat,
+            sun397, inaturalist.
         seed: Seed driving the random subset selection on both sides.
         val_split: Fraction allocated to validation during training. Used to
             ensure ID test excludes those samples (no-op for cifar10).
