@@ -1,0 +1,30 @@
+[project]
+name = "stacking"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+  "probly",
+  "torch>=2.5",
+  "torchvision",
+  "numpy",
+  "scikit-learn",
+  "transformers",
+  "pillow",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.uv.sources]
+probly = { path = "../..", editable = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/stacking"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
