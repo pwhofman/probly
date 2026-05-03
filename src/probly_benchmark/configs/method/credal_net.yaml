@@ -3,5 +3,5 @@ name: "credal_net"
 label: "CreNet"
 params:
     # whether to copt base weights into center of interval layers
-  use_base_weights: false
+  use_base_weights: true
 train:
