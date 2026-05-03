@@ -53,6 +53,11 @@ class CategoricalDistribution[T](Distribution[T]):
     def probabilities(self) -> ArrayLike:
         """Get the normalized probabilities of the categorical distribution."""
 
+    @property
+    @abstractmethod
+    def log_probabilities(self) -> ArrayLike:
+        """Get (possibly unnormalized) log probabilities of the categorical distribution."""
+
 
 class DistributionSample[T: Distribution](RepresentationSample[T]):
     """Sample type for empirical second-order distributions."""

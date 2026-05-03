@@ -11,9 +11,8 @@ from transformers import PreTrainedModel, PreTrainedTokenizerBase
 pytest.importorskip("torch")
 import torch
 
+from probly.representation.distribution.torch_sparse_log_categorical import TorchSparseLogCategoricalDistribution
 from probly.representation.text_generation import (
-    TorchSemanticClusterGeneration,
-    TorchSemanticClusterGenerationSample,
     TorchTextGeneration,
     TorchTextGenerationSample,
 )
@@ -123,10 +122,9 @@ def test_greedy_clusterer_clusters_sample_with_batched_nli_calls() -> None:
 
     clustered = GreedyHFSemanticClusterer(model, tokenizer, batch_size=2)(sample)
 
-    assert isinstance(clustered, TorchSemanticClusterGenerationSample)
-    assert clustered.sample_dim == 1
-    assert torch.equal(clustered.tensor.log_likelihood, generation.log_likelihood)
-    assert torch.equal(clustered.tensor.cluster_id, torch.tensor([[0, 0, 1], [0, 1, 1]]))
+    assert isinstance(clustered, TorchSparseLogCategoricalDistribution)
+    assert torch.equal(clustered.logits, generation.log_likelihood)
+    assert torch.equal(clustered.group_ids, torch.tensor([[0, 0, 1], [0, 1, 1]]))
     assert tokenizer.pair_calls == [
         [("a", "b"), ("b", "a")],
         [("a", "c"), ("c", "a")],
@@ -152,9 +150,9 @@ def test_raw_text_generation_requires_axis_and_returns_raw_semantic_generation()
 
     clustered = clusterer(generation, axis=1)
 
-    assert isinstance(clustered, TorchSemanticClusterGeneration)
-    assert torch.equal(clustered.cluster_id, torch.tensor([[0, 1]]))
-    assert torch.equal(clustered.log_likelihood, generation.log_likelihood)
+    assert isinstance(clustered, TorchSparseLogCategoricalDistribution)
+    assert torch.equal(clustered.group_ids, torch.tensor([[0, 1]]))
+    assert torch.equal(clustered.logits, generation.log_likelihood)
 
 
 def test_single_generation_assigns_cluster_zero_without_nli_model_call() -> None:
@@ -167,7 +165,7 @@ def test_single_generation_assigns_cluster_zero_without_nli_model_call() -> None
 
     clustered = GreedyHFSemanticClusterer(model, tokenizer)(generation, axis=0)
 
-    assert torch.equal(clustered.cluster_id, torch.tensor([0]))
+    assert torch.equal(clustered.group_ids, torch.tensor([0]))
     assert model.calls == []
     assert tokenizer.pair_calls == []
 

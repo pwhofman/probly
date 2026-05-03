@@ -57,21 +57,21 @@ def main() -> None:
     text_sample = sampler(chats)
     semantic_sample = clusterer(text_sample)
 
-    for question, answers, log_likelihoods, cluster_ids in zip(
+    for question, answers, log_likelihoods, group_ids in zip(
         questions,
         text_sample.tensor.text,
         text_sample.tensor.log_likelihood,
-        semantic_sample.tensor.cluster_id,
+        semantic_sample.group_ids,
         strict=True,
     ):
         print(f"\nQuestion: {question}")
-        for index, (answer, log_likelihood, cluster_id) in enumerate(
-            zip(answers, log_likelihoods, cluster_ids, strict=True),
+        for index, (answer, log_likelihood, group_id) in enumerate(
+            zip(answers, log_likelihoods, group_ids, strict=True),
             start=1,
         ):
             print(
                 f"Sample {index} "
-                f"(cluster: {cluster_id.item()}, log likelihood: {log_likelihood.item():.2f}): "
+                f"(group: {group_id.item()}, log likelihood: {log_likelihood.item():.2f}): "
                 f"{answer.strip()[:150]!r}{'...' if len(answer.strip()) > 150 else ''}"
             )
 

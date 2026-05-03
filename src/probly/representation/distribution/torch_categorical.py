@@ -86,6 +86,11 @@ class TorchCategoricalDistribution(
 
     @override
     @property
+    def log_probabilities(self) -> torch.Tensor:
+        return torch.log(self.probabilities)
+
+    @override
+    @property
     def num_classes(self) -> int:
         if self._is_bernoulli:
             return 2

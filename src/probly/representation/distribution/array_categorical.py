@@ -83,6 +83,11 @@ class ArrayCategoricalDistribution(
 
     @override
     @property
+    def log_probabilities(self) -> np.ndarray:
+        return np.log(self.probabilities)
+
+    @override
+    @property
     def num_classes(self) -> int:
         """Get the number of classes."""
         if self._is_bernoulli:

@@ -10,9 +10,8 @@ import numpy as np
 import torch
 from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
+from probly.representation.distribution.torch_sparse_log_categorical import TorchSparseLogCategoricalDistribution
 from probly.representation.text_generation import (
-    TorchSemanticClusterGeneration,
-    TorchSemanticClusterGenerationSample,
     TorchTextGeneration,
     TorchTextGenerationSample,
 )
@@ -25,7 +24,7 @@ if TYPE_CHECKING:
 DEFAULT_NLI_MODEL = "microsoft/deberta-base-mnli"
 
 type SemanticClusterInput = TorchTextGeneration | TorchTextGenerationSample
-type SemanticClusterOutput = TorchSemanticClusterGeneration | TorchSemanticClusterGenerationSample
+type SemanticClusterOutput = TorchSparseLogCategoricalDistribution
 
 _CONTRADICTION = 0
 _NEUTRAL = 1
@@ -260,7 +259,7 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOut
     def _cluster_row(self, statements: np.ndarray) -> torch.Tensor:
         """Cluster one row of generated statements."""
 
-    def _cluster_generation(self, generation: TorchTextGeneration, axis: int) -> TorchSemanticClusterGeneration:
+    def _cluster_generation(self, generation: TorchTextGeneration, axis: int) -> TorchSparseLogCategoricalDistribution:
         axis = self._normalize_axis(axis, generation.ndim)
         comparison_size = generation.shape[axis]
         if comparison_size == 0:
@@ -268,6 +267,7 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOut
             raise ValueError(msg)
 
         text = np.moveaxis(generation.text, axis, -1)
+        logits = torch.moveaxis(generation.log_likelihood, axis, -1)
         row_shape = text.shape[:-1]
         flat_text = text.reshape((int(np.prod(row_shape, dtype=np.int64)), comparison_size))
 
@@ -280,9 +280,9 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOut
                 raise ValueError(msg)
             cluster_rows.append(cluster_row)
 
-        cluster_id = torch.stack(cluster_rows, dim=0).reshape((*row_shape, comparison_size))
-        cluster_id = torch.moveaxis(cluster_id, -1, axis).to(device=generation.log_likelihood.device)
-        return TorchSemanticClusterGeneration(cluster_id=cluster_id, log_likelihood=generation.log_likelihood)
+        group_ids = torch.stack(cluster_rows, dim=0).reshape((*row_shape, comparison_size))
+        group_ids = group_ids.to(device=logits.device)
+        return TorchSparseLogCategoricalDistribution(group_ids=group_ids, logits=logits)
 
     def represent(
         self,
@@ -297,15 +297,22 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOut
             axis: Comparison axis for raw ``TorchTextGeneration`` inputs. Ignored for samples.
 
         Returns:
-            Semantic cluster ids with the original generation log-likelihoods.
+            Sparse grouped logits whose final axis contains semantic cluster assignments.
         """
         if isinstance(generation, TorchTextGenerationSample):
             sample_dim = generation.sample_dim
             clustered = self._cluster_generation(generation.tensor, sample_dim)
-            return TorchSemanticClusterGenerationSample(
-                tensor=clustered,
-                sample_dim=sample_dim,
-                weights=generation.weights,
+            if generation.weights is None:
+                return clustered
+
+            weights = torch.as_tensor(generation.weights, dtype=clustered.logits.dtype, device=clustered.logits.device)
+            if torch.any(weights < 0):
+                msg = "sample weights must be non-negative."
+                raise ValueError(msg)
+            log_weights = torch.log(weights).reshape((*((1,) * (clustered.logits.ndim - 1)), weights.shape[0]))
+            return TorchSparseLogCategoricalDistribution(
+                group_ids=clustered.group_ids,
+                logits=clustered.logits + log_weights,
             )
 
         if not isinstance(generation, TorchTextGeneration):
