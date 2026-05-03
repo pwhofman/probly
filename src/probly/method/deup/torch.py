@@ -479,19 +479,19 @@ class LogMAFDensity(StationarizingFeatureProvider):
         for epoch in range(self.flow_epochs):
             flow.train()
             perm = torch.randperm(features_cat.size(0))
-            features_shuffled = features_cat[perm]
-            total_loss = 0.0
+            epoch_loss = torch.zeros(1, device=device)
             n_batches = 0
             for i in range(0, features_cat.size(0), batch_size):
-                batch = features_shuffled[i : i + batch_size].to(device)
+                # Index features_cat directly to avoid a full shuffled copy per epoch.
+                batch = features_cat[perm[i : i + batch_size]].to(device, non_blocking=True)
                 optimizer.zero_grad()
                 loss = -flow.log_prob(batch.float()).mean()  # ty: ignore[call-non-callable]
                 loss.backward()
                 optimizer.step()
-                total_loss += loss.item()
+                epoch_loss += loss.detach()
                 n_batches += 1
             if (epoch + 1) % 5 == 0 or epoch == self.flow_epochs - 1:
-                tqdm.write(f"MAF epoch {epoch + 1}/{self.flow_epochs}, NLL={total_loss / n_batches:.4f}")
+                tqdm.write(f"MAF epoch {epoch + 1}/{self.flow_epochs}, NLL={epoch_loss.item() / max(n_batches, 1):.4f}")
         flow.eval()
         self._flow = flow
 
@@ -609,8 +609,10 @@ class LogDUEVariance(StationarizingFeatureProvider):
             def forward(self, x: torch.Tensor) -> gpytorch.distributions.MultivariateNormal:
                 return gpytorch.distributions.MultivariateNormal(self.mean_module(x), self.covar_module(x))
 
-        model = _SVGPModel(inducing_points)
-        likelihood = gpytorch.likelihoods.SoftmaxLikelihood(num_features=self.num_classes, num_classes=self.num_classes)
+        model = _SVGPModel(inducing_points).to(device)
+        likelihood = gpytorch.likelihoods.SoftmaxLikelihood(
+            num_features=self.num_classes, num_classes=self.num_classes
+        ).to(device)
         mll = gpytorch.mlls.VariationalELBO(likelihood, model, num_data=features_cat.size(0))
         optimizer = torch.optim.Adam([*model.parameters(), *likelihood.parameters()], lr=self.gp_lr)
 
@@ -619,29 +621,32 @@ class LogDUEVariance(StationarizingFeatureProvider):
             model.train()
             likelihood.train()
             perm = torch.randperm(features_cat.size(0))
-            total_loss = 0.0
+            epoch_loss = torch.zeros(1, device=device)
             n_batches = 0
             for i in range(0, features_cat.size(0), batch_size):
                 idx = perm[i : i + batch_size]
-                bf, bl = features_cat[idx], labels_cat[idx]
+                bf = features_cat[idx].to(device, non_blocking=True)
+                bl = labels_cat[idx].to(device, non_blocking=True)
                 optimizer.zero_grad()
                 output = model(bf)
                 loss = -mll(output, bl)  # ty: ignore[unsupported-operator]
                 loss.backward()
                 optimizer.step()
-                total_loss += loss.item()
+                epoch_loss += loss.detach()
                 n_batches += 1
             if (epoch + 1) % 5 == 0 or epoch == self.gp_epochs - 1:
-                tqdm.write(f"DUE GP epoch {epoch + 1}/{self.gp_epochs}, ELBO={-total_loss / n_batches:.4f}")
+                tqdm.write(
+                    f"DUE GP epoch {epoch + 1}/{self.gp_epochs}, ELBO={-epoch_loss.item() / max(n_batches, 1):.4f}"
+                )
 
         model.eval()
         likelihood.eval()
         self._gp_model = model
         self._likelihood = likelihood
-        self._fit_scaler_from_features(features_cat)
+        self._fit_scaler_from_features(features_cat, device)
 
     @torch.no_grad()
-    def _fit_scaler_from_features(self, features_cat: torch.Tensor) -> None:
+    def _fit_scaler_from_features(self, features_cat: torch.Tensor, device: torch.device) -> None:
         """Compute MinMax scaler from already-extracted CPU features.
 
         Avoids a second full pass through the training loader in ``_fit_scaler``.
@@ -653,10 +658,10 @@ class LogDUEVariance(StationarizingFeatureProvider):
         all_log_var: list[torch.Tensor] = []
         batch_size = 256
         for i in tqdm(range(0, features_cat.size(0), batch_size), desc="Fitting DUE variance scaler"):
-            bf = features_cat[i : i + batch_size]
+            bf = features_cat[i : i + batch_size].to(device, non_blocking=True)
             pred = model(bf)
             var = pred.variance.sum(dim=-1, keepdim=True)
-            all_log_var.append(torch.log(var + self.eps))
+            all_log_var.append(torch.log(var + self.eps).cpu())
         stacked = torch.cat(all_log_var)
         self._scale_min = stacked.min(dim=0).values
         self._scale_max = stacked.max(dim=0).values
@@ -679,7 +684,7 @@ class LogDUEVariance(StationarizingFeatureProvider):
             raise RuntimeError(msg)
         model = self._gp_model
         with torch.no_grad():
-            pred = model(features.cpu().float())
+            pred = model(features.to(next(model.parameters()).device).float())
             variance = pred.variance.sum(dim=-1, keepdim=True).to(features.device)
         return self._normalize(torch.log(variance + self.eps))
 

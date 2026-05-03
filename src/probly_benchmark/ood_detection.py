@@ -27,9 +27,9 @@ def main(cfg: DictConfig) -> None:
 
     utils.set_seed(cfg.seed)
     calibration.validate_calibration_config(cfg)
-
+    print("Loading model...")
     model, _, run_id = load_model_for_evaluation(cfg, device)
-
+    print("Loading data...")
     id_loader, ood_loader = data.get_data_ood(
         cfg.dataset,
         cfg.ood_dataset,
@@ -43,7 +43,7 @@ def main(cfg: DictConfig) -> None:
         OmegaConf.to_container(cfg.method.ood_detection, resolve=True) if cfg.method.get("ood_detection") else {}
     )  # ty: ignore[invalid-assignment]
     rep = representer(model, **rep_kwargs)
-
+    print("Getting outputs...")
     id_outputs, _ = utils.collect_outputs_targets(rep, id_loader, device, cfg.get("amp", False))
     ood_outputs, _ = utils.collect_outputs_targets(rep, ood_loader, device, cfg.get("amp", False))
 
