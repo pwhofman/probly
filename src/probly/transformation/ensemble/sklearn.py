@@ -8,7 +8,12 @@ from ._common import ensemble_generator
 
 
 @ensemble_generator.register(BaseEstimator)
-def generate_sklearn_ensemble(obj: BaseEstimator, num_members: int, reset_params: bool) -> list[object]:
+def generate_sklearn_ensemble(
+    obj: BaseEstimator,
+    num_members: int,
+    reset_params: bool,
+    rngs: object = 1,  # noqa: ARG001
+) -> list[object]:
     """Generates an ensemble model from a sklearn base estimator."""
     if reset_params:
         obj.__setattr__("random_state", None)

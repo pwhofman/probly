@@ -57,7 +57,7 @@ class EnsembleDirichletDistributionPredictor[**In, Out: DirichletDistribution](E
 
 @flexdispatch
 def ensemble_generator[**In, Out](
-    base: Predictor[In, Out], num_members: int, reset_params: bool = True
+    base: Predictor[In, Out], num_members: int, reset_params: bool = True, rngs: object = 1
 ) -> EnsemblePredictor[In, Out]:
     """Generate an ensemble from a base model."""
     msg = f"No ensemble generator is registered for type {type(base)}"
@@ -80,7 +80,7 @@ def register_ensemble_members(ensemble: EnsemblePredictor, t: type[Predictor] | 
 )
 @EnsemblePredictor.register_factory(autocast_builtins=True)
 def ensemble[**In, Out](
-    base: Predictor[In, Out], num_members: int, reset_params: bool = True
+    base: Predictor[In, Out], num_members: int, reset_params: bool = True, rngs: object = 1
 ) -> EnsemblePredictor[In, Out]:
     """Create an ensemble predictor from a base predictor based on :cite:`lakshminarayananSimpleScalable2017`.
 
@@ -88,11 +88,14 @@ def ensemble[**In, Out](
         base: Predictor, The base model to be used for the ensemble.
         num_members: The number of members in the ensemble.
         reset_params: Whether to reset the parameters of each member.
+        rngs: Optional rngs used by the flax backend when ``reset_params=True`` to draw fresh
+            keys for re-initialized parameters (types: ``rnglib.Rngs | rnglib.RngStream | int``).
+            Ignored by the torch backend. Default is ``1``.
 
     Returns:
         Predictor, The ensemble predictor.
     """
-    return ensemble_generator(base, num_members=num_members, reset_params=reset_params)
+    return ensemble_generator(base, num_members=num_members, reset_params=reset_params, rngs=rngs)
 
 
 @predict_raw.register(EnsemblePredictor)

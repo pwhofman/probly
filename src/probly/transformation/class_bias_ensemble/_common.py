@@ -8,9 +8,12 @@ from probly.predictor import LogitClassifier
 from probly.transformation.ensemble import EnsemblePredictor, register_ensemble_members
 from probly.transformation.transformation import predictor_transformation
 from probly.traverse_nn import nn_compose, reset_traverser
+from probly.traverse_nn.reset_traverser import RNGS as RESET_RNGS
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser, traverse
 
 if TYPE_CHECKING:
+    from flax.nnx.rnglib import Rngs, RngStream
+
     from probly.predictor import Predictor
 
 
@@ -29,7 +32,11 @@ class_bias_ensemble_traverser = flexdispatch_traverser[object](name="class_bias_
 @predictor_transformation(permitted_predictor_types=(LogitClassifier,), post_transform=register_ensemble_members)
 @ClassBiasEnsemblePredictor.register_factory(autocast_builtins=True)
 def class_bias_ensemble[**In, Out](
-    base: Predictor[In, Out], num_members: int, reset_params: bool = True, tobias_value: int = 100
+    base: Predictor[In, Out],
+    num_members: int,
+    reset_params: bool = True,
+    tobias_value: int = 100,
+    rngs: int | Rngs | RngStream = 1,
 ) -> ClassBiasEnsemblePredictor[In, Out]:
     """Create an ensemble with class-specific final-layer bias initialization.
 
@@ -38,14 +45,19 @@ def class_bias_ensemble[**In, Out](
         num_members: The number of members in the class-bias ensemble.
         reset_params: Whether to reset the parameters of each member.
         tobias_value: The value to use for the class bias initialization.
+        rngs: Optional rngs used by the flax backend when ``reset_params=True`` to draw
+            fresh keys for re-initialized parameters (types: ``rnglib.Rngs | rnglib.RngStream | int``).
+            Ignored by the torch backend. Default is ``1``.
 
     Returns:
         The class-bias ensemble predictor.
     """
     if reset_params:
         traverser = nn_compose(reset_traverser, class_bias_ensemble_traverser)
+        coerced_rngs = _coerce_rngs(rngs)
     else:
         traverser = nn_compose(class_bias_ensemble_traverser)
+        coerced_rngs = rngs
     members = [
         traverse(
             base,
@@ -56,8 +68,24 @@ def class_bias_ensemble[**In, Out](
                 INITIALIZED: False,
                 RESET_PARAMS: reset_params,
                 TRAVERSE_REVERSED: True,
+                RESET_RNGS: coerced_rngs,
             },
         )
         for i in range(num_members)
     ]
     return members  # ty:ignore[invalid-return-type]
+
+
+def _coerce_rngs(rngs: int | Rngs | RngStream) -> int | Rngs | RngStream:
+    """Coerce an int seed into an :class:`nnx.Rngs` once so members share an advancing stream.
+
+    If flax is unavailable (torch-only environments), returns the seed unchanged — the torch
+    ``reset_traverser`` ignores rngs anyway.
+    """
+    if isinstance(rngs, int):
+        try:
+            from flax import nnx  # noqa: PLC0415
+        except ImportError:
+            return rngs
+        return nnx.Rngs(rngs)
+    return rngs

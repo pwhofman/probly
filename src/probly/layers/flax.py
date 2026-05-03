@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any, Literal
 
 from flax import nnx
@@ -478,3 +479,263 @@ class BatchEnsembleConv(nnx.Conv):
             bias_dim = (slice(None),) + (None,) * (y.ndim - 2) + (slice(None),)
             y = y + self.bias[bias_dim]
         return y.reshape(eb, *y.shape[2:])
+
+
+class HeteroscedasticLayer(nnx.Module):
+    """A unified Flax implementation of the Heteroscedastic layer based on :cite:`collier2021hetnets`.
+
+    Attributes:
+        in_features: int, number of input features.
+        num_classes: int, number of classes.
+        num_factors: int, number of factors.
+        temperature: float, temperature scaling.
+        is_parameter_efficient: bool, whether to use parameter efficient routing.
+        mu_layer: nnx.Linear, deterministic mean parameter transformation.
+        diag_layer: nnx.Linear, diagonal correction variance transformation.
+        v_layer: nnx.Linear, covariance factor parameterization routing.
+        V_matrix: nnx.Param, global homoscedastic matrix (if parameter efficient).
+        rngs: rnglib.Rngs or rnglib.RngStream or None, rng key used to draw
+            standard-normal samples at call time.
+    """
+
+    def __init__(
+        self,
+        in_features: int,
+        num_classes: int,
+        num_factors: int = 15,
+        temperature: float = 1.0,
+        is_parameter_efficient: bool = False,
+        rngs: rnglib.Rngs | rnglib.RngStream | int = 1,
+    ) -> None:
+        """Initialize the HeteroscedasticLayer.
+
+        Args:
+            in_features: Number of input features.
+            num_classes: Number of classes.
+            num_factors: Number of low-rank covariance factors.
+            temperature: Temperature scaling applied to the sampled utilities.
+            is_parameter_efficient: Whether to use the parameter-efficient routing.
+            rngs: ``nnx.Rngs``, ``RngStream`` or integer seed used both to initialize the
+                sub-layers and to draw standard-normal samples at call time. May also be
+                overridden per call.
+        """
+        if isinstance(rngs, (int, rnglib.RngStream)):
+            rngs = nnx.Rngs(rngs)
+        self.in_features = in_features
+        self.num_classes = num_classes
+        self.num_factors = num_factors
+        self.temperature = temperature
+        self.is_parameter_efficient = is_parameter_efficient
+
+        xavier_uniform = jax.nn.initializers.xavier_uniform()
+        zeros = jax.nn.initializers.zeros
+        diag_bias_value = math.log(math.exp(1.0) - 1.0)
+
+        def constant_init(value: float):  # noqa: ANN202
+            def init_fn(_key: jax.Array, shape: tuple[int, ...], dtype: Any) -> jax.Array:  # noqa: ANN401
+                return jnp.full(shape, value, dtype=dtype)
+
+            return init_fn
+
+        self.mu_layer = nnx.Linear(
+            in_features,
+            num_classes,
+            kernel_init=xavier_uniform,
+            bias_init=zeros,
+            rngs=rngs,
+        )
+        self.diag_layer = nnx.Linear(
+            in_features,
+            num_classes,
+            kernel_init=xavier_uniform,
+            bias_init=constant_init(diag_bias_value),
+            rngs=rngs,
+        )
+
+        if is_parameter_efficient:
+            self.v_layer = nnx.Linear(
+                in_features,
+                num_factors,
+                kernel_init=xavier_uniform,
+                bias_init=zeros,
+                rngs=rngs,
+            )
+            v_matrix_key = rngs.params()
+            self.V_matrix = nnx.Param(
+                jax.nn.initializers.xavier_normal()(v_matrix_key, (num_classes, num_factors), jnp.float32),
+            )
+        else:
+            self.v_layer = nnx.Linear(
+                in_features,
+                num_classes * num_factors,
+                kernel_init=xavier_uniform,
+                bias_init=zeros,
+                rngs=rngs,
+            )
+
+        if isinstance(rngs, rnglib.Rngs):
+            self.rngs = rngs["het_net"].fork()
+        elif isinstance(rngs, rnglib.RngStream):
+            self.rngs = rngs.fork()
+        else:
+            self.rngs = nnx.data(None)
+
+    def __call__(
+        self,
+        x: jax.Array,
+        *,
+        rngs: rnglib.Rngs | rnglib.RngStream | jax.Array | None = None,
+    ) -> jax.Array:
+        """Draw a single utility sample and return temperature-scaled logits.
+
+        Samples once from a multivariate normal whose covariance is parameterized by a low-rank
+        factor plus a diagonal term derived from the input. Each call yields a different sample
+        because the noise is drawn freshly from the supplied ``rngs``; the outer sampler turns
+        repeated calls into a Monte Carlo sample of categorical distributions.
+
+        Args:
+            x: Input array of shape ``(batch_size, in_features)``.
+            rngs: Optional override of the rng source for sampling.
+
+        Returns:
+            Temperature-scaled utility logits of shape ``(batch_size, num_classes)``.
+        """
+        rng_source = first_from(
+            rngs,
+            self.rngs,
+            error_msg=(
+                "No `rngs` argument was provided to HeteroscedasticLayer "
+                "as either a __call__ argument or class attribute."
+            ),
+        )
+
+        if isinstance(rng_source, rnglib.Rngs):
+            key = rng_source["het_net"]()
+        elif isinstance(rng_source, rnglib.RngStream):
+            key = rng_source()
+        elif isinstance(rng_source, jax.Array):
+            key = rng_source
+        else:
+            msg = f"rngs must be Rngs, RngStream or jax.Array, but got {type(rng_source)}"
+            raise TypeError(msg)
+
+        key_k, key_r = jax.random.split(key)
+        batch_size = x.shape[0]
+
+        mu = self.mu_layer(x)
+        diag_scale = jax.nn.softplus(self.diag_layer(x))
+
+        eps_k = jax.random.normal(key_k, (batch_size, self.num_classes), dtype=x.dtype)
+        eps_r = jax.random.normal(key_r, (batch_size, self.num_factors), dtype=x.dtype)
+
+        if self.is_parameter_efficient:
+            v_x = self.v_layer(x)
+            scaled_eps_r = (eps_r * v_x)[..., None]
+            low_rank_noise = jnp.matmul(self.V_matrix.value, scaled_eps_r).squeeze(-1)
+        else:
+            v_x_full = self.v_layer(x).reshape(batch_size, self.num_classes, self.num_factors)
+            low_rank_noise = jnp.matmul(v_x_full, eps_r[..., None]).squeeze(-1)
+
+        utilities = mu + diag_scale * eps_k + low_rank_noise
+        return utilities / self.temperature
+
+
+class NormalInverseGammaLinear(nnx.Module):
+    """Custom Linear layer for a normal-inverse-gamma distribution based on :cite:`aminiDeepEvidential2020`.
+
+    Outputs four heads parameterizing the mean of a normal distribution and the parameters
+    of an inverse-gamma distribution over its variance, in the form
+    ``{"gamma": ..., "nu": ..., "alpha": ..., "beta": ...}``.
+
+    Attributes:
+        gamma: nnx.Param of shape ``(in_features, out_features)``, the mean of the normal distribution.
+        nu: nnx.Param of shape ``(in_features, out_features)``, parameter of the normal distribution.
+        alpha: nnx.Param of shape ``(in_features, out_features)``, parameter of the inverse-gamma distribution.
+        beta: nnx.Param of shape ``(in_features, out_features)``, parameter of the inverse-gamma distribution.
+        gamma_bias: nnx.Param of shape ``(out_features,)`` (or None), bias for the mean head.
+        nu_bias: nnx.Param of shape ``(out_features,)`` (or None), bias for the nu head.
+        alpha_bias: nnx.Param of shape ``(out_features,)`` (or None), bias for the alpha head.
+        beta_bias: nnx.Param of shape ``(out_features,)`` (or None), bias for the beta head.
+        in_features: int, number of input features.
+        out_features: int, number of output features.
+        use_bias: bool, whether the layer carries bias parameters.
+        param_dtype: dtype, parameter dtype.
+    """
+
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        rngs: nnx.Rngs | rnglib.RngStream | int = 1,
+        *,
+        use_bias: bool = True,
+        param_dtype: Any = jnp.float32,  # noqa: ANN401
+    ) -> None:
+        """Initialize a NormalInverseGammaLinear layer.
+
+        Args:
+            in_features: Number of input features.
+            out_features: Number of output features.
+            rngs: ``nnx.Rngs``, ``RngStream`` or integer seed used to initialize parameters.
+            use_bias: Whether to include bias parameters for each head. Defaults to True.
+            param_dtype: Parameter dtype. Defaults to ``jnp.float32``.
+        """
+        if isinstance(rngs, (int, rnglib.RngStream)):
+            rngs = nnx.Rngs(rngs)
+
+        self.in_features = in_features
+        self.out_features = out_features
+        self.use_bias = use_bias
+        self.param_dtype = param_dtype
+
+        kernel_shape = (in_features, out_features)
+        # Match torch's kaiming_uniform with a=sqrt(5), which is equivalent to
+        # uniform(-1/sqrt(in_features), 1/sqrt(in_features)) per the torch docs.
+        bound = 1.0 / math.sqrt(in_features) if in_features > 0 else 0.0
+
+        def _uniform_init(shape: tuple[int, ...]) -> jax.Array:
+            return jax.random.uniform(rngs.params(), shape, dtype=param_dtype, minval=-bound, maxval=bound)
+
+        self.gamma = nnx.Param(_uniform_init(kernel_shape))
+        self.nu = nnx.Param(_uniform_init(kernel_shape))
+        self.alpha = nnx.Param(_uniform_init(kernel_shape))
+        self.beta = nnx.Param(_uniform_init(kernel_shape))
+
+        if use_bias:
+            self.gamma_bias = nnx.Param(_uniform_init((out_features,)))
+            self.nu_bias = nnx.Param(_uniform_init((out_features,)))
+            self.alpha_bias = nnx.Param(_uniform_init((out_features,)))
+            self.beta_bias = nnx.Param(_uniform_init((out_features,)))
+        else:
+            self.gamma_bias = None
+            self.nu_bias = None
+            self.alpha_bias = None
+            self.beta_bias = None
+
+    def __call__(self, x: jax.Array) -> dict[str, jax.Array]:
+        """Forward pass of the NormalInverseGamma layer.
+
+        Args:
+            x: Input array of shape ``(batch_size, in_features)``.
+
+        Returns:
+            Dict mapping ``{"gamma", "nu", "alpha", "beta"}`` to the corresponding head outputs.
+        """
+        gamma = jnp.matmul(x, self.gamma.value)
+        nu_pre = jnp.matmul(x, self.nu.value)
+        alpha_pre = jnp.matmul(x, self.alpha.value)
+        beta_pre = jnp.matmul(x, self.beta.value)
+        if (
+            self.gamma_bias is not None
+            and self.nu_bias is not None
+            and self.alpha_bias is not None
+            and self.beta_bias is not None
+        ):
+            gamma = gamma + self.gamma_bias.value
+            nu_pre = nu_pre + self.nu_bias.value
+            alpha_pre = alpha_pre + self.alpha_bias.value
+            beta_pre = beta_pre + self.beta_bias.value
+        nu = jax.nn.softplus(nu_pre)
+        alpha = jax.nn.softplus(alpha_pre) + 1
+        beta = jax.nn.softplus(beta_pre)
+        return {"gamma": gamma, "nu": nu, "alpha": alpha, "beta": beta}
