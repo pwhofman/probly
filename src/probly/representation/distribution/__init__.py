@@ -1,6 +1,6 @@
 """Distribution subpackage."""
 
-from probly.lazy_types import TORCH_TENSOR
+from probly.lazy_types import JAX_ARRAY, TORCH_TENSOR
 
 from ._common import (
     CategoricalDistribution,
@@ -41,6 +41,22 @@ def _(_: type) -> None:
 @create_gaussian_distribution.delayed_register(TORCH_TENSOR)
 def _(_: type) -> None:
     from . import torch_gaussian as torch_gaussian  # noqa: PLC0415
+
+
+## JAX
+@create_categorical_distribution.delayed_register(JAX_ARRAY)
+def _(_: type) -> None:
+    from . import jax_categorical as jax_categorical  # noqa: PLC0415
+
+
+@create_categorical_distribution_from_logits.delayed_register(JAX_ARRAY)
+def _(_: type) -> None:
+    from . import jax_categorical as jax_categorical  # noqa: PLC0415
+
+
+@create_gaussian_distribution.delayed_register(JAX_ARRAY)
+def _(_: type) -> None:
+    from . import jax_gaussian as jax_gaussian  # noqa: PLC0415
 
 
 __all__ = [

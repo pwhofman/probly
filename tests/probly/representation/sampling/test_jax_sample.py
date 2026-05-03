@@ -124,3 +124,67 @@ class TestJaxArraySample:
 
         with pytest.raises(ValueError, match="ddof"):
             sample.sample_var(ddof=1)
+
+
+class TestJaxArraySampleProtectedAxis:
+    """Regression tests for JaxArraySample wrapping JaxAxisProtected types."""
+
+    def test_protected_axis_distribution_at_nonzero_sample_axis(self) -> None:
+        """Regression: JaxArraySample wrapping a JaxAxisProtected at sample_axis!=0 must dispatch correctly.
+
+        Previously ``JaxArraySample.samples`` called ``jnp.moveaxis`` on
+        ``self.array`` directly, which fails for protected-axis wrappers
+        because JAX has no ``__array_function__`` analog. The protocol
+        ``__instancehook__`` reading ``samples`` would crash and tear down
+        the entire ``Flexdispatch`` lookup.
+        """
+        from probly.quantification.measure.distribution import (  # noqa: PLC0415
+            entropy_of_expected_predictive_distribution,
+        )
+        from probly.representation.distribution.jax_categorical import (  # noqa: PLC0415
+            JaxCategoricalDistribution,
+            JaxCategoricalDistributionSample,
+        )
+
+        probs = jnp.arange(5 * 3 * 4, dtype=jnp.float32).reshape(5, 3, 4) + 0.01
+        probs = probs / probs.sum(axis=-1, keepdims=True)
+        dist = JaxCategoricalDistribution(probs)
+
+        sample = JaxArraySample(array=dist, sample_axis=1)
+
+        # Protocol check must not raise:
+        assert isinstance(sample, JaxCategoricalDistributionSample)
+
+        # Dispatch through the measure flexdispatch must produce a finite array.
+        # Categorical batch shape is (5,) after rotating sample_axis=1 to 0 and
+        # taking the mean over the sample axis; entropy further reduces the class axis.
+        result = entropy_of_expected_predictive_distribution(sample)
+        assert result.shape == (5,)
+        assert bool(jnp.all(jnp.isfinite(result)))
+
+    def test_gaussian_protected_axis_at_nonzero_sample_axis(self) -> None:
+        """Regression: same fix path for ``JaxGaussianDistribution``.
+
+        Constructs a ``JaxArraySample`` whose ``array`` is a Gaussian
+        distribution wrapper and verifies the structural protocol check
+        does not crash and the rotated samples preserve the wrapper type.
+        """
+        from probly.representation.distribution.jax_gaussian import (  # noqa: PLC0415
+            JaxGaussianDistribution,
+            JaxGaussianDistributionSample,
+        )
+
+        mean = jnp.arange(2 * 3 * 4, dtype=jnp.float32).reshape(2, 3, 4)
+        var = jnp.ones_like(mean)
+        dist = JaxGaussianDistribution(mean=mean, var=var)
+
+        sample = JaxArraySample(array=dist, sample_axis=1)
+
+        # Protocol check must not raise.
+        assert isinstance(sample, JaxGaussianDistributionSample)
+
+        rotated = sample.samples
+        assert isinstance(rotated, JaxGaussianDistribution)
+        # After rotating sample_axis=1 -> 0, the underlying mean/var have shape (3, 2, 4).
+        assert rotated.mean.shape == (3, 2, 4)
+        assert rotated.var.shape == (3, 2, 4)
