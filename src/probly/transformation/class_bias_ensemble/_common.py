@@ -54,10 +54,8 @@ def class_bias_ensemble[**In, Out](
     """
     if reset_params:
         traverser = nn_compose(reset_traverser, class_bias_ensemble_traverser)
-        coerced_rngs = _coerce_rngs(rngs)
     else:
         traverser = nn_compose(class_bias_ensemble_traverser)
-        coerced_rngs = rngs
     members = [
         traverse(
             base,
@@ -68,24 +66,9 @@ def class_bias_ensemble[**In, Out](
                 INITIALIZED: False,
                 RESET_PARAMS: reset_params,
                 TRAVERSE_REVERSED: True,
-                RESET_RNGS: coerced_rngs,
+                RESET_RNGS: rngs,
             },
         )
         for i in range(num_members)
     ]
     return members  # ty:ignore[invalid-return-type]
-
-
-def _coerce_rngs(rngs: int | Rngs | RngStream) -> int | Rngs | RngStream:
-    """Coerce an int seed into an :class:`nnx.Rngs` once so members share an advancing stream.
-
-    If flax is unavailable (torch-only environments), returns the seed unchanged — the torch
-    ``reset_traverser`` ignores rngs anyway.
-    """
-    if isinstance(rngs, int):
-        try:
-            from flax import nnx  # noqa: PLC0415
-        except ImportError:
-            return rngs
-        return nnx.Rngs(rngs)
-    return rngs

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from pytraverse import GlobalVariable, flexdispatch_traverser
@@ -19,6 +20,8 @@ RNGS = GlobalVariable[RNG](
 
 reset_traverser = flexdispatch_traverser[object](name="reset_traverser")
 
+logger = logging.getLogger(__name__)
+
 
 @reset_traverser.register
 def _(obj: object) -> object:
@@ -29,4 +32,5 @@ def _(obj: object) -> object:
     layer types that have parameters worth resetting. Anything else (e.g. a jax callable
     used as a Sequential layer, or a raw ``nnx.Variable``) is passed through untouched.
     """
+    logger.debug("reset_traverser: no handler for %s; skipping", type(obj).__name__)
     return obj

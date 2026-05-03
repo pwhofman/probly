@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from flextype import flexdispatch
 from probly.predictor import (
@@ -16,6 +16,11 @@ from probly.predictor import (
 )
 from probly.representation.distribution import CategoricalDistribution, DirichletDistribution
 from probly.transformation.transformation import predictor_transformation
+
+if TYPE_CHECKING:
+    from flax.nnx.rnglib import Rngs, RngStream
+
+type RNG = int | Rngs | RngStream
 
 
 @runtime_checkable
@@ -57,7 +62,7 @@ class EnsembleDirichletDistributionPredictor[**In, Out: DirichletDistribution](E
 
 @flexdispatch
 def ensemble_generator[**In, Out](
-    base: Predictor[In, Out], num_members: int, reset_params: bool = True, rngs: object = 1
+    base: Predictor[In, Out], num_members: int, reset_params: bool = True, rngs: RNG = 1
 ) -> EnsemblePredictor[In, Out]:
     """Generate an ensemble from a base model."""
     msg = f"No ensemble generator is registered for type {type(base)}"
@@ -80,7 +85,7 @@ def register_ensemble_members(ensemble: EnsemblePredictor, t: type[Predictor] | 
 )
 @EnsemblePredictor.register_factory(autocast_builtins=True)
 def ensemble[**In, Out](
-    base: Predictor[In, Out], num_members: int, reset_params: bool = True, rngs: object = 1
+    base: Predictor[In, Out], num_members: int, reset_params: bool = True, rngs: RNG = 1
 ) -> EnsemblePredictor[In, Out]:
     """Create an ensemble predictor from a base predictor based on :cite:`lakshminarayananSimpleScalable2017`.
 

@@ -35,8 +35,7 @@ def generate_flax_ensemble(
 ) -> nnx.List:
     """Build a flax ensemble based on :cite:`lakshminarayananSimpleScalable2017`."""
     if reset_params:
-        coerced = nnx.Rngs(rngs) if isinstance(rngs, int) else rngs
-        return nnx.List([_clone_reset(obj, coerced) for _ in range(num_members)])
+        return nnx.List([_clone_reset(obj, rngs) for _ in range(num_members)])
     return nnx.List([_clone(obj) for _ in range(num_members)])
 
 

@@ -13,20 +13,18 @@ if TYPE_CHECKING:
 
 
 @class_bias_ensemble_traverser.register(nnx.Module)
-def _(obj: nnx.Module, state: State) -> tuple[nnx.Module, State]:
-    """Skip layers if last linear layer is initialized or raise an error."""
+def skip_or_raise_on_non_linear(obj: nnx.Module, state: State) -> tuple[nnx.Module, State]:
+    """Skip layers once the last linear layer is initialized; otherwise raise an error."""
     if not state[INITIALIZED]:
         msg = (
-            f"Initialization of class-bias ensemble models "
-            f"with last layer not being a linear layer is not possible. "
-            f"Found last layer to be of type {type(obj)}"
+            f"class_bias_ensemble requires the last child of the model to be an nnx.Linear, found {type(obj).__name__}."
         )
         raise ValueError(msg)
     return obj, state
 
 
 @class_bias_ensemble_traverser.register(nnx.Linear)
-def _(obj: nnx.Linear, state: State) -> tuple[nnx.Module, State]:
+def set_class_bias(obj: nnx.Linear, state: State) -> tuple[nnx.Module, State]:
     """Initialize the last linear layer with class-specific bias."""
     if not state[INITIALIZED]:
         if state[BIAS_CLS] > 0:
@@ -40,6 +38,6 @@ def _(obj: nnx.Linear, state: State) -> tuple[nnx.Module, State]:
 
 
 @class_bias_ensemble_traverser.register(nnx.Sequential)
-def _(obj: nnx.Sequential, state: State) -> tuple[nnx.Module, State]:
+def skip_sequential(obj: nnx.Sequential, state: State) -> tuple[nnx.Module, State]:
     """Skip sequential containers at the end."""
     return obj, state

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
 flax = pytest.importorskip("flax")
@@ -49,3 +51,28 @@ def test_forward_pass_returns_nig_dict(flax_regression_model_2d: nnx.Module) -> 
     assert (out["nu"] >= 0).all()
     assert (out["beta"] >= 0).all()
     assert (out["alpha"] >= 1).all()
+
+
+def test_distinct_rngs_yield_distinct_layers(flax_regression_model_2d: nnx.Module) -> None:
+    """Different ``rngs`` seeds produce distinct ``NormalInverseGammaLinear`` parameters."""
+    m1 = normal_inverse_gamma_head(flax_regression_model_2d, rngs=nnx.Rngs(0))
+    m2 = normal_inverse_gamma_head(flax_regression_model_2d, rngs=nnx.Rngs(42))
+
+    seq1 = cast("nnx.Sequential", m1)
+    seq2 = cast("nnx.Sequential", m2)
+    nig1 = next(layer for layer in seq1.layers if isinstance(layer, NormalInverseGammaLinear))
+    nig2 = next(layer for layer in seq2.layers if isinstance(layer, NormalInverseGammaLinear))
+
+    assert not jnp.allclose(nig1.gamma.value, nig2.gamma.value)
+
+
+def test_earlier_layers_unchanged(flax_regression_model_2d: nnx.Module) -> None:
+    """Layers before the replaced final ``Linear`` retain their original types."""
+    original = cast("nnx.Sequential", flax_regression_model_2d)
+    new_model = cast("nnx.Sequential", normal_inverse_gamma_head(flax_regression_model_2d))
+
+    last_layer_index = len(original.layers) - 1
+    for i in range(last_layer_index):
+        assert type(original.layers[i]) is type(new_model.layers[i])
+
+    assert isinstance(new_model.layers[last_layer_index], NormalInverseGammaLinear)

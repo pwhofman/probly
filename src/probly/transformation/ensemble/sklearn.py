@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from sklearn.base import BaseEstimator, clone
 
-from ._common import ensemble_generator
+from ._common import RNG, ensemble_generator
 
 
 @ensemble_generator.register(BaseEstimator)
@@ -12,7 +12,7 @@ def generate_sklearn_ensemble(
     obj: BaseEstimator,
     num_members: int,
     reset_params: bool,
-    rngs: object = 1,  # noqa: ARG001
+    rngs: RNG = 1,  # noqa: ARG001
 ) -> list[object]:
     """Generates an ensemble model from a sklearn base estimator."""
     if reset_params:
