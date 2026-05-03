@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from types import SimpleNamespace
-from typing import cast
+from typing import Any, cast
 
 import pytest
 from transformers import PreTrainedModel, PreTrainedTokenizerBase
@@ -94,7 +94,11 @@ class FakeModel:
             raise TypeError(msg)
         call_idx = len(self.generate_calls)
         self.generate_calls.append(kwargs)
-        num_return_sequences = kwargs.get("num_return_sequences", 1)
+        generation_config = kwargs.get("generation_config")
+        num_return_sequences = kwargs.get(
+            "num_return_sequences",
+            getattr(generation_config, "num_return_sequences", 1),
+        )
         if not isinstance(num_return_sequences, int):
             msg = "num_return_sequences must be an int."
             raise TypeError(msg)
@@ -170,9 +174,44 @@ def test_sampler_chunks_samples_and_returns_text_generation_sample() -> None:
     assert model.generate_calls[0]["temperature"] == 0.8
     assert model.generate_calls[0]["max_new_tokens"] == 8
     assert model.generate_calls[0]["top_k"] == 20
+    assert "generation_config" not in model.generate_calls[0]
     assert len(set(sample.tensor.text[0].tolist())) == 3
     assert tokenizer.padding_side == "left"
     assert tokenizer.pad_token == "<pad>"  # noqa: S105
+
+
+def test_sampler_merges_options_into_explicit_generation_config() -> None:
+    model = FakeModel()
+    generation_config = SimpleNamespace(name="custom")
+    sample = HFTextGenerationSampler(
+        model=model,
+        tokenizer=FakeTokenizer(),
+        num_samples=2,
+        apply_chat_template=False,
+        temperature=0.9,
+        max_new_tokens=4,
+        top_k=5,
+        generation_config=generation_config,
+    ).represent(["prompt words"])
+
+    assert sample.shape == (1, 2)
+    call = model.generate_calls[0]
+    config = cast("Any", call["generation_config"])
+    assert config is not generation_config
+    assert config.name == "custom"
+    assert config.do_sample is True
+    assert config.return_dict_in_generate is True
+    assert config.output_scores is True
+    assert config.temperature == 0.9
+    assert config.max_new_tokens == 4
+    assert config.top_k == 5
+    assert config.pad_token_id == 0
+    assert config.num_return_sequences == 2
+    assert "temperature" not in call
+    assert "max_new_tokens" not in call
+    assert "top_k" not in call
+    assert "num_return_sequences" not in call
+    assert not hasattr(generation_config, "temperature")
 
 
 def test_sampler_strip_inputs_controls_decoded_prefix() -> None:

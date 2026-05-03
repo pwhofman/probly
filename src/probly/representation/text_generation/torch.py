@@ -9,7 +9,7 @@ import numpy as np
 import torch
 
 from probly.representation._protected_axis.torch import TorchAxisProtected
-from probly.representation.sample import Sample, create_sample
+from probly.representation.sample import RepresentationSample, Sample, create_sample
 from probly.representation.sample.torch import TorchSample
 
 if TYPE_CHECKING:
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchTextGeneration(TorchAxisProtected[Any]):
+class TorchTextGeneration(TorchAxisProtected[torch.Tensor]):
     """Decoded text generations with sequence log-likelihoods.
 
     Shape: ``batch_shape``. The text is stored as a NumPy object array because
@@ -111,7 +111,7 @@ class TorchTextGeneration(TorchAxisProtected[Any]):
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchTokenGeneration(TorchAxisProtected[Any]):
+class TorchTokenGeneration(TorchAxisProtected[torch.Tensor]):
     """Generated token sequences and token transition scores.
 
     Shape: ``batch_shape``. ``sequences`` stores token ids with a protected trailing
@@ -166,6 +166,37 @@ class TorchTokenGeneration(TorchAxisProtected[Any]):
         text = np.asarray(decoded, dtype=object).reshape(batch_shape)
         log_likelihood = torch.sum(self.transition_scores, dim=-1)
         return TorchTextGeneration(log_likelihood=log_likelihood, text=text)
+
+
+@dataclass(frozen=True, slots=True, weakref_slot=True)
+class TorchSemanticClusterGeneration(TorchAxisProtected[torch.Tensor]):
+    """Semantic cluster assignments with generation log-likelihoods.
+
+    Shape: ``batch_shape``. ``cluster_id`` identifies the semantic cluster assigned
+    to each generation and ``log_likelihood`` stores that generation's likelihood.
+    """
+
+    cluster_id: torch.Tensor
+    log_likelihood: torch.Tensor
+    protected_axes: ClassVar[dict[str, int]] = {"cluster_id": 0, "log_likelihood": 0}
+
+    def __post_init__(self) -> None:
+        """Validate semantic cluster generation fields."""
+        if not isinstance(self.cluster_id, torch.Tensor):
+            msg = "cluster_id must be a torch tensor."
+            raise TypeError(msg)
+        if not isinstance(self.log_likelihood, torch.Tensor):
+            msg = "log_likelihood must be a torch tensor."
+            raise TypeError(msg)
+        if self.cluster_id.dtype not in (torch.int8, torch.int16, torch.int32, torch.int64, torch.uint8):
+            msg = "cluster_id must be an integer tensor."
+            raise TypeError(msg)
+        if not torch.is_floating_point(self.log_likelihood):
+            msg = "log_likelihood must be a floating point tensor."
+            raise TypeError(msg)
+        if self.cluster_id.shape != self.log_likelihood.shape:
+            msg = "cluster_id and log_likelihood must have identical shapes."
+            raise ValueError(msg)
 
 
 class TorchTextGenerationSample(TorchSample[TorchTextGeneration]):
@@ -286,4 +317,19 @@ class TorchTextGenerationSample(TorchSample[TorchTextGeneration]):
         return self.move_sample_dim(new_sample_axis)
 
 
+class TorchSemanticClusterGenerationSample(  # ty:ignore[conflicting-metaclass]
+    RepresentationSample[TorchSemanticClusterGeneration],
+    TorchSample[TorchSemanticClusterGeneration],
+):
+    """A torch sample of semantic cluster generations."""
+
+    sample_space: ClassVar[type[TorchSemanticClusterGeneration]] = TorchSemanticClusterGeneration
+
+    @override
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        return super().__instancehook__(instance)
+
+
 create_sample.register(TorchTextGeneration, TorchTextGenerationSample.from_sample)
+create_sample.register(TorchSemanticClusterGeneration, TorchSemanticClusterGenerationSample.from_iterable)

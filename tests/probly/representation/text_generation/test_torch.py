@@ -9,7 +9,10 @@ pytest.importorskip("torch")
 import torch
 
 from probly.representation.sample import create_sample
+from probly.representation.sample.torch import TorchSample
 from probly.representation.text_generation import (
+    TorchSemanticClusterGeneration,
+    TorchSemanticClusterGenerationSample,
     TorchTextGeneration,
     TorchTextGenerationSample,
     TorchTokenGeneration,
@@ -107,3 +110,66 @@ def test_text_generation_sample_move_and_concat() -> None:
     assert concatenated.sample_dim == 1
     assert concatenated.shape == (2, 4)
     assert concatenated.tensor.text.tolist() == [["a", "b", "a", "b"], ["c", "d", "c", "d"]]
+
+
+def test_semantic_cluster_generation_validates_fields() -> None:
+    with pytest.raises(TypeError, match="integer"):
+        TorchSemanticClusterGeneration(
+            cluster_id=torch.tensor([0.0, 1.0]),
+            log_likelihood=torch.tensor([-0.1, -0.2]),
+        )
+
+    with pytest.raises(TypeError, match="floating point"):
+        TorchSemanticClusterGeneration(
+            cluster_id=torch.tensor([0, 1]),
+            log_likelihood=torch.tensor([-1, -2]),
+        )
+
+    with pytest.raises(ValueError, match="identical shapes"):
+        TorchSemanticClusterGeneration(
+            cluster_id=torch.tensor([0, 1]),
+            log_likelihood=torch.tensor([[-0.1, -0.2]]),
+        )
+
+
+def test_semantic_cluster_generation_indexes_and_moves_like_torch_representation() -> None:
+    generation = TorchSemanticClusterGeneration(
+        cluster_id=torch.tensor([[0, 1], [1, 2]]),
+        log_likelihood=torch.tensor([[-0.1, -0.2], [-0.3, -0.4]]),
+    )
+
+    indexed = generation[0]
+
+    assert isinstance(indexed, TorchSemanticClusterGeneration)
+    assert torch.equal(indexed.cluster_id, torch.tensor([0, 1]))
+    assert torch.equal(indexed.log_likelihood, torch.tensor([-0.1, -0.2]))
+    assert generation.to(device=torch.device("cpu")) is generation
+
+
+def test_create_sample_stacks_semantic_cluster_generations() -> None:
+    left = TorchSemanticClusterGeneration(
+        cluster_id=torch.tensor([0, 1]),
+        log_likelihood=torch.tensor([-0.1, -0.2]),
+    )
+    right = TorchSemanticClusterGeneration(
+        cluster_id=torch.tensor([2, 3]),
+        log_likelihood=torch.tensor([-0.3, -0.4]),
+    )
+
+    sample = create_sample([left, right], sample_axis=1)
+
+    assert isinstance(sample, TorchSemanticClusterGenerationSample)
+    assert sample.sample_dim == 1
+    assert sample.shape == (2, 2)
+    assert torch.equal(sample.tensor.cluster_id, torch.tensor([[0, 2], [1, 3]]))
+    assert torch.equal(sample.tensor.log_likelihood, torch.tensor([[-0.1, -0.3], [-0.2, -0.4]]))
+
+
+def test_plain_torch_sample_over_semantic_clusters_matches_semantic_sample_protocol() -> None:
+    generation = TorchSemanticClusterGeneration(
+        cluster_id=torch.tensor([[0, 1], [2, 3]]),
+        log_likelihood=torch.tensor([[-0.1, -0.2], [-0.3, -0.4]]),
+    )
+    sample = TorchSample(tensor=generation, sample_dim=1)
+
+    assert isinstance(sample, TorchSemanticClusterGenerationSample)

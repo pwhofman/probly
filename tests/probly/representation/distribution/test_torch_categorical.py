@@ -8,7 +8,7 @@ import pytest
 pytest.importorskip("torch")
 import torch
 
-from probly.representation.distribution import create_categorical_distribution
+from probly.representation.distribution import CategoricalDistributionSample, create_categorical_distribution
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.sample.torch import TorchSample
 from probly.representation.torch_functions import torch_average
@@ -76,6 +76,13 @@ def test_sampling_relative_probabilities_matches_normalized_distribution() -> No
     expected = torch.tensor([0.2, 0.3, 0.5], dtype=torch.float64)
 
     assert torch.allclose(frequencies, expected, atol=0.02)
+
+
+def test_plain_torch_sample_over_categorical_distribution_matches_distribution_sample_protocol() -> None:
+    dist = TorchCategoricalDistribution(torch.tensor([[0.2, 0.8], [0.4, 0.6]], dtype=torch.float64))
+    sample = TorchSample(tensor=dist, sample_dim=0)
+
+    assert isinstance(sample, CategoricalDistributionSample)
 
 
 def test_sampling_bernoulli_produces_binary_samples_with_correct_mean() -> None:

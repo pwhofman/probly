@@ -291,30 +291,29 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
         raise TypeError(msg)
 
     def _generation_kwargs(self) -> dict[str, object]:
-        config = (
-            self.generation_config
-            if self.generation_config is not None
-            else getattr(self.model, "generation_config", None)
-        )
-        kwargs: dict[str, object] = {
+        values: dict[str, object] = {
             "do_sample": self.do_sample,
             "return_dict_in_generate": True,
             "output_scores": True,
         }
-        if config is not None:
-            kwargs["generation_config"] = copy(config)
         if self.temperature is not None:
-            kwargs["temperature"] = self.temperature
+            values["temperature"] = self.temperature
         if self.max_new_tokens is not None:
-            kwargs["max_new_tokens"] = self.max_new_tokens
+            values["max_new_tokens"] = self.max_new_tokens
         if self.top_k is not None:
-            kwargs["top_k"] = self.top_k
+            values["top_k"] = self.top_k
 
         pad_token_id = getattr(self.tokenizer, "pad_token_id", None)
         if pad_token_id is not None:
-            kwargs["pad_token_id"] = pad_token_id
+            values["pad_token_id"] = pad_token_id
 
-        return kwargs
+        if self.generation_config is None:
+            return values
+
+        config = copy(self.generation_config)
+        for key, value in values.items():
+            setattr(config, key, value)
+        return {"generation_config": config}
 
     def _generate_chunk(self, prompts: Sequence[str], chunk_size: int) -> TorchTextGeneration:
         is_encoder_decoder = _is_encoder_decoder_model(self.model)
@@ -333,7 +332,12 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
 
         generation_kwargs = self._generation_kwargs()
         if use_num_return_sequences:
-            generation_kwargs["num_return_sequences"] = chunk_size
+            raw_generation_config = generation_kwargs.get("generation_config")
+            if raw_generation_config is None:
+                generation_kwargs["num_return_sequences"] = chunk_size
+            else:
+                generation_config = cast("Any", raw_generation_config)
+                generation_config.num_return_sequences = chunk_size
 
         with torch.inference_mode():
             outputs = self.model.generate(**tokenized, **generation_kwargs)

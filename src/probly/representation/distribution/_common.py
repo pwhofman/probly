@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
 from flextype import flexdispatch
 from probly.representation.representation import Representation
-from probly.representation.sample._common import Sample
+from probly.representation.sample._common import RepresentationSample, Sample
 
 if TYPE_CHECKING:
     from probly.representation.array_like import ArrayLike
@@ -55,25 +54,14 @@ class CategoricalDistribution[T](Distribution[T]):
         """Get the normalized probabilities of the categorical distribution."""
 
 
-class DistributionSample[T: Distribution](Sample[T]):
+class DistributionSample[T: Distribution](RepresentationSample[T]):
     """Sample type for empirical second-order distributions."""
 
-    _running_instancehook: ClassVar[ContextVar[object]] = ContextVar(
-        "DistributionSample._running_instancehook", default=NotImplemented
-    )
     sample_space: ClassVar[type[Distribution]] = Distribution
 
     @classmethod
     def __instancehook__(cls, instance: object) -> bool:
-        if cls._running_instancehook.get() is instance:
-            return NotImplemented
-        try:
-            tok = cls._running_instancehook.set(instance)
-            if isinstance(instance, Sample) and isinstance(instance.samples, cls.sample_space):
-                return True
-        finally:
-            cls._running_instancehook.reset(tok)
-        return NotImplemented
+        return super().__instancehook__(instance)
 
 
 class CategoricalDistributionSample[T: CategoricalDistribution](DistributionSample[T]):
