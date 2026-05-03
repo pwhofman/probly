@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from probly.layers.torch import GaussianMixtureHead
 
 
+import gc
 import pathlib
 import tempfile
 
@@ -1371,6 +1372,14 @@ def main(cfg: DictConfig) -> None:
     if cal_loader is not None and cfg.method.name == "deup":
         train_kwargs.setdefault("cal_loader", cal_loader)
     train_model(model, train_loader, val_loader, cfg, device, run, train_kwargs)
+
+    # Release training DataLoaders and force GC to terminate persistent training
+    # workers before spawning test workers. On network filesystems (NFS, Lustre),
+    # persistent training workers hold open file handles to training shards; their
+    # combined count with test worker handles can exceed per-job limits and cause
+    # test workers to SIGABRT when they cannot open additional shard files.
+    del train_loader, val_loader, cal_loader, loaders
+    gc.collect()
 
     test_metrics = evaluate(model, test_loader, device, cfg.get("amp", False), **train_kwargs)
     run.summary.update(test_metrics)
