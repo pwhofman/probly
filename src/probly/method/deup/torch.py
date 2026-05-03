@@ -479,19 +479,19 @@ class LogMAFDensity(StationarizingFeatureProvider):
         for epoch in range(self.flow_epochs):
             flow.train()
             perm = torch.randperm(features_cat.size(0))
-            features_shuffled = features_cat[perm]
-            total_loss = 0.0
+            epoch_loss = torch.zeros(1, device=device)
             n_batches = 0
             for i in range(0, features_cat.size(0), batch_size):
-                batch = features_shuffled[i : i + batch_size].to(device)
+                # Index features_cat directly to avoid a full shuffled copy per epoch.
+                batch = features_cat[perm[i : i + batch_size]].to(device, non_blocking=True)
                 optimizer.zero_grad()
                 loss = -flow.log_prob(batch.float()).mean()  # ty: ignore[call-non-callable]
                 loss.backward()
                 optimizer.step()
-                total_loss += loss.item()
+                epoch_loss += loss.detach()
                 n_batches += 1
             if (epoch + 1) % 5 == 0 or epoch == self.flow_epochs - 1:
-                tqdm.write(f"MAF epoch {epoch + 1}/{self.flow_epochs}, NLL={total_loss / n_batches:.4f}")
+                tqdm.write(f"MAF epoch {epoch + 1}/{self.flow_epochs}, NLL={epoch_loss.item() / max(n_batches, 1):.4f}")
         flow.eval()
         self._flow = flow
 
