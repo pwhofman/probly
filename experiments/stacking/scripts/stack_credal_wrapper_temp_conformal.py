@@ -27,6 +27,8 @@ CLI:
 from __future__ import annotations
 
 import argparse
+import json
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -43,6 +45,15 @@ from probly.predictor import predict, predict_raw
 from stacking.data import load_dataset
 from stacking.models import build_mlp
 from stacking.utils import get_device, set_seed
+
+
+def _write_results(path: Path, payload: dict[str, Any]) -> None:
+    """Write a JSON dict to ``path``, creating parents as needed."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w") as fh:
+        json.dump(payload, fh, indent=2, sort_keys=False)
+        fh.write("\n")
+    print(f"\nwrote results -> {path}")
 
 
 def _train_member(
@@ -122,6 +133,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--alpha", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--device", default="auto")
+    parser.add_argument(
+        "--results-json",
+        type=Path,
+        default=None,
+        help="If given, write a JSON dump of the run's hyperparams + metrics to this path.",
+    )
     return parser.parse_args()
 
 
@@ -156,7 +173,8 @@ def main() -> None:
 
     calib_logits = _pool_logits(ensemble, X_calib, device=device)
     test_logits = _pool_logits(ensemble, X_test, device=device)
-    print(f"\npooled-ensemble test_acc={_accuracy(test_logits, y_test):.4f}")
+    pooled_acc = _accuracy(test_logits, y_test)
+    print(f"\npooled-ensemble test_acc={pooled_acc:.4f}")
 
     cov_a, size_a = _conformal_metrics(
         calib_logits=calib_logits,
@@ -178,6 +196,44 @@ def main() -> None:
     print(f"\nA. pooled       -> conformal_raps @ alpha={args.alpha}: coverage={cov_a:.3f}  avg_set_size={size_a:.3f}")
     print(f"B. pooled -> T  -> conformal_raps @ alpha={args.alpha}: coverage={cov_b:.3f}  avg_set_size={size_b:.3f}")
     print(f"\ndelta (B - A): coverage={cov_b - cov_a:+.3f}  avg_set_size={size_b - size_a:+.3f}")
+
+    if args.results_json is not None:
+        _write_results(
+            args.results_json,
+            {
+                "composition": "credal_wrapper_temp_conformal",
+                "dataset": args.dataset,
+                "encoder": args.encoder if args.dataset == "cifar10h" else None,
+                "in_features": ds.in_features,
+                "num_classes": ds.num_classes,
+                "splits": {
+                    "train": int(ds.X_train.shape[0]),
+                    "calib": int(ds.X_calib.shape[0]),
+                    "test": int(ds.X_test.shape[0]),
+                },
+                "hyperparams": {
+                    "num_members": args.num_members,
+                    "epochs": args.epochs,
+                    "alpha": args.alpha,
+                    "seed": args.seed,
+                },
+                "metrics": {
+                    "pooled_acc": pooled_acc,
+                    "no_temperature": {
+                        "coverage": cov_a,
+                        "avg_set_size": size_a,
+                    },
+                    "with_temperature": {
+                        "coverage": cov_b,
+                        "avg_set_size": size_b,
+                    },
+                    "delta_with_minus_no": {
+                        "coverage": cov_b - cov_a,
+                        "avg_set_size": size_b - size_a,
+                    },
+                },
+            },
+        )
 
     # Silence unused-warning for the predict_raw import (kept for parity with sibling scripts).
     _ = predict_raw

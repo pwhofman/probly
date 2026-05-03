@@ -29,6 +29,9 @@ CLI:
 from __future__ import annotations
 
 import argparse
+import json
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import torch
@@ -41,6 +44,15 @@ from stacking.data import load_dataset
 from stacking.utils import get_device, set_seed
 
 ECE_BINS = 15
+
+
+def _write_results(path: Path, payload: dict[str, Any]) -> None:
+    """Write a JSON dict to ``path``, creating parents as needed."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w") as fh:
+        json.dump(payload, fh, indent=2, sort_keys=False)
+        fh.write("\n")
+    print(f"\nwrote results -> {path}")
 
 
 class _NatPNEncoder(nn.Module):
@@ -174,6 +186,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--entropy-weight", type=float, default=1e-5)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--device", default="auto")
+    parser.add_argument(
+        "--results-json",
+        type=Path,
+        default=None,
+        help="If given, write a JSON dump of the run's hyperparams + metrics to this path.",
+    )
     return parser.parse_args()
 
 
@@ -223,6 +241,38 @@ def main() -> None:
     acc = _accuracy(test_probs, y_test)
     ece = _ece(test_probs, y_test, n_bins=ECE_BINS)
     print(f"\nNatPN ensemble (N={args.num_members}): test_acc={acc:.4f}  ECE={ece:.4f}")
+
+    if args.results_json is not None:
+        _write_results(
+            args.results_json,
+            {
+                "composition": "natpn_ensemble",
+                "dataset": args.dataset,
+                "encoder": args.encoder if args.dataset == "cifar10h" else None,
+                "in_features": ds.in_features,
+                "num_classes": ds.num_classes,
+                "splits": {
+                    "train": int(ds.X_train.shape[0]),
+                    "calib": int(ds.X_calib.shape[0]),
+                    "test": int(ds.X_test.shape[0]),
+                },
+                "hyperparams": {
+                    "num_members": args.num_members,
+                    "epochs": args.epochs,
+                    "batch_size": args.batch_size,
+                    "hidden": args.hidden,
+                    "latent_dim": args.latent_dim,
+                    "num_flows": args.num_flows,
+                    "entropy_weight": args.entropy_weight,
+                    "seed": args.seed,
+                    "ece_bins": ECE_BINS,
+                },
+                "metrics": {
+                    "test_acc": acc,
+                    "ece": ece,
+                },
+            },
+        )
 
 
 if __name__ == "__main__":
