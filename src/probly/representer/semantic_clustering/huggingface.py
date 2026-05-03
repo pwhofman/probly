@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, Self, override
 
 import numpy as np
 import torch
@@ -258,7 +258,7 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, TorchSparseLogCate
     def _cluster_row(self, statements: np.ndarray) -> torch.Tensor:
         """Cluster one row of generated statements."""
 
-    def _cluster_generation(self, generation: TorchTextGeneration, axis: int) -> TorchSparseLogCategoricalDistribution:
+    def _cluster(self, generation: TorchTextGeneration, axis: int) -> TorchSparseLogCategoricalDistribution:
         axis = self._normalize_axis(axis, generation.ndim)
         comparison_size = generation.shape[axis]
         if comparison_size == 0:
@@ -300,7 +300,7 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, TorchSparseLogCate
         """
         if isinstance(generation, TorchTextGenerationSample):
             sample_dim = generation.sample_dim
-            clustered = self._cluster_generation(generation.tensor, sample_dim)
+            clustered = self._cluster(generation.tensor, sample_dim)
             if generation.weights is None:
                 return clustered
 
@@ -320,7 +320,7 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, TorchSparseLogCate
         if axis is None:
             msg = "axis must be provided when clustering a TorchTextGeneration."
             raise ValueError(msg)
-        return self._cluster_generation(generation, axis)
+        return self._cluster(generation, axis)
 
 
 class GreedyHFSemanticClusterer(HFSemanticClusterer):
@@ -335,6 +335,7 @@ class GreedyHFSemanticClusterer(HFSemanticClusterer):
         is_not_neutral_neutral = ~torch.all(label_pairs == _NEUTRAL, dim=1)
         return has_no_contradiction & is_not_neutral_neutral
 
+    @override
     def _cluster_row(self, statements: np.ndarray) -> torch.Tensor:
         if statements.ndim != 1:
             msg = "statements must be a one-dimensional numpy array."
