@@ -10,6 +10,7 @@ dependencies = [
   "scikit-learn",
   "transformers",
   "pillow",
+  "socksio>=1.0.0",
 ]
 
 [dependency-groups]
