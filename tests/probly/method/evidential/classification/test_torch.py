@@ -6,8 +6,12 @@ import torch
 from torch import nn
 
 from probly.method.evidential.classification import (
+    EvidentialClassificationDecomposition,
     evidential_classification,
 )
+from probly.quantification import AleatoricUncertainty, EpistemicUncertainty, TotalUncertainty
+from probly.quantification.measure.distribution import vacuity
+from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
 from probly.transformation.dirichlet_clipped_exp_one_activation.torch import _AddOne, _ClippedExp
 from tests.probly.torch_utils import count_layers
 
@@ -68,3 +72,91 @@ def test_evidential_classification_alpha_is_at_least_one(
     model = evidential_classification(torch_model_small_2d_2d)
     alpha = model(torch.randn(8, 2))
     assert torch.all(alpha >= 1.0)
+
+
+# Tests for EvidentialClassificationDecomposition on Torch Dirichlet representations.
+
+
+def _torch_dirichlet() -> TorchDirichletDistribution:
+    alphas = torch.tensor(
+        [
+            [1.0, 1.0, 1.0],
+            [10.0, 10.0, 10.0],
+            [2.0, 3.0, 5.0],
+            [100.0, 1.0, 1.0],
+        ],
+        dtype=torch.float64,
+    )
+    return TorchDirichletDistribution(alphas=alphas)
+
+
+def test_torch_decomposition_epistemic_matches_vacuity() -> None:
+    distribution = _torch_dirichlet()
+
+    decomposition = EvidentialClassificationDecomposition(distribution)
+
+    assert torch.allclose(decomposition.epistemic, vacuity(distribution), rtol=1e-12, atol=1e-12)
+
+
+def test_torch_decomposition_components_only_epistemic() -> None:
+    decomposition = EvidentialClassificationDecomposition(_torch_dirichlet())
+
+    assert decomposition.components == [EpistemicUncertainty]
+    assert len(decomposition) == 1
+
+
+def test_torch_decomposition_canonical_notion_is_epistemic() -> None:
+    decomposition = EvidentialClassificationDecomposition(_torch_dirichlet())
+
+    assert decomposition.canonical_notion is EpistemicUncertainty
+    assert decomposition.get_canonical() is decomposition.epistemic
+
+
+def test_torch_decomposition_does_not_expose_aleatoric_or_total() -> None:
+    """The paper has no aleatoric / total measures; decomposition must reflect that."""
+    decomposition = EvidentialClassificationDecomposition(_torch_dirichlet())
+
+    import pytest  # noqa: PLC0415
+
+    with pytest.raises(KeyError):
+        decomposition[AleatoricUncertainty]
+    with pytest.raises(KeyError):
+        decomposition[TotalUncertainty]
+    with pytest.raises(KeyError):
+        decomposition["au"]
+    with pytest.raises(KeyError):
+        decomposition["tu"]
+
+
+def test_torch_decomposition_caches_component() -> None:
+    decomposition = EvidentialClassificationDecomposition(_torch_dirichlet())
+
+    epistemic = decomposition.epistemic
+
+    assert decomposition.epistemic is epistemic
+    assert decomposition[EpistemicUncertainty] is epistemic
+
+
+def test_torch_decomposition_propagates_gradients() -> None:
+    alphas = torch.tensor([2.0, 3.0, 5.0], dtype=torch.float64, requires_grad=True)
+    distribution = TorchDirichletDistribution(alphas=alphas)
+
+    decomposition = EvidentialClassificationDecomposition(distribution)
+    decomposition.epistemic.backward()
+
+    grad = alphas.grad
+    assert grad is not None
+    assert torch.isfinite(grad).all()
+
+
+def test_torch_decomposition_on_evidential_model_output(torch_model_small_2d_2d: nn.Sequential) -> None:
+    """End-to-end: an EDL-trained classifier's Dirichlet output feeds the decomposition cleanly."""
+    model = evidential_classification(torch_model_small_2d_2d)
+    alpha = model(torch.randn(5, 2))
+    distribution = TorchDirichletDistribution(alphas=alpha)
+
+    decomposition = EvidentialClassificationDecomposition(distribution)
+
+    assert decomposition.epistemic.shape == (5,)
+    assert torch.all(decomposition.epistemic > 0.0)
+    assert torch.all(decomposition.epistemic <= 1.0)
