@@ -10,6 +10,7 @@ from scipy.stats import dirichlet, entropy as scipy_entropy, norm
 
 from probly.quantification.measure.distribution import (
     conditional_entropy,
+    dempster_shafer_uncertainty,
     entropy,
     entropy_of_expected_predictive_distribution,
     expected_max_probability_complement,
@@ -417,3 +418,66 @@ def test_array_dirichlet_max_probability_complement_of_expected_invariant_to_sca
         rtol=1e-12,
         atol=1e-12,
     )
+
+
+def test_array_gaussian_dempster_shafer_uniform_logits_with_default_factor() -> None:
+    """Uniform-zero logits should give vacuity = K / (K + K * exp(0)) = 1/2."""
+    mean = np.zeros((3, 5), dtype=float)
+    var = np.ones_like(mean)
+    distribution = ArrayGaussianDistribution(mean=mean, var=var)
+
+    measured = dempster_shafer_uncertainty(distribution)
+
+    np.testing.assert_allclose(measured, 0.5, rtol=1e-12, atol=1e-12)
+
+
+def test_array_gaussian_dempster_shafer_matches_explicit_formula() -> None:
+    import math  # noqa: PLC0415
+
+    rng = np.random.default_rng(seed=0)
+    mean = rng.normal(loc=0.0, scale=2.0, size=(20, 5))
+    var = rng.uniform(low=0.01, high=4.0, size=(20, 5))
+    distribution = ArrayGaussianDistribution(mean=mean, var=var)
+
+    measured = dempster_shafer_uncertainty(distribution)
+
+    num_classes = mean.shape[-1]
+    adjusted = mean / np.sqrt(1.0 + (math.pi / 8.0) * var)
+    expected = num_classes / (num_classes + np.sum(np.exp(adjusted), axis=-1))
+    np.testing.assert_allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_array_gaussian_dempster_shafer_lies_in_unit_interval() -> None:
+    rng = np.random.default_rng(seed=1)
+    mean = rng.normal(loc=0.0, scale=5.0, size=(50, 4))
+    var = rng.uniform(low=0.01, high=10.0, size=(50, 4))
+    distribution = ArrayGaussianDistribution(mean=mean, var=var)
+
+    measured = dempster_shafer_uncertainty(distribution)
+
+    assert np.all(measured > 0.0)
+    assert np.all(measured <= 1.0)
+
+
+def test_array_gaussian_dempster_shafer_high_variance_increases_uncertainty() -> None:
+    """Mean-field correction shrinks logits when variance is large -> vacuity goes up."""
+    mean = np.array([[10.0, -10.0, 0.0, 0.0]], dtype=float)
+    low_var = np.full_like(mean, 1e-3)
+    high_var = np.full_like(mean, 1000.0)
+
+    low_var_score = dempster_shafer_uncertainty(ArrayGaussianDistribution(mean=mean, var=low_var))
+    high_var_score = dempster_shafer_uncertainty(ArrayGaussianDistribution(mean=mean, var=high_var))
+
+    assert high_var_score[0] > low_var_score[0]
+
+
+def test_array_gaussian_dempster_shafer_zero_factor_disables_mean_field() -> None:
+    """``mean_field_factor=0`` should reduce to the variance-free formula K / (K + sum exp(h))."""
+    mean = np.array([[1.0, 2.0, 3.0]], dtype=float)
+    var = np.array([[100.0, 100.0, 100.0]], dtype=float)
+    distribution = ArrayGaussianDistribution(mean=mean, var=var)
+
+    measured = dempster_shafer_uncertainty(distribution, mean_field_factor=0.0)
+
+    expected = 3.0 / (3.0 + np.sum(np.exp(mean), axis=-1))
+    np.testing.assert_allclose(measured, expected, rtol=1e-12, atol=1e-12)

@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 import warnings
 
 from flextype import flexdispatch
 from probly.predictor import Predictor, RandomPredictor, predict, predict_raw
+from probly.quantification.decomposition.decomposition import CachingDecomposition, EpistemicDecomposition
+from probly.quantification.measure.distribution import DEFAULT_MEAN_FIELD_FACTOR, dempster_shafer_uncertainty
 from probly.representation.distribution import (
     CategoricalDistributionSample,
     GaussianDistribution,
@@ -234,3 +237,43 @@ def reset_precision_matrix(predictor: Any) -> None:  # noqa: ANN401
     """
     msg = f"reset_precision_matrix not implemented for type {type(predictor).__name__}."
     raise NotImplementedError(msg)
+
+
+@dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
+class SNGPDecomposition[T](CachingDecomposition, EpistemicDecomposition[T]):
+    """Decomposition based on SNGP's Dempster-Shafer epistemic uncertainty.
+
+    Implements the single uncertainty quantity used by SNGP
+    :cite:`liuSNGPSpectralNormalizedNeural2020` for OOD detection (Sec. 5.2 +
+    Appendix C, Eq. 15). For an SNGP-style Gaussian distribution
+    ``N(h, sigma^2)`` over K-class logits:
+
+    - Epistemic uncertainty: ``K / (K + sum_k exp(h_adj_k))`` where
+      ``h_adj_k = h_k / sqrt(1 + mean_field_factor * sigma_k^2)``. This is the
+      Dempster-Shafer / vacuity metric (originally introduced by
+      :cite:`sensoyEvidentialDeepLearning2018`), applied to a soft-evidential
+      Dirichlet with ``alpha = 1 + exp(h_adj)``. The mean-field correction
+      shrinks the logits toward zero when the GP variance is large (OOD),
+      driving the score toward 1.
+
+    The paper does not propose an aleatoric or total uncertainty measure; the
+    DS metric is the only OOD score used. Consequently this decomposition has
+    only an epistemic slot, and its canonical notion is epistemic uncertainty.
+
+    Args:
+        distribution: A Gaussian distribution over K-class logits (e.g. the
+            output of :func:`predict` on an :class:`SNGPPredictor`).
+        mean_field_factor: Coefficient in front of the variance in the
+            mean-field denominator. Defaults to ``pi / 8`` (paper / SNGP recipe).
+            Set to ``0.0`` to ignore variance and compute the literal Eq. 15
+            on the raw GP mean.
+    """
+
+    distribution: GaussianDistribution
+    mean_field_factor: float = DEFAULT_MEAN_FIELD_FACTOR
+
+    @override
+    @property
+    def _epistemic(self) -> T:
+        """The epistemic uncertainty: SNGP's mean-field-adjusted Dempster-Shafer score."""
+        return dempster_shafer_uncertainty(self.distribution, mean_field_factor=self.mean_field_factor)  # ty:ignore[invalid-return-type]

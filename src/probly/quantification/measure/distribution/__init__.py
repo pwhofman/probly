@@ -3,9 +3,11 @@
 from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
 
 from ._common import (
+    DEFAULT_MEAN_FIELD_FACTOR,
     LogBase,
     SecondOrderDistributionLike,
     conditional_entropy,
+    dempster_shafer_uncertainty,
     entropy,
     entropy_of_expected_predictive_distribution,
     expected_max_probability_complement,
@@ -19,6 +21,7 @@ from .array import (
     array_dirichlet_entropy,
     array_dirichlet_max_probability_complement_of_expected,
     array_dirichlet_vacuity,
+    array_gaussian_dempster_shafer_uncertainty,
     array_gaussian_entropy,
 )
 
@@ -31,19 +34,23 @@ from .array import (
 @expected_max_probability_complement.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @max_disagreement.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @vacuity.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@dempster_shafer_uncertainty.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
 __all__ = [
+    "DEFAULT_MEAN_FIELD_FACTOR",
     "LogBase",
     "SecondOrderDistributionLike",
     "array_categorical_entropy",
     "array_dirichlet_entropy",
     "array_dirichlet_max_probability_complement_of_expected",
     "array_dirichlet_vacuity",
+    "array_gaussian_dempster_shafer_uncertainty",
     "array_gaussian_entropy",
     "conditional_entropy",
+    "dempster_shafer_uncertainty",
     "entropy",
     "entropy_of_expected_predictive_distribution",
     "expected_max_probability_complement",
