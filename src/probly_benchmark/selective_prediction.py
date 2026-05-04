@@ -8,12 +8,11 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 from probly.evaluation.tasks import selective_prediction
-from probly.quantification import quantify
 from probly.representer import representer
 from probly_benchmark import calibration, data, utils
-from probly_benchmark.uncertainty import SUPPORTED_DECOMPOSITIONS, select_uncertainty
+from probly_benchmark.uncertainty import SUPPORTED_DECOMPOSITIONS
 from probly_benchmark.utils import (
-    collect_outputs_decisions_targets,
+    collect_uncertainties_decisions_targets,
     init_wandb_for_evaluation,
     load_model_for_evaluation,
 )
@@ -78,19 +77,18 @@ def main(cfg: DictConfig) -> None:
         msg = f"Unsupported decomposition: {cfg.decomposition!r}. Choose from {SUPPORTED_DECOMPOSITIONS}."
         raise ValueError(msg)
 
-    outputs, mean_probs, targets = collect_outputs_decisions_targets(
+    uncertainties_t, mean_probs_t, targets_t = collect_uncertainties_decisions_targets(
         model,
         rep,
         test_loader,
         device,
+        cfg.decomposition,
         rep_kwargs=rep_kwargs or None,
         amp_enabled=cfg.get("amp", False),
     )
-
-    decomposition = quantify(outputs)
-    uncertainties = select_uncertainty(decomposition, cfg.decomposition).detach().cpu().numpy()  # ty:ignore[unresolved-attribute]
-
-    labels = targets.numpy()
+    uncertainties = uncertainties_t.detach().cpu().numpy()
+    mean_probs = mean_probs_t.detach().cpu().numpy()
+    labels = targets_t.detach().cpu().numpy()
     loss = _compute_loss(mean_probs, labels, cfg.loss)
     auroc, bin_losses = selective_prediction(uncertainties, loss, n_bins=cfg.n_bins)
     print(f"Selective prediction AUROC: {auroc:.4f}")

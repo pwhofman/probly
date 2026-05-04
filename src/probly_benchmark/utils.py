@@ -14,15 +14,18 @@ from tqdm import tqdm
 import wandb
 
 from probly.predictor import predict_raw
+from probly.quantification import quantify
 from probly_benchmark import calibration, conformal, metadata
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.decision import decide
+from probly_benchmark.uncertainty import select_uncertainty
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
     from torch import nn
     from torch.utils.data import DataLoader
 
+    from probly.quantification.notion import NotionName
     from probly.representation import Representation
     from probly.representer import Representer
 
@@ -105,6 +108,69 @@ def collect_outputs_targets(
         targets.append(targets_)
 
     return torch.cat(outputs), torch.cat(targets)
+
+
+@torch.no_grad()
+def collect_uncertainties(
+    rep: Representer,
+    loader: torch.utils.data.DataLoader,
+    device: torch.device,
+    decomposition: NotionName,
+    amp_enabled: bool = False,
+) -> torch.Tensor:
+    """Collect per-batch uncertainty scores; quantify per batch then concat.
+
+    Per-batch quantification preserves method-specific decomposition markers
+    that ``torch.cat`` on the underlying representations would strip.
+    """
+    uncertainties: list[torch.Tensor] = []
+
+    for inputs, _ in tqdm(loader, desc="Batch"):
+        if amp_enabled:
+            with torch.amp.autocast(device.type):
+                outputs_ = rep.predict(inputs.to(device))
+        else:
+            outputs_ = rep.predict(inputs.to(device))
+        uncertainty = cast("torch.Tensor", select_uncertainty(quantify(outputs_), decomposition))
+        uncertainties.append(uncertainty)
+
+    return torch.cat(uncertainties)
+
+
+@torch.no_grad()
+def collect_uncertainties_decisions_targets(
+    model: nn.Module,
+    rep: Representer,
+    loader: DataLoader,
+    device: torch.device,
+    decomposition: NotionName,
+    rep_kwargs: dict[str, Any] | None = None,
+    amp_enabled: bool = False,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Per-batch ``(uncertainties, mean_probs, targets)`` for selective prediction.
+
+    Per-batch counterpart to :func:`collect_outputs_decisions_targets` — quantifies
+    each batch immediately so method-specific decomposition markers survive concat.
+    """
+    uncertainties: list[torch.Tensor] = []
+    all_mean_probs: list[torch.Tensor] = []
+    all_targets: list[torch.Tensor] = []
+
+    for inputs, targets_ in tqdm(loader, desc="Batch"):
+        inputs_dev = inputs.to(device)
+        if amp_enabled:
+            with torch.amp.autocast(device.type):
+                outputs_ = rep.predict(inputs_dev)
+                decision = decide(model, inputs_dev, rep_kwargs=rep_kwargs)
+        else:
+            outputs_ = rep.predict(inputs_dev)
+            decision = decide(model, inputs_dev, rep_kwargs=rep_kwargs)
+        uncertainty = cast("torch.Tensor", select_uncertainty(quantify(outputs_), decomposition))
+        uncertainties.append(uncertainty)
+        all_mean_probs.append(cast("torch.Tensor", decision))
+        all_targets.append(targets_)
+
+    return torch.cat(uncertainties), torch.cat(all_mean_probs), torch.cat(all_targets)
 
 
 @torch.no_grad()

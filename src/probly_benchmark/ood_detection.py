@@ -8,10 +8,9 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 from probly.evaluation.ood import evaluate_ood
-from probly.quantification import quantify
 from probly.representer import representer
 from probly_benchmark import calibration, data, utils
-from probly_benchmark.uncertainty import SUPPORTED_DECOMPOSITIONS, select_uncertainty
+from probly_benchmark.uncertainty import SUPPORTED_DECOMPOSITIONS
 from probly_benchmark.utils import init_wandb_for_evaluation, load_model_for_evaluation
 
 
@@ -42,18 +41,25 @@ def main(cfg: DictConfig) -> None:
         OmegaConf.to_container(cfg.method.ood_detection, resolve=True) if cfg.method.get("ood_detection") else {}
     )  # ty: ignore[invalid-assignment]
     rep = representer(model, **rep_kwargs)
-    print("Getting outputs...")
-    id_outputs, _ = utils.collect_outputs_targets(rep, id_loader, device, cfg.get("amp", False))
-    ood_outputs, _ = utils.collect_outputs_targets(rep, ood_loader, device, cfg.get("amp", False))
 
     if cfg.decomposition not in SUPPORTED_DECOMPOSITIONS:
         msg = f"Unsupported decomposition: {cfg.decomposition!r}. Choose from {SUPPORTED_DECOMPOSITIONS}."
         raise ValueError(msg)
 
-    id_decomposition = quantify(id_outputs)
-    ood_decomposition = quantify(ood_outputs)
-    id_uncertainties = select_uncertainty(id_decomposition, cfg.decomposition).detach().cpu().numpy()  # ty:ignore[unresolved-attribute]
-    ood_uncertainties = select_uncertainty(ood_decomposition, cfg.decomposition).detach().cpu().numpy()  # ty:ignore[unresolved-attribute]
+    print("Getting per-batch uncertainties...")
+    # Per-batch quantify preserves method-specific decomposition markers (PostNet, NatPN, EDL).
+    id_uncertainties = (
+        utils.collect_uncertainties(rep, id_loader, device, cfg.decomposition, cfg.get("amp", False))
+        .detach()
+        .cpu()
+        .numpy()
+    )
+    ood_uncertainties = (
+        utils.collect_uncertainties(rep, ood_loader, device, cfg.decomposition, cfg.get("amp", False))
+        .detach()
+        .cpu()
+        .numpy()
+    )
 
     ood_metrics = evaluate_ood(id_uncertainties, ood_uncertainties, metrics=cfg.get("metrics", "all"))
     auroc = ood_metrics["auroc"]
