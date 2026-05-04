@@ -1192,10 +1192,13 @@ def _(
     # swap to torch version of dataset for fit of laplace
     fit_loader = train_loader
     if cfg.dataset == "imagenet":
+        # KFAC with 1000 ImageNet classes stores CxC hessian square roots per sample;
+        # training batch_size (2048) causes OOM, so cap the fit batch at 32.
+        fit_batch_size = train_kwargs.get("fit_batch_size", 32)
         print(
-            "[laplace-fit] cfg.dataset='imagenet' uses webdataset, which doesn't satisfy "
-            "laplace-torch's `len(loader.dataset)` requirement, hence switching to the torchvision version. "
-            "Please consider whether splits are still correct."
+            f"[laplace-fit] cfg.dataset='imagenet' uses webdataset, which doesn't satisfy "
+            f"laplace-torch's `len(loader.dataset)` requirement, hence switching to the "
+            f"torchvision version (fit_batch_size={fit_batch_size})."
         )
         # swap to loader of torch
         fit_loader = data.get_data_train(
@@ -1203,7 +1206,7 @@ def _(
             cfg.seed,
             val_split=cfg.val_split,
             cal_split=cfg.get("cal_split", 0.0),
-            batch_size=cfg.batch_size,
+            batch_size=fit_batch_size,
             num_workers=cfg.num_workers,
             pin_memory=cfg.pin_memory,
             persistent_workers=cfg.persistent_workers,
