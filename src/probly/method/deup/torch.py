@@ -553,6 +553,16 @@ class LogDUEVariance(StationarizingFeatureProvider):
         self.eps = eps
         self._gp_model: Any | None = None
         self._likelihood: Any | None = None
+        self.register_buffer("_feat_mean", None)
+        self.register_buffer("_feat_std", None)
+
+    def _normalize_features(self, features: torch.Tensor) -> torch.Tensor:
+        """Standardize features using statistics computed during fitting."""
+        if self._feat_mean is None or self._feat_std is None:
+            return features
+        mean = self._feat_mean.to(features.device)
+        std = self._feat_std.to(features.device)
+        return (features - mean) / std
 
     def _build_svgp(self, inducing_points: torch.Tensor) -> tuple[Any, Any]:
         """Build the SVGP model and SoftmaxLikelihood from a set of inducing points."""
@@ -572,13 +582,59 @@ class LogDUEVariance(StationarizingFeatureProvider):
                 )
                 super().__init__(var_strat)
                 self.mean_module = gpytorch.means.ConstantMean(batch_shape=torch.Size([num_classes]))
-                self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
+                self.covar_module = gpytorch.kernels.ScaleKernel(
+                    gpytorch.kernels.RBFKernel(batch_shape=torch.Size([num_classes])),
+                    batch_shape=torch.Size([num_classes]),
+                )
 
             def forward(self, x: torch.Tensor) -> gpytorch.distributions.MultivariateNormal:
                 return gpytorch.distributions.MultivariateNormal(self.mean_module(x), self.covar_module(x))
 
         model = _SVGPModel(inducing_points)
         likelihood = gpytorch.likelihoods.SoftmaxLikelihood(num_features=num_classes, num_classes=num_classes)
+        return model, likelihood
+
+    def _train_svgp(
+        self,
+        features_cat: torch.Tensor,
+        labels_cat: torch.Tensor,
+        device: torch.device,
+    ) -> tuple[Any, Any]:
+        """Train the SVGP model and return (model, likelihood)."""
+        perm = torch.randperm(features_cat.size(0))[: self.n_inducing]
+        inducing_points = features_cat[perm]
+        model, likelihood = self._build_svgp(inducing_points)
+        model = model.to(device)
+        likelihood = likelihood.to(device)
+        mll = _gpytorch.mlls.VariationalELBO(likelihood, model, num_data=features_cat.size(0))
+        optimizer = torch.optim.Adam([*model.parameters(), *likelihood.parameters()], lr=self.gp_lr)
+        batch_size = 256
+        n_total = features_cat.size(0)
+        for epoch in range(self.gp_epochs):
+            model.train()
+            likelihood.train()
+            perm = torch.randperm(n_total)
+            epoch_loss = torch.zeros(1, device=device)
+            n_batches = 0
+            for i in tqdm(
+                range(0, n_total, batch_size), desc=f"DUE GP epoch {epoch + 1}/{self.gp_epochs}", leave=False
+            ):
+                idx = perm[i : i + batch_size]
+                bf = features_cat[idx].to(device, non_blocking=True)
+                bl = labels_cat[idx].to(device, non_blocking=True)
+                optimizer.zero_grad()
+                output = model(bf)
+                loss = -mll(output, bl)  # ty: ignore[unsupported-operator]
+                loss.backward()
+                optimizer.step()
+                epoch_loss += loss.detach()
+                n_batches += 1
+            if (epoch + 1) % 5 == 0 or epoch == self.gp_epochs - 1:
+                tqdm.write(
+                    f"DUE GP epoch {epoch + 1}/{self.gp_epochs}, ELBO={-epoch_loss.item() / max(n_batches, 1):.4f}"
+                )
+        model.eval()
+        likelihood.eval()
         return model, likelihood
 
     def _fit_internal(
@@ -609,47 +665,11 @@ class LogDUEVariance(StationarizingFeatureProvider):
         features_cat = torch.cat(all_features)
         labels_cat = torch.cat(all_labels).long()
 
-        perm = torch.randperm(features_cat.size(0))[: self.n_inducing]
-        inducing_points = features_cat[perm]
-        model, likelihood = self._build_svgp(inducing_points)
-        model = model.to(device)
-        likelihood = likelihood.to(device)
-        mll = _gpytorch.mlls.VariationalELBO(likelihood, model, num_data=features_cat.size(0))
-        optimizer = torch.optim.Adam([*model.parameters(), *likelihood.parameters()], lr=self.gp_lr)
+        self._feat_mean = features_cat.mean(dim=0)
+        self._feat_std = features_cat.std(dim=0).clamp(min=1e-6)
+        features_cat = self._normalize_features(features_cat)
 
-        batch_size = 256
-        n_total = features_cat.size(0)
-        for epoch in range(self.gp_epochs):
-            model.train()
-            likelihood.train()
-            perm = torch.randperm(n_total)
-            epoch_loss = torch.zeros(1, device=device)
-            n_batches = 0
-            batch_iter = tqdm(
-                range(0, n_total, batch_size),
-                desc=f"DUE GP epoch {epoch + 1}/{self.gp_epochs}",
-                leave=False,
-            )
-            for i in batch_iter:
-                idx = perm[i : i + batch_size]
-                bf = features_cat[idx].to(device, non_blocking=True)
-                bl = labels_cat[idx].to(device, non_blocking=True)
-                optimizer.zero_grad()
-                output = model(bf)
-                loss = -mll(output, bl)  # ty: ignore[unsupported-operator]
-                loss.backward()
-                optimizer.step()
-                epoch_loss += loss.detach()
-                n_batches += 1
-            if (epoch + 1) % 5 == 0 or epoch == self.gp_epochs - 1:
-                tqdm.write(
-                    f"DUE GP epoch {epoch + 1}/{self.gp_epochs}, ELBO={-epoch_loss.item() / max(n_batches, 1):.4f}"
-                )
-
-        model.eval()
-        likelihood.eval()
-        self._gp_model = model
-        self._likelihood = likelihood
+        self._gp_model, self._likelihood = self._train_svgp(features_cat, labels_cat, device)
         self._fit_scaler_from_features(features_cat, device)
 
     @torch.no_grad()
@@ -690,8 +710,9 @@ class LogDUEVariance(StationarizingFeatureProvider):
             msg = "LogDUEVariance must be fitted before forward(). Call fit() first."
             raise RuntimeError(msg)
         model = self._gp_model
+        norm_features = self._normalize_features(features.float())
         with torch.no_grad():
-            pred = model(features.to(next(model.parameters()).device).float())
+            pred = model(norm_features.to(next(model.parameters()).device))
             variance = pred.variance.sum(dim=-1, keepdim=True).to(features.device)
         return self._normalize(torch.log(variance + self.eps))
 
