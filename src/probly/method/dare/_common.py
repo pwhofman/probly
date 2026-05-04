@@ -9,7 +9,7 @@ from probly.quantification._quantification import decompose
 from probly.quantification.decomposition.decomposition import CachingDecomposition, EpistemicDecomposition
 from probly.quantification.measure.sample import (
     mean_squared_distance_to_scaled_one_hot,
-    measure_sample_variance,
+    sample_variance,
 )
 from probly.representation.representation import Representation
 from probly.representation.sample import Sample, SampleFactory, create_sample
@@ -92,7 +92,7 @@ class DAREDecomposition[T](CachingDecomposition, EpistemicDecomposition[T]):
     def _epistemic(self) -> T:
         """The DARE OOD score."""
         fit = mean_squared_distance_to_scaled_one_hot(self.sample, scale=self.target_scale)
-        dispersion = measure_sample_variance(self.sample).sum(self.class_axis)
+        dispersion = sample_variance(self.sample).sum(self.class_axis)
         return fit + dispersion
 
 

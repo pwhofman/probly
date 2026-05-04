@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import torch
 
-from probly.quantification._quantification import measure
+from probly.quantification import spectral_entropy
 from probly.representation.embedding.torch import TorchEmbedding, TorchEmbeddingSample
 
-type EmbeddingInput = TorchEmbedding | torch.Tensor
+type EmbeddingInput = TorchEmbedding | TorchEmbeddingSample | torch.Tensor
 
 
 def _embedding_tensor(embeddings: EmbeddingInput) -> torch.Tensor:
@@ -120,8 +120,8 @@ def von_neumann_entropy(kernel: torch.Tensor, *, eps: float = 1e-12) -> torch.Te
     return torch.where(valid_trace, entropy, torch.zeros_like(entropy))
 
 
-@measure.register(TorchEmbedding | TorchEmbeddingSample)
-def spectral_entropy(
+@spectral_entropy.register(TorchEmbedding | TorchEmbeddingSample)
+def torch_spectral_entropy(
     embeddings: EmbeddingInput,
     *,
     sample_dim: int | tuple[int, ...] = -1,

@@ -1,12 +1,12 @@
 """Uncertainty measures for samples."""
 
-from probly.lazy_types import TORCH_SAMPLE
+from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
 
-from ._common import mean_squared_distance_to_scaled_one_hot, measure_sample_variance
+from ._common import mean_squared_distance_to_scaled_one_hot, sample_variance
 from .array import array_mean_squared_distance_to_scaled_one_hot
 
 
-@mean_squared_distance_to_scaled_one_hot.delayed_register(TORCH_SAMPLE)
+@mean_squared_distance_to_scaled_one_hot.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
@@ -14,5 +14,5 @@ def _(_: type) -> None:
 __all__ = [
     "array_mean_squared_distance_to_scaled_one_hot",
     "mean_squared_distance_to_scaled_one_hot",
-    "measure_sample_variance",
+    "sample_variance",
 ]

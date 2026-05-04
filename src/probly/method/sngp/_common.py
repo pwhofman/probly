@@ -99,7 +99,7 @@ def register(cls: type, traverser: flexdispatch_traverser) -> None:
     traverser.register(cls=cls, traverser=sngp_traverser, vars={CLONE: True})
 
 
-@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)  # ty: ignore[invalid-argument-type]
+@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
 @SNGPPredictor.register_factory
 def sngp[**In, Out: GaussianDistribution](
     base: Predictor[In, Out],

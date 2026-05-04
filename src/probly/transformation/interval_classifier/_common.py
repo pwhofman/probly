@@ -35,7 +35,7 @@ interval_classifier_traverser = flexdispatch_traverser[object](name="interval_cl
 @predictor_transformation(
     permitted_predictor_types=(ProbabilisticClassifier, LogitClassifier),
     preserve_predictor_type=False,
-)  # ty:ignore[invalid-argument-type]
+)
 @IntervalClassifierPredictor.register_factory
 def interval_classifier[**In, Out: ProbabilityIntervalsCredalSet](
     base: Predictor[In, Out],

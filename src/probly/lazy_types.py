@@ -6,7 +6,6 @@ TORCH_MODULE = "torch.nn.modules.module.Module"
 TORCH_MODULE_LIST = "torch.nn.modules.container.ModuleList"
 TORCH_TENSOR = "torch.Tensor"
 TORCH_TENSOR_LIKE = "probly.representation.torch_like.TorchLikeImplementation"
-TORCH_SAMPLE = "probly.representation.sample.torch.TorchSample"
 
 FLAX_MODULE = "flax.nnx.module.Module"
 FLAX_LIST = "flax.nnx.list.List"

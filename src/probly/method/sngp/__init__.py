@@ -19,21 +19,13 @@ from ._common import (
 
 ## Torch
 @sngp_traverser.delayed_register(TORCH_MODULE)
+@reset_precision_matrix.delayed_register(TORCH_MODULE)
+@_collect_skipped_param_bearing_layer_classes.delayed_register(TORCH_MODULE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
 @compute_categorical_sample_from_logits.delayed_register((TORCH_TENSOR_LIKE, TORCH_TENSOR))
-def _(_: type) -> None:
-    from . import torch as torch  # noqa: PLC0415
-
-
-@reset_precision_matrix.delayed_register(TORCH_MODULE)
-def _(_: type) -> None:
-    from . import torch as torch  # noqa: PLC0415
-
-
-@_collect_skipped_param_bearing_layer_classes.delayed_register(TORCH_MODULE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 

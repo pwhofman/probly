@@ -64,8 +64,8 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
 
 @predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
 @BatchEnsemblePredictor.register_factory
-def batchensemble(
-    base: Predictor,
+def batchensemble[**In, Out](
+    base: Predictor[In, Out],
     num_members: int = NUM_MEMBERS.default,
     use_base_weights: bool = USE_BASE_WEIGHTS.default,
     init: InitMethod = INIT.default,
@@ -74,7 +74,7 @@ def batchensemble(
     s_mean: float = S_MEAN.default,
     s_std: float = S_STD.default,
     rngs: Rngs | int = RNGS.default,
-) -> BatchEnsemblePredictor:
+) -> BatchEnsemblePredictor[In, Out]:
     """Create a BatchEnsemble predictor from a base predictor based on :cite:`wenBatchEnsemble2020`.
 
     Replaces all linear and convolutional layers with their BatchEnsemble counterparts and tags
@@ -82,19 +82,19 @@ def batchensemble(
     Sample.
 
     Args:
-        base: Predictor, The model in which the layers will be replaced by BatchEnsemble layers.
-        num_members: int, The number of members in the BatchEnsemble.
-        use_base_weights: bool, Whether to use the weights of the base layer as initial weights.
+        base: The model in which the layers will be replaced by BatchEnsemble layers.
+        num_members: The number of members in the BatchEnsemble.
+        use_base_weights: Whether to use the weights of the base layer as initial weights.
         init: Initialization scheme for ``r`` and ``s`` - ``"normal"`` (Gaussian, imagenet
             baseline default) or ``"random_sign"`` ({-1, +1}, paper Appendix B).
-        r_mean: float, mean of the Gaussian initializer for ``r`` when ``init="normal"``.
-        r_std: float, standard deviation of the Gaussian initializer for ``r`` when ``init="normal"``.
-        s_mean: float, mean of the Gaussian initializer for ``s`` when ``init="normal"``.
-        s_std: float, standard deviation of the Gaussian initializer for ``s`` when ``init="normal"``.
-        rngs: nnx.Rngs | int, The rngs used for flax layer initialization.
+        r_mean: mean of the Gaussian initializer for ``r`` when ``init="normal"``.
+        r_std: standard deviation of the Gaussian initializer for ``r`` when ``init="normal"``.
+        s_mean: mean of the Gaussian initializer for ``s`` when ``init="normal"``.
+        s_std: standard deviation of the Gaussian initializer for ``s`` when ``init="normal"``.
+        rngs: The rngs used for flax layer initialization.
 
     Returns:
-        Predictor, The BatchEnsemble predictor.
+        The BatchEnsemble predictor.
 
     Raises:
         ValueError: If `num_members` is not a positive integer.

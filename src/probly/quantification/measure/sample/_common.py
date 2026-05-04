@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from flextype import flexdispatch
 from probly.quantification._quantification import measure_atomic
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 @measure_atomic.register(Sample)
-def measure_sample_variance(sample: Sample) -> Any:  # noqa: ANN401
+def sample_variance[T](sample: Sample[T]) -> T:
     """Measure uncertainty for samples via their sample variance."""
     return sample.sample_var()
 
