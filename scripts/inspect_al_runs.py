@@ -63,6 +63,12 @@ DEFAULT_OUT = "scripts/al_analysis_out"
 HISTORY_KEYS = ("iteration", "labeled_size", "test_accuracy")
 PROGRESS_EVERY = 25
 
+# ``plain`` was the pre-refactor name for the vanilla baseline (now ``base``);
+# it was removed in commit 261e4b0d ("refactored active learning") and is no
+# longer reproducible from current code. Old wandb runs tagged with it are
+# excluded from analysis to avoid mixing incomparable experiments.
+_DEPRECATED_METHODS: frozenset[str] = frozenset({"plain"})
+
 logger = logging.getLogger(__name__)
 
 
@@ -102,6 +108,17 @@ def _method_label(method: Any, **tweaks: Any) -> str:
             continue
         suffixes.append(str(value))
     return f"{method}+{'+'.join(suffixes)}" if suffixes else str(method)
+
+
+def _drop_deprecated_methods(df: pd.DataFrame) -> pd.DataFrame:
+    """Drop rows whose ``method`` is in :data:`_DEPRECATED_METHODS`.
+
+    Applied to both fresh fetches and cached pickles so that old runs from
+    pre-refactor methods (e.g. ``plain``) don't leak into the analysis.
+    """
+    if df.empty or "method" not in df.columns:
+        return df
+    return df[~df["method"].isin(_DEPRECATED_METHODS)].reset_index(drop=True)
 
 
 def _derive_method_labels(df: pd.DataFrame) -> pd.DataFrame:
@@ -184,8 +201,10 @@ def _flat_record(run: Any, source: str) -> dict[str, Any]:
 
 
 def _is_al_run(rec: dict[str, Any]) -> bool:
-    """Filter out non-AL runs (e.g. plain training runs) — they have no al_strategy."""
-    return rec.get("strategy") is not None
+    """Filter out non-AL runs (no al_strategy) and runs from deprecated methods."""
+    if rec.get("strategy") is None:
+        return False
+    return rec.get("method") not in _DEPRECATED_METHODS
 
 
 def fetch_one_source(source: str) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -253,6 +272,7 @@ def fetch_all(sources: list[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
     df_hist = pd.concat(hist_frames, ignore_index=True) if hist_frames else pd.DataFrame()
     if "seed" in df_runs.columns:
         df_runs["seed"] = pd.to_numeric(df_runs["seed"], errors="coerce").astype("Int64")
+    df_runs = _drop_deprecated_methods(df_runs)
     df_runs = _derive_method_labels(df_runs)
     return df_runs, df_hist
 
@@ -264,6 +284,7 @@ def load_or_fetch(sources: list[str], out_dir: Path, refresh: bool) -> tuple[pd.
         print(f"Loading cached runs from {runs_path}")
         df_runs_cached = cast("pd.DataFrame", pd.read_pickle(runs_path))  # noqa: S301
         df_hist_cached = cast("pd.DataFrame", pd.read_pickle(hist_path))  # noqa: S301
+        df_runs_cached = _drop_deprecated_methods(df_runs_cached)
         return _derive_method_labels(df_runs_cached), df_hist_cached
 
     df_runs, df_hist = fetch_all(sources)
@@ -394,12 +415,17 @@ def _strat_label(strategy: str | None, notion: str | None) -> str:
 
 
 _REFERENCE_STRATEGIES = ("margin", "random", "least_confident")
-# (label, color, hatch) for the four bars per method, in plotting order.
+# (label, color, hatch) for the bars per method, in plotting order. Methods that
+# don't have runs for a given strategy (e.g. dropout has no entropy or
+# least_confident runs) get an empty slot, but base / base+calibration /
+# base+supervised_loss variants render all six.
 _BAR_SERIES: tuple[tuple[str, str, str | None], ...] = (
     ("uncertainty:EU", "#1f77b4", None),
     ("uncertainty:TU", "#d62728", None),
     ("margin", "tab:green", "//"),
     ("random", "tab:gray", ".."),
+    ("least_confident", "tab:orange", "xx"),
+    ("entropy", "tab:purple", "++"),
 )
 _BASELINE_STYLES = {
     "margin": ("-", "tab:green"),
@@ -428,15 +454,18 @@ def plot_nauc_bars(df_runs: pd.DataFrame, out_dir: Path) -> None:  # noqa: PLR09
             for strat in _REFERENCE_STRATEGIES
         }
 
-        # Methods on x-axis: anything with at least one uncertainty:* run.
-        methods = sorted(sub[sub["strategy"] == "uncertainty"]["method_label"].dropna().unique())
+        # Methods on x-axis: every method label with at least one finished run on
+        # this dataset. Calibration / supervised_loss variants therefore appear
+        # alongside UQ methods even when they have no uncertainty:* runs (their
+        # EU/TU bars will simply be empty).
+        methods = sorted(sub["method_label"].dropna().unique())
         if not methods:
-            print(f"(no uncertainty:* runs for {dataset}; skipping)")
+            print(f"(no finished runs for {dataset}; skipping)")
             continue
 
         x = np.arange(len(methods))
         width = 0.8 / len(_BAR_SERIES)
-        fig, ax = plt.subplots(figsize=(max(8, 1.7 * len(methods)), 5.5))
+        fig, ax = plt.subplots(figsize=(max(8, 2.0 * len(methods)), 6.0))
 
         seed_counts: dict[str, dict[str, int]] = {m: {} for m in methods}
         # Track the lower edge of every drawn bar so we can compute a tight zoom y-min.
@@ -494,17 +523,22 @@ def plot_nauc_bars(df_runs: pd.DataFrame, out_dir: Path) -> None:  # noqa: PLR09
 
         def _xtick(method: str, counts_by_method: dict[str, dict[str, int]] = seed_counts) -> str:
             counts = counts_by_method[method]
-            parts = [f"EU={counts.get('uncertainty:EU', 0)}"]
-            if counts.get("uncertainty:TU", 0):
-                parts.append(f"TU={counts['uncertainty:TU']}")
-            parts.append(f"m={counts.get('margin', 0)}")
-            parts.append(f"r={counts.get('random', 0)}")
-            return f"{method}\nn: {' '.join(parts)}"
+            short = {
+                "uncertainty:EU": "EU",
+                "uncertainty:TU": "TU",
+                "margin": "m",
+                "random": "r",
+                "least_confident": "lc",
+                "entropy": "e",
+            }
+            parts = [f"{short[label]}={counts[label]}" for label, *_ in _BAR_SERIES if counts.get(label, 0)]
+            tally = " ".join(parts) if parts else "(no runs)"
+            return f"{method}\nn: {tally}"
 
         ax.set_xticks(x)
         ax.set_xticklabels([_xtick(m) for m in methods], rotation=15, ha="right", fontsize=8)
         ax.set_ylabel("NAUC")
-        ax.set_title(f"NAUC by method -- {dataset}  (uncertainty vs margin/random; `base` strategies as ref lines)")
+        ax.set_title(f"NAUC by method -- {dataset}  (all strategies per method; `base` strategies as ref lines)")
         ax.legend(fontsize=8, loc="lower right", ncol=2)
         ax.grid(axis="y", alpha=0.3)
         fig.tight_layout()
@@ -518,7 +552,7 @@ def plot_nauc_bars(df_runs: pd.DataFrame, out_dir: Path) -> None:  # noqa: PLR09
             top = ax.get_ylim()[1]
             pad = max(0.005, 0.05 * (top - lo))
             ax.set_ylim(lo - pad, top)
-            ax.set_title(f"NAUC by method -- {dataset}  (zoomed; uncertainty vs margin/random)")
+            ax.set_title(f"NAUC by method -- {dataset}  (zoomed; all strategies per method)")
             zoom_path = out_dir / f"nauc_{dataset}_zoom.png"
             fig.savefig(zoom_path, dpi=150)
             print(f"NAUC bars (zoom): {zoom_path}")
