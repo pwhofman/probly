@@ -45,6 +45,77 @@ def _to_float(x: Any) -> float | None:
         return None
 
 
+# Values that mean "no override" for each tweak field; anything else is treated
+# as part of the method identity for the purposes of plotting / inventorying.
+_DEFAULT_TWEAKS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("calibration", ("none",)),
+    ("supervised_loss", ("cross_entropy",)),
+    ("conformal", ("none",)),
+)
+
+
+def _method_label(method: Any, **tweaks: Any) -> str:
+    """Compose a method label that absorbs non-default calibration / loss / conformal.
+
+    Examples:
+        ``base`` -> ``base``
+        ``base`` + ``calibration=temperature_scaling`` -> ``base+temperature_scaling``
+        ``base`` + ``supervised_loss=label_smoothing`` -> ``base+label_smoothing``
+        ``dropout`` + ``calibration=temperature_scaling`` -> ``dropout+temperature_scaling``
+    """
+    if method is None or (isinstance(method, float) and pd.isna(method)):
+        return ""
+    suffixes: list[str] = []
+    for field, defaults in _DEFAULT_TWEAKS:
+        value = tweaks.get(field)
+        if value is None or (isinstance(value, float) and pd.isna(value)):
+            continue
+        if str(value) in defaults:
+            continue
+        suffixes.append(str(value))
+    return f"{method}+{'+'.join(suffixes)}" if suffixes else str(method)
+
+
+def _derive_method_labels(df: pd.DataFrame) -> pd.DataFrame:
+    """Add ``method_label`` (calibration/loss/conformal-aware) and rebuild ``config_key``.
+
+    Uses ``method_label`` instead of raw ``method`` so that e.g.
+    ``base+temperature_scaling|openml_6|margin`` is treated as a distinct config from
+    plain ``base|openml_6|margin`` everywhere downstream.
+    """
+    if df.empty:
+        return df
+    df = df.copy()
+
+    def _row(field: str, i: int) -> Any:
+        if field not in df.columns:
+            return None
+        return df[field].iloc[i]
+
+    df["method_label"] = [
+        _method_label(
+            df["method"].iloc[i],
+            calibration=_row("calibration", i),
+            supervised_loss=_row("supervised_loss", i),
+            conformal=_row("conformal", i),
+        )
+        for i in range(len(df))
+    ]
+
+    notion_suffix = df["notion"].apply(
+        lambda n: f":{n}" if n is not None and not (isinstance(n, float) and pd.isna(n)) else ""
+    )
+    df["config_key"] = (
+        df["method_label"].astype(str)
+        + "|"
+        + df["dataset"].astype(str)
+        + "|"
+        + df["strategy"].astype(str)
+        + notion_suffix
+    )
+    return df
+
+
 def _flat_record(run: Any, source: str) -> dict[str, Any]:
     cfg = run.config or {}
     method = (cfg.get("method") or {}).get("name")
@@ -97,8 +168,15 @@ def fetch_one_source(source: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     records: list[dict[str, Any]] = []
     history_frames: list[pd.DataFrame] = []
     skipped_non_al = 0
+    skipped_errors = 0
     for i, run in enumerate(runs, start=1):
-        rec = _flat_record(run, source=source)
+        try:
+            rec = _flat_record(run, source=source)
+        except Exception as e:  # noqa: BLE001
+            run_id = getattr(run, "id", "?")
+            logger.warning("_flat_record() failed for %s: %s", run_id, e)
+            skipped_errors += 1
+            continue
         if not _is_al_run(rec):
             skipped_non_al += 1
             continue
@@ -120,6 +198,8 @@ def fetch_one_source(source: str) -> tuple[pd.DataFrame, pd.DataFrame]:
 
     if skipped_non_al:
         print(f"  [{source}] skipped {skipped_non_al} non-AL runs (no al_strategy in config)")
+    if skipped_errors:
+        print(f"  [{source}] skipped {skipped_errors} runs due to wandb fetch errors (retry --refresh later)")
 
     df_runs = pd.DataFrame(records)
     df_hist = (
@@ -145,6 +225,7 @@ def fetch_all(sources: list[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
     df_hist = pd.concat(hist_frames, ignore_index=True) if hist_frames else pd.DataFrame()
     if "seed" in df_runs.columns:
         df_runs["seed"] = pd.to_numeric(df_runs["seed"], errors="coerce").astype("Int64")
+    df_runs = _derive_method_labels(df_runs)
     return df_runs, df_hist
 
 
@@ -155,7 +236,7 @@ def load_or_fetch(sources: list[str], out_dir: Path, refresh: bool) -> tuple[pd.
         print(f"Loading cached runs from {runs_path}")
         df_runs_cached = cast("pd.DataFrame", pd.read_pickle(runs_path))  # noqa: S301
         df_hist_cached = cast("pd.DataFrame", pd.read_pickle(hist_path))  # noqa: S301
-        return df_runs_cached, df_hist_cached
+        return _derive_method_labels(df_runs_cached), df_hist_cached
 
     df_runs, df_hist = fetch_all(sources)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -315,12 +396,12 @@ def plot_nauc_bars(df_runs: pd.DataFrame, out_dir: Path) -> None:  # noqa: PLR09
 
     for dataset, sub in finished.groupby("dataset"):
         baselines = {
-            strat: sub[(sub["method"] == "base") & (sub["strategy"] == strat)]["nauc"].mean()
+            strat: sub[(sub["method_label"] == "base") & (sub["strategy"] == strat)]["nauc"].mean()
             for strat in _REFERENCE_STRATEGIES
         }
 
         # Methods on x-axis: anything with at least one uncertainty:* run.
-        methods = sorted(sub[sub["strategy"] == "uncertainty"]["method"].dropna().unique())
+        methods = sorted(sub[sub["strategy"] == "uncertainty"]["method_label"].dropna().unique())
         if not methods:
             print(f"(no uncertainty:* runs for {dataset}; skipping)")
             continue
@@ -338,7 +419,7 @@ def plot_nauc_bars(df_runs: pd.DataFrame, out_dir: Path) -> None:  # noqa: PLR09
             means: list[float] = []
             stds: list[float] = []
             for method in methods:
-                pts = series_df[series_df["method"] == method]["nauc"].to_numpy()
+                pts = series_df[series_df["method_label"] == method]["nauc"].to_numpy()
                 seed_counts[method][label] = len(pts)
                 if len(pts):
                     m_val = float(np.mean(pts))
@@ -363,7 +444,7 @@ def plot_nauc_bars(df_runs: pd.DataFrame, out_dir: Path) -> None:  # noqa: PLR09
                 linewidth=0.4,
             )
             for j, method in enumerate(methods):
-                pts = series_df[series_df["method"] == method]["nauc"].to_numpy()
+                pts = series_df[series_df["method_label"] == method]["nauc"].to_numpy()
                 if len(pts):
                     ax.scatter(
                         np.full(len(pts), x[j] + offset),

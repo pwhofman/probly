@@ -1,23 +1,20 @@
 #!/usr/bin/env python3
-"""Run the openml_6 baseline + UQ sweep, skipping anything already finished in wandb.
+"""Run the openml_6 sweep, skipping anything already finished — fully offline.
 
-Mirrors the blocks of ``run_baselines_openml6.sh`` (baselines, calibration, supervised
-loss, UQ margin/random, UQ uncertainty EU, UQ uncertainty TU) but expands each Hydra
-``-m`` multirun into explicit per-combination commands and runs only those whose
-``(method, strategy, notion, seed, calibration, supervised_loss)`` tuple is not
-already finished in the configured wandb source(s).
+Covers all openml_6 settings (no conformal-prediction blocks):
 
-Default is a dry run: it lists missing combos. Pass ``--execute`` to actually launch.
+- Baselines: ``method=base`` x {margin, entropy, least_confident}
+- Calibration: ``method=base`` x {temperature_scaling, vector_scaling}
+- Supervised loss: ``method=base`` x {label_smoothing, label_relaxation}
+- UQ methods x {margin, random}
+- UQ uncertainty:EU and uncertainty:TU per method
 
-Sources of "already finished":
+Determines what's already done by reading a local ``.pkl`` / ``.csv`` (defaults to
+``scripts/al_analysis_out/wandb_cache_runs.pkl`` produced by
+``scripts/inspect_al_runs.py``). No wandb roundtrip happens here — refresh the
+cache first if you want fresh state.
 
-- ``--source ENTITY/PROJECT`` (live wandb query, default ``probly/max-test``).
-- ``--seed-file PATH`` (offline) reads finished combos from a ``.pkl`` (e.g. the
-  ``wandb_cache_runs.pkl`` produced by ``scripts/inspect_al_runs.py``) or a ``.csv``
-  with the same schema. Useful to combine multiple wandb projects globally without
-  another live query, or to mark things as done from a hand-rolled CSV.
-- Both flags are repeatable; the union of their finished combos is treated as 'done'.
-- Pass ``--no-wandb`` to rely solely on ``--seed-file`` inputs.
+Default is dry-run; pass ``--execute`` to actually launch missing combos.
 """
 # ruff: noqa: T201, ANN401, D103
 
@@ -31,14 +28,13 @@ import sys
 from typing import TYPE_CHECKING, Any, cast
 
 import pandas as pd
-import wandb
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
-# ---- Sweep spec (mirrors run_baselines_openml6.sh) ---------------------------------
+# ---- Sweep spec --------------------------------------------------------------------
 
-DEFAULT_FINISHED_SOURCES: tuple[str, ...] = ("probly/max-test",)
+DEFAULT_SEED_FILE = "scripts/al_analysis_out/wandb_cache_runs.pkl"
 DATASET = "openml_6"
 SEEDS: tuple[int, ...] = tuple(range(10))
 BASE_STRATEGIES: tuple[str, ...] = ("margin", "entropy", "least_confident")
@@ -55,7 +51,10 @@ UQ_METHODS: tuple[str, ...] = (
     "ddu",
 )
 UQ_TU_METHODS: tuple[str, ...] = tuple(m for m in UQ_METHODS if m != "ddu")
+CALIBRATIONS: tuple[str, ...] = ("temperature_scaling", "vector_scaling")
+SUPERVISED_LOSSES: tuple[str, ...] = ("label_smoothing", "label_relaxation")
 
+# Where to send the new runs we launch.
 WANDB_PROJECT = "max-test"
 WANDB_ENTITY = "probly"
 DEFAULT_DEVICE = "cpu"
@@ -67,7 +66,6 @@ Combo = dict[str, Any]
 
 
 def _norm(value: Any) -> str | None:
-    """Normalize None / 'none' / missing into None; everything else stringified."""
     if value is None:
         return None
     s = str(value)
@@ -96,10 +94,10 @@ def _row_value(row: pd.Series, col: str) -> Any:
 
 
 def load_seed_file(path: Path, dataset_full: str = DATASET) -> set[tuple[Any, ...]]:
-    """Load finished combos from a .pkl or .csv file with the inspect_al_runs cache schema.
+    """Load finished combos from a .pkl or .csv with the inspect_al_runs cache schema.
 
     Required columns: ``method``, ``strategy``, ``seed``, ``state``, ``dataset``.
-    Optional: ``notion``, ``calibration``, ``supervised_loss`` (default to None).
+    Optional: ``notion``, ``calibration``, ``supervised_loss``.
     """
     if path.suffix == ".pkl":
         df = cast("pd.DataFrame", pd.read_pickle(path))  # noqa: S301
@@ -141,51 +139,7 @@ def load_seed_file(path: Path, dataset_full: str = DATASET) -> set[tuple[Any, ..
     return keys
 
 
-# ---- Live wandb query for finished runs --------------------------------------------
-
-
-def fetch_finished_keys(sources: Iterable[str], dataset_full: str = DATASET) -> set[tuple[Any, ...]]:
-    api = wandb.Api()
-    keys: set[tuple[Any, ...]] = set()
-    for src in sources:
-        print(f"Querying wandb {src} for finished {dataset_full} runs...")
-        runs = api.runs(src, filters={"state": "finished"}, per_page=500)
-        n_seen = 0
-        n_match = 0
-        for run in runs:
-            n_seen += 1
-            cfg = run.config or {}
-            ds = (cfg.get("dataset") or {}).get("name")
-            ds_id = (cfg.get("dataset") or {}).get("openml_id")
-            ds_full = f"openml_{ds_id}" if ds == "openml" and ds_id is not None else ds
-            if ds_full != dataset_full:
-                continue
-            method = (cfg.get("method") or {}).get("name")
-            strat = (cfg.get("al_strategy") or {}).get("name")
-            notion = (cfg.get("al_strategy") or {}).get("notion") if strat == "uncertainty" else None
-            seed = cfg.get("seed")
-            calib = (cfg.get("calibration") or {}).get("name")
-            sup = (cfg.get("supervised_loss") or {}).get("name")
-            if method is None or strat is None or seed is None:
-                continue
-            keys.add(
-                _key(
-                    {
-                        "method": method,
-                        "strategy": strat,
-                        "notion": notion,
-                        "seed": seed,
-                        "calibration": calib,
-                        "supervised_loss": sup,
-                    }
-                )
-            )
-            n_match += 1
-        print(f"  [{src}] scanned {n_seen} finished runs, matched {n_match} on {dataset_full}")
-    return keys
-
-
-# ---- Block definitions (cartesian products, exactly as the bash) -------------------
+# ---- Block definitions -------------------------------------------------------------
 
 
 def block_combos() -> Iterator[tuple[str, list[Combo]]]:
@@ -194,19 +148,19 @@ def block_combos() -> Iterator[tuple[str, list[Combo]]]:
         [{"method": "base", "strategy": s, "seed": seed} for s in BASE_STRATEGIES for seed in SEEDS],
     )
     yield (
-        "Calibration (base + temp/vector scaling)",
+        f"Calibration (base + {{{', '.join(CALIBRATIONS)}}})",
         [
             {"method": "base", "strategy": s, "seed": seed, "calibration": cal}
-            for cal in ("temperature_scaling", "vector_scaling")
+            for cal in CALIBRATIONS
             for s in BASE_STRATEGIES
             for seed in SEEDS
         ],
     )
     yield (
-        "Supervised Loss (base + label_smoothing/relaxation)",
+        f"Supervised Loss (base + {{{', '.join(SUPERVISED_LOSSES)}}})",
         [
             {"method": "base", "strategy": s, "seed": seed, "supervised_loss": sup}
-            for sup in ("label_smoothing", "label_relaxation")
+            for sup in SUPERVISED_LOSSES
             for s in BASE_STRATEGIES
             for seed in SEEDS
         ],
@@ -266,31 +220,17 @@ def make_command(combo: Combo, *, device: str = DEFAULT_DEVICE) -> list[str]:
 # ---- CLI entry point ---------------------------------------------------------------
 
 
-def main(argv: Iterable[str] | None = None) -> int:  # noqa: C901, PLR0912, PLR0915
+def main(argv: Iterable[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument(
-        "--source",
-        action="append",
-        metavar="ENTITY/PROJECT",
-        help=(
-            "wandb source(s) whose finished runs count as 'done'. Pass multiple times. "
-            f"Defaults: {', '.join(DEFAULT_FINISHED_SOURCES)}"
-        ),
-    )
     p.add_argument(
         "--seed-file",
         action="append",
         metavar="PATH",
         help=(
-            "additional .pkl or .csv with finished AL runs (e.g. inspect_al_runs.py's "
-            "wandb_cache_runs.pkl) — its finished combos are unioned into the 'done' set. "
-            "Repeatable."
+            f"file(s) holding finished AL runs (.pkl or .csv with the inspect_al_runs schema). "
+            f"Repeatable; the union of all files is treated as 'done'. "
+            f"Default: {DEFAULT_SEED_FILE}"
         ),
-    )
-    p.add_argument(
-        "--no-wandb",
-        action="store_true",
-        help="skip live wandb query; rely entirely on --seed-file inputs.",
     )
     p.add_argument("--device", default=DEFAULT_DEVICE)
     p.add_argument("--execute", action="store_true", help="run missing combos (default: dry-run)")
@@ -303,32 +243,25 @@ def main(argv: Iterable[str] | None = None) -> int:  # noqa: C901, PLR0912, PLR0
         "--limit",
         type=int,
         default=None,
-        help="when --execute, run at most N missing combos and stop (useful to test).",
+        help="when --execute, run at most N missing combos and stop.",
     )
     args = p.parse_args(list(argv) if argv is not None else None)
 
-    sources = args.source or list(DEFAULT_FINISHED_SOURCES)
-    for s in sources:
-        if s.count("/") != 1 or not all(s.split("/")):
-            p.error(f"--source must be ENTITY/PROJECT, got {s!r}")
-
-    seed_files = [Path(p_).expanduser() for p_ in (args.seed_file or [])]
+    raw_seed_files = args.seed_file or [DEFAULT_SEED_FILE]
+    seed_files = [Path(s).expanduser() for s in raw_seed_files]
     for sf in seed_files:
         if not sf.exists():
-            p.error(f"--seed-file path does not exist: {sf}")
+            p.error(
+                f"seed file not found: {sf}\n"
+                f"Run `uv run python scripts/inspect_al_runs.py` first to generate the cache, "
+                f"or pass a custom --seed-file."
+            )
 
+    print(f"Reading {len(seed_files)} seed file(s) (no wandb roundtrip):")
     finished: set[tuple[Any, ...]] = set()
-    if not args.no_wandb:
-        finished |= fetch_finished_keys(sources)
-    elif not seed_files:
-        p.error("--no-wandb requires at least one --seed-file")
-
-    if seed_files:
-        print(f"Loading {len(seed_files)} seed file(s)...")
-        for sf in seed_files:
-            finished |= load_seed_file(sf)
-
-    print(f"Total finished {DATASET} combos across all sources: {len(finished)}\n")
+    for sf in seed_files:
+        finished |= load_seed_file(sf)
+    print(f"Total finished {DATASET} combos: {len(finished)}\n")
 
     missing: list[tuple[str, Combo]] = []
     grand_total = 0
