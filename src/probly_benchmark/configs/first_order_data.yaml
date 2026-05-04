@@ -1,0 +1,19 @@
+defaults:
+  - _self_
+  - supervised_loss: cross_entropy
+  - calibration: none
+  - conformal: none
+  - recipe: ???
+  - method: ???
+
+dataset: "cifar10"
+base_model: "resnet18"
+seed: 1
+val_split: 0.0
+cal_split: 0.0
+batch_size: 512
+amp: true
+wandb:
+  enabled: true
+  entity: "probly"
+  project: "cifar10-benchmark"

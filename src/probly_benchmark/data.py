@@ -608,6 +608,45 @@ def get_data_selective_prediction(
             raise ValueError(msg)
 
 
+def get_data_first_order_comparison(
+    name: str,
+    seed: int,  # noqa: ARG001
+    val_split: float = 0.0,  # noqa: ARG001
+    cal_split: float = 0.0,  # noqa: ARG001
+    **kwargs: Any,  # noqa: ANN401
+) -> DataLoader:
+    """Get the test loader for first-order data comparison.
+
+    Returns the test split for comparing model predictions against
+    ground-truth human label distributions (e.g. CIFAR-10H).
+    ``val_split`` and ``cal_split`` are accepted for API consistency and
+    future dataset support but are unused for CIFAR-10.
+
+    Args:
+        name: Dataset name. Currently only ``"cifar10"`` is supported.
+        seed: Random seed. Unused for CIFAR-10 (no random splitting).
+        val_split: Validation split fraction. Unused for CIFAR-10.
+        cal_split: Calibration split fraction. Unused for CIFAR-10.
+        **kwargs: Forwarded to :class:`~torch.utils.data.DataLoader`.
+
+    Returns:
+        DataLoader over the test set.
+
+    Raises:
+        ValueError: If ``name`` is not a recognised dataset.
+    """
+    name = name.lower()
+    match name:
+        case "cifar10":
+            test = torchvision.datasets.CIFAR10(
+                root=DATA_PATH, train=False, download=True, transform=TRANSFORMS_TEST[name]
+            )
+            return DataLoader(test, **kwargs)
+        case _:
+            msg = f"Dataset {name} not recognized"
+            raise ValueError(msg)
+
+
 def get_data_ood(
     name_id: str,
     name_ood: str,
