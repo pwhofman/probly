@@ -166,7 +166,7 @@ def collect_uncertainties_decisions_targets(
             decision = decide(model, inputs_dev, rep_kwargs=rep_kwargs)
         uncertainty = cast("torch.Tensor", select_uncertainty(quantify(outputs_), decomposition))
         uncertainties.append(uncertainty)
-        all_mean_probs.append(cast("torch.Tensor", decision))
+        all_mean_probs.append(cast("torch.Tensor", decision.probabilities))
         all_targets.append(targets_)
 
     return torch.cat(uncertainties), torch.cat(all_mean_probs), torch.cat(all_targets)
