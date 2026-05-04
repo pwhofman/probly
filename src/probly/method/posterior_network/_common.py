@@ -6,79 +6,56 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, override
 
 from probly.quantification.decomposition.decomposition import (
-    AleatoricEpistemicTotalDecomposition,
+    AleatoricEpistemicDecomposition,
     CachingDecomposition,
 )
-from probly.quantification.measure.distribution import (
-    entropy_of_expected_predictive_distribution,
-    max_probability_complement_of_expected,
-    vacuity,
-)
+from probly.quantification.measure.distribution import max_probability_complement_of_expected, vacuity
 
 if TYPE_CHECKING:
     from probly.quantification.measure.distribution import SecondOrderDistributionLike
-    from probly.quantification.measure.distribution._common import LogBase
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
 class PosteriorNetworkDecomposition[T](
     CachingDecomposition,
-    AleatoricEpistemicTotalDecomposition[T, T, T],
+    AleatoricEpistemicDecomposition[T, T],
 ):
     """Decomposition based on the Posterior Network.
 
-    Implements the uncertainty scoring functions of PostNet
-    :cite:`charpentierPosteriorNetwork2020`. For a Dirichlet posterior
-    Dir(alpha) with K classes and alpha_0 = sum_c alpha_c, the components are:
+    Implements the two uncertainty scoring functions formally proposed by
+    PostNet :cite:`charpentierPosteriorNetwork2020` in its Sec. 4 ("Metrics"):
 
-    - Total uncertainty: ``1 - max_c (alpha_c / alpha_0)``, the max-probability
-      complement of the predictive distribution. This is the score the paper
-      uses for confidence calibration / misclassification detection (the
-      "Alea. Conf" column in every results table), reported as the confidence
-      ``max_c p_bar_c`` and converted here to an uncertainty.
-    - Aleatoric uncertainty: ``H[Cat(alpha / alpha_0)]``, the entropy of the
-      aleatoric distribution. Used in Fig. 4 of the paper to visualize the
-      separation between in-distribution, out-of-distribution and out-of-domain
-      inputs.
+    - Aleatoric uncertainty: ``1 - max_c (alpha_c / alpha_0)``, the
+      max-probability complement of the predictive distribution. The paper
+      reports this as the *aleatoric confidence* score ``max_c p_bar_c``
+      ("Alea. Conf" / "OOD Alea" in every results table); this implementation
+      flips it to a complement so that high values indicate high uncertainty.
     - Epistemic uncertainty: ``K / alpha_0``, the vacuity introduced by
-      :cite:`sensoyEvidentialDeepLearning2018`. This is monotonically equivalent
-      (i.e. produces the same ranking) to the paper's "OOD Epist" score
-      ``alpha_0`` while being bounded in ``(0, 1]``.
+      :cite:`sensoyEvidentialDeepLearning2018`. This is monotonically
+      equivalent to the paper's *"OOD Epist"* score ``alpha_0`` while being
+      bounded in ``(0, 1]``.
 
-    The decomposition is non-additive: ``total != aleatoric + epistemic`` in
-    general, since the three quantities are different scoring functions rather
-    than an information-theoretic split. The total uncertainty is the score the
-    paper validates as the best at separating correct from incorrect
-    predictions, hence its choice as the canonical notion.
+    The paper does not formally propose a "total uncertainty" scoring
+    function; the predictive entropy used in Fig. 4 of the paper is also not
+    a formal aleatoric metric (it is only used for OOD/OODom histograms).
+    Consequently this decomposition has only aleatoric and epistemic slots,
+    and no canonical notion (both are equally valid).
 
     Args:
-        distribution: A second-order distribution (e.g. a Dirichlet) or a sample
-            from one. The total component requires a
-            ``max_probability_complement_of_expected`` implementation, the
-            aleatoric component requires an
-            ``entropy_of_expected_predictive_distribution`` implementation, and
+        distribution: A second-order distribution (e.g. a Dirichlet) or a
+            sample from one. The aleatoric component requires a
+            ``max_probability_complement_of_expected`` implementation, and
             the epistemic component requires a ``vacuity`` implementation
             registered for the input type.
-        base: Logarithm base used for the aleatoric (entropy-based) component.
-            ``None`` uses the natural logarithm. The total uncertainty is a
-            probability complement, and the epistemic uncertainty (vacuity) is
-            dimensionless; both are unaffected by ``base``.
     """
 
     distribution: SecondOrderDistributionLike
-    base: LogBase = None
-
-    @override
-    @property
-    def _total(self) -> T:
-        """The total uncertainty: max-probability complement of the predictive distribution."""
-        return max_probability_complement_of_expected(self.distribution)  # ty:ignore[invalid-return-type]
 
     @override
     @property
     def _aleatoric(self) -> T:
-        """The aleatoric uncertainty: entropy of the predictive distribution at the posterior mean."""
-        return entropy_of_expected_predictive_distribution(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
+        """The aleatoric uncertainty: max-probability complement of the predictive distribution."""
+        return max_probability_complement_of_expected(self.distribution)  # ty:ignore[invalid-return-type]
 
     @override
     @property
