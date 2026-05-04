@@ -12,5 +12,9 @@ params:
   use_base_weights: true
 train:
   samples: 1
+selective_prediction:
+    num_samples: 100
+ood_prediction:
+    num_samples: 100
 active_learning:
   num_samples: 50
