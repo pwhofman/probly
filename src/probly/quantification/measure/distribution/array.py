@@ -286,3 +286,22 @@ def array_dirichlet_vacuity(distribution: ArrayDirichletDistribution | np.ndarra
     num_classes = alphas.shape[-1]
     alpha_0 = np.sum(alphas, axis=-1)
     return np.asarray(num_classes / alpha_0)
+
+
+@max_probability_complement_of_expected.register(ArrayDirichletDistribution)
+def array_dirichlet_max_probability_complement_of_expected(
+    distribution: ArrayDirichletDistribution | np.ndarray,
+) -> np.ndarray:
+    """Compute one minus the max probability of the mean of a Dirichlet distribution.
+
+    Closed form: ``1 - max_c (alpha_c / alpha_0)``.
+    """
+    if isinstance(distribution, ArrayDirichletDistribution):
+        alphas = distribution.alphas
+        del distribution  # Avoid keeping a reference to the distribution for memory efficiency
+    else:
+        alphas = distribution
+
+    alpha_0 = np.sum(alphas, axis=-1, keepdims=True)
+    mean = alphas / alpha_0
+    return 1.0 - np.max(mean, axis=-1)

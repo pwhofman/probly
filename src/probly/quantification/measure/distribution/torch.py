@@ -214,3 +214,22 @@ def torch_dirichlet_vacuity(distribution: TorchDirichletDistribution | torch.Ten
     num_classes = alphas.shape[-1]
     alpha_0 = torch.sum(alphas, dim=-1)
     return torch.as_tensor(num_classes, dtype=alpha_0.dtype, device=alpha_0.device) / alpha_0
+
+
+@max_probability_complement_of_expected.register(TorchDirichletDistribution)
+def torch_dirichlet_max_probability_complement_of_expected(
+    distribution: TorchDirichletDistribution | torch.Tensor,
+) -> torch.Tensor:
+    """Compute one minus the max probability of the mean of a torch Dirichlet distribution.
+
+    Closed form: ``1 - max_c (alpha_c / alpha_0)``.
+    """
+    if isinstance(distribution, TorchDirichletDistribution):
+        alphas = distribution.alphas
+        del distribution  # Avoid keeping a reference to the distribution for memory efficiency
+    else:
+        alphas = distribution
+
+    alpha_0 = torch.sum(alphas, dim=-1, keepdim=True)
+    mean = alphas / alpha_0
+    return 1.0 - torch.max(mean, dim=-1).values

@@ -321,3 +321,44 @@ def test_torch_dirichlet_vacuity_propagates_gradients() -> None:
     assert grad is not None
     expected_grad = -torch.full_like(alphas, 3.0 / (10.0**2))
     assert torch.allclose(grad, expected_grad, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_dirichlet_max_probability_complement_of_expected_known_values() -> None:
+    alphas = torch.tensor(
+        [
+            [1.0, 1.0, 1.0],  # uniform: max(1/3) -> 1 - 1/3 = 2/3
+            [10.0, 1.0, 1.0],  # max = 10/12 -> 1 - 5/6 = 1/6
+            [2.0, 3.0, 5.0],  # max = 5/10 -> 1 - 1/2 = 1/2
+        ],
+        dtype=torch.float64,
+    )
+    distribution = TorchDirichletDistribution(alphas=alphas)
+
+    measured = max_probability_complement_of_expected(distribution)
+
+    expected = torch.tensor([2.0 / 3.0, 1.0 / 6.0, 0.5], dtype=torch.float64)
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_dirichlet_max_probability_complement_of_expected_matches_explicit_formula() -> None:
+    generator = torch.Generator().manual_seed(0)
+    alphas = 0.5 + 19.5 * torch.rand((50, 5), generator=generator, dtype=torch.float64)
+    distribution = TorchDirichletDistribution(alphas=alphas)
+
+    measured = max_probability_complement_of_expected(distribution)
+
+    expected_mean = alphas / alphas.sum(dim=-1, keepdim=True)
+    expected = 1.0 - torch.max(expected_mean, dim=-1).values
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_dirichlet_max_probability_complement_of_expected_propagates_gradients() -> None:
+    alphas = torch.tensor([2.0, 3.0, 5.0], dtype=torch.float64, requires_grad=True)
+    distribution = TorchDirichletDistribution(alphas=alphas)
+
+    measured = max_probability_complement_of_expected(distribution)
+    measured.backward()
+
+    grad = alphas.grad
+    assert grad is not None
+    assert torch.isfinite(grad).all()

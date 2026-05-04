@@ -363,3 +363,57 @@ def test_array_dirichlet_vacuity_decreases_with_evidence() -> None:
     strong = ArrayDirichletDistribution(np.array([100.0, 100.0, 100.0], dtype=float))
 
     assert vacuity(weak) > vacuity(strong)
+
+
+def test_array_dirichlet_max_probability_complement_of_expected_known_values() -> None:
+    alphas = np.array(
+        [
+            [1.0, 1.0, 1.0],  # uniform: max(1/3) -> 1 - 1/3 = 2/3
+            [10.0, 1.0, 1.0],  # max = 10/12 -> 1 - 5/6 = 1/6
+            [2.0, 3.0, 5.0],  # max = 5/10 -> 1 - 1/2 = 1/2
+        ],
+        dtype=float,
+    )
+    distribution = ArrayDirichletDistribution(alphas)
+
+    measured = max_probability_complement_of_expected(distribution)
+
+    expected = np.array([2.0 / 3.0, 1.0 / 6.0, 0.5])
+    np.testing.assert_allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_array_dirichlet_max_probability_complement_of_expected_matches_explicit_formula() -> None:
+    rng = np.random.default_rng(seed=0)
+    alphas = rng.uniform(low=0.5, high=20.0, size=(50, 5))
+    distribution = ArrayDirichletDistribution(alphas)
+
+    measured = max_probability_complement_of_expected(distribution)
+
+    expected_mean = alphas / alphas.sum(axis=-1, keepdims=True)
+    expected = 1.0 - np.max(expected_mean, axis=-1)
+    np.testing.assert_allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_array_dirichlet_max_probability_complement_of_expected_lies_in_unit_interval() -> None:
+    rng = np.random.default_rng(seed=1)
+    alphas = rng.uniform(low=0.1, high=50.0, size=(50, 6))
+    distribution = ArrayDirichletDistribution(alphas)
+
+    measured = max_probability_complement_of_expected(distribution)
+
+    assert np.all(measured >= 0.0)
+    assert np.all(measured < 1.0)
+
+
+def test_array_dirichlet_max_probability_complement_of_expected_invariant_to_scaling() -> None:
+    """Scaling the alphas by a constant leaves the predictive mean (and thus the score) unchanged."""
+    base = np.array([1.0, 2.0, 3.0], dtype=float)
+    weak = ArrayDirichletDistribution(base)
+    strong = ArrayDirichletDistribution(100.0 * base)
+
+    np.testing.assert_allclose(
+        max_probability_complement_of_expected(weak),
+        max_probability_complement_of_expected(strong),
+        rtol=1e-12,
+        atol=1e-12,
+    )

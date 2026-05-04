@@ -35,9 +35,7 @@ def test_array_decomposition_components_match_measure_functions(base: None | flo
 
     decomposition = NaturalPosteriorDecomposition(distribution, base=base)
 
-    np.testing.assert_allclose(
-        decomposition.total, entropy(distribution, base=base), rtol=1e-12, atol=1e-12
-    )
+    np.testing.assert_allclose(decomposition.total, entropy(distribution, base=base), rtol=1e-12, atol=1e-12)
     np.testing.assert_allclose(
         decomposition.aleatoric,
         entropy_of_expected_predictive_distribution(distribution, base=base),

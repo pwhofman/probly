@@ -14,7 +14,13 @@ from ._common import (
     mutual_information,
     vacuity,
 )
-from .array import array_categorical_entropy, array_dirichlet_entropy, array_dirichlet_vacuity, array_gaussian_entropy
+from .array import (
+    array_categorical_entropy,
+    array_dirichlet_entropy,
+    array_dirichlet_max_probability_complement_of_expected,
+    array_dirichlet_vacuity,
+    array_gaussian_entropy,
+)
 
 
 @entropy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
@@ -34,6 +40,7 @@ __all__ = [
     "SecondOrderDistributionLike",
     "array_categorical_entropy",
     "array_dirichlet_entropy",
+    "array_dirichlet_max_probability_complement_of_expected",
     "array_dirichlet_vacuity",
     "array_gaussian_entropy",
     "conditional_entropy",
