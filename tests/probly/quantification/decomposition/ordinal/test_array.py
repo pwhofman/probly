@@ -28,6 +28,7 @@ from probly.quantification.decomposition.ordinal import (
     ordinal_binary_variance_aleatoric,
     ordinal_binary_variance_total,
 )
+from probly.quantification.measure.ordinal import labelwise_entropy, labelwise_variance
 from probly.quantification.notion import AleatoricUncertainty, EpistemicUncertainty, TotalUncertainty
 from probly.representation.distribution.array_categorical import (
     ArrayCategoricalDistribution,
@@ -252,3 +253,54 @@ def test_ordinal_entropy_with_log_base() -> None:
 
     np.testing.assert_allclose(d_bits.total, d_nats.total / np.log(2), rtol=1e-12)
     np.testing.assert_allclose(d_norm.total, d_nats.total / np.log(2), rtol=1e-12)
+
+
+def _bh(x: np.ndarray) -> np.ndarray:
+    return scipy_entropy(np.stack([x, 1.0 - x], axis=-1), axis=-1)
+
+
+def test_labelwise_entropy_vs_manual_formula() -> None:
+    sample = _categorical_sample()
+    p = sample.array.probabilities  # (M=3, N=2, K=3)
+    axis = sample.sample_axis
+    p_bar = np.mean(p, axis=axis)  # (N=2, K=3)
+
+    expected_tu = np.sum(_bh(p_bar), axis=-1)
+    expected_au = np.mean(np.sum(_bh(p), axis=-1), axis=axis)
+
+    d = LabelwiseBinaryEntropyDecomposition(sample)
+    np.testing.assert_allclose(d.total, expected_tu, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(d.aleatoric, expected_au, rtol=1e-12, atol=1e-12)
+
+
+def test_labelwise_variance_vs_manual_formula() -> None:
+    sample = _categorical_sample()
+    p = sample.array.probabilities  # (M, N, K)
+    axis = sample.sample_axis
+    p_bar = np.mean(p, axis=axis)  # (N, K)
+
+    expected_tu = np.sum(p_bar * (1.0 - p_bar), axis=-1)
+    expected_au = np.mean(np.sum(p * (1.0 - p), axis=-1), axis=axis)
+
+    d = LabelwiseBinaryVarianceDecomposition(sample)
+    np.testing.assert_allclose(d.total, expected_tu, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(d.aleatoric, expected_au, rtol=1e-12, atol=1e-12)
+
+
+def test_labelwise_single_distribution_measures() -> None:
+    probs = np.array([[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]], dtype=float)
+    dist = ArrayCategoricalDistribution(probs)
+    p = dist.probabilities  # (N=2, K=3)
+
+    np.testing.assert_allclose(labelwise_entropy(dist), np.sum(_bh(p), axis=-1), rtol=1e-12)
+    np.testing.assert_allclose(labelwise_variance(dist), np.sum(p * (1.0 - p), axis=-1), rtol=1e-12)
+
+
+def test_labelwise_entropy_with_log_base() -> None:
+    sample = _categorical_sample()
+    d_nats = LabelwiseBinaryEntropyDecomposition(sample, base=None)
+    d_bits = LabelwiseBinaryEntropyDecomposition(sample, base=2)
+    d_norm = LabelwiseBinaryEntropyDecomposition(sample, base="normalize")
+
+    np.testing.assert_allclose(d_bits.total, d_nats.total / np.log(2), rtol=1e-12)
+    np.testing.assert_allclose(d_norm.total, d_bits.total, rtol=1e-12)

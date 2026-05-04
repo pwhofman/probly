@@ -15,6 +15,7 @@ from probly.quantification import (  # noqa: E402
     OrdinalEntropyDecomposition,
     OrdinalVarianceDecomposition,
 )
+from probly.quantification.measure.ordinal import labelwise_entropy, labelwise_variance  # noqa: E402
 from probly.representation.distribution.array_categorical import (  # noqa: E402
     ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
@@ -172,6 +173,58 @@ def test_torch_ordinal_entropy_with_log_base() -> None:
     d_nats = OrdinalEntropyDecomposition(sample, base=None)
     d_bits = OrdinalEntropyDecomposition(sample, base=2)
     d_norm = OrdinalEntropyDecomposition(sample, base="normalize")
+
+    torch.testing.assert_close(d_bits.total, d_nats.total / torch.log(torch.tensor(2.0, dtype=torch.float64)))
+    torch.testing.assert_close(d_norm.total, d_bits.total)
+
+
+def _torch_bh(p: torch.Tensor) -> torch.Tensor:
+    p_c = torch.stack([p, 1.0 - p], dim=-1)
+    return -torch.sum(torch.xlogy(p_c, p_c), dim=-1)
+
+
+def test_torch_labelwise_entropy_vs_manual_formula() -> None:
+    sample = _categorical_sample()
+    p = sample.tensor.probabilities  # (M=3, N=2, K=3)
+    axis = sample.sample_axis
+    p_bar = torch.mean(p, dim=axis)  # (N=2, K=3)
+
+    expected_tu = torch.sum(_torch_bh(p_bar), dim=-1)
+    expected_au = torch.mean(torch.sum(_torch_bh(p), dim=-1), dim=axis)
+
+    d = LabelwiseBinaryEntropyDecomposition(sample)
+    torch.testing.assert_close(d.total, expected_tu)
+    torch.testing.assert_close(d.aleatoric, expected_au)
+
+
+def test_torch_labelwise_variance_vs_manual_formula() -> None:
+    sample = _categorical_sample()
+    p = sample.tensor.probabilities  # (M, N, K)
+    axis = sample.sample_axis
+    p_bar = torch.mean(p, dim=axis)  # (N, K)
+
+    expected_tu = torch.sum(p_bar * (1.0 - p_bar), dim=-1)
+    expected_au = torch.mean(torch.sum(p * (1.0 - p), dim=-1), dim=axis)
+
+    d = LabelwiseBinaryVarianceDecomposition(sample)
+    torch.testing.assert_close(d.total, expected_tu)
+    torch.testing.assert_close(d.aleatoric, expected_au)
+
+
+def test_torch_labelwise_single_distribution_measures() -> None:
+    probs = torch.tensor([[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]], dtype=torch.float64)
+    dist = TorchCategoricalDistribution(probs)
+    p = dist.probabilities  # (N=2, K=3)
+
+    torch.testing.assert_close(labelwise_entropy(dist), torch.sum(_torch_bh(p), dim=-1))
+    torch.testing.assert_close(labelwise_variance(dist), torch.sum(p * (1.0 - p), dim=-1))
+
+
+def test_torch_labelwise_entropy_with_log_base() -> None:
+    sample = _categorical_sample()
+    d_nats = LabelwiseBinaryEntropyDecomposition(sample, base=None)
+    d_bits = LabelwiseBinaryEntropyDecomposition(sample, base=2)
+    d_norm = LabelwiseBinaryEntropyDecomposition(sample, base="normalize")
 
     torch.testing.assert_close(d_bits.total, d_nats.total / torch.log(torch.tensor(2.0, dtype=torch.float64)))
     torch.testing.assert_close(d_norm.total, d_bits.total)
