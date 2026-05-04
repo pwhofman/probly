@@ -57,7 +57,7 @@ class TorchEmbeddingSample(  # ty:ignore[conflicting-metaclass]
 
 class TorchEmbeddingSampleSample(  # ty:ignore[conflicting-metaclass]
     EmbeddingSampleSample[TorchEmbedding],
-    TorchSample[TorchEmbeddingSample[TorchEmbedding]],
+    TorchSample[Any],
 ):
     """A torch sample of embedding samples."""
 
