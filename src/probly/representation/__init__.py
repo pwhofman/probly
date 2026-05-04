@@ -8,6 +8,7 @@ from .credal_set import (
     CredalSetType,
     DiscreteCredalSet,
 )
+from .embedding import TorchEmbedding, TorchEmbeddingSample, TorchEmbeddingSampleSample
 from .representation import Representation
 from .sample import Sample
 
@@ -20,4 +21,7 @@ __all__ = [
     "DiscreteCredalSet",
     "Representation",
     "Sample",
+    "TorchEmbedding",
+    "TorchEmbeddingSample",
+    "TorchEmbeddingSampleSample",
 ]

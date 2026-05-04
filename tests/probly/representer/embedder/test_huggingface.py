@@ -10,7 +10,12 @@ import pytest
 pytest.importorskip("torch")
 import torch
 
-from probly.representation.text_generation import TorchTextGeneration, TorchTextGenerationSample
+from probly.representation.embedding import TorchEmbedding, TorchEmbeddingSample, TorchEmbeddingSampleSample
+from probly.representation.text_generation import (
+    TorchTextGeneration,
+    TorchTextGenerationSample,
+    TorchTextGenerationSampleSample,
+)
 from probly.representer.embedder import DEFAULT_EMBEDDING_MODEL, HFTextEmbedder
 
 
@@ -51,10 +56,10 @@ def test_embedder_embeds_raw_text_generation_as_tensor() -> None:
 
     embeddings = HFTextEmbedder(model, batch_size=7, normalize_embeddings=False)(generation)
 
-    assert isinstance(embeddings, torch.Tensor)
-    assert embeddings.shape == (2, 2, 2)
+    assert isinstance(embeddings, TorchEmbedding)
+    assert embeddings.shape == (2, 2)
     assert torch.equal(
-        embeddings,
+        embeddings.embeddings,
         torch.tensor(
             [
                 [[5.0, 0.0], [1.0, 1.0]],
@@ -82,9 +87,35 @@ def test_embedder_embeds_text_generation_sample_without_wrapping_output() -> Non
 
     embeddings = HFTextEmbedder(model)(sample)
 
-    assert isinstance(embeddings, torch.Tensor)
-    assert embeddings.shape == (1, 3, 2)
+    assert isinstance(embeddings, TorchEmbeddingSample)
+    assert embeddings.shape == (1, 3)
+    assert embeddings.sample_dim == 1
+    assert torch.equal(embeddings.weights, torch.tensor([0.2, 0.3, 0.5]))
     assert model.calls[0]["sentences"] == ["first", "second", "third"]
+
+
+def test_embedder_preserves_nested_text_generation_sample_wrapping() -> None:
+    model = FakeEmbeddingModel()
+    generation = TorchTextGeneration(
+        text=np.asarray([["a", "bb"], ["ccc", "dddd"]], dtype=object),
+        log_likelihood=torch.zeros((2, 2)),
+    )
+    inner_sample = TorchTextGenerationSample(tensor=generation, sample_dim=1)
+    outer_sample = TorchTextGenerationSampleSample(
+        tensor=inner_sample,
+        sample_dim=0,
+        weights=torch.tensor([0.25, 0.75]),
+    )
+
+    embeddings = HFTextEmbedder(model)(outer_sample)
+
+    assert isinstance(embeddings, TorchEmbeddingSampleSample)
+    assert embeddings.sample_dim == 0
+    assert torch.equal(embeddings.weights, torch.tensor([0.25, 0.75]))
+    assert isinstance(embeddings.tensor, TorchEmbeddingSample)
+    assert embeddings.tensor.sample_dim == 1
+    assert embeddings.tensor.tensor.shape == (2, 2)
+    assert embeddings.tensor.tensor.protected_shape == (2,)
 
 
 def test_embedder_coerces_numpy_embeddings_to_torch_tensor() -> None:
@@ -95,9 +126,9 @@ def test_embedder_coerces_numpy_embeddings_to_torch_tensor() -> None:
 
     embeddings = HFTextEmbedder(FakeNumpyEmbeddingModel())(generation)
 
-    assert isinstance(embeddings, torch.Tensor)
+    assert isinstance(embeddings, TorchEmbedding)
     assert embeddings.dtype == torch.float32
-    assert torch.equal(embeddings, torch.tensor([[4.0, 0.0]]))
+    assert torch.equal(embeddings.embeddings, torch.tensor([[4.0, 0.0]]))
 
 
 def test_embedder_rejects_empty_generation() -> None:

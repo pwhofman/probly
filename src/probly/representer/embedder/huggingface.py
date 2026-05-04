@@ -7,7 +7,12 @@ from typing import TYPE_CHECKING, Any, Protocol, Self
 
 import torch
 
-from probly.representation.text_generation import TorchTextGeneration, TorchTextGenerationSample
+from probly.representation.embedding import TorchEmbedding, TorchEmbeddingSample, TorchEmbeddingSampleSample
+from probly.representation.text_generation import (
+    TorchTextGeneration,
+    TorchTextGenerationSample,
+    TorchTextGenerationSampleSample,
+)
 from probly.representer._representer import Representer
 
 if TYPE_CHECKING:
@@ -17,7 +22,8 @@ if TYPE_CHECKING:
 
 DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
 
-type TextEmbedInput = TorchTextGeneration | TorchTextGenerationSample
+type TextEmbedInput = TorchTextGeneration | TorchTextGenerationSample | TorchTextGenerationSampleSample
+type TextEmbedOutput = TorchEmbedding | TorchEmbeddingSample | TorchEmbeddingSampleSample
 
 
 class SentenceTransformerLike(Protocol):
@@ -27,7 +33,7 @@ class SentenceTransformerLike(Protocol):
         """Embed a list of sentences."""
 
 
-class HFTextEmbedder(Representer[Any, Any, torch.Tensor, Any]):
+class HFTextEmbedder(Representer[Any, Any, torch.Tensor, TextEmbedOutput]):
     """Embed text generations using a Hugging Face sentence-transformers model."""
 
     model: SentenceTransformerLike
@@ -104,7 +110,7 @@ class HFTextEmbedder(Representer[Any, Any, torch.Tensor, Any]):
         """The underlying embedding model."""
         return self.model
 
-    def _embed_text(self, generation: TorchTextGeneration) -> torch.Tensor:
+    def _embed_text(self, generation: TorchTextGeneration) -> TorchEmbedding:
         text = generation.text
         if text.size == 0:
             msg = "Cannot embed an empty text generation."
@@ -128,21 +134,45 @@ class HFTextEmbedder(Representer[Any, Any, torch.Tensor, Any]):
             msg = f"Embedding model returned {tensor.shape[0]} embeddings for {len(flat_text)} texts."
             raise ValueError(msg)
 
-        return tensor.reshape((*generation.shape, tensor.shape[-1]))
+        return TorchEmbedding(tensor.reshape((*generation.shape, tensor.shape[-1])))
 
-    def represent(self, generation: TextEmbedInput) -> torch.Tensor:
+    def _sample_weights_tensor(self, weights: object, *, device: torch.device) -> torch.Tensor | None:
+        if weights is None:
+            return None
+
+        return torch.as_tensor(weights, dtype=torch.float32, device=device)
+
+    def represent(self, generation: TextEmbedInput) -> TextEmbedOutput:
         """Embed text generations.
 
         Args:
             generation: Text generation representation or sample.
 
         Returns:
-            Embeddings with shape ``(*generation.shape, embedding_dim)``.
+            Embeddings with the same sample wrapping as ``generation``.
         """
+        if isinstance(generation, TorchTextGenerationSampleSample):
+            embeddings = self.represent(generation.tensor)
+            if not isinstance(embeddings, TorchEmbeddingSample):
+                msg = "Nested text generation samples must contain a single inner sample axis."
+                raise TypeError(msg)
+            return TorchEmbeddingSampleSample(
+                tensor=embeddings,
+                sample_dim=generation.sample_dim,
+                weights=self._sample_weights_tensor(generation.weights, device=embeddings.device),
+            )
+
         if isinstance(generation, TorchTextGenerationSample):
-            return self._embed_text(generation.tensor)
+            embeddings = self._embed_text(generation.tensor)
+            return TorchEmbeddingSample(
+                tensor=embeddings,
+                sample_dim=generation.sample_dim,
+                weights=self._sample_weights_tensor(generation.weights, device=embeddings.device),
+            )
 
         if not isinstance(generation, TorchTextGeneration):
-            msg = "generation must be a TorchTextGeneration or TorchTextGenerationSample."
+            msg = (
+                "generation must be a TorchTextGeneration, TorchTextGenerationSample, or nested text generation sample."
+            )
             raise TypeError(msg)
         return self._embed_text(generation)
