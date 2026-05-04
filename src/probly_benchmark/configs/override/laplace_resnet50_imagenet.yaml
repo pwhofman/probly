@@ -5,6 +5,9 @@
 method:
   train:
     pred_type: "nn"
+    # laplace-torch hard-requires link_approx="mc" whenever pred_type="nn"
+    # (the closed-form probit/bridge approximations are GLM-only).
+    link_approx: "mc"
     # KFAC stores per-sample 1000x1000 Hessian square roots; train batch (2048) OOMs.
     fit_batch_size: 32
     # Iterating the full 1.28M-image train set at batch=32 is ~40k batches; the Hessian
