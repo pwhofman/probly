@@ -75,7 +75,6 @@ __all__ = [
     "mean_squared_distance_to_scaled_one_hot",
     "measure",
     "measure_atomic",
-    "measure_conformal_set_size",
     "mutual_information",
     "notion_registry",
     "quantify",
