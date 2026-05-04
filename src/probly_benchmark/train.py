@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from probly.layers.torch import GaussianMixtureHead
 
 
+import contextlib
 import gc
 import pathlib
 import tempfile
@@ -454,6 +455,30 @@ def _(
         )
 
 
+def _shutdown_dataloader_workers(loader: DataLoader, name: str) -> None:
+    """Force any persistent worker processes held by ``loader`` to exit.
+
+    Args:
+        loader: The DataLoader whose persistent workers should be terminated.
+        name: Human-readable loader name used in the log line (e.g. ``"train"``,
+            ``"val"``).
+    """
+    iterator = getattr(loader, "_iterator", None)
+    if iterator is None:
+        return
+    shutdown = getattr(iterator, "_shutdown_workers", None)
+    if shutdown is not None:
+        # Iterator may already be partially torn down; best-effort cleanup.
+        with contextlib.suppress(Exception):
+            shutdown()
+    loader._iterator = None  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+    gc.collect()
+    print(
+        f"[subensemble] Shut down persistent {name}_loader workers between members "
+        f"to release file handles / shared memory."
+    )
+
+
 @train_model.register(SubensemblePredictor)
 def _(
     model: SubensemblePredictor,
@@ -485,6 +510,9 @@ def _(
             log_prefix=f"member_{i}/",
             param_groups=[{"params": trainable}],
         )
+        _shutdown_dataloader_workers(train_loader, "train")
+        if val_loader is not None:
+            _shutdown_dataloader_workers(val_loader, "val")
 
 
 def _split_batchensemble_params(
