@@ -1,5 +1,15 @@
 """Variance-based decomposition methods."""
 
-from ._common import OrdinalIntegerVarianceDecomposition, SecondOrderVarianceDecomposition
+from ._common import (
+    CategoricalVarianceDecomposition,
+    GaussianVarianceDecomposition,
+    OrdinalIntegerVarianceDecomposition,
+    SecondOrderVarianceDecomposition,
+)
 
-__all__ = ["OrdinalIntegerVarianceDecomposition", "SecondOrderVarianceDecomposition"]
+__all__ = [
+    "CategoricalVarianceDecomposition",
+    "GaussianVarianceDecomposition",
+    "OrdinalIntegerVarianceDecomposition",
+    "SecondOrderVarianceDecomposition",
+]

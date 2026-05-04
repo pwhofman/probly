@@ -14,9 +14,13 @@ from .decomposition import (
     AleatoricEpistemicDecomposition,
     AleatoricEpistemicTotalDecomposition,
     CachingDecomposition,
+    CategoricalVarianceDecomposition,
     CredalSetEntropyDecomposition,
     Decomposition,
     EpistemicDecomposition,
+    GaussianVarianceDecomposition,
+    LabelwiseBinaryEntropyDecomposition,
+    LabelwiseBinaryVarianceDecomposition,
     OrdinalEntropyDecomposition,
     OrdinalIntegerVarianceDecomposition,
     OrdinalVarianceDecomposition,
@@ -31,6 +35,7 @@ from .notion import (
     EpistemicUncertainty,
     Notion,
     TotalUncertainty,
+    notion_registry,
 )
 
 measure = _measure
@@ -48,6 +53,8 @@ __all__ = [
     "EpistemicDecomposition",
     "EpistemicUncertainty",
     "GaussianVarianceDecomposition",
+    "LabelwiseBinaryEntropyDecomposition",
+    "LabelwiseBinaryVarianceDecomposition",
     "Notion",
     "OrdinalEntropyDecomposition",
     "OrdinalIntegerVarianceDecomposition",

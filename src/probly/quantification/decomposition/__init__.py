@@ -14,8 +14,18 @@ from .decomposition import (
     TotalDecomposition,
 )
 from .entropy import CredalSetEntropyDecomposition, SecondOrderEntropyDecomposition
-from .ordinal import OrdinalEntropyDecomposition, OrdinalVarianceDecomposition
-from .variance import OrdinalIntegerVarianceDecomposition, SecondOrderVarianceDecomposition
+from .ordinal import (
+    CategoricalVarianceDecomposition,
+    LabelwiseBinaryEntropyDecomposition,
+    LabelwiseBinaryVarianceDecomposition,
+    OrdinalEntropyDecomposition,
+    OrdinalVarianceDecomposition,
+)
+from .variance import (
+    GaussianVarianceDecomposition,
+    OrdinalIntegerVarianceDecomposition,
+    SecondOrderVarianceDecomposition,
+)
 from .zero_one import SecondOrderZeroOneDecomposition
 
 
@@ -37,6 +47,9 @@ __all__ = [
     "Decomposition",
     "EpistemicDecomposition",
     "EpistemicTotalDecomposition",
+    "GaussianVarianceDecomposition",
+    "LabelwiseBinaryEntropyDecomposition",
+    "LabelwiseBinaryVarianceDecomposition",
     "OrdinalEntropyDecomposition",
     "OrdinalIntegerVarianceDecomposition",
     "OrdinalVarianceDecomposition",
