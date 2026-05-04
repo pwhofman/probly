@@ -1,0 +1,48 @@
+{
+  "experiment": "resnet_credal_per_member_T",
+  "calibration": "per_member_temperature_vs_none",
+  "dataset": "cifar10h",
+  "encoder": null,
+  "base_model": "resnet18",
+  "wandb_run": "d9gv6f84",
+  "training_seed": 1,
+  "seed": 0,
+  "splits": {
+    "calib": 5000,
+    "eval": 10000,
+    "calib_source": "cifar10_train_val_split_0.1_seed1",
+    "eval_source": "cifar10h_test_full"
+  },
+  "hyperparams": {
+    "num_members": 10,
+    "decision_rule": "non_dominated"
+  },
+  "metrics": {
+    "test_acc_pooled_argmax_plurality": 0.9596999883651733,
+    "fitted_T_mean": 1.4139881610870362,
+    "fitted_T_std": 0.02611730431081592,
+    "fitted_T_min": 1.3618783950805664,
+    "fitted_T_max": 1.4603196382522583,
+    "no_calibration": {
+      "plurality_coverage": 0.9883999824523926,
+      "per_class_interval_coverage": 0.024049999192357063,
+      "joint_interval_coverage": 0.0,
+      "avg_set_size": 1.301200032234192,
+      "singleton_rate": 0.8916000127792358
+    },
+    "per_member_calibration": {
+      "plurality_coverage": 0.988099992275238,
+      "per_class_interval_coverage": 0.03413999825716019,
+      "joint_interval_coverage": 0.0,
+      "avg_set_size": 1.2705999612808228,
+      "singleton_rate": 0.8914999961853027
+    },
+    "delta_with_minus_no": {
+      "plurality_coverage": -0.000299990177154541,
+      "per_class_interval_coverage": 0.010089999064803123,
+      "joint_interval_coverage": 0.0,
+      "avg_set_size": -0.03060007095336914,
+      "singleton_rate": -0.00010001659393310547
+    }
+  }
+}

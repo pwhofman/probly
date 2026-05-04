@@ -1,0 +1,40 @@
+{
+  "experiment": "resnet_credal_per_member_T",
+  "calibration": "per_member_temperature_vs_none",
+  "dataset": "cifar10",
+  "encoder": null,
+  "base_model": "resnet18",
+  "wandb_run": "d9gv6f84",
+  "seed": 0,
+  "splits": {
+    "calib": 2000,
+    "eval": 8000
+  },
+  "hyperparams": {
+    "num_members": 10,
+    "calib_size": 2000,
+    "decision_rule": "non_dominated"
+  },
+  "metrics": {
+    "test_acc_pooled_argmax": 0.9612500071525574,
+    "fitted_T_mean": 1.4079091668128967,
+    "fitted_T_std": 0.01942591584128195,
+    "fitted_T_min": 1.3605760335922241,
+    "fitted_T_max": 1.4345341920852661,
+    "no_calibration": {
+      "coverage": 0.9906250238418579,
+      "avg_set_size": 1.3111250400543213,
+      "singleton_rate": 0.8887500166893005
+    },
+    "per_member_calibration": {
+      "coverage": 0.9903749823570251,
+      "avg_set_size": 1.2802499532699585,
+      "singleton_rate": 0.8886250257492065
+    },
+    "delta_with_minus_no": {
+      "coverage": -0.00025004148483276367,
+      "avg_set_size": -0.030875086784362793,
+      "singleton_rate": -0.00012499094009399414
+    }
+  }
+}

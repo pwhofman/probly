@@ -6,11 +6,11 @@ on cached CIFAR-10-H embeddings, then asks: does temperature-scaling
 intervals shrink the resulting non-dominated prediction sets, and does
 coverage hold?
 
-The existing :mod:`stack_credal_wrapper_temp_conformal` script already
-applies temperature scaling, but only after pooling the member logits;
-that's a different operation than per-member-then-pool. This script
-computes, per test point and per path, the credal probability interval
-schema used by probly's
+Unlike the calibration ablations in ``stack_dare_temp_conformal`` /
+``stack_hetnet_temp_conformal`` (which calibrate the *pooled* logits
+before conformalisation), this script asks the per-member-then-pool
+version of the same question. It computes, per test point and per
+path, the credal probability interval schema used by probly's
 :class:`probly.representation.credal_set.torch.TorchProbabilityIntervalsCredalSet`
 (``lower(k) = min_i softmax(member_logits_i)[:, k]``, ``upper(k) =
 max_i ...``), then emits the canonical naive-credal-classifier set
@@ -62,10 +62,8 @@ def _train_member(
 ) -> None:
     """Train one ensemble member with full-batch CE + Adam.
 
-    Mirrors the loop in ``stack_credal_wrapper_temp_conformal.py`` so
-    the two scripts share an identical training-time object when given
-    the same seed. The credal_wrapper factory already reset-init'd the
-    member; this just optimises it from that fresh state.
+    The credal_wrapper factory already reset-init'd the member; this
+    just optimises it from that fresh state.
     """
     member.train()
     member.to(device)

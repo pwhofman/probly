@@ -2,308 +2,28 @@
   "experiment": "aggregated",
   "groups": [
     {
-      "experiment": "credal_wrapper_stack",
+      "experiment": "credal_member_calibration",
       "encoder": "dinov2_with_registers",
-      "calibration": "isotonic",
+      "calibration": "per_member_temperature_vs_none",
       "n_runs": 3,
       "seeds": [
         0,
         1,
         2
       ],
-      "metrics": {
-        "test_acc": {
-          "mean": 0.9820444385210673,
-          "std": 0.00033259739773326344,
-          "n": 3
-        },
-        "ece_uncalibrated": {
-          "mean": 0.014424923807382584,
-          "std": 0.00020375915613763724,
-          "n": 3
-        },
-        "ece_calibrated": {
-          "mean": 0.005796640180051327,
-          "std": 0.0011543622916306933,
-          "n": 3
-        },
-        "conformal_coverage": {
-          "mean": 0.892799993356069,
-          "std": 0.007543273276203399,
-          "n": 3
-        },
-        "conformal_avg_set_size": {
-          "mean": 0.9207111111111111,
-          "std": 0.007010116147045009,
-          "n": 3
-        }
-      }
+      "metrics": {}
     },
     {
-      "experiment": "credal_wrapper_stack",
-      "encoder": "dinov2_with_registers",
-      "calibration": "label_relaxation",
-      "n_runs": 3,
-      "seeds": [
-        0,
-        1,
-        2
-      ],
-      "metrics": {
-        "test_acc": {
-          "mean": 0.9824000000953674,
-          "std": 0.00021773610729400195,
-          "n": 3
-        },
-        "ece_uncalibrated": {
-          "mean": 0.003195997948447863,
-          "std": 0.0004100429402393261,
-          "n": 3
-        },
-        "ece_calibrated": {
-          "mean": 0.003195997948447863,
-          "std": 0.0004100429402393261,
-          "n": 3
-        },
-        "conformal_coverage": {
-          "mean": 0.8983555634816488,
-          "std": 0.006477628096848958,
-          "n": 3
-        },
-        "conformal_avg_set_size": {
-          "mean": 0.9291111111111111,
-          "std": 0.006974521533215306,
-          "n": 3
-        }
-      }
-    },
-    {
-      "experiment": "credal_wrapper_stack",
-      "encoder": "dinov2_with_registers",
-      "calibration": "none",
-      "n_runs": 3,
-      "seeds": [
-        0,
-        1,
-        2
-      ],
-      "metrics": {
-        "test_acc": {
-          "mean": 0.9820444385210673,
-          "std": 0.00033259739773326344,
-          "n": 3
-        },
-        "ece_uncalibrated": {
-          "mean": 0.014424923807382584,
-          "std": 0.00020375915613763724,
-          "n": 3
-        },
-        "ece_calibrated": {
-          "mean": 0.014424923807382584,
-          "std": 0.00020375915613763724,
-          "n": 3
-        },
-        "conformal_coverage": {
-          "mean": 0.8994666536649069,
-          "std": 0.004608531153154987,
-          "n": 3
-        },
-        "conformal_avg_set_size": {
-          "mean": 0.918488888888889,
-          "std": 0.00477069242069109,
-          "n": 3
-        }
-      }
-    },
-    {
-      "experiment": "credal_wrapper_stack",
-      "encoder": "dinov2_with_registers",
-      "calibration": "temperature",
-      "n_runs": 3,
-      "seeds": [
-        0,
-        1,
-        2
-      ],
-      "metrics": {
-        "test_acc": {
-          "mean": 0.9820444385210673,
-          "std": 0.00033259739773326344,
-          "n": 3
-        },
-        "ece_uncalibrated": {
-          "mean": 0.014424923807382584,
-          "std": 0.00020375915613763724,
-          "n": 3
-        },
-        "ece_calibrated": {
-          "mean": 0.0036428827637185654,
-          "std": 0.00031957086854425077,
-          "n": 3
-        },
-        "conformal_coverage": {
-          "mean": 0.8972000082333883,
-          "std": 0.0041754094917762505,
-          "n": 3
-        },
-        "conformal_avg_set_size": {
-          "mean": 0.9328888888888889,
-          "std": 0.004839753080121271,
-          "n": 3
-        }
-      }
-    },
-    {
-      "experiment": "credal_wrapper_stack",
+      "experiment": "credal_member_calibration",
       "encoder": "siglip2",
-      "calibration": "isotonic",
+      "calibration": "per_member_temperature_vs_none",
       "n_runs": 3,
       "seeds": [
         0,
         1,
         2
       ],
-      "metrics": {
-        "test_acc": {
-          "mean": 0.96506667137146,
-          "std": 0.0007138955690506211,
-          "n": 3
-        },
-        "ece_uncalibrated": {
-          "mean": 0.01680184807628393,
-          "std": 0.0010518435620775236,
-          "n": 3
-        },
-        "ece_calibrated": {
-          "mean": 0.008802887052297592,
-          "std": 0.0016127845855488222,
-          "n": 3
-        },
-        "conformal_coverage": {
-          "mean": 0.8914222121238708,
-          "std": 0.007512807036958607,
-          "n": 3
-        },
-        "conformal_avg_set_size": {
-          "mean": 0.9489777777777778,
-          "std": 0.01036537445798852,
-          "n": 3
-        }
-      }
-    },
-    {
-      "experiment": "credal_wrapper_stack",
-      "encoder": "siglip2",
-      "calibration": "label_relaxation",
-      "n_runs": 3,
-      "seeds": [
-        0,
-        1,
-        2
-      ],
-      "metrics": {
-        "test_acc": {
-          "mean": 0.9651110967000326,
-          "std": 0.001164064342083778,
-          "n": 3
-        },
-        "ece_uncalibrated": {
-          "mean": 0.004754943307489157,
-          "std": 0.001307168239892452,
-          "n": 3
-        },
-        "ece_calibrated": {
-          "mean": 0.004754943307489157,
-          "std": 0.001307168239892452,
-          "n": 3
-        },
-        "conformal_coverage": {
-          "mean": 0.8972888986269633,
-          "std": 0.0038725282681705115,
-          "n": 3
-        },
-        "conformal_avg_set_size": {
-          "mean": 0.9513777777777778,
-          "std": 0.0041445487028888015,
-          "n": 3
-        }
-      }
-    },
-    {
-      "experiment": "credal_wrapper_stack",
-      "encoder": "siglip2",
-      "calibration": "none",
-      "n_runs": 3,
-      "seeds": [
-        0,
-        1,
-        2
-      ],
-      "metrics": {
-        "test_acc": {
-          "mean": 0.96506667137146,
-          "std": 0.0007138955690506211,
-          "n": 3
-        },
-        "ece_uncalibrated": {
-          "mean": 0.01680184807628393,
-          "std": 0.0010518435620775236,
-          "n": 3
-        },
-        "ece_calibrated": {
-          "mean": 0.01680184807628393,
-          "std": 0.0010518435620775236,
-          "n": 3
-        },
-        "conformal_coverage": {
-          "mean": 0.8982666532198588,
-          "std": 0.004106739718543553,
-          "n": 3
-        },
-        "conformal_avg_set_size": {
-          "mean": 0.9460000000000001,
-          "std": 0.004681247063985629,
-          "n": 3
-        }
-      }
-    },
-    {
-      "experiment": "credal_wrapper_stack",
-      "encoder": "siglip2",
-      "calibration": "temperature",
-      "n_runs": 3,
-      "seeds": [
-        0,
-        1,
-        2
-      ],
-      "metrics": {
-        "test_acc": {
-          "mean": 0.96506667137146,
-          "std": 0.0007138955690506211,
-          "n": 3
-        },
-        "ece_uncalibrated": {
-          "mean": 0.01680184807628393,
-          "std": 0.0010518435620775236,
-          "n": 3
-        },
-        "ece_calibrated": {
-          "mean": 0.0052329835792382555,
-          "std": 0.00037787343848580705,
-          "n": 3
-        },
-        "conformal_coverage": {
-          "mean": 0.8984888990720113,
-          "std": 0.0034121166608575173,
-          "n": 3
-        },
-        "conformal_avg_set_size": {
-          "mean": 0.9624,
-          "std": 0.005446575546633414,
-          "n": 3
-        }
-      }
+      "metrics": {}
     },
     {
       "experiment": "dare_stack",
@@ -912,6 +632,16 @@
           "n": 3
         }
       }
+    },
+    {
+      "experiment": "resnet_credal_per_member_T",
+      "encoder": "None",
+      "calibration": "per_member_temperature_vs_none",
+      "n_runs": 2,
+      "seeds": [
+        0
+      ],
+      "metrics": {}
     }
   ]
 }

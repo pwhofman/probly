@@ -11,6 +11,7 @@ dependencies = [
   "transformers",
   "pillow",
   "socksio>=1.0.0",
+  "wandb>=0.26.1",
 ]
 
 [dependency-groups]

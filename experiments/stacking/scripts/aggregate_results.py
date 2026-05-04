@@ -74,6 +74,8 @@ def _aggregate(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 metrics = run.get("metrics") or {}
                 if metric in metrics and isinstance(metrics[metric], int | float):
                     values.append(float(metrics[metric]))
+            if not values:
+                continue
             mean, std = _mean_std(values)
             metrics_summary[metric] = {"mean": mean, "std": std, "n": len(values)}
         out.append(
@@ -98,9 +100,10 @@ def _print_table(rows: list[dict[str, Any]]) -> None:
         m = row["metrics"]
 
         def cell(metric: str) -> str:
-            mean = m[metric]["mean"]
-            std = m[metric]["std"]
-            return f"{mean:.4f}+-{std:.4f}"
+            entry = m.get(metric)
+            if entry is None:
+                return "--"
+            return f"{entry['mean']:.4f}+-{entry['std']:.4f}"
 
         print(
             f"{row['experiment']:<24} {row['encoder']:<24} {row['calibration']:<18} {row['n_runs']:>3}  "
