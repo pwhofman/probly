@@ -11,6 +11,7 @@ from probly.quantification.measure.sample import (
     mean_squared_distance_to_scaled_one_hot,
     sample_variance,
 )
+from probly.representation.distribution import CategoricalDistributionSample
 from probly.representation.representation import Representation
 from probly.representation.sample import Sample, SampleFactory, create_sample
 from probly.representer import IterableSampler, representer
@@ -26,7 +27,7 @@ class DarePredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
     """A predictor routed through the DARE method API."""
 
 
-@predictor_transformation(permitted_predictor_types=None)
+@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
 @DarePredictor.register_factory(autocast_builtins=True)
 def dare[**In, Out](base: Predictor[In, Out], num_members: int, reset_params: bool = True) -> DarePredictor[In, Out]:
     """Create a DARE predictor from a base predictor."""
@@ -41,12 +42,12 @@ class DARERepresentation(Representation, Protocol):
     """
 
 
-# Register as a virtual subclass of Sample so the dispatch considers the marker
-# more specific than the generic Sample handlers.
-Sample.register(DARERepresentation)
+# Register as a virtual subclass of CategoricalDistributionSample so the dispatch considers the marker
+# more specific than the generic CategoricalDistributionSample handlers.
+CategoricalDistributionSample.register(DARERepresentation)
 
 
-class DARERepresenter[**In, Out](IterableSampler[In, Out, "DARERepresentation"]):  # ty:ignore[invalid-type-arguments]
+class DARERepresenter[**In, Out](IterableSampler[In, Out, DARERepresentation]):  # ty:ignore[invalid-type-arguments]
     """Representer for DARE predictors that marks the output sample for method-specific dispatch.
 
     Defaults ``sample_axis=0`` (member axis first, class axis trailing) to match
