@@ -11,7 +11,7 @@ from probly.representer import representer
 from probly_benchmark import calibration, data, utils
 from probly_benchmark.utils import (
     collect_outputs_targets,
-    collect_outputs_targets_raw,
+    init_wandb_for_evaluation,
     load_model_for_evaluation,
 )
 
@@ -31,11 +31,8 @@ def main(cfg: DictConfig) -> None:
     model, _, run_id = load_model_for_evaluation(cfg, device)
     print(f"Loaded model for {cfg.method.name} from wandb run: {run_id}")
 
-    test_loader = data.get_data_first_order_comparison(
-        cfg.dataset,
-        cfg.seed,
-        val_split=cfg.val_split,
-        cal_split=cfg.get("cal_split", 0.0),
+    data_loader = data.get_data_first_order(
+        cfg.first_order_dataset,
         batch_size=cfg.batch_size,
     )
 
@@ -44,19 +41,19 @@ def main(cfg: DictConfig) -> None:
     )  # ty: ignore[invalid-assignment]
     rep = representer(model, **rep_kwargs)
 
-    outputs, targets = collect_outputs_targets(rep, test_loader, device, amp_enabled=cfg.get("amp", False))
-    print(outputs)
-    print(type(outputs))
-    print(f"Outputs shape: {outputs.shape}")  # ty: ignore[unresolved-attribute]
-    print(f"Targets shape: {targets.shape}")
-    print(f"Num samples: {len(targets)}")
+    _outputs, _targets = collect_outputs_targets(rep, data_loader, device, amp_enabled=cfg.get("amp", False))
 
-    outputs, targets = collect_outputs_targets_raw(model, test_loader, device, amp_enabled=cfg.get("amp", False))
-    print(outputs)
-    print(type(outputs))
-    print(f"Outputs shape: {outputs.shape}")
-    print(f"Targets shape: {targets.shape}")
-    print(f"Num samples: {len(targets)}")
+    ### coverage
+    cov = 0  # coverage(outputs, targets)
+
+    ### efficiency
+    eff = 0  # efficiency(outputs, targets)
+
+    if cfg.wandb.enabled:
+        run = init_wandb_for_evaluation(cfg, run_id)
+        run.summary["coverage"] = cov
+        run.summary["efficiency"] = eff
+        run.finish()
 
 
 if __name__ == "__main__":

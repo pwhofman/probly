@@ -248,7 +248,6 @@ def collect_outputs_targets_raw(
     model.eval()
     outputs = []
     targets = []
-
     for inputs_, targets_ in tqdm(loader, desc="Batch"):
         inputs = inputs_.to(device, non_blocking=True)
         if amp_enabled:
@@ -413,9 +412,16 @@ def _build_uncalibrated_model_from_checkpoint(
 
     build_method = target_method if target_method is not None else cfg["method"]["name"]
     model = build_model(build_method, method_params, ctx)
-    model.load_state_dict(checkpoint["model_state_dict"])
-    model.to(device)
-    model.eval()
+    if isinstance(model, list):
+        for m, state in zip(model, checkpoint["model_state_dict"], strict=True):
+            m = cast("nn.Module", m)
+            m.load_state_dict(state)
+            m.to(device)
+            m.eval()
+    else:
+        model.load_state_dict(checkpoint["model_state_dict"])
+        model.to(device)
+        model.eval()
     return model, cfg
 
 
