@@ -35,11 +35,7 @@ def _array_binary_entropy(p: np.ndarray, base: LogBase = None) -> np.ndarray:
     ``base="normalize"`` normalizes by ``log(2)`` so that the entropy is in
     ``[0, 1]`` for each binary problem.
     """
-    scipy_base: float | None
-    if base == "normalize":
-        scipy_base = 2.0
-    else:
-        scipy_base = base
+    scipy_base: float | None = 2.0 if base == "normalize" else base
     stacked = np.stack([p, 1.0 - p], axis=-1)
     return scipy_entropy(stacked, axis=-1, base=scipy_base)
 
@@ -54,9 +50,7 @@ def _cumulative_lower(p: np.ndarray) -> np.ndarray:
 
 
 @ordinal_binary_entropy_total.register(ArrayCategoricalDistributionSample)
-def array_ordinal_binary_entropy_total(
-    sample: ArrayCategoricalDistributionSample, base: LogBase = None
-) -> np.ndarray:
+def array_ordinal_binary_entropy_total(sample: ArrayCategoricalDistributionSample, base: LogBase = None) -> np.ndarray:
     """OCS binary-entropy total uncertainty for a numpy categorical sample."""
     p = sample.array.probabilities
     axis = sample.sample_axis

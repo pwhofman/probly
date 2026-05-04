@@ -15,6 +15,10 @@ from probly.quantification import (  # noqa: E402
     OrdinalEntropyDecomposition,
     OrdinalVarianceDecomposition,
 )
+from probly.representation.distribution.array_categorical import (  # noqa: E402
+    ArrayCategoricalDistribution,
+    ArrayCategoricalDistributionSample,
+)
 from probly.representation.distribution.torch_categorical import (  # noqa: E402
     TorchCategoricalDistribution,
     TorchCategoricalDistributionSample,
@@ -125,11 +129,6 @@ def test_torch_results_match_numpy(cls) -> None:
         ],
         dtype=float,
     )
-    from probly.representation.distribution.array_categorical import (
-        ArrayCategoricalDistribution,
-        ArrayCategoricalDistributionSample,
-    )
-
     np_sample = ArrayCategoricalDistributionSample(
         array=ArrayCategoricalDistribution(np_sample_probs),
         sample_axis=0,

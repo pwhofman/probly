@@ -15,11 +15,11 @@ from typing import TYPE_CHECKING, override
 
 from flextype import flexdispatch
 from probly.quantification.decomposition.decomposition import AdditiveDecomposition
-from probly.representation.distribution import CategoricalDistributionSample, GaussianDistributionSample
 
 if TYPE_CHECKING:
     from probly.quantification.measure.distribution._common import LogBase
     from probly.representation.array_like import ArrayLike
+    from probly.representation.distribution import CategoricalDistributionSample, GaussianDistributionSample
 
 
 # OCS (Order-Consistent Split) binary reduction

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from scipy.stats import entropy as scipy_entropy
 
 from probly.quantification import (
     CategoricalVarianceDecomposition,
@@ -27,6 +28,7 @@ from probly.quantification.decomposition.ordinal import (
     ordinal_binary_variance_aleatoric,
     ordinal_binary_variance_total,
 )
+from probly.quantification.notion import AleatoricUncertainty, EpistemicUncertainty, TotalUncertainty
 from probly.representation.distribution.array_categorical import (
     ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
@@ -71,10 +73,7 @@ def _constant_categorical_sample() -> ArrayCategoricalDistributionSample:
 
 def _gaussian_sample() -> ArrayGaussianDistributionSample:
     """Three Gaussian models with identical variance and different means."""
-    gaussians = [
-        ArrayGaussianDistribution(mean=np.array([m]), var=np.array([0.5]))
-        for m in [1.0, 2.0, 3.0]
-    ]
+    gaussians = [ArrayGaussianDistribution(mean=np.array([m]), var=np.array([0.5])) for m in [1.0, 2.0, 3.0]]
     return ArrayGaussianDistributionSample.from_iterable(gaussians, sample_axis=0)
 
 
@@ -125,8 +124,6 @@ def test_categorical_decomposition_total_ge_aleatoric(cls) -> None:
 
 @pytest.mark.parametrize("cls", CATEGORICAL_DECOMP_CLASSES)
 def test_categorical_decomposition_notion_access(cls) -> None:
-    from probly.quantification.notion import AleatoricUncertainty, EpistemicUncertainty, TotalUncertainty
-
     d = cls(_categorical_sample())
     assert isinstance(d["tu"], np.ndarray)
     assert isinstance(d["au"], np.ndarray)
@@ -151,8 +148,6 @@ def test_ordinal_entropy_vs_manual_ocs_formula() -> None:
     p_bar = np.mean(cum, axis=0)
 
     def bh(x: np.ndarray) -> np.ndarray:
-        from scipy.stats import entropy as scipy_entropy
-
         return scipy_entropy(np.stack([x, 1.0 - x], axis=-1), axis=-1)
 
     expected_tu = np.sum(bh(p_bar), axis=-1)
