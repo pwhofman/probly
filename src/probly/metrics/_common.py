@@ -218,7 +218,7 @@ def average_interval_width[T](y_pred: T) -> float:
 
 
 @flexdispatch
-def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.0) -> float:
+def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.0, **linprog_kwargs: object) -> float:
     """Empirical convex-hull coverage for distribution-valued targets.
 
     For each instance, the LP feasibility test
@@ -247,6 +247,9 @@ def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.0) 
         epsilon: L1-distance tolerance for relaxed coverage. ``epsilon=0.0``
             (the default) runs the strict feasibility LP, which is faster
             (no slack variables). ``epsilon > 0`` runs the slack LP.
+        **linprog_kwargs: Forwarded to :func:`scipy.optimize.linprog` (e.g.
+            ``method="highs"`` or solver tolerances). Passing an unsupported
+            kwarg raises ``TypeError``.
 
     Returns:
         Fraction of instances whose target distribution lies in (or within
@@ -255,6 +258,18 @@ def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.0) 
     Raises:
         NotImplementedError: If no implementation is registered for the type
             of ``y_pred``.
+
+    Note:
+        Only vertex-based credal sets are registered. For
+        ``ArrayProbabilityIntervalsCredalSet`` and
+        ``TorchProbabilityIntervalsCredalSet``, use the type's own
+        :meth:`contains` method to check whether a target distribution lies
+        inside the (axis-aligned) credal set; that is a tighter and cheaper
+        test than the LP feasibility check used here. Distance-based credal
+        sets do not have explicit vertices and are intentionally not
+        registered. ``TorchDirichletLevelSetCredalSet`` is also skipped:
+        its envelope is estimated by Monte-Carlo sampling, which makes
+        LP-based hull membership stochastic.
     """
     msg = f"convex_hull_coverage is not implemented for type {type(y_pred).__name__}."
     raise NotImplementedError(msg)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -282,6 +283,12 @@ def _average_interval_width_array_probability_intervals(y_pred: ArrayProbability
 # --- Convex-hull coverage ----------------------------------------------------
 
 
+def _validate_epsilon(epsilon: float) -> None:
+    if not math.isfinite(epsilon) or epsilon < 0.0:
+        msg = f"epsilon must be a non-negative finite float, got {epsilon!r}."
+        raise ValueError(msg)
+
+
 def _convex_hull_lp_coverage(
     vertices: np.ndarray,
     targets: np.ndarray,
@@ -310,6 +317,20 @@ def _convex_hull_lp_coverage(
         Fraction of instances whose target lies in (or within ``epsilon`` of)
         the hull, as ``np.float64``.
     """
+    _validate_epsilon(epsilon)
+    if vertices.ndim != 3:
+        msg = f"vertices must be 3D (N, V, K); got shape {vertices.shape}."
+        raise ValueError(msg)
+    if targets.ndim != 2:
+        msg = f"targets must be 2D (N, K); got shape {targets.shape}."
+        raise ValueError(msg)
+    if vertices.shape[0] != targets.shape[0]:
+        msg = f"vertices and targets must agree on N; got {vertices.shape[0]} and {targets.shape[0]}."
+        raise ValueError(msg)
+    if vertices.shape[2] != targets.shape[1]:
+        msg = f"vertices and targets must agree on K; got {vertices.shape[2]} and {targets.shape[1]}."
+        raise ValueError(msg)
+
     n_instances, n_vertices, n_classes = vertices.shape
     relaxed = epsilon > 0.0
 
@@ -321,6 +342,8 @@ def _convex_hull_lp_coverage(
         bounds = [(0.0, 1.0)] * n_vertices
 
     covered = 0
+    # Per-instance LP loop (Python-level). For very large N (~10^6) consider
+    # joblib.Parallel; not implemented here to keep the dependency surface small.
     for i in range(n_instances):
         v = vertices[i]
         t = targets[i]
@@ -384,7 +407,14 @@ def _convex_hull_coverage_array_singleton(
     epsilon: float = 0.0,
     **_linprog_kwargs: object,
 ) -> np.floating:
-    """Hull degenerates to a point; coverage is ``L1(predicted, target) <= epsilon``."""
+    """Hull degenerates to a point; coverage is closed-form L1 distance test.
+
+    The singleton handler does not call ``linprog`` and is therefore unaffected
+    by solver tolerances. ``epsilon=0.0`` performs strict element-wise equality
+    of ``predicted == target`` (subject to float arithmetic), which can produce
+    slightly different verdicts than the LP path on numerically-tight inputs.
+    """
+    _validate_epsilon(epsilon)
     predicted = np.asarray(y_pred.array.probabilities)
     targets = np.asarray(y_true.probabilities)
     l1_dist = np.abs(predicted - targets).sum(axis=-1)

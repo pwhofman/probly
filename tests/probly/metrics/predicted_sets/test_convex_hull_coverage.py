@@ -101,6 +101,18 @@ class TestRelaxed:
         target = _dist(np.array([[0.5, 0.5]]))
         assert convex_hull_coverage(cs, target, epsilon=0.01) == pytest.approx(1.0)
 
+    def test_relaxed_lp_pins_nonzero_l1_distance(self) -> None:
+        # Out-of-hull target with nonzero L1 distance to the hull. Vertices are
+        # the first two corners of a 3-simplex: hull is the segment
+        # {[a, 1-a, 0] : a in [0, 1]}. For target [0.3, 0.3, 0.4] the closest
+        # hull point is [0.5, 0.5, 0] with L1 distance 0.2 + 0.2 + 0.4 = 0.8
+        # (verified directly against scipy's HiGHS solver). Pin the LP optimum
+        # against this distance via two epsilon thresholds straddling it.
+        cs = _convex(np.array([[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]]))
+        target = _dist(np.array([[0.3, 0.3, 0.4]]))
+        assert convex_hull_coverage(cs, target, epsilon=0.79) == pytest.approx(0.0)
+        assert convex_hull_coverage(cs, target, epsilon=0.81) == pytest.approx(1.0)
+
 
 class TestSingleton:
     def test_predicted_equals_target(self) -> None:
@@ -163,10 +175,47 @@ class TestEdgeCases:
         target = _dist(np.array([[0.5, 0.5]]))
         assert convex_hull_coverage(cs, target, method="highs") == pytest.approx(1.0)
 
+    def test_unknown_linprog_kwarg_raises(self) -> None:
+        cs = _convex(np.array([[[1.0, 0.0], [0.0, 1.0]]]))
+        target = _dist(np.array([[0.5, 0.5]]))
+        with pytest.raises(TypeError, match=r"unexpected keyword|got an unexpected"):
+            convex_hull_coverage(cs, target, totally_bogus_kwarg=42)
+
     def test_returns_np_floating(self) -> None:
         cs = _convex(np.array([[[1.0, 0.0], [0.0, 1.0]]]))
         result = convex_hull_coverage(cs, _dist(np.array([[0.5, 0.5]])))
         assert isinstance(result, np.floating)
+
+
+class TestEpsilonValidation:
+    @pytest.mark.parametrize("eps", [-1e-9, -1.0, float("nan"), float("inf"), float("-inf")])
+    def test_invalid_epsilon_raises(self, eps: float) -> None:
+        cs = _convex(np.array([[[1.0, 0.0], [0.0, 1.0]]]))
+        target = _dist(np.array([[0.5, 0.5]]))
+        with pytest.raises(ValueError, match="epsilon must be"):
+            convex_hull_coverage(cs, target, epsilon=eps)
+
+    @pytest.mark.parametrize("eps", [-1e-9, float("nan"), float("inf")])
+    def test_invalid_epsilon_singleton_raises(self, eps: float) -> None:
+        cs = _singleton(np.array([[0.5, 0.5]]))
+        target = _dist(np.array([[0.5, 0.5]]))
+        with pytest.raises(ValueError, match="epsilon must be"):
+            convex_hull_coverage(cs, target, epsilon=eps)
+
+
+class TestShapeValidation:
+    def test_2d_unbatched_vertices_raises(self) -> None:
+        # User accidentally passes (V, K) instead of (N, V, K).
+        from probly.metrics.array import _convex_hull_lp_coverage  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="vertices must be 3D"):
+            _convex_hull_lp_coverage(np.zeros((2, 3)), np.zeros((1, 3)), 0.0)
+        with pytest.raises(ValueError, match="targets must be 2D"):
+            _convex_hull_lp_coverage(np.zeros((1, 2, 3)), np.zeros((3,)), 0.0)
+        with pytest.raises(ValueError, match="vertices and targets must agree on N"):
+            _convex_hull_lp_coverage(np.zeros((2, 2, 3)), np.zeros((1, 3)), 0.0)
+        with pytest.raises(ValueError, match="vertices and targets must agree on K"):
+            _convex_hull_lp_coverage(np.zeros((1, 2, 3)), np.zeros((1, 4)), 0.0)
 
 
 class TestTorchParity:
