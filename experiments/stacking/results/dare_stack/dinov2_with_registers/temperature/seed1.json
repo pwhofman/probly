@@ -1,0 +1,26 @@
+{
+  "experiment": "dare_stack",
+  "calibration": "temperature",
+  "dataset": "cifar10h",
+  "encoder": "dinov2_with_registers",
+  "seed": 1,
+  "splits": {
+    "train": 50000,
+    "calib": 2500,
+    "test": 7500
+  },
+  "hyperparams": {
+    "num_members": 10,
+    "epochs": 200,
+    "lr_alpha": 0.1,
+    "ece_bins": 15
+  },
+  "metrics": {
+    "test_acc": 0.9815999865531921,
+    "ece_uncalibrated": 0.014708904549479485,
+    "ece_calibrated": 0.004064962267875671,
+    "conformal_alpha": 0.1,
+    "conformal_coverage": 0.9018666744232178,
+    "conformal_avg_set_size": 0.9382666666666667
+  }
+}

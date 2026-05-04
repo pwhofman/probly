@@ -1,0 +1,30 @@
+{
+  "experiment": "hetnet_stack",
+  "calibration": "label_relaxation",
+  "dataset": "cifar10h",
+  "encoder": "siglip2",
+  "seed": 2,
+  "splits": {
+    "train": 50000,
+    "calib": 2500,
+    "test": 7500
+  },
+  "hyperparams": {
+    "num_factors": 10,
+    "train_samples": 10,
+    "inf_samples": 10,
+    "epochs": 200,
+    "lr": 0.001,
+    "grad_clip": 1.0,
+    "lr_alpha": 0.1,
+    "ece_bins": 15
+  },
+  "metrics": {
+    "test_acc": 0.963866651058197,
+    "ece_uncalibrated": 0.015420024283230305,
+    "ece_calibrated": 0.015420024283230305,
+    "conformal_alpha": 0.1,
+    "conformal_coverage": 0.8937333226203918,
+    "conformal_avg_set_size": 0.9724
+  }
+}

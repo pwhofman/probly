@@ -1,0 +1,26 @@
+{
+  "experiment": "credal_wrapper_stack",
+  "calibration": "none",
+  "dataset": "cifar10h",
+  "encoder": "siglip2",
+  "seed": 1,
+  "splits": {
+    "train": 50000,
+    "calib": 2500,
+    "test": 7500
+  },
+  "hyperparams": {
+    "num_members": 10,
+    "epochs": 200,
+    "lr_alpha": 0.1,
+    "ece_bins": 15
+  },
+  "metrics": {
+    "test_acc": 0.9641333222389221,
+    "ece_uncalibrated": 0.017596477642655373,
+    "ece_calibrated": 0.017596477642655373,
+    "conformal_alpha": 0.1,
+    "conformal_coverage": 0.902400016784668,
+    "conformal_avg_set_size": 0.9506666666666667
+  }
+}
