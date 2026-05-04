@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import torch
 from torch import nn
@@ -13,19 +12,18 @@ from probly.calibrator import calibrate
 from probly.method.calibration import CalibrationPredictor, temperature_scaling, vector_scaling
 from probly.method.conformal import ConformalSetPredictor, conformal_aps, conformal_lac, conformal_raps
 from probly.predictor import predict
-from probly.quantification import decompose
-from probly.quantification.notion import EpistemicUncertainty, Notion
+from probly.quantification import quantify
 from probly.representer import representer
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.decision import decide
 from probly_benchmark.train import train_model
+from probly_benchmark.uncertainty import select_uncertainty
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
+    from probly.quantification.notion import NotionName
     from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
-
-logger = logging.getLogger(__name__)
 
 # Maps base_model_name -> the final classification nn.Linear.
 # embed() hooks this layer's input to capture penultimate features.
@@ -267,7 +265,8 @@ class UncertaintyEstimator(BaseEstimator):
 
     Attributes:
         rep_kwargs: Representer parameters from the method config (e.g. ``num_samples``).
-        uncertainty_notion: Which uncertainty component to use for sample selection.
+        uncertainty_notion: NotionName (``"aleatoric"|"epistemic"|"total"``) resolved
+            against the decomposition via :func:`select_uncertainty` (falls back when missing).
     """
 
     def __init__(
@@ -282,7 +281,7 @@ class UncertaintyEstimator(BaseEstimator):
         device: torch.device,
         in_features: int | None = None,
         rep_kwargs: dict[str, Any] | None = None,
-        uncertainty_notion: type[Notion] = EpistemicUncertainty,
+        uncertainty_notion: NotionName = "epistemic",
     ) -> None:
         """Initialize the UncertaintyEstimator.
 
@@ -296,7 +295,7 @@ class UncertaintyEstimator(BaseEstimator):
             device: Device to train and infer on.
             in_features: Input feature dimension for tabular models; ignored for image models.
             rep_kwargs: Representer parameters from the method config (e.g. ``num_samples``).
-            uncertainty_notion: Which uncertainty component to use for sample selection.
+            uncertainty_notion: NotionName resolved via :func:`select_uncertainty`.
         """
         super().__init__(
             cfg=cfg,
@@ -324,13 +323,12 @@ class UncertaintyEstimator(BaseEstimator):
 
     @torch.no_grad()
     def uncertainty_scores(self, x: torch.Tensor) -> torch.Tensor:
-        """Return per-sample uncertainty via representer -> quantify -> decomposition."""
+        """Return per-sample uncertainty via representer -> quantify -> select_uncertainty."""
         self.model.eval()
         rep = representer(self.model, **self.rep_kwargs)
-        parts = []
+        parts: list[torch.Tensor] = []
         for i in range(0, len(x), self.cfg.batch_size):
             xb = x[i : i + self.cfg.batch_size].float().to(self.device)
-            decomposition = decompose(rep.represent(xb))
-            scores = decomposition[self.uncertainty_notion]
+            scores = cast("torch.Tensor", select_uncertainty(quantify(rep.predict(xb)), self.uncertainty_notion))
             parts.append(scores.detach().cpu())
         return torch.cat(parts)

@@ -56,7 +56,7 @@ class DARERepresenter[**In, Out](IterableSampler[In, Out, "DARERepresentation"])
     def __init__(
         self,
         predictor: EnsemblePredictor[In, Out],
-        sample_factory: SampleFactory[Out, DARERepresentation] = create_sample,  # ty:ignore[invalid-parameter-default,invalid-type-arguments]
+        sample_factory: SampleFactory[Out, DARERepresentation] = create_sample,  # ty:ignore[invalid-type-arguments]
         sample_axis: int = 0,
     ) -> None:
         """Initialize the DARE representer."""
