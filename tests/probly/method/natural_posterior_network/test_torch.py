@@ -6,7 +6,7 @@ from typing import cast
 
 import pytest
 
-from probly.method.natural_posterior_network import natural_posterior_network
+from probly.method.natural_posterior_network import NaturalPosteriorDecomposition, natural_posterior_network
 
 torch = pytest.importorskip("torch")
 
@@ -119,3 +119,106 @@ def test_certainty_budget_changes_evidence(inputs: torch.Tensor) -> None:
     evidence_constant = (alpha_constant - 1.0).sum(-1)
     evidence_normal = (alpha_normal - 1.0).sum(-1)
     assert (evidence_normal > evidence_constant).all()
+
+
+# Tests for NaturalPosteriorDecomposition on Torch Dirichlet representations.
+
+from probly.quantification import (  # noqa: E402
+    AleatoricUncertainty,
+    EpistemicUncertainty,
+    TotalUncertainty,
+)
+from probly.quantification.measure.distribution import (  # noqa: E402
+    entropy,
+    entropy_of_expected_predictive_distribution,
+    vacuity,
+)
+from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: E402
+
+NUMERIC_BASES: tuple[None | float, ...] = (None, 2.0, 10.0)
+
+
+def _torch_dirichlet() -> TorchDirichletDistribution:
+    alphas = torch.tensor(
+        [
+            [2.0, 3.0, 5.0],
+            [1.0, 1.0, 1.0],
+            [10.0, 10.0, 10.0],
+        ],
+        dtype=torch.float64,
+    )
+    return TorchDirichletDistribution(alphas=alphas)
+
+
+@pytest.mark.parametrize("base", NUMERIC_BASES)
+def test_torch_decomposition_components_match_measure_functions(base: None | float) -> None:
+    distribution = _torch_dirichlet()
+
+    decomposition = NaturalPosteriorDecomposition(distribution, base=base)
+
+    assert torch.allclose(decomposition.total, entropy(distribution, base=base), rtol=1e-12, atol=1e-12)
+    assert torch.allclose(
+        decomposition.aleatoric,
+        entropy_of_expected_predictive_distribution(distribution, base=base),
+        rtol=1e-12,
+        atol=1e-12,
+    )
+    assert torch.allclose(decomposition.epistemic, vacuity(distribution), rtol=1e-12, atol=1e-12)
+
+
+def test_torch_decomposition_notion_access_and_types() -> None:
+    decomposition = NaturalPosteriorDecomposition(_torch_dirichlet())
+
+    assert isinstance(decomposition.total, torch.Tensor)
+    assert isinstance(decomposition.aleatoric, torch.Tensor)
+    assert isinstance(decomposition.epistemic, torch.Tensor)
+    assert decomposition[TotalUncertainty] is decomposition.total
+    assert decomposition[AleatoricUncertainty] is decomposition.aleatoric
+    assert decomposition[EpistemicUncertainty] is decomposition.epistemic
+    assert decomposition["tu"] is decomposition.total
+    assert decomposition["au"] is decomposition.aleatoric
+    assert decomposition["eu"] is decomposition.epistemic
+
+
+def test_torch_decomposition_caches_components() -> None:
+    decomposition = NaturalPosteriorDecomposition(_torch_dirichlet())
+
+    total = decomposition.total
+    aleatoric = decomposition.aleatoric
+    epistemic = decomposition.epistemic
+
+    assert decomposition.total is total
+    assert decomposition.aleatoric is aleatoric
+    assert decomposition.epistemic is epistemic
+
+
+def test_torch_decomposition_canonical_notion_is_total() -> None:
+    decomposition = NaturalPosteriorDecomposition(_torch_dirichlet())
+
+    assert decomposition.get_canonical() is decomposition.total
+
+
+def test_torch_decomposition_propagates_gradients() -> None:
+    alphas = torch.tensor([2.0, 3.0, 5.0], dtype=torch.float64, requires_grad=True)
+    distribution = TorchDirichletDistribution(alphas=alphas)
+
+    decomposition = NaturalPosteriorDecomposition(distribution)
+    objective = decomposition.total + decomposition.aleatoric + decomposition.epistemic
+    objective.backward()
+
+    assert alphas.grad is not None
+    assert torch.isfinite(alphas.grad).all()
+
+
+def test_torch_decomposition_on_natpn_model_output(model: TorchNaturalPosteriorNetwork, inputs: torch.Tensor) -> None:
+    """End-to-end: NatPN output Dirichlet feeds the NatPN decomposition."""
+    alphas = model(inputs)
+    distribution = TorchDirichletDistribution(alphas=alphas)
+
+    decomposition = NaturalPosteriorDecomposition(distribution)
+
+    assert decomposition.total.shape == (BATCH,)
+    assert decomposition.aleatoric.shape == (BATCH,)
+    assert decomposition.epistemic.shape == (BATCH,)
+    assert torch.all(decomposition.epistemic > 0.0)
+    assert torch.all(decomposition.epistemic <= 1.0)

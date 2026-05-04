@@ -69,3 +69,18 @@ def max_disagreement(distribution: SecondOrderDistributionLike) -> ArrayLike:
     """Compute the expected gap between each sample's max probability and its probability on the BMA argmax."""
     msg = f"Max disagreement is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)
+
+
+@flexdispatch
+def vacuity(distribution: SecondOrderDistributionLike) -> ArrayLike:
+    """Compute the vacuity of a second-order distribution.
+
+    For a Dirichlet distribution Dir(alpha) with K classes and alpha_0 = sum_c alpha_c,
+    the vacuity is defined as K / alpha_0 and lies in (0, 1]. It corresponds to the
+    "I do not know" mass in Dempster-Shafer / subjective-logic theory introduced by
+    :cite:`sensoyEvidentialDeepLearning2018`, and is equivalent (up to the constant K)
+    to the inverse of the predicted evidence in Natural Posterior Networks
+    :cite:`charpentierNaturalPosteriorNetwork2022`.
+    """
+    msg = f"Vacuity is not supported for distributions of type {type(distribution)}."
+    raise NotImplementedError(msg)

@@ -25,6 +25,7 @@ from ._common import (
     max_disagreement,
     max_probability_complement_of_expected,
     mutual_information,
+    vacuity,
 )
 
 # Entropy
@@ -268,3 +269,20 @@ def array_categorical_sample_max_disagreement(
     per_sample_bma_prob = np.take_along_axis(p, bma_argmax, axis=-1).squeeze(-1)
     per_sample_max = np.max(p, axis=-1)
     return np.mean(per_sample_max - per_sample_bma_prob, axis=axis)
+
+
+# Vacuity
+
+
+@vacuity.register(ArrayDirichletDistribution)
+def array_dirichlet_vacuity(distribution: ArrayDirichletDistribution | np.ndarray) -> np.ndarray:
+    """Compute the vacuity K / alpha_0 of a Dirichlet distribution."""
+    if isinstance(distribution, ArrayDirichletDistribution):
+        alphas = distribution.alphas
+        del distribution  # Avoid keeping a reference to the distribution for memory efficiency
+    else:
+        alphas = distribution
+
+    num_classes = alphas.shape[-1]
+    alpha_0 = np.sum(alphas, axis=-1)
+    return np.asarray(num_classes / alpha_0)

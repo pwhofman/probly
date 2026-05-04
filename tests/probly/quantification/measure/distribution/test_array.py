@@ -16,6 +16,7 @@ from probly.quantification.measure.distribution import (
     max_disagreement,
     max_probability_complement_of_expected,
     mutual_information,
+    vacuity,
 )
 from probly.representation.distribution.array_categorical import (
     ArrayCategoricalDistribution,
@@ -328,3 +329,37 @@ def test_zero_one_identity_holds_for_array_categorical_sample(sample_axis: int) 
     epistemic = max_disagreement(sample)
 
     np.testing.assert_allclose(total, aleatoric + epistemic, rtol=1e-12, atol=1e-12)
+
+
+def test_array_dirichlet_vacuity_known_values() -> None:
+    alphas = np.array(
+        [
+            [1.0, 1.0, 1.0],  # uniform Dir(1,1,1): K=3, alpha_0=3 -> vacuity=1
+            [10.0, 10.0, 10.0],  # K=3, alpha_0=30 -> vacuity=0.1
+            [2.0, 3.0, 5.0],  # K=3, alpha_0=10 -> vacuity=0.3
+        ],
+        dtype=float,
+    )
+    distribution = ArrayDirichletDistribution(alphas)
+
+    measured = vacuity(distribution)
+
+    np.testing.assert_allclose(measured, np.array([1.0, 0.1, 0.3]), rtol=1e-12, atol=1e-12)
+
+
+def test_array_dirichlet_vacuity_lies_in_unit_interval() -> None:
+    rng = np.random.default_rng(seed=0)
+    alphas = rng.uniform(low=1.0, high=20.0, size=(50, 4))
+    distribution = ArrayDirichletDistribution(alphas)
+
+    measured = vacuity(distribution)
+
+    assert np.all(measured > 0.0)
+    assert np.all(measured <= 1.0)
+
+
+def test_array_dirichlet_vacuity_decreases_with_evidence() -> None:
+    weak = ArrayDirichletDistribution(np.array([1.0, 1.0, 1.0], dtype=float))
+    strong = ArrayDirichletDistribution(np.array([100.0, 100.0, 100.0], dtype=float))
+
+    assert vacuity(weak) > vacuity(strong)

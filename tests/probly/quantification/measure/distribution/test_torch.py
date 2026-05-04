@@ -17,6 +17,7 @@ from probly.quantification.measure.distribution import (
     max_disagreement,
     max_probability_complement_of_expected,
     mutual_information,
+    vacuity,
 )
 from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistribution,
@@ -271,3 +272,52 @@ def test_zero_one_identity_holds_for_torch_categorical_sample(sample_axis: int) 
     epistemic = max_disagreement(sample)
 
     assert torch.allclose(total, aleatoric + epistemic, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_dirichlet_vacuity_known_values() -> None:
+    alphas = torch.tensor(
+        [
+            [1.0, 1.0, 1.0],  # uniform Dir(1,1,1): K=3, alpha_0=3 -> vacuity=1
+            [10.0, 10.0, 10.0],  # K=3, alpha_0=30 -> vacuity=0.1
+            [2.0, 3.0, 5.0],  # K=3, alpha_0=10 -> vacuity=0.3
+        ],
+        dtype=torch.float64,
+    )
+    distribution = TorchDirichletDistribution(alphas=alphas)
+
+    measured = vacuity(distribution)
+
+    expected = torch.tensor([1.0, 0.1, 0.3], dtype=torch.float64)
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_dirichlet_vacuity_lies_in_unit_interval() -> None:
+    generator = torch.Generator().manual_seed(0)
+    alphas = 1.0 + 19.0 * torch.rand((50, 4), generator=generator, dtype=torch.float64)
+    distribution = TorchDirichletDistribution(alphas=alphas)
+
+    measured = vacuity(distribution)
+
+    assert torch.all(measured > 0.0)
+    assert torch.all(measured <= 1.0)
+
+
+def test_torch_dirichlet_vacuity_decreases_with_evidence() -> None:
+    weak = TorchDirichletDistribution(alphas=torch.tensor([1.0, 1.0, 1.0], dtype=torch.float64))
+    strong = TorchDirichletDistribution(alphas=torch.tensor([100.0, 100.0, 100.0], dtype=torch.float64))
+
+    assert vacuity(weak).item() > vacuity(strong).item()
+
+
+def test_torch_dirichlet_vacuity_propagates_gradients() -> None:
+    alphas = torch.tensor([2.0, 3.0, 5.0], dtype=torch.float64, requires_grad=True)
+    distribution = TorchDirichletDistribution(alphas=alphas)
+
+    measured = vacuity(distribution)
+    measured.backward()
+
+    # d(K/alpha_0)/d(alpha_c) = -K / alpha_0^2 for each c
+    grad = alphas.grad
+    assert grad is not None
+    expected_grad = -torch.full_like(alphas, 3.0 / (10.0**2))
+    assert torch.allclose(grad, expected_grad, rtol=1e-12, atol=1e-12)

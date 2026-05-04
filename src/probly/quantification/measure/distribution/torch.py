@@ -20,6 +20,7 @@ from ._common import (
     max_disagreement,
     max_probability_complement_of_expected,
     mutual_information,
+    vacuity,
 )
 
 # Entropy
@@ -196,3 +197,20 @@ def torch_categorical_sample_max_disagreement(
     per_sample_bma_prob = torch.take_along_dim(p, bma_argmax, dim=-1).squeeze(-1)
     per_sample_max = torch.max(p, dim=-1).values
     return torch.mean(per_sample_max - per_sample_bma_prob, dim=axis)
+
+
+# Vacuity
+
+
+@vacuity.register(TorchDirichletDistribution)
+def torch_dirichlet_vacuity(distribution: TorchDirichletDistribution | torch.Tensor) -> torch.Tensor:
+    """Compute the vacuity K / alpha_0 of a torch Dirichlet distribution."""
+    if isinstance(distribution, TorchDirichletDistribution):
+        alphas = distribution.alphas
+        del distribution  # Avoid keeping a reference to the distribution for memory efficiency
+    else:
+        alphas = distribution
+
+    num_classes = alphas.shape[-1]
+    alpha_0 = torch.sum(alphas, dim=-1)
+    return torch.as_tensor(num_classes, dtype=alpha_0.dtype, device=alpha_0.device) / alpha_0

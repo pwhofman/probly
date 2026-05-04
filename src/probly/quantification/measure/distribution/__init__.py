@@ -12,8 +12,9 @@ from ._common import (
     max_disagreement,
     max_probability_complement_of_expected,
     mutual_information,
+    vacuity,
 )
-from .array import array_categorical_entropy, array_dirichlet_entropy, array_gaussian_entropy
+from .array import array_categorical_entropy, array_dirichlet_entropy, array_dirichlet_vacuity, array_gaussian_entropy
 
 
 @entropy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
@@ -23,6 +24,7 @@ from .array import array_categorical_entropy, array_dirichlet_entropy, array_gau
 @max_probability_complement_of_expected.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @expected_max_probability_complement.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @max_disagreement.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@vacuity.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
@@ -32,6 +34,7 @@ __all__ = [
     "SecondOrderDistributionLike",
     "array_categorical_entropy",
     "array_dirichlet_entropy",
+    "array_dirichlet_vacuity",
     "array_gaussian_entropy",
     "conditional_entropy",
     "entropy",
@@ -40,4 +43,5 @@ __all__ = [
     "max_disagreement",
     "max_probability_complement_of_expected",
     "mutual_information",
+    "vacuity",
 ]
