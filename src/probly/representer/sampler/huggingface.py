@@ -16,7 +16,7 @@ from transformers.generation import (
     GenerateEncoderDecoderOutput,
 )
 
-from probly.representation.text_generation import (
+from probly.representation.text_generation.torch import (
     TorchTextGeneration,
     TorchTextGenerationSample,
     TorchTextGenerationSampleSample,

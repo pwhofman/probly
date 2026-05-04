@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Any, Protocol, Self
 
 import torch
 
-from probly.representation.embedding import TorchEmbedding, TorchEmbeddingSample, TorchEmbeddingSampleSample
-from probly.representation.text_generation import (
+from probly.representation.embedding.torch import TorchEmbedding, TorchEmbeddingSample, TorchEmbeddingSampleSample
+from probly.representation.text_generation.torch import (
     TorchTextGeneration,
     TorchTextGenerationSample,
     TorchTextGenerationSampleSample,

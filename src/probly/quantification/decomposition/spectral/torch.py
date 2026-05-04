@@ -9,8 +9,8 @@ import torch
 
 from probly.quantification._quantification import decompose
 from probly.quantification.decomposition.decomposition import AdditiveDecomposition
-from probly.quantification.measure.spectral import spectral_entropy
-from probly.representation.embedding import TorchEmbedding, TorchEmbeddingSampleSample
+from probly.quantification.measure.spectral.torch import spectral_entropy
+from probly.representation.embedding.torch import TorchEmbedding, TorchEmbeddingSampleSample
 
 
 def _embedding_ndim(embeddings: TorchEmbedding | torch.Tensor) -> int:

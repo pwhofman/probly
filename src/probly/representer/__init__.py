@@ -8,14 +8,10 @@ from .credal_set import (
     compute_representative_sample,
 )
 from .sampler import IterableSampler, Sampler
-from .semantic_clustering import DEFAULT_NLI_MODEL, GreedyHFSemanticClusterer, HFSemanticClusterer
 
 __all__ = [
-    "DEFAULT_NLI_MODEL",
     "ConvexCredalSetRepresenter",
     "DummyRepresenter",
-    "GreedyHFSemanticClusterer",
-    "HFSemanticClusterer",
     "IterableSampler",
     "ProbabilityIntervalsRepresenter",
     "RepresentativeConvexCredalSetRepresenter",

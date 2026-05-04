@@ -5,8 +5,7 @@ from __future__ import annotations
 import torch
 
 from probly.quantification._quantification import measure
-from probly.representation.embedding import TorchEmbedding
-from probly.representation.embedding.torch import TorchEmbeddingSample
+from probly.representation.embedding.torch import TorchEmbedding, TorchEmbeddingSample
 
 type EmbeddingInput = TorchEmbedding | torch.Tensor
 

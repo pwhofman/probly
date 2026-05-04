@@ -14,7 +14,7 @@ from probly.representation.distribution.torch_sparse_log_categorical import (
     TorchSparseLogCategoricalDistribution,
     TorchSparseLogCategoricalDistributionSample,
 )
-from probly.representation.text_generation import (
+from probly.representation.text_generation.torch import (
     TorchTextGeneration,
     TorchTextGenerationSample,
     TorchTextGenerationSampleSample,
@@ -301,7 +301,10 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOut
             msg = "sample weights must be non-negative."
             raise ValueError(msg)
         log_weights = torch.log(weights_tensor).reshape(
-            (*((1,) * (distribution.logits.ndim - 1)), weights_tensor.shape[0])
+            (
+                *((1,) * (distribution.logits.ndim - 1)),
+                weights_tensor.shape[0],
+            )
         )
         return TorchSparseLogCategoricalDistribution(
             group_ids=distribution.group_ids,
