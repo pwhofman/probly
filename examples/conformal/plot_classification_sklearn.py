@@ -25,7 +25,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold, train_test_split
 
 from probly.calibrator import calibrate
-from probly.metrics._common import average_set_size, empirical_coverage_classification
+from probly.evaluation import coverage, efficiency
 from probly.method.conformal import conformal_aps, conformal_lac, conformal_raps, conformal_saps
 from probly.representer import representer
 
@@ -52,8 +52,8 @@ model.fit(X_train, y_train)
 
 calibrated_model = calibrate(conformal_lac(model), ALPHA, y_calib, X_calib)
 output = representer(calibrated_model).predict(X_test)
-lac_cov = empirical_coverage_classification(output, y_test)
-lac_size = average_set_size(output)
+lac_cov = coverage(output, y_test)
+lac_size = efficiency(output)
 print(f"LAC  — coverage: {lac_cov:.3f}, avg set size: {lac_size:.3f}")
 
 # %%
@@ -63,8 +63,8 @@ print(f"LAC  — coverage: {lac_cov:.3f}, avg set size: {lac_size:.3f}")
 
 calibrated_model = calibrate(conformal_aps(model, randomized=True), ALPHA, y_calib, X_calib)
 output = representer(calibrated_model).predict(X_test)
-aps_cov = empirical_coverage_classification(output, y_test)
-aps_size = average_set_size(output)
+aps_cov = coverage(output, y_test)
+aps_size = efficiency(output)
 print(f"APS  — coverage: {aps_cov:.3f}, avg set size: {aps_size:.3f}")
 
 # %%
@@ -74,8 +74,8 @@ print(f"APS  — coverage: {aps_cov:.3f}, avg set size: {aps_size:.3f}")
 
 calibrated_model = calibrate(conformal_raps(model, randomized=True, lambda_reg=0.1, k_reg=0), ALPHA, y_calib, X_calib)
 output = representer(calibrated_model).predict(X_test)
-raps_cov = empirical_coverage_classification(output, y_test)
-raps_size = average_set_size(output)
+raps_cov = coverage(output, y_test)
+raps_size = efficiency(output)
 print(f"RAPS — coverage: {raps_cov:.3f}, avg set size: {raps_size:.3f}")
 
 # %%
@@ -85,8 +85,8 @@ print(f"RAPS — coverage: {raps_cov:.3f}, avg set size: {raps_size:.3f}")
 
 calibrated_model = calibrate(conformal_saps(model, randomized=True, lambda_val=0.1), ALPHA, y_calib, X_calib)
 output = representer(calibrated_model).predict(X_test)
-saps_cov = empirical_coverage_classification(output, y_test)
-saps_size = average_set_size(output)
+saps_cov = coverage(output, y_test)
+saps_size = efficiency(output)
 print(f"SAPS — coverage: {saps_cov:.3f}, avg set size: {saps_size:.3f}")
 
 # %%
@@ -108,8 +108,8 @@ for fold, (train_idx, test_idx) in enumerate(KFold(n_splits=5, shuffle=True, ran
     for name, conformal_func in [("LAC", conformal_lac), ("APS", conformal_aps), ("RAPS", conformal_raps), ("SAPS", conformal_saps)]:
         calibrated_model = calibrate(conformal_func(fold_model), ALPHA, y_calib, X_calib)
         output = representer(calibrated_model).predict(X_test)
-        cov = empirical_coverage_classification(output, y_test)
-        size = average_set_size(output)
+        cov = coverage(output, y_test)
+        size = efficiency(output)
         res[name].append((cov, size))
 
 for name, vals in res.items():
