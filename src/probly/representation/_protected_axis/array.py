@@ -20,7 +20,7 @@ from probly.representation._protected_axis.array_functions import array_function
 from probly.representation.array_like import ArrayFlagsLike, NumpyArrayLike, NumpyArrayLikeImplementation, ToIndices
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterator
     from types import ModuleType
 
     from numpy.typing import DTypeLike
@@ -170,6 +170,11 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
             msg = "len() of unsized representation"
             raise TypeError(msg)
         return len(cast("Any", self.protected_value()))
+
+    @override
+    def __iter__(self) -> Iterator[Any]:
+        for index in range(len(self)):
+            yield self[index]
 
     @override
     def __array_namespace__(

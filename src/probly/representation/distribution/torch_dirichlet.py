@@ -14,7 +14,7 @@ from probly.representation.sample.torch import TorchSample
 from probly.representation.torch_functions import torch_average
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable
 
     import numpy as np
 
@@ -83,10 +83,6 @@ class TorchDirichletDistribution(
     def numpy(self, *, force: bool = False) -> np.ndarray:
         """Convert the Dirichlet alpha parameters to a numpy array."""
         return self.alphas.numpy(force=force)
-
-    @override
-    def __iter__(self) -> Iterator[Any]:
-        return self.alphas.__iter__()
 
     @override
     def __eq__(self, value: Any) -> torch.Tensor:  # ty: ignore[invalid-method-override]  # noqa: PYI032

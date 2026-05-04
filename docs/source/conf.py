@@ -104,6 +104,7 @@ sphinx_gallery_conf = {
     "doc_module": ("probly",),
     "reference_url": {"probly": None},
     "filename_pattern": r"plot_.*\.py",
+    "ignore_pattern": r".*/llm/.*",
     "plot_gallery": True,
     "download_all_examples": False,
     "notebook_extensions": set(),

@@ -16,6 +16,7 @@ from probly.quantification.measure.credal_set import (
 )
 from probly.representation.credal_set.torch import (
     TorchConvexCredalSet,
+    TorchDistanceBasedCredalSet,
     TorchProbabilityIntervalsCredalSet,
 )
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
@@ -174,3 +175,82 @@ def test_generalized_hartley_base_consistency() -> None:
     gh_nat = generalized_hartley(cs)
     gh_2 = generalized_hartley(cs, base=2.0)
     assert float(gh_2) == pytest.approx(float(gh_nat) / np.log(2), abs=1e-5)
+
+
+# ---------------------------------------------------------------------------
+# TorchDistanceBasedCredalSet
+# ---------------------------------------------------------------------------
+
+
+def _distance_credal_set(nominal: list[float], radius: float) -> TorchDistanceBasedCredalSet:
+    return TorchDistanceBasedCredalSet(
+        nominal=TorchCategoricalDistribution(torch.tensor(nominal, dtype=torch.float64)),
+        radius=torch.tensor(radius, dtype=torch.float64),
+    )
+
+
+def test_distance_upper_entropy_singleton_returns_exact_entropy() -> None:
+    """When radius is 0, upper == lower == nominal entropy."""
+    probs = [0.2, 0.5, 0.3]
+    cs = _distance_credal_set(probs, 0.0)
+    ue = upper_entropy(cs)
+    le = lower_entropy(cs)
+    expected = float(scipy_entropy(probs))
+    assert float(ue) == pytest.approx(expected, abs=1e-5)
+    assert float(le) == pytest.approx(expected, abs=1e-5)
+
+
+def test_distance_upper_ge_lower_entropy() -> None:
+    """Upper entropy must be >= lower entropy."""
+    cs = _distance_credal_set([0.6, 0.3, 0.1], 0.2)
+    ue = upper_entropy(cs)
+    le = lower_entropy(cs)
+    assert float(ue) >= float(le) - 1e-6
+
+
+def test_distance_matches_equivalent_intervals() -> None:
+    """Distance-based entropy must match the equivalent probability-intervals credal set.
+
+    A TV ball with nominal p and radius r implies:
+        lower_i = max(0, p_i - r)
+        upper_i = min(1, p_i + r)
+    """
+    nominal = [0.5, 0.3, 0.2]
+    radius = 0.15
+    cs_dist = _distance_credal_set(nominal, radius)
+
+    lower = [max(0.0, p - radius) for p in nominal]
+    upper = [min(1.0, p + radius) for p in nominal]
+    cs_int = TorchProbabilityIntervalsCredalSet(
+        lower_bounds=torch.tensor(lower, dtype=torch.float64),
+        upper_bounds=torch.tensor(upper, dtype=torch.float64),
+    )
+
+    ue_dist = upper_entropy(cs_dist)
+    ue_int = upper_entropy(cs_int)
+    le_dist = lower_entropy(cs_dist)
+    le_int = lower_entropy(cs_int)
+
+    assert float(ue_dist) == pytest.approx(float(ue_int), abs=1e-5)
+    assert float(le_dist) == pytest.approx(float(le_int), abs=1e-5)
+
+
+def test_distance_batch_shape_preserved() -> None:
+    """Entropy output shape matches batch dims."""
+    nominal = torch.rand(4, 3, dtype=torch.float64)
+    nominal = nominal / nominal.sum(dim=-1, keepdim=True)
+    radius = torch.full((4,), 0.1, dtype=torch.float64)
+    cs = TorchDistanceBasedCredalSet(
+        nominal=TorchCategoricalDistribution(nominal),
+        radius=radius,
+    )
+    assert upper_entropy(cs).shape == (4,)
+    assert lower_entropy(cs).shape == (4,)
+
+
+def test_distance_upper_entropy_base2() -> None:
+    """Upper entropy with base=2 equals natural upper entropy / ln(2)."""
+    cs = _distance_credal_set([0.5, 0.3, 0.2], 0.1)
+    ue_nat = upper_entropy(cs)
+    ue_2 = upper_entropy(cs, base=2.0)
+    assert float(ue_2) == pytest.approx(float(ue_nat) / np.log(2), abs=1e-5)

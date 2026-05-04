@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
 
-from ._common import ListSample, Sample, SampleAxis, SampleFactory, SampleParams, create_sample
+from ._common import ListSample, RepresentationSample, Sample, SampleAxis, SampleFactory, SampleParams, create_sample
 from .array import ArraySample
 
 
@@ -21,6 +21,7 @@ def _(_: type) -> None:
 __all__ = [
     "ArraySample",
     "ListSample",
+    "RepresentationSample",
     "Sample",
     "SampleAxis",
     "SampleFactory",

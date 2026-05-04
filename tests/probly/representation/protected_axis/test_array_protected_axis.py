@@ -160,6 +160,19 @@ def test_getitem_and_setitem_for_instance_and_tuple() -> None:
     np.testing.assert_array_equal(x.second[1], np.array([3.0, 4.0]))
 
 
+def test_iteration_yields_indexed_protected_objects() -> None:
+    x = PairArray(np.arange(6.0).reshape(2, 3), np.arange(6.0).reshape(2, 3) + 10)
+
+    items = list(x)
+
+    assert len(items) == 2
+    assert all(isinstance(item, PairArray) for item in items)
+    np.testing.assert_array_equal(items[0].first, np.array([0.0, 1.0, 2.0]))
+    np.testing.assert_array_equal(items[0].second, np.array([10.0, 11.0, 12.0]))
+    np.testing.assert_array_equal(items[1].first, np.array([3.0, 4.0, 5.0]))
+    np.testing.assert_array_equal(items[1].second, np.array([13.0, 14.0, 15.0]))
+
+
 def test_nested_multi_field_value_delegates_without_array_casts() -> None:
     inner = InnerPair(
         left=np.arange(24.0).reshape(2, 3, 4),

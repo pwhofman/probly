@@ -17,8 +17,6 @@ from probly.representation.distribution._common import (
 from probly.representation.sample.array import ArraySample
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
-
     from numpy.typing import DTypeLike
 
 
@@ -144,10 +142,6 @@ class ArrayGaussianDistribution(ArrayAxisProtected[np.ndarray], GaussianDistribu
             return NotImplemented
 
         return result
-
-    @override
-    def __iter__(self) -> Iterator[Any]:
-        return self.mean.__iter__()
 
     @override
     def __eq__(self, other: Any) -> np.ndarray:  # ty: ignore[invalid-method-override]  # noqa: PYI032
