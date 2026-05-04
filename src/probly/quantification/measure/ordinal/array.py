@@ -12,6 +12,14 @@ from probly.representation.distribution.array_categorical import (
 
 from ._common import (
     LogBase,
+    labelwise_conditional_entropy,
+    labelwise_conditional_variance,
+    labelwise_entropy,
+    labelwise_entropy_of_expected_predictive_distribution,
+    labelwise_mutual_information_entropy,
+    labelwise_mutual_information_variance,
+    labelwise_variance,
+    labelwise_variance_of_expected_predictive_distribution,
     ordinal_conditional_entropy,
     ordinal_conditional_variance,
     ordinal_entropy,
@@ -178,3 +186,92 @@ def array_ordinal_integer_variance_aleatoric(
     mu_m = np.sum(labels * p, axis=-1, keepdims=True)
     per_model = np.sum(((labels - mu_m) ** 2) * p, axis=-1)
     return np.mean(per_model, axis=axis)
+
+
+# Label-wise (one-vs-rest) binary reduction
+
+
+@labelwise_entropy.register(ArrayCategoricalDistribution)
+def array_categorical_labelwise_entropy(
+    distribution: ArrayCategoricalDistribution | np.ndarray, base: LogBase = None
+) -> np.ndarray:
+    """Compute the label-wise binary entropy of a categorical distribution."""
+    p = distribution.probabilities if isinstance(distribution, ArrayCategoricalDistribution) else distribution
+    return np.sum(_array_binary_entropy(p, base=base), axis=-1)
+
+
+@labelwise_variance.register(ArrayCategoricalDistribution)
+def array_categorical_labelwise_variance(
+    distribution: ArrayCategoricalDistribution | np.ndarray,
+    base: LogBase = None,  # noqa: ARG001
+) -> np.ndarray:
+    """Compute the label-wise binary variance of a categorical distribution."""
+    p = distribution.probabilities if isinstance(distribution, ArrayCategoricalDistribution) else distribution
+    return np.sum(p * (1 - p), axis=-1)
+
+
+@labelwise_entropy_of_expected_predictive_distribution.register(ArrayCategoricalDistributionSample)
+def array_categorical_sample_labelwise_entropy_of_expected_predictive_distribution(
+    sample: ArrayCategoricalDistributionSample, base: LogBase = None
+) -> np.ndarray:
+    """Compute the label-wise binary entropy of the expected predictive distribution."""
+    p = sample.array.probabilities
+    axis = sample.sample_axis
+    expected_p = np.mean(p, axis=axis)
+    return np.sum(_array_binary_entropy(expected_p, base=base), axis=-1)
+
+
+@labelwise_conditional_entropy.register(ArrayCategoricalDistributionSample)
+def array_categorical_sample_labelwise_conditional_entropy(
+    sample: ArrayCategoricalDistributionSample, base: LogBase = None
+) -> np.ndarray:
+    """Compute the label-wise conditional entropy of a categorical sample."""
+    p = sample.array.probabilities
+    axis = sample.sample_axis
+    per_sample_entropy = np.sum(_array_binary_entropy(p, base=base), axis=-1)
+    return np.mean(per_sample_entropy, axis=axis)
+
+
+@labelwise_mutual_information_entropy.register(ArrayCategoricalDistributionSample)
+def array_categorical_sample_labelwise_mutual_information_entropy(
+    sample: ArrayCategoricalDistributionSample, base: LogBase = None
+) -> np.ndarray:
+    """Compute the label-wise entropy-based mutual information of a categorical sample."""
+    return array_categorical_sample_labelwise_entropy_of_expected_predictive_distribution(
+        sample, base
+    ) - array_categorical_sample_labelwise_conditional_entropy(sample, base)
+
+
+@labelwise_variance_of_expected_predictive_distribution.register(ArrayCategoricalDistributionSample)
+def array_categorical_sample_labelwise_variance_of_expected_predictive_distribution(
+    sample: ArrayCategoricalDistributionSample,
+    base: LogBase = None,  # noqa: ARG001
+) -> np.ndarray:
+    """Compute the label-wise binary variance of the expected predictive distribution."""
+    p = sample.array.probabilities
+    axis = sample.sample_axis
+    expected_p = np.mean(p, axis=axis)
+    return np.sum(expected_p * (1 - expected_p), axis=-1)
+
+
+@labelwise_conditional_variance.register(ArrayCategoricalDistributionSample)
+def array_categorical_sample_labelwise_conditional_variance(
+    sample: ArrayCategoricalDistributionSample,
+    base: LogBase = None,  # noqa: ARG001
+) -> np.ndarray:
+    """Compute the label-wise conditional variance of a categorical sample."""
+    p = sample.array.probabilities
+    axis = sample.sample_axis
+    per_sample_variance = np.sum(p * (1 - p), axis=-1)
+    return np.mean(per_sample_variance, axis=axis)
+
+
+@labelwise_mutual_information_variance.register(ArrayCategoricalDistributionSample)
+def array_categorical_sample_labelwise_mutual_information_variance(
+    sample: ArrayCategoricalDistributionSample,
+    base: LogBase = None,  # noqa: ARG001
+) -> np.ndarray:
+    """Compute the label-wise variance-based mutual information of a categorical sample."""
+    p = sample.array.probabilities
+    axis = sample.sample_axis
+    return np.sum(np.var(p, axis=axis, ddof=0), axis=-1)
