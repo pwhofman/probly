@@ -16,6 +16,7 @@ from torchvision import datasets, transforms
 import torchvision.transforms.v2 as T
 import webdataset as wds
 
+from probly.datasets.torch import CIFAR10H
 from probly_benchmark.paths import DATA_PATH, IMAGENET_SHARD_PATH, IMAGENET_TORCH_PATH
 
 if TYPE_CHECKING:
@@ -38,6 +39,14 @@ class DataLoaders(NamedTuple):
 
 TRANSFORMS_TEST = {
     "cifar10": T.Compose(
+        [
+            T.Resize((32, 32), antialias=True),
+            T.ToImage(),
+            T.ToDtype(torch.float32, scale=True),
+            T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ]
+    ),
+    "cifar10h": T.Compose(
         [
             T.Resize((32, 32), antialias=True),
             T.ToImage(),
@@ -608,11 +617,8 @@ def get_data_selective_prediction(
             raise ValueError(msg)
 
 
-def get_data_first_order_comparison(
+def get_data_first_order(
     name: str,
-    seed: int,  # noqa: ARG001
-    val_split: float = 0.0,  # noqa: ARG001
-    cal_split: float = 0.0,  # noqa: ARG001
     **kwargs: Any,  # noqa: ANN401
 ) -> DataLoader:
     """Get the test loader for first-order data comparison.
@@ -633,15 +639,13 @@ def get_data_first_order_comparison(
         DataLoader over the test set.
 
     Raises:
-        ValueError: If ``name`` is not a recognised dataset.
+        ValueError: If ``name`` is not a recognized dataset.
     """
     name = name.lower()
     match name:
-        case "cifar10":
-            test = torchvision.datasets.CIFAR10(
-                root=DATA_PATH, train=False, download=True, transform=TRANSFORMS_TEST[name]
-            )
-            return DataLoader(test, **kwargs)
+        case "cifar10h":
+            data = CIFAR10H(root=DATA_PATH, download=True, transform=TRANSFORMS_TEST["cifar10"])
+            return DataLoader(data, **kwargs)
         case _:
             msg = f"Dataset {name} not recognized"
             raise ValueError(msg)
