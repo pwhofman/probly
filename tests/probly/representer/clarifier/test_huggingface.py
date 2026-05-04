@@ -10,6 +10,7 @@ import pytest
 pytest.importorskip("torch")
 import torch
 
+pytest.importorskip("transformers")
 from probly.representer.clarifier.huggingface import CLARIFICATION_PROMPT, HFQuestionClarifier
 
 

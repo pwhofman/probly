@@ -16,6 +16,8 @@ from probly.representation.text_generation.torch import (
     TorchTextGenerationSample,
     TorchTextGenerationSampleSample,
 )
+
+pytest.importorskip("sentence_transformers")
 from probly.representer.embedder.huggingface import DEFAULT_EMBEDDING_MODEL, HFTextEmbedder
 
 
