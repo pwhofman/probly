@@ -81,10 +81,17 @@ def _copy_weight_into_center(new: IntConv2d | IntLinear, obj: nn.Conv2d | nn.Lin
     Works for both ``nn.Conv2d`` and ``nn.Linear`` because they share the same
     ``weight``/``bias`` attribute names and shapes match the corresponding
     ``IntConv2d``/``IntLinear`` ``center_weight``/``center_bias`` slots.
+
+    Also zeros the radius weight and bias so the interval starts degenerate
+    (lo == hi), reproducing the pretrained model's predictions exactly before
+    any training has modified the radius parameters.
     """
     new.center_weight.copy_(obj.weight)
+    new.radius_weight.zero_()
     if obj.bias is not None and new.center_bias is not None:
         new.center_bias.copy_(obj.bias)
+    if new.radius_bias is not None:
+        new.radius_bias.zero_()
 
 
 @torch.no_grad()
