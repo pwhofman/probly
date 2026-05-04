@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, override
 import torch
 
 from probly.representation._protected_axis.torch import TorchAxisProtected
-from probly.representation.embedding._common import Embedding, EmbeddingSample, EmbeddingSampleSample
+from probly.representation.embedding._common import Embedding, EmbeddingSample, EmbeddingSampleSample, create_embedding
 from probly.representation.sample.torch import TorchSample
 from probly.representation.torch_functions import torch_average
 
@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
+@create_embedding.register(torch.Tensor)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class TorchEmbedding(TorchAxisProtected[torch.Tensor], Embedding[torch.Tensor]):
     """Embedding vectors with a protected trailing embedding axis.

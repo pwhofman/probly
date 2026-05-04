@@ -8,6 +8,7 @@ import warnings
 
 from flextype import flexdispatch
 from probly.predictor import Predictor, RandomPredictor, predict, predict_raw
+from probly.quantification._quantification import decompose
 from probly.quantification.decomposition.decomposition import CachingDecomposition, EpistemicDecomposition
 from probly.quantification.measure.distribution import DEFAULT_MEAN_FIELD_FACTOR, dempster_shafer_uncertainty
 from probly.representation.distribution import (
@@ -15,6 +16,7 @@ from probly.representation.distribution import (
     GaussianDistribution,
     create_gaussian_distribution,
 )
+from probly.representation.representation import Representation
 from probly.representer import Representer, representer
 from probly.transformation.transformation import predictor_transformation
 from probly.traverse_nn import nn_compose
@@ -66,6 +68,15 @@ def compute_categorical_sample_from_logits(sample: Sample[Any]) -> CategoricalDi
     raise NotImplementedError(msg)
 
 
+@runtime_checkable
+class SNGPRepresentation(Representation, Protocol):
+    """Pseudo-representation type marking outputs of the SNGP method.
+
+    Marker protocol used to route :func:`decompose` to :class:`SNGPDecomposition`.
+    """
+
+
+@representer.register(SNGPPredictor)
 class SNGPRepresenter[**In, Out](Representer[Any, In, Out, CategoricalDistributionSample[Any]]):
     """Representer that samples SNGP logits and converts them to categorical samples."""
 
@@ -187,6 +198,7 @@ def sngp[**In, Out: GaussianDistribution](
 
 
 @predict.register(SNGPPredictor)
+@SNGPRepresentation.register_factory
 def _[**In](
     predictor: SNGPPredictor[In, GaussianDistribution], *args: In.args, **kwargs: In.kwargs
 ) -> GaussianDistribution:
@@ -194,9 +206,6 @@ def _[**In](
     logits, variance = predict_raw(predictor, *args, **kwargs)
     distribution = create_gaussian_distribution(logits, variance)
     return distribution
-
-
-representer.register(SNGPPredictor, SNGPRepresenter)
 
 
 @flexdispatch
@@ -239,6 +248,7 @@ def reset_precision_matrix(predictor: Any) -> None:  # noqa: ANN401
     raise NotImplementedError(msg)
 
 
+@decompose.register(SNGPRepresentation)
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
 class SNGPDecomposition[T](CachingDecomposition, EpistemicDecomposition[T]):
     """Decomposition based on SNGP's Dempster-Shafer epistemic uncertainty.
