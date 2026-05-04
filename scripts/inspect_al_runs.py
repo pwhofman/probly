@@ -1,17 +1,45 @@
 #!/usr/bin/env python3
-"""Inventory and visualize active-learning runs from wandb.
+r"""Inventory and visualize active-learning runs from wandb.
 
 Pulls runs from one or more ``<entity>/<project>`` sources (defaults:
 ``speyewear/jakubpaplham-al`` and ``probly/max-test``), merges them, then writes:
 
-- ``inventory.csv``         seed-pivoted state + NAUC table
-- ``coverage_gaps.md``      missing/non-finished seeds per config
+- ``inventory.csv``                  seed-pivoted state + NAUC table
+- ``coverage_gaps.md``               missing/non-finished seeds per config
 - ``learning_curves_<dataset>.png``  mean +/- std accuracy vs labeled_size
-- ``nauc_<dataset>.png``    per-method NAUC bars (uncertainty vs margin/random)
+- ``nauc_<dataset>.png``             per-method NAUC bars (uncertainty vs margin/random)
+- ``nauc_<dataset>_zoom.png``        same, with the y-axis cropped near the bars
+- ``wandb_cache_runs.pkl``           flat per-run DataFrame (consumed by run_openml6.py)
+- ``wandb_cache_history.pkl``        per-iteration history rows for finished runs
 
-Caches the wandb fetch as pickle so re-runs are fast. Pass ``--refresh``
-to invalidate the cache. Pass ``--source entity/project`` (repeatable) to
-override the default sources.
+Calibration / supervised-loss / conformal overrides are folded into a synthetic
+``method_label`` (e.g. ``base+temperature_scaling``) so each variant is treated
+as a distinct method everywhere downstream.
+
+Usage::
+
+    # Default: fetch from both sources, cache, write all artifacts.
+    uv run python scripts/inspect_al_runs.py
+
+    # Re-use the cache (fast, ~1s) — works for plot iteration without network.
+    uv run python scripts/inspect_al_runs.py
+
+    # Re-fetch from wandb (slow, ~7-10 min for ~1000+ runs).
+    uv run python scripts/inspect_al_runs.py --refresh
+
+    # Pick specific wandb sources (repeatable).
+    uv run python scripts/inspect_al_runs.py \\
+        --source probly/max-test --source speyewear/jakubpaplham-al --refresh
+
+    # Custom output directory.
+    uv run python scripts/inspect_al_runs.py --out /tmp/al_out
+
+Notes:
+- Auth comes from ``~/.netrc`` / ``wandb login``; no API key flag here.
+- Non-AL runs (no ``al_strategy`` in config) are filtered out at fetch time.
+- Per-run timeouts are tolerated: a single ``ReadTimeout`` skips that run, the
+  rest of the fetch continues. If the iterator stalls before any output, retry
+  off-peak (the wandb runs paginator is occasionally slow under load).
 """
 # ruff: noqa: T201, ANN401, D103
 

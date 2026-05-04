@@ -1,19 +1,55 @@
 #!/usr/bin/env python3
-"""Run the openml_6 sweep, skipping anything already finished — fully offline.
+r"""Run the openml_6 sweep, skipping anything already finished — fully offline.
 
 Covers all openml_6 settings (no conformal-prediction blocks):
 
-- Baselines: ``method=base`` x {margin, entropy, least_confident}
-- Calibration: ``method=base`` x {temperature_scaling, vector_scaling}
-- Supervised loss: ``method=base`` x {label_smoothing, label_relaxation}
+- Baselines:        ``method=base`` x {margin, entropy, least_confident} x 10 seeds
+- Calibration:      ``method=base`` + {temperature_scaling, vector_scaling}
+- Supervised loss:  ``method=base`` + {label_smoothing, label_relaxation}
 - UQ methods x {margin, random}
-- UQ uncertainty:EU and uncertainty:TU per method
+- UQ uncertainty:EU per method
+- UQ uncertainty:TU per method (excluding ddu)
 
 Determines what's already done by reading a local ``.pkl`` / ``.csv`` (defaults to
 ``scripts/al_analysis_out/wandb_cache_runs.pkl`` produced by
 ``scripts/inspect_al_runs.py``). No wandb roundtrip happens here — refresh the
 cache first if you want fresh state.
 
+A combo is considered "done" if a finished run with a matching tuple of
+``(method, strategy, notion, seed, calibration, supervised_loss)`` exists in the
+seed file(s) for ``dataset == openml_6``.
+
+Usage::
+
+    # Pre-req: populate the cache (one-time or whenever you want fresh state).
+    uv run python scripts/inspect_al_runs.py --refresh
+
+    # Dry-run: print the missing combos and a summary; takes ~1s.
+    uv run python scripts/run_openml6.py
+
+    # Actually run the missing combos sequentially (continues on failure).
+    uv run python scripts/run_openml6.py --execute
+
+    # Smoke test: run only the first 3 missing combos and stop.
+    uv run python scripts/run_openml6.py --execute --limit 3
+
+    # Use a different seed file (e.g. a hand-curated CSV).
+    uv run python scripts/run_openml6.py --seed-file my_done.csv
+
+    # Combine multiple seed files (the union counts as 'done').
+    uv run python scripts/run_openml6.py \\
+        --seed-file scripts/al_analysis_out/wandb_cache_runs.pkl \\
+        --seed-file extra_runs.csv
+
+Seed-file schema (CSV or pickled DataFrame):
+
+    Required: method, strategy, seed, state, dataset
+    Optional: notion, calibration, supervised_loss
+
+Only rows with ``state == "finished"`` and ``dataset == "openml_6"`` are counted.
+
+New runs are launched with ``wandb.project=max-test`` and ``+wandb.entity=probly``;
+edit the ``WANDB_PROJECT`` / ``WANDB_ENTITY`` constants if you want to redirect.
 Default is dry-run; pass ``--execute`` to actually launch missing combos.
 """
 # ruff: noqa: T201, ANN401, D103
