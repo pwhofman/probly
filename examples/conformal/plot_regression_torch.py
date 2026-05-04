@@ -20,7 +20,7 @@ from sklearn.datasets import load_diabetes
 from sklearn.model_selection import KFold, train_test_split
 
 from probly.calibrator import calibrate
-from probly.metrics._common import average_interval_size, empirical_coverage_regression
+from probly.evaluation import coverage, efficiency
 from probly.method.conformal import conformal_absolute_error
 from probly.representer import representer
 
@@ -82,9 +82,9 @@ with torch.no_grad():
     calibrated_model = calibrate(conformal_absolute_error(model), 0.05, y_calib_t, X_calib_t)
     output = representer(calibrated_model).predict(X_test_t)
 
-coverage = empirical_coverage_regression(output, y_test_t)
-avg_size = average_interval_size(output)
-print(f"Absolute Error — coverage: {coverage:.3f}, avg interval size: {avg_size:.1f}")
+cov = coverage(output, y_test_t)
+avg_size = efficiency(output)
+print(f"Absolute Error — coverage: {cov:.3f}, avg interval size: {avg_size:.1f}")
 
 # %%
 # Visualise prediction intervals
@@ -139,8 +139,8 @@ for fold, (train_idx, test_idx) in enumerate(KFold(n_splits=5, shuffle=True, ran
         calibrated_model = calibrate(conformal_absolute_error(fold_model), 0.05, y_calib_t, X_calib_t)
         output = representer(calibrated_model).predict(X_test_t)
 
-    cov = empirical_coverage_regression(output, y_test_t)
-    size = average_interval_size(output)
+    cov = coverage(output, y_test_t)
+    size = efficiency(output)
     res["Absolute Error"].append((cov, size))
 
 for name, vals in res.items():

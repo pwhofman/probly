@@ -5,13 +5,6 @@ from __future__ import annotations
 import torch
 
 from probly.metrics import auc, average_precision_score, precision_recall_curve, roc_auc_score, roc_curve
-from probly.metrics._common import (
-    average_interval_size,
-    average_set_size,
-    empirical_coverage_classification,
-    empirical_coverage_regression,
-)
-from probly.representation.conformal_set.torch import TorchIntervalConformalSet, TorchOneHotConformalSet
 
 
 @auc.register(torch.Tensor)
@@ -94,44 +87,3 @@ def roc_curve_torch(y_true: torch.Tensor, y_score: torch.Tensor) -> tuple[torch.
     thresholds = torch.cat([y_score_sorted[..., :1] + 1, y_score_sorted], dim=-1)
 
     return fpr, tpr, thresholds
-
-
-@empirical_coverage_classification.register(torch.Tensor)
-def _empirical_coverage_classification_torch(y_pred: torch.Tensor, y_true: torch.Tensor) -> float:
-    contained = y_pred[torch.arange(len(y_true)), y_true.long()]
-    return contained.float().mean().cpu().item()
-
-
-@empirical_coverage_regression.register(torch.Tensor)
-def _empirical_coverage_regression_torch(y_pred: torch.Tensor, y_true: torch.Tensor) -> float:
-    return ((y_true >= y_pred[:, 0]) & (y_true <= y_pred[:, 1])).float().mean().cpu().item()
-
-
-@average_set_size.register(torch.Tensor)
-def _average_set_size_torch(y_pred: torch.Tensor) -> float:
-    return y_pred.sum(dim=1).float().mean().cpu().item()
-
-
-@average_interval_size.register(torch.Tensor)
-def _average_interval_size_torch(y_pred: torch.Tensor) -> float:
-    return (y_pred[:, 1] - y_pred[:, 0]).float().mean().cpu().item()
-
-
-@average_interval_size.register(TorchIntervalConformalSet)
-def _average_interval_size_torch_interval(y_pred: TorchIntervalConformalSet) -> float:
-    return average_interval_size(y_pred.tensor.cpu())
-
-
-@average_set_size.register(TorchOneHotConformalSet)
-def _average_set_size_torch_onehot(y_pred: TorchOneHotConformalSet) -> float:
-    return average_set_size(y_pred.tensor.cpu().numpy())
-
-
-@empirical_coverage_regression.register(TorchIntervalConformalSet)
-def _empirical_coverage_regression_torch_interval[T](y_pred: TorchIntervalConformalSet, y_true: T) -> float:
-    return empirical_coverage_regression(y_pred.tensor.cpu(), y_true)
-
-
-@empirical_coverage_classification.register(TorchOneHotConformalSet)
-def _empirical_coverage_classification_torch_onehot[T](y_pred: TorchOneHotConformalSet, y_true: T) -> float:
-    return empirical_coverage_classification(y_pred.tensor.cpu(), y_true)
