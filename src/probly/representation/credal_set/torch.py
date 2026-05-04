@@ -102,6 +102,14 @@ class TorchConvexCredalSet(
         """Get the number of classes."""
         return self.tensor.num_classes
 
+    def lower(self) -> torch.Tensor:
+        """Return the per-class lower probability envelope of the convex hull."""
+        return torch.amin(self.tensor.probabilities, dim=-2)
+
+    def upper(self) -> torch.Tensor:
+        """Return the per-class upper probability envelope of the convex hull."""
+        return torch.amax(self.tensor.probabilities, dim=-2)
+
     @override
     @property
     def barycenter(self) -> TorchCategoricalDistribution:
@@ -360,6 +368,14 @@ class TorchProbabilityIntervalsCredalSet(
     def width(self) -> torch.Tensor:
         """Compute interval width for each class."""
         return self.upper_bounds - self.lower_bounds
+
+    def lower(self) -> torch.Tensor:
+        """Return the per-class lower probability envelope (alias for ``lower_bounds``)."""
+        return self.lower_bounds
+
+    def upper(self) -> torch.Tensor:
+        """Return the per-class upper probability envelope (alias for ``upper_bounds``)."""
+        return self.upper_bounds
 
     def contains(self, probabilities: torch.Tensor) -> torch.Tensor:
         """Check whether probabilities are inside the intervals."""
