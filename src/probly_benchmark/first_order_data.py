@@ -7,6 +7,7 @@ from typing import Any
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
+from probly.metrics import coverage, efficiency
 from probly.representer import representer
 from probly_benchmark import calibration, data, utils
 from probly_benchmark.utils import (
@@ -41,13 +42,13 @@ def main(cfg: DictConfig) -> None:
     )  # ty: ignore[invalid-assignment]
     rep = representer(model, **rep_kwargs)
 
-    _outputs, _targets = collect_outputs_targets(rep, data_loader, device, amp_enabled=cfg.get("amp", False))
+    outputs, targets = collect_outputs_targets(rep, data_loader, device, amp_enabled=cfg.get("amp", False))
 
     ### coverage
-    cov = 0  # coverage(outputs, targets)
+    cov = coverage(outputs, targets)
 
     ### efficiency
-    eff = 0  # efficiency(outputs, targets)
+    eff = efficiency(outputs)
 
     if cfg.wandb.enabled:
         run = init_wandb_for_evaluation(cfg, run_id)
