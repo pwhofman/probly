@@ -9,11 +9,14 @@ from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistributionSample,
 )
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
+from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution
 from probly.utils.torch import torch_entropy
 
 from ._common import (
+    DEFAULT_MEAN_FIELD_FACTOR,
     LogBase,
     conditional_entropy,
+    dempster_shafer_uncertainty,
     entropy,
     entropy_of_expected_predictive_distribution,
     expected_max_probability_complement,
@@ -233,3 +236,22 @@ def torch_dirichlet_max_probability_complement_of_expected(
     alpha_0 = torch.sum(alphas, dim=-1, keepdim=True)
     mean = alphas / alpha_0
     return 1.0 - torch.max(mean, dim=-1).values
+
+
+# Dempster-Shafer uncertainty
+
+
+@dempster_shafer_uncertainty.register(TorchGaussianDistribution)
+def torch_gaussian_dempster_shafer_uncertainty(
+    distribution: TorchGaussianDistribution,
+    mean_field_factor: float = DEFAULT_MEAN_FIELD_FACTOR,
+) -> torch.Tensor:
+    """Compute the Dempster-Shafer uncertainty of a Gaussian over logits."""
+    mean = distribution.mean
+    var = distribution.var
+    del distribution  # Avoid keeping a reference to the distribution for memory efficiency
+
+    num_classes = mean.shape[-1]
+    adjusted = mean / torch.sqrt(1.0 + mean_field_factor * var)
+    num_classes_tensor = torch.as_tensor(num_classes, dtype=mean.dtype, device=mean.device)
+    return num_classes_tensor / (num_classes_tensor + torch.sum(torch.exp(adjusted), dim=-1))

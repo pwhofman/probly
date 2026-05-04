@@ -11,6 +11,7 @@ from torch.distributions.kl import kl_divergence
 
 from probly.quantification.measure.distribution import (
     conditional_entropy,
+    dempster_shafer_uncertainty,
     entropy,
     entropy_of_expected_predictive_distribution,
     expected_max_probability_complement,
@@ -362,3 +363,63 @@ def test_torch_dirichlet_max_probability_complement_of_expected_propagates_gradi
     grad = alphas.grad
     assert grad is not None
     assert torch.isfinite(grad).all()
+
+
+def test_torch_gaussian_dempster_shafer_uniform_logits_with_default_factor() -> None:
+    """Uniform-zero logits should give vacuity = K / (K + K * exp(0)) = 1/2."""
+    from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution  # noqa: PLC0415
+
+    mean = torch.zeros((3, 5), dtype=torch.float64)
+    var = torch.ones_like(mean)
+    distribution = TorchGaussianDistribution(mean=mean, var=var)
+
+    measured = dempster_shafer_uncertainty(distribution)
+
+    assert torch.allclose(measured, torch.full((3,), 0.5, dtype=torch.float64), rtol=1e-12, atol=1e-12)
+
+
+def test_torch_gaussian_dempster_shafer_matches_explicit_formula() -> None:
+    import math  # noqa: PLC0415
+
+    from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution  # noqa: PLC0415
+
+    generator = torch.Generator().manual_seed(0)
+    mean = 2.0 * torch.randn((20, 5), generator=generator, dtype=torch.float64)
+    var = 0.01 + 4.0 * torch.rand((20, 5), generator=generator, dtype=torch.float64)
+    distribution = TorchGaussianDistribution(mean=mean, var=var)
+
+    measured = dempster_shafer_uncertainty(distribution)
+
+    num_classes = mean.shape[-1]
+    adjusted = mean / torch.sqrt(1.0 + (math.pi / 8.0) * var)
+    expected = num_classes / (num_classes + torch.sum(torch.exp(adjusted), dim=-1))
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_gaussian_dempster_shafer_propagates_gradients() -> None:
+    from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution  # noqa: PLC0415
+
+    mean = torch.tensor([[1.0, 2.0, 3.0]], dtype=torch.float64, requires_grad=True)
+    var = torch.tensor([[0.5, 1.0, 0.25]], dtype=torch.float64, requires_grad=True)
+    distribution = TorchGaussianDistribution(mean=mean, var=var)
+
+    measured = dempster_shafer_uncertainty(distribution)
+    measured.sum().backward()
+
+    assert mean.grad is not None
+    assert var.grad is not None
+    assert torch.isfinite(mean.grad).all()
+    assert torch.isfinite(var.grad).all()
+
+
+def test_torch_gaussian_dempster_shafer_zero_factor_disables_mean_field() -> None:
+    from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution  # noqa: PLC0415
+
+    mean = torch.tensor([[1.0, 2.0, 3.0]], dtype=torch.float64)
+    var = torch.full_like(mean, 100.0)
+    distribution = TorchGaussianDistribution(mean=mean, var=var)
+
+    measured = dempster_shafer_uncertainty(distribution, mean_field_factor=0.0)
+
+    expected = 3.0 / (3.0 + torch.sum(torch.exp(mean), dim=-1))
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)

@@ -5,6 +5,7 @@ from __future__ import annotations
 from probly.lazy_types import TORCH_MODULE, TORCH_SAMPLE
 
 from ._common import (
+    SNGPDecomposition,
     SNGPPredictor,
     SNGPRepresenter,
     _collect_skipped_param_bearing_layer_classes,
@@ -38,6 +39,7 @@ def _(_: type) -> None:
 
 
 __all__ = [
+    "SNGPDecomposition",
     "SNGPPredictor",
     "SNGPRepresenter",
     "compute_categorical_sample_from_logits",

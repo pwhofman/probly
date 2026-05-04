@@ -401,3 +401,111 @@ def test_sngp_silent_for_pure_linear_conv2d_norm_models() -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("error")  # turn any warning into an exception
         sngp(model)
+
+
+# Tests for SNGPDecomposition on Torch Gaussian representations.
+
+import math  # noqa: E402
+
+from probly.method.sngp import SNGPDecomposition  # noqa: E402
+from probly.quantification.measure.distribution import dempster_shafer_uncertainty  # noqa: E402
+from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution  # noqa: E402
+
+
+def _torch_gaussian() -> TorchGaussianDistribution:
+    mean = torch.tensor(
+        [
+            [0.0, 0.0, 0.0],
+            [10.0, -10.0, 0.0],
+            [5.0, 5.0, 5.0],
+        ],
+        dtype=torch.float64,
+    )
+    var = torch.tensor(
+        [
+            [1.0, 1.0, 1.0],
+            [100.0, 100.0, 100.0],
+            [0.01, 0.01, 0.01],
+        ],
+        dtype=torch.float64,
+    )
+    return TorchGaussianDistribution(mean=mean, var=var)
+
+
+def test_torch_decomposition_epistemic_matches_measure() -> None:
+    distribution = _torch_gaussian()
+
+    decomposition = SNGPDecomposition(distribution)
+
+    assert torch.allclose(decomposition.epistemic, dempster_shafer_uncertainty(distribution), rtol=1e-12, atol=1e-12)
+
+
+def test_torch_decomposition_components_only_epistemic() -> None:
+    decomposition = SNGPDecomposition(_torch_gaussian())
+
+    from probly.quantification import EpistemicUncertainty  # noqa: PLC0415
+
+    assert decomposition.components == [EpistemicUncertainty]
+    assert len(decomposition) == 1
+
+
+def test_torch_decomposition_canonical_notion_is_epistemic() -> None:
+    decomposition = SNGPDecomposition(_torch_gaussian())
+
+    from probly.quantification import EpistemicUncertainty  # noqa: PLC0415
+
+    assert decomposition.canonical_notion is EpistemicUncertainty
+    assert decomposition.get_canonical() is decomposition.epistemic
+
+
+def test_torch_decomposition_caches_component() -> None:
+    decomposition = SNGPDecomposition(_torch_gaussian())
+
+    epistemic = decomposition.epistemic
+
+    assert decomposition.epistemic is epistemic
+
+
+def test_torch_decomposition_propagates_gradients() -> None:
+    mean = torch.tensor([[1.0, 2.0, 3.0]], dtype=torch.float64, requires_grad=True)
+    var = torch.tensor([[0.5, 1.0, 0.25]], dtype=torch.float64, requires_grad=True)
+    distribution = TorchGaussianDistribution(mean=mean, var=var)
+
+    decomposition = SNGPDecomposition(distribution)
+    decomposition.epistemic.sum().backward()
+
+    assert mean.grad is not None
+    assert var.grad is not None
+    assert torch.isfinite(mean.grad).all()
+    assert torch.isfinite(var.grad).all()
+
+
+def test_torch_decomposition_default_mean_field_factor_is_pi_over_eight() -> None:
+    distribution = _torch_gaussian()
+
+    default_score = SNGPDecomposition(distribution).epistemic
+    explicit = SNGPDecomposition(distribution, mean_field_factor=math.pi / 8.0).epistemic
+
+    assert torch.equal(default_score, explicit)
+
+
+def test_torch_decomposition_on_sngp_model_output() -> None:
+    """End-to-end: SNGP predictor's GaussianDistribution feeds SNGPDecomposition cleanly."""
+    base = nn.Sequential(nn.Linear(2, 8), nn.ReLU(), nn.Linear(8, 4))
+    predictor = sngp(base, num_random_features=64)
+
+    predictor.train()
+    for _ in range(2):
+        _ = predictor(torch.ones(2, 2))
+    predictor.eval()
+
+    from probly.predictor import predict  # noqa: PLC0415
+
+    distribution = predict(predictor, torch.ones(5, 2))
+    assert isinstance(distribution, TorchGaussianDistribution)
+
+    decomposition = SNGPDecomposition(distribution)
+
+    assert decomposition.epistemic.shape == (5,)
+    assert torch.all(decomposition.epistemic > 0.0)
+    assert torch.all(decomposition.epistemic <= 1.0)
