@@ -8,18 +8,27 @@ import numpy as np
 
 from flextype import flexdispatch
 from probly.representation.credal_set.array import (
-    ArrayCategoricalCredalSet,
     ArrayConvexCredalSet,
     ArrayDiscreteCredalSet,
     ArrayDistanceBasedCredalSet,
     ArrayProbabilityIntervalsCredalSet,
     ArraySingletonCredalSet,
 )
+from probly.representation.credal_set.torch import (
+    TorchConvexCredalSet,
+    TorchDirichletLevelSetCredalSet,
+    TorchDistanceBasedCredalSet,
+    TorchProbabilityIntervalsCredalSet,
+)
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
     from probly.plot.config import PlotConfig
+    from probly.representation.credal_set._common import (
+        CategoricalCredalSet,
+    )
+
 
 _NUM_BINARY_CLASSES = 2
 _BINARY_Y_HEIGHT = 0.05
@@ -80,7 +89,7 @@ def _draw_binary_interval(
 
 @flexdispatch
 def _draw_credal_set_binary(
-    data: ArrayCategoricalCredalSet,
+    data: CategoricalCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
@@ -164,6 +173,82 @@ def _draw_vertex_set_binary(
     series_labels: list[str] | None = None,
 ) -> None:
     arr = data.reshape(-1).array.unnormalized_probabilities
+    n_sets = arr.shape[0]
+    for idx in range(n_sets):
+        color = config.color(idx)
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
+        p2_values = arr[idx, :, 1]
+        _draw_binary_interval(ax, float(p2_values.min()), float(p2_values.max()), color, config, label=label)
+        ax.scatter(p2_values, np.zeros_like(p2_values), color=color, s=config.marker_size, zorder=3)
+
+
+@_draw_credal_set_binary.register(TorchDistanceBasedCredalSet)
+def _draw_distance_based_binary(
+    data: TorchDistanceBasedCredalSet,
+    ax: Axes,
+    config: PlotConfig,
+    series_labels: list[str] | None = None,
+) -> None:
+    data = data.reshape(-1)
+    lower_all = data.lower().detach().cpu().numpy()
+    upper_all = data.upper().detach().cpu().numpy()
+    nominal_all = data.nominal.unnormalized_probabilities.detach().cpu().numpy()
+    n_sets = lower_all.shape[0]
+    for idx in range(n_sets):
+        color = config.color(idx)
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
+        _draw_binary_interval(ax, lower_all[idx, 1], upper_all[idx, 1], color, config, label=label)
+        ax.scatter(nominal_all[idx, 1], 0, color=color, s=config.marker_size, zorder=3)
+
+
+@_draw_credal_set_binary.register(TorchProbabilityIntervalsCredalSet)
+def _draw_intervals_binary_torch(
+    data: TorchProbabilityIntervalsCredalSet,
+    ax: Axes,
+    config: PlotConfig,
+    series_labels: list[str] | None = None,
+) -> None:
+    data = data.reshape(-1)
+    lower_all = data.lower_bounds.detach().cpu().numpy()
+    upper_all = data.upper_bounds.detach().cpu().numpy()
+    n_sets = lower_all.shape[0]
+    for idx in range(n_sets):
+        color = config.color(idx)
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
+        low, high = lower_all[idx, 1], upper_all[idx, 1]
+        if np.isclose(low, high):
+            ax.scatter(low, 0, color=color, s=config.marker_size, zorder=3, label=label)
+        else:
+            _draw_binary_interval(ax, low, high, color, config, label=label)
+
+
+@_draw_credal_set_binary.register(TorchDirichletLevelSetCredalSet)
+def _draw_dirichlet_binary_torch(
+    data: TorchDirichletLevelSetCredalSet,
+    ax: Axes,
+    config: PlotConfig,
+    series_labels: list[str] | None = None,
+) -> None:
+    data = data.reshape(-1)
+    lower_all = data.lower().detach().cpu().numpy()
+    upper_all = data.upper().detach().cpu().numpy()
+    nominal_all = data.barycenter.unnormalized_probabilities.detach().cpu().numpy()
+    n_sets = lower_all.shape[0]
+    for idx in range(n_sets):
+        color = config.color(idx)
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
+        _draw_binary_interval(ax, lower_all[idx, 1], upper_all[idx, 1], color, config, label=label)
+        ax.scatter(nominal_all[idx, 1], 0, color=color, s=config.marker_size, zorder=3)
+
+
+@_draw_credal_set_binary.register(TorchConvexCredalSet)
+def _draw_convex_binary_torch(
+    data: TorchConvexCredalSet,
+    ax: Axes,
+    config: PlotConfig,
+    series_labels: list[str] | None = None,
+) -> None:
+    arr = data.reshape(-1).tensor.unnormalized_probabilities.detach().cpu().numpy()
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
