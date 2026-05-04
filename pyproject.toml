@@ -74,6 +74,7 @@ laplace = [
     "curvlinops-for-pytorch>=2.0,<3.0"  # laplace-torch 0.2.2.2 imports curvlinops._base._LinearOperator, removed in 3.x
 ]
 transformers = [
+    { include-group = "torch" },
     "transformers>=4.33.2",  # first cp313 wheels
     "sentence-transformers>=2.3.0",
     "accelerate>=0.24.1",
