@@ -6,9 +6,11 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
+from probly.decider import categorical_from_mean
 from probly.predictor import LogitClassifier, Predictor, RepresentationPredictor
 from probly.quantification._quantification import decompose
 from probly.quantification.decomposition.decomposition import CachingDecomposition, TotalDecomposition
+from probly.representation.distribution._common import create_categorical_distribution
 from probly.representation.representation import Representation
 from probly.transformation.transformation import predictor_transformation
 
@@ -16,6 +18,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from probly.representation.array_like import ArrayLike
+    from probly.representation.distribution import CategoricalDistribution
 
 
 @runtime_checkable
@@ -87,11 +90,6 @@ class DUQDecomposition[T](CachingDecomposition, TotalDecomposition[T]):
         return duq_uncertainty(self.representation.kernel_values)  # ty:ignore[invalid-return-type]
 
 
-__all__ = [
-    "DUQDecomposition",
-    "DUQPredictor",
-    "DUQRepresentation",
-    "create_duq_representation",
-    "duq",
-    "duq_uncertainty",
-]
+@categorical_from_mean.register(DUQRepresentation)
+def _(representation: DUQRepresentation) -> CategoricalDistribution:
+    return create_categorical_distribution(representation.kernel_values)
