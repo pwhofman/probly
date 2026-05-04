@@ -90,3 +90,28 @@ class MetricsSuite:
         flat = efficiency(make_onehot_set(array_fn(flat_mask)))
         nested = efficiency(make_onehot_set(array_fn(nested_mask)))
         assert nested == pytest.approx(flat)
+
+    def test_interval_higher_rank_equivalence(
+        self, make_interval_set: Callable[[Any], Any], array_fn: Callable[..., Any]
+    ) -> None:
+        """Interval coverage on ``(B, N, 2)`` matches the equivalent flat ``(B*N, 2)`` call."""
+        rng = np.random.default_rng(2)
+        flat_intervals = np.sort(rng.random(size=(6, 2)), axis=-1)
+        flat_y = rng.random(size=(6,))
+        nested_intervals = flat_intervals.reshape(3, 2, 2)
+        nested_y = flat_y.reshape(3, 2)
+
+        flat = coverage(make_interval_set(array_fn(flat_intervals, dtype=float)), array_fn(flat_y, dtype=float))
+        nested = coverage(make_interval_set(array_fn(nested_intervals, dtype=float)), array_fn(nested_y, dtype=float))
+        assert nested == pytest.approx(flat)
+
+    def test_interval_efficiency_higher_rank(
+        self, make_interval_set: Callable[[Any], Any], array_fn: Callable[..., Any]
+    ) -> None:
+        """Interval efficiency on ``(B, N, 2)`` matches the equivalent flat ``(B*N, 2)`` call."""
+        rng = np.random.default_rng(3)
+        flat_intervals = np.sort(rng.random(size=(6, 2)), axis=-1)
+        nested_intervals = flat_intervals.reshape(2, 3, 2)
+        flat = efficiency(make_interval_set(array_fn(flat_intervals, dtype=float)))
+        nested = efficiency(make_interval_set(array_fn(nested_intervals, dtype=float)))
+        assert nested == pytest.approx(flat)

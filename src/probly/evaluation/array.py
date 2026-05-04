@@ -1,4 +1,4 @@
-"""NumPy implementations of :func:`coverage` and :func:`efficiency`.
+"""NumPy implementations of :func:`coverage`, :func:`efficiency`, and :func:`average_interval_width`.
 
 Registers the dispatch handlers for every NumPy-backed conformal-set and
 credal-set representation. Coverage uses the membership-of-the-true-class
@@ -15,13 +15,19 @@ semantics for conformal sets, and a per-credal-set rule for credal sets:
   use the interval-dominance prediction set (a class is selected iff its
   upper probability is at least the maximum lower probability across all
   classes).
+
+Note:
+    The ``DistanceBased`` envelope (``clip(nominal +- radius, 0, 1)``) ignores
+    the simplex constraint and is therefore loose. The interval-dominance
+    rule applied to it is consistent with the declared lower/upper but is
+    over-conservative relative to a tight L1-ball envelope.
 """
 
 from __future__ import annotations
 
 import numpy as np
 
-from probly.evaluation.metrics import coverage, efficiency
+from probly.evaluation.metrics import average_interval_width, coverage, efficiency
 from probly.representation.conformal_set.array import ArrayIntervalConformalSet, ArrayOneHotConformalSet
 from probly.representation.credal_set.array import (
     ArrayConvexCredalSet,
@@ -65,6 +71,20 @@ def _onehot_membership(mask: np.ndarray, y_true: np.ndarray) -> np.ndarray:
     return np.take_along_axis(mask, indices, axis=-1).squeeze(-1)
 
 
+def _envelope_coverage(lower: np.ndarray, upper: np.ndarray, y_true: np.ndarray) -> float:
+    mask = _interval_dominance_mask(lower, upper)
+    return float(np.mean(_onehot_membership(mask, np.asarray(y_true))))
+
+
+def _envelope_efficiency(lower: np.ndarray, upper: np.ndarray) -> float:
+    mask = _interval_dominance_mask(lower, upper)
+    return float(np.mean(mask.sum(axis=-1)))
+
+
+def _envelope_average_interval_width(lower: np.ndarray, upper: np.ndarray) -> float:
+    return float(np.mean(np.asarray(upper) - np.asarray(lower)))
+
+
 @coverage.register(ArrayOneHotConformalSet)
 def _coverage_array_onehot(y_pred: ArrayOneHotConformalSet, y_true: np.ndarray) -> float:
     """Coverage for a one-hot conformal set."""
@@ -74,7 +94,7 @@ def _coverage_array_onehot(y_pred: ArrayOneHotConformalSet, y_true: np.ndarray) 
 @efficiency.register(ArrayOneHotConformalSet)
 def _efficiency_array_onehot(y_pred: ArrayOneHotConformalSet) -> float:
     """Average cardinality of a one-hot conformal set."""
-    return float(np.mean(y_pred.set_size))
+    return float(np.mean(np.asarray(y_pred.array).sum(axis=-1)))
 
 
 @coverage.register(ArrayIntervalConformalSet)
@@ -88,13 +108,14 @@ def _coverage_array_interval(y_pred: ArrayIntervalConformalSet, y_true: np.ndarr
 @efficiency.register(ArrayIntervalConformalSet)
 def _efficiency_array_interval(y_pred: ArrayIntervalConformalSet) -> float:
     """Average width of an interval conformal set."""
-    return float(np.mean(y_pred.set_size))
+    arr = np.asarray(y_pred.array)
+    return float(np.mean(arr[..., 1] - arr[..., 0]))
 
 
 @coverage.register(ArraySingletonCredalSet)
 def _coverage_array_singleton(y_pred: ArraySingletonCredalSet, y_true: np.ndarray) -> float:
     """Top-1 coverage for a singleton credal set (degenerate to argmax accuracy)."""
-    probs = np.asarray(y_pred.array.unnormalized_probabilities)
+    probs = np.asarray(y_pred.array.probabilities)
     predicted = np.argmax(probs, axis=-1)
     return float(np.mean(predicted == np.asarray(y_true)))
 
@@ -122,16 +143,6 @@ def _efficiency_array_discrete(y_pred: ArrayDiscreteCredalSet) -> float:
     argmax_per_vertex = np.argmax(probs, axis=-1)
     classes_picked = (argmax_per_vertex[..., None] == np.arange(num_classes)).any(axis=-2)
     return float(np.mean(classes_picked.sum(axis=-1)))
-
-
-def _envelope_coverage(lower: np.ndarray, upper: np.ndarray, y_true: np.ndarray) -> float:
-    mask = _interval_dominance_mask(lower, upper)
-    return float(np.mean(_onehot_membership(mask, np.asarray(y_true))))
-
-
-def _envelope_efficiency(lower: np.ndarray, upper: np.ndarray) -> float:
-    mask = _interval_dominance_mask(lower, upper)
-    return float(np.mean(mask.sum(axis=-1)))
 
 
 @coverage.register(ArrayConvexCredalSet)
@@ -170,17 +181,11 @@ def _efficiency_array_probability_intervals(y_pred: ArrayProbabilityIntervalsCre
     return _envelope_efficiency(y_pred.lower(), y_pred.upper())
 
 
-def average_interval_width(y_pred: ArrayProbabilityIntervalsCredalSet | ArrayDistanceBasedCredalSet) -> float:
-    """Compute the mean width of the per-class probability intervals.
+@average_interval_width.register(ArrayDistanceBasedCredalSet)
+def _average_interval_width_array_distance(y_pred: ArrayDistanceBasedCredalSet) -> float:
+    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
 
-    A geometric companion to :func:`efficiency` for credal sets that expose a
-    meaningful per-class interval (probability-intervals and distance-based
-    credal sets). Smaller is better.
 
-    Args:
-        y_pred: A credal set with per-class lower/upper envelopes.
-
-    Returns:
-        Mean of ``upper - lower`` over both samples and classes.
-    """
-    return float(np.mean(np.asarray(y_pred.upper()) - np.asarray(y_pred.lower())))
+@average_interval_width.register(ArrayProbabilityIntervalsCredalSet)
+def _average_interval_width_array_probability_intervals(y_pred: ArrayProbabilityIntervalsCredalSet) -> float:
+    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())

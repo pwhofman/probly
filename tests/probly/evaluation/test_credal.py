@@ -20,9 +20,41 @@ from probly.representation.credal_set.array import (
 )
 from probly.representation.distribution import ArrayCategoricalDistribution
 
+from ._credal_suite import CredalSuite
+
 
 def _categorical(probs: np.ndarray) -> ArrayCategoricalDistribution:
     return ArrayCategoricalDistribution(probs)
+
+
+@pytest.fixture
+def array_fn():
+    return np.asarray
+
+
+@pytest.fixture
+def make_convex():
+    return lambda probs: ArrayConvexCredalSet(array=_categorical(np.asarray(probs)))
+
+
+@pytest.fixture
+def make_distance():
+    return lambda nominal, radius: ArrayDistanceBasedCredalSet(
+        nominal=_categorical(np.asarray(nominal)),
+        radius=np.asarray(radius),
+    )
+
+
+@pytest.fixture
+def make_intervals():
+    return lambda lower, upper: ArrayProbabilityIntervalsCredalSet(
+        lower_bounds=np.asarray(lower),
+        upper_bounds=np.asarray(upper),
+    )
+
+
+class TestNumpy(CredalSuite):
+    """NumPy implementation of the shared credal suite."""
 
 
 class TestSingletonCredalSet:
@@ -119,10 +151,24 @@ class TestProbabilityIntervalsCredalSet:
 
 def test_unregistered_type_raises() -> None:
     """Falling through to the base flexdispatch raises NotImplementedError."""
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(NotImplementedError, match="coverage is not implemented"):
         coverage(object(), 0)
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(NotImplementedError, match="efficiency is not implemented"):
         efficiency(object())
+    with pytest.raises(NotImplementedError, match="average_interval_width is not implemented"):
+        average_interval_width(object())
+
+
+@pytest.mark.filterwarnings("ignore:Mean of empty slice:RuntimeWarning")
+@pytest.mark.filterwarnings("ignore:invalid value encountered in scalar divide:RuntimeWarning")
+def test_empty_input_returns_nan() -> None:
+    """Coverage/efficiency on an empty batch returns ``nan`` (numpy mean convention)."""
+    cs = ArrayProbabilityIntervalsCredalSet(
+        lower_bounds=np.zeros((0, 3)),
+        upper_bounds=np.ones((0, 3)),
+    )
+    assert np.isnan(coverage(cs, np.zeros((0,), dtype=int)))
+    assert np.isnan(efficiency(cs))
 
 
 def test_end_to_end_with_classification_conformal_predictor() -> None:
