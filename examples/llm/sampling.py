@@ -1,10 +1,11 @@
-"""Sample multiple LLM answers for each question."""
+"""Sample question clarifications and answers with an LLM."""
 
 from __future__ import annotations
 
 import torch
 
-from probly.representer.sampler.huggingface import HFTextGenerationSampler
+from probly.representer.clarifier.huggingface import HFQuestionClarifier
+from probly.representer.sampler.huggingface import HFTextGenerationSampler, load_model
 
 
 # MODEL_NAME = "HuggingFaceTB/SmolLM2-135M-Instruct"
@@ -16,10 +17,22 @@ def main() -> None:
     if torch.cuda.is_available():
         model_kwargs["device_map"] = "auto"
 
-    sampler = HFTextGenerationSampler.from_model_name(
-        MODEL_NAME,
+    model, tokenizer = load_model(MODEL_NAME, model_kwargs=model_kwargs)
+    model.eval()
+
+    clarifier = HFQuestionClarifier(
+        model=model,
+        tokenizer=tokenizer,
         num_samples=2,
-        model_kwargs=model_kwargs,
+        batch_size=10,
+        temperature=1.0,
+        max_new_tokens=48,
+        top_k=50,
+    )
+    answer_sampler = HFTextGenerationSampler(
+        model=model,
+        tokenizer=tokenizer,
+        num_samples=2,
         batch_size=10,
         temperature=1.0,
         max_new_tokens=64,
@@ -30,20 +43,28 @@ def main() -> None:
         "What is a quick way to explain semantic entropy?",
         "Name one reason LLM answers can vary across samples.",
     ]
-    chats = [[{"role": "user", "content": question}] for question in questions]
+    clarifications = clarifier(questions)
+    answers = answer_sampler(clarifications)
 
-    sample = sampler(chats)
-
-    for question, answers, log_likelihoods in zip(
+    for question, question_clarifications, question_answers, question_answer_log_likelihoods in zip(
         questions,
-        sample.tensor.text,
-        sample.tensor.log_likelihood,
+        clarifications.tensor.text,
+        answers.tensor.tensor.text,
+        answers.tensor.tensor.log_likelihood,
         strict=True,
     ):
         print(f"\nQuestion: {question}")
-        for index, (answer, log_likelihood) in enumerate(zip(answers, log_likelihoods, strict=True), start=1):
-            print(f"\nSample {index} (log likelihood: {log_likelihood.item():.2f})")
-            print(answer.strip())
+        for clarification_index, (clarification, clarification_answers, answer_log_likelihoods) in enumerate(
+            zip(question_clarifications, question_answers, question_answer_log_likelihoods, strict=True),
+            start=1,
+        ):
+            print(f"\nClarification {clarification_index}: {clarification.strip()}")
+            for answer_index, (answer, log_likelihood) in enumerate(
+                zip(clarification_answers, answer_log_likelihoods, strict=True),
+                start=1,
+            ):
+                print(f"\nAnswer {answer_index} (log likelihood: {log_likelihood.item():.2f})")
+                print(answer.strip())
 
 
 if __name__ == "__main__":

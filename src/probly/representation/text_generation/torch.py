@@ -175,3 +175,17 @@ class TorchTextGenerationSample(  # ty:ignore[conflicting-metaclass]
     @classmethod
     def __instancehook__(cls, instance: object) -> bool:
         return super().__instancehook__(instance)
+
+
+class TorchTextGenerationSampleSample(  # ty:ignore[conflicting-metaclass]
+    RepresentationSample[TorchTextGenerationSample],
+    TorchSample[Any],
+):
+    """A torch sample of decoded text generation samples."""
+
+    sample_space: ClassVar[type[TorchTextGenerationSample]] = TorchTextGenerationSample
+
+    @override
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        return super().__instancehook__(instance)

@@ -6,12 +6,18 @@ from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Any, cast
 
+import numpy as np
 import pytest
 from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
 pytest.importorskip("torch")
 import torch
 
+from probly.representation.text_generation import (
+    TorchTextGeneration,
+    TorchTextGenerationSample,
+    TorchTextGenerationSampleSample,
+)
 from probly.representer.sampler.huggingface import HFTextGenerationSampler, load_model
 
 
@@ -258,6 +264,111 @@ def test_sampler_chunks_samples_and_returns_text_generation_sample() -> None:
     assert tokenizer.pad_token == "<pad>"  # noqa: S105
 
 
+def test_sampler_accepts_string_ndarrays_and_restores_shape() -> None:
+    sample = HFTextGenerationSampler(
+        model=FakeModel(),
+        tokenizer=FakeTokenizer(),
+        num_samples=2,
+        apply_chat_template=False,
+    ).represent(np.asarray([["first", "second"], ["third", "fourth"]]))
+
+    assert sample.shape == (2, 2, 2)
+    assert sample.sample_dim == 2
+    assert sample.tensor.text.shape == (2, 2, 2)
+    assert sample.tensor.log_likelihood.shape == (2, 2, 2)
+    assert sample.tensor.text[0, 0].tolist() == ["tok100 tok200", "tok100 tok201"]
+
+
+def test_sampler_accepts_object_ndarrays_and_rejects_non_strings() -> None:
+    sampler = HFTextGenerationSampler(
+        model=FakeModel(),
+        tokenizer=FakeTokenizer(),
+        num_samples=1,
+        apply_chat_template=False,
+    )
+
+    sample = sampler.represent(np.asarray(["first", "second"], dtype=object))
+
+    assert sample.shape == (2, 1)
+    assert sample.sample_dim == 1
+
+    with pytest.raises(TypeError, match="only strings"):
+        sampler.represent(np.asarray(["first", 1], dtype=object))
+
+
+def test_sampler_accepts_text_generation_and_restores_shape() -> None:
+    generation = TorchTextGeneration(
+        text=np.asarray([["first", "second"], ["third", "fourth"]], dtype=object),
+        log_likelihood=torch.zeros((2, 2)),
+    )
+
+    sample = HFTextGenerationSampler(
+        model=FakeModel(),
+        tokenizer=FakeTokenizer(),
+        num_samples=2,
+        apply_chat_template=False,
+    ).represent(generation)
+
+    assert sample.shape == (2, 2, 2)
+    assert sample.sample_dim == 2
+    assert sample.tensor.text.shape == (2, 2, 2)
+    assert sample.tensor.log_likelihood.shape == (2, 2, 2)
+
+
+def test_sampler_preserves_existing_sample_axis_when_sampling_text_sample() -> None:
+    generation = TorchTextGeneration(
+        text=np.asarray(
+            [
+                [["a", "b", "c", "d"], ["e", "f", "g", "h"], ["i", "j", "k", "l"]],
+                [["m", "n", "o", "p"], ["q", "r", "s", "t"], ["u", "v", "w", "x"]],
+            ],
+            dtype=object,
+        ),
+        log_likelihood=torch.zeros((2, 3, 4)),
+    )
+    input_sample = TorchTextGenerationSample(tensor=generation, sample_dim=1)
+
+    output_sample = HFTextGenerationSampler(
+        model=FakeModel(),
+        tokenizer=FakeTokenizer(),
+        num_samples=2,
+        apply_chat_template=False,
+    ).represent(input_sample)
+
+    assert output_sample.shape == (2, 3, 4, 2)
+    assert output_sample.sample_dim == 1
+    assert isinstance(output_sample, TorchTextGenerationSampleSample)
+    assert isinstance(output_sample.tensor, TorchTextGenerationSample)
+    assert output_sample.tensor.shape == (2, 3, 4, 2)
+    assert output_sample.tensor.sample_dim == 3
+    assert output_sample.tensor.tensor.text.shape == (2, 3, 4, 2)
+
+
+def test_sampler_preserves_nested_sample_axes_when_sampling_nested_text_sample() -> None:
+    generation = TorchTextGeneration(
+        text=np.asarray([["a", "b", "c"], ["d", "e", "f"]], dtype=object),
+        log_likelihood=torch.zeros((2, 3)),
+    )
+    inner_sample = TorchTextGenerationSample(tensor=generation, sample_dim=1)
+    outer_sample = TorchTextGenerationSampleSample(tensor=inner_sample, sample_dim=0)
+
+    output_sample = HFTextGenerationSampler(
+        model=FakeModel(),
+        tokenizer=FakeTokenizer(),
+        num_samples=2,
+        apply_chat_template=False,
+    ).represent(outer_sample)
+
+    assert output_sample.shape == (2, 3, 2)
+    assert output_sample.sample_dim == 0
+    assert isinstance(output_sample, TorchTextGenerationSampleSample)
+    assert isinstance(output_sample.tensor, TorchTextGenerationSampleSample)
+    assert output_sample.tensor.sample_dim == 1
+    assert isinstance(output_sample.tensor.tensor, TorchTextGenerationSample)
+    assert output_sample.tensor.tensor.sample_dim == 2
+    assert output_sample.tensor.tensor.tensor.text.shape == (2, 3, 2)
+
+
 def test_sampler_can_skip_log_likelihood_scoring() -> None:
     model = FakeModel()
     sample = HFTextGenerationSampler(
@@ -374,6 +485,17 @@ def test_sampler_applies_chat_template() -> None:
     sampler = HFTextGenerationSampler(model=FakeModel(), tokenizer=tokenizer, num_samples=1)
 
     sample = sampler.represent([[{"role": "user", "content": "hello there"}]])
+
+    assert sample.shape == (1, 1)
+    assert tokenizer.chat_calls == 1
+    assert tokenizer.add_generation_prompt_calls == [True]
+
+
+def test_sampler_wraps_string_inputs_as_chat_messages() -> None:
+    tokenizer = FakeTokenizer()
+    sampler = HFTextGenerationSampler(model=FakeModel(), tokenizer=tokenizer, num_samples=1)
+
+    sample = sampler.represent(["hello there"])
 
     assert sample.shape == (1, 1)
     assert tokenizer.chat_calls == 1

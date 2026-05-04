@@ -11,10 +11,14 @@ from transformers import PreTrainedModel, PreTrainedTokenizerBase
 pytest.importorskip("torch")
 import torch
 
-from probly.representation.distribution.torch_sparse_log_categorical import TorchSparseLogCategoricalDistribution
+from probly.representation.distribution.torch_sparse_log_categorical import (
+    TorchSparseLogCategoricalDistribution,
+    TorchSparseLogCategoricalDistributionSample,
+)
 from probly.representation.text_generation import (
     TorchTextGeneration,
     TorchTextGenerationSample,
+    TorchTextGenerationSampleSample,
 )
 from probly.representer.semantic_clustering import DEFAULT_NLI_MODEL, GreedyHFSemanticClusterer
 
@@ -134,6 +138,54 @@ def test_greedy_clusterer_clusters_sample_with_batched_nli_calls() -> None:
     ]
     assert all(len(call) <= 2 for call in tokenizer.pair_calls)
     assert all(len(call) <= 2 for call in model.calls)
+
+
+def test_greedy_clusterer_preserves_outer_sample_axis_for_nested_samples() -> None:
+    tokenizer = FakeTokenizer()
+    labels = _labels_for(
+        tokenizer,
+        {
+            ("a", "b"): 2,
+            ("b", "a"): 2,
+            ("j", "k"): 2,
+            ("k", "j"): 2,
+        },
+    )
+    model = FakeNLIModel(labels)
+    generation = TorchTextGeneration(
+        text=np.asarray(
+            [
+                [["a", "b", "c"], ["d", "e", "f"]],
+                [["g", "h", "i"], ["j", "k", "l"]],
+            ],
+            dtype=object,
+        ),
+        log_likelihood=torch.zeros((2, 2, 3)),
+    )
+    inner_sample = TorchTextGenerationSample(tensor=generation, sample_dim=2)
+    outer_sample = TorchTextGenerationSampleSample(
+        tensor=inner_sample,
+        sample_dim=1,
+        weights=torch.tensor([0.25, 0.75]),
+    )
+
+    clustered = GreedyHFSemanticClusterer(model, tokenizer, batch_size=3)(outer_sample)
+
+    assert isinstance(clustered, TorchSparseLogCategoricalDistributionSample)
+    assert clustered.shape == (2, 2)
+    assert clustered.sample_dim == 1
+    assert torch.equal(clustered.weights, torch.tensor([0.25, 0.75]))
+    assert isinstance(clustered.tensor, TorchSparseLogCategoricalDistribution)
+    assert torch.equal(
+        clustered.tensor.group_ids,
+        torch.tensor(
+            [
+                [[0, 0, 1], [0, 1, 2]],
+                [[0, 1, 2], [0, 0, 1]],
+            ]
+        ),
+    )
+    assert torch.equal(clustered.tensor.logits, generation.log_likelihood)
 
 
 def test_raw_text_generation_requires_axis_and_returns_raw_semantic_generation() -> None:

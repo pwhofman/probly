@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from copy import copy
 from typing import TYPE_CHECKING, Any, Self, cast
 
@@ -19,6 +19,7 @@ from transformers.generation import (
 from probly.representation.text_generation import (
     TorchTextGeneration,
     TorchTextGenerationSample,
+    TorchTextGenerationSampleSample,
     TorchTokenGeneration,
 )
 from probly.representer._representer import Representer
@@ -31,6 +32,14 @@ if TYPE_CHECKING:
 
 type ChatInteraction = Sequence[Mapping[str, str]]
 type TextGenerationInput = str | ChatInteraction
+type TextGenerationInputs = (
+    Sequence[TextGenerationInput]
+    | np.ndarray
+    | TorchTextGeneration
+    | TorchTextGenerationSample
+    | TorchTextGenerationSampleSample
+)
+type TextGenerationOutput = TorchTextGenerationSample | TorchTextGenerationSampleSample
 
 type HFGenerationOutput = (
     GenerateDecoderOnlyOutput
@@ -132,7 +141,7 @@ def load_model(
     return model, tokenizer
 
 
-class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], torch.Tensor, TorchTextGenerationSample]):
+class HFTextGenerationSampler(Representer[Any, [TextGenerationInputs], torch.Tensor, TextGenerationOutput]):
     """Sample decoded text generations from a transformers generation model."""
 
     model: GenerativePreTrainedModel
@@ -174,7 +183,8 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
             tokenizer: The tokenizer associated with ``model``.
             num_samples: Number of completions to sample for each input.
             batch_size: Number of samples per input to generate at once. ``None`` means ``num_samples``.
-            apply_chat_template: Whether inputs are chat interactions that need tokenizer chat templating.
+            apply_chat_template: Whether inputs should use tokenizer chat templating. String inputs are wrapped as
+                user messages; chat interactions are templated directly.
             add_generation_prompt: Whether to add a generation prompt when applying the chat template.
                 Only has an effect if `apply_chat_template=True`.
             strip_inputs: Whether decoded generations should omit decoder-only prompt tokens.
@@ -249,7 +259,8 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
             model_kwargs: Additional keyword arguments forwarded to ``AutoModelForCausalLM.from_pretrained``.
             tokenizer_kwargs: Additional keyword arguments forwarded to ``AutoTokenizer.from_pretrained``.
             batch_size: Number of samples per input to generate at once. ``None`` means ``num_samples``.
-            apply_chat_template: Whether inputs are chat interactions that need tokenizer chat templating.
+            apply_chat_template: Whether inputs should use tokenizer chat templating. String inputs are wrapped as
+                user messages; chat interactions are templated directly.
             add_generation_prompt: Whether to add a generation prompt when applying the chat template.
                 Only has an effect if `apply_chat_template=True`.
             strip_inputs: Whether decoded generations should omit decoder-only prompt tokens.
@@ -294,6 +305,9 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
         """The underlying model used for generation."""
         return self.model
 
+    def _prepare_flat_inputs(self, inputs: Sequence[TextGenerationInput]) -> list[TextGenerationInput]:
+        return list(inputs)
+
     def _prepare_prompts(self, inputs: Sequence[TextGenerationInput]) -> list[str]:
         if not self.apply_chat_template:
             return list(inputs)  # ty:ignore[invalid-return-type]
@@ -304,7 +318,11 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
             raise TypeError(msg)
 
         return [
-            apply_chat_template(interaction, tokenize=False, add_generation_prompt=self.add_generation_prompt)
+            apply_chat_template(
+                [{"role": "user", "content": interaction}] if isinstance(interaction, str) else interaction,
+                tokenize=False,
+                add_generation_prompt=self.add_generation_prompt,
+            )
             for interaction in inputs
         ]
 
@@ -407,20 +425,89 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
             stop_token_ids=model_stop_token_ids if len(model_stop_token_ids) > 0 else None,
         ).reshape(len(prompts), chunk_size)
 
-    def represent(self, inputs: Sequence[TextGenerationInput]) -> TorchTextGenerationSample:
+    def _flatten_text_array(self, value: np.ndarray) -> tuple[list[str], tuple[int, ...]]:
+        flat_values = value.reshape(-1).tolist()
+        strings: list[str] = []
+        for item in flat_values:
+            if not isinstance(item, str):
+                msg = "numpy text generation inputs must contain only strings."
+                raise TypeError(msg)
+            strings.append(item)
+        return strings, value.shape
+
+    def _flatten_inputs(
+        self,
+        inputs: TextGenerationInputs,
+    ) -> tuple[list[TextGenerationInput], Callable[[TorchTextGenerationSample], TextGenerationOutput]]:
+        if isinstance(inputs, TorchTextGenerationSampleSample):
+            flat_inputs, wrap = self._flatten_inputs(inputs.tensor)
+
+            def wrap_nested_sample(sample: TorchTextGenerationSample) -> TorchTextGenerationSampleSample:
+                wrapped = wrap(sample)
+                return TorchTextGenerationSampleSample(
+                    tensor=wrapped,
+                    sample_dim=inputs.sample_dim,
+                    weights=cast("Any", inputs.weights),
+                )
+
+            return flat_inputs, wrap_nested_sample
+
+        if isinstance(inputs, TorchTextGenerationSample):
+            flat_inputs, wrap = self._flatten_inputs(inputs.tensor)
+
+            def wrap_sample(sample: TorchTextGenerationSample) -> TorchTextGenerationSampleSample:
+                wrapped = wrap(sample)
+                return TorchTextGenerationSampleSample(
+                    tensor=wrapped,
+                    sample_dim=inputs.sample_dim,
+                    weights=inputs.weights,
+                )
+
+            return flat_inputs, wrap_sample
+
+        if isinstance(inputs, TorchTextGeneration):
+            strings, shape = self._flatten_text_array(inputs.text)
+            return cast("list[TextGenerationInput]", strings), self._sample_reshaper(shape)
+
+        if isinstance(inputs, np.ndarray):
+            strings, shape = self._flatten_text_array(inputs)
+            return cast("list[TextGenerationInput]", strings), self._sample_reshaper(shape)
+
+        if isinstance(inputs, str) or not isinstance(inputs, Sequence):
+            msg = "inputs must be a sequence, numpy ndarray, TorchTextGeneration, or text generation sample."
+            raise TypeError(msg)
+
+        return list(inputs), self._sample_reshaper((len(inputs),))
+
+    def _sample_reshaper(
+        self,
+        shape: tuple[int, ...],
+    ) -> Callable[[TorchTextGenerationSample], TorchTextGenerationSample]:
+        def reshape_sample(sample: TorchTextGenerationSample) -> TorchTextGenerationSample:
+            sample_shape = (*shape, self.num_samples)
+            generation = TorchTextGeneration(
+                text=sample.tensor.text.reshape(sample_shape),
+                log_likelihood=sample.tensor.log_likelihood.reshape(sample_shape),
+            )
+            return TorchTextGenerationSample(tensor=generation, sample_dim=len(shape))
+
+        return reshape_sample
+
+    def represent(self, inputs: TextGenerationInputs) -> TextGenerationOutput:
         """Sample completions for each input.
 
         Args:
-            inputs: Prompt strings or chat-template compatible interactions.
+            inputs: Prompt strings, chat-template compatible interactions, string arrays, or text generations.
 
         Returns:
-            A sample with shape ``(num_inputs, num_samples)`` and sample axis ``1``.
+            A sample with a newly added trailing sample axis.
         """
-        if len(inputs) == 0:
+        flat_inputs, wrap_sample = self._flatten_inputs(inputs)
+        if len(flat_inputs) == 0:
             msg = "inputs must not be empty."
             raise ValueError(msg)
 
-        prompts = self._prepare_prompts(inputs)
+        prompts = self._prepare_prompts(self._prepare_flat_inputs(flat_inputs))
         chunk_limit = self.num_samples if self.batch_size is None else min(self.batch_size, self.num_samples)
         remaining = self.num_samples
         chunks: list[TorchTextGeneration] = []
@@ -432,7 +519,8 @@ class HFTextGenerationSampler(Representer[Any, Sequence[TextGenerationInput], to
 
         text = np.concatenate([chunk.text for chunk in chunks], axis=1)
         log_likelihood = torch.cat([chunk.log_likelihood for chunk in chunks], dim=1)
-        return TorchTextGenerationSample(
+        flat_sample = TorchTextGenerationSample(
             tensor=TorchTextGeneration(text=text, log_likelihood=log_likelihood),
             sample_dim=1,
         )
+        return wrap_sample(flat_sample)

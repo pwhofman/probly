@@ -8,13 +8,12 @@ from typing import TYPE_CHECKING, Any, ClassVar, override
 import torch
 
 from probly.representation._protected_axis.torch import TorchAxisProtected
-from probly.representation.distribution._common import CategoricalDistribution
+from probly.representation.distribution._common import CategoricalDistribution, CategoricalDistributionSample
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.sample.torch import TorchSample
 
 if TYPE_CHECKING:
     import numpy as np
-
-    from probly.representation.sample.torch import TorchSample
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -143,3 +142,17 @@ class TorchSparseLogCategoricalDistribution(
     def numpy(self, *, force: bool = False) -> np.ndarray:
         """Convert dense probabilities to a numpy array."""
         return self.to_categorical_distribution().numpy(force=force)
+
+
+class TorchSparseLogCategoricalDistributionSample(  # ty:ignore[conflicting-metaclass]
+    CategoricalDistributionSample[TorchSparseLogCategoricalDistribution],
+    TorchSample[TorchSparseLogCategoricalDistribution],
+):
+    """Sample type for sparse grouped log categorical distributions."""
+
+    sample_space: ClassVar[type[CategoricalDistribution]] = TorchSparseLogCategoricalDistribution
+
+    @override
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        return super().__instancehook__(instance)

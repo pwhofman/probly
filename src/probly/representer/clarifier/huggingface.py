@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from transformers import GenerationConfig, PreTrainedTokenizerBase
     from transformers._typing import GenerativePreTrainedModel
 
-    from probly.representation.text_generation import TorchTextGenerationSample
     from probly.representer.sampler.huggingface import TextGenerationInput
 
 
@@ -164,24 +163,16 @@ class HFQuestionClarifier(HFTextGenerationSampler):
         )
 
     @override
-    def represent(self, inputs: Sequence[TextGenerationInput]) -> TorchTextGenerationSample:
-        """Sample clarifications for each question.
-
-        Args:
-            inputs: Questions to clarify.
-
-        Returns:
-            A sample with shape ``(num_inputs, num_samples)`` and sample axis ``1``.
-        """
-        questions: list[str] = []
+    def _prepare_flat_inputs(self, inputs: Sequence[TextGenerationInput]) -> list[TextGenerationInput]:
+        prepared: list[TextGenerationInput] = []
         for question in inputs:
             if not isinstance(question, str):
                 msg = "HFQuestionClarifier inputs must be question strings."
                 raise TypeError(msg)
-            questions.append(question)
+            prompt = self.clarification_prompt.format(question=question)
+            if self.apply_chat_template:
+                prepared.append([{"role": "user", "content": prompt}])
+            else:
+                prepared.append(prompt)
 
-        prompts = [self.clarification_prompt.format(question=question) for question in questions]
-        if not self.apply_chat_template:
-            return super().represent(prompts)
-
-        return super().represent([[{"role": "user", "content": prompt}] for prompt in prompts])
+        return prepared

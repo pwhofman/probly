@@ -10,10 +10,14 @@ import numpy as np
 import torch
 from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
-from probly.representation.distribution.torch_sparse_log_categorical import TorchSparseLogCategoricalDistribution
+from probly.representation.distribution.torch_sparse_log_categorical import (
+    TorchSparseLogCategoricalDistribution,
+    TorchSparseLogCategoricalDistributionSample,
+)
 from probly.representation.text_generation import (
     TorchTextGeneration,
     TorchTextGenerationSample,
+    TorchTextGenerationSampleSample,
 )
 from probly.representer._representer import Representer
 
@@ -23,7 +27,8 @@ if TYPE_CHECKING:
 
 DEFAULT_NLI_MODEL = "microsoft/deberta-base-mnli"
 
-type SemanticClusterInput = TorchTextGeneration | TorchTextGenerationSample
+type SemanticClusterInput = TorchTextGeneration | TorchTextGenerationSample | TorchTextGenerationSampleSample
+type SemanticClusterOutput = TorchSparseLogCategoricalDistribution | TorchSparseLogCategoricalDistributionSample
 
 _CONTRADICTION = 0
 _NEUTRAL = 1
@@ -65,7 +70,7 @@ def _label_id_to_canonical(model: PreTrainedModel) -> dict[int, int]:
     return {_CONTRADICTION: _CONTRADICTION, _NEUTRAL: _NEUTRAL, _ENTAILMENT: _ENTAILMENT}
 
 
-class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, TorchSparseLogCategoricalDistribution], ABC):
+class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOutput], ABC):
     """Base semantic clusterer using a Hugging Face NLI model."""
 
     model: PreTrainedModel
@@ -283,12 +288,42 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, TorchSparseLogCate
         group_ids = group_ids.to(device=logits.device)
         return TorchSparseLogCategoricalDistribution(group_ids=group_ids, logits=logits)
 
+    def _with_sample_weights(
+        self,
+        distribution: TorchSparseLogCategoricalDistribution,
+        weights: object,
+    ) -> TorchSparseLogCategoricalDistribution:
+        if weights is None:
+            return distribution
+
+        weights_tensor = torch.as_tensor(weights, dtype=distribution.logits.dtype, device=distribution.logits.device)
+        if torch.any(weights_tensor < 0):
+            msg = "sample weights must be non-negative."
+            raise ValueError(msg)
+        log_weights = torch.log(weights_tensor).reshape(
+            (*((1,) * (distribution.logits.ndim - 1)), weights_tensor.shape[0])
+        )
+        return TorchSparseLogCategoricalDistribution(
+            group_ids=distribution.group_ids,
+            logits=distribution.logits + log_weights,
+        )
+
+    def _sample_weights_tensor(self, weights: object, *, device: torch.device) -> torch.Tensor | None:
+        if weights is None:
+            return None
+
+        weights_tensor = torch.as_tensor(weights, dtype=torch.float32, device=device)
+        if torch.any(weights_tensor < 0):
+            msg = "sample weights must be non-negative."
+            raise ValueError(msg)
+        return weights_tensor
+
     def represent(
         self,
         generation: SemanticClusterInput,
         *,
         axis: int | None = None,
-    ) -> TorchSparseLogCategoricalDistribution:
+    ) -> SemanticClusterOutput:
         """Cluster text generations into semantic equivalence classes.
 
         Args:
@@ -298,24 +333,27 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, TorchSparseLogCate
         Returns:
             Sparse grouped logits whose final axis contains semantic cluster assignments.
         """
+        if isinstance(generation, TorchTextGenerationSampleSample):
+            clustered = self.represent(generation.tensor)
+            if not isinstance(clustered, TorchSparseLogCategoricalDistribution):
+                msg = "Nested text generation samples must contain a single inner sample axis."
+                raise TypeError(msg)
+
+            return TorchSparseLogCategoricalDistributionSample(
+                tensor=clustered,
+                sample_dim=generation.sample_dim,
+                weights=self._sample_weights_tensor(generation.weights, device=clustered.logits.device),
+            )
+
         if isinstance(generation, TorchTextGenerationSample):
             sample_dim = generation.sample_dim
             clustered = self._cluster(generation.tensor, sample_dim)
-            if generation.weights is None:
-                return clustered
-
-            weights = torch.as_tensor(generation.weights, dtype=clustered.logits.dtype, device=clustered.logits.device)
-            if torch.any(weights < 0):
-                msg = "sample weights must be non-negative."
-                raise ValueError(msg)
-            log_weights = torch.log(weights).reshape((*((1,) * (clustered.logits.ndim - 1)), weights.shape[0]))
-            return TorchSparseLogCategoricalDistribution(
-                group_ids=clustered.group_ids,
-                logits=clustered.logits + log_weights,
-            )
+            return self._with_sample_weights(clustered, generation.weights)
 
         if not isinstance(generation, TorchTextGeneration):
-            msg = "generation must be a TorchTextGeneration or TorchTextGenerationSample."
+            msg = (
+                "generation must be a TorchTextGeneration, TorchTextGenerationSample, or nested text generation sample."
+            )
             raise TypeError(msg)
         if axis is None:
             msg = "axis must be provided when clustering a TorchTextGeneration."
