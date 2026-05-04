@@ -1,24 +1,21 @@
-"""Composition #4: single HetNet -> temperature scaling -> conformal RAPS.
+"""Experiment ``hetnet_stack``: HetNet -> calibration -> conformal RAPS.
 
-Wraps a small MLP with probly's heteroscedastic head (``het_net``),
-trains end-to-end with the standard HetNet loss (NLL on the average
-softmax over MC samples), then averages MC samples at inference to
-form a single ``(B, num_classes)`` probability vector. The
-log-probability vector is fed through the same calibration / conformal
-chain used by the DARE script: ``temperature_scaling`` fitted on the
-calibration logits, then ``conformal_raps`` calibrated at level alpha.
+Wraps a small MLP with probly's heteroscedastic head
+(:func:`probly.method.het_net.het_net`), trains end-to-end with the
+training loss selected by ``--calibration``, averages MC samples at
+inference to form a single ``(B, num_classes)`` predictive
+distribution, and runs the conformal RAPS layer on top.
 
-CLI:
+For ``calibration == "label_relaxation"`` the training loss is
+:class:`probly.train.calibration.torch.LabelRelaxationLoss`, applied
+per MC sample and averaged across samples (so the recipe stays close
+to the canonical HetNet training but the per-sample objective is the
+relaxation loss). For all other modes the per-step loss is the
+original NLL on the mean MC softmax (which is exactly cross-entropy on
+the averaged predictive distribution).
 
-    --dataset {two_moons,cifar10h}   required
-    --encoder <name>                 default: siglip2 (ignored on two_moons)
-    --num-factors <int>              default: 10
-    --train-samples <int>            default: 10
-    --inf-samples <int>              default: 10
-    --epochs <int>                   default: 200
-    --alpha <float>                  default: 0.1
-    --seed <int>                     default: 0
-    --device <str>                   default: auto
+Pass ``--results-json <path>`` to write the run's hyperparams and
+metrics to disk under the uniform stack-experiments schema.
 """
 
 from __future__ import annotations
@@ -34,58 +31,55 @@ from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 from probly.calibrator import calibrate
-from probly.method.calibration import temperature_scaling, torch_identity_logit_model
+from probly.method.calibration import torch_identity_logit_model
 from probly.method.conformal import conformal_raps
 from probly.method.het_net import het_net
 from probly.metrics import average_set_size, empirical_coverage_classification
-from probly.predictor import predict, predict_raw
+from probly.predictor import predict
 
+from stacking.calibration_modes import CALIBRATION_MODES, calibrate_logits, make_loss
 from stacking.data import load_dataset
 from stacking.models import build_mlp
 from stacking.utils import get_device, set_seed
 
 ECE_BINS = 15
-
-
-def _write_results(path: Path, payload: dict[str, Any]) -> None:
-    """Write a JSON dict to ``path``, creating parents as needed."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w") as fh:
-        json.dump(payload, fh, indent=2, sort_keys=False)
-        fh.write("\n")
-    print(f"\nwrote results -> {path}")
+EXPERIMENT = "hetnet_stack"
 
 
 def _train_hetnet(
     model: nn.Module,
-    X: torch.Tensor,
+    x: torch.Tensor,
     y: torch.Tensor,
     *,
     epochs: int,
     samples: int,
     lr: float,
     grad_clip: float,
+    calibration: str,
+    loss_fn: nn.Module,
     device: torch.device,
 ) -> None:
-    """Train a HetNet end-to-end with NLL on mean-of-MC-softmax.
+    """Train a HetNet end-to-end.
 
-    Mirrors :func:`probly_benchmark.train_funcs.train_epoch_het_net` minus
-    the optimizer/AMP plumbing: average ``S`` softmax samples per step
-    (each forward draws a fresh noise sample from the het head), then
-    NLL. Adam + global gradient clipping keeps the heteroscedastic head's
-    low-rank covariance from blowing up on differently scaled feature
-    distributions (raw DINOv2 embeddings, in particular, diverge with
-    the larger learning rates that work for SigLIP2).
+    For ``calibration == "label_relaxation"`` the per-step loss is the
+    average of ``loss_fn`` evaluated on each MC sample's logits. For all
+    other modes the per-step loss is NLL on the mean of MC softmax
+    samples (the canonical HetNet recipe; equivalent to CE on the mean
+    predictive distribution).
     """
     model.train()
     model.to(device)
     opt = torch.optim.Adam(model.parameters(), lr=lr)
     for _ in range(epochs):
         opt.zero_grad()
-        avg_probs = torch.stack(
-            [F.softmax(model(X), dim=1) for _ in range(samples)],
-        ).mean(0)
-        loss = F.nll_loss(avg_probs.log(), y)
+        if calibration == "label_relaxation":
+            losses = torch.stack([loss_fn(model(x), y) for _ in range(samples)])
+            loss = losses.mean()
+        else:
+            avg_probs = torch.stack(
+                [F.softmax(model(x), dim=1) for _ in range(samples)],
+            ).mean(0)
+            loss = F.nll_loss(avg_probs.log(), y)
         loss.backward()
         if grad_clip > 0:
             nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
@@ -94,20 +88,19 @@ def _train_hetnet(
 
 @torch.no_grad()
 def _hetnet_mean_logits(
-    model: nn.Module, X: torch.Tensor, *, samples: int, device: torch.device
+    model: nn.Module, x: torch.Tensor, *, samples: int, device: torch.device
 ) -> torch.Tensor:
     """Average ``samples`` MC predictive probabilities and return them as logits.
 
-    HetNet draws fresh noise per forward call, so we sample ``S`` times,
-    average the softmax, then take ``log`` to recover a logit-space tensor
-    of shape ``(B, num_classes)`` consumable by ``temperature_scaling``.
-    A small floor avoids ``log(0)`` on classes the ensemble never picks.
+    Each forward pass draws a fresh noise sample from the heteroscedastic
+    head; we average ``samples`` softmax outputs, clip to avoid log(0),
+    and return ``log`` so downstream layers keep operating on logits.
     """
     model.eval()
     model.to(device)
     chunks: list[torch.Tensor] = []
     for _ in range(samples):
-        logits = model(X.to(device))
+        logits = model(x.to(device))
         chunks.append(F.softmax(logits, dim=-1).detach())
     mean_probs = torch.stack(chunks, dim=0).mean(dim=0).clamp(min=1e-12)
     return mean_probs.log()
@@ -137,6 +130,15 @@ def _ece(logits: torch.Tensor, y: torch.Tensor, *, n_bins: int) -> float:
     return float(ece.item())
 
 
+def _write_results(path: Path, payload: dict[str, Any]) -> None:
+    """Write a JSON dict to ``path``, creating parents as needed."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w") as fh:
+        json.dump(payload, fh, indent=2, sort_keys=False)
+        fh.write("\n")
+    print(f"\nwrote results -> {path}")
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", choices=["two_moons", "cifar10h"], required=True)
@@ -147,15 +149,17 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--epochs", type=int, default=200)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--grad-clip", type=float, default=1.0)
-    parser.add_argument("--alpha", type=float, default=0.1)
+    parser.add_argument("--alpha", type=float, default=0.1, help="Conformal miscoverage level.")
+    parser.add_argument("--calibration", choices=list(CALIBRATION_MODES), default="temperature")
+    parser.add_argument(
+        "--lr-alpha",
+        type=float,
+        default=0.1,
+        help="LabelRelaxationLoss alpha; only consulted when --calibration label_relaxation.",
+    )
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--device", default="auto")
-    parser.add_argument(
-        "--results-json",
-        type=Path,
-        default=None,
-        help="If given, write a JSON dump of the run's hyperparams + metrics to this path.",
-    )
+    parser.add_argument("--results-json", type=Path, default=None)
     return parser.parse_args()
 
 
@@ -164,78 +168,80 @@ def _to_tensors(arr: np.ndarray, *, dtype: torch.dtype, device: torch.device) ->
 
 
 def main() -> None:
-    """Run a single HetNet -> temp -> conformal RAPS on the chosen dataset."""
+    """Run hetnet_stack on the chosen dataset / encoder / calibration mode."""
     args = _parse_args()
     set_seed(args.seed)
     device = get_device(args.device)
     print(f"Device: {device}")
 
     ds = load_dataset(args.dataset, encoder=args.encoder, seed=args.seed)
-    print(f"Dataset: {ds.meta.get('name')}  in_features={ds.in_features}  num_classes={ds.num_classes}")
+    print(
+        f"Dataset: {ds.meta.get('name')}  in_features={ds.in_features}  num_classes={ds.num_classes}  "
+        f"calibration={args.calibration}  seed={args.seed}"
+    )
     print(f"  train={ds.X_train.shape[0]}  calib={ds.X_calib.shape[0]}  test={ds.X_test.shape[0]}")
 
-    X_train = _to_tensors(ds.X_train, dtype=torch.float32, device=device)
+    x_train = _to_tensors(ds.X_train, dtype=torch.float32, device=device)
     y_train = _to_tensors(ds.y_train, dtype=torch.long, device=device)
-    X_calib = _to_tensors(ds.X_calib, dtype=torch.float32, device=device)
+    x_calib = _to_tensors(ds.X_calib, dtype=torch.float32, device=device)
     y_calib = _to_tensors(ds.y_calib, dtype=torch.long, device=device)
-    X_test = _to_tensors(ds.X_test, dtype=torch.float32, device=device)
+    x_test = _to_tensors(ds.X_test, dtype=torch.float32, device=device)
     y_test = _to_tensors(ds.y_test, dtype=torch.long, device=device)
 
-    # 1. Build a base MLP and wrap its last logit layer with the HetNet head.
     base = build_mlp(in_features=ds.in_features, num_classes=ds.num_classes)
     model: nn.Module = het_net(base, num_factors=args.num_factors)  # ty: ignore[invalid-assignment]
 
-    # 2. Train end-to-end with the HetNet MC-softmax loss.
+    loss_fn = make_loss(args.calibration, lr_alpha=args.lr_alpha)
+
     print("  training HetNet ...")
     _train_hetnet(
         model,
-        X_train,
+        x_train,
         y_train,
         epochs=args.epochs,
         samples=args.train_samples,
         lr=args.lr,
         grad_clip=args.grad_clip,
+        calibration=args.calibration,
+        loss_fn=loss_fn,
         device=device,
     )
 
-    # 3. Form mean-MC logits on calib + test.
-    calib_logits = _hetnet_mean_logits(model, X_calib, samples=args.inf_samples, device=device)
-    test_logits = _hetnet_mean_logits(model, X_test, samples=args.inf_samples, device=device)
+    calib_logits = _hetnet_mean_logits(model, x_calib, samples=args.inf_samples, device=device)
+    test_logits = _hetnet_mean_logits(model, x_test, samples=args.inf_samples, device=device)
 
-    acc = _accuracy(test_logits, y_test)
+    test_acc = _accuracy(test_logits, y_test)
     ece_uncal = _ece(test_logits, y_test, n_bins=ECE_BINS)
-    print(f"\nuncalibrated HetNet: test_acc={acc:.4f}  ECE={ece_uncal:.4f}")
+    print(f"\npooled HetNet: test_acc={test_acc:.4f}  ECE_uncal={ece_uncal:.4f}")
 
-    # 4. Temperature scaling on cached calib logits.
-    calibrator: Any = temperature_scaling(torch_identity_logit_model())
-    calibrate(calibrator, y_calib, calib_logits)
-    test_logits_calibrated = predict_raw(calibrator, test_logits)
-    if not isinstance(test_logits_calibrated, torch.Tensor):
-        msg = f"expected torch.Tensor calibrated logits, got {type(test_logits_calibrated)}"
-        raise TypeError(msg)
-    ece_cal = _ece(test_logits_calibrated, y_test, n_bins=ECE_BINS)
-    print(f"calibrated HetNet:    test_acc={_accuracy(test_logits_calibrated, y_test):.4f}  ECE={ece_cal:.4f}")
+    calib_calibrated, test_calibrated = calibrate_logits(
+        mode=args.calibration,
+        calib_logits=calib_logits,
+        test_logits=test_logits,
+        y_calib=y_calib,
+        num_classes=ds.num_classes,
+    )
+    ece_cal = _ece(test_calibrated, y_test, n_bins=ECE_BINS)
+    print(f"after calibration ({args.calibration}): ECE_cal={ece_cal:.4f}")
 
-    # 5. Conformal RAPS wrapped around the calibrator.
-    conformalizer: Any = conformal_raps(calibrator)
-    calibrate(conformalizer, args.alpha, y_calib, calib_logits)
-    test_sets = predict(conformalizer, test_logits)
+    conformalizer: Any = conformal_raps(torch_identity_logit_model())
+    calibrate(conformalizer, args.alpha, y_calib, calib_calibrated)
+    test_sets = predict(conformalizer, test_calibrated)
     coverage = float(empirical_coverage_classification(test_sets, y_test))
     avg_size = float(average_set_size(test_sets))
     print(
-        f"\nconformal RAPS @ alpha={args.alpha}:"
-        f"  coverage={coverage:.3f}  avg_set_size={avg_size:.3f}"
+        f"conformal RAPS @ alpha={args.alpha}: coverage={coverage:.3f}  avg_set_size={avg_size:.3f}"
     )
 
     if args.results_json is not None:
         _write_results(
             args.results_json,
             {
-                "composition": "hetnet_temp_conformal",
+                "experiment": EXPERIMENT,
+                "calibration": args.calibration,
                 "dataset": args.dataset,
                 "encoder": args.encoder if args.dataset == "cifar10h" else None,
-                "in_features": ds.in_features,
-                "num_classes": ds.num_classes,
+                "seed": args.seed,
                 "splits": {
                     "train": int(ds.X_train.shape[0]),
                     "calib": int(ds.X_calib.shape[0]),
@@ -248,14 +254,14 @@ def main() -> None:
                     "epochs": args.epochs,
                     "lr": args.lr,
                     "grad_clip": args.grad_clip,
-                    "alpha": args.alpha,
-                    "seed": args.seed,
+                    "lr_alpha": args.lr_alpha,
                     "ece_bins": ECE_BINS,
                 },
                 "metrics": {
-                    "test_acc": acc,
+                    "test_acc": test_acc,
                     "ece_uncalibrated": ece_uncal,
                     "ece_calibrated": ece_cal,
+                    "conformal_alpha": args.alpha,
                     "conformal_coverage": coverage,
                     "conformal_avg_set_size": avg_size,
                 },
