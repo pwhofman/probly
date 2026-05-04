@@ -11,18 +11,22 @@ Note:
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import torch
 
 from probly.metrics import (
     auc,
     average_interval_width,
     average_precision_score,
+    convex_hull_coverage,
     coverage,
     efficiency,
     precision_recall_curve,
     roc_auc_score,
     roc_curve,
 )
+from probly.metrics.array import _convex_hull_lp_coverage
 from probly.representation.conformal_set.torch import TorchIntervalConformalSet, TorchOneHotConformalSet
 from probly.representation.credal_set.torch import (
     TorchConvexCredalSet,
@@ -30,6 +34,9 @@ from probly.representation.credal_set.torch import (
     TorchDistanceBasedCredalSet,
     TorchProbabilityIntervalsCredalSet,
 )
+
+if TYPE_CHECKING:
+    from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 
 
 @auc.register(torch.Tensor)
@@ -261,3 +268,21 @@ def _average_interval_width_torch_probability_intervals(y_pred: TorchProbability
 def _average_interval_width_torch_dirichlet_level_set(y_pred: TorchDirichletLevelSetCredalSet) -> float:
     """Mean per-class width of the MC-sampled envelope of a Dirichlet-level-set credal set."""
     return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
+
+
+@convex_hull_coverage.register(TorchConvexCredalSet)
+def _convex_hull_coverage_torch_convex(
+    y_pred: TorchConvexCredalSet,
+    y_true: TorchCategoricalDistribution,
+    *,
+    epsilon: float = 0.0,
+    **linprog_kwargs: object,
+) -> object:
+    """Hull coverage for a torch convex credal set; routes through the numpy LP solver.
+
+    ``scipy.linprog`` is numpy-only, so the vertex tensor and target tensor
+    are detached, moved to CPU, and converted to numpy arrays.
+    """
+    vertices = y_pred.tensor.probabilities.detach().cpu().numpy()
+    targets = y_true.probabilities.detach().cpu().numpy()
+    return _convex_hull_lp_coverage(vertices, targets, epsilon, **linprog_kwargs)

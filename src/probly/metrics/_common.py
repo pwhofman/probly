@@ -215,3 +215,46 @@ def average_interval_width[T](y_pred: T) -> float:
     """
     msg = f"average_interval_width is not implemented for type {type(y_pred).__name__}."
     raise NotImplementedError(msg)
+
+
+@flexdispatch
+def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.0) -> float:
+    """Empirical convex-hull coverage for distribution-valued targets.
+
+    For each instance, the LP feasibility test
+    ``V^T lambda = t, sum(lambda) = 1, lambda in [0, 1]``
+    asks whether the target distribution ``t`` can be expressed as a convex
+    combination of the credal set's vertex distributions ``V``. Coverage is
+    the fraction of instances where the LP is feasible — i.e. where the
+    target lies in the convex hull of the vertices.
+
+    With ``epsilon > 0`` the relaxed slack-variable LP
+    ``V^T lambda + s+ - s- = t`` is solved with objective
+    ``min sum(s+ + s-)``; coverage counts instances whose optimal L1
+    distance from the hull is at most ``epsilon``.
+
+    Differs from :func:`coverage` on credal sets, which takes integer class
+    labels and uses interval dominance. This function takes wrapped
+    distribution-valued targets and uses exact convex-hull membership.
+
+    Args:
+        y_pred: A vertex-based credal-set representation
+            (``ArrayConvexCredalSet`` / ``ArrayDiscreteCredalSet`` /
+            ``ArraySingletonCredalSet`` / ``TorchConvexCredalSet``).
+        y_true: A wrapped categorical distribution per instance (shape
+            ``(N, K)``). ``ArrayCategoricalDistribution`` for the numpy
+            handlers, ``TorchCategoricalDistribution`` for the torch handler.
+        epsilon: L1-distance tolerance for relaxed coverage. ``epsilon=0.0``
+            (the default) runs the strict feasibility LP, which is faster
+            (no slack variables). ``epsilon > 0`` runs the slack LP.
+
+    Returns:
+        Fraction of instances whose target distribution lies in (or within
+        ``epsilon`` of) the credal set's convex hull, as ``np.float64``.
+
+    Raises:
+        NotImplementedError: If no implementation is registered for the type
+            of ``y_pred``.
+    """
+    msg = f"convex_hull_coverage is not implemented for type {type(y_pred).__name__}."
+    raise NotImplementedError(msg)

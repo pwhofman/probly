@@ -11,6 +11,7 @@ from ._common import (
     auc,
     average_interval_width,
     average_precision_score,
+    convex_hull_coverage,
     coverage,
     efficiency,
     precision_recall_curve,
@@ -22,6 +23,7 @@ from ._common import (
 @auc.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @average_interval_width.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @average_precision_score.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@convex_hull_coverage.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @coverage.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @efficiency.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @precision_recall_curve.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
@@ -44,6 +46,7 @@ __all__ = [
     "auc",
     "average_interval_width",
     "average_precision_score",
+    "convex_hull_coverage",
     "coverage",
     "efficiency",
     "precision_recall_curve",

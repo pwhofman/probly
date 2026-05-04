@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
+from scipy.optimize import linprog
 
 from probly.representation.conformal_set.array import ArrayIntervalConformalSet, ArrayOneHotConformalSet
 from probly.representation.credal_set.array import (
@@ -17,12 +20,16 @@ from ._common import (
     auc,
     average_interval_width,
     average_precision_score,
+    convex_hull_coverage,
     coverage,
     efficiency,
     precision_recall_curve,
     roc_auc_score,
     roc_curve,
 )
+
+if TYPE_CHECKING:
+    from probly.representation.distribution import ArrayCategoricalDistribution
 
 
 @auc.register(np.ndarray)
@@ -270,3 +277,115 @@ def _average_interval_width_array_distance(y_pred: ArrayDistanceBasedCredalSet) 
 def _average_interval_width_array_probability_intervals(y_pred: ArrayProbabilityIntervalsCredalSet) -> np.floating:
     """Mean per-class interval width of a probability-intervals credal set."""
     return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
+
+
+# --- Convex-hull coverage ----------------------------------------------------
+
+
+def _convex_hull_lp_coverage(
+    vertices: np.ndarray,
+    targets: np.ndarray,
+    epsilon: float,
+    **linprog_kwargs: object,
+) -> np.floating:
+    """Convex-hull membership coverage via per-instance LP feasibility.
+
+    Solves one linear program per instance. The strict variant
+    (``epsilon == 0``) tests feasibility of
+    ``V^T lambda = t, sum(lambda) = 1, lambda in [0, 1]``. The relaxed
+    variant (``epsilon > 0``) introduces L1 slack variables ``s+`` and
+    ``s-`` and minimizes their sum; an instance counts as covered iff the
+    LP is feasible and the optimal slack sum is at most ``epsilon``.
+
+    Args:
+        vertices: Array of shape ``(N, V, K)`` holding ``V`` vertex
+            distributions over ``K`` classes for each of ``N`` instances.
+        targets: Array of shape ``(N, K)`` holding the target distribution
+            for each instance.
+        epsilon: L1 tolerance. ``0.0`` selects the strict LP.
+        **linprog_kwargs: Forwarded to :func:`scipy.optimize.linprog`
+            (e.g. ``method`` or solver tolerances).
+
+    Returns:
+        Fraction of instances whose target lies in (or within ``epsilon`` of)
+        the hull, as ``np.float64``.
+    """
+    n_instances, n_vertices, n_classes = vertices.shape
+    relaxed = epsilon > 0.0
+
+    if relaxed:
+        c = np.concatenate([np.zeros(n_vertices), np.ones(2 * n_classes)])
+        bounds: list[tuple[float, float | None]] = [(0.0, 1.0)] * n_vertices + [(0.0, None)] * (2 * n_classes)
+    else:
+        c = np.zeros(n_vertices)
+        bounds = [(0.0, 1.0)] * n_vertices
+
+    covered = 0
+    for i in range(n_instances):
+        v = vertices[i]
+        t = targets[i]
+        if relaxed:
+            a_eq_top = np.hstack([v.T, np.eye(n_classes), -np.eye(n_classes)])
+            a_eq_bot = np.concatenate([np.ones(n_vertices), np.zeros(2 * n_classes)])
+            a_eq = np.vstack([a_eq_top, a_eq_bot])
+            b_eq = np.concatenate([t, [1.0]])
+        else:
+            a_eq = np.vstack([v.T, np.ones(n_vertices)])
+            b_eq = np.concatenate([t, [1.0]])
+
+        res = linprog(c=c, A_eq=a_eq, b_eq=b_eq, bounds=bounds, **linprog_kwargs)
+        if relaxed:
+            covered += int(bool(res.success) and float(res.fun) <= epsilon)
+        else:
+            covered += int(bool(res.success))
+
+    return np.float64(covered / n_instances) if n_instances > 0 else np.float64("nan")
+
+
+@convex_hull_coverage.register(ArrayConvexCredalSet)
+def _convex_hull_coverage_array_convex(
+    y_pred: ArrayConvexCredalSet,
+    y_true: ArrayCategoricalDistribution,
+    *,
+    epsilon: float = 0.0,
+    **linprog_kwargs: object,
+) -> np.floating:
+    """LP-based hull coverage for a convex credal set."""
+    return _convex_hull_lp_coverage(
+        np.asarray(y_pred.array.probabilities),
+        np.asarray(y_true.probabilities),
+        epsilon,
+        **linprog_kwargs,
+    )
+
+
+@convex_hull_coverage.register(ArrayDiscreteCredalSet)
+def _convex_hull_coverage_array_discrete(
+    y_pred: ArrayDiscreteCredalSet,
+    y_true: ArrayCategoricalDistribution,
+    *,
+    epsilon: float = 0.0,
+    **linprog_kwargs: object,
+) -> np.floating:
+    """LP-based hull coverage for a discrete credal set (same vertex structure as Convex)."""
+    return _convex_hull_lp_coverage(
+        np.asarray(y_pred.array.probabilities),
+        np.asarray(y_true.probabilities),
+        epsilon,
+        **linprog_kwargs,
+    )
+
+
+@convex_hull_coverage.register(ArraySingletonCredalSet)
+def _convex_hull_coverage_array_singleton(
+    y_pred: ArraySingletonCredalSet,
+    y_true: ArrayCategoricalDistribution,
+    *,
+    epsilon: float = 0.0,
+    **_linprog_kwargs: object,
+) -> np.floating:
+    """Hull degenerates to a point; coverage is ``L1(predicted, target) <= epsilon``."""
+    predicted = np.asarray(y_pred.array.probabilities)
+    targets = np.asarray(y_true.probabilities)
+    l1_dist = np.abs(predicted - targets).sum(axis=-1)
+    return np.mean(l1_dist <= epsilon)

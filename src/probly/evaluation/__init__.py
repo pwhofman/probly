@@ -9,10 +9,11 @@ the same namespace.
 
 from __future__ import annotations
 
-from probly.metrics import average_interval_width, coverage, efficiency
+from probly.metrics import average_interval_width, convex_hull_coverage, coverage, efficiency
 
 __all__ = [
     "average_interval_width",
+    "convex_hull_coverage",
     "coverage",
     "efficiency",
 ]
