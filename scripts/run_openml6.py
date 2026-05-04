@@ -74,17 +74,24 @@ DEFAULT_SEED_FILE = "scripts/al_analysis_out/wandb_cache_runs.pkl"
 DATASET = "openml_6"
 SEEDS: tuple[int, ...] = tuple(range(10))
 BASE_STRATEGIES: tuple[str, ...] = ("margin", "entropy", "least_confident")
+# Ensemble-based methods are slow to train (multiple base models per run); they
+# are placed at the tail of UQ_METHODS so the per-block iteration runs them
+# last, and the global execution order also pulls them to the very end via
+# ENSEMBLE_METHODS below.
+ENSEMBLE_METHODS: frozenset[str] = frozenset({"ensemble", "credal_ensembling"})
+
 UQ_METHODS: tuple[str, ...] = (
     "dropout",
     "dropconnect",
     "bayesian",
     "dare",
-    "ensemble",
     "evidential_classification",
     "posterior_network",
-    "credal_ensembling",
     "credal_relative_likelihood",
     "ddu",
+    # ensemble-based — kept last
+    "ensemble",
+    "credal_ensembling",
 )
 UQ_TU_METHODS: tuple[str, ...] = tuple(m for m in UQ_METHODS if m != "ddu")
 CALIBRATIONS: tuple[str, ...] = ("temperature_scaling", "vector_scaling")
@@ -268,7 +275,7 @@ def make_command(combo: Combo, *, device: str = DEFAULT_DEVICE) -> list[str]:
 # ---- CLI entry point ---------------------------------------------------------------
 
 
-def main(argv: Iterable[str] | None = None) -> int:
+def main(argv: Iterable[str] | None = None) -> int:  # noqa: PLR0912
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
         "--seed-file",
@@ -328,6 +335,12 @@ def main(argv: Iterable[str] | None = None) -> int:
     if not args.execute:
         print("Dry run; pass --execute to launch them.")
         return 0
+
+    # Stable-sort: non-ensemble combos first, ensemble-based last (across blocks).
+    missing.sort(key=lambda item: item[1]["method"] in ENSEMBLE_METHODS)
+    n_ensemble = sum(1 for _, c in missing if c["method"] in ENSEMBLE_METHODS)
+    if n_ensemble:
+        print(f"Reordered: {n_ensemble} ensemble-based combos pulled to the end.")
 
     if args.limit is not None:
         print(f"--limit={args.limit}: will execute at most {args.limit} of {len(missing)} combos.")
