@@ -610,29 +610,30 @@ class LogDUEVariance(StationarizingFeatureProvider):
         optimizer = torch.optim.Adam([*model.parameters(), *likelihood.parameters()], lr=self.gp_lr)
         batch_size = 256
         n_total = features_cat.size(0)
-        for epoch in range(self.gp_epochs):
-            model.train()
-            likelihood.train()
-            perm = torch.randperm(n_total)
-            epoch_loss = torch.zeros(1, device=device)
-            n_batches = 0
-            for i in tqdm(
-                range(0, n_total, batch_size), desc=f"DUE GP epoch {epoch + 1}/{self.gp_epochs}", leave=False
-            ):
-                idx = perm[i : i + batch_size]
-                bf = features_cat[idx].to(device, non_blocking=True)
-                bl = labels_cat[idx].to(device, non_blocking=True)
-                optimizer.zero_grad()
-                output = model(bf)
-                loss = -mll(output, bl)  # ty: ignore[unsupported-operator]
-                loss.backward()
-                optimizer.step()
-                epoch_loss += loss.detach()
-                n_batches += 1
-            if (epoch + 1) % 5 == 0 or epoch == self.gp_epochs - 1:
-                tqdm.write(
-                    f"DUE GP epoch {epoch + 1}/{self.gp_epochs}, ELBO={-epoch_loss.item() / max(n_batches, 1):.4f}"
-                )
+        with _gpytorch.settings.cholesky_jitter(1e-4):
+            for epoch in range(self.gp_epochs):
+                model.train()
+                likelihood.train()
+                perm = torch.randperm(n_total)
+                epoch_loss = torch.zeros(1, device=device)
+                n_batches = 0
+                for i in tqdm(
+                    range(0, n_total, batch_size), desc=f"DUE GP epoch {epoch + 1}/{self.gp_epochs}", leave=False
+                ):
+                    idx = perm[i : i + batch_size]
+                    bf = features_cat[idx].to(device, non_blocking=True)
+                    bl = labels_cat[idx].to(device, non_blocking=True)
+                    optimizer.zero_grad()
+                    output = model(bf)
+                    loss = -mll(output, bl)  # ty: ignore[unsupported-operator]
+                    loss.backward()
+                    optimizer.step()
+                    epoch_loss += loss.detach()
+                    n_batches += 1
+                if (epoch + 1) % 5 == 0 or epoch == self.gp_epochs - 1:
+                    tqdm.write(
+                        f"DUE GP epoch {epoch + 1}/{self.gp_epochs}, ELBO={-epoch_loss.item() / max(n_batches, 1):.4f}"
+                    )
         model.eval()
         likelihood.eval()
         return model, likelihood
