@@ -51,17 +51,26 @@ def _train_member(
     *,
     epochs: int,
     loss_fn: nn.Module,
+    lr: float,
+    grad_clip: float,
     device: torch.device,
 ) -> None:
-    """Train one ensemble member with full-batch ``loss_fn`` + Adam(lr=1e-2)."""
+    """Train one ensemble member with full-batch ``loss_fn`` + Adam.
+
+    Optional global gradient clipping is helpful when the loss is
+    LabelRelaxationLoss on differently-scaled embedding spaces (DINOv2
+    in particular collapses with the default lr that works for SigLIP2).
+    """
     member.train()
     member.to(device)
-    opt = torch.optim.Adam(member.parameters(), lr=1e-2)
+    opt = torch.optim.Adam(member.parameters(), lr=lr)
     for _ in range(epochs):
         opt.zero_grad()
         logits = member(x)
         loss = loss_fn(logits, y)
         loss.backward()
+        if grad_clip > 0:
+            nn.utils.clip_grad_norm_(member.parameters(), grad_clip)
         opt.step()
 
 
@@ -117,6 +126,13 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--epochs", type=int, default=200)
     parser.add_argument("--alpha", type=float, default=0.1, help="Conformal miscoverage level.")
     parser.add_argument("--calibration", choices=list(CALIBRATION_MODES), default="temperature")
+    parser.add_argument("--lr", type=float, default=1e-2, help="Adam learning rate per member.")
+    parser.add_argument(
+        "--grad-clip",
+        type=float,
+        default=0.0,
+        help="Global gradient-clip norm; <=0 disables. Recommended >0 with LabelRelaxationLoss on DINOv2.",
+    )
     parser.add_argument(
         "--lr-alpha",
         type=float,
@@ -160,7 +176,16 @@ def main() -> None:
     loss_fn = make_loss(args.calibration, lr_alpha=args.lr_alpha)
     for i, member in enumerate(ensemble):
         print(f"  training member {i + 1}/{args.num_members} ...")
-        _train_member(member, x_train, y_train, epochs=args.epochs, loss_fn=loss_fn, device=device)
+        _train_member(
+            member,
+            x_train,
+            y_train,
+            epochs=args.epochs,
+            loss_fn=loss_fn,
+            lr=args.lr,
+            grad_clip=args.grad_clip,
+            device=device,
+        )
 
     calib_logits = _pool_logits(ensemble, x_calib, device=device)
     test_logits = _pool_logits(ensemble, x_test, device=device)
@@ -205,6 +230,8 @@ def main() -> None:
                 "hyperparams": {
                     "num_members": args.num_members,
                     "epochs": args.epochs,
+                    "lr": args.lr,
+                    "grad_clip": args.grad_clip,
                     "lr_alpha": args.lr_alpha,
                     "ece_bins": ECE_BINS,
                 },
