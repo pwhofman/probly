@@ -19,10 +19,10 @@ def torch_mean_squared_distance_to_scaled_one_hot(sample: TorchSample, scale: fl
     num_classes = tensor.shape[-1]
     target_scale = float(num_classes) if scale is None else float(scale)
 
-    norm_sq = (tensor * tensor).sum(dim=-1)  # type: ignore[union-attr]  # ty:ignore[unsupported-operator]
-    max_logit = tensor.amax(dim=-1)  # ty:ignore[unresolved-attribute]
-    per_member = norm_sq - 2.0 * target_scale * max_logit + target_scale * target_scale  # ty:ignore[unsupported-operator]
+    norm_sq = (tensor * tensor).sum(dim=-1)  # type: ignore[union-attr]
+    max_logit = tensor.amax(dim=-1)
+    per_member = norm_sq - 2.0 * target_scale * max_logit + target_scale * target_scale
 
     if sample.weights is not None:
-        return torch_average(per_member, dim=sample.sample_dim, weights=sample.weights)  # ty:ignore[invalid-argument-type]
-    return per_member.mean(dim=sample.sample_dim)  # ty:ignore[unresolved-attribute]
+        return torch_average(per_member, dim=sample.sample_dim, weights=sample.weights)
+    return per_member.mean(dim=sample.sample_dim)

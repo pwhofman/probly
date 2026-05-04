@@ -60,7 +60,7 @@ class NaturalPosteriorNetworkRepresenter[**In](
     @NaturalPosteriorNetworkRepresentation.register_factory
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> NaturalPosteriorNetworkRepresentation:
         """Return a marked NatPN representation for a given input."""
-        return predict(self.predictor, *args, **kwargs)  # ty:ignore[invalid-return-type]
+        return predict(self.predictor, *args, **kwargs)
 
 
 representer.register(NaturalPosteriorNetworkPredictor, NaturalPosteriorNetworkRepresenter)

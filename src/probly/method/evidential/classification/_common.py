@@ -68,7 +68,7 @@ class EvidentialClassificationRepresenter[**In](
     @EvidentialClassificationRepresentation.register_factory
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> EvidentialClassificationRepresentation:
         """Return a marked EDL representation for a given input."""
-        return predict(self.predictor, *args, **kwargs)  # ty:ignore[invalid-return-type]
+        return predict(self.predictor, *args, **kwargs)
 
 
 representer.register(EvidentialClassificationPredictor, EvidentialClassificationRepresenter)

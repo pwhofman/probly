@@ -66,7 +66,7 @@ class DARERepresenter[**In, Out](IterableSampler[In, Out, "DARERepresentation"])
     @DARERepresentation.register_factory
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> DARERepresentation:
         """Return a marked DARE sample representation for a given input."""
-        return self._create_sample(self._predict(*args, **kwargs))  # ty:ignore[invalid-return-type]
+        return self._create_sample(self._predict(*args, **kwargs))
 
 
 representer.register(DarePredictor, DARERepresenter)
@@ -93,7 +93,7 @@ class DAREDecomposition[T](CachingDecomposition, EpistemicDecomposition[T]):
         """The DARE OOD score."""
         fit = mean_squared_distance_to_scaled_one_hot(self.sample, scale=self.target_scale)
         dispersion = measure_sample_variance(self.sample).sum(self.class_axis)
-        return fit + dispersion  # ty:ignore[invalid-return-type, unsupported-operator]
+        return fit + dispersion
 
 
 __all__ = ["DAREDecomposition", "DARERepresentation", "DARERepresenter", "DarePredictor", "dare"]

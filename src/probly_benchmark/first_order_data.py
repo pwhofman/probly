@@ -54,7 +54,7 @@ def main(cfg: DictConfig) -> None:
     outputs, targets = collect_outputs_targets_raw(model, test_loader, device, amp_enabled=cfg.get("amp", False))
     print(outputs)
     print(type(outputs))
-    print(f"Outputs shape: {outputs.shape}")  # ty: ignore[unresolved-attribute]
+    print(f"Outputs shape: {outputs.shape}")
     print(f"Targets shape: {targets.shape}")
     print(f"Num samples: {len(targets)}")
 
