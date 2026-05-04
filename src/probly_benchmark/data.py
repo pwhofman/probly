@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 import itertools
 import ssl
-from typing import Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 import warnings
 
 import numpy as np
@@ -17,6 +17,9 @@ import torchvision.transforms.v2 as T
 import webdataset as wds
 
 from probly_benchmark.paths import DATA_PATH, IMAGENET_SHARD_PATH, IMAGENET_TORCH_PATH
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # Ignore a warning from WebDataset about the use of length
 warnings.filterwarnings("ignore", message=".*with_length\\(\\).*")
@@ -358,26 +361,71 @@ _GRAYSCALE_OOD_DATASETS = frozenset({"mnist", "fashion_mnist"})
 
 
 class _HfOodDataset(torchvision.datasets.VisionDataset):
-    """Torchvision-style wrapper for a HuggingFace OOD dataset.
+    """Torchvision-style wrapper for an HF-hosted OOD dataset.
 
-    Labels are returned as ``0`` because OOD evaluation does not consume them
-    and some HF mirrors ship a broken ``ClassLabel`` schema.
+    Bypasses ``datasets.load_dataset`` (which can misclassify tar layouts as
+    WebDataset and which lazily streams xet-backed files row-by-row, causing
+    pathological per-row network round-trips during iteration). Instead this
+    downloads any archive files in the repo via ``hf_hub_download`` (full,
+    once), extracts them to a local cache directory, and yields images by
+    file path.
+
+    Labels are returned as ``0`` because OOD evaluation does not consume them.
     """
+
+    _CACHE_ROOT = DATA_PATH / "_hf_ood_cache"
+    _IMG_EXTS = frozenset({".jpg", ".jpeg", ".png", ".bmp", ".webp"})
+    _ARCHIVE_EXTS = (".tar", ".tar.gz", ".tgz", ".zip")
 
     def __init__(self, repo: str, transform: T.Compose) -> None:
         super().__init__(root="", transform=transform)
-        from datasets import load_dataset  # noqa: PLC0415
-
-        self._hf = load_dataset(repo, split="train").select_columns(["image"])
+        extract_dir = self._ensure_local(repo)
+        self._paths = sorted(p for p in extract_dir.rglob("*") if p.suffix.lower() in self._IMG_EXTS)
+        if not self._paths:
+            msg = f"No images found under {extract_dir} after extracting {repo}."
+            raise RuntimeError(msg)
         self._transform = transform
 
+    @classmethod
+    def _ensure_local(cls, repo: str) -> Path:
+        """Download and extract every archive file in ``repo`` once, locally."""
+        import tarfile  # noqa: PLC0415
+        import zipfile  # noqa: PLC0415
+
+        from huggingface_hub import HfApi, hf_hub_download  # noqa: PLC0415
+
+        extract_dir = cls._CACHE_ROOT / repo.replace("/", "__")
+        marker = extract_dir / ".extracted"
+        if marker.exists():
+            return extract_dir
+
+        extract_dir.mkdir(parents=True, exist_ok=True)
+        files = HfApi().list_repo_files(repo, repo_type="dataset")
+        archives = [f for f in files if f.endswith(cls._ARCHIVE_EXTS)]
+        if not archives:
+            msg = f"No tar/zip archives in {repo}; repo tree: {files}"
+            raise RuntimeError(msg)
+
+        for fname in archives:
+            print(f"[_HfOodDataset] downloading {repo}:{fname}")
+            local_path = hf_hub_download(repo, fname, repo_type="dataset")
+            print(f"[_HfOodDataset] extracting {local_path} -> {extract_dir}")
+            if fname.endswith(".zip"):
+                with zipfile.ZipFile(local_path) as zf:
+                    zf.extractall(extract_dir)  # noqa: S202
+            else:
+                with tarfile.open(local_path) as tf:
+                    tf.extractall(extract_dir, filter="data")
+        marker.touch()
+        return extract_dir
+
     def __len__(self) -> int:
-        return len(self._hf)
+        return len(self._paths)
 
     def __getitem__(self, index: int) -> tuple[torch.Tensor, int]:
-        img = self._hf[index]["image"]
-        if hasattr(img, "convert"):
-            img = img.convert("RGB")
+        from PIL import Image  # noqa: PLC0415
+
+        img = Image.open(self._paths[index]).convert("RGB")
         return self._transform(img), 0
 
 
