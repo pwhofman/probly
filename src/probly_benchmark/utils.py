@@ -369,7 +369,7 @@ def _download_checkpoint_from_wandb(
     device: torch.device,
 ) -> tuple[dict[str, Any], str]:
     """Download a model artifact from wandb and return the raw checkpoint."""
-    api = wandb.Api()
+    api = wandb.Api(timeout=60)
     full_name = f"{entity}/{project}/{artifact_name}:latest"
 
     try:
@@ -557,7 +557,7 @@ def load_model_for_evaluation(
 
 def _find_existing_run_id(entity: str, project: str, run_name: str) -> str | None:
     """Return the ID of the most recent wandb run with the given display name, or None."""
-    api = wandb.Api()
+    api = wandb.Api(timeout=60)
     runs = api.runs(
         f"{entity}/{project}",
         filters={"display_name": run_name},
@@ -606,7 +606,7 @@ def init_wandb_for_evaluation(
         # Fetch the source run's config so training-relevant parameters are
         # carried over (e.g. base_model, dataset, seed, training hyperparams).
         # The current eval cfg is merged on top, so method-specific overrides win.
-        api = wandb.Api()
+        api = wandb.Api(timeout=60)
         source_run = api.run(f"{cfg.wandb.entity}/{cfg.wandb.project}/{run_id}")
         source_config: dict[str, Any] = dict(source_run.config)
         return wandb.init(
