@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
 from flextype import flexdispatch
 from probly.predictor import Predictor
+from probly.representer._representer import DummyRepresenter, representer
 from probly.transformation.transformation import predictor_transformation
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, flexdispatch_traverser, traverse
@@ -21,6 +22,8 @@ if TYPE_CHECKING:
 class BatchEnsemblePredictor[**In, Out](Predictor[In, Out], Protocol):
     """Protocol marking a predictor whose linear/conv layers were swapped for BatchEnsemble layers."""
 
+
+representer.register(BatchEnsemblePredictor, DummyRepresenter)
 
 type InitMethod = Literal["random_sign", "normal"]
 

@@ -12,7 +12,24 @@ from probly.layers.torch import BatchEnsembleConv2d, BatchEnsembleLinear  # noqa
 from probly.method.batchensemble import batchensemble  # noqa: E402
 from probly.predictor import predict  # noqa: E402
 from probly.representation.sample.torch import TorchSample  # noqa: E402
+from probly.representer import DummyRepresenter, representer  # noqa: E402
 from tests.probly.torch_utils import count_layers  # noqa: E402
+
+
+class TestBatchEnsembleRepresenter:
+    """Tests for batchensemble representer registration."""
+
+    def test_batchensemble_uses_dummy_representer(self) -> None:
+        model = batchensemble(nn.Linear(4, 2), num_members=3)
+        rep = representer(model)
+        assert isinstance(rep, DummyRepresenter)
+
+    def test_batchensemble_representer_returns_torch_sample(self) -> None:
+        model = batchensemble(nn.Linear(4, 2), num_members=3)
+        rep = representer(model)
+        out = rep.represent(torch.ones(2, 4))
+        assert isinstance(out, TorchSample)
+        assert out.tensor.shape == (3, 2, 2)
 
 
 class TestBatchEnsembleLayers:

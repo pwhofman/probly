@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 
 from flextype import flexdispatch
 from probly.decider import categorical_from_mean
+from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.ddu import DDUPredictor
 from probly.method.efficient_credal_prediction import EfficientCredalPredictor
@@ -93,5 +94,18 @@ def _decide_subensemble(
 ) -> CategoricalDistribution:
     """Average softmax probabilities across all subensemble members."""
     member_dists = [create_categorical_distribution_from_logits(predict(member, x)) for member in model]
+    avg_probs = sum(d.probabilities for d in member_dists) / len(member_dists)
+    return create_categorical_distribution(avg_probs)
+
+
+@decide.register(BatchEnsemblePredictor)
+def _decide_batchensemble(
+    model: BatchEnsemblePredictor,
+    x: torch.Tensor,
+    rep_kwargs: dict[str, Any] | None = None,  # noqa: ARG001
+) -> CategoricalDistribution:
+    """Average softmax probabilities across all batchensemble members."""
+    sample = predict(model, x)
+    member_dists = [create_categorical_distribution_from_logits(logits) for logits in sample.samples]
     avg_probs = sum(d.probabilities for d in member_dists) / len(member_dists)
     return create_categorical_distribution(avg_probs)

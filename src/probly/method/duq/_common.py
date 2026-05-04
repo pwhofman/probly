@@ -93,3 +93,13 @@ class DUQDecomposition[T](CachingDecomposition, TotalDecomposition[T]):
 @categorical_from_mean.register(DUQRepresentation)
 def _(representation: DUQRepresentation) -> CategoricalDistribution:
     return create_categorical_distribution(representation.kernel_values)
+
+
+__all__ = [
+    "DUQDecomposition",
+    "DUQPredictor",
+    "DUQRepresentation",
+    "create_duq_representation",
+    "duq",
+    "duq_uncertainty",
+]
