@@ -13,6 +13,9 @@ train:
   lr: 0.1
   # GLM predictive at inference. ImageNet recipe overrides to "nn" because the GLM Jacobian is too expensive
   pred_type: "glm"
-  # Batch size used when fitting the Laplace posterior (model.fit). Kept small because KFAC
+    # Batch size used when fitting the Laplace posterior (model.fit). Kept small because KFAC
   # stores CxC hessian square roots per sample; 2048 OOMs on ImageNet (C=1000).
-  fit_batch_size: 32
+  # null means use original batch_size
+  fit_batch_size: null
+  # Fraction in (0, 1] of the train set used to fit the Hessian, null = full dataset.
+  fit_subset: null

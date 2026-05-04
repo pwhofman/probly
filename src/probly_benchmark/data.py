@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 import itertools
 import ssl
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple, cast
 import warnings
 
 import numpy as np
@@ -20,6 +20,8 @@ from probly_benchmark.paths import DATA_PATH, IMAGENET_SHARD_PATH, IMAGENET_TORC
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from omegaconf import DictConfig
 
 # Ignore a warning from WebDataset about the use of length
 warnings.filterwarnings("ignore", message=".*with_length\\(\\).*")
@@ -355,6 +357,89 @@ def get_data_train(
         case _:
             msg = f"Dataset {name} not recognized"
             raise ValueError(msg)
+
+
+def build_laplace_fit_loader(
+    train_loader: DataLoader,
+    cfg: DictConfig,
+    train_kwargs: dict[str, Any],
+) -> DataLoader:
+    """Build a DataLoader for ``BaseLaplace.fit``, honoring ``fit_batch_size`` and ``fit_subset``.
+
+    laplace-torch's KFAC stores per-sample C-by-C Hessian square roots, so the fit step often
+    needs a smaller batch than training. ``fit_subset`` (a fraction in ``(0, 1]``, or ``None``)
+    trades Hessian-estimate variance for fit-time speed: the Hessian is an unbiased average
+    across samples, so a uniform random subset gives the same estimator with higher variance.
+
+    For ImageNet the source dataset is swapped from webdataset to ``imagenet_torch`` because
+    laplace-torch requires ``len(loader.dataset)``.
+
+    Args:
+        train_loader: DataLoader used for the supervised fine-tune phase.
+        cfg: Hydra config; ``cfg.dataset`` and ``cfg.seed`` are read.
+        train_kwargs: ``train`` block from the method config; ``fit_batch_size`` (``int`` or
+            ``None``; ``None`` means the train batch size, or 32 on ImageNet) and ``fit_subset``
+            (``float`` in ``(0, 1]`` or ``None``) are read here.
+
+    Returns:
+        A DataLoader to pass to :meth:`laplace.baselaplace.BaseLaplace.fit`.
+
+    Raises:
+        ValueError: If ``fit_subset`` is not in ``(0, 1]``.
+    """
+    fit_subset = train_kwargs.get("fit_subset")
+    if fit_subset is not None and not 0.0 < float(fit_subset) <= 1.0:
+        msg = f"fit_subset must be in (0, 1] or None, got {fit_subset!r}"
+        raise ValueError(msg)
+    fit_batch_size_cfg = train_kwargs.get("fit_batch_size")
+
+    if cfg.dataset == "imagenet":
+        # KFAC with 1000 ImageNet classes stores CxC hessian square roots per sample;
+        # training batch_size (2048) causes OOM, so default the fit batch to 32.
+        fit_batch_size = int(fit_batch_size_cfg) if fit_batch_size_cfg is not None else 32
+        print(
+            f"[laplace-fit] cfg.dataset='imagenet' uses webdataset, which doesn't satisfy "
+            f"laplace-torch's `len(loader.dataset)` requirement, hence switching to the "
+            f"torchvision version (fit_batch_size={fit_batch_size})."
+        )
+        source_loader = get_data_train(
+            "imagenet_torch",
+            cfg.seed,
+            val_split=cfg.val_split,
+            cal_split=cfg.get("cal_split", 0.0),
+            batch_size=fit_batch_size,
+            num_workers=cfg.num_workers,
+            pin_memory=cfg.pin_memory,
+            persistent_workers=cfg.persistent_workers,
+            prefetch_factor=cfg.get("prefetch_factor", 4),
+            shuffle=True,
+        ).train
+    else:
+        source_loader = train_loader
+        fit_batch_size = int(fit_batch_size_cfg) if fit_batch_size_cfg is not None else source_loader.batch_size
+
+    if fit_subset is None and fit_batch_size == source_loader.batch_size:
+        return source_loader
+
+    dataset = source_loader.dataset
+    if fit_subset is not None:
+        # Datasets fed to laplace-torch must be ``Sized`` (it calls ``len(loader.dataset)``);
+        # ``torch.utils.data.Dataset`` itself doesn't promise ``__len__``, hence the cast.
+        n_total = len(cast("Any", dataset))
+        n_keep = max(1, round(float(fit_subset) * n_total))
+        rng = torch.Generator().manual_seed(int(cfg.seed))
+        indices = torch.randperm(n_total, generator=rng)[:n_keep].tolist()
+        dataset = Subset(dataset, indices)
+        print(f"[laplace-fit] fit_subset={fit_subset}: using {n_keep}/{n_total} samples")
+
+    return DataLoader(
+        dataset,
+        batch_size=fit_batch_size,
+        shuffle=True,
+        num_workers=source_loader.num_workers,
+        pin_memory=source_loader.pin_memory,
+        persistent_workers=source_loader.num_workers > 0 and source_loader.persistent_workers,
+    )
 
 
 _GRAYSCALE_OOD_DATASETS = frozenset({"mnist", "fashion_mnist"})

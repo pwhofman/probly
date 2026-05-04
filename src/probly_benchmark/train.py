@@ -471,7 +471,7 @@ def _shutdown_dataloader_workers(loader: DataLoader, name: str) -> None:
         # Iterator may already be partially torn down; best-effort cleanup.
         with contextlib.suppress(Exception):
             shutdown()
-    loader._iterator = None  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+    loader._iterator = None  # noqa: SLF001
     gc.collect()
     print(
         f"[subensemble] Shut down persistent {name}_loader workers between members "
@@ -1217,30 +1217,7 @@ def _(
         train_fn=train_epoch_cross_entropy,
         val_fn=validate_cross_entropy,
     )
-    # swap to torch version of dataset for fit of laplace
-    fit_loader = train_loader
-    if cfg.dataset == "imagenet":
-        # KFAC with 1000 ImageNet classes stores CxC hessian square roots per sample;
-        # training batch_size (2048) causes OOM, so cap the fit batch at 32.
-        fit_batch_size = train_kwargs.get("fit_batch_size", 32)
-        print(
-            f"[laplace-fit] cfg.dataset='imagenet' uses webdataset, which doesn't satisfy "
-            f"laplace-torch's `len(loader.dataset)` requirement, hence switching to the "
-            f"torchvision version (fit_batch_size={fit_batch_size})."
-        )
-        # swap to loader of torch
-        fit_loader = data.get_data_train(
-            "imagenet_torch",
-            cfg.seed,
-            val_split=cfg.val_split,
-            cal_split=cfg.get("cal_split", 0.0),
-            batch_size=fit_batch_size,
-            num_workers=cfg.num_workers,
-            pin_memory=cfg.pin_memory,
-            persistent_workers=cfg.persistent_workers,
-            prefetch_factor=cfg.get("prefetch_factor", 4),
-            shuffle=True,
-        ).train
+    fit_loader = data.build_laplace_fit_loader(train_loader, cfg, train_kwargs)
     model.fit(fit_loader)
     run.summary["laplace_fitted"] = True
     if train_kwargs.get("optimize_prior", False):
