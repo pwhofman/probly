@@ -30,11 +30,12 @@ amp: true
 
 # Experiment
 seed: 0
-device: "cuda"
+device: null
 
 # WandB (AL-level logging only)
 wandb:
   enabled: true
+  entity: "probly"
   project: "probly-active-learning"
 
 # Local results aggregation. When ``save_results`` is true, each run appends

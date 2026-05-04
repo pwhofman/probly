@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-import torch
 import wandb
 import wandb.util
 
@@ -26,13 +25,15 @@ from probly.evaluation.active_learning import (
     compute_nauc,
     from_dataset,
 )
+from probly_benchmark import utils
 from probly_benchmark.al_estimators import BaseEstimator, UncertaintyEstimator
 from probly_benchmark.data import get_data_al
 from probly_benchmark.metadata import AL_DATASETS
 from probly_benchmark.uncertainty import SUPPORTED_DECOMPOSITIONS
-from probly_benchmark.utils import set_seed
 
 if TYPE_CHECKING:
+    import torch
+
     from probly.quantification.notion import NotionName
 
 logger = logging.getLogger(__name__)
@@ -148,8 +149,8 @@ def _append_result(results_file: Path, result: dict[str, Any]) -> None:
 @hydra.main(version_base=None, config_path="configs/", config_name="active_learning")
 def main(cfg: DictConfig) -> float:
     """Run a single active learning experiment."""
-    set_seed(cfg.seed)
-    device = torch.device(cfg.device)
+    utils.set_seed(cfg.seed)
+    device = utils.get_device(cfg.get("device", None))
 
     # --- Data ---
     dataset_kwargs: dict[str, Any] = {}
