@@ -6,6 +6,8 @@ from types import SimpleNamespace
 
 import numpy as np
 import pytest
+
+pytest.importorskip("transformers")
 from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
 pytest.importorskip("torch")
@@ -15,12 +17,12 @@ from probly.representation.distribution.torch_sparse_log_categorical import (
     TorchSparseLogCategoricalDistribution,
     TorchSparseLogCategoricalDistributionSample,
 )
-from probly.representation.text_generation import (
+from probly.representation.text_generation.torch import (
     TorchTextGeneration,
     TorchTextGenerationSample,
     TorchTextGenerationSampleSample,
 )
-from probly.representer.semantic_clustering import DEFAULT_NLI_MODEL, GreedyHFSemanticClusterer
+from probly.representer.semantic_clustering.huggingface import DEFAULT_NLI_MODEL, HFGreedySemanticClusterer
 
 
 class FakeTokenizer:
@@ -124,7 +126,7 @@ def test_greedy_clusterer_clusters_sample_with_batched_nli_calls() -> None:
     )
     sample = TorchTextGenerationSample(tensor=generation, sample_dim=1)
 
-    clustered = GreedyHFSemanticClusterer(model, tokenizer, batch_size=2)(sample)
+    clustered = HFGreedySemanticClusterer(model, tokenizer, batch_size=2)(sample)
 
     assert isinstance(clustered, TorchSparseLogCategoricalDistribution)
     assert torch.equal(clustered.logits, generation.log_likelihood)
@@ -169,7 +171,7 @@ def test_greedy_clusterer_preserves_outer_sample_axis_for_nested_samples() -> No
         weights=torch.tensor([0.25, 0.75]),
     )
 
-    clustered = GreedyHFSemanticClusterer(model, tokenizer, batch_size=3)(outer_sample)
+    clustered = HFGreedySemanticClusterer(model, tokenizer, batch_size=3)(outer_sample)
 
     assert isinstance(clustered, TorchSparseLogCategoricalDistributionSample)
     assert clustered.shape == (2, 2)
@@ -195,7 +197,7 @@ def test_raw_text_generation_requires_axis_and_returns_raw_semantic_generation()
         text=np.asarray([["x", "y"]], dtype=object),
         log_likelihood=torch.tensor([[-0.1, -0.2]]),
     )
-    clusterer = GreedyHFSemanticClusterer(model, tokenizer)
+    clusterer = HFGreedySemanticClusterer(model, tokenizer)
 
     with pytest.raises(ValueError, match="axis"):
         clusterer(generation)
@@ -215,7 +217,7 @@ def test_single_generation_assigns_cluster_zero_without_nli_model_call() -> None
         log_likelihood=torch.tensor([-0.1]),
     )
 
-    clustered = GreedyHFSemanticClusterer(model, tokenizer)(generation, axis=0)
+    clustered = HFGreedySemanticClusterer(model, tokenizer)(generation, axis=0)
 
     assert torch.equal(clustered.group_ids, torch.tensor([0]))
     assert model.calls == []
@@ -240,7 +242,7 @@ def test_from_model_name_loads_hf_sequence_classifier(monkeypatch: pytest.Monkey
     monkeypatch.setattr(transformers.AutoTokenizer, "from_pretrained", tokenizer_from_pretrained)
     monkeypatch.setattr(transformers.AutoModelForSequenceClassification, "from_pretrained", model_from_pretrained)
 
-    clusterer = GreedyHFSemanticClusterer.from_model_name(
+    clusterer = HFGreedySemanticClusterer.from_model_name(
         cache_dir="probly-cache",
         force_download=True,
         model_kwargs={"dtype": "auto"},

@@ -10,13 +10,13 @@ import pytest
 pytest.importorskip("torch")
 import torch
 
-from probly.representation.embedding import TorchEmbedding, TorchEmbeddingSample, TorchEmbeddingSampleSample
-from probly.representation.text_generation import (
+from probly.representation.embedding.torch import TorchEmbedding, TorchEmbeddingSample, TorchEmbeddingSampleSample
+from probly.representation.text_generation.torch import (
     TorchTextGeneration,
     TorchTextGenerationSample,
     TorchTextGenerationSampleSample,
 )
-from probly.representer.embedder import DEFAULT_EMBEDDING_MODEL, HFTextEmbedder
+from probly.representer.embedder.huggingface import DEFAULT_EMBEDDING_MODEL, HFTextEmbedder
 
 
 class FakeEmbeddingModel:

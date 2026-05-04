@@ -8,12 +8,14 @@ from typing import Any, cast
 
 import numpy as np
 import pytest
+
+pytest.importorskip("transformers")
 from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
 pytest.importorskip("torch")
 import torch
 
-from probly.representation.text_generation import (
+from probly.representation.text_generation.torch import (
     TorchTextGeneration,
     TorchTextGenerationSample,
     TorchTextGenerationSampleSample,

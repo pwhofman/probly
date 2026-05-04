@@ -18,7 +18,7 @@ from probly.representation.text_generation import TorchTextGeneration
 from probly.representer.clarifier.huggingface import HFQuestionClarifier
 from probly.representer.sampler.huggingface import HFTextGenerationSampler
 from probly.representer.sampler.huggingface import load_model
-from probly.representer.semantic_clustering import GreedyHFSemanticClusterer
+from probly.representer.semantic_clustering import HFGreedySemanticClusterer
 
 
 # GENERATION_MODEL_NAME = "HuggingFaceTB/SmolLM2-135M-Instruct"
@@ -61,7 +61,7 @@ class QuestionResult:
 
 
 def cluster_answers_by_question(
-    clusterer: GreedyHFSemanticClusterer,
+    clusterer: HFGreedySemanticClusterer,
     answers: object,
 ) -> TorchSparseLogCategoricalDistributionSample:
     """Cluster all answers for each original question and return clarification-level distributions.
@@ -191,7 +191,7 @@ def main() -> None:
         max_new_tokens=128,
     )
     print(f"Loading NLI model: {NLI_MODEL_NAME}")
-    clusterer = GreedyHFSemanticClusterer.from_model_name(
+    clusterer = HFGreedySemanticClusterer.from_model_name(
         NLI_MODEL_NAME,
         model_kwargs=nli_model_kwargs,
         batch_size=10,

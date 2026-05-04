@@ -15,7 +15,7 @@ import numpy as np
 import torch
 
 from probly.representation.text_generation import TorchTextGeneration
-from probly.representer.semantic_clustering import GreedyHFSemanticClusterer
+from probly.representer.semantic_clustering import HFGreedySemanticClusterer
 
 
 NLI_MODEL_NAME = "microsoft/deberta-base-mnli"
@@ -48,7 +48,7 @@ BATCHED_BATCH_SIZE = 1000
 RESULTS_PATH = Path(__file__).resolve().parent / "results" / "semantic_entropy_nli_batching.json"
 
 
-class CountingGreedyHFSemanticClusterer(GreedyHFSemanticClusterer):
+class CountingHFGreedySemanticClusterer(HFGreedySemanticClusterer):
     """Greedy semantic clusterer that records NLI pair query counts."""
 
     nli_pairs_scored: int
@@ -87,7 +87,7 @@ def make_generation(samples: list[str]) -> TorchTextGeneration:
 
 
 def runtime_seconds(
-    clusterer: CountingGreedyHFSemanticClusterer,
+    clusterer: CountingHFGreedySemanticClusterer,
     samples: list[str],
 ) -> tuple[float, int, int]:
     """Measure one semantic clustering invocation.
@@ -109,8 +109,8 @@ def runtime_seconds(
 
 
 def benchmark_sample_count(
-    unbatched: CountingGreedyHFSemanticClusterer,
-    batched: CountingGreedyHFSemanticClusterer,
+    unbatched: CountingHFGreedySemanticClusterer,
+    batched: CountingHFGreedySemanticClusterer,
     num_samples: int,
 ) -> dict[str, object]:
     """Benchmark unbatched and batched NLI querying for one sample count.
@@ -162,12 +162,12 @@ def main() -> None:
         model_kwargs["device_map"] = "auto"
 
     print(f"Loading NLI model: {NLI_MODEL_NAME}")
-    unbatched = CountingGreedyHFSemanticClusterer.from_model_name(
+    unbatched = CountingHFGreedySemanticClusterer.from_model_name(
         NLI_MODEL_NAME,
         model_kwargs=model_kwargs,
         batch_size=UNBATCHED_BATCH_SIZE,
     )
-    batched = CountingGreedyHFSemanticClusterer(
+    batched = CountingHFGreedySemanticClusterer(
         unbatched.model,
         unbatched.tokenizer,
         batch_size=BATCHED_BATCH_SIZE,

@@ -7,8 +7,8 @@ import pytest
 pytest.importorskip("torch")
 import torch
 
-from probly.quantification.measure.spectral import rbf_kernel, spectral_entropy, von_neumann_entropy
-from probly.representation.embedding import TorchEmbedding
+from probly.quantification.measure.spectral.torch import rbf_kernel, spectral_entropy, von_neumann_entropy
+from probly.representation.embedding.torch import TorchEmbedding
 
 
 def test_rbf_kernel_uses_normalized_distance_identity_case() -> None:

@@ -9,7 +9,7 @@ import torch
 
 from probly.quantification import decompose
 from probly.quantification.decomposition.spectral.torch import spectral_decomposition
-from probly.representation.embedding import TorchEmbedding, TorchEmbeddingSample, TorchEmbeddingSampleSample
+from probly.representation.embedding.torch import TorchEmbedding, TorchEmbeddingSample, TorchEmbeddingSampleSample
 
 
 def test_spectral_decomposition_returns_additive_components() -> None:

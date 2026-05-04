@@ -9,7 +9,7 @@ pytest.importorskip("torch")
 import torch
 
 from probly.representation.sample import create_sample
-from probly.representation.text_generation import (
+from probly.representation.text_generation.torch import (
     TorchTextGeneration,
     TorchTextGenerationSample,
     TorchTokenGeneration,

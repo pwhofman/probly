@@ -7,7 +7,7 @@ import pytest
 pytest.importorskip("torch")
 import torch
 
-from probly.representation.embedding import TorchEmbedding, TorchEmbeddingSample, TorchEmbeddingSampleSample
+from probly.representation.embedding.torch import TorchEmbedding, TorchEmbeddingSample, TorchEmbeddingSampleSample
 
 
 def test_torch_embedding_protects_trailing_embedding_axis() -> None:

@@ -364,7 +364,7 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOut
         return self._cluster(generation, axis)
 
 
-class GreedyHFSemanticClusterer(HFSemanticClusterer):
+class HFGreedySemanticClusterer(HFSemanticClusterer):
     """Greedy semantic clustering via bidirectional NLI labels."""
 
     @staticmethod
