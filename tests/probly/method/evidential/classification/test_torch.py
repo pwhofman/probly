@@ -160,3 +160,52 @@ def test_torch_decomposition_on_evidential_model_output(torch_model_small_2d_2d:
     assert decomposition.epistemic.shape == (5,)
     assert torch.all(decomposition.epistemic > 0.0)
     assert torch.all(decomposition.epistemic <= 1.0)
+
+
+# Representer dispatch tests.
+
+from probly.method.evidential.classification import (  # noqa: E402
+    EvidentialClassificationRepresentation,
+    EvidentialClassificationRepresenter,
+)
+from probly.predictor import predict  # noqa: E402
+from probly.quantification import quantify  # noqa: E402
+from probly.quantification.decomposition.entropy import SecondOrderEntropyDecomposition  # noqa: E402
+from probly.representer import representer  # noqa: E402
+
+
+def test_representer_factory_returns_edl_representer(torch_model_small_2d_2d: nn.Sequential) -> None:
+    model = evidential_classification(torch_model_small_2d_2d)
+    rep = representer(model)
+    assert isinstance(rep, EvidentialClassificationRepresenter)
+
+
+def test_representer_output_marked_as_edl_representation(torch_model_small_2d_2d: nn.Sequential) -> None:
+    model = evidential_classification(torch_model_small_2d_2d)
+    out = representer(model)(torch.randn(5, 2))
+
+    assert isinstance(out, TorchDirichletDistribution)
+    assert isinstance(out, EvidentialClassificationRepresentation)
+
+
+def test_quantify_on_representer_output_dispatches_to_edl_decomposition(
+    torch_model_small_2d_2d: nn.Sequential,
+) -> None:
+    """quantify(representer(model)(x)) -> EvidentialClassificationDecomposition."""
+    model = evidential_classification(torch_model_small_2d_2d)
+    out = representer(model)(torch.randn(5, 2))
+
+    decomposition = quantify(out)
+
+    assert isinstance(decomposition, EvidentialClassificationDecomposition)
+
+
+def test_direct_predict_output_not_marked_keeps_default_decomposition(
+    torch_model_small_2d_2d: nn.Sequential,
+) -> None:
+    """quantify(predict(model, x)) -> SecondOrderEntropyDecomposition (UNCHANGED)."""
+    model = evidential_classification(torch_model_small_2d_2d)
+    direct = predict(model, torch.randn(5, 2))
+
+    assert not isinstance(direct, EvidentialClassificationRepresentation)
+    assert isinstance(quantify(direct), SecondOrderEntropyDecomposition)

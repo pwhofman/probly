@@ -8,11 +8,17 @@ from probly.transformation.natural_posterior_network import (
     natural_posterior_network,
 )
 
-from ._common import NaturalPosteriorDecomposition
+from ._common import (
+    NaturalPosteriorDecomposition,
+    NaturalPosteriorNetworkRepresentation,
+    NaturalPosteriorNetworkRepresenter,
+)
 
 __all__ = [
     "CertaintyBudget",
     "NaturalPosteriorDecomposition",
     "NaturalPosteriorNetworkPredictor",
+    "NaturalPosteriorNetworkRepresentation",
+    "NaturalPosteriorNetworkRepresenter",
     "natural_posterior_network",
 ]

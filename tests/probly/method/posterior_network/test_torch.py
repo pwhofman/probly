@@ -169,3 +169,53 @@ def test_postnet_decomposition_on_model_output(model: PosteriorNetworkPredictor,
     assert torch.all(decomposition.aleatoric < 1.0)
     assert torch.all(decomposition.epistemic > 0.0)
     assert torch.all(decomposition.epistemic <= 1.0)
+
+
+# Representer dispatch tests.
+
+from probly.method.posterior_network import (  # noqa: E402
+    PosteriorNetworkRepresentation,
+    PosteriorNetworkRepresenter,
+)
+from probly.quantification import quantify  # noqa: E402
+from probly.quantification.decomposition.entropy import SecondOrderEntropyDecomposition  # noqa: E402
+from probly.representer import representer  # noqa: E402
+
+
+def test_representer_factory_returns_postnet_representer(model: PosteriorNetworkPredictor) -> None:
+    rep = representer(model)
+    assert isinstance(rep, PosteriorNetworkRepresenter)
+
+
+def test_representer_output_marked_as_postnet_representation(
+    model: PosteriorNetworkPredictor, inputs: torch.Tensor
+) -> None:
+    model.eval()
+    rep = representer(model)
+    out = rep(inputs)
+
+    assert isinstance(out, TorchDirichletDistribution)
+    assert isinstance(out, PosteriorNetworkRepresentation)
+
+
+def test_quantify_on_representer_output_dispatches_to_postnet_decomposition(
+    model: PosteriorNetworkPredictor, inputs: torch.Tensor
+) -> None:
+    """quantify(representer(model)(x)) -> PosteriorNetworkDecomposition (auto-dispatch)."""
+    model.eval()
+    out = representer(model)(inputs)
+
+    decomposition = quantify(out)
+
+    assert isinstance(decomposition, PosteriorNetworkDecomposition)
+
+
+def test_direct_predict_output_not_marked_keeps_default_decomposition(
+    model: PosteriorNetworkPredictor, inputs: torch.Tensor
+) -> None:
+    """``quantify(predict(model, x))`` keeps the entropy decomposition (direct predict bypasses representer)."""
+    model.eval()
+    direct = predict(model, inputs)
+
+    assert not isinstance(direct, PosteriorNetworkRepresentation)
+    assert isinstance(quantify(direct), SecondOrderEntropyDecomposition)

@@ -3,18 +3,65 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, override
+from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 
+from probly.predictor import predict
+from probly.quantification._quantification import decompose
 from probly.quantification.decomposition.decomposition import (
     AleatoricEpistemicDecomposition,
     CachingDecomposition,
 )
 from probly.quantification.measure.distribution import max_probability_complement_of_expected, vacuity
+from probly.representation.distribution._common import SecondOrderDistribution
+from probly.representation.representation import Representation
+from probly.representer import Representer, representer
+from probly.transformation.posterior_network import PosteriorNetworkPredictor
 
 if TYPE_CHECKING:
     from probly.quantification.measure.distribution import SecondOrderDistributionLike
 
 
+@runtime_checkable
+class PosteriorNetworkRepresentation(Representation, Protocol):
+    """Pseudo-representation type marking outputs of the Posterior Network method.
+
+    A pure marker protocol used to route :func:`decompose` to a PostNet-specific
+    decomposition. Constructed via
+    :meth:`PosteriorNetworkRepresentation.register_factory` on the
+    :class:`PosteriorNetworkRepresenter`'s ``represent`` method, which marks the
+    underlying :class:`DirichletDistribution` instance so it is recognised as a
+    PostNet representation by the dispatch chain.
+    """
+
+
+# Register as a virtual subclass of SecondOrderDistribution so the dispatch
+# considers the marker more specific than the generic SecondOrderDistribution
+# entropy decomposition.
+SecondOrderDistribution.register(PosteriorNetworkRepresentation)
+
+
+class PosteriorNetworkRepresenter[**In](
+    Representer[Any, In, "PosteriorNetworkRepresentation", "PosteriorNetworkRepresentation"]
+):
+    """Representer for Posterior Network predictors.
+
+    Calls :func:`predict` on the wrapped PostNet predictor and marks the
+    resulting :class:`DirichletDistribution` as a
+    :class:`PosteriorNetworkRepresentation`, which lets :func:`decompose`
+    auto-route the output to :class:`PosteriorNetworkDecomposition`.
+    """
+
+    @override
+    @PosteriorNetworkRepresentation.register_factory
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> PosteriorNetworkRepresentation:
+        """Return a marked PostNet representation for a given input."""
+        return predict(self.predictor, *args, **kwargs)  # ty:ignore[invalid-return-type]
+
+
+representer.register(PosteriorNetworkPredictor, PosteriorNetworkRepresenter)
+
+
+@decompose.register(PosteriorNetworkRepresentation)
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
 class PosteriorNetworkDecomposition[T](
     CachingDecomposition,
@@ -64,4 +111,8 @@ class PosteriorNetworkDecomposition[T](
         return vacuity(self.distribution)  # ty:ignore[invalid-return-type]
 
 
-__all__ = ["PosteriorNetworkDecomposition"]
+__all__ = [
+    "PosteriorNetworkDecomposition",
+    "PosteriorNetworkRepresentation",
+    "PosteriorNetworkRepresenter",
+]

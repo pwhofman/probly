@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, override
+from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 
+from probly.predictor import predict
+from probly.quantification._quantification import decompose
 from probly.quantification.decomposition.decomposition import (
     AleatoricEpistemicTotalDecomposition,
     CachingDecomposition,
@@ -14,12 +16,57 @@ from probly.quantification.measure.distribution import (
     entropy_of_expected_predictive_distribution,
     vacuity,
 )
+from probly.representation.distribution._common import SecondOrderDistribution
+from probly.representation.representation import Representation
+from probly.representer import Representer, representer
+from probly.transformation.natural_posterior_network import NaturalPosteriorNetworkPredictor
 
 if TYPE_CHECKING:
     from probly.quantification.measure.distribution import SecondOrderDistributionLike
     from probly.quantification.measure.distribution._common import LogBase
 
 
+@runtime_checkable
+class NaturalPosteriorNetworkRepresentation(Representation, Protocol):
+    """Pseudo-representation type marking outputs of the Natural Posterior Network method.
+
+    A pure marker protocol used to route :func:`decompose` to a NatPN-specific
+    decomposition. Constructed via
+    :meth:`NaturalPosteriorNetworkRepresentation.register_factory` on the
+    :class:`NaturalPosteriorNetworkRepresenter`'s ``represent`` method, which marks
+    the underlying :class:`DirichletDistribution` instance so it is recognised as
+    a NatPN representation by the dispatch chain.
+    """
+
+
+# Register as a virtual subclass of SecondOrderDistribution so the dispatch
+# considers the marker more specific than the generic SecondOrderDistribution
+# entropy decomposition.
+SecondOrderDistribution.register(NaturalPosteriorNetworkRepresentation)
+
+
+class NaturalPosteriorNetworkRepresenter[**In](
+    Representer[Any, In, "NaturalPosteriorNetworkRepresentation", "NaturalPosteriorNetworkRepresentation"]
+):
+    """Representer for Natural Posterior Network predictors.
+
+    Calls :func:`predict` on the wrapped NatPN predictor and marks the
+    resulting :class:`DirichletDistribution` as a
+    :class:`NaturalPosteriorNetworkRepresentation`, which lets :func:`decompose`
+    auto-route the output to :class:`NaturalPosteriorDecomposition`.
+    """
+
+    @override
+    @NaturalPosteriorNetworkRepresentation.register_factory
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> NaturalPosteriorNetworkRepresentation:
+        """Return a marked NatPN representation for a given input."""
+        return predict(self.predictor, *args, **kwargs)  # ty:ignore[invalid-return-type]
+
+
+representer.register(NaturalPosteriorNetworkPredictor, NaturalPosteriorNetworkRepresenter)
+
+
+@decompose.register(NaturalPosteriorNetworkRepresentation)
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
 class NaturalPosteriorDecomposition[T](
     CachingDecomposition,
@@ -83,4 +130,8 @@ class NaturalPosteriorDecomposition[T](
         return vacuity(self.distribution)  # ty:ignore[invalid-return-type]
 
 
-__all__ = ["NaturalPosteriorDecomposition"]
+__all__ = [
+    "NaturalPosteriorDecomposition",
+    "NaturalPosteriorNetworkRepresentation",
+    "NaturalPosteriorNetworkRepresenter",
+]

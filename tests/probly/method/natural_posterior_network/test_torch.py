@@ -230,3 +230,53 @@ def test_torch_decomposition_on_natpn_model_output(model: TorchNaturalPosteriorN
     assert decomposition.epistemic.shape == (BATCH,)
     assert torch.all(decomposition.epistemic > 0.0)
     assert torch.all(decomposition.epistemic <= 1.0)
+
+
+# Representer dispatch tests.
+
+from probly.method.natural_posterior_network import (  # noqa: E402
+    NaturalPosteriorNetworkRepresentation,
+    NaturalPosteriorNetworkRepresenter,
+)
+from probly.predictor import predict  # noqa: E402
+from probly.quantification import quantify  # noqa: E402
+from probly.quantification.decomposition.entropy import SecondOrderEntropyDecomposition  # noqa: E402
+from probly.representer import representer  # noqa: E402
+
+
+def test_representer_factory_returns_natpn_representer(model: TorchNaturalPosteriorNetwork) -> None:
+    rep = representer(model)
+    assert isinstance(rep, NaturalPosteriorNetworkRepresenter)
+
+
+def test_representer_output_marked_as_natpn_representation(
+    model: TorchNaturalPosteriorNetwork, inputs: torch.Tensor
+) -> None:
+    model.eval()
+    out = representer(model)(inputs)
+
+    assert isinstance(out, TorchDirichletDistribution)
+    assert isinstance(out, NaturalPosteriorNetworkRepresentation)
+
+
+def test_quantify_on_representer_output_dispatches_to_natpn_decomposition(
+    model: TorchNaturalPosteriorNetwork, inputs: torch.Tensor
+) -> None:
+    """quantify(representer(model)(x)) -> NaturalPosteriorDecomposition (auto-dispatch)."""
+    model.eval()
+    out = representer(model)(inputs)
+
+    decomposition = quantify(out)
+
+    assert isinstance(decomposition, NaturalPosteriorDecomposition)
+
+
+def test_direct_predict_output_not_marked_keeps_default_decomposition(
+    model: TorchNaturalPosteriorNetwork, inputs: torch.Tensor
+) -> None:
+    """quantify(predict(model, x)) -> SecondOrderEntropyDecomposition (UNCHANGED)."""
+    model.eval()
+    direct = predict(model, inputs)
+
+    assert not isinstance(direct, NaturalPosteriorNetworkRepresentation)
+    assert isinstance(quantify(direct), SecondOrderEntropyDecomposition)

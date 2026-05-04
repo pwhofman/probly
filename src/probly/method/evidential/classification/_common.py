@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol, override, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 
+from probly.predictor import predict
+from probly.quantification._quantification import decompose
 from probly.quantification.decomposition.decomposition import CachingDecomposition, EpistemicDecomposition
 from probly.quantification.measure.distribution import vacuity
 from probly.representation.distribution import DirichletDistribution
+from probly.representation.distribution._common import SecondOrderDistribution
+from probly.representation.representation import Representation
+from probly.representer import Representer, representer
 from probly.transformation.dirichlet_clipped_exp_one_activation import (
     DirichletClippedExpOneActivationPredictor,
     dirichlet_clipped_exp_one_activation,
@@ -29,6 +34,47 @@ evidential_classification = EvidentialClassificationPredictor.register_factory(
 )
 
 
+@runtime_checkable
+class EvidentialClassificationRepresentation(Representation, Protocol):
+    """Pseudo-representation type marking outputs of the evidential classification method.
+
+    A pure marker protocol used to route :func:`decompose` to an EDL-specific
+    decomposition. Constructed via
+    :meth:`EvidentialClassificationRepresentation.register_factory` on the
+    :class:`EvidentialClassificationRepresenter`'s ``represent`` method, which marks
+    the underlying :class:`DirichletDistribution` instance so it is recognised as
+    an EDL representation by the dispatch chain.
+    """
+
+
+# Register as a virtual subclass of SecondOrderDistribution so the dispatch
+# considers the marker more specific than the generic SecondOrderDistribution
+# entropy decomposition.
+SecondOrderDistribution.register(EvidentialClassificationRepresentation)
+
+
+class EvidentialClassificationRepresenter[**In](
+    Representer[Any, In, "EvidentialClassificationRepresentation", "EvidentialClassificationRepresentation"]
+):
+    """Representer for evidential classification predictors.
+
+    Calls :func:`predict` on the wrapped EDL predictor and marks the
+    resulting :class:`DirichletDistribution` as an
+    :class:`EvidentialClassificationRepresentation`, which lets :func:`decompose`
+    auto-route the output to :class:`EvidentialClassificationDecomposition`.
+    """
+
+    @override
+    @EvidentialClassificationRepresentation.register_factory
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> EvidentialClassificationRepresentation:
+        """Return a marked EDL representation for a given input."""
+        return predict(self.predictor, *args, **kwargs)  # ty:ignore[invalid-return-type]
+
+
+representer.register(EvidentialClassificationPredictor, EvidentialClassificationRepresenter)
+
+
+@decompose.register(EvidentialClassificationRepresentation)
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
 class EvidentialClassificationDecomposition[T](CachingDecomposition, EpistemicDecomposition[T]):
     """Decomposition based on Evidential Deep Learning for classification.
@@ -67,5 +113,7 @@ class EvidentialClassificationDecomposition[T](CachingDecomposition, EpistemicDe
 __all__ = [
     "EvidentialClassificationDecomposition",
     "EvidentialClassificationPredictor",
+    "EvidentialClassificationRepresentation",
+    "EvidentialClassificationRepresenter",
     "evidential_classification",
 ]
