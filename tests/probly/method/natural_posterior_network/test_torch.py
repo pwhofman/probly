@@ -166,6 +166,14 @@ def test_torch_decomposition_components_match_measure_functions(base: None | flo
     assert torch.allclose(decomposition.epistemic, vacuity(distribution), rtol=1e-12, atol=1e-12)
 
 
+def test_torch_decomposition_components_have_all_three() -> None:
+    """Appendix E formally defines TU, AU, and EU."""
+    decomposition = NaturalPosteriorDecomposition(_torch_dirichlet())
+
+    assert decomposition.components == [TotalUncertainty, AleatoricUncertainty, EpistemicUncertainty]
+    assert len(decomposition) == 3
+
+
 def test_torch_decomposition_notion_access_and_types() -> None:
     decomposition = NaturalPosteriorDecomposition(_torch_dirichlet())
 

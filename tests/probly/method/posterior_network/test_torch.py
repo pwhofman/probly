@@ -19,14 +19,12 @@ from probly.quantification import (  # noqa: E402
     TotalUncertainty,
 )
 from probly.quantification.measure.distribution import (  # noqa: E402
-    entropy_of_expected_predictive_distribution,
     max_probability_complement_of_expected,
     vacuity,
 )
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: E402
 from probly.transformation.posterior_network import PosteriorNetworkPredictor  # noqa: E402
 
-NUMERIC_BASES: tuple[None | float, ...] = (None, 2.0, 10.0)
 NUM_CLASSES = 4
 IN_FEATURES = 8
 HIDDEN = 16
@@ -47,57 +45,65 @@ def _torch_dirichlet() -> TorchDirichletDistribution:
     return TorchDirichletDistribution(alphas=alphas)
 
 
-@pytest.mark.parametrize("base", NUMERIC_BASES)
-def test_torch_decomposition_components_match_measure_functions(base: None | float) -> None:
+def test_torch_decomposition_components_match_measure_functions() -> None:
     distribution = _torch_dirichlet()
 
-    decomposition = PosteriorNetworkDecomposition(distribution, base=base)
+    decomposition = PosteriorNetworkDecomposition(distribution)
 
     assert torch.allclose(
-        decomposition.total,
-        max_probability_complement_of_expected(distribution),
-        rtol=1e-12,
-        atol=1e-12,
-    )
-    assert torch.allclose(
         decomposition.aleatoric,
-        entropy_of_expected_predictive_distribution(distribution, base=base),
+        max_probability_complement_of_expected(distribution),
         rtol=1e-12,
         atol=1e-12,
     )
     assert torch.allclose(decomposition.epistemic, vacuity(distribution), rtol=1e-12, atol=1e-12)
 
 
+def test_torch_decomposition_components_only_aleatoric_and_epistemic() -> None:
+    """Paper has no formal TU; decomposition has only AU and EU slots."""
+    decomposition = PosteriorNetworkDecomposition(_torch_dirichlet())
+
+    assert decomposition.components == [AleatoricUncertainty, EpistemicUncertainty]
+    assert len(decomposition) == 2
+
+
 def test_torch_decomposition_notion_access_and_types() -> None:
     decomposition = PosteriorNetworkDecomposition(_torch_dirichlet())
 
-    assert isinstance(decomposition.total, torch.Tensor)
     assert isinstance(decomposition.aleatoric, torch.Tensor)
     assert isinstance(decomposition.epistemic, torch.Tensor)
-    assert decomposition[TotalUncertainty] is decomposition.total
     assert decomposition[AleatoricUncertainty] is decomposition.aleatoric
     assert decomposition[EpistemicUncertainty] is decomposition.epistemic
-    assert decomposition["tu"] is decomposition.total
     assert decomposition["au"] is decomposition.aleatoric
     assert decomposition["eu"] is decomposition.epistemic
+
+
+def test_torch_decomposition_does_not_expose_total() -> None:
+    decomposition = PosteriorNetworkDecomposition(_torch_dirichlet())
+
+    with pytest.raises(KeyError):
+        decomposition[TotalUncertainty]
+    with pytest.raises(KeyError):
+        decomposition["tu"]
 
 
 def test_torch_decomposition_caches_components() -> None:
     decomposition = PosteriorNetworkDecomposition(_torch_dirichlet())
 
-    total = decomposition.total
     aleatoric = decomposition.aleatoric
     epistemic = decomposition.epistemic
 
-    assert decomposition.total is total
     assert decomposition.aleatoric is aleatoric
     assert decomposition.epistemic is epistemic
 
 
-def test_torch_decomposition_canonical_notion_is_total() -> None:
+def test_torch_decomposition_no_canonical_notion() -> None:
+    """AU and EU are equally valid; no canonical notion."""
     decomposition = PosteriorNetworkDecomposition(_torch_dirichlet())
 
-    assert decomposition.get_canonical() is decomposition.total
+    assert decomposition.canonical_notion is None
+    with pytest.raises(NotImplementedError):
+        decomposition.get_canonical()
 
 
 def test_torch_decomposition_propagates_gradients() -> None:
@@ -105,7 +111,7 @@ def test_torch_decomposition_propagates_gradients() -> None:
     distribution = TorchDirichletDistribution(alphas=alphas)
 
     decomposition = PosteriorNetworkDecomposition(distribution)
-    objective = decomposition.total + decomposition.aleatoric + decomposition.epistemic
+    objective = decomposition.aleatoric + decomposition.epistemic
     objective.backward()
 
     grad = alphas.grad
@@ -157,10 +163,9 @@ def test_postnet_decomposition_on_model_output(model: PosteriorNetworkPredictor,
     decomposition = PosteriorNetworkDecomposition(dirichlet)
 
     n = inputs.shape[0]
-    assert decomposition.total.shape == (n,)
     assert decomposition.aleatoric.shape == (n,)
     assert decomposition.epistemic.shape == (n,)
-    assert torch.all(decomposition.total >= 0.0)
-    assert torch.all(decomposition.total < 1.0)
+    assert torch.all(decomposition.aleatoric >= 0.0)
+    assert torch.all(decomposition.aleatoric < 1.0)
     assert torch.all(decomposition.epistemic > 0.0)
     assert torch.all(decomposition.epistemic <= 1.0)
