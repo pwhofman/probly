@@ -8,6 +8,7 @@ from probly import (
     evaluation as evaluation,
     layers as layers,
     method as method,
+    metrics as metrics,
     plot as plot,
     predictor as predictor,
     quantification as quantification,
