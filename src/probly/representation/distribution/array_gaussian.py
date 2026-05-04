@@ -6,14 +6,17 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, override
 
 import numpy as np
+from scipy.stats import norm
 
 from probly.representation._protected_axis.array import ArrayAxisProtected
-from probly.representation.distribution._common import GaussianDistribution, GaussianDistributionSample
+from probly.representation.distribution._common import (
+    GaussianDistribution,
+    GaussianDistributionSample,
+    create_gaussian_distribution,
+)
 from probly.representation.sample.array import ArraySample
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
-
     from numpy.typing import DTypeLike
 
 
@@ -48,6 +51,20 @@ class ArrayGaussianDistribution(ArrayAxisProtected[np.ndarray], GaussianDistribu
         object.__setattr__(self, "mean", mean)
         object.__setattr__(self, "var", var)
 
+    @property
+    def std(self) -> np.ndarray:
+        """Get the standard deviation."""
+        return np.sqrt(self.var)
+
+    def quantile(self, q: float | list[float] | np.ndarray) -> np.ndarray:
+        """Calculate the quantile function at the given points."""
+        q_arr = np.asanyarray(q)
+        res = norm.ppf(q_arr, loc=self.mean[..., None], scale=self.std[..., None])
+
+        if q_arr.ndim == 0:
+            return res.squeeze(-1)
+        return res
+
     @override
     def sample(
         self,
@@ -58,7 +75,7 @@ class ArrayGaussianDistribution(ArrayAxisProtected[np.ndarray], GaussianDistribu
         if rng is None:
             rng = np.random.default_rng()
 
-        std = np.sqrt(self.var)
+        std = self.std
         samples = rng.normal(
             loc=self.mean,
             scale=std,
@@ -127,10 +144,6 @@ class ArrayGaussianDistribution(ArrayAxisProtected[np.ndarray], GaussianDistribu
         return result
 
     @override
-    def __iter__(self) -> Iterator[Any]:
-        return self.mean.__iter__()
-
-    @override
     def __eq__(self, other: Any) -> np.ndarray:  # ty: ignore[invalid-method-override]  # noqa: PYI032
         """Compare two Gaussians by their parameters."""
         if not isinstance(other, ArrayGaussianDistribution):
@@ -145,6 +158,17 @@ class ArrayGaussianDistribution(ArrayAxisProtected[np.ndarray], GaussianDistribu
         hash gives per-instance identity semantics.
         """
         return object.__hash__(self)
+
+
+@create_gaussian_distribution.register(np.ndarray)
+def _(mean: np.ndarray, var: np.ndarray | None = None) -> ArrayGaussianDistribution:
+    """Create an ArrayGaussianDistribution from numpy arrays."""
+    if var is None:
+        if mean.shape[-1] != 2:
+            msg = "If var is not provided, mean must have shape (..., 2) where the last axis contains [mean, var]"
+            raise ValueError(msg)
+        return ArrayGaussianDistribution(mean=mean[..., 0], var=mean[..., 1])
+    return ArrayGaussianDistribution(mean=mean, var=var)
 
 
 class ArrayGaussianDistributionSample(  # ty:ignore[conflicting-metaclass]

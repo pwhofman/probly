@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import TORCH_MODULE, TORCH_SAMPLE
+from probly.lazy_types import TORCH_MODULE, TORCH_TENSOR, TORCH_TENSOR_LIKE
 
 from ._common import (
     SNGPDecomposition,
@@ -23,7 +23,7 @@ def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-@compute_categorical_sample_from_logits.delayed_register(TORCH_SAMPLE)
+@compute_categorical_sample_from_logits.delayed_register((TORCH_TENSOR_LIKE, TORCH_TENSOR))
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 

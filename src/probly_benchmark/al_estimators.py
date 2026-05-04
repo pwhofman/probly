@@ -113,7 +113,7 @@ class BaseEstimator:
     Attributes:
         cfg: Hydra DictConfig with training hyperparameters.
         base_model_name: Name of the base model architecture.
-        method_name: Name of the method (e.g. ``"plain"``, ``"dropout"``, ``"lac"``).
+        method_name: Name of the method (e.g. ``"base"``, ``"dropout"``, ``"lac"``).
         method_params: Method-specific hyperparameters.
         num_classes: Number of output classes.
         device: Device to train and infer on.
@@ -138,7 +138,7 @@ class BaseEstimator:
         Args:
             cfg: Hydra DictConfig with training hyperparameters.
             base_model_name: Name of the base model architecture.
-            method_name: Name of the method (e.g. ``"plain"``, ``"dropout"``, ``"lac"``).
+            method_name: Name of the method (e.g. ``"base"``, ``"dropout"``, ``"lac"``).
             method_params: Method-specific hyperparameters.
             num_classes: Number of output classes.
             device: Device to train and infer on.

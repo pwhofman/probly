@@ -5,6 +5,13 @@ from probly.transformation.bayesian import bayesian
 from probly.transformation.bayesian_ensemble import bayesian_ensemble
 from probly.transformation.cast import cast
 from probly.transformation.class_bias_ensemble import class_bias_ensemble
+from probly.transformation.conformal_credal_set import (
+    conformal_dirichlet_relative_likelihood,
+    conformal_inner_product,
+    conformal_kullback_leibler,
+    conformal_total_variation,
+    conformal_wasserstein_distance,
+)
 from probly.transformation.dirichlet_clipped_exp_one_activation import dirichlet_clipped_exp_one_activation
 from probly.transformation.dirichlet_exp_activation import dirichlet_exp_activation
 from probly.transformation.dirichlet_softplus_activation import dirichlet_softplus_activation
@@ -22,6 +29,11 @@ __all__ = [
     "cast",
     "class_bias_ensemble",
     "dirichlet_clipped_exp_one_activation",
+    "conformal_dirichlet_relative_likelihood",
+    "conformal_inner_product",
+    "conformal_kullback_leibler",
+    "conformal_total_variation",
+    "conformal_wasserstein_distance",
     "dirichlet_exp_activation",
     "dirichlet_softplus_activation",
     "dropconnect",

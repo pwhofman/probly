@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Literal, Protocol, Self, TypedDict, Unpack
+from contextvars import ContextVar
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Protocol, Self, TypedDict, Unpack
 
 from flextype import Flexdispatch, flexdispatch
 from probly.representation.representation import Representation
@@ -108,6 +109,27 @@ class Sample[T](Representation, ABC):
         """Compute the variance of the sample."""
         msg = "var method not implemented."
         raise NotImplementedError(msg)
+
+
+class RepresentationSample[T: Representation](Sample[T]):
+    """Sample type for samples over representation objects."""
+
+    _running_instancehook: ClassVar[ContextVar[object]] = ContextVar(
+        "RepresentationSample._running_instancehook", default=NotImplemented
+    )
+    sample_space: ClassVar[type[Representation]] = Representation
+
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        if cls._running_instancehook.get() is instance:
+            return NotImplemented
+        try:
+            tok = cls._running_instancehook.set(instance)
+            if isinstance(instance, Sample) and isinstance(instance.samples, cls.sample_space):
+                return True
+        finally:
+            cls._running_instancehook.reset(tok)
+        return NotImplemented
 
 
 class ListSample[T](list[T], Sample[T]):

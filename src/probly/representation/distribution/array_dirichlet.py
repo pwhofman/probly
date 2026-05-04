@@ -13,7 +13,7 @@ from probly.representation.distribution.array_categorical import ArrayCategorica
 from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable
 
     from numpy.typing import DTypeLike
 
@@ -90,10 +90,6 @@ class ArrayDirichletDistribution(
     def _postprocess_ufunc_result(self, result: np.ndarray, *, ufunc: np.ufunc, method: str) -> np.ndarray:
         del ufunc, method
         return np.maximum(result, 1e-10)
-
-    @override
-    def __iter__(self) -> Iterator[Any]:
-        return self.alphas.__iter__()
 
     @override
     def __eq__(self, value: Any) -> np.ndarray:  # ty: ignore[invalid-method-override]  # noqa: PYI032

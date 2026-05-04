@@ -1,6 +1,6 @@
-"""============================================
-Active Learning with sklearn — Margin vs Random
-============================================
+"""============================================================
+Active Learning with sklearn - Margin vs Random
+============================================================
 
 Compare margin sampling against random query selection on the Digits
 dataset using a bare :class:`~sklearn.linear_model.LogisticRegression`.

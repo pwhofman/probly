@@ -5,7 +5,6 @@ requires-python = ">=3.13"
 dependencies = [
   "river>=0.21",
   "probly",
-  "torch>=2.5",
   "numpy",
   "matplotlib",
   "pandas",

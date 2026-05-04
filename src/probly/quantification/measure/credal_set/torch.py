@@ -7,7 +7,12 @@ import math
 
 import torch
 
-from probly.representation.credal_set.torch import TorchConvexCredalSet, TorchProbabilityIntervalsCredalSet
+from probly.representation.credal_set.torch import (
+    TorchConvexCredalSet,
+    TorchDirichletLevelSetCredalSet,
+    TorchDistanceBasedCredalSet,
+    TorchProbabilityIntervalsCredalSet,
+)
 from probly.utils.torch import torch_entropy
 
 from ._common import LogBase, generalized_hartley, lower_entropy, upper_entropy
@@ -60,6 +65,59 @@ def torch_intervals_lower_entropy(credal_set: TorchProbabilityIntervalsCredalSet
     mass and returns the configuration with the lowest entropy found.
     """
     lower, upper = credal_set.lower_bounds, credal_set.upper_bounds
+    n_classes = lower.shape[-1]
+    capacity = upper - lower
+    residual = 1.0 - lower.sum(-1)
+    best = lower.new_full(lower.shape[:-1], float("inf"))
+    for j in range(n_classes):
+        p = lower.detach().clone()
+        rem = residual.clone()
+        for i in [j, *[k for k in range(n_classes) if k != j]]:
+            fill = torch.minimum(rem.clamp(min=0.0), capacity[..., i])
+            p[..., i] = p[..., i] + fill
+            rem = rem - fill
+        best = torch.minimum(best, torch_entropy(p))
+    return _apply_base(best, credal_set.num_classes, base)
+
+
+@upper_entropy.register(TorchDistanceBasedCredalSet)
+def torch_distance_based_upper_entropy(
+    credal_set: TorchDistanceBasedCredalSet,
+    base: LogBase = None,
+) -> torch.Tensor:
+    """Compute the upper entropy of a distance-based credal set.
+
+    The TV ball {p : TV(p, p_hat) <= r} implies per-class bounds
+    lower_i = max(0, p_hat_i - r), upper_i = min(1, p_hat_i + r).
+    Uses bisection on the Lagrange multiplier for sum(p) = 1.
+    """
+    lower = credal_set.lower()
+    upper = credal_set.upper()
+    lo = 1.0 + lower.amin(dim=-1).clamp_min(torch.finfo(lower.dtype).tiny).log()
+    hi = lower.new_ones(lower.shape[:-1])
+    for _ in range(_BISECT_ITERS):
+        mu = (lo + hi) / 2
+        g = torch.clamp((mu.unsqueeze(-1) - 1).exp(), lower, upper).sum(-1) - 1.0
+        lo = torch.where(g < 0, mu, lo)
+        hi = torch.where(g >= 0, mu, hi)
+    mu = (lo + hi) / 2
+    result = torch_entropy(torch.clamp((mu.unsqueeze(-1) - 1).exp(), lower, upper))
+    return _apply_base(result, credal_set.num_classes, base)
+
+
+@lower_entropy.register(TorchDistanceBasedCredalSet)
+def torch_distance_based_lower_entropy(
+    credal_set: TorchDistanceBasedCredalSet,
+    base: LogBase = None,
+) -> torch.Tensor:
+    """Compute the lower entropy of a distance-based credal set.
+
+    The TV ball implies per-class bounds. Since entropy is concave, the
+    minimum is at an extreme point of the polytope. Greedy heuristic tries
+    each class as the primary recipient of excess mass.
+    """
+    lower = credal_set.lower()
+    upper = credal_set.upper()
     n_classes = lower.shape[-1]
     capacity = upper - lower
     residual = 1.0 - lower.sum(-1)
@@ -161,3 +219,54 @@ def torch_convex_generalized_hartley(
         log_a = math.log(len(a)) / log_b if log_b else math.log(len(a))
         result = result + _moebius(vertices, a) * log_a
     return result
+
+
+@upper_entropy.register(TorchDirichletLevelSetCredalSet)
+def torch_dirichlet_level_set_upper_entropy(
+    credal_set: TorchDirichletLevelSetCredalSet,
+    base: LogBase = None,
+) -> torch.Tensor:
+    """Compute the upper entropy of a Dirichlet level set credal set.
+
+    Uses per-class bounds from Monte Carlo sampling, then applies the
+    bisection algorithm for sum(p) = 1 constrained entropy maximization.
+    """
+    lower = credal_set.lower()
+    upper = credal_set.upper()
+    lo = 1.0 + lower.amin(dim=-1).clamp_min(torch.finfo(lower.dtype).tiny).log()
+    hi = lower.new_ones(lower.shape[:-1])
+    for _ in range(_BISECT_ITERS):
+        mu = (lo + hi) / 2
+        g = torch.clamp((mu.unsqueeze(-1) - 1).exp(), lower, upper).sum(-1) - 1.0
+        lo = torch.where(g < 0, mu, lo)
+        hi = torch.where(g >= 0, mu, hi)
+    mu = (lo + hi) / 2
+    result = torch_entropy(torch.clamp((mu.unsqueeze(-1) - 1).exp(), lower, upper))
+    return _apply_base(result, credal_set.num_classes, base)
+
+
+@lower_entropy.register(TorchDirichletLevelSetCredalSet)
+def torch_dirichlet_level_set_lower_entropy(
+    credal_set: TorchDirichletLevelSetCredalSet,
+    base: LogBase = None,
+) -> torch.Tensor:
+    """Compute the lower entropy of a Dirichlet level set credal set.
+
+    Uses per-class bounds from Monte Carlo sampling, then applies the
+    greedy heuristic for entropy minimization at extreme points.
+    """
+    lower = credal_set.lower()
+    upper = credal_set.upper()
+    n_classes = lower.shape[-1]
+    capacity = upper - lower
+    residual = 1.0 - lower.sum(-1)
+    best = lower.new_full(lower.shape[:-1], float("inf"))
+    for j in range(n_classes):
+        p = lower.detach().clone()
+        rem = residual.clone()
+        for i in [j, *[k for k in range(n_classes) if k != j]]:
+            fill = torch.minimum(rem.clamp(min=0.0), capacity[..., i])
+            p[..., i] = p[..., i] + fill
+            rem = rem - fill
+        best = torch.minimum(best, torch_entropy(p))
+    return _apply_base(best, credal_set.num_classes, base)

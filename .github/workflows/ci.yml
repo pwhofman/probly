@@ -64,6 +64,8 @@ jobs:
                       dependency-group: jax
                     - os: ubuntu-latest
                       dependency-group: river
+                    - os: ubuntu-latest
+                      dependency-group: transformers
                     - os: macos-latest
                       dependency-group: torch
                     - os: macos-latest

@@ -73,7 +73,20 @@ laplace = [
     "laplace-torch>=0.2.0",
     "curvlinops-for-pytorch>=2.0,<3.0"  # laplace-torch 0.2.2.2 imports curvlinops._base._LinearOperator, removed in 3.x
 ]
-all_ml = [{ include-group = "torch" }, { include-group = "jax" }, { include-group = "sklearn" }, { include-group = "river" }, { include-group = "laplace" }]
+transformers = [
+    { include-group = "torch" },
+    "transformers>=4.33.2",  # first cp313 wheels
+    "sentence-transformers>=2.3.0",
+    "accelerate>=0.24.1",
+]
+all_ml = [
+    { include-group = "torch" },
+    { include-group = "jax" },
+    { include-group = "sklearn" },
+    { include-group = "river" },
+    { include-group = "laplace" },
+    { include-group = "transformers" },
+]
 test = [
     "pytest>=8.3.5",       # for testing
     "pytest-cov>=6.0.0",   # for coverage

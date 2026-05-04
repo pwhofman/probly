@@ -63,6 +63,7 @@ autoclass_content = "both"  # class docstring AND __init__ docstring
 autodoc_typehints = "signature"  # show type hints only in the signature,
 # Only show types for parameters that are actually documented
 autodoc_typehints_description_target = "documented_params"  # only params that are actually documented
+napoleon_use_ivar = True
 autodoc_default_options = {
     "members": True,
     "undoc-members": True,
@@ -103,6 +104,7 @@ sphinx_gallery_conf = {
     "doc_module": ("probly",),
     "reference_url": {"probly": None},
     "filename_pattern": r"plot_.*\.py",
+    "ignore_pattern": r".*/llm/.*",
     "plot_gallery": True,
     "download_all_examples": False,
     "notebook_extensions": set(),
