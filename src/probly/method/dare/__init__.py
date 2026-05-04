@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from ._common import DAREDecomposition, DarePredictor, dare
+from ._common import DAREDecomposition, DarePredictor, DARERepresentation, DARERepresenter, dare
 
-__all__ = ["DAREDecomposition", "DarePredictor", "dare"]
+__all__ = ["DAREDecomposition", "DARERepresentation", "DARERepresenter", "DarePredictor", "dare"]
