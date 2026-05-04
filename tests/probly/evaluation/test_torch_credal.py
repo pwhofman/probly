@@ -109,23 +109,30 @@ def test_probability_intervals_numpy_torch_parity() -> None:
 
 
 def test_dirichlet_level_set_dispatches() -> None:
-    """The Dirichlet-level-set handler resolves and returns finite numbers.
+    """The Dirichlet-level-set handler resolves to concrete pinned-seed values.
 
-    The MC sampling makes the values stochastic, so we only check finiteness
-    and the basic ``[0, 1]`` / non-negative ranges. Pinning a torch seed for
-    determinism.
+    The MC sampling is stochastic, but with a fixed torch seed and 10000
+    samples (the default in ``TorchDirichletLevelSetCredalSet``) the values
+    are reproducible. The expected numbers below were computed from the
+    pinned seed; if a future refactor silently breaks the dispatch they
+    will diverge.
     """
-    torch.manual_seed(0)
     alphas = torch.tensor([[5.0, 5.0, 5.0]])
     threshold = torch.tensor(0.5)
-    cs = TorchDirichletLevelSetCredalSet(alphas=alphas, threshold=threshold)
-    y = torch.tensor([0])
-    cov = coverage(cs, y)
-    eff = efficiency(cs)
-    width = average_interval_width(cs)
-    assert 0.0 <= cov <= 1.0
-    assert eff >= 0.0
-    assert width >= 0.0
+
+    def _make_cs() -> TorchDirichletLevelSetCredalSet:
+        return TorchDirichletLevelSetCredalSet(alphas=alphas, threshold=threshold)
+
+    torch.manual_seed(0)
+    cov = coverage(_make_cs(), torch.tensor([0]))
+    torch.manual_seed(0)
+    eff = efficiency(_make_cs())
+    torch.manual_seed(0)
+    width = average_interval_width(_make_cs())
+
+    assert cov == pytest.approx(1.0, abs=0.05)
+    assert eff == pytest.approx(3.0, abs=0.05)
+    assert width == pytest.approx(0.31, abs=0.05)
 
 
 def test_torch_handlers_respect_device() -> None:
@@ -139,3 +146,51 @@ def test_torch_handlers_respect_device() -> None:
     # ``y_true`` is a numpy array; the handler must coerce on the right device.
     cov = coverage(cs, np.array([0]))
     assert cov == pytest.approx(1.0)
+
+
+def test_unregistered_torch_type_raises() -> None:
+    """An unregistered torch wrapper raises a meaningful NotImplementedError.
+
+    Pins the deliberate gap that no ``TorchSingletonCredalSet`` /
+    ``TorchDiscreteCredalSet`` exist: a bare ``TorchCategoricalDistribution``
+    must not silently match an unintended handler.
+    """
+    distribution = TorchCategoricalDistribution(torch.tensor([[0.5, 0.5]]))
+    with pytest.raises(NotImplementedError, match="coverage is not implemented"):
+        coverage(distribution, torch.tensor([0]))
+    with pytest.raises(NotImplementedError, match="efficiency is not implemented"):
+        efficiency(distribution)
+
+
+def test_lazy_dispatch_loads_torch_module_on_credal_set() -> None:
+    """Calling coverage on a torch credal set must trigger lazy loading of probly.evaluation.torch.
+
+    Locks in the contract that ``TORCH_TENSOR_LIKE`` matches the credal-set
+    wrappers (which inherit from ``TorchLikeImplementation``) and triggers
+    the lazy import. Tested in a fresh subprocess so that prior test
+    imports do not satisfy the ``in sys.modules`` check trivially.
+    """
+    import subprocess  # noqa: PLC0415
+    import sys  # noqa: PLC0415
+
+    program = (
+        "import sys; "
+        "import torch; "
+        "from probly.evaluation import coverage; "
+        "from probly.representation.credal_set.torch import TorchProbabilityIntervalsCredalSet; "
+        "cs = TorchProbabilityIntervalsCredalSet("
+        "lower_bounds=torch.tensor([[0.1, 0.4, 0.05]]), "
+        "upper_bounds=torch.tensor([[0.5, 0.6, 0.2]]),"
+        "); "
+        "assert 'probly.evaluation.torch' not in sys.modules, 'preloaded'; "
+        "cov = coverage(cs, torch.tensor([0])); "
+        "assert 'probly.evaluation.torch' in sys.modules, 'not lazy-loaded'; "
+        "assert cov == 1.0, cov"
+    )
+    result = subprocess.run(  # noqa: S603
+        [sys.executable, "-c", program],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, f"stdout={result.stdout!r} stderr={result.stderr!r}"

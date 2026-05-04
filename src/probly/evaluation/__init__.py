@@ -8,8 +8,8 @@ Public entry points:
   envelope-based credal sets.
 
 NumPy-backed implementations are loaded eagerly. PyTorch handlers are loaded
-lazily on first dispatch involving any torch-like type, mirroring the pattern
-used by :mod:`probly.metrics`.
+lazily on first dispatch involving any torch-like type, using the same lazy
+registration pattern used elsewhere in probly.
 """
 
 from __future__ import annotations

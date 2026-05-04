@@ -7,12 +7,12 @@ the only differences are the use of :func:`torch.gather` in place of
 reduction at the end of each handler.
 
 Note:
-    Torch counterparts for :class:`ArraySingletonCredalSet` and
-    :class:`ArrayDiscreteCredalSet` do not exist in
-    :mod:`probly.representation.credal_set.torch`, so dispatch on those
-    semantics is unavailable from the torch side. The remaining torch credal
-    sets (Convex, DistanceBased, ProbabilityIntervals, DirichletLevelSet) all
-    use the interval-dominance rule via their ``lower()`` / ``upper()`` envelopes.
+    There is no ``TorchSingletonCredalSet`` or ``TorchDiscreteCredalSet`` in
+    :mod:`probly.representation.credal_set.torch`; for those semantics, use
+    the numpy-side ``ArraySingletonCredalSet`` / ``ArrayDiscreteCredalSet``
+    types. The remaining torch credal sets (Convex, DistanceBased,
+    ProbabilityIntervals, DirichletLevelSet) all use the interval-dominance
+    rule via their ``lower()`` / ``upper()`` envelopes.
 """
 
 from __future__ import annotations
@@ -44,9 +44,27 @@ def _interval_dominance_mask(lower: torch.Tensor, upper: torch.Tensor) -> torch.
 
 
 def _onehot_membership(mask: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
-    """Look up the membership flag for the true class along the last axis."""
+    """Look up the membership flag for the true class along the last axis.
+
+    ``y_true`` is coerced onto ``mask.device``; transfer cost falls on the
+    caller if the devices mismatch.
+    """
     indices = torch.as_tensor(y_true, device=mask.device).to(dtype=torch.int64).unsqueeze(-1)
     return torch.gather(mask, -1, indices).squeeze(-1)
+
+
+def _envelope_coverage(lower: torch.Tensor, upper: torch.Tensor, y_true: torch.Tensor) -> float:
+    mask = _interval_dominance_mask(lower, upper)
+    return float(_onehot_membership(mask, y_true).float().mean().item())
+
+
+def _envelope_efficiency(lower: torch.Tensor, upper: torch.Tensor) -> float:
+    mask = _interval_dominance_mask(lower, upper)
+    return float(mask.float().sum(dim=-1).mean().item())
+
+
+def _envelope_average_interval_width(lower: torch.Tensor, upper: torch.Tensor) -> float:
+    return float((upper - lower).float().mean().item())
 
 
 @coverage.register(TorchOneHotConformalSet)
@@ -75,20 +93,6 @@ def _coverage_torch_interval(y_pred: TorchIntervalConformalSet, y_true: torch.Te
 def _efficiency_torch_interval(y_pred: TorchIntervalConformalSet) -> float:
     """Average width of an interval conformal set."""
     return float((y_pred.tensor[..., 1] - y_pred.tensor[..., 0]).float().mean().item())
-
-
-def _envelope_coverage(lower: torch.Tensor, upper: torch.Tensor, y_true: torch.Tensor) -> float:
-    mask = _interval_dominance_mask(lower, upper)
-    return float(_onehot_membership(mask, y_true).float().mean().item())
-
-
-def _envelope_efficiency(lower: torch.Tensor, upper: torch.Tensor) -> float:
-    mask = _interval_dominance_mask(lower, upper)
-    return float(mask.float().sum(dim=-1).mean().item())
-
-
-def _envelope_average_interval_width(lower: torch.Tensor, upper: torch.Tensor) -> float:
-    return float((upper - lower).float().mean().item())
 
 
 @coverage.register(TorchConvexCredalSet)
@@ -147,16 +151,25 @@ def _efficiency_torch_dirichlet_level_set(y_pred: TorchDirichletLevelSetCredalSe
     return _envelope_efficiency(y_pred.lower(), y_pred.upper())
 
 
+@average_interval_width.register(TorchConvexCredalSet)
+def _average_interval_width_torch_convex(y_pred: TorchConvexCredalSet) -> float:
+    """Mean per-class width of the vertex-derived envelope of a convex credal set."""
+    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
+
+
 @average_interval_width.register(TorchDistanceBasedCredalSet)
 def _average_interval_width_torch_distance(y_pred: TorchDistanceBasedCredalSet) -> float:
+    """Mean per-class width of the L1-clip envelope of a distance-based credal set."""
     return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
 
 
 @average_interval_width.register(TorchProbabilityIntervalsCredalSet)
 def _average_interval_width_torch_probability_intervals(y_pred: TorchProbabilityIntervalsCredalSet) -> float:
+    """Mean per-class interval width of a probability-intervals credal set."""
     return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
 
 
 @average_interval_width.register(TorchDirichletLevelSetCredalSet)
 def _average_interval_width_torch_dirichlet_level_set(y_pred: TorchDirichletLevelSetCredalSet) -> float:
+    """Mean per-class width of the MC-sampled envelope of a Dirichlet-level-set credal set."""
     return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())

@@ -55,11 +55,19 @@ def coverage[T](y_pred: T, y_true: object) -> float:
 
     * Singleton: degenerates to top-1 accuracy on the single distribution.
     * Discrete: covered iff some vertex distribution puts its argmax on the
-      true class. Asymmetric with the convex hull case below: the discrete
-      credal set is the *vertex set*, not its convex hull.
+      true class. Discrete coverage is always less than or equal to Convex
+      coverage on the same vertices: a true class with probability strictly
+      between two vertex argmaxes is included by the convex hull's
+      interval-dominance set but missed by the vertex-only rule. Use
+      Discrete when the modeled object is the finite vertex set (e.g. an
+      ensemble); use Convex when the convex hull is the modeled object.
     * Convex / DistanceBased / ProbabilityIntervals / DirichletLevelSet:
       interval-dominance prediction set built from
-      ``lower()`` / ``upper()`` envelopes.
+      ``lower()`` / ``upper()`` envelopes. Note that the DistanceBased
+      envelope (``clip(nominal +- radius, 0, 1)``) ignores the simplex
+      constraint and is therefore loose; the resulting coverage is
+      consistent with the declared envelope but over-conservative relative
+      to the tight L1-ball envelope.
 
     Args:
         y_pred: A predicted-set representation (conformal set or credal set).
@@ -88,7 +96,8 @@ def efficiency[T](y_pred: T) -> float:
     * One-hot conformal sets: average cardinality (number of selected
       classes).
     * Interval conformal sets: average interval width (``upper - lower``).
-    * Singleton credal sets: ``1`` by definition.
+    * Singleton credal sets: ``1`` by definition (one distribution yields
+      one argmax class per sample).
     * Discrete credal sets: average number of distinct argmax classes
       across the vertex set. Differs from the convex hull's interval-dominance
       cardinality (which is always ``>=`` the discrete count).

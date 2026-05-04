@@ -181,11 +181,26 @@ def _efficiency_array_probability_intervals(y_pred: ArrayProbabilityIntervalsCre
     return _envelope_efficiency(y_pred.lower(), y_pred.upper())
 
 
+@average_interval_width.register(ArrayConvexCredalSet)
+def _average_interval_width_array_convex(y_pred: ArrayConvexCredalSet) -> float:
+    """Mean per-class width of the vertex-derived envelope of a convex credal set."""
+    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
+
+
+@average_interval_width.register(ArrayDiscreteCredalSet)
+def _average_interval_width_array_discrete(y_pred: ArrayDiscreteCredalSet) -> float:
+    """Mean per-class width of the vertex-min/vertex-max envelope of a discrete credal set."""
+    probs = np.asarray(y_pred.array.probabilities)
+    return _envelope_average_interval_width(np.min(probs, axis=-2), np.max(probs, axis=-2))
+
+
 @average_interval_width.register(ArrayDistanceBasedCredalSet)
 def _average_interval_width_array_distance(y_pred: ArrayDistanceBasedCredalSet) -> float:
+    """Mean per-class width of the L1-clip envelope of a distance-based credal set."""
     return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
 
 
 @average_interval_width.register(ArrayProbabilityIntervalsCredalSet)
 def _average_interval_width_array_probability_intervals(y_pred: ArrayProbabilityIntervalsCredalSet) -> float:
+    """Mean per-class interval width of a probability-intervals credal set."""
     return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
