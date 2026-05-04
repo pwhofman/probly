@@ -14,11 +14,11 @@ from probly.representation.distribution.torch_sparse_log_categorical import (
     TorchSparseLogCategoricalDistribution,
     TorchSparseLogCategoricalDistributionSample,
 )
-from probly.representation.text_generation import TorchTextGeneration
+from probly.representation.text_generation.torch import TorchTextGeneration
 from probly.representer.clarifier.huggingface import HFQuestionClarifier
 from probly.representer.sampler.huggingface import HFTextGenerationSampler
 from probly.representer.sampler.huggingface import load_model
-from probly.representer.semantic_clustering import HFGreedySemanticClusterer
+from probly.representer.semantic_clustering.huggingface import HFGreedySemanticClusterer
 
 
 # GENERATION_MODEL_NAME = "HuggingFaceTB/SmolLM2-135M-Instruct"

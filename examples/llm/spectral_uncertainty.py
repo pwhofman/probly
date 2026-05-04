@@ -10,7 +10,7 @@ import torch
 
 from probly.quantification import decompose
 from probly.representer.clarifier.huggingface import HFQuestionClarifier
-from probly.representer.embedder import HFTextEmbedder
+from probly.representer.embedder.huggingface import HFTextEmbedder
 from probly.representer.sampler.huggingface import HFTextGenerationSampler, load_model
 
 

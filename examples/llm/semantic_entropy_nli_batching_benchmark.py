@@ -14,8 +14,8 @@ from time import perf_counter
 import numpy as np
 import torch
 
-from probly.representation.text_generation import TorchTextGeneration
-from probly.representer.semantic_clustering import HFGreedySemanticClusterer
+from probly.representation.text_generation.torch import TorchTextGeneration
+from probly.representer.semantic_clustering.huggingface import HFGreedySemanticClusterer
 
 
 NLI_MODEL_NAME = "microsoft/deberta-base-mnli"
