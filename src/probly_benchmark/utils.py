@@ -13,7 +13,6 @@ import torch
 from tqdm import tqdm
 import wandb
 
-from probly.predictor import predict_raw
 from probly_benchmark import calibration, conformal, metadata
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.decision import decide
@@ -188,9 +187,9 @@ def collect_outputs_targets_raw(
         inputs = inputs_.to(device, non_blocking=True)
         if amp_enabled:
             with torch.amp.autocast(device.type):
-                outputs_ = predict_raw(model, inputs)
+                outputs_ = model(inputs)
         else:
-            outputs_ = predict_raw(model, inputs)
+            outputs_ = model(inputs)
         outputs.append(outputs_.detach().cpu())
         targets.append(targets_.detach().cpu())
 
