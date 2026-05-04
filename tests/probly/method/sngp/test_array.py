@@ -90,9 +90,7 @@ def test_array_decomposition_returns_ndarray() -> None:
 
 def test_array_decomposition_uniform_zero_logits_gives_one_half() -> None:
     """h=0 with default mean-field correction: u = K / (K + K * exp(0)) = 1/2."""
-    distribution = ArrayGaussianDistribution(
-        mean=np.zeros((1, 4), dtype=float), var=np.ones((1, 4), dtype=float)
-    )
+    distribution = ArrayGaussianDistribution(mean=np.zeros((1, 4), dtype=float), var=np.ones((1, 4), dtype=float))
 
     decomposition = SNGPDecomposition(distribution)
 

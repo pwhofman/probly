@@ -11,6 +11,7 @@ from probly.evaluation.tasks import selective_prediction
 from probly.quantification import quantify
 from probly.representer import representer
 from probly_benchmark import calibration, data, utils
+from probly_benchmark.uncertainty import SUPPORTED_DECOMPOSITIONS, select_uncertainty
 from probly_benchmark.utils import (
     collect_outputs_decisions_targets,
     init_wandb_for_evaluation,
@@ -21,7 +22,6 @@ if TYPE_CHECKING:
     import numpy as np
 
 _SUPPORTED_LOSSES = ("zero_one",)
-_SUPPORTED_DECOMPOSITIONS = ("aleatoric", "epistemic", "total")
 
 
 def _compute_loss(mean_probs: np.ndarray, labels: np.ndarray, loss: str) -> np.ndarray:
@@ -74,8 +74,8 @@ def main(cfg: DictConfig) -> None:
     )  # ty: ignore[invalid-assignment]
     rep = representer(model, **rep_kwargs)
 
-    if cfg.decomposition not in _SUPPORTED_DECOMPOSITIONS:
-        msg = f"Unsupported decomposition: {cfg.decomposition!r}. Choose from {_SUPPORTED_DECOMPOSITIONS}."
+    if cfg.decomposition not in SUPPORTED_DECOMPOSITIONS:
+        msg = f"Unsupported decomposition: {cfg.decomposition!r}. Choose from {SUPPORTED_DECOMPOSITIONS}."
         raise ValueError(msg)
 
     outputs, mean_probs, targets = collect_outputs_decisions_targets(
@@ -88,7 +88,7 @@ def main(cfg: DictConfig) -> None:
     )
 
     decomposition = quantify(outputs)
-    uncertainties = decomposition[cfg.decomposition].detach().cpu().numpy()  # ty:ignore[not-subscriptable]
+    uncertainties = select_uncertainty(decomposition, cfg.decomposition).detach().cpu().numpy()  # ty:ignore[unresolved-attribute]
 
     labels = targets.numpy()
     loss = _compute_loss(mean_probs, labels, cfg.loss)

@@ -11,9 +11,8 @@ from probly.evaluation.ood import evaluate_ood
 from probly.quantification import quantify
 from probly.representer import representer
 from probly_benchmark import calibration, data, utils
+from probly_benchmark.uncertainty import SUPPORTED_DECOMPOSITIONS, select_uncertainty
 from probly_benchmark.utils import init_wandb_for_evaluation, load_model_for_evaluation
-
-_SUPPORTED_DECOMPOSITIONS = ("aleatoric", "epistemic", "total")
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="ood_detection")
@@ -47,12 +46,14 @@ def main(cfg: DictConfig) -> None:
     id_outputs, _ = utils.collect_outputs_targets(rep, id_loader, device, cfg.get("amp", False))
     ood_outputs, _ = utils.collect_outputs_targets(rep, ood_loader, device, cfg.get("amp", False))
 
-    if cfg.decomposition not in _SUPPORTED_DECOMPOSITIONS:
-        msg = f"Unsupported decomposition: {cfg.decomposition!r}. Choose from {_SUPPORTED_DECOMPOSITIONS}."
+    if cfg.decomposition not in SUPPORTED_DECOMPOSITIONS:
+        msg = f"Unsupported decomposition: {cfg.decomposition!r}. Choose from {SUPPORTED_DECOMPOSITIONS}."
         raise ValueError(msg)
 
-    id_uncertainties = quantify(id_outputs)[cfg.decomposition].detach().cpu().numpy()  # ty:ignore[not-subscriptable]
-    ood_uncertainties = quantify(ood_outputs)[cfg.decomposition].detach().cpu().numpy()  # ty:ignore[not-subscriptable]
+    id_decomposition = quantify(id_outputs)
+    ood_decomposition = quantify(ood_outputs)
+    id_uncertainties = select_uncertainty(id_decomposition, cfg.decomposition).detach().cpu().numpy()  # ty:ignore[unresolved-attribute]
+    ood_uncertainties = select_uncertainty(ood_decomposition, cfg.decomposition).detach().cpu().numpy()  # ty:ignore[unresolved-attribute]
 
     ood_metrics = evaluate_ood(id_uncertainties, ood_uncertainties, metrics=cfg.get("metrics", "all"))
     auroc = ood_metrics["auroc"]
