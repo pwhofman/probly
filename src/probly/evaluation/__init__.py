@@ -1,30 +1,15 @@
-"""Evaluation metrics for predicted-set representations.
+"""Evaluation namespace: re-exports the predicted-set metrics from :mod:`probly.metrics`.
 
-Public entry points:
-
-* :func:`coverage` -- empirical coverage of a predicted set.
-* :func:`efficiency` -- average size of a predicted set.
-* :func:`average_interval_width` -- mean per-class interval width for
-  envelope-based credal sets.
-
-NumPy-backed implementations are loaded eagerly. PyTorch handlers are loaded
-lazily on first dispatch involving any torch-like type, using the same lazy
-registration pattern used elsewhere in probly.
+The implementations now live in :mod:`probly.metrics` (the canonical home for
+all scoring functions). They are re-exported here so that the
+representation-level workflow code that lives in :mod:`probly.evaluation`
+(active learning, OOD detection, selective prediction) can import them from
+the same namespace.
 """
 
 from __future__ import annotations
 
-from probly.evaluation import array as array
-from probly.evaluation.metrics import average_interval_width, coverage, efficiency
-from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
-
-
-@average_interval_width.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@coverage.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@efficiency.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-def _(_: type) -> None:
-    from probly.evaluation import torch as torch  # noqa: PLC0415
-
+from probly.metrics import average_interval_width, coverage, efficiency
 
 __all__ = [
     "average_interval_width",

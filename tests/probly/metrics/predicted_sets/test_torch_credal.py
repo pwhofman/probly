@@ -163,7 +163,7 @@ def test_unregistered_torch_type_raises() -> None:
 
 
 def test_lazy_dispatch_loads_torch_module_on_credal_set() -> None:
-    """Calling coverage on a torch credal set must trigger lazy loading of probly.evaluation.torch.
+    """Calling coverage on a torch credal set must trigger lazy loading of probly.metrics.torch.
 
     Locks in the contract that ``TORCH_TENSOR_LIKE`` matches the credal-set
     wrappers (which inherit from ``TorchLikeImplementation``) and triggers
@@ -176,15 +176,15 @@ def test_lazy_dispatch_loads_torch_module_on_credal_set() -> None:
     program = (
         "import sys; "
         "import torch; "
-        "from probly.evaluation import coverage; "
+        "from probly.metrics import coverage; "
         "from probly.representation.credal_set.torch import TorchProbabilityIntervalsCredalSet; "
         "cs = TorchProbabilityIntervalsCredalSet("
         "lower_bounds=torch.tensor([[0.1, 0.4, 0.05]]), "
         "upper_bounds=torch.tensor([[0.5, 0.6, 0.2]]),"
         "); "
-        "assert 'probly.evaluation.torch' not in sys.modules, 'preloaded'; "
+        "assert 'probly.metrics.torch' not in sys.modules, 'preloaded'; "
         "cov = coverage(cs, torch.tensor([0])); "
-        "assert 'probly.evaluation.torch' in sys.modules, 'not lazy-loaded'; "
+        "assert 'probly.metrics.torch' in sys.modules, 'not lazy-loaded'; "
         "assert cov == 1.0, cov"
     )
     result = subprocess.run(  # noqa: S603
