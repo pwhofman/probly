@@ -9,6 +9,7 @@ from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistributionSample,
 )
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
+from probly.representation.distribution.torch_sparse_log_categorical import TorchSparseLogCategoricalDistribution
 from probly.utils.torch import torch_entropy
 
 from ._common import (
@@ -42,6 +43,14 @@ def torch_categorical_entropy(
         base = float(p.shape[-1])
 
     return entropy / torch.log(torch.tensor(base))
+
+
+@entropy.register(TorchSparseLogCategoricalDistribution)
+def torch_sparse_log_categorical_entropy(
+    distribution: TorchSparseLogCategoricalDistribution, base: LogBase = None
+) -> torch.Tensor:
+    """Compute the entropy of a sparse log categorical distribution."""
+    return torch_categorical_entropy(distribution.probabilities, base=base)
 
 
 @entropy.register(TorchDirichletDistribution)

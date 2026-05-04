@@ -27,6 +27,18 @@ class TestTorchSample:
     def test_sample_length(self, torch_tensor_sample_2d: TorchSample) -> None:
         assert len(torch_tensor_sample_2d) == len(torch_tensor_sample_2d.tensor)
 
+    def test_sample_iteration_follows_axis_zero(self) -> None:
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1)
+
+        items = list(sample)
+
+        assert len(items) == 3
+        assert all(isinstance(item, TorchSample) for item in items)
+        assert [item.sample_dim for item in items] == [0, 0, 0]
+        assert torch.equal(items[0].tensor, torch.tensor([0, 1, 2, 3]))
+        assert torch.equal(items[1].tensor, torch.tensor([4, 5, 6, 7]))
+        assert torch.equal(items[2].tensor, torch.tensor([8, 9, 10, 11]))
+
     def test_sample_ndim(self, torch_tensor_sample_2d: TorchSample) -> None:
         assert torch_tensor_sample_2d.ndim == 2
 
