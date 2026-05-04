@@ -26,6 +26,7 @@ early_stopping:
   patience: 0
 grad_clip_norm: null
 model_type: "logit_classifier"
+amp: true
 
 # Experiment
 seed: 0
