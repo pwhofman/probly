@@ -47,7 +47,7 @@ IS_PARAMETER_EFFICIENT = GlobalVariable[bool]("IS_PARAMETER_EFFICIENT")
         ProbabilisticClassifier,
     ),
     preserve_predictor_type=False,
-)  # ty:ignore[invalid-argument-type]
+)
 @HetNetPredictor.register_factory
 def het_net[**In, Out: CategoricalDistribution](
     base: Predictor[In, Out],

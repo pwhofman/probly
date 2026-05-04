@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 import itertools
 import ssl
-from typing import Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple, cast
 import warnings
 
 import numpy as np
@@ -16,7 +16,13 @@ from torchvision import datasets, transforms
 import torchvision.transforms.v2 as T
 import webdataset as wds
 
-from probly_benchmark.paths import DATA_PATH, IMAGENET_SHARD_PATH
+from probly.datasets.torch import CIFAR10H
+from probly_benchmark.paths import DATA_PATH, IMAGENET_SHARD_PATH, IMAGENET_TORCH_PATH
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from omegaconf import DictConfig
 
 # Ignore a warning from WebDataset about the use of length
 warnings.filterwarnings("ignore", message=".*with_length\\(\\).*")
@@ -34,6 +40,15 @@ class DataLoaders(NamedTuple):
 TRANSFORMS_TEST = {
     "cifar10": T.Compose(
         [
+            T.Resize((32, 32), antialias=True),
+            T.ToImage(),
+            T.ToDtype(torch.float32, scale=True),
+            T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ]
+    ),
+    "cifar10h": T.Compose(
+        [
+            T.Resize((32, 32), antialias=True),
             T.ToImage(),
             T.ToDtype(torch.float32, scale=True),
             T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
@@ -42,6 +57,7 @@ TRANSFORMS_TEST = {
     "imagenet": T.Compose(
         [
             T.Resize((224, 224), antialias=True),
+            T.ToImage(),
             T.ToDtype(torch.float32, scale=True),
             T.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ]
@@ -339,26 +355,201 @@ def get_data_train(
                 prefetch_factor=kwargs.get("prefetch_factor", 4),
                 seed=seed,
             )
+        case "imagenet_torch":
+            train = torchvision.datasets.ImageNet(
+                root=IMAGENET_TORCH_PATH,
+                split="train",
+                transform=TRANSFORMS_TEST["imagenet"],
+            )
+            train_loader = DataLoader(train, **kwargs)
+            return DataLoaders(train_loader, None, None, None)  # ty: ignore
         case _:
             msg = f"Dataset {name} not recognized"
             raise ValueError(msg)
 
 
-def _get_test_dataset(name: str, transform: T.Compose) -> torchvision.datasets.VisionDataset:
+def build_laplace_fit_loader(
+    train_loader: DataLoader,
+    cfg: DictConfig,
+    train_kwargs: dict[str, Any],
+) -> DataLoader:
+    """Build a DataLoader for ``BaseLaplace.fit``, honoring ``fit_batch_size`` and ``fit_subset``.
+
+    laplace-torch's KFAC stores per-sample C-by-C Hessian square roots, so the fit step often
+    needs a smaller batch than training. ``fit_subset`` (a fraction in ``(0, 1]``, or ``None``)
+    trades Hessian-estimate variance for fit-time speed: the Hessian is an unbiased average
+    across samples, so a uniform random subset gives the same estimator with higher variance.
+
+    For ImageNet the source dataset is swapped from webdataset to ``imagenet_torch`` because
+    laplace-torch requires ``len(loader.dataset)``.
+
+    Args:
+        train_loader: DataLoader used for the supervised fine-tune phase.
+        cfg: Hydra config; ``cfg.dataset`` and ``cfg.seed`` are read.
+        train_kwargs: ``train`` block from the method config; ``fit_batch_size`` (``int`` or
+            ``None``; ``None`` means the train batch size, or 32 on ImageNet) and ``fit_subset``
+            (``float`` in ``(0, 1]`` or ``None``) are read here.
+
+    Returns:
+        A DataLoader to pass to :meth:`laplace.baselaplace.BaseLaplace.fit`.
+
+    Raises:
+        ValueError: If ``fit_subset`` is not in ``(0, 1]``.
+    """
+    fit_subset = train_kwargs.get("fit_subset")
+    if fit_subset is not None and not 0.0 < float(fit_subset) <= 1.0:
+        msg = f"fit_subset must be in (0, 1] or None, got {fit_subset!r}"
+        raise ValueError(msg)
+    fit_batch_size_cfg = train_kwargs.get("fit_batch_size")
+
+    if cfg.dataset == "imagenet":
+        # KFAC with 1000 ImageNet classes stores CxC hessian square roots per sample;
+        # training batch_size (2048) causes OOM, so default the fit batch to 32.
+        fit_batch_size = int(fit_batch_size_cfg) if fit_batch_size_cfg is not None else 32
+        print(
+            f"[laplace-fit] cfg.dataset='imagenet' uses webdataset, which doesn't satisfy "
+            f"laplace-torch's `len(loader.dataset)` requirement, hence switching to the "
+            f"torchvision version (fit_batch_size={fit_batch_size})."
+        )
+        source_loader = get_data_train(
+            "imagenet_torch",
+            cfg.seed,
+            val_split=cfg.val_split,
+            cal_split=cfg.get("cal_split", 0.0),
+            batch_size=fit_batch_size,
+            num_workers=cfg.num_workers,
+            pin_memory=cfg.pin_memory,
+            persistent_workers=cfg.persistent_workers,
+            prefetch_factor=cfg.get("prefetch_factor", 4),
+            shuffle=True,
+        ).train
+    else:
+        source_loader = train_loader
+        fit_batch_size = int(fit_batch_size_cfg) if fit_batch_size_cfg is not None else source_loader.batch_size
+
+    if fit_subset is None and fit_batch_size == source_loader.batch_size:
+        return source_loader
+
+    dataset = source_loader.dataset
+    if fit_subset is not None:
+        # Datasets fed to laplace-torch must be ``Sized`` (it calls ``len(loader.dataset)``);
+        # ``torch.utils.data.Dataset`` itself doesn't promise ``__len__``, hence the cast.
+        n_total = len(cast("Any", dataset))
+        n_keep = max(1, round(float(fit_subset) * n_total))
+        rng = torch.Generator().manual_seed(int(cfg.seed))
+        indices = torch.randperm(n_total, generator=rng)[:n_keep].tolist()
+        dataset = Subset(dataset, indices)
+        print(f"[laplace-fit] fit_subset={fit_subset}: using {n_keep}/{n_total} samples")
+
+    return DataLoader(
+        dataset,
+        batch_size=fit_batch_size,
+        shuffle=True,
+        num_workers=source_loader.num_workers,
+        pin_memory=source_loader.pin_memory,
+        persistent_workers=source_loader.num_workers > 0 and source_loader.persistent_workers,
+    )
+
+
+_GRAYSCALE_OOD_DATASETS = frozenset({"mnist", "fashion_mnist"})
+
+
+class _HfOodDataset(torchvision.datasets.VisionDataset):
+    """Torchvision-style wrapper for an HF-hosted OOD dataset.
+
+    Bypasses ``datasets.load_dataset`` (which can misclassify tar layouts as
+    WebDataset and which lazily streams xet-backed files row-by-row, causing
+    pathological per-row network round-trips during iteration). Instead this
+    downloads any archive files in the repo via ``hf_hub_download`` (full,
+    once), extracts them to a local cache directory, and yields images by
+    file path.
+
+    Labels are returned as ``0`` because OOD evaluation does not consume them.
+    """
+
+    _CACHE_ROOT = DATA_PATH / "_hf_ood_cache"
+    _IMG_EXTS = frozenset({".jpg", ".jpeg", ".png", ".bmp", ".webp"})
+    _ARCHIVE_EXTS = (".tar", ".tar.gz", ".tgz", ".zip")
+
+    def __init__(self, repo: str, transform: T.Compose) -> None:
+        super().__init__(root="", transform=transform)
+        extract_dir = self._ensure_local(repo)
+        self._paths = sorted(p for p in extract_dir.rglob("*") if p.suffix.lower() in self._IMG_EXTS)
+        if not self._paths:
+            msg = f"No images found under {extract_dir} after extracting {repo}."
+            raise RuntimeError(msg)
+        self._transform = transform
+
+    @classmethod
+    def _ensure_local(cls, repo: str) -> Path:
+        """Download and extract every archive file in ``repo`` once, locally."""
+        import tarfile  # noqa: PLC0415
+        import zipfile  # noqa: PLC0415
+
+        from huggingface_hub import HfApi, hf_hub_download  # noqa: PLC0415
+
+        extract_dir = cls._CACHE_ROOT / repo.replace("/", "__")
+        marker = extract_dir / ".extracted"
+        if marker.exists():
+            return extract_dir
+
+        extract_dir.mkdir(parents=True, exist_ok=True)
+        files = HfApi().list_repo_files(repo, repo_type="dataset")
+        archives = [f for f in files if f.endswith(cls._ARCHIVE_EXTS)]
+        if not archives:
+            msg = f"No tar/zip archives in {repo}; repo tree: {files}"
+            raise RuntimeError(msg)
+
+        for fname in archives:
+            print(f"[_HfOodDataset] downloading {repo}:{fname}")
+            local_path = hf_hub_download(repo, fname, repo_type="dataset")
+            print(f"[_HfOodDataset] extracting {local_path} -> {extract_dir}")
+            if fname.endswith(".zip"):
+                with zipfile.ZipFile(local_path) as zf:
+                    zf.extractall(extract_dir)  # noqa: S202
+            else:
+                with tarfile.open(local_path) as tf:
+                    tf.extractall(extract_dir, filter="data")
+        marker.touch()
+        return extract_dir
+
+    def __len__(self) -> int:
+        return len(self._paths)
+
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, int]:
+        from PIL import Image  # noqa: PLC0415
+
+        img = Image.open(self._paths[index]).convert("RGB")
+        return self._transform(img), 0
+
+
+def _get_test_dataset(name: str, transform: T.Compose) -> torchvision.datasets.VisionDataset:  # noqa: PLR0911, PLR0912
     """Return the test view of a map-style dataset with the given transform.
 
     Used by get_data_ood for both ID and OOD sides. Imagenet is not registered
     here; it goes through _allocate_imagenet_shards + _make_imagenet_loader.
 
+    For grayscale OOD sources (see ``_GRAYSCALE_OOD_DATASETS``), an RGB
+    conversion is prepended to the supplied transform so the ID-side normalize
+    (which assumes 3 channels) applies without crashing.
+
     Args:
-        name: Dataset name. One of cifar10, cifar100, svhn, textures, places365.
+        name: Dataset name. One of ``cifar10``, ``cifar100``, ``svhn``,
+            ``textures``, ``places365``, ``mnist``, ``fashion_mnist``,
+            ``stl10``, ``eurosat``, ``sun397``, ``inaturalist``, ``ninco``,
+            ``ssb_hard``.
         transform: Test transform to apply to all returned samples.
 
     Returns:
-        A torch.utils.data.Dataset over the named dataset's test split.
+        A torch.utils.data.Dataset over the named dataset's test split. For
+        ``eurosat`` and ``sun397``, which do not ship with a train/test split,
+        the full dataset is returned. ``ninco`` and ``ssb_hard`` are loaded
+        from HuggingFace mirrors of the original ImageNet near-OOD benchmarks.
     """
     ssl._create_default_https_context = ssl._create_unverified_context  # ty:ignore[invalid-assignment]  # noqa: SLF001
     name = name.lower()
+    if name in _GRAYSCALE_OOD_DATASETS:
+        transform = T.Compose([T.RGB(), *transform.transforms])
     match name:
         case "cifar10":
             return torchvision.datasets.CIFAR10(root=DATA_PATH, train=False, download=True, transform=transform)
@@ -372,6 +563,24 @@ def _get_test_dataset(name: str, transform: T.Compose) -> torchvision.datasets.V
             return torchvision.datasets.Places365(
                 root=DATA_PATH, split="val", small=True, download=True, transform=transform
             )
+        case "mnist":
+            return torchvision.datasets.MNIST(root=DATA_PATH, train=False, download=True, transform=transform)
+        case "fashion_mnist":
+            return torchvision.datasets.FashionMNIST(root=DATA_PATH, train=False, download=True, transform=transform)
+        case "stl10":
+            return torchvision.datasets.STL10(root=DATA_PATH, split="test", download=True, transform=transform)
+        case "eurosat":
+            return torchvision.datasets.EuroSAT(root=DATA_PATH, download=True, transform=transform)
+        case "sun397":
+            return torchvision.datasets.SUN397(root=DATA_PATH, download=True, transform=transform)
+        case "inaturalist":
+            return torchvision.datasets.INaturalist(
+                root=DATA_PATH, version="2021_valid", download=True, transform=transform
+            )
+        case "ninco":
+            return _HfOodDataset("Rxzh/NINCO", transform)
+        case "ssb_hard":
+            return _HfOodDataset("torch-uncertainty/SSB_hard", transform)
         case _:
             msg = f"Dataset {name} not recognized for test loading"
             raise ValueError(msg)
@@ -408,6 +617,40 @@ def get_data_selective_prediction(
             raise ValueError(msg)
 
 
+def get_data_first_order(
+    name: str,
+    **kwargs: Any,  # noqa: ANN401
+) -> DataLoader:
+    """Get the test loader for first-order data comparison.
+
+    Returns the test split for comparing model predictions against
+    ground-truth human label distributions (e.g. CIFAR-10H).
+    ``val_split`` and ``cal_split`` are accepted for API consistency and
+    future dataset support but are unused for CIFAR-10.
+
+    Args:
+        name: Dataset name. Currently only ``"cifar10"`` is supported.
+        seed: Random seed. Unused for CIFAR-10 (no random splitting).
+        val_split: Validation split fraction. Unused for CIFAR-10.
+        cal_split: Calibration split fraction. Unused for CIFAR-10.
+        **kwargs: Forwarded to :class:`~torch.utils.data.DataLoader`.
+
+    Returns:
+        DataLoader over the test set.
+
+    Raises:
+        ValueError: If ``name`` is not a recognized dataset.
+    """
+    name = name.lower()
+    match name:
+        case "cifar10h":
+            data = CIFAR10H(root=DATA_PATH, download=True, transform=TRANSFORMS_TEST["cifar10"])
+            return DataLoader(data, **kwargs)
+        case _:
+            msg = f"Dataset {name} not recognized"
+            raise ValueError(msg)
+
+
 def get_data_ood(
     name_id: str,
     name_ood: str,
@@ -428,8 +671,9 @@ def get_data_ood(
 
     Args:
         name_id: In-distribution dataset name. cifar10 or imagenet.
-        name_ood: Out-of-distribution dataset name. One of cifar100, svhn,
-            textures, places365.
+        name_ood: Out-of-distribution dataset name. One of cifar10, cifar100,
+            svhn, textures, places365, mnist, fashion_mnist, stl10, eurosat,
+            sun397, inaturalist, ninco, ssb_hard.
         seed: Seed driving the random subset selection on both sides.
         val_split: Fraction allocated to validation during training. Used to
             ensure ID test excludes those samples (no-op for cifar10).

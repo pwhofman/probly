@@ -10,12 +10,14 @@ from scipy.stats import dirichlet, entropy as scipy_entropy, norm
 
 from probly.quantification.measure.distribution import (
     conditional_entropy,
+    dempster_shafer_uncertainty,
     entropy,
     entropy_of_expected_predictive_distribution,
     expected_max_probability_complement,
     max_disagreement,
     max_probability_complement_of_expected,
     mutual_information,
+    vacuity,
 )
 from probly.representation.distribution.array_categorical import (
     ArrayCategoricalDistribution,
@@ -328,3 +330,154 @@ def test_zero_one_identity_holds_for_array_categorical_sample(sample_axis: int) 
     epistemic = max_disagreement(sample)
 
     np.testing.assert_allclose(total, aleatoric + epistemic, rtol=1e-12, atol=1e-12)
+
+
+def test_array_dirichlet_vacuity_known_values() -> None:
+    alphas = np.array(
+        [
+            [1.0, 1.0, 1.0],  # uniform Dir(1,1,1): K=3, alpha_0=3 -> vacuity=1
+            [10.0, 10.0, 10.0],  # K=3, alpha_0=30 -> vacuity=0.1
+            [2.0, 3.0, 5.0],  # K=3, alpha_0=10 -> vacuity=0.3
+        ],
+        dtype=float,
+    )
+    distribution = ArrayDirichletDistribution(alphas)
+
+    measured = vacuity(distribution)
+
+    np.testing.assert_allclose(measured, np.array([1.0, 0.1, 0.3]), rtol=1e-12, atol=1e-12)
+
+
+def test_array_dirichlet_vacuity_lies_in_unit_interval() -> None:
+    rng = np.random.default_rng(seed=0)
+    alphas = rng.uniform(low=1.0, high=20.0, size=(50, 4))
+    distribution = ArrayDirichletDistribution(alphas)
+
+    measured = vacuity(distribution)
+
+    assert np.all(measured > 0.0)
+    assert np.all(measured <= 1.0)
+
+
+def test_array_dirichlet_vacuity_decreases_with_evidence() -> None:
+    weak = ArrayDirichletDistribution(np.array([1.0, 1.0, 1.0], dtype=float))
+    strong = ArrayDirichletDistribution(np.array([100.0, 100.0, 100.0], dtype=float))
+
+    assert vacuity(weak) > vacuity(strong)
+
+
+def test_array_dirichlet_max_probability_complement_of_expected_known_values() -> None:
+    alphas = np.array(
+        [
+            [1.0, 1.0, 1.0],  # uniform: max(1/3) -> 1 - 1/3 = 2/3
+            [10.0, 1.0, 1.0],  # max = 10/12 -> 1 - 5/6 = 1/6
+            [2.0, 3.0, 5.0],  # max = 5/10 -> 1 - 1/2 = 1/2
+        ],
+        dtype=float,
+    )
+    distribution = ArrayDirichletDistribution(alphas)
+
+    measured = max_probability_complement_of_expected(distribution)
+
+    expected = np.array([2.0 / 3.0, 1.0 / 6.0, 0.5])
+    np.testing.assert_allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_array_dirichlet_max_probability_complement_of_expected_matches_explicit_formula() -> None:
+    rng = np.random.default_rng(seed=0)
+    alphas = rng.uniform(low=0.5, high=20.0, size=(50, 5))
+    distribution = ArrayDirichletDistribution(alphas)
+
+    measured = max_probability_complement_of_expected(distribution)
+
+    expected_mean = alphas / alphas.sum(axis=-1, keepdims=True)
+    expected = 1.0 - np.max(expected_mean, axis=-1)
+    np.testing.assert_allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_array_dirichlet_max_probability_complement_of_expected_lies_in_unit_interval() -> None:
+    rng = np.random.default_rng(seed=1)
+    alphas = rng.uniform(low=0.1, high=50.0, size=(50, 6))
+    distribution = ArrayDirichletDistribution(alphas)
+
+    measured = max_probability_complement_of_expected(distribution)
+
+    assert np.all(measured >= 0.0)
+    assert np.all(measured < 1.0)
+
+
+def test_array_dirichlet_max_probability_complement_of_expected_invariant_to_scaling() -> None:
+    """Scaling the alphas by a constant leaves the predictive mean (and thus the score) unchanged."""
+    base = np.array([1.0, 2.0, 3.0], dtype=float)
+    weak = ArrayDirichletDistribution(base)
+    strong = ArrayDirichletDistribution(100.0 * base)
+
+    np.testing.assert_allclose(
+        max_probability_complement_of_expected(weak),
+        max_probability_complement_of_expected(strong),
+        rtol=1e-12,
+        atol=1e-12,
+    )
+
+
+def test_array_gaussian_dempster_shafer_uniform_logits_with_default_factor() -> None:
+    """Uniform-zero logits should give vacuity = K / (K + K * exp(0)) = 1/2."""
+    mean = np.zeros((3, 5), dtype=float)
+    var = np.ones_like(mean)
+    distribution = ArrayGaussianDistribution(mean=mean, var=var)
+
+    measured = dempster_shafer_uncertainty(distribution)
+
+    np.testing.assert_allclose(measured, 0.5, rtol=1e-12, atol=1e-12)
+
+
+def test_array_gaussian_dempster_shafer_matches_explicit_formula() -> None:
+    import math  # noqa: PLC0415
+
+    rng = np.random.default_rng(seed=0)
+    mean = rng.normal(loc=0.0, scale=2.0, size=(20, 5))
+    var = rng.uniform(low=0.01, high=4.0, size=(20, 5))
+    distribution = ArrayGaussianDistribution(mean=mean, var=var)
+
+    measured = dempster_shafer_uncertainty(distribution)
+
+    num_classes = mean.shape[-1]
+    adjusted = mean / np.sqrt(1.0 + (math.pi / 8.0) * var)
+    expected = num_classes / (num_classes + np.sum(np.exp(adjusted), axis=-1))
+    np.testing.assert_allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_array_gaussian_dempster_shafer_lies_in_unit_interval() -> None:
+    rng = np.random.default_rng(seed=1)
+    mean = rng.normal(loc=0.0, scale=5.0, size=(50, 4))
+    var = rng.uniform(low=0.01, high=10.0, size=(50, 4))
+    distribution = ArrayGaussianDistribution(mean=mean, var=var)
+
+    measured = dempster_shafer_uncertainty(distribution)
+
+    assert np.all(measured > 0.0)
+    assert np.all(measured <= 1.0)
+
+
+def test_array_gaussian_dempster_shafer_high_variance_increases_uncertainty() -> None:
+    """Mean-field correction shrinks logits when variance is large -> vacuity goes up."""
+    mean = np.array([[10.0, -10.0, 0.0, 0.0]], dtype=float)
+    low_var = np.full_like(mean, 1e-3)
+    high_var = np.full_like(mean, 1000.0)
+
+    low_var_score = dempster_shafer_uncertainty(ArrayGaussianDistribution(mean=mean, var=low_var))
+    high_var_score = dempster_shafer_uncertainty(ArrayGaussianDistribution(mean=mean, var=high_var))
+
+    assert high_var_score[0] > low_var_score[0]
+
+
+def test_array_gaussian_dempster_shafer_zero_factor_disables_mean_field() -> None:
+    """``mean_field_factor=0`` should reduce to the variance-free formula K / (K + sum exp(h))."""
+    mean = np.array([[1.0, 2.0, 3.0]], dtype=float)
+    var = np.array([[100.0, 100.0, 100.0]], dtype=float)
+    distribution = ArrayGaussianDistribution(mean=mean, var=var)
+
+    measured = dempster_shafer_uncertainty(distribution, mean_field_factor=0.0)
+
+    expected = 3.0 / (3.0 + np.sum(np.exp(mean), axis=-1))
+    np.testing.assert_allclose(measured, expected, rtol=1e-12, atol=1e-12)

@@ -100,7 +100,7 @@ def fetch_sp_runs(
     Raises:
         RuntimeError: If no runs with selective prediction results are found.
     """
-    api = wandb.Api()
+    api = wandb.Api(timeout=60)
 
     filters: dict[str, Any] = {
         "config.method.name": method_entry.name,
@@ -228,7 +228,7 @@ def fetch_ood_runs(
     Raises:
         RuntimeError: If no runs with OOD histogram data are found.
     """
-    api = wandb.Api()
+    api = wandb.Api(timeout=60)
 
     filters: dict[str, Any] = {
         "config.method.name": method_entry.name,

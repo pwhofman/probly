@@ -9,18 +9,22 @@ from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistributionSample,
 )
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
+from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution
 from probly.representation.distribution.torch_sparse_log_categorical import TorchSparseLogCategoricalDistribution
 from probly.utils.torch import torch_entropy
 
 from ._common import (
+    DEFAULT_MEAN_FIELD_FACTOR,
     LogBase,
     conditional_entropy,
+    dempster_shafer_uncertainty,
     entropy,
     entropy_of_expected_predictive_distribution,
     expected_max_probability_complement,
     max_disagreement,
     max_probability_complement_of_expected,
     mutual_information,
+    vacuity,
 )
 
 # Entropy
@@ -205,3 +209,58 @@ def torch_categorical_sample_max_disagreement(
     per_sample_bma_prob = torch.take_along_dim(p, bma_argmax, dim=-1).squeeze(-1)
     per_sample_max = torch.max(p, dim=-1).values
     return torch.mean(per_sample_max - per_sample_bma_prob, dim=axis)
+
+
+# Vacuity
+
+
+@vacuity.register(TorchDirichletDistribution)
+def torch_dirichlet_vacuity(distribution: TorchDirichletDistribution | torch.Tensor) -> torch.Tensor:
+    """Compute the vacuity K / alpha_0 of a torch Dirichlet distribution."""
+    if isinstance(distribution, TorchDirichletDistribution):
+        alphas = distribution.alphas
+        del distribution  # Avoid keeping a reference to the distribution for memory efficiency
+    else:
+        alphas = distribution
+
+    num_classes = alphas.shape[-1]
+    alpha_0 = torch.sum(alphas, dim=-1)
+    return torch.as_tensor(num_classes, dtype=alpha_0.dtype, device=alpha_0.device) / alpha_0
+
+
+@max_probability_complement_of_expected.register(TorchDirichletDistribution)
+def torch_dirichlet_max_probability_complement_of_expected(
+    distribution: TorchDirichletDistribution | torch.Tensor,
+) -> torch.Tensor:
+    """Compute one minus the max probability of the mean of a torch Dirichlet distribution.
+
+    Closed form: ``1 - max_c (alpha_c / alpha_0)``.
+    """
+    if isinstance(distribution, TorchDirichletDistribution):
+        alphas = distribution.alphas
+        del distribution  # Avoid keeping a reference to the distribution for memory efficiency
+    else:
+        alphas = distribution
+
+    alpha_0 = torch.sum(alphas, dim=-1, keepdim=True)
+    mean = alphas / alpha_0
+    return 1.0 - torch.max(mean, dim=-1).values
+
+
+# Dempster-Shafer uncertainty
+
+
+@dempster_shafer_uncertainty.register(TorchGaussianDistribution)
+def torch_gaussian_dempster_shafer_uncertainty(
+    distribution: TorchGaussianDistribution,
+    mean_field_factor: float = DEFAULT_MEAN_FIELD_FACTOR,
+) -> torch.Tensor:
+    """Compute the Dempster-Shafer uncertainty of a Gaussian over logits."""
+    mean = distribution.mean
+    var = distribution.var
+    del distribution  # Avoid keeping a reference to the distribution for memory efficiency
+
+    num_classes = mean.shape[-1]
+    adjusted = mean / torch.sqrt(1.0 + mean_field_factor * var)
+    num_classes_tensor = torch.as_tensor(num_classes, dtype=mean.dtype, device=mean.device)
+    return num_classes_tensor / (num_classes_tensor + torch.sum(torch.exp(adjusted), dim=-1))

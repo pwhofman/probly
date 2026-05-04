@@ -12,6 +12,7 @@ from probly.transformation.conformal_credal_set import (
     conformal_total_variation,
     conformal_wasserstein_distance,
 )
+from probly.transformation.dirichlet_clipped_exp_one_activation import dirichlet_clipped_exp_one_activation
 from probly.transformation.dirichlet_exp_activation import dirichlet_exp_activation
 from probly.transformation.dirichlet_softplus_activation import dirichlet_softplus_activation
 from probly.transformation.dropconnect import dropconnect
@@ -32,6 +33,7 @@ __all__ = [
     "conformal_kullback_leibler",
     "conformal_total_variation",
     "conformal_wasserstein_distance",
+    "dirichlet_clipped_exp_one_activation",
     "dirichlet_exp_activation",
     "dirichlet_softplus_activation",
     "dropconnect",

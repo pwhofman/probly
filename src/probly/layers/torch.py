@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Literal, cast
+from typing import Literal, cast
 
 import torch
 from torch import nn
 from torch.nn import init
 import torch.nn.functional as F
+from torch.nn.utils import parametrize
 
 
 def _init_fast_weight(
@@ -1534,6 +1535,7 @@ class HeteroscedasticLayer(nn.Module):
         self.num_factors = num_factors
         self.temperature = temperature
         self.is_parameter_efficient = is_parameter_efficient
+        self.training_samples: int = 1
 
         self.mu_layer = nn.Linear(in_features, num_classes)
         self.diag_layer = nn.Linear(in_features, num_classes)
@@ -1558,195 +1560,521 @@ class HeteroscedasticLayer(nn.Module):
             nn.init.xavier_normal_(self.V_matrix)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Draw a single utility sample and return temperature-scaled logits.
+        """Sample utility logits and return temperature-scaled logits or averaged log-probs.
 
-        Samples once from a multivariate normal whose covariance is parameterized by a low-rank
-        factor plus a diagonal term derived from the input. Each call yields a different sample
-        because ``torch.randn`` is invoked fresh; the outer sampler turns repeated calls into a
-        Monte Carlo sample of categorical distributions.
+        When ``training_samples == 1`` (default), draws a single noise sample and returns
+        temperature-scaled logits of shape ``(batch_size, num_classes)``.  When
+        ``training_samples > 1``, draws S noise samples in a single vectorized operation —
+        the backbone-derived statistics (mu, diag_scale, v_x) are computed only once — and
+        returns the log of the softmax-averaged utilities of shape ``(batch_size, num_classes)``.
 
         Args:
             x: Input tensor of shape (batch_size, in_features).
 
         Returns:
-            Temperature-scaled utility logits of shape (batch_size, num_classes).
+            Temperature-scaled logits ``(B, K)`` when ``training_samples == 1``, or averaged
+            log-probabilities ``(B, K)`` when ``training_samples > 1``.
         """
         batch_size = x.size(0)
 
         mu = self.mu_layer(x)
         diag_scale = F.softplus(self.diag_layer(x))
 
-        eps_k = torch.randn(batch_size, self.num_classes, device=x.device, dtype=x.dtype)
-        eps_r = torch.randn(batch_size, self.num_factors, device=x.device, dtype=x.dtype)
+        if self.training_samples == 1:
+            eps_k = torch.randn(batch_size, self.num_classes, device=x.device, dtype=x.dtype)
+            eps_r = torch.randn(batch_size, self.num_factors, device=x.device, dtype=x.dtype)
+            if self.is_parameter_efficient:
+                v_x = self.v_layer(x)
+                scaled_eps_r = (eps_r * v_x).unsqueeze(-1)
+                low_rank_noise = torch.matmul(self.V_matrix, scaled_eps_r).squeeze(-1)
+            else:
+                v_x_full = self.v_layer(x).view(batch_size, self.num_classes, self.num_factors)
+                low_rank_noise = torch.matmul(v_x_full, eps_r.unsqueeze(-1)).squeeze(-1)
+            utilities = mu + diag_scale * eps_k + low_rank_noise
+            return utilities / self.temperature
 
+        n_samples = self.training_samples
+        eps_k = torch.randn(n_samples, batch_size, self.num_classes, device=x.device, dtype=x.dtype)
+        eps_r = torch.randn(n_samples, batch_size, self.num_factors, device=x.device, dtype=x.dtype)
         if self.is_parameter_efficient:
             v_x = self.v_layer(x)
-            scaled_eps_r = (eps_r * v_x).unsqueeze(-1)
-            low_rank_noise = torch.matmul(self.V_matrix, scaled_eps_r).squeeze(-1)
+            low_rank_noise = torch.einsum("kr,sbr->sbk", self.V_matrix, eps_r * v_x)
         else:
             v_x_full = self.v_layer(x).view(batch_size, self.num_classes, self.num_factors)
-            low_rank_noise = torch.matmul(v_x_full, eps_r.unsqueeze(-1)).squeeze(-1)
+            low_rank_noise = torch.einsum("bkr,sbr->sbk", v_x_full, eps_r)
+        utilities = mu + diag_scale * eps_k + low_rank_noise  # [n_samples, B, K]
+        return F.softmax(utilities / self.temperature, dim=-1).mean(0).log()
 
-        utilities = mu + diag_scale * eps_k + low_rank_noise
-        return utilities / self.temperature
+
+_SPECTRAL_NORM_WARMUP_ITERATIONS = 15
 
 
-class SpectralNormWithMultiplier(nn.Module):
-    """Applies spectral normalization with a bounded multiplier to a module's weight suggested by :cite:`liu2020SNGP`.
+class _SpectralNormParametrization(nn.Module):
+    """Parametrization that applies spectral normalization with a bounded multiplier.
 
-    Attributes:
-        module: nn.Module, the module to which spectral normalization is applied.
-        name: str, the name of the weight parameter to normalize (default: "weight").
-        n_power_iterations: int, number of power iterations to perform (default: 1).
-        norm_multiplier: float, the upper bound for the spectral norm multiplier (default: 1.0).
-        eps: float, small constant for numerical stability (default: 1e-12).
+    Register this on a module's weight via
+    :func:`torch.nn.utils.parametrize.register_parametrization`. Power iteration
+    runs only in training mode; in eval mode the cached singular vectors are
+    reused. At construction time, a 15-iteration power-method warmup runs to
+    provide a well-conditioned initial estimate of the dominant singular
+    vectors.
+
+    Behaviorally matches :cite:`liu2020SNGP` Eq. 10:
+    ``W = c * W / sigma`` if ``sigma > c`` else ``W``, with ``sigma`` estimated
+    by power iteration on the unfolded weight matrix.
+
+    Note:
+        For ``Conv2d`` layers, this implementation reshapes the kernel to a
+        2D matrix ``(out_channels, in_channels * kh * kw)`` and computes the
+        spectral norm of the unfolded matrix. This is the standard
+        approximation used in the SNGP paper and in the Edward2 reference;
+        it is exact for 1x1 convolutions but in general differs from the
+        spectral norm of the actual convolution operator. A more rigorous
+        operator-norm implementation (analogous to
+        ``untangle.wrappers.sngp_wrapper.Conv2dSpectralNormalizer``) is
+        left as future work.
     """
 
-    weight_u: torch.Tensor
-    weight_v: torch.Tensor
+    u: torch.Tensor
+    v: torch.Tensor
 
     def __init__(
         self,
-        module: nn.Module,
-        name: str = "weight",
+        weight: torch.Tensor,
         n_power_iterations: int = 1,
         norm_multiplier: float = 1.0,
         eps: float = 1e-12,
     ) -> None:
-        """Initialize the SpectralNormWithMultiplier wrapper.
-
-        Args:
-            module: nn.Module, the module to which spectral normalization is applied.
-            name: str, the name of the weight parameter to normalize (default: "weight").
-            n_power_iterations: int, number of power iterations to perform (default: 1).
-            norm_multiplier: float, the upper bound for the spectral norm multiplier (default: 1.0).
-            eps: float, small constant for numerical stability (default: 1e-12).
-        """
+        """Initialize the parametrization and run a 15-iteration power-method warmup."""
         super().__init__()
-        self.module = module
-        self.name = name
         self.n_power_iterations = n_power_iterations
         self.norm_multiplier = norm_multiplier
         self.eps = eps
 
-        weight = getattr(self.module, self.name)
-        u = torch.randn(weight.shape[0])
-        v = torch.randn(weight.view(weight.shape[0], -1).shape[1])
-        self.register_buffer("weight_u", F.normalize(u, dim=0))
-        self.register_buffer("weight_v", F.normalize(v, dim=0))
+        weight_matrix = weight.detach().view(weight.shape[0], -1)
+        u = torch.randn(weight_matrix.shape[0], device=weight.device, dtype=weight.dtype)
+        v = torch.randn(weight_matrix.shape[1], device=weight.device, dtype=weight.dtype)
+        self.register_buffer("u", F.normalize(u, dim=0, eps=eps))
+        self.register_buffer("v", F.normalize(v, dim=0, eps=eps))
 
-        delattr(self.module, self.name)
-        self.register_parameter(f"{self.name}_orig", nn.Parameter(weight.detach()))
-
-    def compute_weight(self) -> torch.Tensor:
-        """Compute the spectrally normalized weight."""
-        weight_orig = getattr(self, f"{self.name}_orig")
-        weight_matrix = weight_orig.view(weight_orig.shape[0], -1)
-
+        # Warmup: 15 iterations to get a well-conditioned initial estimate of the
+        # dominant singular vectors. One-shot, runs only at construction time.
         with torch.no_grad():
-            for _ in range(self.n_power_iterations):
-                v = F.normalize(torch.mv(weight_matrix.t(), self.weight_u), dim=0, eps=self.eps)
-                u = F.normalize(torch.mv(weight_matrix, v), dim=0, eps=self.eps)
-            self.weight_u.copy_(u)
-            self.weight_v.copy_(v)
+            u_buf = self.u
+            v_buf = self.v
+            for _ in range(_SPECTRAL_NORM_WARMUP_ITERATIONS):
+                v_buf = F.normalize(torch.mv(weight_matrix.t(), u_buf), dim=0, eps=eps)
+                u_buf = F.normalize(torch.mv(weight_matrix, v_buf), dim=0, eps=eps)
+            self.u.copy_(u_buf)
+            self.v.copy_(v_buf)
 
-        sigma = torch.dot(self.weight_u, torch.mv(weight_matrix, self.weight_v))
-        # Apply the norm multiplier bound
+    def forward(self, weight: torch.Tensor) -> torch.Tensor:
+        """Return the spectrally-normalized weight, refreshing u/v in training mode."""
+        weight_matrix = weight.view(weight.shape[0], -1)
+
+        if self.training:
+            with torch.no_grad():
+                u = self.u
+                v = self.v
+                for _ in range(self.n_power_iterations):
+                    v = F.normalize(torch.mv(weight_matrix.t(), u), dim=0, eps=self.eps)
+                    u = F.normalize(torch.mv(weight_matrix, v), dim=0, eps=self.eps)
+                self.u.copy_(u)
+                self.v.copy_(v)
+
+        sigma = torch.dot(self.u, torch.mv(weight_matrix, self.v))
+        # Bound the spectral norm: factor = min(c / sigma, 1).
         factor = torch.clamp(self.norm_multiplier / (sigma + self.eps), max=1.0)
-        return weight_orig * factor
-
-    def forward(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
-        """Apply the module with the spectrally normalized weight.
-
-        Returns:
-            The output of the wrapped module with the spectrally normalized weight.
-        """
-        setattr(self.module, self.name, self.compute_weight())
-        return self.module(*args, **kwargs)
+        return weight * factor
 
 
 class SNGPLayer(nn.Module):
     """Spectral-normalized Neural Gaussian Process (SNGP) layer based on :cite:`liu2020SNGP`.
 
+    Replaces the model's final linear classifier with a random-Fourier-feature
+    Gaussian process whose posterior covariance is estimated by Laplace
+    approximation under the Gaussian likelihood (i.e., shared covariance
+    across classes), matching the
+    ``baselines/imagenet/sngp.py`` reference implementation.
+
     Attributes:
-        num_inducing: int, number of inducing points.
-        ridge_penalty: float, ridge penalty for numerical stability (default: 1e-6).
-        momentum: float, momentum for the precision matrix (default: 0.999).
-        W_L: nn.Parameter, random Fourier feature weights.
-        b_L: nn.Parameter, random Fourier feature biases.
-        sngp: nn.Linear, Bayesian linear classifier.
+        num_random_features: Dimensionality of the random Fourier feature map.
+        ridge_penalty: Ridge factor used inside the covariance inversion
+            ``inv(ridge * I + precision)``.
+        momentum: Discount factor for the precision-matrix update. Negative
+            means accumulate (and the user is expected to call
+            :func:`probly.method.sngp.reset_precision_matrix` per epoch);
+            positive means EMA mode.
+        W_L: Frozen random projection (``W_L ~ N(0, 1)`` per paper Eq. 7).
+        b_L: Frozen random phase (``b_L ~ U(0, 2*pi)`` per paper Eq. 7).
+        sngp: Trainable Bayesian linear classifier (no bias).
+        precision_matrix: Buffer accumulating the Laplace precision matrix.
+        covariance_matrix: Cached inverse of the regularized precision matrix.
+        covariance_is_stale: Buffer flagging whether the covariance cache must
+            be recomputed on the next eval-mode forward.
     """
 
     precision_matrix: torch.Tensor
+    covariance_matrix: torch.Tensor
+    covariance_is_stale: torch.Tensor
 
     def __init__(
         self,
         in_features: int,
         num_classes: int,
-        num_inducing: int = 1024,
-        ridge_penalty: float = 1e-6,
-        momentum: float = 0.999,
+        num_random_features: int,
+        ridge_penalty: float = 1.0,
+        momentum: float = -1.0,
+        random_feature_init_std: float = 1.0,
     ) -> None:
-        """Initialize the SNGPLayer."""
+        """Initialize the SNGPLayer.
+
+        Args:
+            in_features: Hidden dimension of the penultimate features.
+            num_classes: Output dimensionality.
+            num_random_features: Dimensionality of the random Fourier feature map.
+            ridge_penalty: Ridge factor used inside the covariance inversion
+                ``inv(ridge * I + precision)``. Defaults to 1.0 (imagenet).
+            momentum: Discount factor for the precision-matrix update. With
+                ``momentum > 0`` the update is an exponential moving average
+                ``momentum * precision + (1 - momentum) * batch / batch_size``.
+                With ``momentum <= 0`` (the default, matching imagenet's
+                ``gp_cov_discount_factor=-1``), the precision matrix
+                accumulates ``phi^T phi`` exactly within an epoch and the
+                user **must** call
+                :func:`probly.method.sngp.reset_precision_matrix` at
+                the start of each training epoch. Otherwise the precision
+                matrix grows unboundedly across epochs and the variance
+                shrinks toward zero.
+            random_feature_init_std: Standard deviation of the Gaussian used
+                to initialize the frozen random projection ``W_L``. Defaults
+                to ``1.0``.
+        """
         super().__init__()
-        self.num_inducing = num_inducing
+        self.num_random_features = num_random_features
+        self.ridge_penalty = ridge_penalty
         self.momentum = momentum
 
-        # Frozen Random Fourier Features
-        self.W_L = nn.Parameter(torch.randn(num_inducing, in_features), requires_grad=False)
-        self.b_L = nn.Parameter(torch.empty(num_inducing).uniform_(0, 2 * math.pi), requires_grad=False)
+        # Frozen Random Fourier Features (paper Eq. 7).
+        # `random_feature_init_std` scales `W_L`. With std=1.0 (paper) `cos` operates
+        # over many full cycles per feature variation; with std=0.05 it
+        # operates near-linearly, preserving pretrained signal at the cost of a
+        # longer effective kernel lengthscale.
+        self.W_L = nn.Parameter(
+            torch.randn(num_random_features, in_features) * random_feature_init_std,
+            requires_grad=False,
+        )
+        self.b_L = nn.Parameter(torch.empty(num_random_features).uniform_(0, 2 * math.pi), requires_grad=False)
 
-        # Bayesian Linear Classifier
-        self.sngp = nn.Linear(num_inducing, num_classes)
+        # Bayesian linear classifier - no bias (paper has no bias term;
+        # Edward2 default is gp_output_bias_trainable=False).
+        self.sngp = nn.Linear(num_random_features, num_classes, bias=False)
 
-        # Precision Matrix Buffer (Non-gradient state)
-        self.register_buffer("precision_matrix", torch.eye(num_inducing) * ridge_penalty)
+        # Precision matrix starts at zero. Ridge is added at inversion time.
+        self.register_buffer("precision_matrix", torch.zeros(num_random_features, num_random_features))
+        # Cached covariance: inv(ridge * I + 0) = I / ridge initially. Recomputed
+        # lazily on the first eval-mode forward after a precision update.
+        self.register_buffer("covariance_matrix", torch.eye(num_random_features) / ridge_penalty)
+        self.register_buffer("covariance_is_stale", torch.tensor(True))
 
     def compute_rff(self, x: torch.Tensor) -> torch.Tensor:
-        """Compute Random Fourier Features."""
+        """Compute Random Fourier Features (paper Eq. 7)."""
         projection = F.linear(x, self.W_L, self.b_L)
-        return torch.cos(projection) * math.sqrt(2.0 / self.num_inducing)
+        return torch.cos(projection) * math.sqrt(2.0 / self.num_random_features)
 
-    def update_precision_matrix(self, phi: torch.Tensor, logits: torch.Tensor) -> None:
-        """Update the precision matrix."""
+    def reset_precision_matrix(self) -> None:
+        """Zero the precision matrix and mark the cached covariance stale.
+
+        Call this at the start of each training epoch when running with the
+        default ``momentum=-1`` (accumulate) mode. With ``momentum > 0`` (EMA
+        mode), calling this is a soft reset of the running estimate; not
+        usually needed.
+        """
+        self.precision_matrix.zero_()
+        self.covariance_is_stale.fill_(True)
+
+    def update_precision_matrix(self, phi: torch.Tensor) -> None:
+        """Update the precision matrix with the current minibatch.
+
+        Uses Gaussian-likelihood / shared-covariance Laplace approximation,
+        matching ``baselines/imagenet/sngp.py`` (file docstring lines 26-30):
+        ``prob_multiplier = 1`` for all classes. Per-class precision matrices
+        (paper Eq. 9) are not implemented.
+
+        Args:
+            phi: Random Fourier features of shape ``(batch_size, num_random_features)``.
+        """
         with torch.no_grad():
-            probs = F.softmax(logits, dim=-1)
-            prob_variance = probs * (1.0 - probs)
-            max_variance, _ = torch.max(prob_variance, dim=-1)
-
-            phi_scaled = phi * max_variance.unsqueeze(-1)
-            batch_update_matrix = torch.matmul(phi.t(), phi_scaled)
-
+            batch_update = phi.t() @ phi  # (num_random_features, num_random_features)
             if self.momentum > 0:
+                batch_size = phi.shape[0]
+                batch_update = batch_update / batch_size
                 self.precision_matrix.copy_(
-                    self.momentum * self.precision_matrix + (1 - self.momentum) * batch_update_matrix
+                    self.momentum * self.precision_matrix + (1.0 - self.momentum) * batch_update,
                 )
             else:
-                self.precision_matrix.copy_(self.precision_matrix + batch_update_matrix)
+                # Accumulate mode (paper Algorithm 1; imagenet
+                # `gp_cov_discount_factor=-1`). The user is expected to call
+                # `probly.method.sngp.reset_precision_matrix(predictor)` at
+                # the start of each training epoch.
+                self.precision_matrix.add_(batch_update)
+            self.covariance_is_stale.fill_(True)
 
-    def forward(self, x: torch.Tensor, update_covariance: bool = True) -> tuple[torch.Tensor, torch.Tensor]:
+    def _refresh_covariance(self) -> None:
+        """Recompute and cache the covariance matrix.
+
+        Computes ``inv(ridge * I + precision)`` in fp32 with autocast
+        disabled to avoid ill-conditioned half-precision inversions on GPU.
+        """
+        with torch.amp.autocast(device_type="cuda", enabled=False):
+            precision_fp32 = self.precision_matrix.float()
+            d = precision_fp32.shape[0]
+            ridge_eye = self.ridge_penalty * torch.eye(
+                d,
+                dtype=precision_fp32.dtype,
+                device=precision_fp32.device,
+            )
+            covariance = torch.linalg.inv(ridge_eye + precision_fp32)
+            self.covariance_matrix.copy_(covariance.to(self.covariance_matrix.dtype))
+        self.covariance_is_stale.fill_(False)
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Forward pass of the SNGP layer.
 
         Args:
-            x: Input tensor of shape (batch_size, in_features).
-            update_covariance: Whether to update the precision matrix during training.
+            x: Input tensor of shape ``(batch_size, in_features)``.
 
         Returns:
-            Tuple of logits and variance.
+            Tuple ``(logits, variance)`` of shape ``(batch_size, num_classes)``
+            each. In training mode the variance is a tiny positive placeholder
+            (1e-12); the user computes loss on ``logits`` and ignores variance.
+            In eval mode the variance is the per-sample diagonal of
+            ``ridge * Phi @ Cov @ Phi^T`` broadcast across classes (the
+            Laplace-approximated GP posterior variance).
         """
         phi = self.compute_rff(x)
         logits = self.sngp(phi)
 
-        if self.training and update_covariance:
-            self.update_precision_matrix(phi, logits)
+        if self.training:
+            self.update_precision_matrix(phi)
+            # Tiny positive placeholder. `TorchGaussianDistribution.__post_init__`
+            # validates `var > 0` strictly; loss is computed on logits, so the
+            # specific value is irrelevant beyond being positive.
+            variance = torch.full_like(logits, 1e-12)
+            return logits, variance
 
+        # Eval: lazily refresh covariance if stale.
+        if bool(self.covariance_is_stale):
+            self._refresh_covariance()
+
+        # Per-sample diagonal: var_i = ridge * phi_i^T @ Sigma @ phi_i.
         with torch.amp.autocast(device_type="cuda", enabled=False):
-            precision_fp32 = self.precision_matrix.float()
-            covariance_matrix = torch.linalg.inv(precision_fp32)
             phi_fp32 = phi.float()
-            variance = torch.sum(phi_fp32 * torch.matmul(phi_fp32, covariance_matrix), dim=-1)
-
-        # Expand the variance to match the shape of the mean (logits)
+            cov_fp32 = self.covariance_matrix.float()
+            variance = self.ridge_penalty * torch.sum(
+                phi_fp32 * (phi_fp32 @ cov_fp32),
+                dim=-1,
+            )
+        # Broadcast scalar-per-sample variance across the class axis.
         variance = variance.unsqueeze(-1).expand_as(logits)
-
         return logits, variance
+
+
+class GaussianMixtureHead(nn.Module):
+    """Per-class Gaussian density head (Gaussian Discriminant Analysis).
+
+    One full-covariance Gaussian per class with class-frequency mixing
+    weights, fitted post-hoc on encoder features.  Used as the density
+    estimator for DDU :cite:`mukhotiDeepDeterministicUncertainty2023`
+    and as a feature-space density estimate in other methods that need
+    one (e.g. as a stationarizing feature for DEUP).
+
+    After fitting, ``forward`` returns the per-class log-densities
+    ``log(pi_c * N(z; mu_c, Sigma_c))``; downstream code can either
+    take the marginal ``logsumexp`` over classes or pick the
+    class-conditional value.
+
+    Buffers:
+        means: Per-class mean vectors, shape ``(num_classes, feature_dim)``.
+        scale_tril: Lower-triangular Cholesky factor of each per-class
+            covariance, shape ``(num_classes, feature_dim, feature_dim)``.
+        log_pi: Log class-frequency priors, shape ``(num_classes,)``.
+    """
+
+    means: torch.Tensor
+    scale_tril: torch.Tensor
+    log_pi: torch.Tensor
+
+    def __init__(self, num_classes: int, feature_dim: int) -> None:
+        """Initialize with uniform priors, identity covariance, and zero means.
+
+        Args:
+            num_classes: Number of classes (one Gaussian component per class).
+            feature_dim: Dimensionality of the feature vectors.
+        """
+        super().__init__()
+        self.num_classes = num_classes
+        self.feature_dim = feature_dim
+        self.register_buffer("means", torch.zeros(num_classes, feature_dim))
+        self.register_buffer(
+            "scale_tril",
+            torch.eye(feature_dim).unsqueeze(0).repeat(num_classes, 1, 1),
+        )
+        self.register_buffer(
+            "log_pi",
+            torch.full((num_classes,), -math.log(num_classes)),
+        )
+        # Jitter schedule for making sample covariances positive definite.
+        # Start from 0, try increasingly large values until torch.linalg.cholesky succeeds.
+        self._jitters = [0.0] + [10**exp for exp in range(-308, 0, 1)]
+
+    def fit(self, features: torch.Tensor, labels: torch.Tensor) -> None:
+        """Estimate per-class means, covariances, and mixing weights.
+
+        Per-class means and unbiased sample covariances are computed from the
+        provided features.  The class-frequency prior ``pi_c = N_c / N`` is
+        stored as ``log_pi``.  The minimum jitter ``eps * I`` that makes the
+        Cholesky decomposition succeed is added to each covariance matrix
+        before factorising.
+
+        Args:
+            features: Feature vectors of shape ``(N, feature_dim)``.
+            labels: Integer class labels of shape ``(N,)``.
+        """
+        n_total = len(labels)
+        means = torch.zeros_like(self.means)
+        scale_trils = torch.eye(self.feature_dim, device=features.device).unsqueeze(0).repeat(self.num_classes, 1, 1)
+        log_pi = torch.full((self.num_classes,), float("-inf"), device=features.device)
+        eye = torch.eye(self.feature_dim, device=features.device)
+        for c in range(self.num_classes):
+            mask = labels == c
+            count = int(mask.sum().item())
+            if count == 0:
+                continue
+            log_pi[c] = torch.tensor(count / n_total, device=features.device).log()
+            if count < 2:
+                continue
+            z = features[mask]
+            mu = z.mean(0)
+            centered = z - mu
+            cov = (centered.T @ centered) / (count - 1)
+            means[c] = mu
+            for jitter_eps in self._jitters:
+                try:
+                    scale_trils[c] = torch.linalg.cholesky(cov + jitter_eps * eye)
+                    break
+                except torch.linalg.LinAlgError:
+                    continue
+        self.means.copy_(means)
+        self.scale_tril.copy_(scale_trils)
+        self.log_pi.copy_(log_pi)
+
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        """Compute per-class log-densities for each sample.
+
+        Returns ``log(pi_c * N(z; mu_c, Sigma_c))`` for every class *c*.
+
+        Args:
+            features: Feature vectors of shape ``(N, feature_dim)``.
+
+        Returns:
+            Per-class log-density scores of shape ``(N, num_classes)``.
+        """
+        dist = torch.distributions.MultivariateNormal(loc=self.means, scale_tril=self.scale_tril, validate_args=False)
+        return self.log_pi + dist.log_prob(features.unsqueeze(1))
+
+
+class SNCoeffParametrization(nn.Module):
+    """Weight parametrization that clips the spectral norm to at most ``coeff``.
+
+    Uses one step of power iteration to estimate the spectral norm, then scales
+    the weight so that ``||W||_2 <= coeff``.  Compatible with
+    ``torch.nn.utils.parametrize`` and supports ``state_dict`` round-tripping
+    via :meth:`right_inverse`.
+
+    Used by DDU (:cite:`mukhotiDeepDeterministicUncertainty2023`) and DEUP
+    (:cite:`lahlou2021deup`) to enforce Lipschitz
+    continuity on the encoder.
+    """
+
+    def __init__(self, coeff: float, weight: torch.Tensor) -> None:
+        """Initialize with the Lipschitz coefficient and a reference weight.
+
+        Args:
+            coeff: Maximum allowed spectral norm.
+            weight: Reference weight used for shape and device.
+        """
+        super().__init__()
+        self.coeff = coeff
+        self._u: torch.Tensor
+        self.register_buffer("_u", F.normalize(torch.randn(weight.shape[0], device=weight.device), dim=0))
+
+    def forward(self, weight: torch.Tensor) -> torch.Tensor:
+        """Return weight rescaled so its spectral norm is at most ``coeff``.
+
+        Args:
+            weight: The raw weight tensor.
+
+        Returns:
+            Rescaled weight tensor with ``||W||_2 <= coeff``.
+        """
+        w_mat = weight.reshape(weight.shape[0], -1)
+        with torch.no_grad():
+            v = F.normalize(w_mat.T @ self._u, dim=0)
+            u = F.normalize(w_mat @ v, dim=0)
+            self._u.copy_(u)
+        sigma = u @ (w_mat @ v)
+        return weight * (self.coeff / sigma.clamp(min=self.coeff))
+
+    def right_inverse(self, weight: torch.Tensor) -> torch.Tensor:
+        """Identity right-inverse to support ``state_dict`` loading.
+
+        Args:
+            weight: The parametrized weight.
+
+        Returns:
+            The weight unchanged.
+        """
+        return weight
+
+
+def apply_spectral_norm_to_encoder(module: nn.Module, sn_coeff: float = 3.0) -> None:
+    """Apply spectral normalization in-place to all Conv2d and Linear layers.
+
+    For stride-2 ``1x1`` Conv2d (typical ResNet downsampling shortcuts),
+    an ``AvgPool2d`` is inserted before a stride-1 copy to remove aliasing,
+    matching the approach of DDU :cite:`mukhotiDeepDeterministicUncertainty2023`.
+
+    Args:
+        module: Encoder module to modify in-place.
+        sn_coeff: Lipschitz coefficient — spectral norm of each weight is
+            clipped to at most this value.
+    """
+    for name, child in list(module.named_children()):
+        if isinstance(child, nn.Linear):
+            parametrize.register_parametrization(child, "weight", SNCoeffParametrization(sn_coeff, child.weight))
+        elif isinstance(child, nn.Conv2d):
+            stride = child.stride[0] if isinstance(child.stride, (tuple, list)) else child.stride
+            kernel = child.kernel_size[0] if isinstance(child.kernel_size, (tuple, list)) else child.kernel_size
+            if stride > 1 and kernel == 1:
+                avg_pool = nn.AvgPool2d(kernel_size=stride, stride=stride)
+                new_conv = nn.Conv2d(
+                    child.in_channels,
+                    child.out_channels,
+                    kernel_size=1,
+                    stride=1,
+                    padding=child.padding if isinstance(child.padding, int) else child.padding[0],
+                    bias=child.bias is not None,
+                )
+                with torch.no_grad():
+                    new_conv.weight.copy_(child.weight)
+                    if child.bias is not None and new_conv.bias is not None:
+                        new_conv.bias.copy_(child.bias)
+                parametrize.register_parametrization(
+                    new_conv, "weight", SNCoeffParametrization(sn_coeff, new_conv.weight)
+                )
+                setattr(module, name, nn.Sequential(avg_pool, new_conv))
+            else:
+                parametrize.register_parametrization(child, "weight", SNCoeffParametrization(sn_coeff, child.weight))
+        else:
+            apply_spectral_norm_to_encoder(child, sn_coeff)
