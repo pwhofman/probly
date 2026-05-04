@@ -100,22 +100,34 @@ Combo = dict[str, Any]
 
 # ---- Key normalization & matching --------------------------------------------------
 
+# Per-field default values that mean "no override". Treated as None when keying so
+# e.g. ``supervised_loss == "cross_entropy"`` (explicit default in wandb) matches a
+# combo where supervised_loss isn't set.
+_FIELD_DEFAULTS: dict[str, tuple[str, ...]] = {
+    "notion": (),
+    "calibration": ("none",),
+    "supervised_loss": ("cross_entropy",),
+    "conformal": ("none",),
+}
 
-def _norm(value: Any) -> str | None:
+
+def _norm_field(value: Any, field: str) -> str | None:
     if value is None:
         return None
     s = str(value)
-    return None if s == "none" else s
+    if s in _FIELD_DEFAULTS.get(field, ()):
+        return None
+    return s
 
 
 def _key(combo: Combo) -> tuple[Any, ...]:
     return (
         str(combo["method"]),
         str(combo["strategy"]),
-        _norm(combo.get("notion")),
+        _norm_field(combo.get("notion"), "notion"),
         int(combo["seed"]),
-        _norm(combo.get("calibration")),
-        _norm(combo.get("supervised_loss")),
+        _norm_field(combo.get("calibration"), "calibration"),
+        _norm_field(combo.get("supervised_loss"), "supervised_loss"),
     )
 
 
