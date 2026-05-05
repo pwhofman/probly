@@ -17,4 +17,4 @@ selective_prediction:
 ood_prediction:
     num_samples: 100
 active_learning:
-  num_samples: 50
+  num_samples: 100
