@@ -11,25 +11,52 @@ from torch import nn  # noqa: E402
 from probly.layers.torch import BatchEnsembleConv2d, BatchEnsembleLinear  # noqa: E402
 from probly.method.batchensemble import batchensemble  # noqa: E402
 from probly.predictor import predict  # noqa: E402
+from probly.quantification import quantify  # noqa: E402
+from probly.quantification.notion import (  # noqa: E402
+    AleatoricUncertainty,
+    EpistemicUncertainty,
+    TotalUncertainty,
+)
+from probly.representation.distribution.torch_categorical import (  # noqa: E402
+    TorchCategoricalDistributionSample,
+    TorchLogitCategoricalDistribution,
+)
 from probly.representation.sample.torch import TorchSample  # noqa: E402
-from probly.representer import DummyRepresenter, representer  # noqa: E402
+from probly.representer import representer  # noqa: E402
+from probly.transformation.batchensemble._common import BatchEnsembleRepresenter  # noqa: E402
 from tests.probly.torch_utils import count_layers  # noqa: E402
 
 
 class TestBatchEnsembleRepresenter:
     """Tests for batchensemble representer registration."""
 
-    def test_batchensemble_uses_dummy_representer(self) -> None:
+    def test_batchensemble_uses_batchensemble_representer(self) -> None:
         model = batchensemble(nn.Linear(4, 2), num_members=3)
         rep = representer(model)
-        assert isinstance(rep, DummyRepresenter)
+        assert isinstance(rep, BatchEnsembleRepresenter)
 
-    def test_batchensemble_representer_returns_torch_sample(self) -> None:
+    def test_batchensemble_representer_returns_categorical_sample(self) -> None:
         model = batchensemble(nn.Linear(4, 2), num_members=3)
         rep = representer(model)
         out = rep.represent(torch.ones(2, 4))
-        assert isinstance(out, TorchSample)
-        assert out.tensor.shape == (3, 2, 2)
+        # Mirrors the deep-ensemble layout: tensor is a logit categorical distribution
+        # holding all members, with the ensemble axis at sample_dim=1.
+        assert isinstance(out, TorchCategoricalDistributionSample)
+        assert isinstance(out.tensor, TorchLogitCategoricalDistribution)
+        assert out.tensor.tensor.shape == (2, 3, 2)
+        assert out.sample_dim == 1
+
+    def test_batchensemble_quantify_yields_per_sample_uncertainty(self) -> None:
+        model = batchensemble(nn.Linear(4, 3), num_members=5)
+        rep = representer(model)
+        out = rep.represent(torch.randn(10, 4))
+        decomposition = quantify(out)
+        assert set(decomposition.components) == {
+            TotalUncertainty,
+            AleatoricUncertainty,
+            EpistemicUncertainty,
+        }
+        assert decomposition["epistemic"].shape == (10,)
 
 
 class TestBatchEnsembleLayers:
