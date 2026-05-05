@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from probly.transformation.subensemble.torch import _FrozenBackbone
 
 
-import contextlib
 import gc
 import pathlib
 import tempfile
@@ -457,30 +456,6 @@ def _(
         )
 
 
-def _shutdown_dataloader_workers(loader: DataLoader, name: str) -> None:
-    """Force any persistent worker processes held by ``loader`` to exit.
-
-    Args:
-        loader: The DataLoader whose persistent workers should be terminated.
-        name: Human-readable loader name used in the log line (e.g. ``"train"``,
-            ``"val"``).
-    """
-    iterator = getattr(loader, "_iterator", None)
-    if iterator is None:
-        return
-    shutdown = getattr(iterator, "_shutdown_workers", None)
-    if shutdown is not None:
-        # Iterator may already be partially torn down; best-effort cleanup.
-        with contextlib.suppress(Exception):
-            shutdown()
-    loader._iterator = None  # noqa: SLF001
-    gc.collect()
-    print(
-        f"[subensemble] Shut down persistent {name}_loader workers between members "
-        f"to release file handles / shared memory."
-    )
-
-
 @train_model.register(SubensemblePredictor)
 def _(
     model: SubensemblePredictor,
@@ -532,11 +507,20 @@ def _(
         frozen_backbone = cast("_FrozenBackbone", next(model[0].children()))
         frozen_backbone.module.load_state_dict(warmup_encoder.state_dict())
 
-        _shutdown_dataloader_workers(train_loader, "train")
-        if val_loader is not None:
-            _shutdown_dataloader_workers(val_loader, "val")
-
     for i, member in enumerate(model):
+        if i > 0:
+            # Long imagenet subensemble runs accumulate worker shared-memory / FD
+            # state in the parent process; new workers forked between members can
+            # then SIGABRT during validation. Drop the previous member's loaders
+            # entirely and rebuild fresh ones before training the next head.
+            # ``del`` lets refcounting GC the loader, which triggers the iterator's
+            # ``__del__`` -> ``_shutdown_workers``; ``gc.collect`` mops up any
+            # cyclic refs; ``empty_cache`` is belt-and-braces for GPU memory.
+            del train_loader, val_loader
+            gc.collect()
+            torch.cuda.empty_cache()
+            train_loader, val_loader = _rebuild_subensemble_loaders(cfg, i)
+
         trainable = [p for p in member.parameters() if p.requires_grad]
         _training_loop(
             member,
@@ -551,9 +535,37 @@ def _(
             log_prefix=f"member_{i}/",
             param_groups=[{"params": trainable}],
         )
-        _shutdown_dataloader_workers(train_loader, "train")
-        if val_loader is not None:
-            _shutdown_dataloader_workers(val_loader, "val")
+
+
+def _rebuild_subensemble_loaders(cfg: DictConfig, member_idx: int) -> tuple[DataLoader, DataLoader | None]:
+    """Build fresh train / val loaders for the next subensemble member.
+
+    For datasets whose train shuffle is driven by an explicit seed (imagenet's
+    webdataset, where ``loader_seed`` is plumbed into ``wds.WebDataset`` and
+    ``wds.detshuffle``), we offset the seed by ``member_idx`` so each head sees
+    a different data ordering -- imagenet's shard allocation is deterministic
+    on the sorted shard list regardless of seed, so this changes shuffling only,
+    not which shards are in train/val/cal/test. For other datasets the same
+    ``seed`` argument feeds ``random_split`` and would shift the train/val/cal
+    membership across members; we keep it stable there and rely on the
+    DataLoader's default shuffle (which advances global RNG state) to give
+    natural per-member shuffling.
+    """
+    base_seed = cfg.get("seed", 0) or 0
+    member_seed = base_seed + member_idx if cfg.dataset.lower() == "imagenet" else base_seed
+    loaders = data.get_data_train(
+        cfg.dataset,
+        member_seed,
+        val_split=cfg.val_split,
+        cal_split=cfg.get("cal_split", 0.0),
+        batch_size=cfg.batch_size,
+        num_workers=cfg.num_workers,
+        pin_memory=cfg.pin_memory,
+        persistent_workers=cfg.persistent_workers,
+        prefetch_factor=cfg.get("prefetch_factor", 4),
+        shuffle=True,
+    )
+    return loaders.train, loaders.validation
 
 
 def _split_batchensemble_params(
