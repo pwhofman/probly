@@ -29,12 +29,19 @@ def main(cfg: DictConfig) -> None:
     utils.set_seed(cfg.seed)
     calibration.validate_calibration_config(cfg)
 
-    model, _, run_id = load_model_for_evaluation(cfg, device)
+    model, train_cfg, run_id = load_model_for_evaluation(cfg, device)
     print(f"Loaded model for {cfg.method.name} from wandb run: {run_id}")
 
+    # Replay the same cal/test split that conformalize_credal_set uses so every
+    # model is evaluated on the same held-out test portion. Most artifacts (base,
+    # credal_wrapper, ...) don't carry cal_split, so we default to 0.2 — the
+    # default in conformalize_credal_set.yaml.
+    cal_split = float(train_cfg.get("cal_split", 0.2) or 0.2)
+    data_seed = int(train_cfg.get("seed", cfg.seed))
     _, data_loader = data.get_data_first_order(
         cfg.first_order_dataset,
-        seed=cfg.seed,
+        seed=data_seed,
+        cal_split=cal_split,
         batch_size=cfg.batch_size,
     )
 
