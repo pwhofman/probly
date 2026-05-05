@@ -2,16 +2,22 @@
 
 Mirrors the structure of :mod:`probly_benchmark.plot.cache` but tailored to
 the AL run shape: per-iteration ``test_accuracy`` lives in run history (not
-summary), and the cache key picks up the AL strategy as an extra axis.
+summary), and the cache key picks up the AL strategy plus three more axes
+that vary across the user's sweep (notion of uncertainty, supervised loss,
+calibration).
 
 Cache layout::
 
     probly_cache/{entity}/{project}/{dataset_key}/{method}/{strategy}/
-        cal_{calibration}/seed_{seed}.json
+        notion_{notion}/loss_{supervised_loss}/cal_{calibration}/seed_{seed}.json
 
 ``dataset_key`` is the value used to identify a dataset in :data:`AL_DATASETS`,
 e.g. ``openml_6``, ``openml_155``, ``openml_156``, ``cifar10``,
 ``fashion_mnist``.
+
+For non-uncertainty strategies the ``notion`` segment is ``notion_n_a`` (the
+strategy ignores the notion field). The wandb fetch filters on ``notion``
+only when the strategy is ``"uncertainty"``.
 
 Each JSON record:
 
@@ -61,8 +67,29 @@ _SUMMARY_KEYS = ("nauc", "final_accuracy")
 _HISTORY_KEYS = ("iteration", "labeled_size", "test_accuracy")
 
 
+_DEFAULT_NOTION = "epistemic"
+_DEFAULT_LOSS = "cross_entropy"
+_DEFAULT_CAL = "none"
+_NOTION_NA = "n_a"
+
+
 def _calibration_segment(calibration: str | None) -> str:
-    return f"cal_{calibration}" if calibration else "cal_none"
+    return f"cal_{calibration or _DEFAULT_CAL}"
+
+
+def _notion_segment(notion: str | None) -> str:
+    return f"notion_{notion or _DEFAULT_NOTION}"
+
+
+def _loss_segment(supervised_loss: str | None) -> str:
+    return f"loss_{supervised_loss or _DEFAULT_LOSS}"
+
+
+def effective_notion(strategy: str, notion: str | None) -> str:
+    """Notion only matters for the ``uncertainty`` strategy; collapse otherwise."""
+    if strategy == "uncertainty":
+        return notion or _DEFAULT_NOTION
+    return _NOTION_NA
 
 
 def dataset_key(name: str, openml_id: int | str | None) -> str:
@@ -85,10 +112,22 @@ def cache_dir(
     ds_key: str,
     method: str,
     strategy: str,
+    notion: str | None = None,
+    supervised_loss: str | None = None,
     calibration: str | None = None,
 ) -> Path:
     """Return the directory holding seed-level AL cache files for one combo."""
-    return CACHE_PATH / entity / project / ds_key / method / strategy / _calibration_segment(calibration)
+    return (
+        CACHE_PATH
+        / entity
+        / project
+        / ds_key
+        / method
+        / strategy
+        / _notion_segment(effective_notion(strategy, notion))
+        / _loss_segment(supervised_loss)
+        / _calibration_segment(calibration)
+    )
 
 
 def _seed_path(directory: Path, seed: Any) -> Path:  # noqa: ANN401
@@ -106,21 +145,31 @@ def _json_default(obj: Any) -> Any:  # noqa: ANN401
     raise TypeError(msg)
 
 
+def _config_axes(config: dict[str, Any]) -> tuple[str, str, str | None, str | None, str | None]:
+    """Pull (method, strategy, notion, supervised_loss, calibration) out of a record's config."""
+    method_v = config.get("method")
+    method = method_v.get("name") if isinstance(method_v, dict) else method_v
+    strat_v = config.get("al_strategy")
+    if isinstance(strat_v, dict):
+        strategy = strat_v.get("name")
+        notion = strat_v.get("notion")
+    else:
+        strategy = strat_v
+        notion = None
+    cal_v = config.get("calibration")
+    calibration = cal_v.get("name") if isinstance(cal_v, dict) else cal_v
+    loss_v = config.get("supervised_loss")
+    loss = loss_v.get("name") if isinstance(loss_v, dict) else loss_v
+    return str(method), str(strategy), notion, loss, calibration
+
+
 def save_run(record: dict[str, Any]) -> None:
     """Write one AL run record to the cache.
 
     The destination is derived from the record's ``config`` fields.
     """
     config = record["config"]
-    method = config.get("method")
-    if isinstance(method, dict):
-        method = method.get("name")
-    strategy = config.get("al_strategy")
-    if isinstance(strategy, dict):
-        strategy = strategy.get("name")
-    calibration = config.get("calibration")
-    if isinstance(calibration, dict):
-        calibration = calibration.get("name")
+    method, strategy, notion, loss, calibration = _config_axes(config)
     ds = config.get("dataset", {})
     ds_name = ds.get("name") if isinstance(ds, dict) else ds
     ds_id = ds.get("openml_id") if isinstance(ds, dict) else None
@@ -131,7 +180,9 @@ def save_run(record: dict[str, Any]) -> None:
         dataset_key(ds_name, ds_id),
         method,
         strategy,
-        calibration,
+        notion=notion,
+        supervised_loss=loss,
+        calibration=calibration,
     )
     directory.mkdir(parents=True, exist_ok=True)
     path = _seed_path(directory, config["seed"])
@@ -145,11 +196,22 @@ def load_runs(
     ds_key: str,
     method: str,
     strategy: str,
+    notion: str | None = None,
+    supervised_loss: str | None = None,
     calibration: str | None = None,
     seeds: Iterable[Any] | None = None,
 ) -> list[dict[str, Any]]:
-    """Load cached AL run records for one ``(method, strategy, calibration)`` combo."""
-    directory = cache_dir(entity, project, ds_key, method, strategy, calibration)
+    """Load cached AL run records for one ``(method, strategy, ...)`` combo."""
+    directory = cache_dir(
+        entity,
+        project,
+        ds_key,
+        method,
+        strategy,
+        notion=notion,
+        supervised_loss=supervised_loss,
+        calibration=calibration,
+    )
     if not directory.exists():
         return []
 
@@ -238,6 +300,8 @@ def _fetch_records_from_wandb(
     ds_key: str,
     method: str,
     strategy: str,
+    notion: str | None,
+    supervised_loss: str | None,
     calibration: str | None,
     seeds: Iterable[Any] | None,
 ) -> list[dict[str, Any]]:
@@ -253,6 +317,13 @@ def _fetch_records_from_wandb(
         filters["config.dataset.openml_id"] = int(ds_key.removeprefix("openml_"))
     else:
         filters["config.dataset.name"] = ds_key
+    # Notion only varies for the ``uncertainty`` strategy. Filter only when
+    # meaningful; non-uncertainty strategies often omit ``al_strategy.notion``
+    # in their configs entirely, so a strict match would return nothing.
+    if strategy == "uncertainty" and notion:
+        filters["config.al_strategy.notion"] = notion
+    if supervised_loss:
+        filters["config.supervised_loss.name"] = supervised_loss
     if calibration:
         filters["config.calibration.name"] = calibration
     if seeds is not None:
@@ -271,13 +342,12 @@ def _fetch_records_from_wandb(
     return records
 
 
-def _method_filters(method_entry: DictConfig | dict[str, Any]) -> tuple[str, str | None]:
+def _method_filters(method_entry: DictConfig | dict[str, Any]) -> str:
     name = method_entry.get("name")
-    calibration = method_entry.get("calibration")
     if not isinstance(name, str):
         msg = f"Method entry must have a string 'name' field; got {method_entry!r}."
         raise TypeError(msg)
-    return name, calibration
+    return name
 
 
 def fetch_with_cache(
@@ -287,35 +357,47 @@ def fetch_with_cache(
     ds_key: str,
     method_entry: DictConfig | dict[str, Any],
     strategy: str,
+    notion: str | None = None,
+    supervised_loss: str | None = None,
+    calibration: str | None = None,
     default_seeds: Iterable[Any] | None,
     mode: CacheMode = "read",
 ) -> list[dict[str, Any]]:
-    """Return cache-shaped AL records for one (method, strategy, dataset) combo.
+    """Return cache-shaped AL records for one (method, strategy, ...) combo.
 
     Args:
         entity: W&B entity.
         project: W&B project (e.g. ``"al_openml_v1600_0505"``).
         ds_key: ``dataset_key(...)`` value (e.g. ``"openml_6"``).
         method_entry: Method config entry. Must have ``name``; optionally
-            ``calibration`` and ``seeds``.
+            ``seeds``.
         strategy: Acquisition strategy (``"uncertainty"``, ``"random"``, ...).
+        notion: Uncertainty notion (``"epistemic"`` / ``"total"`` /
+            ``"aleatoric"``). Only used when ``strategy == "uncertainty"``.
+        supervised_loss: Loss name (``"cross_entropy"`` / ``"label_smoothing"``
+            / ``"label_relaxation"``). Defaults to ``cross_entropy`` for
+            cache pathing.
+        calibration: Calibration name (``"none"`` / ``"temperature_scaling"``
+            / ``"vector_scaling"``).
         default_seeds: Fallback seed list when ``method_entry`` has no seeds.
         mode: ``"read"`` | ``"refresh"`` | ``"off"``.
 
     Returns:
         List of run-record dicts.
     """
-    method, calibration = _method_filters(method_entry)
+    method = _method_filters(method_entry)
     entry_seeds = method_entry.get("seeds") if hasattr(method_entry, "get") else None
     seeds = (
         list(entry_seeds) if entry_seeds is not None else (list(default_seeds) if default_seeds is not None else None)
     )
 
+    args = (entity, project, ds_key, method, strategy, notion, supervised_loss, calibration)
+
     if mode == "off":
-        return _fetch_records_from_wandb(entity, project, ds_key, method, strategy, calibration, seeds)
+        return _fetch_records_from_wandb(*args, seeds)
 
     if mode == "refresh":
-        records = _fetch_records_from_wandb(entity, project, ds_key, method, strategy, calibration, seeds)
+        records = _fetch_records_from_wandb(*args, seeds)
         for record in records:
             save_run(record)
         return records
@@ -324,12 +406,22 @@ def fetch_with_cache(
         msg = f"Unknown cache mode {mode!r}. Expected one of 'read', 'refresh', 'off'."
         raise ValueError(msg)
 
-    cached = load_runs(entity, project, ds_key, method, strategy, calibration, seeds)
+    cached = load_runs(
+        entity,
+        project,
+        ds_key,
+        method,
+        strategy,
+        notion=notion,
+        supervised_loss=supervised_loss,
+        calibration=calibration,
+        seeds=seeds,
+    )
 
     if seeds is None:
         if cached:
             return cached
-        records = _fetch_records_from_wandb(entity, project, ds_key, method, strategy, calibration, None)
+        records = _fetch_records_from_wandb(*args, None)
         for record in records:
             save_run(record)
         return records
@@ -339,14 +431,15 @@ def fetch_with_cache(
     if not missing:
         return cached
 
-    new_records = _fetch_records_from_wandb(entity, project, ds_key, method, strategy, calibration, missing)
+    new_records = _fetch_records_from_wandb(*args, missing)
     for record in new_records:
         save_run(record)
     fetched_seeds = {r["config"].get("seed") for r in new_records}
     still_missing = [s for s in missing if s not in fetched_seeds]
     if still_missing:
         warnings.warn(
-            f"No finished AL run found for method '{method}' / strategy '{strategy}' on "
+            f"No finished AL run found for method '{method}' / strategy '{strategy}' / "
+            f"notion={notion!r} / loss={supervised_loss!r} / cal={calibration!r} on "
             f"{ds_key} in {entity}/{project} for seeds={still_missing}.",
             stacklevel=2,
         )

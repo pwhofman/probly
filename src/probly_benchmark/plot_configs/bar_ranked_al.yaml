@@ -7,11 +7,24 @@ wandb:
   project: "al_openml_v1600_0505"
 
 # OpenML task ids (or "cifar10" / "fashion_mnist") to render bar plots for.
-# One PDF is produced per entry.
 datasets: [openml_6, openml_155, openml_156]
 
-# Acquisition strategies to group within each dataset's bar plot.
-strategies: [uncertainty, random, badge, entropy, least_confident, margin]
+# One PDF per (dataset, notion). The bars in each plot show every UQ method
+# from cfg.methods using the ``uq_strategy`` at the listed notion;
+# baselines are drawn as horizontal lines behind the bars.
+notions: [epistemic, aleatoric, total]
+uq_strategy: uncertainty
+
+# UQ-method axes (held fixed across all plots).
+supervised_loss: cross_entropy
+calibration: none
+
+# Baselines plotted as horizontal lines behind the bars.
+baselines:
+  method: base
+  strategies: [random, least_confident, margin]
+  supervised_loss: cross_entropy
+  calibration: none
 
 seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 

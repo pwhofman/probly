@@ -9,8 +9,21 @@ wandb:
 # OpenML task ids (or "cifar10" / "fashion_mnist") to render curves for.
 datasets: [openml_6, openml_155, openml_156]
 
-# Acquisition strategies to render. One PDF per (dataset, strategy).
-strategies: [uncertainty, random, badge, entropy, least_confident, margin]
+# One PDF per (dataset, notion). Bars and curves both use the same notion.
+notions: [epistemic, aleatoric, total]
+uq_strategy: uncertainty
+
+# UQ-method axes (held fixed across all plots).
+supervised_loss: cross_entropy
+calibration: none
+
+# Baselines drawn as dashed reference curves alongside the top-K UQ curves.
+# Set ``baselines.strategies: []`` to omit.
+baselines:
+  method: base
+  strategies: [random, least_confident, margin]
+  supervised_loss: cross_entropy
+  calibration: none
 
 seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 top_k: 4
@@ -22,5 +35,5 @@ cache:
 
 # null -> FIGURE_PATH; relative paths resolve from repo root.
 # bar_ranked_al.py must have written
-# bar_al_<dataset>_<strategy>.ranking.json into the same directory.
+# bar_al_<dataset>_<notion>.ranking.json into the same directory.
 save_path: null

@@ -1,16 +1,21 @@
 r"""Active-learning ranked bar plot.
 
-For each ID dataset, produces one PDF with methods on the x-axis (descending
-by mean NAUC across the configured strategies) and one bar per strategy
-within each method tick. Mean and std are computed across seeds.
+Three PDFs per ID dataset, one per uncertainty notion (epistemic / aleatoric
+/ total). Each PDF:
 
-Sidecar JSONs are written alongside each PDF:
+- **Bars** -- every UQ method from ``cfg.methods`` (excluding the baseline
+  ``base`` method) using ``uq_strategy`` (default ``"uncertainty"``) at the
+  plot's notion. Methods on the x-axis sorted descending by NAUC; mean and
+  std are computed across seeds.
+- **Horizontal lines** -- the ``base`` method evaluated under each entry of
+  ``baselines.strategies`` (default random / least_confident / margin) with
+  ``baselines.supervised_loss = cross_entropy`` and ``baselines.calibration =
+  none``. Each line's value is the mean NAUC across seeds; a shaded band
+  shows :math:`\pm` one std.
 
-- ``bar_al_<dataset>.ranking.json`` -- methods ranked by mean NAUC across
-  strategies (the headline ranking shown by the bar order).
-- ``bar_al_<dataset>_<strategy>.ranking.json`` -- per-strategy ranking,
-  consumed by :mod:`probly_benchmark.plot.al_curves_topk` and
-  :mod:`probly_benchmark.plot.paper_tables`.
+Sidecars: ``bar_al_<dataset>_<notion>.ranking.json`` -- methods ranked by
+NAUC under that notion, used by :mod:`probly_benchmark.plot.al_curves_topk`
+and :mod:`probly_benchmark.plot.paper_tables`.
 
 Usage::
 
@@ -38,6 +43,10 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
 
+_BASELINE_LINESTYLES = ("--", "-.", ":", (0, (3, 1, 1, 1)))
+_NOTION_TITLE = {"epistemic": "Epistemic (EU)", "aleatoric": "Aleatoric (AU)", "total": "Total (TU)"}
+
+
 def _aggregate_nauc(records: list[dict]) -> tuple[float, float] | None:
     """Mean and std of NAUC across seeds, or ``None`` if no records have it."""
     values = []
@@ -58,48 +67,130 @@ def _aggregate_nauc(records: list[dict]) -> tuple[float, float] | None:
 def _write_ranking_json(path: Path, ranking: list[dict]) -> None:
     serializable = [
         {
-            "method": entry["method"],
-            "label": entry["label"],
-            "mean": float(entry["mean"]),
-            "std": float(entry["std"]),
+            "method": e["method"],
+            "label": e["label"],
+            "mean": float(e["mean"]),
+            "std": float(e["std"]),
         }
-        for entry in ranking
+        for e in ranking
     ]
     path.write_text(json.dumps(serializable, indent=2) + "\n")
 
 
-def _draw_grouped_bars(
+def _gather_uq(
+    cfg: DictConfig,
     *,
-    method_labels: list[str],
-    strategies: list[str],
-    means: dict[tuple[str, str], float],
-    stds: dict[tuple[str, str], float],
+    ds_key: str,
+    method_entries: list[DictConfig],
+    notion: str,
+    cache_mode: str,
+    default_seeds: list[int] | None,
+) -> list[dict]:
+    """Per-method NAUC entries for the bar plot at one notion."""
+    out: list[dict] = []
+    for entry in method_entries:
+        if entry.name == cfg.baselines.method:
+            continue
+        try:
+            records = cache_al.fetch_with_cache(
+                cfg.wandb.entity,
+                cfg.wandb.project,
+                ds_key=ds_key,
+                method_entry=entry,
+                strategy=cfg.uq_strategy,
+                notion=notion,
+                supervised_loss=cfg.supervised_loss,
+                calibration=cfg.calibration,
+                default_seeds=default_seeds,
+                mode=cache_mode,
+            )
+        except (RuntimeError, ValueError) as exc:
+            warnings.warn(f"Skipping {entry.name}: {exc}", stacklevel=2)
+            continue
+        agg = _aggregate_nauc(records)
+        if agg is None:
+            continue
+        mean, std = agg
+        out.append({"method": entry.name, "label": resolve_label(entry), "mean": mean, "std": std})
+    out.sort(key=lambda e: e["mean"], reverse=True)
+    return out
+
+
+def _gather_baselines(
+    cfg: DictConfig,
+    *,
+    ds_key: str,
+    cache_mode: str,
+    default_seeds: list[int] | None,
+) -> list[dict]:
+    """Mean/std NAUC for each baseline strategy (always ``base`` method)."""
+    bl = cfg.baselines
+    out: list[dict] = []
+    for strategy in bl.strategies:
+        try:
+            records = cache_al.fetch_with_cache(
+                cfg.wandb.entity,
+                cfg.wandb.project,
+                ds_key=ds_key,
+                method_entry={"name": bl.method},
+                strategy=strategy,
+                notion=None,  # ignored for non-uncertainty
+                supervised_loss=bl.supervised_loss,
+                calibration=bl.calibration,
+                default_seeds=default_seeds,
+                mode=cache_mode,
+            )
+        except (RuntimeError, ValueError) as exc:
+            warnings.warn(f"Baseline {bl.method}/{strategy} skipped: {exc}", stacklevel=2)
+            continue
+        agg = _aggregate_nauc(records)
+        if agg is None:
+            continue
+        mean, std = agg
+        out.append({"strategy": strategy, "mean": mean, "std": std})
+    return out
+
+
+def _draw_plot(
+    *,
+    bars: list[dict],
+    baselines: list[dict],
     title: str,
 ) -> Figure:
-    """Render one grouped bar chart for a single dataset.
+    """Bar plot for UQ methods + horizontal baseline reference lines."""
+    if not bars:
+        fig, ax = plt.subplots(figsize=(8.0, 5.0))
+        ax.set_title(title + " (no UQ data)")
+        ax.set_axis_off()
+        return fig
 
-    Methods on the x-axis, one bar per strategy within each method tick.
-    """
-    n_methods = len(method_labels)
-    n_strats = len(strategies)
-    bar_width = 0.85 / max(n_strats, 1)
-    x = np.arange(n_methods)
-    cmap = plt.get_cmap("tab10")
+    method_labels = [e["label"] for e in bars]
+    means = [e["mean"] for e in bars]
+    stds = [e["std"] for e in bars]
+    x = np.arange(len(bars))
 
-    fig, ax = plt.subplots(figsize=(max(8.0, 0.7 * n_methods + 2.0), 5.0))
-    for s_idx, strategy in enumerate(strategies):
-        offsets = (s_idx - (n_strats - 1) / 2.0) * bar_width
-        ms = [means.get((m, strategy), float("nan")) for m in method_labels]
-        ss = [stds.get((m, strategy), 0.0) for m in method_labels]
-        ax.bar(
-            x + offsets,
-            ms,
-            bar_width,
-            yerr=ss,
-            capsize=3,
-            color=cmap(s_idx % 10),
-            label=strategy,
-        )
+    fig, ax = plt.subplots(figsize=(max(8.0, 0.7 * len(bars) + 2.0), 5.0))
+
+    # Baselines first so the bars sit on top of any shaded bands.
+    cmap = plt.get_cmap("Greys")
+    legend_handles = []
+    for idx, baseline in enumerate(baselines):
+        ls = _BASELINE_LINESTYLES[idx % len(_BASELINE_LINESTYLES)]
+        color = cmap(0.45 + 0.15 * idx)
+        line = ax.axhline(baseline["mean"], linestyle=ls, color=color, linewidth=1.6, zorder=1)
+        if baseline["std"] > 0:
+            ax.axhspan(
+                baseline["mean"] - baseline["std"],
+                baseline["mean"] + baseline["std"],
+                color=color,
+                alpha=0.10,
+                zorder=0,
+            )
+        line.set_label(f"baseline / {baseline['strategy'].replace('_', ' ')}")
+        legend_handles.append(line)
+
+    bar_handles = ax.bar(x, means, yerr=stds, capsize=3, color="#4C78A8", zorder=2)
+    bar_handles.set_label("UQ method")
 
     ax.set_xticks(x)
     ax.set_xticklabels(method_labels, rotation=30, ha="right")
@@ -108,111 +199,74 @@ def _draw_grouped_bars(
     ax.set_ylim(0.0, 1.0)
     ax.yaxis.grid(visible=True, linestyle="--", alpha=0.5)
     ax.set_axisbelow(True)
-    ax.legend(title="Strategy", fontsize="small", ncol=min(n_strats, 3))
+    ax.legend(
+        handles=[bar_handles, *legend_handles],
+        fontsize="small",
+        loc="lower right",
+    )
     fig.tight_layout()
     return fig
 
 
-def _per_dataset(
+def _per_dataset_notion(
     cfg: DictConfig,
     ds_key: str,
-    strategies: list[str],
+    notion: str,
     method_entries: list[DictConfig],
     out_dir: Path,
     cache_mode: str,
     default_seeds: list[int] | None,
 ) -> None:
-    """Produce one bar PDF + ranking JSONs for a single ID dataset."""
-    means: dict[tuple[str, str], float] = {}
-    stds: dict[tuple[str, str], float] = {}
-    per_strategy: dict[str, list[dict]] = {s: [] for s in strategies}
-    seen_methods: list[tuple[str, str]] = []  # (name, label) preserving order
+    """Render one bar PDF + ranking JSON for ``(ds_key, notion)``."""
+    bars = _gather_uq(
+        cfg,
+        ds_key=ds_key,
+        method_entries=method_entries,
+        notion=notion,
+        cache_mode=cache_mode,
+        default_seeds=default_seeds,
+    )
+    baselines = _gather_baselines(
+        cfg,
+        ds_key=ds_key,
+        cache_mode=cache_mode,
+        default_seeds=default_seeds,
+    )
 
-    for entry in method_entries:
-        label = resolve_label(entry)
-        any_data = False
-        for strategy in strategies:
-            try:
-                records = cache_al.fetch_with_cache(
-                    cfg.wandb.entity,
-                    cfg.wandb.project,
-                    ds_key=ds_key,
-                    method_entry=entry,
-                    strategy=strategy,
-                    default_seeds=default_seeds,
-                    mode=cache_mode,
-                )
-            except (RuntimeError, ValueError) as exc:
-                warnings.warn(f"Skipping {entry.name} / {strategy}: {exc}", stacklevel=2)
-                continue
-            agg = _aggregate_nauc(records)
-            if agg is None:
-                continue
-            any_data = True
-            mean, std = agg
-            means[(entry.name, strategy)] = mean
-            stds[(entry.name, strategy)] = std
-            per_strategy[strategy].append({"method": entry.name, "label": label, "mean": mean, "std": std})
-        if any_data:
-            seen_methods.append((entry.name, label))
-
-    if not seen_methods:
-        warnings.warn(f"No AL data for any method on {ds_key}; skipping.", stacklevel=2)
+    if not bars and not baselines:
+        warnings.warn(f"No AL data for {ds_key} / {notion}; skipping.", stacklevel=2)
         return
 
-    # Headline ranking: mean NAUC across all strategies (only those present).
-    aggregate: list[dict] = []
-    for name, label in seen_methods:
-        ms = [means[(name, s)] for s in strategies if (name, s) in means]
-        ss = [stds[(name, s)] for s in strategies if (name, s) in means]
-        if not ms:
-            continue
-        aggregate.append(
-            {
-                "method": name,
-                "label": label,
-                "mean": float(np.mean(ms)),
-                "std": float(np.mean(ss)),
-            }
-        )
-    aggregate.sort(key=lambda e: e["mean"], reverse=True)
-    method_order_labels = [e["label"] for e in aggregate]
-    method_order_names = [e["method"] for e in aggregate]
-
-    fig = _draw_grouped_bars(
-        method_labels=method_order_labels,
-        strategies=strategies,
-        means={(name, s): means[(name, s)] for name in method_order_names for s in strategies if (name, s) in means},
-        stds={(name, s): stds[(name, s)] for name in method_order_names for s in strategies if (name, s) in means},
-        title=f"AL NAUC on {ds_key}",
-    )
-    pdf_path = out_dir / f"bar_al_{ds_key}.pdf"
+    title = f"AL NAUC on {ds_key}  -  {_NOTION_TITLE.get(notion, notion)}"
+    fig = _draw_plot(bars=bars, baselines=baselines, title=title)
+    pdf_path = out_dir / f"bar_al_{ds_key}_{notion}.pdf"
     fig.savefig(pdf_path)
     plt.close(fig)
-    _write_ranking_json(out_dir / f"bar_al_{ds_key}.ranking.json", aggregate)
-    print(f"Wrote {pdf_path}  ({len(method_order_labels)} methods x {len(strategies)} strategies)")
-
-    # Per-strategy ranking sidecars (consumed by curves + paper_tables).
-    for strategy, items in per_strategy.items():
-        if not items:
-            continue
-        items.sort(key=lambda e: e["mean"], reverse=True)
-        _write_ranking_json(out_dir / f"bar_al_{ds_key}_{strategy}.ranking.json", items)
+    _write_ranking_json(out_dir / f"bar_al_{ds_key}_{notion}.ranking.json", bars)
+    print(f"Wrote {pdf_path}  ({len(bars)} UQ bars + {len(baselines)} baseline lines)")
 
 
 @hydra.main(version_base=None, config_path="../plot_configs", config_name="bar_ranked_al")
 def main(cfg: DictConfig) -> None:
-    """Render grouped-bar AL plots and write per-strategy ranking JSONs."""
+    """Render per-notion AL bar plots with baseline reference lines."""
     out_dir = resolve_save_path(cfg.get("save_path"))
     out_dir.mkdir(parents=True, exist_ok=True)
 
     cache_mode = cfg.get("cache", DictConfig({})).get("mode", "read")
     default_seeds = list(cfg.seeds) if cfg.get("seeds") else None
-    strategies = list(cfg.strategies)
     method_entries = cast("list[DictConfig]", cfg.methods)
 
     for ds_key in cfg.datasets:
-        _per_dataset(cfg, ds_key, strategies, method_entries, out_dir, cache_mode, default_seeds)
+        for notion in cfg.notions:
+            _per_dataset_notion(
+                cfg,
+                ds_key,
+                notion,
+                method_entries,
+                out_dir,
+                cache_mode,
+                default_seeds,
+            )
 
     if cfg.get("show", False):
         plt.show()
