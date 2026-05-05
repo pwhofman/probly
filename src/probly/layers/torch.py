@@ -1894,7 +1894,7 @@ class GaussianMixtureHead(nn.Module):
     take the marginal ``logsumexp`` over classes or pick the
     class-conditional value.
 
-    Buffers:
+    Attributes:
         means: Per-class mean vectors, shape ``(num_classes, feature_dim)``.
         scale_tril: Lower-triangular Cholesky factor of each per-class
             covariance, shape ``(num_classes, feature_dim, feature_dim)``.
