@@ -1,0 +1,26 @@
+defaults:
+  - comparison: ???
+  - _self_
+
+wandb:
+  entity: "probly"
+  project: "al_openml_v1600_0505"
+
+# OpenML task ids (or "cifar10" / "fashion_mnist") to render curves for.
+datasets: [openml_6, openml_155, openml_156]
+
+# Acquisition strategies to render. One PDF per (dataset, strategy).
+strategies: [uncertainty, random, badge, entropy, least_confident, margin]
+
+seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+top_k: 4
+
+show: false
+
+cache:
+  mode: read   # read | refresh | off
+
+# null -> FIGURE_PATH; relative paths resolve from repo root.
+# bar_ranked_al.py must have written
+# bar_al_<dataset>_<strategy>.ranking.json into the same directory.
+save_path: null

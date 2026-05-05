@@ -1,0 +1,24 @@
+# @package _global_
+# AL comparison config — all methods we have run for the OpenML AL sweep.
+filename: "al_openml_all_methods.pdf"
+
+methods:
+    -   name: "dropout"
+    -   name: "dropconnect"
+    -   name: "bayesian"
+    -   name: "evidential_classification"
+    -   name: "posterior_network"
+    -   name: "natural_posterior_network"
+    -   name: "dare"
+    -   name: "ddu"
+    -   name: "duq"
+    -   name: "sngp"
+    -   name: "het_net"
+    -   name: "ensemble"
+    -   name: "credal_wrapper"
+    -   name: "credal_ensembling"
+    -   name: "credal_bnn"
+    -   name: "credal_net"
+    -   name: "credal_relative_likelihood"
+    -   name: "efficient_credal_prediction"
+    -   name: "base"

@@ -46,16 +46,23 @@ def _normalize_inputs(value: object) -> list[Path]:
 
 def _load_rankings(
     inputs: list[Path],
-) -> tuple[dict[str, list[dict]], dict[tuple[str, str], list[dict]]]:
+) -> tuple[
+    dict[str, list[dict]],
+    dict[tuple[str, str], list[dict]],
+    dict[tuple[str, str], list[dict]],
+]:
     """Scan ``inputs`` for bar ranking JSONs.
 
     Returns:
-        ``(sp_rankings, ood_rankings)`` where ``sp_rankings[dataset]`` is the
-        per-method list and ``ood_rankings[(band, dataset)]`` is keyed by
-        ``band in {"near", "far"}``.
+        ``(sp_rankings, ood_rankings, al_rankings)``:
+
+        - ``sp_rankings[dataset]`` -- per-method list (Acc-AUC).
+        - ``ood_rankings[(band, dataset)]`` -- keyed by ``band in {"near", "far"}``.
+        - ``al_rankings[(strategy, dataset)]`` -- keyed by AL acquisition strategy.
     """
     sp: dict[str, list[dict]] = {}
     ood: dict[tuple[str, str], list[dict]] = {}
+    al: dict[tuple[str, str], list[dict]] = {}
     for root in inputs:
         if not root.exists():
             continue
@@ -69,7 +76,16 @@ def _load_rankings(
             band, _, ds = rest.partition("_")
             if band in ("near", "far") and ds:
                 ood[(band, ds)] = json.loads(path.read_text())
-    return sp, ood
+        for path in sorted(root.glob("bar_al_*_*.ranking.json")):
+            # Filename shape: bar_al_<dataset>_<strategy>.ranking.json.
+            # ``<dataset>`` itself can include underscores (e.g. ``openml_6``),
+            # so split from the right.
+            stem = path.name[: -len(".ranking.json")]
+            rest = stem[len("bar_al_") :]
+            ds, _, strategy = rest.rpartition("_")
+            if ds and strategy:
+                al[(strategy, ds)] = json.loads(path.read_text())
+    return sp, ood, al
 
 
 def _collect_method_labels(rankings: list[list[dict]]) -> dict[str, str]:
@@ -132,15 +148,32 @@ _ARRAYSTRETCH = "1.15"
 _HEADER_VSKIP = "0.45em"
 
 
+def _strip_leading_zero(value: float, decimals: int) -> str:
+    """Format ``value`` with ``decimals`` digits, dropping a leading ``0`` if present.
+
+    ``0.918`` becomes ``.918``; ``1.000`` stays ``1.000``. Negative values are
+    not expected for AUROC / Acc-AUC bars but are passed through unchanged.
+    """
+    text = f"{value:.{decimals}f}"
+    if text.startswith("0."):
+        return text[1:]
+    if text.startswith("-0."):
+        return "-" + text[2:]
+    return text
+
+
 def _format_cell(entry: dict | None, *, decimals: int, is_best: bool) -> str:
     r"""Format one ``mean\,(std)`` cell, bolded when best.
 
-    Std is rendered in parentheses with a thin space after the mean, which
-    typesets more cleanly than ``mean $\pm$ std`` in dense tables.
+    Numbers drop their leading ``0`` (``.918`` instead of ``0.918``) since
+    every metric in these tables is a [0, 1] score; std is rendered in
+    parentheses with a thin space.
     """
     if entry is None:
         return "--"
-    body = f"{entry['mean']:.{decimals}f}\\,({entry['std']:.{decimals}f})"
+    mean = _strip_leading_zero(entry["mean"], decimals)
+    std = _strip_leading_zero(entry["std"], decimals)
+    body = f"{mean}\\,({std})"
     return r"\textbf{" + body + "}" if is_best else body
 
 
@@ -299,16 +332,85 @@ def _ood_table(
     return "\n".join(lines)
 
 
+def _al_table(
+    al: dict[tuple[str, str], list[dict]],
+    groups: list[dict],
+    citations: dict[str, str],
+    decimals: int,
+) -> str:
+    """Render the AL table: rows = methods, columns = {dataset} x {strategies}, cell = NAUC."""
+    datasets = sorted({ds for _, ds in al})
+    strategies = sorted({strategy for strategy, _ in al})
+    method_labels = _collect_method_labels(list(al.values()))
+    sections = _grouped_sections(method_labels, groups)
+
+    cells: dict[tuple[str, str, str], dict] = {}
+    for (strategy, ds), ranking in al.items():
+        for entry in ranking:
+            cells[(entry["method"], strategy, ds)] = entry
+    best_per_col: dict[tuple[str, str], str] = {}
+    for (strategy, ds), ranking in al.items():
+        if ranking:
+            best_per_col[(strategy, ds)] = max(ranking, key=lambda e: e["mean"])["method"]
+
+    n_strats = len(strategies)
+    n_data_cols = n_strats * len(datasets)
+    n_total_cols = 2 + n_data_cols
+    col_spec = "@{}l@{\\hspace{4pt}}l " + " ".join(["c" * n_strats] * len(datasets)) + "@{}"
+    lines = [
+        _PREAMBLE.rstrip(),
+        "{",
+        f"\\setlength{{\\tabcolsep}}{{{_TABCOLSEP_PT}pt}}",
+        f"\\renewcommand{{\\arraystretch}}{{{_ARRAYSTRETCH}}}",
+        r"\begin{tabular}{" + col_spec + "}",
+        r"\toprule",
+    ]
+
+    # Dataset spans across the strategy sub-columns.
+    spans = r"\multicolumn{2}{@{}l}{}"
+    cdash: list[str] = []
+    col_idx = 3
+    for ds in datasets:
+        spans += f" & \\multicolumn{{{n_strats}}}{{c}}{{\\textbf{{{ds.upper().replace('_', '\\_')}}}}}"
+        cdash.append(f"\\cdashline{{{col_idx}-{col_idx + n_strats - 1}}}")
+        col_idx += n_strats
+    lines.append(spans + r" \\")
+    lines.append(" ".join(cdash))
+    lines.append(r"\noalign{\vskip " + _HEADER_VSKIP + "}")
+
+    sub_header = r"\multicolumn{2}{@{}l}{\textbf{Method}}"
+    for _ in datasets:
+        for strategy in strategies:
+            sub_header += f" & \\textbf{{{strategy.replace('_', ' ').title()}}}"
+    lines.append(sub_header + r" \\")
+    lines.append(r"\hdashline\noalign{\vskip " + _HEADER_VSKIP + "}")
+
+    def render_al_row(method: str) -> str:
+        row = f"{_cite_cell(method, citations)} & {method_labels[method]}"
+        for ds in datasets:
+            for strategy in strategies:
+                row += " & " + _format_cell(
+                    cells.get((method, strategy, ds)),
+                    decimals=decimals,
+                    is_best=best_per_col.get((strategy, ds)) == method,
+                )
+        return row + r" \\"
+
+    lines.extend(_emit_grouped_rows(sections, n_total_cols, render_al_row))
+    lines += [r"\bottomrule", r"\end{tabular}", "}", ""]
+    return "\n".join(lines)
+
+
 @hydra.main(version_base=None, config_path="../plot_configs", config_name="paper_tables")
 def main(cfg: DictConfig) -> dict[str, Path]:
-    """Build combined SP and OOD LaTeX tables from existing ranking JSONs.
+    """Build combined SP, OOD, and AL LaTeX tables from existing ranking JSONs.
 
     Args:
         cfg: Hydra config. ``inputs`` is a directory or list of directories
             to scan; ``save_path`` is where the combined ``.tex`` files land.
 
     Returns:
-        Mapping ``{"sp": Path, "ood": Path}`` for each table that was written.
+        Mapping ``{"sp": Path, "ood": Path, "al": Path}`` for each table written.
     """
     inputs_resolved = OmegaConf.to_container(cfg.inputs, resolve=True) if cfg.get("inputs") is not None else None
     if inputs_resolved is None:
@@ -337,7 +439,7 @@ def main(cfg: DictConfig) -> dict[str, Path]:
         groups_obj = groups_raw
     groups: list[dict] = list(groups_obj) if isinstance(groups_obj, list) else []
 
-    sp, ood = _load_rankings(inputs)
+    sp, ood, al = _load_rankings(inputs)
     written: dict[str, Path] = {}
 
     if sp:
@@ -347,6 +449,16 @@ def main(cfg: DictConfig) -> dict[str, Path]:
         print(f"Wrote {path}  (datasets: {sorted(sp)})")
     else:
         print("No SP ranking JSONs found in inputs; skipping paper_table_sp.tex.")
+
+    if al:
+        path = out_dir / "paper_table_al.tex"
+        path.write_text(_al_table(al, groups, citations, decimals))
+        written["al"] = path
+        ds_set = sorted({ds for _, ds in al})
+        st_set = sorted({s for s, _ in al})
+        print(f"Wrote {path}  (datasets: {ds_set} x strategies: {st_set})")
+    else:
+        print("No AL ranking JSONs found in inputs; skipping paper_table_al.tex.")
 
     if ood:
         path = out_dir / "paper_table_ood.tex"

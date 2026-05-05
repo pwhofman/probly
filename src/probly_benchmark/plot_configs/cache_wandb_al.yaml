@@ -1,0 +1,20 @@
+defaults:
+  - comparison: ???
+  - _self_
+
+wandb:
+  entity: "probly"
+  project: "al_openml_v1600_0505"
+
+# Acquisition strategies to fetch. Each (method, dataset, strategy, seed)
+# combo is a separate cache file.
+strategies: [uncertainty, random, badge, entropy, least_confident, margin]
+
+# OpenML task ids (or "cifar10" / "fashion_mnist") to fetch.
+# Each is converted to ds_key = "openml_<id>" or the bare name.
+datasets: [openml_6, openml_155, openml_156]
+
+seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+cache:
+  mode: refresh   # read | refresh | off
