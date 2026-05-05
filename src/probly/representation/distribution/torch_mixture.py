@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, cast, override
+from inspect import signature
+from typing import Any, ClassVar, Literal, cast, override
 
 import torch
 
@@ -14,13 +15,11 @@ from probly.representation.distribution._common import (
     create_dirichlet_distribution_from_alphas,
     create_dirichlet_mixture_distribution_from_alphas_and_weights,
 )
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
 from probly.representation.sample.torch import TorchSample
 from probly.representation.torch_functions import torch_average
 from probly.representation.torch_like import TorchLike
-
-if TYPE_CHECKING:
-    from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
-    from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -109,7 +108,11 @@ class TorchMixtureDistribution[D: Distribution, T: TorchLike](
         gathered_components = flat_components.gather(dim=-1, index=flat_indices)
         selected_components = gathered_components.transpose(0, 1).reshape(num_samples, *self.shape)
 
-        component_sample: TorchSample = selected_components.sample(1, rng=rng)  # ty:ignore[unresolved-attribute]
+        sample_method = selected_components.sample  # ty:ignore[unresolved-attribute]
+        if "rng" in signature(sample_method).parameters:
+            component_sample: TorchSample = sample_method(1, rng=rng)
+        else:
+            component_sample = sample_method(1)
 
         if not isinstance(component_sample, TorchSample):
             msg = "Torch mixture components must return a TorchSample."
@@ -149,6 +152,22 @@ class TorchMixtureDistribution[D: Distribution, T: TorchLike](
         weights = self.mixture_weights
 
         return torch_average(component_means, dim=-1, weights=weights)  # ty:ignore[invalid-return-type]
+
+
+class TorchDirichletMixtureDistribution(  # ty:ignore[conflicting-metaclass]
+    TorchMixtureDistribution[TorchDirichletDistribution, TorchCategoricalDistribution],
+    MixtureDistribution[TorchDirichletDistribution, TorchCategoricalDistribution],
+):
+    """Mixture distribution with Dirichlet components and torch tensor mixture weights."""
+
+    component_type: ClassVar[type[TorchDirichletDistribution]] = TorchDirichletDistribution
+    components: TorchDirichletDistribution
+    mixture_weights: torch.Tensor
+
+    @override
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        return super().__instancehook__(instance)
 
 
 @create_dirichlet_mixture_distribution_from_alphas_and_weights.register(torch.Tensor)

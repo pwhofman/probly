@@ -211,6 +211,21 @@ def _normalize_batch_reduction_dims(dim: object, batch_ndim: int) -> int | tuple
     raise TypeError(msg)
 
 
+def _expand_average_weights_for_protected_axes(
+    weights: object,
+    value: TorchProtectedValue,
+    axes_count: int,
+) -> object:
+    if not isinstance(weights, torch.Tensor) or axes_count == 0:
+        return weights
+
+    batch_ndim = value_ndim(value) - axes_count
+    if weights.ndim == batch_ndim:
+        return weights.reshape((*weights.shape, *((1,) * axes_count)))
+
+    return weights
+
+
 class _TorchFunction(Protocol):
     def __call__(
         self,
@@ -399,6 +414,13 @@ def protected_batch_reduction_function(  # noqa: PLR0912
                 field_kwargs["out"] = out_internals.values[name]
             else:
                 field_kwargs["out"] = out
+
+        if func is torch_average and "weights" in field_kwargs:
+            field_kwargs["weights"] = _expand_average_weights_for_protected_axes(
+                field_kwargs["weights"],
+                value,
+                axes_count,
+            )
 
         result = func(*tuple(field_args), **field_kwargs)
 

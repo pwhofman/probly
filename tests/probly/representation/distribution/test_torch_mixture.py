@@ -104,3 +104,22 @@ def test_torch_mixture_sampling_dirichlet_components_preserves_class_axis() -> N
     assert sample.tensor.probabilities.shape == (4, 3)
     assert sample.sample_axis == 0
     torch.testing.assert_close(sample.tensor.probabilities.sum(dim=-1), torch.ones(4))
+
+
+def test_torch_mixture_mean_averages_dirichlet_component_means_with_batch_weights() -> None:
+    alphas = torch.tensor(
+        [
+            [[2.0, 1.0], [1.0, 3.0], [3.0, 1.0]],
+            [[1.0, 5.0], [4.0, 2.0], [2.0, 2.0]],
+        ]
+    )
+    weights = torch.tensor([[1.0, 2.0, 1.0], [3.0, 1.0, 2.0]])
+    distribution = TorchMixtureDistribution(components=TorchDirichletDistribution(alphas), mixture_weights=weights)
+
+    mean = distribution.mean
+
+    component_means = alphas / alphas.sum(dim=-1, keepdim=True)
+    expected = torch.sum(component_means * weights.unsqueeze(-1), dim=1) / torch.sum(weights, dim=1, keepdim=True)
+    assert isinstance(mean, TorchCategoricalDistribution)
+    assert mean.shape == (2,)
+    torch.testing.assert_close(mean.probabilities, expected)

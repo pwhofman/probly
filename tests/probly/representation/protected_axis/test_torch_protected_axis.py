@@ -213,6 +213,19 @@ def test_permitted_torch_average_reduces_only_batch_axes() -> None:
     assert averaged.protected_shape == (4,)
 
 
+def test_permitted_torch_average_expands_batch_shaped_weights_before_protected_axis() -> None:
+    x = ReductionTensor(torch.arange(24.0).reshape(2, 3, 4))
+    weights = torch.tensor([[1.0, 3.0, 1.0], [2.0, 1.0, 2.0]])
+
+    averaged = torch_average(x, dim=-1, weights=weights)
+
+    expected = torch_average(x.tensor, dim=1, weights=weights.unsqueeze(-1))
+    assert isinstance(averaged, ReductionTensor)
+    assert torch.allclose(averaged.tensor, expected)
+    assert averaged.shape == (2,)
+    assert averaged.protected_shape == (4,)
+
+
 def test_unpermitted_torch_average_returns_notimplemented() -> None:
     x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
 
