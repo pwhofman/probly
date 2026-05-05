@@ -21,8 +21,6 @@ from typing import TYPE_CHECKING, cast
 import warnings
 
 import hydra
-from matplotlib.patches import PathPatch, Rectangle
-from matplotlib.path import Path as MplPath
 import matplotlib.pyplot as plt
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
@@ -32,73 +30,9 @@ from probly_benchmark.plot import ood_groups
 from probly_benchmark.plot.utils import fetch_ood_runs, fetch_sp_runs, resolve_label, resolve_save_path
 
 if TYPE_CHECKING:
-    from matplotlib.axes import Axes
     from matplotlib.figure import Figure
 
 _CONFIG_DIR = Path(__file__).parent.parent / "configs"
-
-
-def _round_top_corners(
-    ax: Axes,
-    *,
-    rx_frac: float = 0.20,
-    ry: float = 0.05,
-) -> None:
-    """Round only the top-left and top-right corners of every bar.
-
-    The bottom edge stays square so bars sit flush on the x-axis. The top
-    edge reaches exactly to ``y_top`` so error caps drawn at ``mean`` line
-    up with the bar instead of floating in space.
-
-    Args:
-        ax: Axes whose Rectangle patches will be replaced with rounded paths.
-        rx_frac: Horizontal arc radius as a fraction of bar width.
-        ry: Vertical arc radius in data units (capped at the bar height).
-    """
-    for patch in list(ax.patches):
-        if not isinstance(patch, Rectangle):
-            continue
-        width = patch.get_width()
-        height = patch.get_height()
-        if width <= 0 or height <= 0:
-            continue
-        x_left, y_bottom = patch.get_xy()
-        x_right = x_left + width
-        y_top = y_bottom + height
-        rx = min(width * rx_frac, width / 2.0)
-        ry_clamped = min(ry, height)
-        verts = [
-            (x_left, y_bottom),  # MOVETO bottom-left
-            (x_right, y_bottom),  # LINETO bottom-right
-            (x_right, y_top - ry_clamped),  # LINETO up to start of top-right arc
-            (x_right, y_top),
-            (x_right - rx, y_top),  # CURVE3 (top-right corner)
-            (x_left + rx, y_top),  # LINETO across the top
-            (x_left, y_top),
-            (x_left, y_top - ry_clamped),  # CURVE3 (top-left corner)
-            (x_left, y_bottom),  # LINETO down to bottom-left
-            (x_left, y_bottom),  # CLOSEPOLY anchor
-        ]
-        codes = [
-            MplPath.MOVETO,
-            MplPath.LINETO,
-            MplPath.LINETO,
-            MplPath.CURVE3,
-            MplPath.CURVE3,
-            MplPath.LINETO,
-            MplPath.CURVE3,
-            MplPath.CURVE3,
-            MplPath.LINETO,
-            MplPath.CLOSEPOLY,
-        ]
-        new = PathPatch(
-            MplPath(verts, codes),
-            facecolor=patch.get_facecolor(),
-            edgecolor="none",
-            zorder=patch.get_zorder(),
-        )
-        patch.remove()
-        ax.add_patch(new)
 
 
 def _draw_bars(
@@ -139,7 +73,6 @@ def _draw_bars(
         edgecolor="none",
         error_kw={"ecolor": "#333333", "elinewidth": 1.2, "capthick": 1.2},
     )
-    _round_top_corners(ax)
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=30, ha="right")
     ax.set_ylabel(ylabel)
