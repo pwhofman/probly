@@ -32,6 +32,14 @@ from ._common import (
 if TYPE_CHECKING:
     from probly.representation.distribution import ArrayCategoricalDistribution
 
+# Number of decimal places used when rounding lower/upper bounds before the
+# probability-vector containment check.  Softmax outputs are never exactly 0,
+# so tiny floating-point residuals (e.g. 3e-5) in the lower envelope would
+# wrongly exclude a target probability of 0.  Rounding to this many decimals
+# collapses such residuals to 0 before the comparison, matching the behaviour
+# of the reference implementation.
+_CREDAL_ROUND_DECIMALS: int = 4
+
 
 @auc.register(np.ndarray)
 def auc_numpy(x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -218,18 +226,40 @@ def _efficiency_array_discrete(y_pred: ArrayDiscreteCredalSet) -> np.floating:
 
 
 def _credal_containment_coverage(lower: np.ndarray, upper: np.ndarray, y_true: np.ndarray) -> np.floating:
-    """Fraction of instances where ``y_true`` lies in ``[lower, upper]`` for all classes.
+    """Fraction of instances whose target lies inside the credal set's envelope.
+
+    Dispatches on the shape of ``y_true``:
+
+    * **Integer class labels** (``y_true.ndim == lower.ndim - 1``): covered when
+      the true class is selected by the interval-dominance rule, i.e.
+      ``upper[y] >= max_k lower[k]``.
+    * **Probability vectors** (``y_true.ndim == lower.ndim``): covered when
+      ``lower[k] <= y_true[k] <= upper[k]`` for all classes ``k``.
 
     Args:
-        lower: Lower probability envelope of shape ``(N, C)``.
-        upper: Upper probability envelope of shape ``(N, C)``.
-        y_true: Target probability vectors of shape ``(N, C)``.
+        lower: Lower probability envelope of shape ``(..., C)``.
+        upper: Upper probability envelope of shape ``(..., C)``.
+        y_true: Integer class labels of shape ``(...)`` or target probability
+            vectors of shape ``(..., C)``.
 
     Returns:
         Mean containment indicator as a scalar float.
     """
     y = np.asarray(y_true)
-    covered = np.all((lower <= y) & (y <= upper), axis=-1)
+    if y.ndim < lower.ndim:
+        # Integer class labels: interval-dominance rule.
+        threshold = np.max(lower, axis=-1, keepdims=True)
+        mask = upper >= threshold
+        indices = y.astype(np.int64)[..., np.newaxis]
+        covered = np.take_along_axis(mask, indices, axis=-1).squeeze(-1)
+    else:
+        # Probability vectors: containment in [lower, upper] for all classes.
+        # Round before comparing so that tiny floating-point residuals in the
+        # lower envelope (softmax is never exactly 0) do not incorrectly
+        # exclude a target probability of 0.
+        lower_r = np.round(lower, decimals=_CREDAL_ROUND_DECIMALS)
+        upper_r = np.round(upper, decimals=_CREDAL_ROUND_DECIMALS)
+        covered = np.all((lower_r <= y) & (y <= upper_r), axis=-1)
     return np.mean(covered)
 
 
