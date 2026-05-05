@@ -16,6 +16,15 @@ train:
   # Used only when prior_optimization_method == "gridsearch". 100 points over log-range [-4, 4]
   # is the laplace-torch default; reduce on ImageNet if the gridsearch evaluation pass is slow.
   prior_grid_size: 100
+  # Per-batch size of the val loader used during gridsearch. Needed because laplace-torch's
+  # GLM-probit path materialises a (B, num_classes, num_classes) f_var tensor — at ImageNet
+  # (C=1000) that is 4*B MB; with the training batch size (2048) it OOMs at 8 GB.
+  # null = pass val_loader through unchanged.
+  prior_eval_batch_size: null
+  # Optional cap on total samples used for gridsearch. int = absolute sample count;
+  # float in (0, 1] = fraction of len(val_loader)*batch_size; null = use full val.
+  # Subsampling adds NLL-estimate noise (~1/sqrt(N)); 5-10k samples on ImageNet is usually fine.
+  prior_eval_subset: null
   # GLM predictive at inference. ImageNet recipe overrides to "nn" because the GLM Jacobian is too expensive
   pred_type: "glm"
     # Batch size used when fitting the Laplace posterior (model.fit). Kept small because KFAC

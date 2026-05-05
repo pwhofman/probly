@@ -368,6 +368,100 @@ def get_data_train(
             raise ValueError(msg)
 
 
+class _RebatchedLoader:
+    """Yield rebatched ``(X, y)`` from a source loader without requiring ``len(loader.dataset)``.
+
+    Splits each source batch into sub-batches of ``batch_size`` and optionally caps the total
+    samples yielded across the whole iteration. Used to feed laplace-torch's gridsearch a
+    small-batch view of an ImageNet webdataset val loader (whose native batch is too large
+    for the ``(B, C, C)`` GLM functional-variance tensor to fit on a single GPU).
+
+    Iteration is memoryless — calling ``iter()`` again restarts from the source. No
+    ``__len__`` is exposed because the source webdataset loader's per-pass count is
+    only loosely tied to a sample budget.
+    """
+
+    def __init__(
+        self,
+        source: DataLoader,
+        batch_size: int,
+        max_samples: int | None = None,
+    ) -> None:
+        self._source = source
+        self._batch_size = batch_size
+        self._max_samples = max_samples
+
+    def __iter__(self) -> Any:  # noqa: ANN401
+        seen = 0
+        for x_src, y_src in self._source:
+            if self._max_samples is not None and seen >= self._max_samples:
+                return
+            if self._max_samples is not None:
+                remaining = self._max_samples - seen
+                if x_src.shape[0] > remaining:
+                    x_src = x_src[:remaining]  # noqa: PLW2901
+                    y_src = y_src[:remaining]  # noqa: PLW2901
+            for i in range(0, x_src.shape[0], self._batch_size):
+                yield x_src[i : i + self._batch_size], y_src[i : i + self._batch_size]
+            seen += x_src.shape[0]
+
+
+def build_laplace_prior_eval_loader(
+    val_loader: DataLoader,
+    train_kwargs: dict[str, Any],
+) -> DataLoader | _RebatchedLoader:
+    """Build the val iterator passed to laplace-torch's gridsearch prior tuning.
+
+    laplace-torch's GLM-probit path materialises the full ``(B, num_classes, num_classes)``
+    functional-variance tensor before extracting the diagonal — at ImageNet (C=1000, B=2048)
+    that's an 8 GB allocation per batch and OOMs immediately. ``prior_eval_batch_size``
+    rebatches into smaller chunks; ``prior_eval_subset`` optionally caps the total sample
+    budget so 100 grid points x full val doesn't take hours. Only iteration is needed --
+    ``len(loader.dataset)`` is never called by gridsearch, so the webdataset val loader
+    can be wrapped directly without the torchvision swap that ``fit`` needs.
+
+    Args:
+        val_loader: The base validation loader from ``data.get_data_train``.
+        train_kwargs: ``train`` block from the method config; reads ``prior_eval_batch_size``
+            (``int`` or ``None`` = pass val loader through unchanged) and
+            ``prior_eval_subset`` (``int`` for absolute sample count, ``float`` in
+            ``(0, 1]`` for a fraction of source ``len(val_loader)*batch_size``,
+            or ``None`` = no cap).
+
+    Returns:
+        Either the original ``val_loader`` (when no rebatching is requested) or a
+        rebatched/capped wrapper.
+
+    Raises:
+        ValueError: If ``prior_eval_subset`` is a float outside ``(0, 1]``.
+    """
+    batch_size = train_kwargs.get("prior_eval_batch_size")
+    subset = train_kwargs.get("prior_eval_subset")
+    if batch_size is None and subset is None:
+        return val_loader
+
+    effective_batch = int(batch_size) if batch_size is not None else getattr(val_loader, "batch_size", 32) or 32
+
+    max_samples: int | None = None
+    if subset is not None:
+        if isinstance(subset, float):
+            if not 0.0 < subset <= 1.0:
+                msg = f"prior_eval_subset must be in (0, 1] when float, got {subset!r}"
+                raise ValueError(msg)
+            try:
+                source_total = len(val_loader) * (getattr(val_loader, "batch_size", None) or effective_batch)
+            except TypeError:
+                source_total = None
+            if source_total is None:
+                msg = "prior_eval_subset float requires a sized val_loader; pass an int instead."
+                raise ValueError(msg)
+            max_samples = max(1, int(subset * source_total))
+        else:
+            max_samples = int(subset)
+
+    return _RebatchedLoader(val_loader, batch_size=effective_batch, max_samples=max_samples)
+
+
 def build_laplace_fit_loader(
     train_loader: DataLoader,
     cfg: DictConfig,

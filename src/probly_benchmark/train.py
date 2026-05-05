@@ -1296,11 +1296,16 @@ def _(
             )
             prior_method = "marglik"
         if prior_method == "gridsearch":
+            # Rebatch / optionally cap val_loader for the gridsearch — laplace-torch's
+            # GLM-probit path allocates a (B, C, C) f_var tensor per batch which OOMs at
+            # ImageNet's native batch size (2048 * 1000 * 1000 floats = 8 GB).
+            assert val_loader is not None  # Guarded by the marglik fallback above. # noqa: S101
+            prior_eval_loader = data.build_laplace_prior_eval_loader(val_loader, train_kwargs)
             model.optimize_prior_precision(
                 method="gridsearch",
                 pred_type="glm",
                 link_approx="probit",
-                val_loader=val_loader,
+                val_loader=prior_eval_loader,  # ty: ignore[invalid-argument-type]
                 grid_size=train_kwargs.get("prior_grid_size", 100),
             )
         else:  # "marglik" — known to under-regularize last-layer + KFAC; kept for opt-in compatibility.
