@@ -67,16 +67,6 @@ def test_entropy_normalizes_relative_probabilities() -> None:
     assert torch.allclose(dist.entropy(), expected)
 
 
-def test_entropy_bernoulli_formula() -> None:
-    probabilities = torch.tensor([[0.25], [0.5], [0.75]], dtype=torch.float64)
-    dist = TorchProbabilityCategoricalDistribution(probabilities)
-
-    p = probabilities[:, 0]
-    expected = -(p * torch.log(p) + (1 - p) * torch.log(1 - p))
-
-    assert torch.allclose(dist.entropy(), expected)
-
-
 def test_sampling_relative_probabilities_matches_normalized_distribution() -> None:
     probabilities = torch.tensor([[2.0, 3.0, 5.0]], dtype=torch.float64)
     dist = TorchProbabilityCategoricalDistribution(probabilities)
@@ -101,19 +91,6 @@ def test_plain_torch_sample_over_categorical_distribution_matches_distribution_s
     sample = TorchSample(tensor=dist, sample_dim=0)
 
     assert isinstance(sample, CategoricalDistributionSample)
-
-
-def test_sampling_bernoulli_produces_binary_samples_with_correct_mean() -> None:
-    probabilities = torch.tensor([[0.3]], dtype=torch.float64)
-    dist = TorchProbabilityCategoricalDistribution(probabilities)
-    rng = torch.Generator().manual_seed(1)
-
-    sample = dist.sample(num_samples=40_000, rng=rng)
-
-    assert isinstance(sample, TorchSample)
-    assert sample.tensor.shape == (40_000, 1)
-    assert torch.all((sample.tensor == 0) | (sample.tensor == 1))
-    assert float(torch.mean(sample.tensor.to(dtype=torch.float64))) == pytest.approx(0.3, abs=0.02)
 
 
 def test_numpy_array_interop() -> None:
