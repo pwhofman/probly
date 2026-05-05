@@ -58,11 +58,14 @@ def _load_rankings(
 
         - ``sp_rankings[dataset]`` -- per-method list (Acc-AUC).
         - ``ood_rankings[(band, dataset)]`` -- keyed by ``band in {"near", "far"}``.
-        - ``al_rankings[(strategy, dataset)]`` -- keyed by AL acquisition strategy.
+        - ``al_rankings[(notion, dataset)]`` -- keyed by uncertainty notion
+          (``"epistemic"`` / ``"aleatoric"`` / ``"total"``); the bar plot for AL
+          fixes a notion per PDF.
     """
     sp: dict[str, list[dict]] = {}
     ood: dict[tuple[str, str], list[dict]] = {}
     al: dict[tuple[str, str], list[dict]] = {}
+    al_notions = {"epistemic", "aleatoric", "total"}
     for root in inputs:
         if not root.exists():
             continue
@@ -77,14 +80,14 @@ def _load_rankings(
             if band in ("near", "far") and ds:
                 ood[(band, ds)] = json.loads(path.read_text())
         for path in sorted(root.glob("bar_al_*_*.ranking.json")):
-            # Filename shape: bar_al_<dataset>_<strategy>.ranking.json.
+            # Filename shape: bar_al_<dataset>_<notion>.ranking.json.
             # ``<dataset>`` itself can include underscores (e.g. ``openml_6``),
-            # so split from the right.
+            # so split the notion off the right end.
             stem = path.name[: -len(".ranking.json")]
             rest = stem[len("bar_al_") :]
-            ds, _, strategy = rest.rpartition("_")
-            if ds and strategy:
-                al[(strategy, ds)] = json.loads(path.read_text())
+            ds, _, notion = rest.rpartition("_")
+            if ds and notion in al_notions:
+                al[(notion, ds)] = json.loads(path.read_text())
     return sp, ood, al
 
 
@@ -316,11 +319,10 @@ def _ood_table(
         for band in bands:
             sub_header += f" & {band.title()}-OOD"
     lines.append(sub_header + r" \\")
-    # Split the mid-rule into per-dataset dashed segments (matches the spans
-    # at the top), instead of one full-width hdashline crossing the Method
-    # column.
-    lines.append(" ".join(cdash))
-    lines.append(r"\noalign{\vskip " + _HEADER_VSKIP + "}")
+    # Full-width dashed mid-rule between the header block and the data rows.
+    # The per-dataset \cdashline above (under the dataset spans) already
+    # signals the dataset grouping; this line marks the start of the data.
+    lines.append(r"\hdashline\noalign{\vskip " + _HEADER_VSKIP + "}")
 
     def render_ood_row(method: str) -> str:
         row = f"{_cite_cell(method, citations)} & {method_labels[method]}"
@@ -338,31 +340,37 @@ def _ood_table(
     return "\n".join(lines)
 
 
+_AL_NOTION_ORDER = ("epistemic", "aleatoric", "total")
+_AL_NOTION_LABEL = {"epistemic": "EU", "aleatoric": "AU", "total": "TU"}
+
+
 def _al_table(
     al: dict[tuple[str, str], list[dict]],
     groups: list[dict],
     citations: dict[str, str],
     decimals: int,
 ) -> str:
-    """Render the AL table: rows = methods, columns = {dataset} x {strategies}, cell = NAUC."""
+    """Render the AL table: rows = methods, columns = {dataset} x {notions}, cell = NAUC."""
     datasets = sorted({ds for _, ds in al})
-    strategies = sorted({strategy for strategy, _ in al})
+    notions_present = {notion for notion, _ in al}
+    notions = [n for n in _AL_NOTION_ORDER if n in notions_present]
+    notions += sorted(n for n in notions_present if n not in _AL_NOTION_ORDER)
     method_labels = _collect_method_labels(list(al.values()))
     sections = _grouped_sections(method_labels, groups)
 
     cells: dict[tuple[str, str, str], dict] = {}
-    for (strategy, ds), ranking in al.items():
+    for (notion, ds), ranking in al.items():
         for entry in ranking:
-            cells[(entry["method"], strategy, ds)] = entry
+            cells[(entry["method"], notion, ds)] = entry
     best_per_col: dict[tuple[str, str], str] = {}
-    for (strategy, ds), ranking in al.items():
+    for (notion, ds), ranking in al.items():
         if ranking:
-            best_per_col[(strategy, ds)] = max(ranking, key=lambda e: e["mean"])["method"]
+            best_per_col[(notion, ds)] = max(ranking, key=lambda e: e["mean"])["method"]
 
-    n_strats = len(strategies)
-    n_data_cols = n_strats * len(datasets)
+    n_notions = len(notions)
+    n_data_cols = n_notions * len(datasets)
     n_total_cols = 2 + n_data_cols
-    col_spec = "@{}l@{\\hspace{4pt}}l " + " ".join(["c" * n_strats] * len(datasets)) + "@{}"
+    col_spec = "@{}l@{\\hspace{4pt}}l " + " ".join(["c" * n_notions] * len(datasets)) + "@{}"
     lines = [
         _PREAMBLE.rstrip(),
         "{",
@@ -372,33 +380,34 @@ def _al_table(
         r"\toprule",
     ]
 
-    # Dataset spans across the strategy sub-columns.
+    # Dataset spans across the notion sub-columns.
     spans = r"\multicolumn{2}{@{}l}{}"
     cdash: list[str] = []
     col_idx = 3
     for ds in datasets:
-        spans += f" & \\multicolumn{{{n_strats}}}{{c}}{{\\textbf{{{ds.upper().replace('_', '\\_')}}}}}"
-        cdash.append(f"\\cdashline{{{col_idx}-{col_idx + n_strats - 1}}}")
-        col_idx += n_strats
+        spans += f" & \\multicolumn{{{n_notions}}}{{c}}{{\\textbf{{{ds.upper().replace('_', '\\_')}}}}}"
+        cdash.append(f"\\cdashline{{{col_idx}-{col_idx + n_notions - 1}}}")
+        col_idx += n_notions
     lines.append(spans + r" \\")
     lines.append(" ".join(cdash))
     lines.append(r"\noalign{\vskip " + _HEADER_VSKIP + "}")
 
     sub_header = r"\multicolumn{2}{@{}l}{\textbf{Method}}"
     for _ in datasets:
-        for strategy in strategies:
-            sub_header += f" & \\textbf{{{strategy.replace('_', ' ').title()}}}"
+        for notion in notions:
+            label = _AL_NOTION_LABEL.get(notion, notion.title())
+            sub_header += f" & \\textbf{{{label}}}"
     lines.append(sub_header + r" \\")
     lines.append(r"\hdashline\noalign{\vskip " + _HEADER_VSKIP + "}")
 
     def render_al_row(method: str) -> str:
         row = f"{_cite_cell(method, citations)} & {method_labels[method]}"
         for ds in datasets:
-            for strategy in strategies:
+            for notion in notions:
                 row += " & " + _format_cell(
-                    cells.get((method, strategy, ds)),
+                    cells.get((method, notion, ds)),
                     decimals=decimals,
-                    is_best=best_per_col.get((strategy, ds)) == method,
+                    is_best=best_per_col.get((notion, ds)) == method,
                 )
         return row + r" \\"
 
@@ -461,8 +470,8 @@ def main(cfg: DictConfig) -> dict[str, Path]:
         path.write_text(_al_table(al, groups, citations, decimals))
         written["al"] = path
         ds_set = sorted({ds for _, ds in al})
-        st_set = sorted({s for s, _ in al})
-        print(f"Wrote {path}  (datasets: {ds_set} x strategies: {st_set})")
+        notion_set = sorted({n for n, _ in al})
+        print(f"Wrote {path}  (datasets: {ds_set} x notions: {notion_set})")
     else:
         print("No AL ranking JSONs found in inputs; skipping paper_table_al.tex.")
 
