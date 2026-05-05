@@ -18,7 +18,8 @@ from probly.method.conformal_credal_set import (
     conformal_total_variation,
     conformal_wasserstein_distance,
 )
-from probly_benchmark import calibration, conformal, data, utils
+from probly_benchmark import calibration, conformal, data, metadata, utils
+from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.paths import CHECKPOINT_PATH
 
 
@@ -158,14 +159,33 @@ def main(cfg: DictConfig) -> None:
     load_from = cfg.get("load_from")
     if load_from == "base":
         source_artifact = f"base_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+        base_model, _, source_run_id = utils.load_model_from_wandb(
+            source_artifact,
+            cfg.wandb.entity,
+            cfg.wandb.project,
+            device,
+        )
+        # Build a fresh base predictor from the current cfg and copy weights.
+        # Mirrors the load_from=base pattern in efficient_credal_prediction / laplace.
+        ctx = BuildContext(
+            base_model_name=cfg.base_model,
+            model_type=cfg.model_type,
+            num_classes=metadata.DATASETS[cfg.dataset].num_classes,
+            pretrained=cfg.get("pretrained", False),
+            train_loader=None,
+        )
+        model = build_model("base", {}, ctx)
+        model.load_state_dict(base_model.state_dict())
+        model.to(device)
+        model.eval()
     else:
         source_artifact = utils.resolve_artifact_name(cfg, include_conformal=False)
-    model, _, source_run_id = utils.load_model_from_wandb(
-        source_artifact,
-        cfg.wandb.entity,
-        cfg.wandb.project,
-        device,
-    )
+        model, _, source_run_id = utils.load_model_from_wandb(
+            source_artifact,
+            cfg.wandb.entity,
+            cfg.wandb.project,
+            device,
+        )
     print(f"Loaded model {source_artifact} from wandb run: {source_run_id}")
 
     cal_loader, _test_loader = data.get_data_first_order(
