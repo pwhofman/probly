@@ -6,8 +6,14 @@ from math import log, pi
 from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
 from flextype import flexdispatch
-from probly.predictor import EvidentialPredictor, predict, predict_raw
-from probly.representation.distribution import DirichletDistribution, create_dirichlet_distribution_from_alphas
+from probly.predictor import (
+    DirichletMixtureDistributionPredictor,
+    EvidentialPredictor,
+)
+from probly.representation.distribution import (
+    DirichletDistribution,
+    DirichletMixtureDistribution,
+)
 from probly.transformation.transformation import predictor_transformation
 
 if TYPE_CHECKING:
@@ -28,6 +34,18 @@ type GraphPosteriorEvidenceScale = (
 @runtime_checkable
 class GraphPosteriorNetworkPredictor[**In, Out: DirichletDistribution](EvidentialPredictor[In, Out], Protocol):
     """Protocol for graph posterior network predictors."""
+
+
+@runtime_checkable
+class LOPGraphPosteriorNetworkPredictor[**In, Out: DirichletMixtureDistribution](
+    DirichletMixtureDistributionPredictor[In, Out], Protocol
+):
+    """Protocol for graph posterior network predictors."""
+
+
+@runtime_checkable
+class CUQGraphNeuralNetworkPredictor[**In, Out: DirichletDistribution](EvidentialPredictor[In, Out], Protocol):
+    """Protocol for CUQ graph neural network predictors."""
 
 
 def graph_evidence_log_scale(scale: GraphPosteriorEvidenceScale, latent_dim: int, num_classes: int) -> float:
@@ -78,7 +96,7 @@ def graph_posterior_network_generator[**In, Out: DirichletDistribution](
 
 
 @flexdispatch
-def lop_graph_posterior_network_generator[**In, Out: DirichletDistribution](
+def lop_graph_posterior_network_generator[**In, Out: DirichletMixtureDistribution](
     input_encoder: Predictor[In, Out],
     latent_dim: int,
     num_classes: int,
@@ -90,7 +108,7 @@ def lop_graph_posterior_network_generator[**In, Out: DirichletDistribution](
     propagation_steps: int = 10,
     teleport_probability: float = 0.1,
     add_self_loops: bool = True,
-) -> GraphPosteriorNetworkPredictor[In, Out]:
+) -> LOPGraphPosteriorNetworkPredictor[In, Out]:
     """Return a LOP graph posterior network given an encoder model."""
     msg = f"No LOP graph posterior network registered for type {type(input_encoder)}"
     raise NotImplementedError(msg)
@@ -110,7 +128,7 @@ def cuq_graph_neural_network_generator[**In, Out: DirichletDistribution](
     teleport_probability: float = 0.1,
     add_self_loops: bool = True,
     convolution_name: Literal["appnp", "gcn"] = "appnp",
-) -> GraphPosteriorNetworkPredictor[In, Out]:
+) -> CUQGraphNeuralNetworkPredictor[In, Out]:
     """Return a CUQ graph neural network given an encoder model."""
     msg = f"No CUQ graph neural network registered for type {type(input_encoder)}"
     raise NotImplementedError(msg)
@@ -164,7 +182,7 @@ def graph_posterior_network[**In, Out: DirichletDistribution](
 
 @predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
 @GraphPosteriorNetworkPredictor.register_factory
-def lop_graph_posterior_network[**In, Out: DirichletDistribution](
+def lop_graph_posterior_network[**In, Out: DirichletMixtureDistribution](
     input_encoder: Predictor[In, Out],
     latent_dim: int,
     num_classes: int,
@@ -176,7 +194,7 @@ def lop_graph_posterior_network[**In, Out: DirichletDistribution](
     propagation_steps: int = 10,
     teleport_probability: float = 0.1,
     add_self_loops: bool = True,
-) -> GraphPosteriorNetworkPredictor[In, Out]:
+) -> LOPGraphPosteriorNetworkPredictor[In, Out]:
     """Create a LOP-GPN predictor with approximate pooled Dirichlet outputs.
 
     Args:
@@ -223,7 +241,7 @@ def cuq_graph_neural_network[**In, Out: DirichletDistribution](
     teleport_probability: float = 0.1,
     add_self_loops: bool = True,
     convolution_name: Literal["appnp", "gcn"] = "appnp",
-) -> GraphPosteriorNetworkPredictor[In, Out]:
+) -> CUQGraphNeuralNetworkPredictor[In, Out]:
     """Create a CUQ-GNN predictor with graph-refined node features.
 
     Args:
@@ -255,11 +273,3 @@ def cuq_graph_neural_network[**In, Out: DirichletDistribution](
         add_self_loops=add_self_loops,
         convolution_name=convolution_name,
     )
-
-
-@predict.register(GraphPosteriorNetworkPredictor)
-def _[**In](
-    predictor: GraphPosteriorNetworkPredictor[In, DirichletDistribution], *args: In.args, **kwargs: In.kwargs
-) -> DirichletDistribution:
-    """Predict with a graph posterior network predictor."""
-    return create_dirichlet_distribution_from_alphas(predict_raw(predictor, *args, **kwargs))

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from typing import Literal, cast
 
 import torch
@@ -10,12 +11,17 @@ from torch_geometric.data import Data
 from torch_geometric.nn import APPNP, GCNConv
 
 from probly.layers.torch import RadialNormalizingFlowStack
+from probly.representation.distribution._common import DirichletMixtureDistribution
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
-from probly.transformation.graph_posterior_network import GraphPosteriorNetworkPredictor
+from probly.representation.distribution.torch_mixture import TorchMixtureDistribution
 from probly.traverse_nn.utils import get_output_dim
 
 from ._common import (
+    CUQGraphNeuralNetworkPredictor,
     GraphPosteriorEvidenceScale,
+    GraphPosteriorNetworkPredictor,
+    LOPGraphPosteriorNetworkPredictor,
     cuq_graph_neural_network_generator,
     graph_evidence_log_scale,
     graph_posterior_network_generator,
@@ -23,7 +29,7 @@ from ._common import (
 )
 
 
-class TorchGraphPosteriorNetworkBase[T, F](nn.Module, GraphPosteriorNetworkPredictor[[Data], T]):
+class TorchGraphPosteriorNetworkBase[T, F](nn.Module, ABC):
     """Torch Geometric Graph Posterior Network."""
 
     class_counts: torch.Tensor | None
@@ -148,15 +154,33 @@ class TorchGraphPosteriorNetworkBase[T, F](nn.Module, GraphPosteriorNetworkPredi
         beta = self.propagation(beta_ft, edge_index)
         return 1.0 + beta
 
+    @abstractmethod
+    def predict_representation(self, data: Data) -> T:
+        """Compute the predictive distribution parameters for all nodes."""
+
 
 @graph_posterior_network_generator.register(nn.Module)
-class TorchGraphPosteriorNetwork(TorchGraphPosteriorNetworkBase[TorchDirichletDistribution, torch.Tensor]):
+class TorchGraphPosteriorNetwork(
+    TorchGraphPosteriorNetworkBase[TorchDirichletDistribution, torch.Tensor],
+    GraphPosteriorNetworkPredictor[[Data], TorchDirichletDistribution],
+):
     """Torch Geometric Graph Posterior Network."""
+
+    def predict_representation(self, data: Data) -> TorchDirichletDistribution:
+        """Compute the predictive distribution parameters (Dirichlet alphas) for all nodes."""
+        alphas: torch.Tensor = self.forward(data)
+        return TorchDirichletDistribution(alphas=alphas)
 
 
 @lop_graph_posterior_network_generator.register(nn.Module)
 class TorchLOPGraphPosteriorNetwork(
-    TorchGraphPosteriorNetworkBase[TorchDirichletDistribution, tuple[torch.Tensor, torch.Tensor]]
+    TorchGraphPosteriorNetworkBase[
+        TorchMixtureDistribution[TorchDirichletDistribution, TorchCategoricalDistribution],
+        tuple[torch.Tensor, torch.Tensor],
+    ],
+    LOPGraphPosteriorNetworkPredictor[
+        [Data], DirichletMixtureDistribution[TorchDirichletDistribution, TorchCategoricalDistribution]
+    ],
 ):
     """Torch Geometric LOP-GPN with approximate pooled Dirichlet outputs."""
 
@@ -185,9 +209,22 @@ class TorchLOPGraphPosteriorNetwork(
 
         return alpha_features, mixture_weights
 
+    def predict_representation(
+        self, data: Data
+    ) -> TorchMixtureDistribution[TorchDirichletDistribution, TorchCategoricalDistribution]:
+        """Compute the predictive distribution parameters (Dirichlet alphas) for all nodes."""
+        alphas, weights = self.forward(data)
+        return TorchMixtureDistribution(
+            TorchDirichletDistribution(alphas=alphas.expand(weights.shape[0], *alphas.shape)),
+            weights,
+        )
+
 
 @cuq_graph_neural_network_generator.register(nn.Module)
-class TorchCUQGraphNeuralNetwork(TorchGraphPosteriorNetworkBase[TorchDirichletDistribution, torch.Tensor]):
+class TorchCUQGraphNeuralNetwork(
+    TorchGraphPosteriorNetworkBase[TorchDirichletDistribution, torch.Tensor],
+    CUQGraphNeuralNetworkPredictor[[Data], TorchDirichletDistribution],
+):
     """Torch Geometric CUQ-GNN using graph-refined hidden features."""
 
     def __init__(
@@ -245,3 +282,8 @@ class TorchCUQGraphNeuralNetwork(TorchGraphPosteriorNetworkBase[TorchDirichletDi
         if self.convolution_name == "gcn":
             return self.graph_module(hidden, edge_index)
         return self.graph_module(hidden, edge_index)
+
+    def predict_representation(self, data: Data) -> TorchDirichletDistribution:
+        """Compute the predictive distribution parameters (Dirichlet alphas) for all nodes."""
+        alphas: torch.Tensor = self.forward(data)
+        return TorchDirichletDistribution(alphas=alphas)

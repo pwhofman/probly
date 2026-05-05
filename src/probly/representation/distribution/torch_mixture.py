@@ -3,19 +3,30 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, ClassVar, Literal, cast, override
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, cast, override
 
 import torch
 
 from probly.representation._protected_axis.torch import TorchAxisProtected
-from probly.representation.distribution._common import Distribution, MixtureDistribution
+from probly.representation.distribution._common import (
+    Distribution,
+    MixtureDistribution,
+    create_dirichlet_distribution_from_alphas,
+    create_dirichlet_mixture_distribution_from_alphas_and_weights,
+)
 from probly.representation.sample.torch import TorchSample
+from probly.representation.torch_functions import torch_average
+from probly.representation.torch_like import TorchLike
+
+if TYPE_CHECKING:
+    from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+    from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchMixtureDistribution[D: Distribution](
-    TorchAxisProtected[Any],
-    MixtureDistribution[D, Any],
+class TorchMixtureDistribution[D: Distribution, T: TorchLike](
+    TorchAxisProtected[T],
+    MixtureDistribution[D, T],
 ):
     """Mixture distribution with torch tensor mixture weights.
 
@@ -78,7 +89,7 @@ class TorchMixtureDistribution[D: Distribution](
         self,
         num_samples: int = 1,
         rng: torch.Generator | None = None,
-    ) -> TorchSample[Any]:
+    ) -> TorchSample[T]:
         """Draw samples from the mixture distribution.
 
         Args:
@@ -130,3 +141,23 @@ class TorchMixtureDistribution[D: Distribution](
     def __hash__(self) -> int:
         """Return an identity-based hash."""
         return object.__hash__(self)
+
+    @property
+    def mean(self) -> T:
+        """Compute the mean of the mixture distribution."""
+        component_means = self.components.mean  # ty:ignore[unresolved-attribute]
+        weights = self.mixture_weights
+
+        return torch_average(component_means, dim=-1, weights=weights)  # ty:ignore[invalid-return-type]
+
+
+@create_dirichlet_mixture_distribution_from_alphas_and_weights.register(torch.Tensor)
+def _(
+    alphas: torch.Tensor,
+    weights: torch.Tensor,
+) -> TorchMixtureDistribution[TorchDirichletDistribution, TorchCategoricalDistribution]:
+    """Create a TorchMixtureDistribution from alphas and weights."""
+    return TorchMixtureDistribution(
+        components=cast("TorchDirichletDistribution", create_dirichlet_distribution_from_alphas(alphas)),
+        mixture_weights=weights,
+    )

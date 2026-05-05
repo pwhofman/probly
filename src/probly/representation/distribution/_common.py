@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
 from flextype import flexdispatch
@@ -43,6 +44,10 @@ class MixtureDistribution[D: Distribution, T](Distribution[T], ABC):
     """Base class for mixture distributions."""
 
     type: Literal["mixture"] = "mixture"
+    _running_instancehook: ClassVar[ContextVar[object]] = ContextVar(
+        "MixtureDistribution._running_instancehook", default=NotImplemented
+    )
+    component_type: ClassVar[type[D]] = Distribution
 
     @property
     @abstractmethod
@@ -53,6 +58,18 @@ class MixtureDistribution[D: Distribution, T](Distribution[T], ABC):
     @abstractmethod
     def mixture_weights(self) -> ArrayLike:
         """Get the mixture weights of the mixture distribution."""
+
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        if cls._running_instancehook.get() is instance:
+            return NotImplemented
+        try:
+            tok = cls._running_instancehook.set(instance)
+            if isinstance(instance, MixtureDistribution) and isinstance(instance.components, cls.component_type):
+                return True
+        finally:
+            cls._running_instancehook.reset(tok)
+        return NotImplemented
 
 
 class CategoricalDistribution[T](Distribution[T]):
@@ -155,6 +172,16 @@ class DirichletDistribution[T: CategoricalDistribution](SecondOrderDistribution[
         """Get the mean of the Dirichlet distribution."""
 
 
+class DirichletMixtureDistribution[D: DirichletDistribution, T: CategoricalDistribution](MixtureDistribution[D, T]):
+    """Mixture distribution with Dirichlet components."""
+
+    component_type: ClassVar[type[DirichletDistribution]] = DirichletDistribution
+
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        return super().__instancehook__(instance)
+
+
 class GaussianDistribution[D](Distribution[D], ABC):
     """Base class for Gaussian distributions."""
 
@@ -234,6 +261,18 @@ def create_bernoulli_distribution_from_logits[T](data: T) -> BernoulliDistributi
 def create_dirichlet_distribution_from_alphas[T](alphas: T) -> DirichletDistribution:
     """Create a Dirichlet distribution from backend-specific alpha data."""
     msg = f"No Dirichlet distribution factory registered for alphas type {type(alphas)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def create_dirichlet_mixture_distribution_from_alphas_and_weights[T](
+    alphas: T, weights: T
+) -> DirichletMixtureDistribution:
+    """Create a Dirichlet mixture distribution from backend-specific alpha and weight data."""
+    msg = (
+        f"No Dirichlet mixture distribution factory registered for alphas type {type(alphas)} "
+        f"and weights type {type(weights)}"
+    )
     raise NotImplementedError(msg)
 
 

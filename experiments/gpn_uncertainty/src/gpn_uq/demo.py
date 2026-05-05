@@ -17,7 +17,7 @@ from probly.evaluation.tasks import selective_prediction
 from probly.predictor import predict
 from probly.quantification import quantify
 from probly.train.evidential.torch import mixture_uce_loss, postnet_loss
-from probly.transformation.graph_posterior_network import (
+from probly.method.graph_posterior_network import (
     cuq_graph_neural_network,
     graph_posterior_network,
     lop_graph_posterior_network,

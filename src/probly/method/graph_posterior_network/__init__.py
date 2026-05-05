@@ -5,7 +5,9 @@ from __future__ import annotations
 from probly.lazy_types import TORCH_MODULE
 
 from ._common import (
+    CUQGraphNeuralNetworkPredictor,
     GraphPosteriorNetworkPredictor,
+    LOPGraphPosteriorNetworkPredictor,
     cuq_graph_neural_network,
     cuq_graph_neural_network_generator,
     graph_evidence_log_scale,
@@ -32,7 +34,9 @@ def _(_: type) -> None:
 
 
 __all__ = [
+    "CUQGraphNeuralNetworkPredictor",
     "GraphPosteriorNetworkPredictor",
+    "LOPGraphPosteriorNetworkPredictor",
     "cuq_graph_neural_network",
     "graph_evidence_log_scale",
     "graph_posterior_network",

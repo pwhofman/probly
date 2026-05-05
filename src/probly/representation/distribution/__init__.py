@@ -8,6 +8,7 @@ from ._common import (
     CategoricalDistribution,
     CategoricalDistributionSample,
     DirichletDistribution,
+    DirichletMixtureDistribution,
     Distribution,
     DistributionSample,
     DistributionType,
@@ -20,6 +21,7 @@ from ._common import (
     create_categorical_distribution,
     create_categorical_distribution_from_logits,
     create_dirichlet_distribution_from_alphas,
+    create_dirichlet_mixture_distribution_from_alphas_and_weights,
     create_gaussian_distribution,
 )
 from .array_bernoulli import (
@@ -61,6 +63,11 @@ def _(_: type) -> None:
     from . import torch_gaussian as torch_gaussian  # noqa: PLC0415
 
 
+@create_dirichlet_mixture_distribution_from_alphas_and_weights.delayed_register(TORCH_TENSOR)
+def _(_: type) -> None:
+    from . import torch_mixture as torch_mixture  # noqa: PLC0415
+
+
 __all__ = [
     "ArrayBernoulliDistribution",
     "ArrayBernoulliDistributionSample",
@@ -78,6 +85,7 @@ __all__ = [
     "CategoricalDistribution",
     "CategoricalDistributionSample",
     "DirichletDistribution",
+    "DirichletMixtureDistribution",
     "Distribution",
     "DistributionSample",
     "DistributionType",
@@ -90,5 +98,6 @@ __all__ = [
     "create_categorical_distribution",
     "create_categorical_distribution_from_logits",
     "create_dirichlet_distribution_from_alphas",
+    "create_dirichlet_mixture_distribution_from_alphas_and_weights",
     "create_gaussian_distribution",
 ]
