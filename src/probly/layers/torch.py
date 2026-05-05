@@ -121,12 +121,14 @@ class BatchEnsembleLinear(nn.Module):
             raise ValueError(msg)
         b = eb // num_members
 
-        x = x.view(num_members, b, x.shape[-1])
-        x = x * self.r.unsqueeze(1)
+        # repeat_interleave keeps the tensor 2D, avoiding the view/reshape dance.
+        r_per = self.r.repeat_interleave(b, dim=0)
+        s_per = self.s.repeat_interleave(b, dim=0)
+        bias_per = self.bias.repeat_interleave(b, dim=0)
+
+        x = x * r_per
         y = F.linear(x, self.weight, bias=None)
-        y = y * self.s.unsqueeze(1)
-        y = y + self.bias.unsqueeze(1)
-        return y.reshape(eb, -1)
+        return y * s_per + bias_per
 
     def extra_repr(self) -> str:
         """Expose description of in- and out-features, num_members and bias of this layer."""
@@ -239,10 +241,13 @@ class BatchEnsembleConv2d(nn.Module):
             raise ValueError(msg)
         b = eb // num_members
 
-        x = x.view(num_members, b, *x.shape[1:])
-        x = x * self.r[:, None, :, None, None]
-        x = x.reshape(eb, *x.shape[2:])
+        # Broadcasting the per-sample factors over the [E*B, C, H, W] tensor avoids the
+        # 4D->5D reshape, so a ``channels_last`` input survives the layer for cuDNN.
+        r_per = self.r.repeat_interleave(b, dim=0)[:, :, None, None]
+        s_per = self.s.repeat_interleave(b, dim=0)[:, :, None, None]
+        bias_per = self.bias.repeat_interleave(b, dim=0)[:, :, None, None]
 
+        x = x * r_per
         y = F.conv2d(
             x,
             self.weight,
@@ -252,11 +257,7 @@ class BatchEnsembleConv2d(nn.Module):
             dilation=self.dilation,
             groups=self.groups,
         )
-
-        y = y.view(num_members, b, *y.shape[1:])
-        y = y * self.s[:, None, :, None, None]
-        y = y + self.bias[:, None, :, None, None]
-        return y.reshape(eb, *y.shape[2:])
+        return y * s_per + bias_per
 
     def extra_repr(self) -> str:
         """Expose description of in- and out-features, kernel size, stride and num_members of this layer."""

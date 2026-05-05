@@ -17,8 +17,11 @@ from ._common import BatchEnsemblePredictor, _attach_num_members, _wrap_batchens
 
 
 def tile_inputs(x: torch.Tensor, num_members: int) -> torch.Tensor:
-    """Tile the leading batch dim by ``num_members`` for a BatchEnsemble forward pass."""
-    return torch.tile(x, (num_members,) + (1,) * (x.dim() - 1))
+    """Tile the leading batch dim by ``num_members``, preserving ``channels_last`` for 4D inputs."""
+    out = torch.tile(x, (num_members,) + (1,) * (x.dim() - 1))
+    if x.dim() == 4 and x.is_contiguous(memory_format=torch.channels_last):
+        out = out.contiguous(memory_format=torch.channels_last)
+    return out
 
 
 @_attach_num_members.register(nn.Module)

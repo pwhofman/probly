@@ -225,6 +225,32 @@ class TestBatchEnsembleLayers:
         assert conv2d_output == expected_conv2d
 
 
+class TestBatchEnsembleChannelsLast:
+    """``channels_last`` must reach cuDNN through ``tile_inputs`` and the BE conv layer.
+
+    The layer output's layout is cuDNN's choice on CUDA; we verify the upstream invariants
+    portably here (CPU's ``F.conv2d`` may switch the output to NCHW regardless).
+    """
+
+    def test_tile_inputs_preserves_channels_last(self) -> None:
+        from probly.transformation.batchensemble.torch import tile_inputs  # noqa: PLC0415
+
+        x = torch.randn(8, 3, 16, 16).contiguous(memory_format=torch.channels_last)
+        out = tile_inputs(x, 5)
+        assert out.is_contiguous(memory_format=torch.channels_last)
+
+    def test_batchensemble_conv_pre_conv_multiply_preserves_channels_last(self) -> None:
+        # The conv input (after the *r broadcast) must still be channels_last so cuDNN
+        # picks the fast path; replicating the layer's pre-conv path mirrors what the
+        # ``forward`` body produces before ``F.conv2d``.
+        layer = batchensemble(nn.Conv2d(3, 8, 3, padding=1), num_members=5)
+        x = torch.randn(40, 3, 16, 16).contiguous(memory_format=torch.channels_last)
+        b = x.shape[0] // int(layer.num_members)
+        r_per = layer.r.repeat_interleave(b, dim=0)[:, :, None, None]
+        x_pre_conv = x * r_per
+        assert x_pre_conv.is_contiguous(memory_format=torch.channels_last)
+
+
 class TestBatchEnsembleForwards:
     """Test class for BatchEnsemble layer forwards."""
 
