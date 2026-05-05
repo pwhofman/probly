@@ -99,6 +99,10 @@ def intersection_probability(lower: torch.Tensor, upper: torch.Tensor) -> torch.
     slack = upper - lower
     slack_sum = torch.sum(slack, dim=-1, keepdim=True)
     remaining = 1 - torch.sum(lower, dim=-1, keepdim=True)
+    # Clamp alpha to [0, 1] to guard against floating-point drift where
+    # sum(lower) slightly exceeds 1, which would make remaining negative and
+    # produce sub-zero output probabilities.
+    remaining = remaining.clamp(min=0)
     denominator = torch.where(slack_sum != 0, slack_sum, torch.ones_like(slack_sum))
     weights = torch.where(slack_sum != 0, slack / denominator, torch.zeros_like(slack))
     return lower + remaining * weights
