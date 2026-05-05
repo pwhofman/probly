@@ -217,16 +217,57 @@ def _efficiency_array_discrete(y_pred: ArrayDiscreteCredalSet) -> np.floating:
     return np.mean(classes_picked.sum(axis=-1))
 
 
+def _credal_containment_coverage(lower: np.ndarray, upper: np.ndarray, y_true: np.ndarray) -> np.floating:
+    """Fraction of instances where ``y_true`` lies in ``[lower, upper]`` for all classes.
+
+    Args:
+        lower: Lower probability envelope of shape ``(N, C)``.
+        upper: Upper probability envelope of shape ``(N, C)``.
+        y_true: Target probability vectors of shape ``(N, C)``.
+
+    Returns:
+        Mean containment indicator as a scalar float.
+    """
+    y = np.asarray(y_true)
+    covered = np.all((lower <= y) & (y <= upper), axis=-1)
+    return np.mean(covered)
+
+
+def _credal_interval_efficiency(lower: np.ndarray, upper: np.ndarray) -> np.floating:
+    """Efficiency of a credal set as ``1 - mean(upper - lower)``.
+
+    Args:
+        lower: Lower probability envelope of shape ``(N, C)``.
+        upper: Upper probability envelope of shape ``(N, C)``.
+
+    Returns:
+        Scalar in ``(-inf, 1]``; higher means a tighter (more efficient) credal set.
+    """
+    return np.float64(1.0 - float(np.mean(np.asarray(upper) - np.asarray(lower))))
+
+
 @coverage.register(ArrayConvexCredalSet)
 def _coverage_array_convex(y_pred: ArrayConvexCredalSet, y_true: np.ndarray) -> np.floating:
-    """Interval-dominance coverage for a convex credal set."""
-    return _envelope_coverage(y_pred.lower(), y_pred.upper(), y_true)
+    """Containment coverage for a convex credal set.
+
+    Args:
+        y_pred: Convex credal set.
+        y_true: Target probability vectors of shape ``(N, C)``.
+
+    Returns:
+        Fraction of instances where the target lies in ``[lower, upper]`` for all classes.
+    """
+    return _credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
 
 
 @efficiency.register(ArrayConvexCredalSet)
 def _efficiency_array_convex(y_pred: ArrayConvexCredalSet) -> np.floating:
-    """Interval-dominance prediction-set cardinality for a convex credal set."""
-    return _envelope_efficiency(y_pred.lower(), y_pred.upper())
+    """Interval-width efficiency for a convex credal set: ``1 - mean(upper - lower)``.
+
+    Returns:
+        Scalar efficiency; higher means a tighter credal set.
+    """
+    return _credal_interval_efficiency(y_pred.lower(), y_pred.upper())
 
 
 @coverage.register(ArrayDistanceBasedCredalSet)
@@ -245,14 +286,26 @@ def _efficiency_array_distance(y_pred: ArrayDistanceBasedCredalSet) -> np.floati
 def _coverage_array_probability_intervals(
     y_pred: ArrayProbabilityIntervalsCredalSet, y_true: np.ndarray
 ) -> np.floating:
-    """Interval-dominance coverage for a probability-intervals credal set."""
-    return _envelope_coverage(y_pred.lower(), y_pred.upper(), y_true)
+    """Containment coverage for a probability-intervals credal set.
+
+    Args:
+        y_pred: Probability-intervals credal set.
+        y_true: Target probability vectors of shape ``(N, C)``.
+
+    Returns:
+        Fraction of instances where the target lies in ``[lower, upper]`` for all classes.
+    """
+    return _credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
 
 
 @efficiency.register(ArrayProbabilityIntervalsCredalSet)
 def _efficiency_array_probability_intervals(y_pred: ArrayProbabilityIntervalsCredalSet) -> np.floating:
-    """Interval-dominance prediction-set cardinality for a probability-intervals credal set."""
-    return _envelope_efficiency(y_pred.lower(), y_pred.upper())
+    """Interval-width efficiency for a probability-intervals credal set: ``1 - mean(upper - lower)``.
+
+    Returns:
+        Scalar efficiency; higher means a tighter credal set.
+    """
+    return _credal_interval_efficiency(y_pred.lower(), y_pred.upper())
 
 
 @average_interval_width.register(ArrayConvexCredalSet)

@@ -1321,7 +1321,7 @@ def _(
     predictor's ``lower`` and ``upper`` buffers.
     """
     model_ = cast("Any", model)
-    load_from = cfg.method.get("load_from")
+    load_from = train_kwargs.get("load_from")
     if load_from == "base":
         base_artifact_name = f"base_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
         base_model, _, source_run_id = utils.load_model_from_wandb(

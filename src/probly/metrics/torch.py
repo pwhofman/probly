@@ -190,16 +190,57 @@ def _efficiency_torch_interval(y_pred: TorchIntervalConformalSet) -> float:
     return float((y_pred.tensor[..., 1] - y_pred.tensor[..., 0]).float().mean().item())
 
 
+def _credal_containment_coverage_torch(lower: torch.Tensor, upper: torch.Tensor, y_true: torch.Tensor) -> float:
+    """Fraction of instances where ``y_true`` lies in ``[lower, upper]`` for all classes.
+
+    Args:
+        lower: Lower probability envelope of shape ``(N, C)``.
+        upper: Upper probability envelope of shape ``(N, C)``.
+        y_true: Target probability tensors of shape ``(N, C)``.
+
+    Returns:
+        Mean containment indicator as a Python float.
+    """
+    y = torch.as_tensor(y_true, device=lower.device, dtype=lower.dtype)
+    covered = ((lower <= y) & (y <= upper)).all(dim=-1)
+    return float(covered.float().mean().item())
+
+
+def _credal_interval_efficiency_torch(lower: torch.Tensor, upper: torch.Tensor) -> float:
+    """Efficiency of a credal set as ``1 - mean(upper - lower)``.
+
+    Args:
+        lower: Lower probability envelope of shape ``(N, C)``.
+        upper: Upper probability envelope of shape ``(N, C)``.
+
+    Returns:
+        Scalar in ``(-inf, 1]``; higher means a tighter (more efficient) credal set.
+    """
+    return float(1.0 - (upper - lower).float().mean().item())
+
+
 @coverage.register(TorchConvexCredalSet)
 def _coverage_torch_convex(y_pred: TorchConvexCredalSet, y_true: torch.Tensor) -> float:
-    """Interval-dominance coverage for a convex credal set."""
-    return _envelope_coverage(y_pred.lower(), y_pred.upper(), y_true)
+    """Containment coverage for a convex credal set.
+
+    Args:
+        y_pred: Convex credal set.
+        y_true: Target probability tensors of shape ``(N, C)``.
+
+    Returns:
+        Fraction of instances where the target lies in ``[lower, upper]`` for all classes.
+    """
+    return _credal_containment_coverage_torch(y_pred.lower(), y_pred.upper(), y_true)
 
 
 @efficiency.register(TorchConvexCredalSet)
 def _efficiency_torch_convex(y_pred: TorchConvexCredalSet) -> float:
-    """Interval-dominance prediction-set cardinality for a convex credal set."""
-    return _envelope_efficiency(y_pred.lower(), y_pred.upper())
+    """Interval-width efficiency for a convex credal set: ``1 - mean(upper - lower)``.
+
+    Returns:
+        Scalar efficiency; higher means a tighter credal set.
+    """
+    return _credal_interval_efficiency_torch(y_pred.lower(), y_pred.upper())
 
 
 @coverage.register(TorchDistanceBasedCredalSet)
@@ -216,14 +257,26 @@ def _efficiency_torch_distance(y_pred: TorchDistanceBasedCredalSet) -> float:
 
 @coverage.register(TorchProbabilityIntervalsCredalSet)
 def _coverage_torch_probability_intervals(y_pred: TorchProbabilityIntervalsCredalSet, y_true: torch.Tensor) -> float:
-    """Interval-dominance coverage for a probability-intervals credal set."""
-    return _envelope_coverage(y_pred.lower(), y_pred.upper(), y_true)
+    """Containment coverage for a probability-intervals credal set.
+
+    Args:
+        y_pred: Probability-intervals credal set.
+        y_true: Target probability tensors of shape ``(N, C)``.
+
+    Returns:
+        Fraction of instances where the target lies in ``[lower, upper]`` for all classes.
+    """
+    return _credal_containment_coverage_torch(y_pred.lower(), y_pred.upper(), y_true)
 
 
 @efficiency.register(TorchProbabilityIntervalsCredalSet)
 def _efficiency_torch_probability_intervals(y_pred: TorchProbabilityIntervalsCredalSet) -> float:
-    """Interval-dominance prediction-set cardinality for a probability-intervals credal set."""
-    return _envelope_efficiency(y_pred.lower(), y_pred.upper())
+    """Interval-width efficiency for a probability-intervals credal set: ``1 - mean(upper - lower)``.
+
+    Returns:
+        Scalar efficiency; higher means a tighter credal set.
+    """
+    return _credal_interval_efficiency_torch(y_pred.lower(), y_pred.upper())
 
 
 @coverage.register(TorchDirichletLevelSetCredalSet)
