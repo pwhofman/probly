@@ -51,18 +51,11 @@ class ArrayCategoricalDistribution(CategoricalDistribution, ArrayAxisProtected[n
 
         return super().with_protected_values(values, func)
 
-    @property
-    def _is_bernoulli(self) -> bool:
-        return self.array.shape[-1] == 1
-
-    def _bernoulli_array(self) -> np.ndarray:
-        """Gets the probability or logit of the positive/last class for a Bernoulli distribution."""
-        return self.array[..., -1]
-
     @override
     @property
     def unnormalized_probabilities(self) -> np.ndarray:
-        return np.exp(self.logits - np.max(self.logits, axis=-1, keepdims=True))
+        logits = self.logits
+        return np.exp(logits - np.max(logits, axis=-1, keepdims=True))
 
     @override
     @property
@@ -86,8 +79,6 @@ class ArrayCategoricalDistribution(CategoricalDistribution, ArrayAxisProtected[n
     @property
     def num_classes(self) -> int:
         """Get the number of classes."""
-        if self._is_bernoulli:
-            return 2
         return self.unnormalized_probabilities.shape[-1]
 
     @override
@@ -128,22 +119,13 @@ class ArrayProbabilityCategoricalDistribution(ArrayCategoricalDistribution):
         if self.array.ndim < 1:
             msg = "probabilities must have at least one dimension."
             raise ValueError(msg)
-
-        if self._is_bernoulli:
-            if np.any(self.array < 0) or np.any(self.array > 1):
-                msg = "Bernoulli probabilities must be in the range [0, 1]."
-                raise ValueError(msg)
-        elif np.any(self.array < 0):
+        if np.any(self.array < 0):
             msg = "Relative probabilities must be non-negative."
             raise ValueError(msg)
 
     @override
     @property
     def unnormalized_probabilities(self) -> np.ndarray:
-        if self._is_bernoulli:
-            p = self._bernoulli_array()
-            q = 1 - p
-            return np.stack((q, p), axis=-1)
         return self.array
 
     @override
@@ -187,11 +169,6 @@ class ArrayLogitCategoricalDistribution(ArrayCategoricalDistribution):
     @override
     @property
     def logits(self) -> np.ndarray:
-        if self._is_bernoulli:
-            return np.concatenate(
-                (np.zeros_like(self.array), self._bernoulli_array()),
-                axis=-1,
-            )
         return self.array
 
     @override

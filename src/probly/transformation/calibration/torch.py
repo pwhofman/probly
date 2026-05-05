@@ -10,7 +10,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from probly.predictor import LogitClassifier, predict_raw
+from probly.predictor import BinaryLogitClassifier, LogitClassifier, predict_raw
 
 from ._common import CalibrationMethodConfig, _CalibrationPredictorBase, calibration_generator
 
@@ -131,6 +131,7 @@ class TorchIdentityLogitModel(nn.Module):
 
 
 LogitClassifier.register(TorchIdentityLogitModel)
+BinaryLogitClassifier.register(TorchIdentityLogitModel)
 
 
 class _TorchCalibrationPredictorBase[**In](_CalibrationPredictorBase[In, torch.Tensor], nn.Module, ABC):

@@ -56,14 +56,6 @@ class TorchCategoricalDistribution(
 
         return super().with_protected_values(values, func)
 
-    @property
-    def _is_bernoulli(self) -> bool:
-        return self.tensor.shape[-1] == 1
-
-    def _bernoulli_tensor(self) -> torch.Tensor:
-        """Get the probability or logit of the positive/last class for a Bernoulli distribution."""
-        return self.tensor[..., -1]
-
     @override
     @property
     def unnormalized_probabilities(self) -> torch.Tensor:
@@ -90,8 +82,6 @@ class TorchCategoricalDistribution(
     @override
     @property
     def num_classes(self) -> int:
-        if self._is_bernoulli:
-            return 2
         return self.unnormalized_probabilities.shape[-1]
 
     @override
@@ -131,21 +121,13 @@ class TorchProbabilityCategoricalDistribution(TorchCategoricalDistribution):
             msg = "probabilities must have at least one dimension."
             raise ValueError(msg)
 
-        if self._is_bernoulli:
-            if torch.any(self.tensor < 0) or torch.any(self.tensor > 1):
-                msg = "Bernoulli probabilities must be in the range [0, 1]."
-                raise ValueError(msg)
-        elif torch.any(self.tensor < 0):
+        if torch.any(self.tensor < 0):
             msg = "Relative probabilities must be non-negative."
             raise ValueError(msg)
 
     @override
     @property
     def unnormalized_probabilities(self) -> torch.Tensor:
-        if self._is_bernoulli:
-            p = self._bernoulli_tensor()
-            q = 1 - p
-            return torch.stack((q, p), dim=-1)
         return self.tensor
 
     @override
@@ -189,11 +171,6 @@ class TorchLogitCategoricalDistribution(TorchCategoricalDistribution):
     @override
     @property
     def logits(self) -> torch.Tensor:
-        if self._is_bernoulli:
-            return torch.cat(
-                (torch.zeros_like(self.tensor), self._bernoulli_tensor()),
-                dim=-1,
-            )
         return self.tensor
 
     @override

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
-from probly.predictor import LogitClassifier, predict_raw
+from probly.predictor import LogitClassifier, predict
 from probly.representation.array_like import ArrayLike
 from probly.representation.credal_set import (
     ProbabilityIntervalsCredalSet,
@@ -139,6 +139,6 @@ class EfficientCredalRepresenter[**In, Out: CategoricalDistribution, C: Probabil
                 "predictor.lower / predictor.upper before requesting a representation."
             )
             raise RuntimeError(msg)
-        logits = predict_raw(self.predictor, *args, **kwargs)
+        logits = predict(self.predictor, *args, **kwargs).logits
         packed = compute_efficient_credal_bounds(logits, self.predictor.lower, self.predictor.upper)
         return create_probability_intervals_from_lower_upper_array(packed)  # ty:ignore[invalid-return-type]

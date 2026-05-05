@@ -51,35 +51,12 @@ def test_zero_sum_relative_probabilities_return_nan() -> None:
     assert np.isnan(dist.probabilities).all()
 
 
-def test_bernoulli_validation_uses_unit_interval() -> None:
-    ArrayProbabilityCategoricalDistribution(np.array([[0.0], [0.5], [1.0]], dtype=float))
-
-    with pytest.raises(ValueError, match="Bernoulli probabilities"):
-        ArrayProbabilityCategoricalDistribution(np.array([[1.1]], dtype=float))
-
-
-def test_bernoulli_reports_two_classes() -> None:
-    dist = ArrayProbabilityCategoricalDistribution(np.array([[0.2], [0.8]], dtype=float))
-
-    assert dist.num_classes == 2
-
-
 def test_entropy_normalizes_relative_probabilities() -> None:
     probabilities = np.array([[2.0, 3.0, 5.0]], dtype=float)
     dist = ArrayProbabilityCategoricalDistribution(probabilities)
 
     normalized = probabilities / probabilities.sum(axis=-1, keepdims=True)
     expected = -np.sum(normalized * np.log(normalized), axis=-1)
-
-    np.testing.assert_allclose(dist.entropy(), expected)
-
-
-def test_entropy_bernoulli_formula() -> None:
-    probabilities = np.array([[0.25], [0.5], [0.75]], dtype=float)
-    dist = ArrayProbabilityCategoricalDistribution(probabilities)
-
-    p = probabilities[:, 0]
-    expected = -(p * np.log(p) + (1 - p) * np.log(1 - p))
 
     np.testing.assert_allclose(dist.entropy(), expected)
 
@@ -101,18 +78,6 @@ def test_sampling_relative_probabilities_matches_normalized_distribution() -> No
     expected = np.array([0.2, 0.3, 0.5], dtype=float)
 
     np.testing.assert_allclose(frequencies, expected, atol=0.02)
-
-
-def test_sampling_bernoulli_produces_binary_samples_with_correct_mean() -> None:
-    p = np.array([[0.3]], dtype=float)
-    dist = ArrayProbabilityCategoricalDistribution(p)
-
-    sample = dist.sample(num_samples=40_000, rng=np.random.default_rng(1))
-
-    assert isinstance(sample, ArraySample)
-    assert sample.array.shape == (40_000, 1)
-    assert np.all((sample.array == 0) | (sample.array == 1))
-    assert float(sample.array.mean()) == pytest.approx(0.3, abs=0.02)
 
 
 def test_getitem_cannot_index_class_axis_directly() -> None:

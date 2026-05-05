@@ -5,6 +5,8 @@ from __future__ import annotations
 from probly.lazy_types import FLAX_MODULE, LAPLACE_BASE, SKLEARN_MODULE, TORCH_MODULE
 
 from ._common import (
+    BernoulliDistributionPredictor,
+    BernoulliLogitDistributionPredictor,
     CategoricalDistributionPredictor,
     CredalPredictor,
     DirichletDistributionPredictor,
@@ -23,6 +25,8 @@ from ._common import (
 )
 
 # Aliases for common predictor types
+BinaryProbabilisticClassifier = BernoulliDistributionPredictor
+BinaryLogitClassifier = BernoulliLogitDistributionPredictor
 ProbabilisticClassifier = CategoricalDistributionPredictor
 LogitClassifier = LogitDistributionPredictor
 EvidentialPredictor = DirichletDistributionPredictor
@@ -47,6 +51,10 @@ def _(_: type[object]) -> None:
 
 
 __all__ = [
+    "BernoulliDistributionPredictor",
+    "BernoulliLogitDistributionPredictor",
+    "BinaryLogitClassifier",
+    "BinaryProbabilisticClassifier",
     "CategoricalDistributionPredictor",
     "CredalPredictor",
     "DirichletDistributionPredictor",
