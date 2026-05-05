@@ -297,6 +297,7 @@ experiments/**/*.pdf
 
 # Local data / model caches
 data/
+probly_cache/
 
 # Paper (synced via Overleaf git)
 paper/

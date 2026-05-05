@@ -1,0 +1,22 @@
+defaults:
+  - comparison: ???
+  - _self_
+
+wandb:
+  entity: "probly"
+  project: "test"
+
+seeds: [1, 2, 3]
+top_k: 4
+measure: default
+decomposition: total
+
+show: false
+
+cache:
+  mode: read   # read | refresh | off
+
+# null -> FIGURE_PATH; relative paths resolve from repo root.
+# bar_ranked.py task=sp must have written
+# bar_sp_<dataset>.ranking.json into the same directory.
+save_path: null

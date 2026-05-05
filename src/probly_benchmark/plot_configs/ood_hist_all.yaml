@@ -6,11 +6,15 @@ wandb:
   entity: "probly"
   project: "test"
 
-filename_prefix: "sp_arc"
 seeds: [1, 2, 3]
+bins: 50
+measure: default
+decomposition: epistemic
+
 show: false
 
 cache:
   mode: read   # read | refresh | off
 
-save_path: null   # null -> FIGURE_PATH; relative paths resolve from repo root
+# null -> FIGURE_PATH; relative paths resolve from repo root
+save_path: null

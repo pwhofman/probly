@@ -2,17 +2,39 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
-import tempfile
 from typing import Any
 import warnings
 
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
-import wandb
+
+from probly_benchmark.paths import FIGURE_PATH
+from probly_benchmark.plot import cache
 
 _METHOD_CONFIG_DIR = Path(__file__).parent.parent / "configs" / "method"
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+def resolve_save_path(save_path: str | None) -> Path:
+    """Resolve a ``save_path`` config value to an absolute output directory.
+
+    Args:
+        save_path: User-supplied save path, or ``None`` to fall back to
+            :data:`probly_benchmark.paths.FIGURE_PATH`. Absolute paths are used
+            as-is; relative paths are interpreted relative to the repository
+            root, which is convenient for landing figures in
+            ``paper_artifacts/<topic>/``.
+
+    Returns:
+        Absolute :class:`pathlib.Path` for the figure output directory.
+    """
+    if save_path is None:
+        return FIGURE_PATH
+    candidate = Path(save_path).expanduser()
+    if candidate.is_absolute():
+        return candidate
+    return _REPO_ROOT / candidate
 
 
 def resolve_label(entry: DictConfig) -> str:
@@ -42,31 +64,11 @@ def resolve_label(entry: DictConfig) -> str:
     return str(entry.name)
 
 
-def _get_summary_value(run: wandb.apis.public.Run, key: str) -> object:
-    """Retrieve a summary value, downloading the full JSON for large arrays.
-
-    wandb's public API returns a SummarySubDict placeholder for large arrays
-    rather than the actual data. This helper falls back to wandb-summary.json
-    so callers always get the real value.
-
-    Args:
-        run: A wandb public API Run object.
-        key: Summary key to retrieve.
-
-    Returns:
-        The summary value, or ``None`` if the key is absent.
-    """
-    value = run.summary.get(key)
-    if value is None:
-        return None
-    raw = run.summary._json_dict.get(key)  # noqa: SLF001
-    if isinstance(raw, dict) and raw.get("_type") == "large-array":
-        with tempfile.TemporaryDirectory() as tmpdir:
-            run.file("wandb-summary.json").download(replace=True, root=tmpdir)
-            with Path(tmpdir, "wandb-summary.json").open() as fh:
-                full_summary = json.load(fh)
-        return full_summary.get(key)
-    return value
+def _as_array(value: Any) -> np.ndarray:  # noqa: ANN401
+    """Convert a cached or wandb summary value to a float ndarray."""
+    if isinstance(value, np.ndarray):
+        return value.astype(float, copy=False)
+    return np.asarray(value, dtype=float)
 
 
 def fetch_sp_runs(
@@ -78,22 +80,24 @@ def fetch_sp_runs(
     default_seeds: list[int] | None = None,
     measure: str = "default",
     decomposition: str = "total",
+    cache_mode: cache.CacheMode = "read",
 ) -> list[dict[str, Any]]:
-    """Fetch selective prediction results from wandb for one method entry.
+    """Fetch selective prediction results from wandb (with caching) for one method.
 
     Args:
         entity: W&B entity (username or team name).
         project: W&B project name.
         method_entry: One element from ``cfg.methods``. Must have a ``name`` field.
-            Optionally ``calibration`` (maps to ``config.calibration.name``),
-            ``seeds`` (overrides ``default_seeds``), ``measure``, and
+            Optionally ``calibration``, ``seeds``, ``measure``, and
             ``decomposition`` (override the function-level defaults).
         dataset: Dataset name as stored in the run config (e.g. ``"cifar10"``).
-        base_model: Base model name as stored in the run config (e.g. ``"resnet18"``).
+        base_model: Base model name as stored in the run config.
         default_seeds: Seeds to filter on when the method entry has no ``seeds``
             field. ``None`` means all available seeds.
         measure: Uncertainty measure used when logging (e.g. ``"default"``).
         decomposition: Uncertainty decomposition used when logging (e.g. ``"total"``).
+        cache_mode: ``"read"`` (default), ``"refresh"``, or ``"off"`` (see
+            :mod:`probly_benchmark.plot.cache`).
 
     Returns:
         List of dicts, one per matching run, each with keys:
@@ -105,62 +109,41 @@ def fetch_sp_runs(
     Raises:
         RuntimeError: If no runs with selective prediction results are found.
     """
-    api = wandb.Api(timeout=60)
-
-    filters: dict[str, Any] = {
-        "config.method.name": method_entry.name,
-        "config.dataset": dataset,
-        "config.base_model": base_model,
-    }
-
-    seeds = method_entry.get("seeds") or default_seeds
-    if seeds is not None:
-        filters["config.seed"] = {"$in": list(seeds)}
-
-    if method_entry.get("calibration"):
-        filters["config.calibration.name"] = method_entry.calibration
-
-    filters["state"] = "finished"
-    runs = api.runs(f"{entity}/{project}", filters=filters, order="-created_at")
+    records = cache.fetch_with_cache(
+        entity,
+        project,
+        dataset=dataset,
+        base_model=base_model,
+        method_entry=method_entry,
+        default_seeds=default_seeds,
+        mode=cache_mode,
+    )
 
     entry_measure = method_entry.get("measure") or measure
     entry_decomp = method_entry.get("decomposition") or decomposition
     prefix = f"sp/{entry_measure}/{entry_decomp}"
 
-    seen_seeds: set[Any] = set()
-    results = []
-    for run in runs:
-        seed = run.config.get("seed")
-        if seed in seen_seeds:
-            continue
-        seen_seeds.add(seed)
-
-        bin_losses = run.summary.get(f"{prefix}/bin_losses")
-        auroc = run.summary.get(f"{prefix}/auroc")
+    results: list[dict[str, Any]] = []
+    for record in records:
+        seed = record.get("config", {}).get("seed")
+        summary = record.get("summary", {})
+        bin_losses = summary.get(f"{prefix}/bin_losses")
+        auroc = summary.get(f"{prefix}/auroc")
         if bin_losses is None or auroc is None:
             warnings.warn(
-                f"Run {run.id} ({run.name}) matched filters but has no selective "
-                "prediction results. Was selective_prediction.py run for this run?",
+                f"Run {record.get('run_id')} ({record.get('name')}) matched filters "
+                "but has no selective prediction results. Was selective_prediction.py "
+                "run for this run?",
                 stacklevel=2,
             )
             continue
         results.append(
             {
-                "bin_losses": np.array(bin_losses),
+                "bin_losses": _as_array(bin_losses),
                 "auroc": float(auroc),
                 "seed": seed,
             }
         )
-
-    if seeds is not None:
-        found_seeds = {r["seed"] for r in results}
-        for s in seeds:
-            if s not in found_seeds:
-                warnings.warn(
-                    f"No finished run found for method '{method_entry.name}' "
-                    f"seed={s} on {dataset}/{base_model} in {entity}/{project}.",
-                    stacklevel=2,
-                )
 
     if not results:
         msg = (
@@ -174,29 +157,45 @@ def fetch_sp_runs(
     return results
 
 
-def _collect_ood_scalar_metrics(run: wandb.apis.public.Run, prefix: str) -> dict[str, float]:
-    """Collect all scalar summary values under ``prefix`` into a flat dict.
+def _discover_ood_datasets_from_summary(summary: dict[str, Any], measure: str, decomposition: str) -> list[str]:
+    """Return OOD dataset names that have ``ood_scores`` arrays in the summary."""
+    suffix = f"/{measure}/{decomposition}/ood_scores"
+    datasets: list[str] = []
+    for key in summary:
+        if key.startswith("ood/") and key.endswith(suffix):
+            middle = key[len("ood/") : -len(suffix)]
+            if "/" not in middle:
+                datasets.append(middle)
+    return sorted(datasets)
 
-    The ``prefix + "/"`` portion is stripped from the keys, and the score
-    arrays (ending in ``/ood_scores`` or ``/id_scores``) are excluded.
 
-    Args:
-        run: A wandb public API Run object.
-        prefix: The summary key prefix to filter on, e.g.
-            ``"ood/cifar100/default/epistemic"``.
+def _discover_ood_datasets_with_metrics(summary: dict[str, Any], measure: str, decomposition: str) -> list[str]:
+    """Discover OOD datasets that have any scalar metric under the prefix.
 
-    Returns:
-        Mapping from metric name (without the prefix) to float value.
+    Used as a fallback when score arrays are missing (placeholders that wandb
+    did not materialize) but scalar metrics like ``auroc`` are present.
     """
+    needle = f"/{measure}/{decomposition}/"
+    datasets: set[str] = set()
+    for key in summary:
+        if not key.startswith("ood/") or needle not in key:
+            continue
+        middle = key[len("ood/") : key.index(needle)]
+        if "/" not in middle:
+            datasets.add(middle)
+    return sorted(datasets)
+
+
+def _collect_ood_scalar_metrics_from_summary(summary: dict[str, Any], prefix: str) -> dict[str, float]:
+    """Collect scalar OOD metric values under a prefix from a cached summary."""
     strip = prefix + "/"
     metrics: dict[str, float] = {}
-    for key in run.summary.keys():  # noqa: SIM118
+    for key, value in summary.items():
         if not key.startswith(strip):
             continue
         suffix = key[len(strip) :]
         if suffix in ("ood_scores", "id_scores"):
             continue
-        value = run.summary.get(key)
         if value is None:
             continue
         try:
@@ -204,31 +203,6 @@ def _collect_ood_scalar_metrics(run: wandb.apis.public.Run, prefix: str) -> dict
         except (TypeError, ValueError):
             continue
     return metrics
-
-
-def _discover_ood_datasets(run: wandb.apis.public.Run, measure: str, decomposition: str) -> list[str]:
-    """Return OOD dataset names that have results logged on this run.
-
-    Scans summary keys for the pattern
-    ``ood/{ood_dataset}/{measure}/{decomposition}/ood_scores`` and returns
-    the unique ``ood_dataset`` values found.
-
-    Args:
-        run: A wandb public API Run object.
-        measure: Uncertainty measure segment used in the key (e.g. ``"default"``).
-        decomposition: Uncertainty decomposition segment (e.g. ``"epistemic"``).
-
-    Returns:
-        Sorted list of OOD dataset name strings.
-    """
-    suffix = f"/{measure}/{decomposition}/ood_scores"
-    datasets: list[str] = []
-    for key in run.summary.keys():  # noqa: SIM118
-        if key.startswith("ood/") and key.endswith(suffix):
-            middle = key[len("ood/") : -len(suffix)]
-            if "/" not in middle:
-                datasets.append(middle)
-    return sorted(datasets)
 
 
 def fetch_ood_runs(
@@ -241,32 +215,34 @@ def fetch_ood_runs(
     default_seeds: list[int] | None = None,
     measure: str = "default",
     decomposition: str = "epistemic",
+    cache_mode: cache.CacheMode = "read",
 ) -> dict[str, list[dict[str, Any]]]:
-    """Fetch OOD detection results from wandb for one method entry.
+    """Fetch OOD detection results from wandb (with caching) for one method.
 
     All OOD dataset results live on the same training run as separate summary
     key prefixes ``ood/{ood_dataset}/{measure}/{decomposition}/...``, so a
-    single API query retrieves data for every OOD dataset.
+    single cached record covers every OOD dataset for one ``(method, seed)``.
 
     Args:
         entity: W&B entity (username or team name).
         project: W&B project name.
         method_entry: One element from ``cfg.methods``. Must have a ``name`` field.
-            Optionally ``calibration`` (maps to ``config.calibration.name``),
-            ``seeds`` (overrides ``default_seeds``), ``measure``, and
+            Optionally ``calibration``, ``seeds``, ``measure``, and
             ``decomposition`` (override the function-level defaults).
         dataset: In-distribution dataset name as stored in the run config.
         base_model: Base model name as stored in the run config.
-        ood_datasets: OOD dataset names to collect. ``None`` means auto-discover
-            all datasets that have results logged on the fetched runs.
+        ood_datasets: OOD dataset names to collect. ``None`` means use every
+            dataset present in the cached/fetched runs.
         default_seeds: Seeds to filter on when the method entry has no ``seeds``
             field. ``None`` means all available seeds.
         measure: Uncertainty measure used when logging (e.g. ``"default"``).
         decomposition: Uncertainty decomposition used when logging (e.g.
             ``"epistemic"``).
+        cache_mode: ``"read"`` (default), ``"refresh"``, or ``"off"`` (see
+            :mod:`probly_benchmark.plot.cache`).
 
     Returns:
-        Dict mapping each OOD dataset name to a list of run-level dicts.  Each
+        Dict mapping each OOD dataset name to a list of run-level dicts. Each
         dict has keys:
 
         - ``id_scores``: ``np.ndarray`` of in-distribution uncertainty scores.
@@ -279,77 +255,55 @@ def fetch_ood_runs(
     Raises:
         RuntimeError: If no runs with OOD results are found for any dataset.
     """
-    api = wandb.Api(timeout=60)
-
-    filters: dict[str, Any] = {
-        "config.method.name": method_entry.name,
-        "config.dataset": dataset,
-        "config.base_model": base_model,
-    }
-
-    seeds = method_entry.get("seeds") or default_seeds
-    if seeds is not None:
-        filters["config.seed"] = {"$in": list(seeds)}
-
-    if method_entry.get("calibration"):
-        filters["config.calibration.name"] = method_entry.calibration
-
-    filters["state"] = "finished"
-    runs = api.runs(f"{entity}/{project}", filters=filters, order="-created_at")
+    records = cache.fetch_with_cache(
+        entity,
+        project,
+        dataset=dataset,
+        base_model=base_model,
+        method_entry=method_entry,
+        default_seeds=default_seeds,
+        mode=cache_mode,
+    )
 
     entry_measure = method_entry.get("measure") or measure
     entry_decomp = method_entry.get("decomposition") or decomposition
     id_scores_key = f"ood/{entry_measure}/{entry_decomp}/id_scores"
 
-    seen_seeds: set[Any] = set()
+    empty = np.empty((0,), dtype=float)
     results_by_dataset: dict[str, list[dict[str, Any]]] = {}
-
-    for run in runs:
-        seed = run.config.get("seed")
-        if seed in seen_seeds:
-            continue
-        seen_seeds.add(seed)
-
-        id_scores_raw = _get_summary_value(run, id_scores_key)
-        if id_scores_raw is None:
-            warnings.warn(
-                f"Run {run.id} ({run.name}) matched filters but has no OOD id_scores. "
-                "Was ood_detection.py run for this run?",
-                stacklevel=2,
-            )
-            continue
-        id_scores = np.array(id_scores_raw)
+    for record in records:
+        seed = record.get("config", {}).get("seed")
+        summary = record.get("summary", {})
+        id_scores_raw = summary.get(id_scores_key)
+        id_scores = _as_array(id_scores_raw) if id_scores_raw is not None else empty
 
         available = (
-            ood_datasets if ood_datasets is not None else _discover_ood_datasets(run, entry_measure, entry_decomp)
+            ood_datasets
+            if ood_datasets is not None
+            else _discover_ood_datasets_from_summary(summary, entry_measure, entry_decomp)
         )
+        # Fall back to scalar-only OOD datasets discovered from the summary
+        # (e.g. only auroc/aupr/fpr were logged because score arrays were
+        # placeholders). This keeps bar plots working for those runs.
+        if not available:
+            available = _discover_ood_datasets_with_metrics(summary, entry_measure, entry_decomp)
+
         for ood_ds in available:
             ood_prefix = f"ood/{ood_ds}/{entry_measure}/{entry_decomp}"
-            ood_scores_raw = _get_summary_value(run, f"{ood_prefix}/ood_scores")
-            if ood_scores_raw is None:
+            ood_scores_raw = summary.get(f"{ood_prefix}/ood_scores")
+            metrics = _collect_ood_scalar_metrics_from_summary(summary, ood_prefix)
+            auroc_raw = summary.get(f"{ood_prefix}/auroc")
+            if ood_scores_raw is None and not metrics and auroc_raw is None:
                 continue
-            metrics = _collect_ood_scalar_metrics(run, ood_prefix)
-            auroc_key = f"{ood_prefix}/auroc"
             results_by_dataset.setdefault(ood_ds, []).append(
                 {
                     "id_scores": id_scores,
-                    "ood_scores": np.array(ood_scores_raw),
-                    "auroc": float(run.summary[auroc_key]) if run.summary.get(auroc_key) is not None else None,
+                    "ood_scores": _as_array(ood_scores_raw) if ood_scores_raw is not None else empty,
+                    "auroc": float(auroc_raw) if auroc_raw is not None else None,
                     "metrics": metrics,
                     "seed": seed,
                 }
             )
-
-    if seeds is not None:
-        for ood_ds, ds_results in results_by_dataset.items():
-            found_seeds = {r["seed"] for r in ds_results}
-            for s in seeds:
-                if s not in found_seeds:
-                    warnings.warn(
-                        f"No finished run found for method '{method_entry.name}' "
-                        f"seed={s} on {dataset}/{base_model}/{ood_ds} in {entity}/{project}.",
-                        stacklevel=2,
-                    )
 
     if not results_by_dataset:
         msg = (

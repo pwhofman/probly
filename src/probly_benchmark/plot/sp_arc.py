@@ -10,8 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
-from probly_benchmark.paths import FIGURE_PATH
-from probly_benchmark.plot.utils import fetch_sp_runs, resolve_label
+from probly_benchmark.plot.utils import fetch_sp_runs, resolve_label, resolve_save_path
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -42,6 +41,7 @@ def main(cfg: DictConfig) -> Figure:
     base_model: str = cfg.get("base_model") or recipe.base_model
 
     fig, ax = plt.subplots()
+    cache_mode = cfg.get("cache", DictConfig({})).get("mode", "read")
 
     for entry in cfg.methods:
         runs = fetch_sp_runs(
@@ -53,6 +53,7 @@ def main(cfg: DictConfig) -> Figure:
             list(cfg.seeds) if cfg.get("seeds") else None,
             measure=cfg.get("measure", "default"),
             decomposition=cfg.get("decomposition", "total"),
+            cache_mode=cache_mode,
         )
 
         bin_losses_stack = np.stack([r["bin_losses"] for r in runs])
@@ -81,8 +82,9 @@ def main(cfg: DictConfig) -> Figure:
     fig.tight_layout()
 
     if cfg.get("filename") and cfg.get("filename_prefix"):
-        FIGURE_PATH.mkdir(parents=True, exist_ok=True)
-        fig.savefig(FIGURE_PATH / f"{cfg.filename_prefix}_{cfg.filename}")
+        out_dir = resolve_save_path(cfg.get("save_path"))
+        out_dir.mkdir(parents=True, exist_ok=True)
+        fig.savefig(out_dir / f"{cfg.filename_prefix}_{cfg.filename}")
     if cfg.get("show", False):
         plt.show()
 

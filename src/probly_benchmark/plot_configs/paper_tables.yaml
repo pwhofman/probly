@@ -1,0 +1,65 @@
+defaults:
+  - _self_
+
+# One or more directories to scan for bar_*.ranking.json files.
+# Pass a single string (one dir) or a list (e.g. cifar10 + imagenet output dirs).
+inputs: ???
+
+# Where to write the combined .tex files.
+save_path: ???
+
+# Number of decimals on each cell.
+decimals: 3
+
+# Method grouping. Each group becomes a gray-banded section with a bold
+# heading; methods are listed in the order given (only methods with data
+# are rendered). Methods not mentioned in any group fall into an
+# auto-appended "Other" section at the end.
+# Set ``groups: []`` to render a flat table without group headers.
+groups:
+  - name: "Second-order methods"
+    methods:
+      - dropout
+      - dropconnect
+      - bayesian
+      - laplace
+      - ensemble
+      - batchensemble
+      - subensemble
+      - dare
+      - duq
+      - ddu
+      - sngp
+      - evidential_classification
+      - posterior_network
+      - natural_posterior_network
+      - het_net
+  - name: "Credal-set methods"
+    methods:
+      - credal_wrapper
+      - credal_ensembling
+      - credal_bnn
+      - credal_net
+      - credal_relative_likelihood
+      - efficient_credal_prediction
+
+# Method (config name) -> bibtex key. Methods without an entry render as "---"
+# in the citation column. Keys here mirror methods_table.tex.
+citations:
+  dropout: galDropout2016
+  dropconnect: wanDropConnect2013
+  bayesian: blundellWeightUncertainty2015
+  laplace: daxbergerLaplaceRedux2021
+  ensemble: lakshminarayananDeepEnsembles2017
+  batchensemble: wenBatchEnsemble2020
+  dare: deMathelinDARE2023
+  evidential_classification: sensoyEvidentialDeepLearning2018
+  posterior_network: charpentierPosteriorNetwork2020
+  natural_posterior_network: charpentierNaturalPosteriorNetwork2022
+  het_net: collierHETNet2021
+  credal_wrapper: wangCredalWrapper2025
+  credal_ensembling: nguyenCredalEnsembling2025
+  credal_bnn: caprioCredalBNNs2024
+  credal_net: wangCredalIntervalNNs2025
+  credal_relative_likelihood: loehrCredalPrediction2025
+  efficient_credal_prediction: hofmanEfficientCredalPrediction2026

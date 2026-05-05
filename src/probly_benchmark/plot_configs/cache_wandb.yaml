@@ -1,0 +1,12 @@
+defaults:
+  - comparison: ???
+  - _self_
+
+wandb:
+  entity: "probly"
+  project: "test"
+
+seeds: [1, 2, 3]
+
+cache:
+  mode: refresh   # read | refresh | off

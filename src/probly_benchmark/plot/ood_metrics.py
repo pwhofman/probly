@@ -10,8 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
-from probly_benchmark.paths import FIGURE_PATH
-from probly_benchmark.plot.utils import fetch_ood_runs, resolve_label
+from probly_benchmark.plot.utils import fetch_ood_runs, resolve_label, resolve_save_path
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -177,6 +176,8 @@ def main(cfg: DictConfig) -> dict[str, tuple[Figure, str]]:
     measure: str = cfg.get("measure", "default")
     decomposition: str = cfg.get("decomposition", "epistemic")
 
+    cache_mode = cfg.get("cache", DictConfig({})).get("mode", "read")
+
     # Fetch all runs for every method once; results keyed by method name then ood_dataset.
     runs_by_method: dict[str, dict[str, list[dict]]] = {}
     for entry in cast("list[DictConfig]", cfg.methods):
@@ -190,6 +191,7 @@ def main(cfg: DictConfig) -> dict[str, tuple[Figure, str]]:
             default_seeds=list(cfg.seeds) if cfg.get("seeds") else None,
             measure=measure,
             decomposition=decomposition,
+            cache_mode=cache_mode,
         )
 
     # Collect the union of OOD datasets found across all methods.
@@ -205,11 +207,12 @@ def main(cfg: DictConfig) -> dict[str, tuple[Figure, str]]:
         table = _make_latex_table(method_labels, per_method, metric_keys, higher_is_better)
 
         if cfg.get("filename") and cfg.get("filename_prefix"):
-            FIGURE_PATH.mkdir(parents=True, exist_ok=True)
+            out_dir = resolve_save_path(cfg.get("save_path"))
+            out_dir.mkdir(parents=True, exist_ok=True)
             stem = Path(cfg.filename).stem
             prefix = cfg.filename_prefix
-            fig.savefig(FIGURE_PATH / f"{prefix}_{stem}_{ood_ds}.pdf")
-            (FIGURE_PATH / f"{prefix}_{stem}_{ood_ds}.tex").write_text(table)
+            fig.savefig(out_dir / f"{prefix}_{stem}_{ood_ds}.pdf")
+            (out_dir / f"{prefix}_{stem}_{ood_ds}.tex").write_text(table)
 
         output[ood_ds] = (fig, table)
 

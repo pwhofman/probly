@@ -11,3 +11,8 @@ bins: 50
 seeds: [1, 2, 3]
 show: false
 # ood_datasets: [mnist, svhn, textures, places365]  # leave unset to auto-discover from wandb runs
+
+cache:
+  mode: read   # read | refresh | off
+
+save_path: null   # null -> FIGURE_PATH; relative paths resolve from repo root

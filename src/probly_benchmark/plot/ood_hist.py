@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
+import warnings
 
 import hydra
 import matplotlib.pyplot as plt
@@ -11,8 +12,7 @@ import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
 from probly.plot.ood import plot_histogram
-from probly_benchmark.paths import FIGURE_PATH
-from probly_benchmark.plot.utils import fetch_ood_runs, resolve_label
+from probly_benchmark.plot.utils import fetch_ood_runs, resolve_label, resolve_save_path
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -44,6 +44,7 @@ def main(cfg: DictConfig) -> list[Figure]:
     bins: int = cfg.get("bins", 50)
     measure: str = cfg.get("measure", "default")
     decomposition: str = cfg.get("decomposition", "epistemic")
+    cache_mode = cfg.get("cache", DictConfig({})).get("mode", "read")
     figures: list[Figure] = []
 
     for entry in cfg.methods:
@@ -57,7 +58,18 @@ def main(cfg: DictConfig) -> list[Figure]:
             default_seeds=list(cfg.seeds) if cfg.get("seeds") else None,
             measure=measure,
             decomposition=decomposition,
+            cache_mode=cache_mode,
         )
+
+        # Drop OOD datasets where score arrays are empty (e.g. wandb large-array
+        # placeholders that never got their h5 payload uploaded).
+        runs_by_ds = {ds: runs for ds, runs in runs_by_ds.items() if any(r["ood_scores"].size > 0 for r in runs)}
+        if not runs_by_ds:
+            warnings.warn(
+                f"Skipping {entry.name}: no OOD score arrays available (only scalar metrics).",
+                stacklevel=2,
+            )
+            continue
 
         available_ds = sorted(runs_by_ds)
         n_ds = len(available_ds)
@@ -94,8 +106,9 @@ def main(cfg: DictConfig) -> list[Figure]:
         figures.append(fig)
 
         if cfg.get("filename_prefix"):
-            FIGURE_PATH.mkdir(parents=True, exist_ok=True)
-            fig.savefig(FIGURE_PATH / f"{cfg.filename_prefix}_{entry.name}.pdf")
+            out_dir = resolve_save_path(cfg.get("save_path"))
+            out_dir.mkdir(parents=True, exist_ok=True)
+            fig.savefig(out_dir / f"{cfg.filename_prefix}_{entry.name}.pdf")
 
     if cfg.get("show", False):
         plt.show()
