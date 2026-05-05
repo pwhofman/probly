@@ -1323,7 +1323,9 @@ def main(cfg: DictConfig) -> None:
     seed = cfg.get("seed", None)
     utils.set_seed(seed)
 
-    run_name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}{utils.supervised_loss_name_suffix(cfg)}_{run_id}"
+    alpha_suffix = utils.credal_alpha_name_suffix(cfg)
+    loss_suffix = utils.supervised_loss_name_suffix(cfg)
+    run_name = f"{cfg.method.name}{alpha_suffix}_{cfg.base_model}_{cfg.dataset}{loss_suffix}_{run_id}"
     run = wandb.init(
         id=run_id,
         name=run_name,

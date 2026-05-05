@@ -24,6 +24,7 @@ from probly.method.ensemble import ensemble
 from probly.method.evidential.classification import evidential_classification
 from probly.method.evidential.regression import evidential_regression
 from probly.method.het_net import het_net
+import probly.method.laplace  # noqa: F401  # registers LaplaceRepresenter lazily
 from probly.method.sngp import sngp
 from probly.method.subensemble import subensemble
 
