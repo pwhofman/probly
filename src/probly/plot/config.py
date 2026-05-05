@@ -41,7 +41,12 @@ class PlotConfig:
     back to ``PlotConfig()`` when no config is provided.
     """
 
-    # General categorical palette
+    # General categorical palette. Extended past the original 7 entries so
+    # plots with up to ~15 categorical series (e.g. method overlays in the
+    # benchmark plots) avoid hue duplication via the wrap-around in
+    # :meth:`color`. Added colors are chosen to maximize hue separation
+    # against the existing 7 while staying within the same flat / material
+    # aesthetic family.
     categorical_palette: tuple[str, ...] = (
         "#1e88e5",  # blue
         "#ff0d57",  # pink-red
@@ -50,6 +55,14 @@ class PlotConfig:
         "#9b59b6",  # purple
         "#16a085",  # teal
         "#d35400",  # dark orange
+        "#34495e",  # slate
+        "#1abc9c",  # turquoise
+        "#e74c3c",  # alizarin red
+        "#f1c40f",  # sun yellow
+        "#00bcd4",  # cyan
+        "#795548",  # brown
+        "#cddc39",  # lime
+        "#6610f2",  # indigo
     )
     color_positive: str = "#ff0d57"  # pink-red
     color_negative: str = "#1e88e5"  # blue

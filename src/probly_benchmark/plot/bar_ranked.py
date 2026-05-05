@@ -21,17 +21,47 @@ from typing import TYPE_CHECKING, cast
 import warnings
 
 import hydra
+from matplotlib.patches import FancyBboxPatch, Rectangle
 import matplotlib.pyplot as plt
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
+from probly.plot.config import PlotConfig
 from probly_benchmark.plot import ood_groups
 from probly_benchmark.plot.utils import fetch_ood_runs, fetch_sp_runs, resolve_label, resolve_save_path
 
 if TYPE_CHECKING:
+    from matplotlib.axes import Axes
     from matplotlib.figure import Figure
 
 _CONFIG_DIR = Path(__file__).parent.parent / "configs"
+
+
+def _round_bar_corners(ax: Axes, *, rounding_size: float = 0.025) -> None:
+    """Replace plain ``Rectangle`` bar patches with rounded :class:`FancyBboxPatch`.
+
+    Gives every bar a subtle arc on its corners. ``rounding_size`` is in data
+    units along the y-axis; for AUROC / Acc-AUC bars (range ~[0, 1]) values
+    around 0.02-0.03 read as a gentle, modern look.
+    """
+    for patch in list(ax.patches):
+        if not isinstance(patch, Rectangle):
+            continue
+        x_left, y_bottom = patch.get_xy()
+        width = patch.get_width()
+        height = patch.get_height()
+        new = FancyBboxPatch(
+            (x_left, y_bottom),
+            abs(width),
+            abs(height),
+            boxstyle=f"round,pad=-0.0040,rounding_size={rounding_size}",
+            ec="none",
+            fc=patch.get_facecolor(),
+            mutation_aspect=1,
+            zorder=patch.get_zorder(),
+        )
+        patch.remove()
+        ax.add_patch(new)
 
 
 def _draw_bars(
@@ -53,20 +83,35 @@ def _draw_bars(
     Returns:
         The matplotlib Figure.
     """
+    plot_config = PlotConfig()
     labels = [entry["label"] for entry in ranking]
     means = [entry["mean"] for entry in ranking]
     stds = [entry["std"] for entry in ranking]
     x = np.arange(len(labels))
 
     fig, ax = plt.subplots(figsize=(max(6.0, 0.6 * len(labels) + 2.0), 4.5))
-    ax.bar(x, means, yerr=stds, capsize=4)
+    ax.bar(
+        x,
+        means,
+        yerr=stds,
+        capsize=4,
+        color=plot_config.color(0),
+        edgecolor="none",
+        error_kw={"ecolor": "#33333399", "elinewidth": 1.1},
+    )
+    _round_bar_corners(ax)
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=30, ha="right")
     ax.set_ylabel(ylabel)
     ax.set_title(title)
     if ylim is not None:
         ax.set_ylim(*ylim)
-    ax.yaxis.grid(visible=True, linestyle="--", alpha=0.5)
+    ax.yaxis.grid(
+        visible=True,
+        linestyle=plot_config.grid_linestyle,
+        alpha=plot_config.grid_alpha,
+        color=plot_config.color_gridline,
+    )
     ax.set_axisbelow(True)
     fig.tight_layout()
     return fig

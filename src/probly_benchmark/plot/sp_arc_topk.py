@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
+from probly.plot.config import PlotConfig
 from probly_benchmark.plot.utils import fetch_sp_runs, resolve_label, resolve_save_path
 
 if TYPE_CHECKING:
@@ -89,8 +90,9 @@ def main(cfg: DictConfig) -> Figure:
 
     cache_mode = cfg.get("cache", DictConfig({})).get("mode", "read")
 
+    plot_config = PlotConfig()
     fig, ax = plt.subplots()
-    for entry in selected:
+    for idx, entry in enumerate(selected):
         runs = fetch_sp_runs(
             cfg.wandb.entity,
             cfg.wandb.project,
@@ -111,21 +113,30 @@ def main(cfg: DictConfig) -> Figure:
         n_bins = len(mean_acc)
         rejection_rates = np.linspace(0.0, 1.0, n_bins)
         label = f"{resolve_label(entry)} (Acc-AUC={auroc_acc:.3f})"
+        color = plot_config.color(idx)
 
-        (line,) = ax.plot(rejection_rates, mean_acc, label=label)
+        ax.plot(rejection_rates, mean_acc, label=label, color=color, linewidth=plot_config.line_width)
         if len(runs) > 1:
             ax.fill_between(
                 rejection_rates,
                 mean_acc - std_acc,
                 mean_acc + std_acc,
-                alpha=0.2,
-                color=line.get_color(),
+                alpha=plot_config.fill_alpha,
+                color=color,
+                linewidth=0,
             )
 
     ax.set_xlabel("Rejection rate")
     ax.set_ylabel("Accuracy")
     ax.set_xlim(0.0, 1.0)
     ax.set_title(f"Top-{top_k} selective prediction on {dataset}")
+    ax.grid(
+        visible=True,
+        linestyle=plot_config.grid_linestyle,
+        alpha=plot_config.grid_alpha,
+        color=plot_config.color_gridline,
+    )
+    ax.set_axisbelow(True)
     ax.legend()
     fig.tight_layout()
 
