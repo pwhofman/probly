@@ -18,23 +18,23 @@ from probly.representation.credal_set.array import (
     ArrayDiscreteCredalSet,
     ArraySingletonCredalSet,
 )
-from probly.representation.distribution import ArrayCategoricalDistribution
+from probly.representation.distribution import ArrayProbabilityCategoricalDistribution
 
 
 def _convex(probs: np.ndarray) -> ArrayConvexCredalSet:
-    return ArrayConvexCredalSet(array=ArrayCategoricalDistribution(probs))
+    return ArrayConvexCredalSet(array=ArrayProbabilityCategoricalDistribution(probs))
 
 
 def _discrete(probs: np.ndarray) -> ArrayDiscreteCredalSet:
-    return ArrayDiscreteCredalSet(array=ArrayCategoricalDistribution(probs))
+    return ArrayDiscreteCredalSet(array=ArrayProbabilityCategoricalDistribution(probs))
 
 
 def _singleton(probs: np.ndarray) -> ArraySingletonCredalSet:
-    return ArraySingletonCredalSet(array=ArrayCategoricalDistribution(probs))
+    return ArraySingletonCredalSet(array=ArrayProbabilityCategoricalDistribution(probs))
 
 
-def _dist(probs: np.ndarray) -> ArrayCategoricalDistribution:
-    return ArrayCategoricalDistribution(probs)
+def _dist(probs: np.ndarray) -> ArrayProbabilityCategoricalDistribution:
+    return ArrayProbabilityCategoricalDistribution(probs)
 
 
 class TestStrict:
@@ -223,7 +223,7 @@ class TestTorchParity:
         torch = pytest.importorskip("torch")
         from probly.representation.credal_set.torch import TorchConvexCredalSet  # noqa: PLC0415
         from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
-            TorchCategoricalDistribution,
+            TorchProbabilityCategoricalDistribution,
         )
 
         v = np.array(
@@ -234,9 +234,9 @@ class TestTorchParity:
         )
         targets = np.array([[0.45, 0.45, 0.1], [0.5, 0.4, 0.1]])
         np_cs = _convex(v)
-        tc_cs = TorchConvexCredalSet(tensor=TorchCategoricalDistribution(torch.as_tensor(v)))
+        tc_cs = TorchConvexCredalSet(tensor=TorchProbabilityCategoricalDistribution(torch.as_tensor(v)))
         np_t = _dist(targets)
-        tc_t = TorchCategoricalDistribution(torch.as_tensor(targets))
+        tc_t = TorchProbabilityCategoricalDistribution(torch.as_tensor(targets))
 
         assert convex_hull_coverage(np_cs, np_t) == pytest.approx(convex_hull_coverage(tc_cs, tc_t))
         assert convex_hull_coverage(np_cs, np_t, epsilon=0.3) == pytest.approx(
