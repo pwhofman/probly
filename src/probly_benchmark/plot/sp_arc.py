@@ -51,6 +51,8 @@ def main(cfg: DictConfig) -> Figure:
             dataset,
             base_model,
             list(cfg.seeds) if cfg.get("seeds") else None,
+            measure=cfg.get("measure", "default"),
+            decomposition=cfg.get("decomposition", "total"),
         )
 
         bin_losses_stack = np.stack([r["bin_losses"] for r in runs])
