@@ -18,8 +18,8 @@ from ._common import (
     ordinal_conditional_variance,
     ordinal_entropy,
     ordinal_entropy_of_expected_predictive_distribution,
-    ordinal_integer_variance_aleatoric,
-    ordinal_integer_variance_total,
+    categorical_variance_aleatoric,
+    categorical_variance_total,
     ordinal_mutual_information_entropy,
     ordinal_mutual_information_variance,
     ordinal_variance,
@@ -55,8 +55,8 @@ from .array import (  # noqa: F401  (registers numpy implementations)
 @ordinal_mutual_information_entropy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @ordinal_mutual_information_variance.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @ordinal_variance_of_expected_predictive_distribution.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@ordinal_integer_variance_total.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@ordinal_integer_variance_aleatoric.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@categorical_variance_total.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@categorical_variance_aleatoric.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @labelwise_entropy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @labelwise_variance.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @labelwise_entropy_of_expected_predictive_distribution.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
@@ -83,8 +83,8 @@ __all__ = [
     "ordinal_conditional_variance",
     "ordinal_entropy",
     "ordinal_entropy_of_expected_predictive_distribution",
-    "ordinal_integer_variance_aleatoric",
-    "ordinal_integer_variance_total",
+    "categorical_variance_aleatoric",
+    "categorical_variance_total",
     "ordinal_mutual_information_entropy",
     "ordinal_mutual_information_variance",
     "ordinal_variance",

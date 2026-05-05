@@ -9,7 +9,7 @@ torch = pytest.importorskip("torch")
 
 from probly.quantification import (  # noqa: E402
     CategoricalVarianceDecomposition,
-    GaussianVarianceDecomposition,
+    SecondOrderVarianceDecomposition,
     LabelwiseBinaryEntropyDecomposition,
     LabelwiseBinaryVarianceDecomposition,
     OrdinalEntropyDecomposition,
@@ -146,7 +146,7 @@ def test_torch_results_match_numpy(cls) -> None:
 
 def test_torch_gaussian_variance_decomposition_values() -> None:
     sample = _gaussian_sample()
-    d = GaussianVarianceDecomposition(sample)
+    d = SecondOrderVarianceDecomposition(sample)
 
     expected_au = torch.tensor([0.5], dtype=torch.float64)
     expected_eu = torch.tensor([np.var([1.0, 2.0, 3.0], ddof=0)], dtype=torch.float64)
@@ -158,13 +158,13 @@ def test_torch_gaussian_variance_decomposition_values() -> None:
 
 def test_torch_gaussian_variance_decomposition_is_additive() -> None:
     sample = _gaussian_sample()
-    d = GaussianVarianceDecomposition(sample)
+    d = SecondOrderVarianceDecomposition(sample)
     torch.testing.assert_close(d.total, d.aleatoric + d.epistemic)
 
 
 def test_torch_identical_gaussian_has_zero_epistemic() -> None:
     sample = _identical_gaussian_sample()
-    d = GaussianVarianceDecomposition(sample)
+    d = SecondOrderVarianceDecomposition(sample)
     torch.testing.assert_close(d.epistemic, torch.zeros_like(d.epistemic), atol=1e-12, rtol=0.0)
 
 

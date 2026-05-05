@@ -24,8 +24,8 @@ from ._common import (
     ordinal_conditional_variance,
     ordinal_entropy,
     ordinal_entropy_of_expected_predictive_distribution,
-    ordinal_integer_variance_aleatoric,
-    ordinal_integer_variance_total,
+    categorical_variance_aleatoric,
+    categorical_variance_total,
     ordinal_mutual_information_entropy,
     ordinal_mutual_information_variance,
     ordinal_variance,
@@ -153,7 +153,7 @@ def torch_categorical_sample_ordinal_mutual_information_entropy(
     ) - torch_categorical_sample_ordinal_conditional_entropy(sample, base)
 
 
-@ordinal_integer_variance_total.register(TorchCategoricalDistributionSample)
+@categorical_variance_total.register(TorchCategoricalDistributionSample)
 def torch_categorical_sample_ordinal_integer_variance_total(
     sample: TorchCategoricalDistributionSample,
     base: LogBase = None,  # noqa: ARG001
@@ -167,7 +167,7 @@ def torch_categorical_sample_ordinal_integer_variance_total(
     return torch.sum(((labels - mu) ** 2) * expected_p, dim=-1)
 
 
-@ordinal_integer_variance_aleatoric.register(TorchCategoricalDistributionSample)
+@categorical_variance_aleatoric.register(TorchCategoricalDistributionSample)
 def torch_categorical_sample_ordinal_integer_variance_aleatoric(
     sample: TorchCategoricalDistributionSample,
     base: LogBase = None,  # noqa: ARG001

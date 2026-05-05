@@ -7,12 +7,12 @@ from typing import TYPE_CHECKING, override
 
 from probly.quantification.decomposition.decomposition import AdditiveDecomposition
 from probly.quantification.measure.ordinal._common import (
-    ordinal_integer_variance_aleatoric,
-    ordinal_integer_variance_total,
+    categorical_variance_aleatoric,
+    categorical_variance_total,
 )
 from probly.quantification.measure.variance._common import (
     conditional_variance,
-    mutual_information,
+    mutual_information_variance,
     variance_of_expected_predictive_distribution,
 )
 
@@ -47,11 +47,11 @@ class SecondOrderVarianceDecomposition[T](AdditiveDecomposition[T, T, T]):
     @property
     def _epistemic(self) -> T:
         """The epistemic variance (variance of the means over the ensemble/samples)."""
-        return mutual_information(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
+        return mutual_information_variance(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
-class OrdinalIntegerVarianceDecomposition[T](AdditiveDecomposition[T, T, T]):
+class CategoricalVarianceDecomposition[T](AdditiveDecomposition[T, T, T]):
     """Variance decomposition for integer-encoded categorical samples."""
 
     distribution: SecondOrderDistributionLike
@@ -61,14 +61,11 @@ class OrdinalIntegerVarianceDecomposition[T](AdditiveDecomposition[T, T, T]):
     @property
     def _total(self) -> T:
         """The total variance (overall predictive uncertainty)."""
-        return ordinal_integer_variance_total(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
+        return categorical_variance_total(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
 
     @override
     @property
     def _aleatoric(self) -> T:
         """The aleatoric variance (expected variance over the ensemble/samples)."""
-        return ordinal_integer_variance_aleatoric(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
+        return categorical_variance_aleatoric(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
 
-
-CategoricalVarianceDecomposition = OrdinalIntegerVarianceDecomposition
-GaussianVarianceDecomposition = SecondOrderVarianceDecomposition

@@ -41,7 +41,7 @@ def conditional_variance(distribution: SecondOrderDistributionLike, base: LogBas
 
 
 @flexdispatch
-def mutual_information(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
+def mutual_information_variance(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
     """Compute the mutual information of a distribution."""
     msg = f"Mutual information is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)

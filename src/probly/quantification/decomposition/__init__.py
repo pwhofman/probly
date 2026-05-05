@@ -22,8 +22,7 @@ from .ordinal import (
     OrdinalVarianceDecomposition,
 )
 from .variance import (
-    GaussianVarianceDecomposition,
-    OrdinalIntegerVarianceDecomposition,
+    CategoricalVarianceDecomposition,
     SecondOrderVarianceDecomposition,
 )
 from .zero_one import SecondOrderZeroOneDecomposition
@@ -51,7 +50,7 @@ __all__ = [
     "LabelwiseBinaryEntropyDecomposition",
     "LabelwiseBinaryVarianceDecomposition",
     "OrdinalEntropyDecomposition",
-    "OrdinalIntegerVarianceDecomposition",
+    "CategoricalVarianceDecomposition",
     "OrdinalVarianceDecomposition",
     "SecondOrderEntropyDecomposition",
     "SecondOrderVarianceDecomposition",

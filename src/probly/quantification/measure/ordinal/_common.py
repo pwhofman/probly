@@ -76,14 +76,14 @@ def ordinal_conditional_entropy(distribution: SecondOrderDistributionLike, base:
 
 
 @flexdispatch
-def ordinal_integer_variance_total(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
+def categorical_variance_total(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
     """Compute the total variance of an integer-encoded categorical sample."""
     msg = f"Ordinal integer variance total is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)
 
 
 @flexdispatch
-def ordinal_integer_variance_aleatoric(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
+def categorical_variance_aleatoric(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
     """Compute the aleatoric variance of an integer-encoded categorical sample."""
     msg = f"Ordinal integer variance aleatoric is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)

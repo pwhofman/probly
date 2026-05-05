@@ -8,7 +8,7 @@ from scipy.stats import entropy as scipy_entropy
 
 from probly.quantification import (
     CategoricalVarianceDecomposition,
-    GaussianVarianceDecomposition,
+    SecondOrderVarianceDecomposition,
     LabelwiseBinaryEntropyDecomposition,
     LabelwiseBinaryVarianceDecomposition,
     OrdinalEntropyDecomposition,
@@ -17,16 +17,16 @@ from probly.quantification import (
 from probly.quantification.decomposition.ordinal import (
     categorical_variance_aleatoric,
     categorical_variance_total,
-    gaussian_variance_aleatoric,
-    gaussian_variance_epistemic,
-    labelwise_binary_entropy_aleatoric,
-    labelwise_binary_entropy_total,
-    labelwise_binary_variance_aleatoric,
-    labelwise_binary_variance_total,
-    ordinal_binary_entropy_aleatoric,
-    ordinal_binary_entropy_total,
-    ordinal_binary_variance_aleatoric,
-    ordinal_binary_variance_total,
+    conditional_variance,
+    mutual_information_variance,
+    labelwise_conditional_entropy,
+    labelwise_entropy_of_expected_predictive_distribution,
+    labelwise_conditional_variance,
+    labelwise_variance_of_expected_predictive_distribution,
+    ordinal_conditional_entropy,
+    ordinal_entropy_of_expected_predictive_distribution,
+    ordinal_conditional_variance,
+    ordinal_variance_of_expected_predictive_distribution,
 )
 from probly.quantification.measure.ordinal import labelwise_entropy, labelwise_variance
 from probly.quantification.notion import AleatoricUncertainty, EpistemicUncertainty, TotalUncertainty
@@ -194,20 +194,20 @@ def test_standalone_measure_functions_match_decomposition() -> None:
     sample = _categorical_sample()
 
     d_ord_ent = OrdinalEntropyDecomposition(sample)
-    np.testing.assert_allclose(ordinal_binary_entropy_total(sample), d_ord_ent.total)
-    np.testing.assert_allclose(ordinal_binary_entropy_aleatoric(sample), d_ord_ent.aleatoric)
+    np.testing.assert_allclose(ordinal_entropy_of_expected_predictive_distribution(sample), d_ord_ent.total)
+    np.testing.assert_allclose(ordinal_conditional_entropy(sample), d_ord_ent.aleatoric)
 
     d_ord_var = OrdinalVarianceDecomposition(sample)
-    np.testing.assert_allclose(ordinal_binary_variance_total(sample), d_ord_var.total)
-    np.testing.assert_allclose(ordinal_binary_variance_aleatoric(sample), d_ord_var.aleatoric)
+    np.testing.assert_allclose(ordinal_variance_of_expected_predictive_distribution(sample), d_ord_var.total)
+    np.testing.assert_allclose(ordinal_conditional_variance(sample), d_ord_var.aleatoric)
 
     d_lw_ent = LabelwiseBinaryEntropyDecomposition(sample)
-    np.testing.assert_allclose(labelwise_binary_entropy_total(sample), d_lw_ent.total)
-    np.testing.assert_allclose(labelwise_binary_entropy_aleatoric(sample), d_lw_ent.aleatoric)
+    np.testing.assert_allclose(labelwise_entropy_of_expected_predictive_distribution(sample), d_lw_ent.total)
+    np.testing.assert_allclose(labelwise_conditional_entropy(sample), d_lw_ent.aleatoric)
 
     d_lw_var = LabelwiseBinaryVarianceDecomposition(sample)
-    np.testing.assert_allclose(labelwise_binary_variance_total(sample), d_lw_var.total)
-    np.testing.assert_allclose(labelwise_binary_variance_aleatoric(sample), d_lw_var.aleatoric)
+    np.testing.assert_allclose(labelwise_variance_of_expected_predictive_distribution(sample), d_lw_var.total)
+    np.testing.assert_allclose(labelwise_conditional_variance(sample), d_lw_var.aleatoric)
 
     d_cat_var = CategoricalVarianceDecomposition(sample)
     np.testing.assert_allclose(categorical_variance_total(sample), d_cat_var.total)
@@ -216,7 +216,7 @@ def test_standalone_measure_functions_match_decomposition() -> None:
 
 def test_gaussian_variance_decomposition_values() -> None:
     sample = _gaussian_sample()
-    d = GaussianVarianceDecomposition(sample)
+    d = SecondOrderVarianceDecomposition(sample)
 
     expected_au = np.array([0.5])
     expected_eu = np.var(np.array([1.0, 2.0, 3.0]), ddof=0)
@@ -228,21 +228,21 @@ def test_gaussian_variance_decomposition_values() -> None:
 
 def test_gaussian_variance_decomposition_is_additive() -> None:
     sample = _gaussian_sample()
-    d = GaussianVarianceDecomposition(sample)
+    d = SecondOrderVarianceDecomposition(sample)
     np.testing.assert_allclose(d.total, d.aleatoric + d.epistemic, rtol=1e-12, atol=1e-12)
 
 
 def test_identical_gaussian_has_zero_epistemic() -> None:
     sample = _identical_gaussian_sample()
-    d = GaussianVarianceDecomposition(sample)
+    d = SecondOrderVarianceDecomposition(sample)
     np.testing.assert_allclose(d.epistemic, 0.0, atol=1e-12)
 
 
 def test_gaussian_standalone_functions_match_decomposition() -> None:
     sample = _gaussian_sample()
-    d = GaussianVarianceDecomposition(sample)
-    np.testing.assert_allclose(gaussian_variance_aleatoric(sample), d.aleatoric)
-    np.testing.assert_allclose(gaussian_variance_epistemic(sample), d.epistemic)
+    d = SecondOrderVarianceDecomposition(sample)
+    np.testing.assert_allclose(conditional_variance(sample), d.aleatoric)
+    np.testing.assert_allclose(mutual_information_variance(sample), d.epistemic)
 
 
 def test_ordinal_entropy_with_log_base() -> None:

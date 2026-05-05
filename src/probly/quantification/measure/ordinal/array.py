@@ -24,8 +24,8 @@ from ._common import (
     ordinal_conditional_variance,
     ordinal_entropy,
     ordinal_entropy_of_expected_predictive_distribution,
-    ordinal_integer_variance_aleatoric,
-    ordinal_integer_variance_total,
+    categorical_variance_aleatoric,
+    categorical_variance_total,
     ordinal_mutual_information_entropy,
     ordinal_mutual_information_variance,
     ordinal_variance,
@@ -158,7 +158,7 @@ def _integer_labels(num_classes: int) -> np.ndarray:
     return np.arange(1, num_classes + 1, dtype=float)
 
 
-@ordinal_integer_variance_total.register(ArrayCategoricalDistributionSample)
+@categorical_variance_total.register(ArrayCategoricalDistributionSample)
 def array_ordinal_integer_variance_total(
     sample: ArrayCategoricalDistributionSample,
     base: LogBase = None,  # noqa: ARG001
@@ -173,7 +173,7 @@ def array_ordinal_integer_variance_total(
     return np.sum(((labels - mu) ** 2) * expected_p, axis=-1)
 
 
-@ordinal_integer_variance_aleatoric.register(ArrayCategoricalDistributionSample)
+@categorical_variance_aleatoric.register(ArrayCategoricalDistributionSample)
 def array_ordinal_integer_variance_aleatoric(
     sample: ArrayCategoricalDistributionSample,
     base: LogBase = None,  # noqa: ARG001

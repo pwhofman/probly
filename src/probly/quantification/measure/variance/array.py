@@ -13,7 +13,7 @@ from probly.representation.sample.array import ArraySample
 from ._common import (
     LogBase,
     conditional_variance,
-    mutual_information,
+    mutual_information_variance,
     variance,
     variance_of_expected_predictive_distribution,
 )
@@ -39,7 +39,7 @@ def array_gaussian_sample_conditional_variance(
     return np.mean(sample.array.var, axis=sample.sample_axis)
 
 
-@mutual_information.register(ArrayGaussianDistributionSample)
+@mutual_information_variance.register(ArrayGaussianDistributionSample)
 def array_gaussian_sample_mutual_information(
     sample: ArrayGaussianDistributionSample,
     base: LogBase = None,  # noqa: ARG001
@@ -75,7 +75,7 @@ def array_sample_conditional_variance(
     return np.zeros_like(np.mean(sample.array, axis=sample.sample_axis))
 
 
-@mutual_information.register(ArraySample)
+@mutual_information_variance.register(ArraySample)
 def array_sample_mutual_information(
     sample: ArraySample,
     base: LogBase = None,  # noqa: ARG001
