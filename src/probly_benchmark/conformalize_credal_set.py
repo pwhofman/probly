@@ -12,15 +12,45 @@ import torch
 import wandb
 import wandb.util
 
+from probly.calibrator import calibrate
 from probly.method.conformal_credal_set import (
     conformal_inner_product,
     conformal_kullback_leibler,
     conformal_total_variation,
     conformal_wasserstein_distance,
 )
+from probly.predictor import LogitClassifier
 from probly_benchmark import calibration, conformal, data, metadata, utils
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.paths import CHECKPOINT_PATH
+
+
+class _MultiClassIdentityLogitModel(torch.nn.Module):
+    """Pass-through logit model registered only as a multi-class ``LogitClassifier``.
+
+    Workaround: probly's ``TorchIdentityLogitModel`` is registered as both
+    ``LogitClassifier`` and ``BinaryLogitClassifier``, so ``predict()`` resolves
+    to the Bernoulli handler for any multi-class input and produces a
+    ``(B, K, 2)`` distribution that breaks the conformal score computation.
+    """
+
+    def forward(self, logits: torch.Tensor) -> torch.Tensor:
+        """Return the input logits unchanged."""
+        return logits
+
+
+LogitClassifier.register(_MultiClassIdentityLogitModel)
+
+
+def _fit_credal_logit_conformalizer(
+    cfg: DictConfig,
+    logits: torch.Tensor,
+    targets: torch.Tensor,
+) -> torch.nn.Module:
+    """Wrap a multi-class identity model with the credal-set method and calibrate it."""
+    conformalizer = conformal.apply_conformal(_MultiClassIdentityLogitModel(), cfg)
+    calibrate(conformalizer, conformal.conformal_alpha(cfg), targets, logits)
+    return conformalizer
 
 
 def _conformal_tv(model: torch.nn.Module, **_: Any) -> torch.nn.Module:  # noqa: ANN401
@@ -199,7 +229,7 @@ def main(cfg: DictConfig) -> None:
         raise RuntimeError(msg)
 
     logits, targets = utils.collect_outputs_targets_raw(model, cal_loader, device, cfg.get("amp", False))
-    logit_conformalizer = conformal.fit_logit_conformalizer(cfg, logits, targets)
+    logit_conformalizer = _fit_credal_logit_conformalizer(cfg, logits, targets)
 
     metrics = conformal.extract_conformal_metrics(cfg, logit_conformalizer)
     log_metrics = {f"conformal/{key}": value for key, value in metrics.items()}
