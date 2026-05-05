@@ -16,10 +16,6 @@ if TYPE_CHECKING:
 class SubensemblePredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
     """Protocol for subensemble predictors."""
 
-    @classmethod
-    def __instancehook__(cls, instance: object) -> bool:
-        return super().__instancehook__(instance)
-
 
 @flexdispatch
 def subensemble_generator[**In, H, Out](

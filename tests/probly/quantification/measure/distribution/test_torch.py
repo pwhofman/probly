@@ -11,16 +11,18 @@ from torch.distributions.kl import kl_divergence
 
 from probly.quantification.measure.distribution import (
     conditional_entropy,
+    dempster_shafer_uncertainty,
     entropy,
     entropy_of_expected_predictive_distribution,
     expected_max_probability_complement,
     max_disagreement,
     max_probability_complement_of_expected,
     mutual_information,
+    vacuity,
 )
 from probly.representation.distribution.torch_categorical import (
-    TorchCategoricalDistribution,
     TorchCategoricalDistributionSample,
+    TorchProbabilityCategoricalDistribution,
 )
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
 
@@ -48,7 +50,7 @@ def test_torch_categorical_entropy_matches_torch_distribution(base: None | float
         [[0.25, 0.25, 0.5], [0.1, 0.2, 0.7]],
         dtype=torch.float64,
     )
-    distribution = TorchCategoricalDistribution(probabilities)
+    distribution = TorchProbabilityCategoricalDistribution(probabilities)
 
     measured = entropy(distribution, base=base)
     expected_natural = Categorical(probs=probabilities).entropy()
@@ -72,7 +74,7 @@ def test_torch_categorical_entropy_normalize_maps_to_unit_interval() -> None:
         dtype=torch.float64,
     )
 
-    measured = entropy(TorchCategoricalDistribution(probabilities), base="normalize")
+    measured = entropy(TorchProbabilityCategoricalDistribution(probabilities), base="normalize")
 
     assert measured[0] == pytest.approx(1.0, abs=1e-6)
     assert measured[1] == pytest.approx(0.0, abs=1e-6)
@@ -144,7 +146,7 @@ def test_torch_categorical_second_order_measures_match_torch(sample_axis: int, b
     )
     probabilities = torch.moveaxis(base_probabilities, 0, sample_axis)
     sample = TorchCategoricalDistributionSample(
-        tensor=TorchCategoricalDistribution(probabilities),
+        tensor=TorchProbabilityCategoricalDistribution(probabilities),
         sample_dim=sample_axis,
     )
 
@@ -189,7 +191,7 @@ def test_identity_holds_for_torch_categorical_sample(sample_axis: int, base: Non
     )
     probabilities = torch.moveaxis(base_probabilities, 0, sample_axis)
     sample = TorchCategoricalDistributionSample(
-        tensor=TorchCategoricalDistribution(probabilities),
+        tensor=TorchProbabilityCategoricalDistribution(probabilities),
         sample_dim=sample_axis,
     )
 
@@ -212,7 +214,7 @@ def test_torch_sample_zero_one_measures_match_manual(sample_axis: int) -> None:
     )
     probabilities = torch.moveaxis(base_probabilities, 0, sample_axis)
     sample = TorchCategoricalDistributionSample(
-        tensor=TorchCategoricalDistribution(probabilities),
+        tensor=TorchProbabilityCategoricalDistribution(probabilities),
         sample_dim=sample_axis,
     )
 
@@ -241,7 +243,7 @@ def test_torch_sample_zero_one_known_values() -> None:
         dtype=torch.float64,
     )
     sample = TorchCategoricalDistributionSample(
-        tensor=TorchCategoricalDistribution(probabilities),
+        tensor=TorchProbabilityCategoricalDistribution(probabilities),
         sample_dim=0,
     )
 
@@ -262,7 +264,7 @@ def test_zero_one_identity_holds_for_torch_categorical_sample(sample_axis: int) 
     )
     probabilities = torch.moveaxis(base_probabilities, 0, sample_axis)
     sample = TorchCategoricalDistributionSample(
-        tensor=TorchCategoricalDistribution(probabilities),
+        tensor=TorchProbabilityCategoricalDistribution(probabilities),
         sample_dim=sample_axis,
     )
 
@@ -271,3 +273,153 @@ def test_zero_one_identity_holds_for_torch_categorical_sample(sample_axis: int) 
     epistemic = max_disagreement(sample)
 
     assert torch.allclose(total, aleatoric + epistemic, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_dirichlet_vacuity_known_values() -> None:
+    alphas = torch.tensor(
+        [
+            [1.0, 1.0, 1.0],  # uniform Dir(1,1,1): K=3, alpha_0=3 -> vacuity=1
+            [10.0, 10.0, 10.0],  # K=3, alpha_0=30 -> vacuity=0.1
+            [2.0, 3.0, 5.0],  # K=3, alpha_0=10 -> vacuity=0.3
+        ],
+        dtype=torch.float64,
+    )
+    distribution = TorchDirichletDistribution(alphas=alphas)
+
+    measured = vacuity(distribution)
+
+    expected = torch.tensor([1.0, 0.1, 0.3], dtype=torch.float64)
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_dirichlet_vacuity_lies_in_unit_interval() -> None:
+    generator = torch.Generator().manual_seed(0)
+    alphas = 1.0 + 19.0 * torch.rand((50, 4), generator=generator, dtype=torch.float64)
+    distribution = TorchDirichletDistribution(alphas=alphas)
+
+    measured = vacuity(distribution)
+
+    assert torch.all(measured > 0.0)
+    assert torch.all(measured <= 1.0)
+
+
+def test_torch_dirichlet_vacuity_decreases_with_evidence() -> None:
+    weak = TorchDirichletDistribution(alphas=torch.tensor([1.0, 1.0, 1.0], dtype=torch.float64))
+    strong = TorchDirichletDistribution(alphas=torch.tensor([100.0, 100.0, 100.0], dtype=torch.float64))
+
+    assert vacuity(weak).item() > vacuity(strong).item()
+
+
+def test_torch_dirichlet_vacuity_propagates_gradients() -> None:
+    alphas = torch.tensor([2.0, 3.0, 5.0], dtype=torch.float64, requires_grad=True)
+    distribution = TorchDirichletDistribution(alphas=alphas)
+
+    measured = vacuity(distribution)
+    measured.backward()
+
+    # d(K/alpha_0)/d(alpha_c) = -K / alpha_0^2 for each c
+    grad = alphas.grad
+    assert grad is not None
+    expected_grad = -torch.full_like(alphas, 3.0 / (10.0**2))
+    assert torch.allclose(grad, expected_grad, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_dirichlet_max_probability_complement_of_expected_known_values() -> None:
+    alphas = torch.tensor(
+        [
+            [1.0, 1.0, 1.0],  # uniform: max(1/3) -> 1 - 1/3 = 2/3
+            [10.0, 1.0, 1.0],  # max = 10/12 -> 1 - 5/6 = 1/6
+            [2.0, 3.0, 5.0],  # max = 5/10 -> 1 - 1/2 = 1/2
+        ],
+        dtype=torch.float64,
+    )
+    distribution = TorchDirichletDistribution(alphas=alphas)
+
+    measured = max_probability_complement_of_expected(distribution)
+
+    expected = torch.tensor([2.0 / 3.0, 1.0 / 6.0, 0.5], dtype=torch.float64)
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_dirichlet_max_probability_complement_of_expected_matches_explicit_formula() -> None:
+    generator = torch.Generator().manual_seed(0)
+    alphas = 0.5 + 19.5 * torch.rand((50, 5), generator=generator, dtype=torch.float64)
+    distribution = TorchDirichletDistribution(alphas=alphas)
+
+    measured = max_probability_complement_of_expected(distribution)
+
+    expected_mean = alphas / alphas.sum(dim=-1, keepdim=True)
+    expected = 1.0 - torch.max(expected_mean, dim=-1).values
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_dirichlet_max_probability_complement_of_expected_propagates_gradients() -> None:
+    alphas = torch.tensor([2.0, 3.0, 5.0], dtype=torch.float64, requires_grad=True)
+    distribution = TorchDirichletDistribution(alphas=alphas)
+
+    measured = max_probability_complement_of_expected(distribution)
+    measured.backward()
+
+    grad = alphas.grad
+    assert grad is not None
+    assert torch.isfinite(grad).all()
+
+
+def test_torch_gaussian_dempster_shafer_uniform_logits_with_default_factor() -> None:
+    """Uniform-zero logits should give vacuity = K / (K + K * exp(0)) = 1/2."""
+    from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution  # noqa: PLC0415
+
+    mean = torch.zeros((3, 5), dtype=torch.float64)
+    var = torch.ones_like(mean)
+    distribution = TorchGaussianDistribution(mean=mean, var=var)
+
+    measured = dempster_shafer_uncertainty(distribution)
+
+    assert torch.allclose(measured, torch.full((3,), 0.5, dtype=torch.float64), rtol=1e-12, atol=1e-12)
+
+
+def test_torch_gaussian_dempster_shafer_matches_explicit_formula() -> None:
+    import math  # noqa: PLC0415
+
+    from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution  # noqa: PLC0415
+
+    generator = torch.Generator().manual_seed(0)
+    mean = 2.0 * torch.randn((20, 5), generator=generator, dtype=torch.float64)
+    var = 0.01 + 4.0 * torch.rand((20, 5), generator=generator, dtype=torch.float64)
+    distribution = TorchGaussianDistribution(mean=mean, var=var)
+
+    measured = dempster_shafer_uncertainty(distribution)
+
+    num_classes = mean.shape[-1]
+    adjusted = mean / torch.sqrt(1.0 + (math.pi / 8.0) * var)
+    expected = num_classes / (num_classes + torch.sum(torch.exp(adjusted), dim=-1))
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_gaussian_dempster_shafer_propagates_gradients() -> None:
+    from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution  # noqa: PLC0415
+
+    mean = torch.tensor([[1.0, 2.0, 3.0]], dtype=torch.float64, requires_grad=True)
+    var = torch.tensor([[0.5, 1.0, 0.25]], dtype=torch.float64, requires_grad=True)
+    distribution = TorchGaussianDistribution(mean=mean, var=var)
+
+    measured = dempster_shafer_uncertainty(distribution)
+    measured.sum().backward()
+
+    assert mean.grad is not None
+    assert var.grad is not None
+    assert torch.isfinite(mean.grad).all()
+    assert torch.isfinite(var.grad).all()
+
+
+def test_torch_gaussian_dempster_shafer_zero_factor_disables_mean_field() -> None:
+    from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution  # noqa: PLC0415
+
+    mean = torch.tensor([[1.0, 2.0, 3.0]], dtype=torch.float64)
+    var = torch.full_like(mean, 100.0)
+    distribution = TorchGaussianDistribution(mean=mean, var=var)
+
+    measured = dempster_shafer_uncertainty(distribution, mean_field_factor=0.0)
+
+    expected = 3.0 / (3.0 + torch.sum(torch.exp(mean), dim=-1))
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)

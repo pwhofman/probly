@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 from laplace.baselaplace import BaseLaplace
 import torch
@@ -11,6 +11,7 @@ from torch.amp import GradScaler, autocast
 import torch.nn.functional as F
 
 from flextype import flexdispatch
+from probly.layers.torch import HeteroscedasticLayer, SNGPLayer
 from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
@@ -19,6 +20,7 @@ from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPre
 from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
+from probly.method.deup import DEUPPredictor
 from probly.method.dropconnect import DropConnectPredictor
 from probly.method.dropout import DropoutPredictor
 from probly.method.duq import DUQPredictor
@@ -28,6 +30,7 @@ from probly.method.evidential.classification import EvidentialClassificationPred
 from probly.method.het_net import HetNetPredictor
 from probly.method.natural_posterior_network import NaturalPosteriorNetworkPredictor
 from probly.method.posterior_network import PosteriorNetworkPredictor
+from probly.method.sngp import SNGPPredictor
 from probly.method.subensemble import SubensemblePredictor
 from probly.predictor import predict_raw
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
@@ -215,30 +218,35 @@ def train_epoch_het_net(
     samples: int = 1,
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> float:
-    """Train a HetNets predictor by averaging softmax probabilities over MC samples.
+    """Train a HetNet predictor by averaging softmax probabilities over MC samples.
 
-    Each forward pass draws a fresh noise sample from the heteroscedastic layer.
-    Averaging S such samples before computing NLL loss reduces gradient variance
-    compared to a single-sample estimate, following :cite:`collier2021hetnets`.
+    Sets ``training_samples`` on every HeteroscedasticLayer so sampling is vectorized
+    inside a single forward pass: the backbone runs once and the het layer draws S noise
+    samples in one GPU op, following :cite:`collier2021hetnets`.
     """
-    optimizer.zero_grad()
-    with autocast(inputs.device.type, enabled=amp_enabled):
-        avg_probs = torch.stack(
-            [F.softmax(model(inputs), dim=1) for _ in range(samples)]  # ty: ignore[call-non-callable]
-        ).mean(0)
-        loss = F.nll_loss(avg_probs.log(), targets)
-    if scaler is not None:
-        scaler.scale(loss).backward()
-        if grad_clip_norm is not None:
-            scaler.unscale_(optimizer)
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
-        scaler.step(optimizer)
-        scaler.update()
-    else:
-        loss.backward()
-        if grad_clip_norm is not None:
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
-        optimizer.step()
+    het_layers = [m for m in cast("nn.Module", model).modules() if isinstance(m, HeteroscedasticLayer)]
+    for layer in het_layers:
+        layer.training_samples = samples
+    try:
+        optimizer.zero_grad()
+        with autocast(inputs.device.type, enabled=amp_enabled):
+            output = model(inputs)  # ty: ignore[call-non-callable]
+            loss = F.cross_entropy(output, targets) if samples == 1 else F.nll_loss(output, targets)
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            if grad_clip_norm is not None:
+                scaler.unscale_(optimizer)
+                nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            loss.backward()
+            if grad_clip_norm is not None:
+                nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            optimizer.step()
+    finally:
+        for layer in het_layers:
+            layer.training_samples = 1
     return loss.item()
 
 
@@ -473,6 +481,49 @@ def train_epoch_ddu(
     return loss.item()
 
 
+@train_epoch.register(DEUPPredictor)
+def train_epoch_deup(
+    model: nn.Module,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> torch.Tensor | float:
+    """Train a DEUP predictor for one step with cross-entropy on the classification logits.
+
+    Phase-1 training: only ``encoder`` and ``classification_head`` are updated.
+    The ``error_head`` is excluded from the optimizer parameter group and is
+    trained separately after phase 1 completes (see ``_fit_deup_error_head``
+    in ``probly_benchmark/train.py``).
+
+    Lahlou et al., "DEUP: Direct Epistemic Uncertainty Prediction", 2022
+    (https://arxiv.org/abs/2102.08501), Section 3.
+    """
+    model_ = cast("Any", model)
+    criterion = nn.CrossEntropyLoss()
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        features = model_.encoder(inputs)
+        logits = model_.classification_head(features)
+        loss = criterion(logits, targets)
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        optimizer.step()
+    return loss.item()
+
+
 def _duq_bce_loss(kernel_values: torch.Tensor, targets_onehot: torch.Tensor) -> torch.Tensor:
     r"""Binary cross-entropy on per-class RBF kernel values.
 
@@ -563,6 +614,13 @@ def train_epoch_duq(
     return loss.item()
 
 
+class ValidationMetrics(TypedDict):
+    """Metrics returned by ``validate``, must include loss and acc."""
+
+    loss: float
+    acc: float
+
+
 @flexdispatch
 def validate(
     model: Predictor,
@@ -570,7 +628,7 @@ def validate(
     device: torch.device,
     amp_enabled: bool = False,
     **kwargs: Any,  # noqa: ANN401
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate a model."""
     msg = f"No validation function for {type(model)}"
     raise NotImplementedError(msg)
@@ -583,10 +641,9 @@ def _(
     val_loader: DataLoader,
     device: torch.device,
     amp_enabled: bool = False,
-    **kwargs: Any,  # noqa: ANN401
-) -> tuple[float, float]:
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> ValidationMetrics:
     """Validate a Bayesian predictor."""
-    criterion = ELBOLoss(kl_penalty=kwargs.get("kl_penalty", 1e-5))
     model.eval()
     val_loss, val_acc = 0.0, 0.0
     num_instances = 0
@@ -594,13 +651,15 @@ def _(
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
             outputs = model(inputs)
-            kl = collect_kl_divergence(model)
-            val_loss += criterion(outputs, targets, kl).item()
+            val_loss += F.cross_entropy(outputs, targets).item()
             val_acc += _accuracy(outputs, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    kl_value = collect_kl_divergence(model).item()
+    return {  # ty: ignore[invalid-return-type]
+        "loss": val_loss / len(val_loader),
+        "acc": val_acc / num_instances,
+        "kl": kl_value,  # ty: ignore[invalid-key]
+    }
 
 
 @validate.register(BatchEnsemblePredictor)
@@ -611,7 +670,7 @@ def validate_batchensemble(
     device: torch.device,
     amp_enabled: bool = False,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate a BatchEnsemble predictor with per-member CE loss and ensemble-averaged accuracy."""
     num_members = int(model.num_members)  # ty: ignore[unresolved-attribute]
     criterion = nn.CrossEntropyLoss()
@@ -628,9 +687,7 @@ def validate_batchensemble(
             ensemble_probs = F.softmax(outputs.view(num_members, -1, outputs.shape[-1]), dim=-1).mean(dim=0)
             val_acc += _accuracy(ensemble_probs, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @validate.register((BasePredictor, DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetPredictor))
@@ -641,7 +698,7 @@ def validate_cross_entropy(
     device: torch.device,
     amp_enabled: bool = False,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate a dropout/dropconnect predictor with cross-entropy loss."""
     criterion = nn.CrossEntropyLoss()
     model.eval()  # ty: ignore[unresolved-attribute]
@@ -655,9 +712,7 @@ def validate_cross_entropy(
             val_loss += criterion(outputs, targets).item()
             val_acc += _accuracy(outputs, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @validate.register(PosteriorNetworkPredictor)
@@ -669,7 +724,7 @@ def _(
     amp_enabled: bool = False,
     entropy_weight: float = 1e-5,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate a posterior network with the PostNet loss."""
     model.eval()
     val_loss = 0.0
@@ -682,9 +737,7 @@ def _(
             val_loss += postnet_loss(alpha, targets, entropy_weight=entropy_weight).item()
             val_acc += _accuracy(alpha, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @validate.register(NaturalPosteriorNetworkPredictor)
@@ -696,7 +749,7 @@ def _(
     amp_enabled: bool = False,
     entropy_weight: float = 1e-5,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate a natural posterior network with the mean-reduced Bayesian loss."""
     model.eval()
     val_loss = 0.0
@@ -709,9 +762,7 @@ def _(
             val_loss += postnet_loss(alpha, targets, entropy_weight=entropy_weight, reduction="mean").item()
             val_acc += _accuracy(alpha, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @validate.register(EvidentialClassificationPredictor)
@@ -726,7 +777,7 @@ def _(
     annealing_epochs: int = 10,
     epoch: int = 0,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate an evidential classifier using the same loss as training at the current epoch."""
     base_loss_fn = EVIDENTIAL_LOSSES[loss]
     lambda_t = _evidential_lambda_t(kl_weight, annealing_epochs, epoch)
@@ -742,9 +793,7 @@ def _(
         val_loss += batch_loss.item()
         val_acc += _accuracy(alpha, targets) * inputs.shape[0]
         num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @validate.register(CredalNetPredictor)
@@ -755,7 +804,7 @@ def _(
     device: torch.device,
     amp_enabled: bool = False,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate a credal net."""
     model.eval()
     val_loss = 0.0
@@ -771,9 +820,7 @@ def _(
         val_loss += batch_loss.item()
         val_acc += _accuracy(q_int, targets) * inputs.shape[0]
         num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @validate.register(DDUPredictor)
@@ -784,7 +831,7 @@ def validate_ddu(
     device: torch.device,
     amp_enabled: bool = False,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate a DDU predictor with cross-entropy loss on the classification logits."""
     model_ = cast("Any", model)
     criterion = nn.CrossEntropyLoss()
@@ -800,9 +847,34 @@ def validate_ddu(
             val_loss += criterion(logits, targets).item()
             val_acc += _accuracy(logits, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
+
+
+@validate.register(DEUPPredictor)
+@torch.no_grad()
+def validate_deup(
+    model: nn.Module,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> ValidationMetrics:
+    """Validate a DEUP predictor with cross-entropy loss on the classification logits."""
+    model_ = cast("Any", model)
+    criterion = nn.CrossEntropyLoss()
+    model_.eval()
+    val_loss = 0.0
+    val_acc = 0.0
+    num_instances = 0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            features = model_.encoder(inputs)
+            logits = model_.classification_head(features)
+            val_loss += criterion(logits, targets).item()
+            val_acc += _accuracy(logits, targets) * inputs.shape[0]
+            num_instances += inputs.shape[0]
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @validate.register(DUQPredictor)
@@ -813,7 +885,7 @@ def validate_duq(
     device: torch.device,
     amp_enabled: bool = False,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> tuple[float, float]:
+) -> ValidationMetrics:
     """Validate a DUQ predictor with BCE on kernel values and argmax accuracy."""
     model_ = cast("Any", model)
     num_classes = int(model_.centroid_head.num_classes)
@@ -829,9 +901,7 @@ def validate_duq(
             val_loss += _duq_bce_loss(kernel_values, targets_onehot).item()
         val_acc += _accuracy(kernel_values, targets) * inputs.shape[0]
         num_instances += inputs.shape[0]
-    val_loss /= len(val_loader)
-    val_acc /= num_instances
-    return val_loss, val_acc
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @flexdispatch
@@ -1119,6 +1189,36 @@ def evaluate_ddu(
     return _compute_metrics(probs, labels, n_bins)
 
 
+@evaluate.register(DEUPPredictor)
+@torch.no_grad()
+def evaluate_deup(
+    model: nn.Module,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate a DEUP predictor on the test set.
+
+    Uses softmax of the classification logits as class probabilities.
+    """
+    model_ = cast("Any", model)
+    model_.eval()
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            features = model_.encoder(inputs)
+            logits = model_.classification_head(features)
+        all_probs.append(F.softmax(logits, dim=1))
+        all_labels.append(targets)
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
+    return _compute_metrics(probs, labels, n_bins)
+
+
 @evaluate.register(DUQPredictor)
 @torch.no_grad()
 def evaluate_duq(
@@ -1250,6 +1350,105 @@ def evaluate_ensemble(
     metrics.update(_compute_metrics(ensemble_probs, labels, n_bins))
 
     return metrics
+
+
+def _maybe_reset_sngp_precision_for_new_epoch(model: nn.Module, epoch: int) -> None:
+    """Reset every ``SNGPLayer`` precision matrix the first time an epoch is seen.
+
+    Tracks ``_last_reset_epoch`` per layer, an attribute.
+    """
+    for layer in model.modules():
+        if isinstance(layer, SNGPLayer) and getattr(layer, "_last_reset_epoch", -1) != epoch:
+            layer.reset_precision_matrix()
+            layer._last_reset_epoch = epoch  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+
+
+@train_epoch.register(SNGPPredictor)
+def train_epoch_sngp(
+    model: SNGPPredictor,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    supervised_loss: dict[str, Any] | None = None,
+    epoch: int = 0,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> torch.Tensor | float:
+    """Train an SNGP predictor for one step with cross-entropy on the GP MAP logits."""
+    _maybe_reset_sngp_precision_for_new_epoch(model, epoch)  # ty: ignore[invalid-argument-type]
+    criterion = _get_supervised_criterion(supervised_loss)
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        logits, _variance = model(inputs)
+        loss = criterion(logits, targets)
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        optimizer.step()
+    return loss.item()
+
+
+@validate.register(SNGPPredictor)
+@torch.no_grad()
+def validate_sngp(
+    model: SNGPPredictor,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> ValidationMetrics:
+    """Validate an SNGP predictor with cross-entropy and argmax accuracy on logit means."""
+    criterion = nn.CrossEntropyLoss()
+    model.eval()
+    val_loss = 0.0
+    val_acc = 0.0
+    num_instances = 0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            logits, _variance = model(inputs)
+            val_loss += criterion(logits, targets).item()
+            val_acc += _accuracy(logits, targets) * inputs.shape[0]
+            num_instances += inputs.shape[0]
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
+
+
+@evaluate.register(SNGPPredictor)
+@torch.no_grad()
+def evaluate_sngp(
+    model: SNGPPredictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    mean_field_factor: float = 1.0,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate an SNGP predictor on accuracy/NLL/ECE via the closed-form mean-field correction."""
+    model.eval()
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            logits, variance = model(inputs)
+            scale = (1.0 + mean_field_factor * variance) ** 0.5
+            probs = F.softmax(logits / scale, dim=-1)
+        all_probs.append(probs)
+        all_labels.append(targets)
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
+    return _compute_metrics(probs, labels, n_bins)
 
 
 def _compute_metrics(probs: torch.Tensor, labels: torch.Tensor, n_bins: int) -> dict[str, float]:

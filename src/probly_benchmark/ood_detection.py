@@ -8,12 +8,10 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 from probly.evaluation.ood import evaluate_ood
-from probly.quantification import quantify
 from probly.representer import representer
 from probly_benchmark import calibration, data, utils
+from probly_benchmark.uncertainty import SUPPORTED_DECOMPOSITIONS
 from probly_benchmark.utils import init_wandb_for_evaluation, load_model_for_evaluation
-
-_SUPPORTED_DECOMPOSITIONS = ("aleatoric", "epistemic", "total")
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="ood_detection")
@@ -27,9 +25,9 @@ def main(cfg: DictConfig) -> None:
 
     utils.set_seed(cfg.seed)
     calibration.validate_calibration_config(cfg)
-
+    print("Loading model...")
     model, _, run_id = load_model_for_evaluation(cfg, device)
-
+    print("Loading data...")
     id_loader, ood_loader = data.get_data_ood(
         cfg.dataset,
         cfg.ood_dataset,
@@ -44,15 +42,24 @@ def main(cfg: DictConfig) -> None:
     )  # ty: ignore[invalid-assignment]
     rep = representer(model, **rep_kwargs)
 
-    id_outputs, _ = utils.collect_outputs_targets(rep, id_loader, device, cfg.get("amp", False))
-    ood_outputs, _ = utils.collect_outputs_targets(rep, ood_loader, device, cfg.get("amp", False))
-
-    if cfg.decomposition not in _SUPPORTED_DECOMPOSITIONS:
-        msg = f"Unsupported decomposition: {cfg.decomposition!r}. Choose from {_SUPPORTED_DECOMPOSITIONS}."
+    if cfg.decomposition not in SUPPORTED_DECOMPOSITIONS:
+        msg = f"Unsupported decomposition: {cfg.decomposition!r}. Choose from {SUPPORTED_DECOMPOSITIONS}."
         raise ValueError(msg)
 
-    id_uncertainties = quantify(id_outputs)[cfg.decomposition].detach().cpu().numpy()  # ty:ignore[not-subscriptable]
-    ood_uncertainties = quantify(ood_outputs)[cfg.decomposition].detach().cpu().numpy()  # ty:ignore[not-subscriptable]
+    print("Getting per-batch uncertainties...")
+    # Per-batch quantify preserves method-specific decomposition markers (PostNet, NatPN, EDL).
+    id_uncertainties = (
+        utils.collect_uncertainties(rep, id_loader, device, cfg.decomposition, cfg.get("amp", False))
+        .detach()
+        .cpu()
+        .numpy()
+    )
+    ood_uncertainties = (
+        utils.collect_uncertainties(rep, ood_loader, device, cfg.decomposition, cfg.get("amp", False))
+        .detach()
+        .cpu()
+        .numpy()
+    )
 
     ood_metrics = evaluate_ood(id_uncertainties, ood_uncertainties, metrics=cfg.get("metrics", "all"))
     auroc = ood_metrics["auroc"]
@@ -60,11 +67,11 @@ def main(cfg: DictConfig) -> None:
 
     if cfg.wandb.enabled:
         run = init_wandb_for_evaluation(cfg, run_id)
-        run.config.update({"ood_dataset": cfg.ood_dataset, "decomposition": cfg.decomposition}, allow_val_change=True)
+        prefix = f"ood/{cfg.ood_dataset}/{cfg.measure}/{cfg.decomposition}"
         for metric_name, value in ood_metrics.items():
-            run.summary[f"ood/{metric_name}"] = value
-        run.summary["ood/id_scores"] = id_uncertainties.tolist()
-        run.summary["ood/ood_scores"] = ood_uncertainties.tolist()
+            run.summary[f"{prefix}/{metric_name}"] = value
+        run.summary[f"{prefix}/ood_scores"] = ood_uncertainties.tolist()
+        run.summary[f"ood/{cfg.measure}/{cfg.decomposition}/id_scores"] = id_uncertainties.tolist()
         run.finish()
 
 

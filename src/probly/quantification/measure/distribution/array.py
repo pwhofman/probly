@@ -17,14 +17,17 @@ from probly.representation.distribution.array_gaussian import (
 )
 
 from ._common import (
+    DEFAULT_MEAN_FIELD_FACTOR,
     LogBase,
     conditional_entropy,
+    dempster_shafer_uncertainty,
     entropy,
     entropy_of_expected_predictive_distribution,
     expected_max_probability_complement,
     max_disagreement,
     max_probability_complement_of_expected,
     mutual_information,
+    vacuity,
 )
 
 # Entropy
@@ -268,3 +271,57 @@ def array_categorical_sample_max_disagreement(
     per_sample_bma_prob = np.take_along_axis(p, bma_argmax, axis=-1).squeeze(-1)
     per_sample_max = np.max(p, axis=-1)
     return np.mean(per_sample_max - per_sample_bma_prob, axis=axis)
+
+
+# Vacuity
+
+
+@vacuity.register(ArrayDirichletDistribution)
+def array_dirichlet_vacuity(distribution: ArrayDirichletDistribution | np.ndarray) -> np.ndarray:
+    """Compute the vacuity K / alpha_0 of a Dirichlet distribution."""
+    if isinstance(distribution, ArrayDirichletDistribution):
+        alphas = distribution.alphas
+        del distribution  # Avoid keeping a reference to the distribution for memory efficiency
+    else:
+        alphas = distribution
+
+    num_classes = alphas.shape[-1]
+    alpha_0 = np.sum(alphas, axis=-1)
+    return np.asarray(num_classes / alpha_0)
+
+
+@max_probability_complement_of_expected.register(ArrayDirichletDistribution)
+def array_dirichlet_max_probability_complement_of_expected(
+    distribution: ArrayDirichletDistribution | np.ndarray,
+) -> np.ndarray:
+    """Compute one minus the max probability of the mean of a Dirichlet distribution.
+
+    Closed form: ``1 - max_c (alpha_c / alpha_0)``.
+    """
+    if isinstance(distribution, ArrayDirichletDistribution):
+        alphas = distribution.alphas
+        del distribution  # Avoid keeping a reference to the distribution for memory efficiency
+    else:
+        alphas = distribution
+
+    alpha_0 = np.sum(alphas, axis=-1, keepdims=True)
+    mean = alphas / alpha_0
+    return 1.0 - np.max(mean, axis=-1)
+
+
+# Dempster-Shafer uncertainty
+
+
+@dempster_shafer_uncertainty.register(ArrayGaussianDistribution)
+def array_gaussian_dempster_shafer_uncertainty(
+    distribution: ArrayGaussianDistribution,
+    mean_field_factor: float = DEFAULT_MEAN_FIELD_FACTOR,
+) -> np.ndarray:
+    """Compute the Dempster-Shafer uncertainty of a Gaussian over logits."""
+    mean = distribution.mean
+    var = distribution.var
+    del distribution  # Avoid keeping a reference to the distribution for memory efficiency
+
+    num_classes = mean.shape[-1]
+    adjusted = mean / np.sqrt(1.0 + mean_field_factor * var)
+    return num_classes / (num_classes + np.sum(np.exp(adjusted), axis=-1))

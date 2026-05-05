@@ -9,7 +9,10 @@ pytest.importorskip("torch")
 import torch
 
 from probly.representation.array_like import to_numpy_array_like
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.distribution.torch_categorical import (
+    TorchCategoricalDistribution,
+    TorchProbabilityCategoricalDistribution,
+)
 from probly.representation.sample.array import ArraySample
 from probly.representation.sample.torch import TorchSample
 from probly.representation.torch_functions import torch_average
@@ -265,7 +268,7 @@ class TestTorchSample:
 
     def test_sample_mean_of_categorical_distribution_preserves_distribution_type(self) -> None:
         probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
-        sample = TorchSample(TorchCategoricalDistribution(probabilities), sample_dim=0)
+        sample = TorchSample(TorchProbabilityCategoricalDistribution(probabilities), sample_dim=0)
 
         result = sample.sample_mean()
 
@@ -277,7 +280,7 @@ class TestTorchSample:
     def test_weighted_sample_mean_of_categorical_distribution_uses_weights(self) -> None:
         probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
         weights = torch.tensor([0.25, 0.75], dtype=torch.float64)
-        sample = TorchSample(TorchCategoricalDistribution(probabilities), sample_dim=0, weights=weights)
+        sample = TorchSample(TorchProbabilityCategoricalDistribution(probabilities), sample_dim=0, weights=weights)
 
         result = sample.sample_mean()
 

@@ -62,7 +62,7 @@ quant_kl = quantify(prediction_kl)
 logger.info(quant_kl)
 
 logger.info("--- Dirichlet Relative Likelihood ---")
-evidential_model = evidential_classification(model)  # ty: ignore[invalid-argument-type]
+evidential_model = evidential_classification(model)
 dirichlet_cep = conformal_dirichlet_relative_likelihood(evidential_model)
 dirichlet_cep.calibrate(alpha, y_calib, x_calib)
 dirichlet_rep = representer(dirichlet_cep)

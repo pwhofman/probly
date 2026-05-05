@@ -28,7 +28,9 @@ class CIFAR10H(torchvision.datasets.CIFAR10):
     targets: torch.Tensor
     """Tensor of size (n_instances, n_classes), first-order distribution."""
 
-    def __init__(self, root: str, transform: Callable[..., Any] | None = None, *, download: bool = False) -> None:
+    def __init__(
+        self, root: str | Path, transform: Callable[..., Any] | None = None, *, download: bool = False
+    ) -> None:
         """Initialize an instance of the CIFAR10H class.
 
         Args:

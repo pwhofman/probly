@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import torch
 from torch import nn
@@ -13,19 +12,18 @@ from probly.calibrator import calibrate
 from probly.method.calibration import CalibrationPredictor, temperature_scaling, vector_scaling
 from probly.method.conformal import ConformalSetPredictor, conformal_aps, conformal_lac, conformal_raps
 from probly.predictor import predict
-from probly.quantification import decompose
-from probly.quantification.notion import EpistemicUncertainty, Notion
+from probly.quantification import quantify
 from probly.representer import representer
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.decision import decide
 from probly_benchmark.train import train_model
+from probly_benchmark.uncertainty import select_uncertainty
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
+    from probly.quantification.notion import NotionName
     from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
-
-logger = logging.getLogger(__name__)
 
 # Maps base_model_name -> the final classification nn.Linear.
 # embed() hooks this layer's input to capture penultimate features.
@@ -53,6 +51,7 @@ def extract_penultimate_features(
     base_model_name: str,
     batch_size: int,
     device: torch.device,
+    amp_enabled: bool = False,
 ) -> torch.Tensor:
     """Extract penultimate-layer features from a model using a forward hook.
 
@@ -67,6 +66,7 @@ def extract_penultimate_features(
         base_model_name: Key into ``_CLASSIFICATION_LAYER`` (e.g. ``"tabular_mlp"``).
         batch_size: Inference batch size.
         device: Device to run inference on.
+        amp_enabled: Whether to use automatic mixed precision.
 
     Returns:
         Feature tensor of shape ``(n, emb_dim)`` on CPU.
@@ -89,7 +89,8 @@ def extract_penultimate_features(
     handle = target_layer.register_forward_hook(_hook)
     eager_forward = torch.compiler.disable(model)
     for i in range(0, len(x), batch_size):
-        eager_forward(x[i : i + batch_size].float().to(device))
+        with torch.amp.autocast(device.type, enabled=amp_enabled):
+            eager_forward(x[i : i + batch_size].float().to(device))
     handle.remove()
     return torch.cat(hook_output)
 
@@ -219,6 +220,7 @@ class BaseEstimator:
             TensorDataset(x.float(), y.long()),
             batch_size=self.cfg.batch_size,
             shuffle=True,
+            pin_memory=self.device.type == "cuda",
         )
         ctx = BuildContext(
             base_model_name=self.base_model_name,
@@ -237,11 +239,13 @@ class BaseEstimator:
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return class probabilities via probly's predict dispatch."""
         self.model.eval()
+        amp_enabled = self.cfg.get("amp", False)
         parts = []
         for i in range(0, len(x), self.cfg.batch_size):
             xb = x[i : i + self.cfg.batch_size].float().to(self.device)
-            out: TorchCategoricalDistribution = predict(self.model, xb)
-            parts.append(out.probabilities.cpu())
+            with torch.amp.autocast(self.device.type, enabled=amp_enabled):
+                out: TorchCategoricalDistribution = predict(self.model, xb)
+            parts.append(out.probabilities.float().cpu())
         return torch.cat(parts)
 
     @torch.no_grad()
@@ -256,7 +260,14 @@ class BaseEstimator:
         base = self.model
         if isinstance(base, CalibrationPredictor):
             base = base.predictor
-        return extract_penultimate_features(base, x, self.base_model_name, self.cfg.batch_size, self.device)
+        return extract_penultimate_features(
+            base,
+            x,
+            self.base_model_name,
+            self.cfg.batch_size,
+            self.device,
+            amp_enabled=self.cfg.get("amp", False),
+        )
 
 
 class UncertaintyEstimator(BaseEstimator):
@@ -267,7 +278,8 @@ class UncertaintyEstimator(BaseEstimator):
 
     Attributes:
         rep_kwargs: Representer parameters from the method config (e.g. ``num_samples``).
-        uncertainty_notion: Which uncertainty component to use for sample selection.
+        uncertainty_notion: NotionName (``"aleatoric"|"epistemic"|"total"``) resolved
+            against the decomposition via :func:`select_uncertainty` (falls back when missing).
     """
 
     def __init__(
@@ -282,7 +294,7 @@ class UncertaintyEstimator(BaseEstimator):
         device: torch.device,
         in_features: int | None = None,
         rep_kwargs: dict[str, Any] | None = None,
-        uncertainty_notion: type[Notion] = EpistemicUncertainty,
+        uncertainty_notion: NotionName = "epistemic",
     ) -> None:
         """Initialize the UncertaintyEstimator.
 
@@ -296,7 +308,7 @@ class UncertaintyEstimator(BaseEstimator):
             device: Device to train and infer on.
             in_features: Input feature dimension for tabular models; ignored for image models.
             rep_kwargs: Representer parameters from the method config (e.g. ``num_samples``).
-            uncertainty_notion: Which uncertainty component to use for sample selection.
+            uncertainty_notion: NotionName resolved via :func:`select_uncertainty`.
         """
         super().__init__(
             cfg=cfg,
@@ -315,22 +327,25 @@ class UncertaintyEstimator(BaseEstimator):
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return class probabilities via the ``decide`` dispatch."""
         self.model.eval()
+        amp_enabled = self.cfg.get("amp", False)
         parts = []
         for i in range(0, len(x), self.cfg.batch_size):
             xb = x[i : i + self.cfg.batch_size].float().to(self.device)
-            probs = decide(self.model, xb, rep_kwargs=self.rep_kwargs).probabilities
-            parts.append(probs.cpu())  # ty: ignore[unresolved-attribute]
+            with torch.amp.autocast(self.device.type, enabled=amp_enabled):
+                probs = decide(self.model, xb, rep_kwargs=self.rep_kwargs).probabilities
+            parts.append(probs.float().cpu())  # ty: ignore[unresolved-attribute]
         return torch.cat(parts)
 
     @torch.no_grad()
     def uncertainty_scores(self, x: torch.Tensor) -> torch.Tensor:
-        """Return per-sample uncertainty via representer -> quantify -> decomposition."""
+        """Return per-sample uncertainty via representer -> quantify -> select_uncertainty."""
         self.model.eval()
         rep = representer(self.model, **self.rep_kwargs)
-        parts = []
+        amp_enabled = self.cfg.get("amp", False)
+        parts: list[torch.Tensor] = []
         for i in range(0, len(x), self.cfg.batch_size):
             xb = x[i : i + self.cfg.batch_size].float().to(self.device)
-            decomposition = decompose(rep.represent(xb))
-            scores = decomposition[self.uncertainty_notion]
-            parts.append(scores.detach().cpu())
+            with torch.amp.autocast(self.device.type, enabled=amp_enabled):
+                scores = cast("torch.Tensor", select_uncertainty(quantify(rep.predict(xb)), self.uncertainty_notion))
+            parts.append(scores.detach().float().cpu())
         return torch.cat(parts)

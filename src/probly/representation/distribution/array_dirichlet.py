@@ -9,7 +9,10 @@ import numpy as np
 
 from probly.representation._protected_axis.array import ArrayAxisProtected
 from probly.representation.distribution._common import DirichletDistribution
-from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
+from probly.representation.distribution.array_categorical import (
+    ArrayCategoricalDistribution,
+    ArrayProbabilityCategoricalDistribution,
+)
 from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
@@ -63,8 +66,7 @@ class ArrayDirichletDistribution(
     @property
     def mean(self) -> ArrayCategoricalDistribution:
         """Return the mean of the Dirichlet distribution."""
-        mean_alphas = self.alphas / np.sum(self.alphas, axis=-1, keepdims=True)
-        return ArrayCategoricalDistribution(mean_alphas)
+        return ArrayProbabilityCategoricalDistribution(self.alphas)
 
     @override
     def sample(
@@ -81,10 +83,7 @@ class ArrayDirichletDistribution(
             scale=1.0,
             size=(num_samples, *self.alphas.shape),
         )
-
-        samples = gammas / np.sum(gammas, axis=-1, keepdims=True)
-
-        return ArraySample(array=ArrayCategoricalDistribution(samples), sample_axis=0)
+        return ArraySample(array=ArrayProbabilityCategoricalDistribution(gammas), sample_axis=0)
 
     @override
     def _postprocess_ufunc_result(self, result: np.ndarray, *, ufunc: np.ufunc, method: str) -> np.ndarray:

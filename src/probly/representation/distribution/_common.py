@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from probly.representation.array_like import ArrayLike
 
 type DistributionType = Literal[
-    "gaussian", "dirichlet", "categorical", "empirical_second_order_categorical", "point_prediction"
+    "gaussian", "dirichlet", "categorical", "bernoulli", "empirical_second_order_categorical", "point_prediction"
 ]
 
 
@@ -40,23 +40,47 @@ class CategoricalDistribution[T](Distribution[T]):
 
     @property
     @abstractmethod
-    def unnormalized_probabilities(self) -> ArrayLike:
-        """Get the probabilities of the categorical distribution."""
-
-    @property
-    @abstractmethod
     def num_classes(self) -> int:
         """Get the number of classes."""
 
     @property
     @abstractmethod
+    def unnormalized_probabilities(self) -> ArrayLike:
+        """Get unnormalized probabilities of the categorical distribution."""
+
+    @property
+    @abstractmethod
     def probabilities(self) -> ArrayLike:
-        """Get the normalized probabilities of the categorical distribution."""
+        """Get the probabilities of the categorical distribution."""
+
+    @property
+    @abstractmethod
+    def logits(self) -> ArrayLike:
+        """Get logits of the categorical distribution."""
 
     @property
     @abstractmethod
     def log_probabilities(self) -> ArrayLike:
-        """Get (possibly unnormalized) log probabilities of the categorical distribution."""
+        """Get the log probabilities of the categorical distribution."""
+
+
+class BernoulliDistribution[T](CategoricalDistribution[T]):
+    """Base class for Bernoulli distributions.
+
+    Bernoulli distributions are represented by the probability of class 1 and
+    can be viewed as two-class categorical distributions.
+    """
+
+    type: Literal["bernoulli"] = "bernoulli"
+
+    @property
+    def num_classes(self) -> int:
+        """Get the fixed number of Bernoulli classes."""
+        return 2
+
+    @abstractmethod
+    def to_categorical(self) -> CategoricalDistribution:
+        """Convert to a two-class categorical distribution."""
 
 
 class DistributionSample[T: Distribution](RepresentationSample[T]):
@@ -73,6 +97,16 @@ class CategoricalDistributionSample[T: CategoricalDistribution](DistributionSamp
     """Sample type for empirical second-order categorical distributions."""
 
     sample_space: ClassVar[type[CategoricalDistribution]] = CategoricalDistribution
+
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        return super().__instancehook__(instance)
+
+
+class BernoulliDistributionSample[T: BernoulliDistribution](CategoricalDistributionSample[T]):
+    """Sample type for Bernoulli distributions."""
+
+    sample_space: ClassVar[type[BernoulliDistribution]] = BernoulliDistribution
 
     @classmethod
     def __instancehook__(cls, instance: object) -> bool:
@@ -151,6 +185,26 @@ def _(data: CategoricalDistribution) -> CategoricalDistribution:
 def create_categorical_distribution_from_logits[T](data: T) -> CategoricalDistribution:
     """Create a categorical distribution from backend-specific logit data."""
     msg = f"No categorical distribution factory from logits registered for data type {type(data)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def create_bernoulli_distribution[T](data: T) -> BernoulliDistribution:
+    """Create a Bernoulli distribution from backend-specific probability data."""
+    msg = f"No Bernoulli distribution factory registered for data type {type(data)}"
+    raise NotImplementedError(msg)
+
+
+@create_bernoulli_distribution.register(BernoulliDistribution)
+def _(data: BernoulliDistribution) -> BernoulliDistribution:
+    """Create a Bernoulli distribution from an instance of BernoulliDistribution."""
+    return data
+
+
+@flexdispatch
+def create_bernoulli_distribution_from_logits[T](data: T) -> BernoulliDistribution:
+    """Create a Bernoulli distribution from backend-specific logit data."""
+    msg = f"No Bernoulli distribution factory from logits registered for data type {type(data)}"
     raise NotImplementedError(msg)
 
 

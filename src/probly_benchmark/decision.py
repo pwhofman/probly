@@ -13,11 +13,16 @@ from typing import TYPE_CHECKING, Any
 
 from flextype import flexdispatch
 from probly.decider import categorical_from_mean
+from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.ddu import DDUPredictor
 from probly.method.efficient_credal_prediction import EfficientCredalPredictor
+from probly.method.subensemble import SubensemblePredictor
 from probly.predictor import predict
-from probly.representation.distribution import create_categorical_distribution_from_logits
+from probly.representation.distribution import (
+    create_categorical_distribution,
+    create_categorical_distribution_from_logits,
+)
 from probly.representer import representer
 
 if TYPE_CHECKING:
@@ -79,3 +84,28 @@ def _decide_ddu(
     features = model.encoder(x)
     logits = model.classification_head(features)
     return create_categorical_distribution_from_logits(logits)
+
+
+@decide.register(SubensemblePredictor)
+def _decide_subensemble(
+    model: SubensemblePredictor,
+    x: torch.Tensor,
+    rep_kwargs: dict[str, Any] | None = None,  # noqa: ARG001
+) -> CategoricalDistribution:
+    """Average softmax probabilities across all subensemble members."""
+    member_dists = [create_categorical_distribution_from_logits(predict(member, x)) for member in model]
+    avg_probs = sum(d.probabilities for d in member_dists) / len(member_dists)
+    return create_categorical_distribution(avg_probs)
+
+
+@decide.register(BatchEnsemblePredictor)
+def _decide_batchensemble(
+    model: BatchEnsemblePredictor,
+    x: torch.Tensor,
+    rep_kwargs: dict[str, Any] | None = None,  # noqa: ARG001
+) -> CategoricalDistribution:
+    """Average softmax probabilities across all batchensemble members."""
+    sample = predict(model, x)
+    member_dists = [create_categorical_distribution_from_logits(logits) for logits in sample.samples]
+    avg_probs = sum(d.probabilities for d in member_dists) / len(member_dists)
+    return create_categorical_distribution(avg_probs)

@@ -1,0 +1,15 @@
+# @package method
+name: "credal_bnn"
+label: "CreBNN"
+params:
+  num_members: 10
+  posterior_std: 0.05
+  # One prior mean and prior standard deviation per ensemble member.
+  # Members share the zero prior mean but disagree on the prior scale,
+  # giving the credal-set vertices a meaningful spread per :cite:`caprio2024credal`.
+  # Replace with task-specific values once tuned.
+  prior_mean: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  prior_std: [0.1, 0.15, 0.2, 0.3, 0.45, 0.7, 1.0, 1.5, 2.0, 3.0]
+  use_base_weights: true
+train:
+  samples: 1

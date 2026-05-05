@@ -10,10 +10,13 @@ from flextype import ProtocolRegistry, flexdispatch
 from probly.representation import Representation
 from probly.representation.credal_set import CredalSet, ProbabilityIntervalsCredalSet
 from probly.representation.distribution import (
+    BernoulliDistribution,
     CategoricalDistribution,
     DirichletDistribution,
     Distribution,
     GaussianDistribution,
+    create_bernoulli_distribution,
+    create_bernoulli_distribution_from_logits,
     create_categorical_distribution,
     create_categorical_distribution_from_logits,
     create_gaussian_distribution,
@@ -21,6 +24,10 @@ from probly.representation.distribution import (
 from probly.utils.switchdispatch import switch
 
 type PredictorName = Literal[
+    "bernoulli_distribution_predictor",
+    "binary_classifier",
+    "bernoulli_logit_distribution_predictor",
+    "binary_logit_classifier",
     "categorical_distribution_predictor",
     "probabilistic_classifier",
     "logit_distribution_predictor",
@@ -124,10 +131,26 @@ class CategoricalDistributionPredictor[**In, Out: CategoricalDistribution](Distr
         return NotImplemented
 
 
+@predictor_registry.multi_register(["bernoulli_distribution_predictor", "binary_classifier"])
+@runtime_checkable
+class BernoulliDistributionPredictor[**In, Out: BernoulliDistribution](
+    CategoricalDistributionPredictor[In, Out], Protocol
+):
+    """Protocol for predictors that return a Bernoulli distribution expressed as probabilities."""
+
+
 @predictor_registry.multi_register(["logit_distribution_predictor", "logit_classifier"])
 @runtime_checkable
 class LogitDistributionPredictor[**In, Out: CategoricalDistribution](DistributionPredictor[In, Out], Protocol):
     """Protocol for predictors that return a categorical distribution over outputs expressed as logits."""
+
+
+@predictor_registry.multi_register(["bernoulli_logit_distribution_predictor", "binary_logit_classifier"])
+@runtime_checkable
+class BernoulliLogitDistributionPredictor[**In, Out: BernoulliDistribution](
+    LogitDistributionPredictor[In, Out], Protocol
+):
+    """Protocol for predictors that return a Bernoulli distribution expressed as logits."""
 
 
 @predictor_registry.multi_register(["dirichlet_distribution_predictor", "evidential_classifier"])
@@ -205,12 +228,28 @@ def predict_categorical_distribution[**In, Out: CategoricalDistribution](
     return create_categorical_distribution(predict_raw(predictor, *args, **kwargs))  # ty:ignore[invalid-return-type]
 
 
+@predict.register(BernoulliDistributionPredictor)
+def predict_bernoulli_distribution[**In, Out: BernoulliDistribution](
+    predictor: BernoulliDistributionPredictor[In, Out], *args: In.args, **kwargs: In.kwargs
+) -> Out:
+    """Predict for a Bernoulli distribution predictor."""
+    return create_bernoulli_distribution(predict_raw(predictor, *args, **kwargs))  # ty:ignore[invalid-return-type]
+
+
 @predict.register(LogitDistributionPredictor)
 def predict_categorical_distribution_from_logit[**In, Out: CategoricalDistribution](
     predictor: LogitDistributionPredictor[In, Out], *args: In.args, **kwargs: In.kwargs
 ) -> Out:
     """Predict for a categorical distribution predictor."""
     return create_categorical_distribution_from_logits(predict_raw(predictor, *args, **kwargs))  # ty:ignore[invalid-return-type]
+
+
+@predict.register(BernoulliLogitDistributionPredictor)
+def predict_bernoulli_distribution_from_logit[**In, Out: BernoulliDistribution](
+    predictor: BernoulliLogitDistributionPredictor[In, Out], *args: In.args, **kwargs: In.kwargs
+) -> Out:
+    """Predict for a Bernoulli logit distribution predictor."""
+    return create_bernoulli_distribution_from_logits(predict_raw(predictor, *args, **kwargs))  # ty:ignore[invalid-return-type]
 
 
 @predict.register(GaussianDistributionPredictor)

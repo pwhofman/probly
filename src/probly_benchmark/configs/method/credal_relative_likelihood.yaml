@@ -8,3 +8,6 @@ params:
 train:
     alpha: 1.0
     batch_check: false # determines whether likelihood constraint is checked after batch (if true) or epoch (if false)
+active_learning:
+    train:
+        alpha: 0.8 # AL-only override of the relative-likelihood threshold; default 1.0 is too strict for small labeled pools

@@ -1,0 +1,18 @@
+# @package method
+name: "sngp"
+label: "SNGP"
+params:
+  # Imagenet/CLINC-baseline defaults; see probly.method.sngp.sngp docstring for caveats. Also works for CIFAR10
+  num_random_features: 1024
+  norm_multiplier: 6.0
+  ridge_penalty: 1.0
+  # `random_feature_init_std` controls the std of the frozen random projection W_L: 1.0 for cifar10 (non-pretrained),
+  # 0.05 for pretrained imagenet
+  random_feature_init_std: 1.0
+
+selective_prediction:
+  num_samples: 10
+ood_detection:
+  num_samples: 10
+active_learning:
+  num_samples: 10

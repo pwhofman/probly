@@ -8,7 +8,7 @@ from typing import Concatenate, Literal, Protocol, Self, runtime_checkable
 
 from flextype import flexdispatch
 from probly.calibrator._common import Calibrator
-from probly.predictor import LogitClassifier, Predictor, ProbabilisticClassifier
+from probly.predictor import BinaryLogitClassifier, BinaryProbabilisticClassifier, LogitClassifier, Predictor
 from probly.transformation.transformation import predictor_transformation
 
 type ScalingMethod = Literal["temperature", "platt", "vector", "isotonic"]
@@ -72,7 +72,7 @@ def temperature_scaling[**In, Out](base: Predictor[In, Out]) -> CalibrationPredi
     )
 
 
-@predictor_transformation(permitted_predictor_types=(LogitClassifier,), preserve_predictor_type=True)
+@predictor_transformation(permitted_predictor_types=(BinaryLogitClassifier,), preserve_predictor_type=True)
 @CalibrationPredictor.register_factory
 def platt_scaling[**In, Out](base: Predictor[In, Out]) -> CalibrationPredictor[In, Out]:
     """Create a platt scaling calibration wrapper."""
@@ -99,9 +99,9 @@ def vector_scaling[**In, Out](
 
 
 @predictor_transformation(
-    permitted_predictor_types=(LogitClassifier, ProbabilisticClassifier), preserve_predictor_type=False
+    permitted_predictor_types=(BinaryLogitClassifier, BinaryProbabilisticClassifier), preserve_predictor_type=False
 )
-@ProbabilisticClassifier.register_factory
+@BinaryProbabilisticClassifier.register_factory
 @CalibrationPredictor.register_factory
 def isotonic_regression[**In, Out](base: Predictor[In, Out]) -> CalibrationPredictor[In, Out]:
     """Create an isotonic regression calibration wrapper for binary logits."""

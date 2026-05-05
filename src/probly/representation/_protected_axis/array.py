@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from abc import ABC
 from dataclasses import replace
+from inspect import isabstract
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, cast, overload, override
 
 import numpy as np
@@ -45,7 +46,7 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
     def __init_subclass__(cls, **kwargs: object) -> None:
         super().__init_subclass__(**kwargs)
 
-        if cls is ArrayAxisProtected:
+        if cls is ArrayAxisProtected or isabstract(cls):
             return
 
         axes = getattr(cls, "protected_axes", None)
@@ -153,16 +154,26 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
         primary_name = type(self).primary_protected_name()
         return self.protected_values()[primary_name]
 
-    def with_protected_values(self, values: dict[str, ArrayProtectedValue]) -> Self:
+    @overload
+    def with_protected_values(
+        self,
+        values: dict[str, ArrayProtectedValue],
+    ) -> Self: ...
+
+    @overload
+    def with_protected_values(
+        self,
+        values: dict[str, ArrayProtectedValue],
+        func: Callable | None,
+    ) -> ArrayAxisProtected[T]: ...
+
+    def with_protected_values(
+        self,
+        values: dict[str, ArrayProtectedValue],
+        func: Callable | None = None,  # noqa: ARG002
+    ) -> ArrayAxisProtected[T]:
         """Return a copy with updated protected field values."""
         return replace(self, **values)  # ty:ignore[invalid-argument-type]
-
-    def with_protected_value(self, value: ArrayProtectedValue) -> Self:
-        """Return a copy with a replaced primary protected value."""
-        if len(type(self).protected_axes) != 1:
-            msg = "with_protected_value is only supported for single-field protected objects."
-            raise TypeError(msg)
-        return self.with_protected_values({type(self).primary_protected_name(): value})
 
     @override
     def __len__(self) -> int:

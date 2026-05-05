@@ -13,11 +13,15 @@ from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPre
 from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.efficient_credal_prediction import EfficientCredalRepresenter, efficient_credal_prediction
 from probly.representation.credal_set import ProbabilityIntervalsCredalSet
-from probly.representation.distribution import ArrayCategoricalDistribution
+from probly.representation.distribution.array_categorical import (
+    ArrayCategoricalDistribution,
+    ArrayProbabilityCategoricalDistribution,
+)
 from probly.representer import (
     ConvexCredalSetRepresenter,
     ProbabilityIntervalsRepresenter,
     RepresentativeConvexCredalSetRepresenter,
+    SampleMeanConvexCredalSetRepresenter,
     representer,
 )
 
@@ -28,7 +32,7 @@ class _DummyEnsemble(list[Callable[[], ArrayCategoricalDistribution]]):
 
 def _categorical_member(probabilities: list[float]) -> Callable[[], ArrayCategoricalDistribution]:
     def predict() -> ArrayCategoricalDistribution:
-        return ArrayCategoricalDistribution(np.asarray(probabilities))
+        return ArrayProbabilityCategoricalDistribution(np.asarray(probabilities))
 
     return predict
 
@@ -42,12 +46,25 @@ def _ensemble() -> list[Callable[[], ArrayCategoricalDistribution]]:
     )
 
 
-def test_credal_bnn_uses_convex_credal_set_representer() -> None:
+def test_credal_bnn_uses_sample_mean_convex_credal_set_representer() -> None:
     predictor = CredalBNNPredictor.register_instance(_ensemble())
 
     rep = representer(predictor)
 
+    assert isinstance(rep, SampleMeanConvexCredalSetRepresenter)
     assert isinstance(rep, ConvexCredalSetRepresenter)
+    assert rep.num_samples == 20
+    assert len(rep.sub_samplers) == len(predictor)
+    assert all(s.num_samples == 20 for s in rep.sub_samplers)
+
+
+def test_credal_bnn_representer_honors_custom_num_samples() -> None:
+    predictor = CredalBNNPredictor.register_instance(_ensemble())
+
+    rep = SampleMeanConvexCredalSetRepresenter(predictor, num_samples=7)
+
+    assert rep.num_samples == 7
+    assert all(s.num_samples == 7 for s in rep.sub_samplers)
 
 
 def test_credal_ensembling_uses_representative_convex_credal_set_representer() -> None:
@@ -87,3 +104,27 @@ def test_efficient_credal_prediction_uses_method_local_representer() -> None:
 
     assert isinstance(rep, EfficientCredalRepresenter)
     assert isinstance(output, ProbabilityIntervalsCredalSet)
+
+
+def test_credal_bnn_representer_yields_k_vertex_credal_set_torch() -> None:
+    torch = pytest.importorskip("torch")
+    nn = pytest.importorskip("torch.nn")
+
+    from probly.method.credal_bnn import credal_bnn  # noqa: PLC0415
+    from probly.representation.credal_set._common import ConvexCredalSet  # noqa: PLC0415
+
+    torch.manual_seed(0)
+    base = nn.Sequential(nn.Linear(4, 6), nn.ReLU(), nn.Linear(6, 3))
+    predictor = credal_bnn(base, num_members=4, predictor_type="logit_classifier")
+
+    rep = representer(predictor)
+    assert isinstance(rep, SampleMeanConvexCredalSetRepresenter)
+    assert len(rep.sub_samplers) == 4
+
+    cset = rep.represent(torch.randn(2, 4))
+
+    assert isinstance(cset, ConvexCredalSet)
+    # Vertex axis is the second-to-last; classes is the last.
+    vertex_probs = cset.tensor.probabilities
+    assert vertex_probs.shape[-2] == 4
+    assert vertex_probs.shape[-1] == 3

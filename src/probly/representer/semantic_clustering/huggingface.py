@@ -286,7 +286,7 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOut
 
         group_ids = torch.stack(cluster_rows, dim=0).reshape((*row_shape, comparison_size))
         group_ids = group_ids.to(device=logits.device)
-        return TorchSparseLogCategoricalDistribution(group_ids=group_ids, logits=logits)
+        return TorchSparseLogCategoricalDistribution(group_ids=group_ids, entry_logits=logits)
 
     def _with_sample_weights(
         self,
@@ -296,19 +296,21 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOut
         if weights is None:
             return distribution
 
-        weights_tensor = torch.as_tensor(weights, dtype=distribution.logits.dtype, device=distribution.logits.device)
+        weights_tensor = torch.as_tensor(
+            weights, dtype=distribution.entry_logits.dtype, device=distribution.entry_logits.device
+        )
         if torch.any(weights_tensor < 0):
             msg = "sample weights must be non-negative."
             raise ValueError(msg)
         log_weights = torch.log(weights_tensor).reshape(
             (
-                *((1,) * (distribution.logits.ndim - 1)),
+                *((1,) * (distribution.entry_logits.ndim - 1)),
                 weights_tensor.shape[0],
             )
         )
         return TorchSparseLogCategoricalDistribution(
             group_ids=distribution.group_ids,
-            logits=distribution.logits + log_weights,
+            entry_logits=distribution.entry_logits + log_weights,
         )
 
     def _sample_weights_tensor(self, weights: object, *, device: torch.device) -> torch.Tensor | None:
@@ -345,7 +347,7 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOut
             return TorchSparseLogCategoricalDistributionSample(
                 tensor=clustered,
                 sample_dim=generation.sample_dim,
-                weights=self._sample_weights_tensor(generation.weights, device=clustered.logits.device),
+                weights=self._sample_weights_tensor(generation.weights, device=clustered.entry_logits.device),
             )
 
         if isinstance(generation, TorchTextGenerationSample):
