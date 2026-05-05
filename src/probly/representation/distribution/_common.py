@@ -60,6 +60,11 @@ class CategoricalDistribution[T](Distribution[T]):
 
     @property
     @abstractmethod
+    def unnormalized_probabilities(self) -> ArrayLike:
+        """Get unnormalized probabilities of the categorical distribution."""
+
+    @property
+    @abstractmethod
     def log_probabilities(self) -> ArrayLike:
         """Get the log probabilities of the categorical distribution."""
 
