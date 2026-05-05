@@ -79,6 +79,11 @@ transformers = [
     "sentence-transformers>=2.3.0",
     "accelerate>=0.24.1",
 ]
+torch-uncertainty = [
+    { include-group = "torch" },
+    "lightning>=2.6.0",
+    "torch-uncertainty>=0.11.0",
+]
 all_ml = [
     { include-group = "torch" },
     { include-group = "jax" },
@@ -86,6 +91,7 @@ all_ml = [
     { include-group = "river" },
     { include-group = "laplace" },
     { include-group = "transformers" },
+    { include-group = "torch-uncertainty" },
 ]
 test = [
     "pytest>=8.3.5",       # for testing
