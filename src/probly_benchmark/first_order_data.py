@@ -32,8 +32,9 @@ def main(cfg: DictConfig) -> None:
     model, _, run_id = load_model_for_evaluation(cfg, device)
     print(f"Loaded model for {cfg.method.name} from wandb run: {run_id}")
 
-    data_loader = data.get_data_first_order(
+    _, data_loader = data.get_data_first_order(
         cfg.first_order_dataset,
+        seed=cfg.seed,
         batch_size=cfg.batch_size,
     )
 

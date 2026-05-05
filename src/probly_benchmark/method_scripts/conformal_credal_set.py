@@ -69,3 +69,36 @@ dirichlet_rep = representer(dirichlet_cep)
 dirichlet_prediction = dirichlet_rep.predict(inputs)
 dirichlet_quant = quantify(dirichlet_prediction)
 logger.info(dirichlet_quant)
+
+
+# Same four credal-set methods exercised with first-order calibration data
+# (probability vectors instead of class indices).
+y_calib_first_order = torch.softmax(torch.randn(10, 5), dim=-1)
+
+logger.info("--- Total Variation (first-order calibration) ---")
+cep_tv_fo = conformal_total_variation(LeNet(n_classes=5).eval())
+cep_tv_fo.calibrate(alpha, y_calib_first_order, x_calib)
+rep_tv_fo = representer(cep_tv_fo)
+quant_tv_fo = quantify(rep_tv_fo.predict(inputs))
+logger.info(quant_tv_fo)
+
+logger.info("--- Wasserstein Distance (first-order calibration) ---")
+cep_wd_fo = conformal_wasserstein_distance(LeNet(n_classes=5).eval())
+cep_wd_fo.calibrate(alpha, y_calib_first_order, x_calib)
+rep_wd_fo = representer(cep_wd_fo)
+quant_wd_fo = quantify(rep_wd_fo.predict(inputs))
+logger.info(quant_wd_fo)
+
+logger.info("--- Inner Product (first-order calibration) ---")
+cep_ip_fo = conformal_inner_product(LeNet(n_classes=5).eval())
+cep_ip_fo.calibrate(alpha, y_calib_first_order, x_calib)
+rep_ip_fo = representer(cep_ip_fo)
+quant_ip_fo = quantify(rep_ip_fo.predict(inputs))
+logger.info(quant_ip_fo)
+
+logger.info("--- Kullback-Leibler Divergence (first-order calibration) ---")
+cep_kl_fo = conformal_kullback_leibler(LeNet(n_classes=5).eval())
+cep_kl_fo.calibrate(alpha, y_calib_first_order, x_calib)
+rep_kl_fo = representer(cep_kl_fo)
+quant_kl_fo = quantify(rep_kl_fo.predict(inputs))
+logger.info(quant_kl_fo)

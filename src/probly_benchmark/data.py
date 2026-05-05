@@ -619,33 +619,30 @@ def get_data_selective_prediction(
 
 def get_data_first_order(
     name: str,
+    seed: int,
+    cal_split: float = 0.0,
     **kwargs: Any,  # noqa: ANN401
-) -> DataLoader:
-    """Get the test loader for first-order data comparison.
-
-    Returns the test split for comparing model predictions against
-    ground-truth human label distributions (e.g. CIFAR-10H).
-    ``val_split`` and ``cal_split`` are accepted for API consistency and
-    future dataset support but are unused for CIFAR-10.
+) -> tuple[DataLoader | None, DataLoader]:
+    """Calibration and test loaders for first-order data, split reproducibly via ``seed``.
 
     Args:
-        name: Dataset name. Currently only ``"cifar10"`` is supported.
-        seed: Random seed. Unused for CIFAR-10 (no random splitting).
-        val_split: Validation split fraction. Unused for CIFAR-10.
-        cal_split: Calibration split fraction. Unused for CIFAR-10.
-        **kwargs: Forwarded to :class:`~torch.utils.data.DataLoader`.
-
-    Returns:
-        DataLoader over the test set.
-
-    Raises:
-        ValueError: If ``name`` is not a recognized dataset.
+        name: Dataset name.
+        seed: Seed for the calibration/test split.
+        cal_split: Fraction used for calibration; ``0.0`` returns ``(None, full_loader)``.
+        **kwargs: Forwarded to the underlying ``DataLoader``.
     """
     name = name.lower()
     match name:
         case "cifar10h":
-            data = CIFAR10H(root=DATA_PATH, download=True, transform=TRANSFORMS_TEST["cifar10"])
-            return DataLoader(data, **kwargs)
+            full = CIFAR10H(root=DATA_PATH, download=True, transform=TRANSFORMS_TEST["cifar10"])
+            eval_kwargs: dict[str, Any] = {**kwargs, "shuffle": False, "persistent_workers": False}
+            if cal_split == 0.0:
+                return None, DataLoader(full, **eval_kwargs)
+            rng = torch.Generator().manual_seed(seed)
+            cal_len = int(len(full) * cal_split)
+            test_len = len(full) - cal_len
+            cal, test = random_split(full, [cal_len, test_len], generator=rng)
+            return DataLoader(cal, **eval_kwargs), DataLoader(test, **eval_kwargs)
         case _:
             msg = f"Dataset {name} not recognized"
             raise ValueError(msg)

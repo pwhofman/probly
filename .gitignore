@@ -278,6 +278,9 @@ stubs/
 .claude/settings.local.json
 .claude/worktrees/
 
+# Local agent artifacts (specs, plans)
+docs/superpowers/
+
 # Weights and Biases
 wandb/
 
