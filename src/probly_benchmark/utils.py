@@ -409,7 +409,8 @@ def _download_checkpoint_from_wandb(
         msg = f"Expected exactly one .pt file in artifact, found {len(pt_files)}"
         raise RuntimeError(msg)
 
-    checkpoint = torch.load(pt_files[0], map_location=device, weights_only=False)
+    load_device = torch.device("cpu") if device.type == "mps" else device
+    checkpoint = torch.load(pt_files[0], map_location=load_device, weights_only=False)
     run_id = artifact.logged_by().id
     return checkpoint, run_id
 
@@ -432,24 +433,29 @@ def _build_uncalibrated_model_from_checkpoint(
         train_loader=None,
     )
 
+    def _to_device(m: nn.Module) -> nn.Module:
+        if device.type == "mps":
+            m = m.to(torch.float32)
+        return m.to(device)
+
     build_method = target_method if target_method is not None else cfg["method"]["name"]
     model = build_model(build_method, method_params, ctx)
     if isinstance(model, list):
         for m, state in zip(model, checkpoint["model_state_dict"], strict=True):
             m = cast("nn.Module", m)
             m.load_state_dict(state)
-            m.to(device)
+            _to_device(m)
             m.eval()
     elif isinstance(model, BaseLaplace):
         # Move inner nn.Module to device BEFORE load_state_dict so that BaseLaplace._device
         # already returns the target device when the prior_precision setter is called (it
         # unconditionally moves the value to self._device at assignment time).
-        model.model.to(device)
+        _to_device(model.model)
         model.load_state_dict(checkpoint["model_state_dict"])
         model.model.eval()
     else:
         model.load_state_dict(checkpoint["model_state_dict"])
-        model.to(device)
+        _to_device(model)
         model.eval()
     return model, cfg
 
