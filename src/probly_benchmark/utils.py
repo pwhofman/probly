@@ -358,9 +358,13 @@ def resolve_artifact_name(
     """
     calibration_suffix = calibration_name_suffix(cfg) if include_calibration else ""
     conformal_suffix = conformal_name_suffix(cfg) if include_conformal else ""
+    # cal_split is only embedded in artifact names produced by conformal fitting runs
+    # (conformalize_credal_set.yaml). For methods trained without conformal, the
+    # artifact was saved without a cal_split suffix, so don't add one here either.
+    cal_split_suffix = cal_split_name_suffix(cfg) if conformal_suffix else ""
     return (
         f"{cfg.method.name}{credal_alpha_name_suffix(cfg)}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
-        f"{cal_split_name_suffix(cfg)}"
+        f"{cal_split_suffix}"
         f"{supervised_loss_name_suffix(cfg)}"
         f"{calibration_suffix}"
         f"{conformal_suffix}"
