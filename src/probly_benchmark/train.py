@@ -1274,15 +1274,32 @@ def _(
     model.fit(fit_loader)
     run.summary["laplace_fitted"] = True
     if train_kwargs.get("optimize_prior", False):
-        # ``pred_type`` is required by laplace-torch's signature but unused when ``method='marglik'``
-        # (marglik works directly on the closed-form log-marginal-likelihood); any value is fine.
-        model.optimize_prior_precision(
-            pred_type="glm",
-            method="marglik",
-            n_steps=train_kwargs.get("n_steps", 100),
-            lr=train_kwargs.get("lr", 0.1),
-        )
+        prior_method = train_kwargs.get("prior_optimization_method", "gridsearch")
+        if prior_method == "gridsearch" and val_loader is None:
+            print(
+                "[laplace] prior_optimization_method='gridsearch' requires val_loader "
+                "but val_split=0; falling back to 'marglik'."
+            )
+            prior_method = "marglik"
+        if prior_method == "gridsearch":
+            model.optimize_prior_precision(
+                method="gridsearch",
+                pred_type="glm",
+                link_approx="probit",
+                val_loader=val_loader,
+                grid_size=train_kwargs.get("prior_grid_size", 100),
+            )
+        else:  # "marglik" — known to under-regularize last-layer + KFAC; kept for opt-in compatibility.
+            # ``pred_type`` is required by laplace-torch's signature but unused when ``method='marglik'``
+            # (marglik works directly on the closed-form log-marginal-likelihood); any value is fine.
+            model.optimize_prior_precision(
+                pred_type="glm",
+                method="marglik",
+                n_steps=train_kwargs.get("n_steps", 100),
+                lr=train_kwargs.get("lr", 0.1),
+            )
         run.summary["laplace_prior_precision"] = float(model.prior_precision)
+        run.summary["laplace_prior_method"] = prior_method
 
 
 @train_model.register(EfficientCredalPredictor)

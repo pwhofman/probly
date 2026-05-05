@@ -7,10 +7,14 @@ params:
   subset_of_weights: "last_layer"
   hessian_structure: "kron"
 train:
-  # Post-fit prior-precision tuning via marginal-likelihood, defaults are the library defaults from baselaplace.py.
   optimize_prior: true
+  prior_optimization_method: "gridsearch"
+  # Used only when prior_optimization_method == "marglik". Library defaults from baselaplace.py.
   n_steps: 100
   lr: 0.1
+  # Used only when prior_optimization_method == "gridsearch". 100 points over log-range [-4, 4]
+  # is the laplace-torch default; reduce on ImageNet if the gridsearch evaluation pass is slow.
+  prior_grid_size: 100
   # GLM predictive at inference. ImageNet recipe overrides to "nn" because the GLM Jacobian is too expensive
   pred_type: "glm"
     # Batch size used when fitting the Laplace posterior (model.fit). Kept small because KFAC
