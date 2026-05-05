@@ -167,7 +167,7 @@ class TorchDirichletMixtureDistribution(  # ty:ignore[conflicting-metaclass]
     @override
     @classmethod
     def __instancehook__(cls, instance: object) -> bool:
-        return super().__instancehook__(instance)
+        return MixtureDistribution.__instancehook__(instance)
 
 
 @create_dirichlet_mixture_distribution_from_alphas_and_weights.register(torch.Tensor)
