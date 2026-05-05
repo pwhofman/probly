@@ -19,3 +19,7 @@ train:
   fit_batch_size: null
   # Fraction in (0, 1] of the train set used to fit the Hessian, null = full dataset.
   fit_subset: null
+selective_prediction:
+    num_samples: 100
+ood_detection:
+    num_samples: 100

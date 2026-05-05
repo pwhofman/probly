@@ -11,7 +11,7 @@ from laplace import Laplace  # noqa: E402
 from torch import nn  # noqa: E402
 from torch.utils.data import DataLoader, TensorDataset  # noqa: E402
 
-from probly.method.laplace.laplace import LaplaceSampler  # noqa: E402
+from probly.method.laplace.torch import LaplaceRepresenter  # noqa: E402
 from probly.representation.distribution import CategoricalDistribution  # noqa: E402
 from probly.representation.sample import Sample  # noqa: E402
 from probly.representer import representer  # noqa: E402
@@ -60,7 +60,7 @@ def fitted_glm_la(tiny_classifier: nn.Module, tiny_loader: DataLoader):
 def test_representer_returns_laplace_sampler_glm(fitted_glm_la, tiny_input: torch.Tensor) -> None:
     """``representer(la, num_samples=N)`` returns a LaplaceSampler in GLM mode (default)."""
     rep = representer(fitted_glm_la, num_samples=8)
-    assert isinstance(rep, LaplaceSampler)
+    assert isinstance(rep, LaplaceRepresenter)
     assert rep.num_samples == 8
     assert rep.pred_type == "glm"
 
@@ -72,7 +72,7 @@ def test_representer_returns_laplace_sampler_glm(fitted_glm_la, tiny_input: torc
 def test_representer_returns_laplace_sampler_nn(fitted_glm_la, tiny_input: torch.Tensor) -> None:
     """``representer(la, num_samples=N, pred_type='nn')`` returns a LaplaceSampler in MC mode."""
     rep = representer(fitted_glm_la, num_samples=8, pred_type="nn")
-    assert isinstance(rep, LaplaceSampler)
+    assert isinstance(rep, LaplaceRepresenter)
     assert rep.pred_type == "nn"
 
     out = rep.represent(tiny_input)

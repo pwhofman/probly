@@ -7,8 +7,9 @@ import random
 import secrets
 from typing import TYPE_CHECKING, Any, cast
 
+from laplace.baselaplace import BaseLaplace
 import numpy as np
-from omegaconf import OmegaConf
+from omegaconf import DictConfig, OmegaConf
 import torch
 from tqdm import tqdm
 import wandb
@@ -20,7 +21,6 @@ from probly_benchmark.decision import decide
 from probly_benchmark.uncertainty import select_uncertainty
 
 if TYPE_CHECKING:
-    from omegaconf import DictConfig
     from torch import nn
     from torch.utils.data import DataLoader
 
@@ -155,9 +155,11 @@ def collect_uncertainties_decisions_targets(
     all_mean_probs: list[torch.Tensor] = []
     all_targets: list[torch.Tensor] = []
 
+    # BaseLaplace uses Cholesky decomposition internally which doesn't support float16.
+    use_amp = amp_enabled and not isinstance(model, BaseLaplace)
     for inputs, targets_ in tqdm(loader, desc="Batch"):
         inputs_dev = inputs.to(device)
-        if amp_enabled:
+        if use_amp:
             with torch.amp.autocast(device.type):
                 outputs_ = rep.predict(inputs_dev)
                 decision = decide(model, inputs_dev, rep_kwargs=rep_kwargs)
@@ -274,6 +276,26 @@ def _safe_artifact_token(value: object) -> str:
     return "".join(char if char.isalnum() or char in "._-" else "_" for char in str(value))
 
 
+_CREDAL_ALPHA_METHODS = frozenset({"credal_relative_likelihood", "efficient_credal_prediction"})
+
+
+def credal_alpha_name_suffix(cfg: DictConfig) -> str:
+    """Return the alpha suffix for credal methods whose artifacts differ by alpha.
+
+    Args:
+        cfg: Hydra config containing ``method.name`` and ``method.train.alpha``.
+
+    Returns:
+        A string like ``_alpha0_5`` when the method is alpha-dependent, else ``""``.
+    """
+    if cfg.method.name not in _CREDAL_ALPHA_METHODS:
+        return ""
+    alpha = cfg.method.get("train", {}).get("alpha")
+    if alpha is None:
+        return ""
+    return f"_alpha{_safe_artifact_token(alpha)}"
+
+
 def supervised_loss_name_suffix(cfg: DictConfig) -> str:
     """Return the name suffix for non-default supervised training losses."""
     name = get_supervised_loss_name(cfg)
@@ -337,7 +359,7 @@ def resolve_artifact_name(
     calibration_suffix = calibration_name_suffix(cfg) if include_calibration else ""
     conformal_suffix = conformal_name_suffix(cfg) if include_conformal else ""
     return (
-        f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+        f"{cfg.method.name}{credal_alpha_name_suffix(cfg)}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
         f"{cal_split_name_suffix(cfg)}"
         f"{supervised_loss_name_suffix(cfg)}"
         f"{calibration_suffix}"
@@ -418,6 +440,13 @@ def _build_uncalibrated_model_from_checkpoint(
             m.load_state_dict(state)
             m.to(device)
             m.eval()
+    elif isinstance(model, BaseLaplace):
+        # Move inner nn.Module to device BEFORE load_state_dict so that BaseLaplace._device
+        # already returns the target device when the prior_precision setter is called (it
+        # unconditionally moves the value to self._device at assignment time).
+        model.model.to(device)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        model.model.eval()
     else:
         model.load_state_dict(checkpoint["model_state_dict"])
         model.to(device)
@@ -546,7 +575,12 @@ def load_model_for_evaluation(
         return load_model_from_wandb(artifact_name, cfg.wandb.entity, cfg.wandb.project, device)
 
     source_method, member_index = _parse_load_from(load_from)
-    artifact_name = f"{source_method}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+    source_alpha = ""
+    if isinstance(load_from, DictConfig):
+        alpha_val = load_from.get("alpha")
+        if alpha_val is not None:
+            source_alpha = f"_alpha{_safe_artifact_token(alpha_val)}"
+    artifact_name = f"{source_method}{source_alpha}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
 
     if member_index is not None:
         model, train_cfg, run_id = load_model_from_wandb(artifact_name, cfg.wandb.entity, cfg.wandb.project, device)
@@ -600,7 +634,7 @@ def init_wandb_for_evaluation(
         ``run.finish()``.
     """
     if cfg.method.get("load_from"):
-        run_name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+        run_name = f"{cfg.method.name}{credal_alpha_name_suffix(cfg)}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
         existing_id = _find_existing_run_id(cfg.wandb.entity, cfg.wandb.project, run_name)
         if existing_id is not None:
             return wandb.init(
