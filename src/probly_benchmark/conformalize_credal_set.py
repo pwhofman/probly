@@ -30,8 +30,14 @@ class _MultiClassIdentityLogitModel(torch.nn.Module):
 
     Workaround: probly's ``TorchIdentityLogitModel`` is registered as both
     ``LogitClassifier`` and ``BinaryLogitClassifier``, so ``predict()`` resolves
-    to the Bernoulli handler for any multi-class input and produces a
-    ``(B, K, 2)`` distribution that breaks the conformal score computation.
+    to the Bernoulli handler for any multi-class input. The Bernoulli handler
+    treats each class logit as an independent binary logit and stacks
+    ``(zeros, logit)`` along the last dim, producing a ``(B, K, 2)`` distribution
+    that breaks the conformal score computation against ``(B, K)`` first-order
+    targets.
+
+    Registering only as ``LogitClassifier`` (multi-class) avoids the dispatch
+    routing through Bernoulli.
     """
 
     def forward(self, logits: torch.Tensor) -> torch.Tensor:
