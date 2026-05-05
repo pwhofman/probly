@@ -6,6 +6,7 @@ from probly import (
     datasets as datasets,
     decider as decider,
     evaluation as evaluation,
+    integrations as integrations,
     layers as layers,
     method as method,
     metrics as metrics,
