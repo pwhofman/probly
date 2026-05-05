@@ -13,7 +13,13 @@ if TYPE_CHECKING:
     from probly.representation.array_like import ArrayLike
 
 type DistributionType = Literal[
-    "gaussian", "dirichlet", "categorical", "bernoulli", "empirical_second_order_categorical", "point_prediction"
+    "gaussian",
+    "dirichlet",
+    "categorical",
+    "bernoulli",
+    "empirical_second_order_categorical",
+    "mixture",
+    "point_prediction",
 ]
 
 
@@ -31,6 +37,22 @@ class Distribution[T](Representation, ABC):
     @abstractmethod
     def sample(self, num_samples: int) -> Sample[T]:
         """Draw samples from Distribution."""
+
+
+class MixtureDistribution[D: Distribution, T](Distribution[T], ABC):
+    """Base class for mixture distributions."""
+
+    type: Literal["mixture"] = "mixture"
+
+    @property
+    @abstractmethod
+    def components(self) -> ArrayLike[D]:
+        """Get the components of the mixture distribution."""
+
+    @property
+    @abstractmethod
+    def mixture_weights(self) -> ArrayLike:
+        """Get the mixture weights of the mixture distribution."""
 
 
 class CategoricalDistribution[T](Distribution[T]):
