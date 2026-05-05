@@ -355,7 +355,7 @@ def _training_loop(  # noqa: PLR0912, PLR0915
         for inputs_, targets_ in tqdm(train_loader):
             inputs = inputs_.to(device, non_blocking=True)
             if device.type == "cuda" and inputs.ndim >= 4:
-                inputs = inputs.contiguous(memory_format=torch.channels_last)
+                inputs = inputs.contiguous()
             targets = targets_.to(device, non_blocking=True)
             running_loss += train_fn(
                 model,
@@ -675,7 +675,7 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
         for inputs_, targets_ in tqdm(train_loader):
             inputs = inputs_.to(device, non_blocking=True)
             if device.type == "cuda" and inputs.ndim >= 4:
-                inputs = inputs.contiguous(memory_format=torch.channels_last)
+                inputs = inputs.contiguous()
             targets = targets_.to(device, non_blocking=True)
             running_loss += train_fn(
                 model,
@@ -891,7 +891,7 @@ def _fit_ddu_density_head(
     for inputs_, targets_ in tqdm(train_loader, desc="Fitting DDU density head"):
         inputs = inputs_.to(device, non_blocking=True)
         if device.type == "cuda" and inputs.ndim >= 4:
-            inputs = inputs.contiguous(memory_format=torch.channels_last)
+            inputs = inputs.contiguous()
         targets = targets_.to(device, non_blocking=True)
         with torch.amp.autocast(device.type, enabled=amp_enabled):
             features = model.encoder(inputs)
@@ -1002,7 +1002,7 @@ def _collect_deup_error_targets(
     for inputs_, targets_ in tqdm(error_head_loader, desc="Collecting DEUP error targets"):
         inputs = inputs_.to(device, non_blocking=True)
         if device.type == "cuda" and inputs.ndim >= 4:
-            inputs = inputs.contiguous(memory_format=torch.channels_last)
+            inputs = inputs.contiguous()
         targets = targets_.to(device, non_blocking=True)
         with torch.amp.autocast(device.type, enabled=amp_enabled):
             features = model_.encoder(inputs)
