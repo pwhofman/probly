@@ -9,7 +9,12 @@ from omegaconf import DictConfig, OmegaConf
 
 from probly.metrics import coverage, efficiency
 from probly.representer import representer
-from probly_benchmark import calibration, data, utils
+from probly_benchmark import (
+    calibration,
+    conformalize_credal_set as _conformalize_credal_set,  # noqa: F401  # registers credal-set conformal methods
+    data,
+    utils,
+)
 from probly_benchmark.utils import (
     collect_outputs_targets,
     init_wandb_for_evaluation,
