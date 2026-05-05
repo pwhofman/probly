@@ -52,14 +52,11 @@ def main(cfg: DictConfig) -> None:
 
     outputs, targets = collect_outputs_targets(rep, data_loader, device, amp_enabled=cfg.get("amp", False))
 
-    print(outputs)
-    print(targets)
     ### coverage
     cov = coverage(outputs, targets)
-    print(cov)
+
     ### efficiency
     eff = efficiency(outputs)
-    print(eff)
 
     if cfg.wandb.enabled:
         run = init_wandb_for_evaluation(cfg, run_id)
