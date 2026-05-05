@@ -15,7 +15,6 @@ from .decomposition import (
 )
 from .entropy import CredalSetEntropyDecomposition, SecondOrderEntropyDecomposition
 from .ordinal import (
-    CategoricalVarianceDecomposition,
     LabelwiseBinaryEntropyDecomposition,
     LabelwiseBinaryVarianceDecomposition,
     OrdinalEntropyDecomposition,
@@ -42,6 +41,7 @@ __all__ = [
     "AleatoricTotalDecomposition",
     "CachingDecomposition",
     "CategoricalVarianceDecomposition",
+    "CategoricalVarianceDecomposition",
     "CredalSetEntropyDecomposition",
     "Decomposition",
     "EpistemicDecomposition",
@@ -50,7 +50,6 @@ __all__ = [
     "LabelwiseBinaryEntropyDecomposition",
     "LabelwiseBinaryVarianceDecomposition",
     "OrdinalEntropyDecomposition",
-    "CategoricalVarianceDecomposition",
     "OrdinalVarianceDecomposition",
     "SecondOrderEntropyDecomposition",
     "SecondOrderVarianceDecomposition",

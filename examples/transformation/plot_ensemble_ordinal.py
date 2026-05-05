@@ -62,35 +62,51 @@ class MLPClassifier(nn.Module):
 # We specify predictor_type="logit_classifier" to get probabilistic distributions out.
 ensemble_predictor = ensemble(MLPClassifier(), num_members=5, reset_params=True, predictor_type="logit_classifier")
 
-# Evaluate the untrained state for comparison
-output_pre = representer(ensemble_predictor).predict(X_test)
-variance_pre = OrdinalVarianceDecomposition(output_pre)
-entropy_pre = OrdinalEntropyDecomposition(output_pre)
 
-
-total_unc_pre = variance_pre.total
-aleatoric_unc_pre = variance_pre.aleatoric
-epistemic_unc_pre = variance_pre.epistemic
-
-total_entropy_pre = entropy_pre.total
-aleatoric_entropy_pre = entropy_pre.aleatoric
-epistemic_entropy_pre = entropy_pre.epistemic
-
-
-# Calculate the expected class dynamically (BMA probability mean)
-bma_probs_pre = torch.mean(output_pre.tensor.probabilities, dim=output_pre.sample_axis)
-classes = torch.arange(5, dtype=torch.float32)
-expected_class_pre = torch.sum(bma_probs_pre * classes, dim=-1).detach().numpy()
-
-
-# Train each member on the dataset.
+# Train each member on the dataset for 10 epochs.
 loss_fn = nn.CrossEntropyLoss()
+optimizers = []
+member_indices = []
+
 for member in ensemble_predictor:
     optimizer = torch.optim.Adam(member.parameters(), lr=0.01)
+    optimizers.append(optimizer)
     member_idx = torch.randint(0, len(X_train), (len(X_train),)) # Bagging
+    member_indices.append(member_idx)
     X_bag, y_bag = X_train[member_idx], y_train[member_idx]
 
-    for _ in range(500):
+    for _ in range(10):
+        optimizer.zero_grad()
+        out = member(X_bag)
+        loss = loss_fn(out, y_bag)
+        loss.backward()
+        optimizer.step()
+
+# Evaluate the state after 10 epochs
+output_epoch_10 = representer(ensemble_predictor).predict(X_test)
+variance_epoch_10 = OrdinalVarianceDecomposition(output_epoch_10)
+entropy_epoch_10 = OrdinalEntropyDecomposition(output_epoch_10)
+
+total_unc_epoch_10 = variance_epoch_10.total
+aleatoric_unc_epoch_10 = variance_epoch_10.aleatoric
+epistemic_unc_epoch_10 = variance_epoch_10.epistemic
+
+total_entropy_epoch_10 = entropy_epoch_10.total
+aleatoric_entropy_epoch_10 = entropy_epoch_10.aleatoric
+epistemic_entropy_epoch_10 = entropy_epoch_10.epistemic
+
+# Calculate the expected class dynamically (BMA probability mean)
+bma_probs_epoch_10 = torch.mean(output_epoch_10.tensor.probabilities, dim=output_epoch_10.sample_axis)
+classes = torch.arange(5, dtype=torch.float32)
+expected_class_epoch_10 = torch.sum(bma_probs_epoch_10 * classes, dim=-1).detach().numpy()
+
+
+# Train each member on the dataset for another 90 epochs (to reach 100 epochs total)
+for i, member in enumerate(ensemble_predictor):
+    optimizer = optimizers[i]
+    X_bag, y_bag = X_train[member_indices[i]], y_train[member_indices[i]]
+
+    for _ in range(90):
         optimizer.zero_grad()
         out = member(X_bag)
         loss = loss_fn(out, y_bag)
@@ -101,77 +117,76 @@ for member in ensemble_predictor:
 # Represent and Quantify
 # ----------------------
 # We wrap the ensemble predictor to generate our second-order representation.
-output_post = representer(ensemble_predictor).predict(X_test)
+output_epoch_100 = representer(ensemble_predictor).predict(X_test)
 
 # Quantify total, aleatoric, and epistemic uncertainty via OrdinalVarianceDecomposition
-variance_post = OrdinalVarianceDecomposition(output_post)
-entropy_post = OrdinalEntropyDecomposition(output_post)
+variance_epoch_100 = OrdinalVarianceDecomposition(output_epoch_100)
+entropy_epoch_100 = OrdinalEntropyDecomposition(output_epoch_100)
 
-total_unc_post = variance_post.total
-aleatoric_unc_post = variance_post.aleatoric
-epistemic_unc_post = variance_post.epistemic
+total_unc_epoch_100 = variance_epoch_100.total
+aleatoric_unc_epoch_100 = variance_epoch_100.aleatoric
+epistemic_unc_epoch_100 = variance_epoch_100.epistemic
 
-total_entropy_post = entropy_post.total
-aleatoric_entropy_post = entropy_post.aleatoric
-epistemic_entropy_post = entropy_post.epistemic
+total_entropy_epoch_100 = entropy_epoch_100.total
+aleatoric_entropy_epoch_100 = entropy_epoch_100.aleatoric
+epistemic_entropy_epoch_100 = entropy_epoch_100.epistemic
 
 # %%
 # Results
 # -------
 
 # Calculate predictive mean (expected class)
-bma_probs_post = torch.mean(output_post.tensor.probabilities, dim=output_post.sample_axis)
-expected_class_post = torch.sum(bma_probs_post * classes, dim=-1).detach().numpy()
+bma_probs_epoch_100 = torch.mean(output_epoch_100.tensor.probabilities, dim=output_epoch_100.sample_axis)
+expected_class_epoch_100 = torch.sum(bma_probs_epoch_100 * classes, dim=-1).detach().numpy()
 
 # Sort for plotting
 order = np.argsort(X_test.numpy().ravel())
 X_plot = X_test.numpy().ravel()[order]
 
-# Pre-train plots
-mean_plot_pre = expected_class_pre[order]
-tot_plot_pre = total_unc_pre.squeeze().detach().numpy()[order]
-ale_plot_pre = aleatoric_unc_pre.squeeze().detach().numpy()[order]
-epi_plot_pre = epistemic_unc_pre.squeeze().detach().numpy()[order]
-std_total_pre = np.sqrt(tot_plot_pre)
+# Plots for 10 epochs
+mean_plot_epoch_10 = expected_class_epoch_10[order]
+tot_plot_epoch_10 = total_unc_epoch_10.squeeze().detach().numpy()[order]
+ale_plot_epoch_10 = aleatoric_unc_epoch_10.squeeze().detach().numpy()[order]
+epi_plot_epoch_10 = epistemic_unc_epoch_10.squeeze().detach().numpy()[order]
+std_total_epoch_10 = np.sqrt(tot_plot_epoch_10)
 
-tot_ent_pre = total_entropy_pre.squeeze().detach().numpy()[order]
-ale_ent_pre = aleatoric_entropy_pre.squeeze().detach().numpy()[order]
-epi_ent_pre = epistemic_entropy_pre.squeeze().detach().numpy()[order]
+tot_ent_epoch_10 = total_entropy_epoch_10.squeeze().detach().numpy()[order]
+ale_ent_epoch_10 = aleatoric_entropy_epoch_10.squeeze().detach().numpy()[order]
+epi_ent_epoch_10 = epistemic_entropy_epoch_10.squeeze().detach().numpy()[order]
 
 
+# Plots for 100 epochs
+mean_plot_epoch_100 = expected_class_epoch_100[order]
+tot_plot_epoch_100 = total_unc_epoch_100.squeeze().detach().numpy()[order]
+ale_plot_epoch_100 = aleatoric_unc_epoch_100.squeeze().detach().numpy()[order]
+epi_plot_epoch_100 = epistemic_unc_epoch_100.squeeze().detach().numpy()[order]
+std_total_epoch_100 = np.sqrt(tot_plot_epoch_100)
 
-# Post-train plots
-mean_plot_post = expected_class_post[order]
-tot_plot_post = total_unc_post.squeeze().detach().numpy()[order]
-ale_plot_post = aleatoric_unc_post.squeeze().detach().numpy()[order]
-epi_plot_post = epistemic_unc_post.squeeze().detach().numpy()[order]
-std_total_post = np.sqrt(tot_plot_post)
-
-tot_ent_post = total_entropy_post.squeeze().detach().numpy()[order]
-ale_ent_post = aleatoric_entropy_post.squeeze().detach().numpy()[order]
-epi_ent_post = epistemic_entropy_post.squeeze().detach().numpy()[order]
+tot_ent_epoch_100 = total_entropy_epoch_100.squeeze().detach().numpy()[order]
+ale_ent_epoch_100 = aleatoric_entropy_epoch_100.squeeze().detach().numpy()[order]
+epi_ent_epoch_100 = epistemic_entropy_epoch_100.squeeze().detach().numpy()[order]
 
 fig, axs = plt.subplots(3, 2, figsize=(14, 12), sharex=True)
-ax1_pre, ax1_post = axs[0, 0], axs[0, 1]
-ax2_pre, ax2_post = axs[1, 0], axs[1, 1]
-ax3_pre, ax3_post = axs[2, 0], axs[2, 1]
+ax1_epoch_10, ax1_epoch_100 = axs[0, 0], axs[0, 1]
+ax2_epoch_10, ax2_epoch_100 = axs[1, 0], axs[1, 1]
+ax3_epoch_10, ax3_epoch_100 = axs[2, 0], axs[2, 1]
 
 # Compute y-limits for the decompositions (shared across measures, separate for states)
-max_decomp_y_pre = max(
-    tot_plot_pre.max(), tot_ent_pre.max()
+max_decomp_y_epoch_10 = max(
+    tot_plot_epoch_10.max(), tot_ent_epoch_10.max()
 ) * 1.05
-max_decomp_y_post = max(
-    tot_plot_post.max(), tot_ent_post.max()
+max_decomp_y_epoch_100 = max(
+    tot_plot_epoch_100.max(), tot_ent_epoch_100.max()
 ) * 1.05
 
 min_class_y = min(
-    (mean_plot_pre - 2 * std_total_pre).min(),
-    (mean_plot_post - 2 * std_total_post).min(),
+    (mean_plot_epoch_10 - 2 * std_total_epoch_10).min(),
+    (mean_plot_epoch_100 - 2 * std_total_epoch_100).min(),
     y_train.numpy().min(), y_test.numpy().min()
 ) - 0.5
 max_class_y = max(
-    (mean_plot_pre + 2 * std_total_pre).max(),
-    (mean_plot_post + 2 * std_total_post).max(),
+    (mean_plot_epoch_10 + 2 * std_total_epoch_10).max(),
+    (mean_plot_epoch_100 + 2 * std_total_epoch_100).max(),
     y_train.numpy().max(), y_test.numpy().max()
 ) + 0.5
 
@@ -196,37 +211,37 @@ def plot_decomposition(ax, tot_plot, epi_plot, ale_plot, ylabel, title_prefix, m
     ax.legend(loc="upper left")
     ax.set_title(f"{title_prefix}: {ylabel} Decomposition")
 
-plot_expected_class(ax1_pre, mean_plot_pre, std_total_pre, "Untrained")
-plot_expected_class(ax1_post, mean_plot_post, std_total_post, "Trained")
+plot_expected_class(ax1_epoch_10, mean_plot_epoch_10, std_total_epoch_10, "10 Epochs")
+plot_expected_class(ax1_epoch_100, mean_plot_epoch_100, std_total_epoch_100, "100 Epochs")
 
-plot_decomposition(ax2_pre, tot_plot_pre, epi_plot_pre, ale_plot_pre, "Ordinal Variance", "Untrained", max_decomp_y_pre)
-plot_decomposition(ax2_post, tot_plot_post, epi_plot_post, ale_plot_post, "Ordinal Variance", "Trained", max_decomp_y_post)
+plot_decomposition(ax2_epoch_10, tot_plot_epoch_10, epi_plot_epoch_10, ale_plot_epoch_10, "Ordinal Variance", "10 Epochs", max_decomp_y_epoch_10)
+plot_decomposition(ax2_epoch_100, tot_plot_epoch_100, epi_plot_epoch_100, ale_plot_epoch_100, "Ordinal Variance", "100 Epochs", max_decomp_y_epoch_100)
 
-plot_decomposition(ax3_pre, tot_ent_pre, epi_ent_pre, ale_ent_pre, "Ordinal Entropy", "Untrained", max_decomp_y_pre)
-plot_decomposition(ax3_post, tot_ent_post, epi_ent_post, ale_ent_post, "Ordinal Entropy", "Trained", max_decomp_y_post)
+plot_decomposition(ax3_epoch_10, tot_ent_epoch_10, epi_ent_epoch_10, ale_ent_epoch_10, "Ordinal Entropy", "10 Epochs", max_decomp_y_epoch_10)
+plot_decomposition(ax3_epoch_100, tot_ent_epoch_100, epi_ent_epoch_100, ale_ent_epoch_100, "Ordinal Entropy", "100 Epochs", max_decomp_y_epoch_100)
 
-ax3_pre.set_xlabel("X")
-ax3_post.set_xlabel("X")
+ax3_epoch_10.set_xlabel("X")
+ax3_epoch_100.set_xlabel("X")
 
 fig.tight_layout()
 plt.show()
 
 # Print specific point values
-print("--- Before Training ---")
+print("--- After 10 Epochs ---")
 print("Variance Decomp:")
-print(f"  Total Range:     [{total_unc_pre.min().item():.4f}, {total_unc_pre.max().item():.4f}]")
-print(f"  Epistemic Range: [{epistemic_unc_pre.min().item():.4f}, {epistemic_unc_pre.max().item():.4f}]")
-print(f"  Aleatoric Range: [{aleatoric_unc_pre.min().item():.4f}, {aleatoric_unc_pre.max().item():.4f}]")
+print(f"  Total Range:     [{total_unc_epoch_10.min().item():.4f}, {total_unc_epoch_10.max().item():.4f}]")
+print(f"  Epistemic Range: [{epistemic_unc_epoch_10.min().item():.4f}, {epistemic_unc_epoch_10.max().item():.4f}]")
+print(f"  Aleatoric Range: [{aleatoric_unc_epoch_10.min().item():.4f}, {aleatoric_unc_epoch_10.max().item():.4f}]")
 print("Entropy Decomp:")
-print(f"  Total Range:     [{total_entropy_pre.min().item():.4f}, {total_entropy_pre.max().item():.4f}]")
-print(f"  Epistemic Range: [{epistemic_entropy_pre.min().item():.4f}, {epistemic_entropy_pre.max().item():.4f}]")
-print(f"  Aleatoric Range: [{aleatoric_entropy_pre.min().item():.4f}, {aleatoric_entropy_pre.max().item():.4f}]")
-print("\n--- After Training ---")
+print(f"  Total Range:     [{total_entropy_epoch_10.min().item():.4f}, {total_entropy_epoch_10.max().item():.4f}]")
+print(f"  Epistemic Range: [{epistemic_entropy_epoch_10.min().item():.4f}, {epistemic_entropy_epoch_10.max().item():.4f}]")
+print(f"  Aleatoric Range: [{aleatoric_entropy_epoch_10.min().item():.4f}, {aleatoric_entropy_epoch_10.max().item():.4f}]")
+print("\n--- After 100 Epochs ---")
 print("Variance Decomp:")
-print(f"  Total Range:     [{total_unc_post.min().item():.4f}, {total_unc_post.max().item():.4f}]")
-print(f"  Epistemic Range: [{epistemic_unc_post.min().item():.4f}, {epistemic_unc_post.max().item():.4f}]")
-print(f"  Aleatoric Range: [{aleatoric_unc_post.min().item():.4f}, {aleatoric_unc_post.max().item():.4f}]")
+print(f"  Total Range:     [{total_unc_epoch_100.min().item():.4f}, {total_unc_epoch_100.max().item():.4f}]")
+print(f"  Epistemic Range: [{epistemic_unc_epoch_100.min().item():.4f}, {epistemic_unc_epoch_100.max().item():.4f}]")
+print(f"  Aleatoric Range: [{aleatoric_unc_epoch_100.min().item():.4f}, {aleatoric_unc_epoch_100.max().item():.4f}]")
 print("Entropy Decomp:")
-print(f"  Total Range:     [{total_entropy_post.min().item():.4f}, {total_entropy_post.max().item():.4f}]")
-print(f"  Epistemic Range: [{epistemic_entropy_post.min().item():.4f}, {epistemic_entropy_post.max().item():.4f}]")
-print(f"  Aleatoric Range: [{aleatoric_entropy_post.min().item():.4f}, {aleatoric_entropy_post.max().item():.4f}]")
+print(f"  Total Range:     [{total_entropy_epoch_100.min().item():.4f}, {total_entropy_epoch_100.max().item():.4f}]")
+print(f"  Epistemic Range: [{epistemic_entropy_epoch_100.min().item():.4f}, {epistemic_entropy_epoch_100.max().item():.4f}]")
+print(f"  Aleatoric Range: [{aleatoric_entropy_epoch_100.min().item():.4f}, {aleatoric_entropy_epoch_100.max().item():.4f}]")

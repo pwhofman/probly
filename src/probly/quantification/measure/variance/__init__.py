@@ -31,4 +31,9 @@ def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-__all__ = ["conditional_variance", "mutual_information_variance", "variance", "variance_of_expected_predictive_distribution"]
+__all__ = [
+    "conditional_variance",
+    "mutual_information_variance",
+    "variance",
+    "variance_of_expected_predictive_distribution",
+]

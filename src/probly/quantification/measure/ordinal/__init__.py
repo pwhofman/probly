@@ -6,6 +6,8 @@ from probly.lazy_types import (
 )
 
 from ._common import (
+    categorical_variance_aleatoric,
+    categorical_variance_total,
     labelwise_conditional_entropy,
     labelwise_conditional_variance,
     labelwise_entropy,
@@ -18,8 +20,6 @@ from ._common import (
     ordinal_conditional_variance,
     ordinal_entropy,
     ordinal_entropy_of_expected_predictive_distribution,
-    categorical_variance_aleatoric,
-    categorical_variance_total,
     ordinal_mutual_information_entropy,
     ordinal_mutual_information_variance,
     ordinal_variance,
@@ -71,6 +71,8 @@ def _(_: type) -> None:
 
 
 __all__ = [
+    "categorical_variance_aleatoric",
+    "categorical_variance_total",
     "labelwise_conditional_entropy",
     "labelwise_conditional_variance",
     "labelwise_entropy",
@@ -83,8 +85,6 @@ __all__ = [
     "ordinal_conditional_variance",
     "ordinal_entropy",
     "ordinal_entropy_of_expected_predictive_distribution",
-    "categorical_variance_aleatoric",
-    "categorical_variance_total",
     "ordinal_mutual_information_entropy",
     "ordinal_mutual_information_variance",
     "ordinal_variance",

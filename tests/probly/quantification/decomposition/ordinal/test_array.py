@@ -8,24 +8,24 @@ from scipy.stats import entropy as scipy_entropy
 
 from probly.quantification import (
     CategoricalVarianceDecomposition,
-    SecondOrderVarianceDecomposition,
     LabelwiseBinaryEntropyDecomposition,
     LabelwiseBinaryVarianceDecomposition,
     OrdinalEntropyDecomposition,
     OrdinalVarianceDecomposition,
+    SecondOrderVarianceDecomposition,
 )
 from probly.quantification.decomposition.ordinal import (
     categorical_variance_aleatoric,
     categorical_variance_total,
     conditional_variance,
-    mutual_information_variance,
     labelwise_conditional_entropy,
-    labelwise_entropy_of_expected_predictive_distribution,
     labelwise_conditional_variance,
+    labelwise_entropy_of_expected_predictive_distribution,
     labelwise_variance_of_expected_predictive_distribution,
+    mutual_information_variance,
     ordinal_conditional_entropy,
-    ordinal_entropy_of_expected_predictive_distribution,
     ordinal_conditional_variance,
+    ordinal_entropy_of_expected_predictive_distribution,
     ordinal_variance_of_expected_predictive_distribution,
 )
 from probly.quantification.measure.ordinal import labelwise_entropy, labelwise_variance

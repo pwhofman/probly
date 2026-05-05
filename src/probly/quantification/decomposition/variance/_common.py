@@ -68,4 +68,3 @@ class CategoricalVarianceDecomposition[T](AdditiveDecomposition[T, T, T]):
     def _aleatoric(self) -> T:
         """The aleatoric variance (expected variance over the ensemble/samples)."""
         return categorical_variance_aleatoric(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
-

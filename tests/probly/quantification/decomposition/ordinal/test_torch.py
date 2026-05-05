@@ -9,11 +9,11 @@ torch = pytest.importorskip("torch")
 
 from probly.quantification import (  # noqa: E402
     CategoricalVarianceDecomposition,
-    SecondOrderVarianceDecomposition,
     LabelwiseBinaryEntropyDecomposition,
     LabelwiseBinaryVarianceDecomposition,
     OrdinalEntropyDecomposition,
     OrdinalVarianceDecomposition,
+    SecondOrderVarianceDecomposition,
 )
 from probly.quantification.measure.ordinal import labelwise_entropy, labelwise_variance  # noqa: E402
 from probly.representation.distribution.array_categorical import (  # noqa: E402
