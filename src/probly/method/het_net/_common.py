@@ -19,6 +19,8 @@ from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_tr
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from flax.nnx.rnglib import Rngs, RngStream
+
 
 class HetNetRepresentation[T: CategoricalDistribution](CategoricalDistributionSample[T]):
     """A sample of categorical distributions produced by a HetNets model.
@@ -35,10 +37,13 @@ class HetNetPredictor[**In, Out: CategoricalDistribution](RandomPredictor[In, Ou
 
 het_net_traverser = flexdispatch_traverser[object](name="het_nets_traverser")
 
+type RNG = int | Rngs | RngStream
+
 LAST_LAYER = GlobalVariable[bool]("LAST_LAYER")
 NUM_FACTORS = GlobalVariable[int]("NUM_FACTORS")
 TEMPERATURE = GlobalVariable[float]("TEMPERATURE")
 IS_PARAMETER_EFFICIENT = GlobalVariable[bool]("IS_PARAMETER_EFFICIENT")
+RNGS = GlobalVariable[RNG]("RNGS", "rngs for flax HeteroscedasticLayer initialization.", default=1)
 
 
 @predictor_transformation(
@@ -54,6 +59,7 @@ def het_net[**In, Out: CategoricalDistribution](
     num_factors: int = 10,
     temperature: float = 1.0,
     is_parameter_efficient: bool = False,
+    rngs: RNG = 1,
 ) -> HetNetPredictor[In, Out]:
     """Create a HetNets predictor from a base predictor base on :cite:`collier2021hetnets`.
 
@@ -62,6 +68,9 @@ def het_net[**In, Out: CategoricalDistribution](
         num_factors: The rank of the low-rank covariance parametrization.
         temperature: The temperature parameter for scaling the utility.
         is_parameter_efficient: Whether to use the parameter-efficient version.
+        rngs: Optional rngs for the flax HeteroscedasticLayer initialization (types:
+            ``rnglib.Rngs | rnglib.RngStream | int``). Ignored by the torch backend.
+            Default is ``1``.
 
     Returns:
         The HetNets predictor.
@@ -76,6 +85,7 @@ def het_net[**In, Out: CategoricalDistribution](
             NUM_FACTORS: num_factors,
             TEMPERATURE: temperature,
             IS_PARAMETER_EFFICIENT: is_parameter_efficient,
+            RNGS: rngs,
         },
     )
 
