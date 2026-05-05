@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 torch = pytest.importorskip("torch")
-import torch
 
 from probly.quantification import (  # noqa: E402
     CategoricalVarianceDecomposition,
@@ -19,7 +18,7 @@ from probly.quantification import (  # noqa: E402
 from probly.quantification.measure.ordinal import labelwise_entropy, labelwise_variance  # noqa: E402
 from probly.representation.distribution.array_categorical import (  # noqa: E402
     ArrayCategoricalDistributionSample,
-    ArrayProbabilityCategoricalDistribution
+    ArrayProbabilityCategoricalDistribution,
 )
 from probly.representation.distribution.torch_categorical import (  # noqa: E402
     TorchCategoricalDistributionSample,
