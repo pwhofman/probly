@@ -21,7 +21,8 @@ from typing import TYPE_CHECKING, cast
 import warnings
 
 import hydra
-from matplotlib.patches import FancyBboxPatch, Rectangle
+from matplotlib.patches import PathPatch, Rectangle
+from matplotlib.path import Path as MplPath
 import matplotlib.pyplot as plt
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
@@ -37,27 +38,63 @@ if TYPE_CHECKING:
 _CONFIG_DIR = Path(__file__).parent.parent / "configs"
 
 
-def _round_bar_corners(ax: Axes, *, rounding_size: float = 0.025) -> None:
-    """Replace plain ``Rectangle`` bar patches with rounded :class:`FancyBboxPatch`.
+def _round_top_corners(
+    ax: Axes,
+    *,
+    rx_frac: float = 0.20,
+    ry: float = 0.05,
+) -> None:
+    """Round only the top-left and top-right corners of every bar.
 
-    Gives every bar a subtle arc on its corners. ``rounding_size`` is in data
-    units along the y-axis; for AUROC / Acc-AUC bars (range ~[0, 1]) values
-    around 0.02-0.03 read as a gentle, modern look.
+    The bottom edge stays square so bars sit flush on the x-axis. The top
+    edge reaches exactly to ``y_top`` so error caps drawn at ``mean`` line
+    up with the bar instead of floating in space.
+
+    Args:
+        ax: Axes whose Rectangle patches will be replaced with rounded paths.
+        rx_frac: Horizontal arc radius as a fraction of bar width.
+        ry: Vertical arc radius in data units (capped at the bar height).
     """
     for patch in list(ax.patches):
         if not isinstance(patch, Rectangle):
             continue
-        x_left, y_bottom = patch.get_xy()
         width = patch.get_width()
         height = patch.get_height()
-        new = FancyBboxPatch(
-            (x_left, y_bottom),
-            abs(width),
-            abs(height),
-            boxstyle=f"round,pad=-0.0040,rounding_size={rounding_size}",
-            ec="none",
-            fc=patch.get_facecolor(),
-            mutation_aspect=1,
+        if width <= 0 or height <= 0:
+            continue
+        x_left, y_bottom = patch.get_xy()
+        x_right = x_left + width
+        y_top = y_bottom + height
+        rx = min(width * rx_frac, width / 2.0)
+        ry_clamped = min(ry, height)
+        verts = [
+            (x_left, y_bottom),  # MOVETO bottom-left
+            (x_right, y_bottom),  # LINETO bottom-right
+            (x_right, y_top - ry_clamped),  # LINETO up to start of top-right arc
+            (x_right, y_top),
+            (x_right - rx, y_top),  # CURVE3 (top-right corner)
+            (x_left + rx, y_top),  # LINETO across the top
+            (x_left, y_top),
+            (x_left, y_top - ry_clamped),  # CURVE3 (top-left corner)
+            (x_left, y_bottom),  # LINETO down to bottom-left
+            (x_left, y_bottom),  # CLOSEPOLY anchor
+        ]
+        codes = [
+            MplPath.MOVETO,
+            MplPath.LINETO,
+            MplPath.LINETO,
+            MplPath.CURVE3,
+            MplPath.CURVE3,
+            MplPath.LINETO,
+            MplPath.CURVE3,
+            MplPath.CURVE3,
+            MplPath.LINETO,
+            MplPath.CLOSEPOLY,
+        ]
+        new = PathPatch(
+            MplPath(verts, codes),
+            facecolor=patch.get_facecolor(),
+            edgecolor="none",
             zorder=patch.get_zorder(),
         )
         patch.remove()
@@ -69,6 +106,7 @@ def _draw_bars(
     *,
     ylabel: str,
     title: str,
+    subtitle: str | None = None,
     ylim: tuple[float, float] | None = (0.0, 1.0),
 ) -> Figure:
     """Render a descending bar chart from a ranked entry list.
@@ -77,7 +115,9 @@ def _draw_bars(
         ranking: List of dicts (already sorted descending) with ``label``,
             ``mean`` and ``std``.
         ylabel: Y-axis label for the bars.
-        title: Figure title.
+        title: Bold main title shown above the axes.
+        subtitle: Optional non-bold parenthetical subtitle (e.g.
+            ``"(avg over 4 datasets)"``) drawn just below the title.
         ylim: Y-axis limits, or ``None`` to let matplotlib auto-scale.
 
     Returns:
@@ -97,13 +137,27 @@ def _draw_bars(
         capsize=4,
         color=plot_config.color(0),
         edgecolor="none",
-        error_kw={"ecolor": "#33333399", "elinewidth": 1.1},
+        error_kw={"ecolor": "#333333", "elinewidth": 1.2, "capthick": 1.2},
     )
-    _round_bar_corners(ax)
+    _round_top_corners(ax)
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=30, ha="right")
     ax.set_ylabel(ylabel)
-    ax.set_title(title)
+    if subtitle:
+        # Lift the bold title so the regular-weight subtitle has room below.
+        ax.set_title(title, pad=18)
+        ax.annotate(
+            subtitle,
+            xy=(0.5, 1.005),
+            xycoords="axes fraction",
+            ha="center",
+            va="bottom",
+            fontsize=plot_config.label_fontsize * 0.85,
+            fontweight="normal",
+            color="#555555",
+        )
+    else:
+        ax.set_title(title)
     if ylim is not None:
         ax.set_ylim(*ylim)
     ax.yaxis.grid(
@@ -252,7 +306,8 @@ def _run_ood(cfg: DictConfig, dataset: str, base_model: str) -> dict[str, tuple[
         fig = _draw_bars(
             items,
             ylabel="OOD AUROC",
-            title=f"{title_band} detection on {dataset} (avg over {len(bands[band_name])} datasets)",
+            title=f"{title_band} detection on {dataset}",
+            subtitle=f"(avg over {len(bands[band_name])} datasets)",
         )
         out[band_name] = (fig, items)
     return out
