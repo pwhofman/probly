@@ -109,7 +109,7 @@ class TestDiscreteCredalSet:
 
 
 class TestConvexCredalSet:
-    def test_uses_interval_dominance(self) -> None:
+    def test_integer_label_coverage(self) -> None:
         probs = np.array(
             [
                 [[0.6, 0.3, 0.1], [0.4, 0.5, 0.1]],
@@ -117,9 +117,74 @@ class TestConvexCredalSet:
         )
         cs = ArrayConvexCredalSet(array=_categorical(probs))
         # lower = [0.4, 0.3, 0.1]; upper = [0.6, 0.5, 0.1]; max(lower) = 0.4.
-        # mask = upper >= 0.4 = [True, True, False]. truth 1 is in the set.
+        # mask = upper >= 0.4 = [True, True, False]: truth 1 covered, truth 2 not.
         assert coverage(cs, np.array([1])) == pytest.approx(1.0)
-        assert efficiency(cs) == pytest.approx(2.0)
+        assert coverage(cs, np.array([2])) == pytest.approx(0.0)
+
+    def test_efficiency(self) -> None:
+        probs = np.array([[[0.6, 0.3, 0.1], [0.4, 0.5, 0.1]]])
+        cs = ArrayConvexCredalSet(array=_categorical(probs))
+        # widths = [0.2, 0.2, 0.0]; efficiency = 1 - mean([0.2, 0.2, 0.0]) = 1 - 0.4/3.
+        assert efficiency(cs) == pytest.approx(1.0 - 0.4 / 3)
+
+    def test_prob_vector_coverage(self) -> None:
+        probs = np.array([[[0.6, 0.3, 0.1], [0.4, 0.5, 0.1]]])
+        cs = ArrayConvexCredalSet(array=_categorical(probs))
+        # lower = [0.4, 0.3, 0.1]; upper = [0.6, 0.5, 0.1].
+        # [0.5, 0.4, 0.1] inside: all components in [lower, upper].
+        # [0.3, 0.5, 0.1] outside: 0.4 <= 0.3 fails.
+        assert coverage(cs, np.array([[0.5, 0.4, 0.1]])) == pytest.approx(1.0)
+        assert coverage(cs, np.array([[0.3, 0.5, 0.1]])) == pytest.approx(0.0)
+
+    def test_prob_vector_coverage_partial(self) -> None:
+        probs = np.array(
+            [
+                [[0.6, 0.3, 0.1], [0.4, 0.5, 0.1]],  # lower=[0.4,0.3,0.1], upper=[0.6,0.5,0.1]
+                [[0.7, 0.2, 0.1], [0.5, 0.4, 0.1]],  # lower=[0.5,0.2,0.1], upper=[0.7,0.4,0.1]
+            ]
+        )
+        cs = ArrayConvexCredalSet(array=_categorical(probs))
+        # Instance 0 target [0.5, 0.4, 0.1]: inside → covered.
+        # Instance 1 target [0.5, 0.4, 0.1]: 0.5<=0.5<=0.7 ok, 0.2<=0.4<=0.4 ok,
+        #   0.1<=0.1<=0.1 ok → covered.
+        targets_both_inside = np.array([[0.5, 0.4, 0.1], [0.5, 0.4, 0.1]])
+        assert coverage(cs, targets_both_inside) == pytest.approx(1.0)
+        # Instance 0 target [0.3, 0.4, 0.3]: 0.4<=0.3 fails → not covered.
+        targets_first_outside = np.array([[0.3, 0.4, 0.3], [0.5, 0.4, 0.1]])
+        assert coverage(cs, targets_first_outside) == pytest.approx(0.5)
+
+
+class TestRoundingInProbVectorCoverage:
+    """Rounding of lower/upper before probability-vector containment check.
+
+    Softmax outputs are never exactly 0, so the lower envelope of a deep
+    ensemble can be e.g. 3e-5 for a class that the model confidently rejects.
+    Without rounding, ``3e-5 <= 0`` is False and coverage drops to 0 even
+    though the credal set is correct.  The implementation rounds lower/upper
+    to ``_CREDAL_ROUND_DECIMALS`` decimal places so that such residuals
+    collapse to 0 before the comparison.
+    """
+
+    def test_near_zero_lower_does_not_block_zero_target(self) -> None:
+        """A lower bound of 3e-5 must not prevent a target of 0 from being covered."""
+        # lower[1] = 3e-5: rounds to 0.0 at 4 decimal places.
+        lower = np.array([[0.85, 3e-5, 2e-5]])
+        upper = np.array([[0.95, 0.05, 0.03]])
+        cs = ArrayProbabilityIntervalsCredalSet(lower_bounds=lower, upper_bounds=upper)
+        # Target: class 0 has true prob 0.9, classes 1 and 2 have prob 0.
+        # Without rounding: lower[1]=3e-5 > 0 → fails.
+        # With rounding:    lower[1]=0.0   ≤ 0 → passes.
+        target = np.array([[0.9, 0.0, 0.0]])
+        assert coverage(cs, target) == pytest.approx(1.0)
+
+    def test_large_lower_still_blocks_zero_target(self) -> None:
+        """A lower bound of 0.05 (above the rounding threshold) correctly blocks a target of 0."""
+        lower = np.array([[0.7, 0.05, 0.05]])
+        upper = np.array([[0.9, 0.15, 0.15]])
+        cs = ArrayProbabilityIntervalsCredalSet(lower_bounds=lower, upper_bounds=upper)
+        # Target prob for class 1 is 0.0, but lower[1]=0.05 rounds to 0.05 ≠ 0 → not covered.
+        target = np.array([[0.9, 0.0, 0.0]])
+        assert coverage(cs, target) == pytest.approx(0.0)
 
 
 class TestDistanceBasedCredalSet:
@@ -135,14 +200,38 @@ class TestDistanceBasedCredalSet:
 
 
 class TestProbabilityIntervalsCredalSet:
-    def test_coverage_and_efficiency(self) -> None:
+    def test_integer_label_coverage(self) -> None:
         lower = np.array([[0.1, 0.4, 0.05]])
         upper = np.array([[0.5, 0.6, 0.2]])
         cs = ArrayProbabilityIntervalsCredalSet(lower_bounds=lower, upper_bounds=upper)
-        # max(lower) = 0.4; mask = upper >= 0.4 = [T, T, F]; truth 0 is covered, truth 2 is not.
+        # max(lower) = 0.4; mask = upper >= 0.4 = [T, T, F]; truth 0 covered, truth 2 not.
         assert coverage(cs, np.array([0])) == pytest.approx(1.0)
         assert coverage(cs, np.array([2])) == pytest.approx(0.0)
-        assert efficiency(cs) == pytest.approx(2.0)
+
+    def test_efficiency(self) -> None:
+        lower = np.array([[0.1, 0.4, 0.05]])
+        upper = np.array([[0.5, 0.6, 0.2]])
+        cs = ArrayProbabilityIntervalsCredalSet(lower_bounds=lower, upper_bounds=upper)
+        # widths = [0.4, 0.2, 0.15]; mean = 0.25; efficiency = 0.75.
+        assert efficiency(cs) == pytest.approx(0.75)
+
+    def test_prob_vector_coverage(self) -> None:
+        lower = np.array([[0.1, 0.4, 0.05]])
+        upper = np.array([[0.5, 0.6, 0.2]])
+        cs = ArrayProbabilityIntervalsCredalSet(lower_bounds=lower, upper_bounds=upper)
+        # [0.3, 0.5, 0.1]: 0.1<=0.3<=0.5, 0.4<=0.5<=0.6, 0.05<=0.1<=0.2 → inside.
+        # [0.0, 0.5, 0.1]: 0.1<=0.0 fails → outside.
+        assert coverage(cs, np.array([[0.3, 0.5, 0.1]])) == pytest.approx(1.0)
+        assert coverage(cs, np.array([[0.0, 0.5, 0.1]])) == pytest.approx(0.0)
+
+    def test_prob_vector_coverage_partial(self) -> None:
+        lower = np.array([[0.1, 0.4, 0.05], [0.1, 0.4, 0.05]])
+        upper = np.array([[0.5, 0.6, 0.2], [0.5, 0.6, 0.2]])
+        cs = ArrayProbabilityIntervalsCredalSet(lower_bounds=lower, upper_bounds=upper)
+        # Instance 0: [0.3, 0.5, 0.1] → inside (all components in [lower, upper]).
+        # Instance 1: [0.0, 0.5, 0.1] → outside (0.1 <= 0.0 fails).
+        targets = np.array([[0.3, 0.5, 0.1], [0.0, 0.5, 0.1]])
+        assert coverage(cs, targets) == pytest.approx(0.5)
 
     def test_average_interval_width(self) -> None:
         lower = np.array([[0.1, 0.2, 0.3], [0.0, 0.0, 0.0]])

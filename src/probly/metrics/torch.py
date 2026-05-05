@@ -26,6 +26,7 @@ from probly.metrics import (
     roc_auc_score,
     roc_curve,
 )
+from probly.metrics._common import CREDAL_ROUND_DECIMALS
 from probly.metrics.array import _convex_hull_lp_coverage
 from probly.representation.conformal_set.torch import TorchIntervalConformalSet, TorchOneHotConformalSet
 from probly.representation.credal_set.torch import (
@@ -191,23 +192,51 @@ def _efficiency_torch_interval(y_pred: TorchIntervalConformalSet) -> float:
 
 
 def _credal_containment_coverage_torch(lower: torch.Tensor, upper: torch.Tensor, y_true: torch.Tensor) -> float:
-    """Fraction of instances where ``y_true`` lies in ``[lower, upper]`` for all classes.
+    """Fraction of instances whose target lies inside the credal set's envelope.
+
+    Dispatches on the shape of ``y_true``:
+
+    * **Integer class labels** (``y_true.dim() == lower.dim() - 1``): covered
+      when the true class is selected by the interval-dominance rule, i.e.
+      ``upper[y] >= max_k lower[k]``.
+    * **Probability vectors** (``y_true.dim() == lower.dim()``): covered when
+      ``lower[k] <= y_true[k] <= upper[k]`` for all classes ``k``.
 
     Args:
-        lower: Lower probability envelope of shape ``(N, C)``.
-        upper: Upper probability envelope of shape ``(N, C)``.
-        y_true: Target probability tensors of shape ``(N, C)``.
+        lower: Lower probability envelope of shape ``(..., C)``.
+        upper: Upper probability envelope of shape ``(..., C)``.
+        y_true: Integer class labels of shape ``(...)`` or target probability
+            tensors of shape ``(..., C)``.
 
     Returns:
         Mean containment indicator as a Python float.
     """
-    y = torch.as_tensor(y_true, device=lower.device, dtype=lower.dtype)
-    covered = ((lower <= y) & (y <= upper)).all(dim=-1)
+    y = torch.as_tensor(y_true, device=lower.device)
+    if y.dim() < lower.dim():
+        # Integer class labels: interval-dominance rule.
+        threshold = lower.max(dim=-1, keepdim=True).values
+        mask = upper >= threshold
+        indices = y.to(dtype=torch.int64).unsqueeze(-1)
+        covered = torch.gather(mask, -1, indices).squeeze(-1)
+    else:
+        # Probability vectors: containment in [lower, upper] for all classes.
+        # Round before comparing so that tiny floating-point residuals in the
+        # lower envelope (softmax is never exactly 0) do not incorrectly
+        # exclude a target probability of 0.
+        scale = 10**CREDAL_ROUND_DECIMALS
+        lower_r = torch.round(lower * scale) / scale
+        upper_r = torch.round(upper * scale) / scale
+        y = y.to(dtype=lower.dtype)
+        covered = ((lower_r <= y) & (y <= upper_r)).all(dim=-1)
     return float(covered.float().mean().item())
 
 
 def _credal_interval_efficiency_torch(lower: torch.Tensor, upper: torch.Tensor) -> float:
     """Efficiency of a credal set as ``1 - mean(upper - lower)``.
+
+    Bounds are rounded to ``CREDAL_ROUND_DECIMALS`` decimals before subtracting
+    so floating-point residuals (e.g. softmax outputs near 0) do not perturb
+    the width.
 
     Args:
         lower: Lower probability envelope of shape ``(N, C)``.
@@ -216,7 +245,10 @@ def _credal_interval_efficiency_torch(lower: torch.Tensor, upper: torch.Tensor) 
     Returns:
         Scalar in ``(-inf, 1]``; higher means a tighter (more efficient) credal set.
     """
-    return float(1.0 - (upper - lower).float().mean().item())
+    scale = 10**CREDAL_ROUND_DECIMALS
+    lower_r = torch.round(lower * scale) / scale
+    upper_r = torch.round(upper * scale) / scale
+    return float(1.0 - (upper_r - lower_r).float().mean().item())
 
 
 @coverage.register(TorchConvexCredalSet)
