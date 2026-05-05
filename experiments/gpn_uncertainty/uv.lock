@@ -1079,11 +1079,13 @@ all-ml = [
     { name = "flax", specifier = ">=0.12.4" },
     { name = "jax", specifier = ">=0.8.1" },
     { name = "laplace-torch", specifier = ">=0.2.0" },
+    { name = "lightning", specifier = ">=2.6.0" },
     { name = "river", specifier = ">=0.21" },
     { name = "scikit-learn", specifier = ">=1.6.0" },
     { name = "sentence-transformers", specifier = ">=2.3.0" },
     { name = "torch", specifier = ">=2.6.0" },
     { name = "torch-geometric", specifier = ">=2.6.0" },
+    { name = "torch-uncertainty", specifier = ">=0.11.0" },
     { name = "torchvision", specifier = ">=0.21.0" },
     { name = "transformers", specifier = ">=4.33.2" },
 ]
@@ -1109,6 +1111,7 @@ dev = [
     { name = "hydra-core", specifier = ">=1.3.1" },
     { name = "jax", specifier = ">=0.8.1" },
     { name = "laplace-torch", specifier = ">=0.2.0" },
+    { name = "lightning", specifier = ">=2.6.0" },
     { name = "nflows", specifier = ">=0.14" },
     { name = "nvidia-ml-py", specifier = "==13.595.45" },
     { name = "packaging" },
@@ -1129,6 +1132,7 @@ dev = [
     { name = "torch", specifier = "<2.11.0" },
     { name = "torch", specifier = ">=2.6.0" },
     { name = "torch-geometric", specifier = ">=2.6.0" },
+    { name = "torch-uncertainty", specifier = ">=0.11.0" },
     { name = "torchvision", specifier = "<0.26.0" },
     { name = "torchvision", specifier = ">=0.21.0" },
     { name = "transformers", specifier = ">=4.33.2" },
@@ -1174,6 +1178,12 @@ torch = [
 torch-geometric = [
     { name = "torch", specifier = ">=2.6.0" },
     { name = "torch-geometric", specifier = ">=2.6.0" },
+    { name = "torchvision", specifier = ">=0.21.0" },
+]
+torch-uncertainty = [
+    { name = "lightning", specifier = ">=2.6.0" },
+    { name = "torch", specifier = ">=2.6.0" },
+    { name = "torch-uncertainty", specifier = ">=0.11.0" },
     { name = "torchvision", specifier = ">=0.21.0" },
 ]
 transformers = [
