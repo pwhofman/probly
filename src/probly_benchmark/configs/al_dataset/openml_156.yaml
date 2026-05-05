@@ -9,3 +9,6 @@ epochs: 100
 initial_size: 100
 query_size: 100
 n_iterations: 15
+# Bigger batch (vs default 128) to amortize kernel-launch overhead during
+# inference over the (capped) 50k unlabeled pool / 20k test set.
+batch_size: 4096
