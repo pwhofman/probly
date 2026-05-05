@@ -3,3 +3,6 @@ name: "efficient_credal_prediction"
 label: "EffCre"
 train:
   alpha: 0.5  # relative-likelihood threshold for the credal set
+active_learning:
+  train:
+    alpha: 0.8  # AL-only override of the relative-likelihood threshold
