@@ -99,7 +99,7 @@ def cluster_answers_by_question(
 
     semantic = TorchSparseLogCategoricalDistribution(
         group_ids=flat_semantic.group_ids.reshape((num_questions, num_clarifications, num_answers)),
-        logits=flat_semantic.logits.reshape((num_questions, num_clarifications, num_answers)),
+        entry_logits=flat_semantic.entry_logits.reshape((num_questions, num_clarifications, num_answers)),
     )
     return TorchSparseLogCategoricalDistributionSample(tensor=semantic, sample_dim=1)
 

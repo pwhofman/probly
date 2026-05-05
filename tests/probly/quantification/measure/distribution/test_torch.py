@@ -21,8 +21,8 @@ from probly.quantification.measure.distribution import (
     vacuity,
 )
 from probly.representation.distribution.torch_categorical import (
-    TorchCategoricalDistribution,
     TorchCategoricalDistributionSample,
+    TorchProbabilityCategoricalDistribution,
 )
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
 
@@ -50,7 +50,7 @@ def test_torch_categorical_entropy_matches_torch_distribution(base: None | float
         [[0.25, 0.25, 0.5], [0.1, 0.2, 0.7]],
         dtype=torch.float64,
     )
-    distribution = TorchCategoricalDistribution(probabilities)
+    distribution = TorchProbabilityCategoricalDistribution(probabilities)
 
     measured = entropy(distribution, base=base)
     expected_natural = Categorical(probs=probabilities).entropy()
@@ -74,7 +74,7 @@ def test_torch_categorical_entropy_normalize_maps_to_unit_interval() -> None:
         dtype=torch.float64,
     )
 
-    measured = entropy(TorchCategoricalDistribution(probabilities), base="normalize")
+    measured = entropy(TorchProbabilityCategoricalDistribution(probabilities), base="normalize")
 
     assert measured[0] == pytest.approx(1.0, abs=1e-6)
     assert measured[1] == pytest.approx(0.0, abs=1e-6)
@@ -146,7 +146,7 @@ def test_torch_categorical_second_order_measures_match_torch(sample_axis: int, b
     )
     probabilities = torch.moveaxis(base_probabilities, 0, sample_axis)
     sample = TorchCategoricalDistributionSample(
-        tensor=TorchCategoricalDistribution(probabilities),
+        tensor=TorchProbabilityCategoricalDistribution(probabilities),
         sample_dim=sample_axis,
     )
 
@@ -191,7 +191,7 @@ def test_identity_holds_for_torch_categorical_sample(sample_axis: int, base: Non
     )
     probabilities = torch.moveaxis(base_probabilities, 0, sample_axis)
     sample = TorchCategoricalDistributionSample(
-        tensor=TorchCategoricalDistribution(probabilities),
+        tensor=TorchProbabilityCategoricalDistribution(probabilities),
         sample_dim=sample_axis,
     )
 
@@ -214,7 +214,7 @@ def test_torch_sample_zero_one_measures_match_manual(sample_axis: int) -> None:
     )
     probabilities = torch.moveaxis(base_probabilities, 0, sample_axis)
     sample = TorchCategoricalDistributionSample(
-        tensor=TorchCategoricalDistribution(probabilities),
+        tensor=TorchProbabilityCategoricalDistribution(probabilities),
         sample_dim=sample_axis,
     )
 
@@ -243,7 +243,7 @@ def test_torch_sample_zero_one_known_values() -> None:
         dtype=torch.float64,
     )
     sample = TorchCategoricalDistributionSample(
-        tensor=TorchCategoricalDistribution(probabilities),
+        tensor=TorchProbabilityCategoricalDistribution(probabilities),
         sample_dim=0,
     )
 
@@ -264,7 +264,7 @@ def test_zero_one_identity_holds_for_torch_categorical_sample(sample_axis: int) 
     )
     probabilities = torch.moveaxis(base_probabilities, 0, sample_axis)
     sample = TorchCategoricalDistributionSample(
-        tensor=TorchCategoricalDistribution(probabilities),
+        tensor=TorchProbabilityCategoricalDistribution(probabilities),
         sample_dim=sample_axis,
     )
 

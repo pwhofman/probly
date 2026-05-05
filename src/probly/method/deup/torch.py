@@ -26,7 +26,10 @@ except ImportError:
 
 from probly.layers.torch import GaussianMixtureHead, apply_spectral_norm_to_encoder
 from probly.representation._protected_axis.torch import TorchAxisProtected
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.distribution.torch_categorical import (
+    TorchCategoricalDistribution,
+    TorchProbabilityCategoricalDistribution,
+)
 from probly.traverse_nn import nn_compose, nn_traverser
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, singledispatch_traverser, traverse_with_state
 
@@ -889,6 +892,6 @@ class TorchDEUPPredictor(nn.Module, DEUPPredictor[[torch.Tensor], TorchDEUPRepre
         """
         logits, error_score = self.forward(x)
         return TorchDEUPRepresentation(
-            softmax=TorchCategoricalDistribution(torch.softmax(logits, dim=-1)),
+            softmax=TorchProbabilityCategoricalDistribution(torch.softmax(logits, dim=-1)),
             error_score=error_score,
         )

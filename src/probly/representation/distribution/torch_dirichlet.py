@@ -9,7 +9,10 @@ import torch
 
 from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.distribution._common import DirichletDistribution, create_dirichlet_distribution_from_alphas
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.distribution.torch_categorical import (
+    TorchCategoricalDistribution,
+    TorchProbabilityCategoricalDistribution,
+)
 from probly.representation.sample.torch import TorchSample
 from probly.representation.torch_functions import torch_average
 
@@ -71,13 +74,13 @@ class TorchDirichletDistribution(
     @property
     def mean(self) -> TorchCategoricalDistribution:
         """Return the expected categorical probabilities."""
-        return TorchCategoricalDistribution(self.alphas / torch.sum(self.alphas, dim=-1, keepdim=True))
+        return TorchProbabilityCategoricalDistribution(self.alphas / torch.sum(self.alphas, dim=-1, keepdim=True))
 
     @override
     def sample(self, num_samples: int = 1) -> TorchSample[TorchCategoricalDistribution]:
         """Sample categorical distributions from the Dirichlet distribution."""
         samples = torch.distributions.Dirichlet(self.alphas).sample((num_samples,))
-        return TorchSample(tensor=TorchCategoricalDistribution(samples), sample_dim=0)
+        return TorchSample(tensor=TorchProbabilityCategoricalDistribution(samples), sample_dim=0)
 
     @override
     def numpy(self, *, force: bool = False) -> np.ndarray:

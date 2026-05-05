@@ -23,7 +23,10 @@ from probly.representation.credal_set._common import (
     create_probability_intervals_from_bounds,
     create_probability_intervals_from_lower_upper_array,
 )
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.distribution.torch_categorical import (
+    TorchCategoricalDistribution,
+    TorchProbabilityCategoricalDistribution,
+)
 from probly.representation.sample.torch import TorchSample
 from probly.utils.torch import intersection_probability
 
@@ -36,7 +39,7 @@ if TYPE_CHECKING:
 def _ensure_torch_categorical_distribution(value: object) -> TorchCategoricalDistribution:
     if isinstance(value, TorchCategoricalDistribution):
         return value
-    return TorchCategoricalDistribution(torch.as_tensor(value))
+    return TorchProbabilityCategoricalDistribution(torch.as_tensor(value))
 
 
 def _sample_probabilities(
@@ -94,7 +97,7 @@ class TorchConvexCredalSet(
     ) -> Self:
         probabilities = _sample_probabilities(sample)
         vertices = torch.moveaxis(probabilities, 0, -2)
-        return cls(tensor=TorchCategoricalDistribution(vertices))
+        return cls(tensor=TorchProbabilityCategoricalDistribution(vertices))
 
     @override
     @property
@@ -146,7 +149,7 @@ class TorchDistanceBasedCredalSet(
         tv_dists = 0.5 * torch.sum(diff, dim=-1)
         radius = torch.max(tv_dists, dim=0).values
         return cls(
-            nominal=TorchCategoricalDistribution(nominal),
+            nominal=TorchProbabilityCategoricalDistribution(nominal),
             radius=torch.as_tensor(radius),
         )
 
@@ -322,7 +325,7 @@ class TorchDirichletLevelSetCredalSet(
     @property
     def barycenter(self) -> TorchCategoricalDistribution:
         """Return the Dirichlet mean as the barycenter."""
-        return TorchCategoricalDistribution(self.alphas / self.alphas.sum(dim=-1, keepdim=True))
+        return TorchProbabilityCategoricalDistribution(self.alphas / self.alphas.sum(dim=-1, keepdim=True))
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
@@ -385,7 +388,7 @@ class TorchProbabilityIntervalsCredalSet(
     @override
     @property
     def barycenter(self) -> TorchCategoricalDistribution:
-        return TorchCategoricalDistribution(intersection_probability(self.lower_bounds, self.upper_bounds))
+        return TorchProbabilityCategoricalDistribution(intersection_probability(self.lower_bounds, self.upper_bounds))
 
 
 create_probability_intervals.register(TorchCategoricalDistribution, TorchProbabilityIntervalsCredalSet.from_sample)
@@ -415,7 +418,7 @@ def _create_distance_based_credal_set_from_center_and_radius(
     radius: torch.Tensor,
 ) -> TorchDistanceBasedCredalSet:
     return TorchDistanceBasedCredalSet(
-        nominal=TorchCategoricalDistribution(center),
+        nominal=TorchProbabilityCategoricalDistribution(center),
         radius=radius,
     )
 

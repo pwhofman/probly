@@ -258,7 +258,7 @@ def test_torch_isotonic_regression_matches_sklearn_on_identity_logits() -> None:
     calibrate(torch_wrapper, y_calib, x_calib)
     calibrate(sklearn_wrapper, y_calib.numpy().astype(int), x_calib.numpy())
 
-    torch_probs = predict(torch_wrapper, x_test).unnormalized_probabilities.reshape(-1)
+    torch_probs = predict(torch_wrapper, x_test).probabilities[..., -1].reshape(-1)
     sklearn_probs = sklearn_wrapper.predict_proba(x_test.numpy())[:, 1]
     _assert_torch_sklearn_probabilities_close(torch_probs, sklearn_probs, mean_abs_tol=3e-2, max_abs_tol=1.2e-1)
 

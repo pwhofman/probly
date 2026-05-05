@@ -10,12 +10,12 @@ from probly.method.ddu import DDUDensityDecomposition, negative_log_density  # n
 from probly.method.ddu.torch import TorchDDURepresentation  # noqa: E402
 from probly.quantification import measure, quantify  # noqa: E402
 from probly.quantification.measure.distribution import entropy  # noqa: E402
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution  # noqa: E402
+from probly.representation.distribution.torch_categorical import TorchProbabilityCategoricalDistribution  # noqa: E402
 
 
 def _ddu_representation() -> TorchDDURepresentation:
     return TorchDDURepresentation(
-        softmax=TorchCategoricalDistribution(torch.tensor([[0.25, 0.75], [0.5, 0.5]], dtype=torch.float64)),
+        softmax=TorchProbabilityCategoricalDistribution(torch.tensor([[0.25, 0.75], [0.5, 0.5]], dtype=torch.float64)),
         densities=torch.log(torch.tensor([[0.2, 0.3], [0.1, 0.4]], dtype=torch.float64)),
     )
 

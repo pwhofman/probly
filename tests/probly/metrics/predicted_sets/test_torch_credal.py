@@ -26,7 +26,7 @@ from probly.representation.credal_set.torch import (  # noqa: E402
     TorchProbabilityIntervalsCredalSet,
 )
 from probly.representation.distribution.array_categorical import ArrayProbabilityCategoricalDistribution  # noqa: E402
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution  # noqa: E402
+from probly.representation.distribution.torch_categorical import TorchProbabilityCategoricalDistribution  # noqa: E402
 
 from ._credal_suite import CredalSuite  # noqa: E402
 
@@ -38,13 +38,13 @@ def array_fn():
 
 @pytest.fixture
 def make_convex():
-    return lambda probs: TorchConvexCredalSet(tensor=TorchCategoricalDistribution(torch.as_tensor(probs)))
+    return lambda probs: TorchConvexCredalSet(tensor=TorchProbabilityCategoricalDistribution(torch.as_tensor(probs)))
 
 
 @pytest.fixture
 def make_distance():
     return lambda nominal, radius: TorchDistanceBasedCredalSet(
-        nominal=TorchCategoricalDistribution(torch.as_tensor(nominal)),
+        nominal=TorchProbabilityCategoricalDistribution(torch.as_tensor(nominal)),
         radius=torch.as_tensor(radius),
     )
 
@@ -71,7 +71,7 @@ class TestTorch(CredalSuite):
 def test_convex_numpy_torch_parity(probs: np.ndarray) -> None:
     """Convex coverage and efficiency agree across backends on identical inputs."""
     np_cs = ArrayConvexCredalSet(array=ArrayProbabilityCategoricalDistribution(probs))
-    tc_cs = TorchConvexCredalSet(tensor=TorchCategoricalDistribution(torch.as_tensor(probs)))
+    tc_cs = TorchConvexCredalSet(tensor=TorchProbabilityCategoricalDistribution(torch.as_tensor(probs)))
     y = np.array([1])
     assert coverage(np_cs, y) == pytest.approx(coverage(tc_cs, torch.as_tensor(y)))
     assert efficiency(np_cs) == pytest.approx(efficiency(tc_cs))
@@ -85,7 +85,7 @@ def test_distance_numpy_torch_parity() -> None:
         radius=radius,
     )
     tc_cs = TorchDistanceBasedCredalSet(
-        nominal=TorchCategoricalDistribution(torch.as_tensor(nominal)),
+        nominal=TorchProbabilityCategoricalDistribution(torch.as_tensor(nominal)),
         radius=torch.as_tensor(radius),
     )
     y = np.array([0])
@@ -140,7 +140,7 @@ def test_torch_handlers_respect_device() -> None:
     nominal = torch.tensor([[0.5, 0.3, 0.2]])
     radius = torch.tensor([0.1])
     cs = TorchDistanceBasedCredalSet(
-        nominal=TorchCategoricalDistribution(nominal),
+        nominal=TorchProbabilityCategoricalDistribution(nominal),
         radius=radius,
     )
     # ``y_true`` is a numpy array; the handler must coerce on the right device.
@@ -155,7 +155,7 @@ def test_unregistered_torch_type_raises() -> None:
     ``TorchDiscreteCredalSet`` exist: a bare ``TorchCategoricalDistribution``
     must not silently match an unintended handler.
     """
-    distribution = TorchCategoricalDistribution(torch.tensor([[0.5, 0.5]]))
+    distribution = TorchProbabilityCategoricalDistribution(torch.tensor([[0.5, 0.5]]))
     with pytest.raises(NotImplementedError, match="coverage is not implemented"):
         coverage(distribution, torch.tensor([0]))
     with pytest.raises(NotImplementedError, match="efficiency is not implemented"):

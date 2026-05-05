@@ -13,7 +13,10 @@ from torch.nn.utils import parametrize
 
 from probly.layers.torch import GaussianMixtureHead, SNCoeffParametrization
 from probly.representation._protected_axis.torch import TorchAxisProtected
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.distribution.torch_categorical import (
+    TorchCategoricalDistribution,
+    TorchProbabilityCategoricalDistribution,
+)
 from probly.traverse_nn import nn_compose, nn_traverser
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, singledispatch_traverser, traverse_with_state
 
@@ -218,6 +221,6 @@ class TorchDDUPredictor(nn.Module, DDUPredictor[[torch.Tensor], TorchDDURepresen
         logits, densities = self.forward(x)
 
         return TorchDDURepresentation(
-            TorchCategoricalDistribution(torch.softmax(logits, dim=-1)),
+            TorchProbabilityCategoricalDistribution(torch.softmax(logits, dim=-1)),
             densities,
         )

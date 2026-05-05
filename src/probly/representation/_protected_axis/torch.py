@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from abc import ABC
 from dataclasses import replace
+from inspect import isabstract
 from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, overload, override
 
 import numpy as np
@@ -45,7 +46,7 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor | np.ndarray](TorchLikeImpl
     def __init_subclass__(cls, **kwargs: object) -> None:
         super().__init_subclass__(**kwargs)
 
-        if cls is TorchAxisProtected:
+        if cls is TorchAxisProtected or isabstract(cls):
             return
 
         axes = getattr(cls, "protected_axes", None)
@@ -135,7 +136,11 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor | np.ndarray](TorchLikeImpl
         msg = "No torch-like protected value is available."
         raise TypeError(msg)
 
-    def with_protected_values(self, values: dict[str, TorchProtectedValue]) -> TorchAxisProtected[T]:
+    def with_protected_values(
+        self,
+        values: dict[str, TorchProtectedValue],
+        func: Callable | None = None,  # noqa: ARG002
+    ) -> TorchAxisProtected[T]:
         """Return a copy with updated protected field values."""
         current_values = self.protected_values()
         updates: dict[str, object] = {}
