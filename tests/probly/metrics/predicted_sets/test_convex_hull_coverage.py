@@ -18,7 +18,7 @@ from probly.representation.credal_set.array import (
     ArrayDiscreteCredalSet,
     ArraySingletonCredalSet,
 )
-from probly.representation.distribution import ArrayCategoricalDistribution, ArrayProbabilityCategoricalDistribution
+from probly.representation.distribution import ArrayProbabilityCategoricalDistribution
 
 
 def _convex(probs: np.ndarray) -> ArrayConvexCredalSet:
@@ -33,7 +33,7 @@ def _singleton(probs: np.ndarray) -> ArraySingletonCredalSet:
     return ArraySingletonCredalSet(array=ArrayProbabilityCategoricalDistribution(probs))
 
 
-def _dist(probs: np.ndarray) -> ArrayCategoricalDistribution:
+def _dist(probs: np.ndarray) -> ArrayProbabilityCategoricalDistribution:
     return ArrayProbabilityCategoricalDistribution(probs)
 
 
