@@ -12,6 +12,18 @@ initial_size: 1000
 query_size: 1000
 n_iterations: 10
 
+# Optional unlabeled-pool and test-set caps. Each AL iteration scores the
+# entire unlabeled pool (and the test set, for accuracy reporting), which
+# scales linearly with their size. For huge tabular datasets like
+# openml_155 (~660k train) and openml_156 (~800k train) these caps cut
+# inference cost dramatically while leaving the AL story intact. Set to
+# ``null`` to disable (no cap). Subsampling uses a separate RNG stream so
+# it is reproducible and independent of the model/training seed; the
+# ``subsample_seed_offset`` lets you re-roll the subsample across reruns.
+unlabeled_pool_max_size: 50000
+test_max_size: 20000
+subsample_seed_offset: 0
+
 # Training (per AL iteration)
 epochs: 50
 batch_size: 128
