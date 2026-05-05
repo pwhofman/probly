@@ -1251,25 +1251,39 @@ def _(
 ) -> None:
     """Fine-tune the underlying network, then fit the Laplace posterior post-hoc.
 
-    Phase 1 runs the standard supervised loop on the underlying ``nn.Module`` (laplace-torch's wrapped model).
-    Phase 2 calls ``BaseLaplace.fit(train_loader)`` and, if ``train_kwargs["optimize_prior"]`` is set, tunes
-    the prior precision by marginal-likelihood maximization.
+    When ``train_kwargs["load_from"] == "base"``, load the pre-trained base predictor
+    from wandb and skip Phase 1; otherwise run the standard supervised loop on the
+    underlying ``nn.Module`` (laplace-torch's wrapped model). Phase 2 calls
+    ``BaseLaplace.fit(train_loader)`` and, if ``train_kwargs["optimize_prior"]`` is set,
+    tunes the prior precision (gridsearch by default; see ``prior_optimization_method``).
     """
     # Extract model from BaseLaplace, if we do last layer mode, model.model is a FeatureExtractor, so unwrap it
     inner_model = model.model.model if isinstance(model.model, FeatureExtractor) else model.model
     # Problems with cuda + triton + compile if we compile this model, so we set a flag to skip it.
     inner_model._probly_skip_compile = True  # ty: ignore[unresolved-attribute]  # noqa: SLF001
-    _training_loop(
-        inner_model,
-        train_loader,
-        val_loader,
-        cfg,
-        device,
-        run,
-        train_kwargs,
-        train_fn=train_epoch_cross_entropy,
-        val_fn=validate_cross_entropy,
-    )
+    load_from = train_kwargs.get("load_from")
+    if load_from == "base":
+        base_artifact_name = f"base_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+        base_model, _, source_run_id = utils.load_model_from_wandb(
+            base_artifact_name,
+            cfg.wandb.entity,
+            cfg.wandb.project,
+            device,
+        )
+        inner_model.load_state_dict(base_model.state_dict())
+        run.summary["base_run_id"] = source_run_id
+    else:
+        _training_loop(
+            inner_model,
+            train_loader,
+            val_loader,
+            cfg,
+            device,
+            run,
+            train_kwargs,
+            train_fn=train_epoch_cross_entropy,
+            val_fn=validate_cross_entropy,
+        )
     fit_loader = data.build_laplace_fit_loader(train_loader, cfg, train_kwargs)
     model.fit(fit_loader)
     run.summary["laplace_fitted"] = True
