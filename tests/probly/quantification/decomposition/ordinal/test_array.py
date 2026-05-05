@@ -31,8 +31,8 @@ from probly.quantification.decomposition.ordinal import (
 from probly.quantification.measure.ordinal import labelwise_entropy, labelwise_variance
 from probly.quantification.notion import AleatoricUncertainty, EpistemicUncertainty, TotalUncertainty
 from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
+    ArrayProbabilityCategoricalDistribution,
 )
 from probly.representation.distribution.array_gaussian import (
     ArrayGaussianDistribution,
@@ -51,7 +51,7 @@ def _categorical_sample() -> ArrayCategoricalDistributionSample:
         dtype=float,
     )
     return ArrayCategoricalDistributionSample(
-        array=ArrayCategoricalDistribution(probs),
+        array=ArrayProbabilityCategoricalDistribution(probs),
         sample_axis=0,
     )
 
@@ -67,7 +67,7 @@ def _constant_categorical_sample() -> ArrayCategoricalDistributionSample:
         dtype=float,
     )
     return ArrayCategoricalDistributionSample(
-        array=ArrayCategoricalDistribution(probs),
+        array=ArrayProbabilityCategoricalDistribution(probs),
         sample_axis=0,
     )
 
@@ -289,7 +289,7 @@ def test_labelwise_variance_vs_manual_formula() -> None:
 
 def test_labelwise_single_distribution_measures() -> None:
     probs = np.array([[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]], dtype=float)
-    dist = ArrayCategoricalDistribution(probs)
+    dist = ArrayProbabilityCategoricalDistribution(probs)
     p = dist.probabilities  # (N=2, K=3)
 
     np.testing.assert_allclose(labelwise_entropy(dist), np.sum(_bh(p), axis=-1), rtol=1e-12)

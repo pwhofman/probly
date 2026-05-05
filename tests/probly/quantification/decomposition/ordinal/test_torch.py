@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 torch = pytest.importorskip("torch")
+import torch
 
 from probly.quantification import (  # noqa: E402
     CategoricalVarianceDecomposition,
@@ -17,12 +18,12 @@ from probly.quantification import (  # noqa: E402
 )
 from probly.quantification.measure.ordinal import labelwise_entropy, labelwise_variance  # noqa: E402
 from probly.representation.distribution.array_categorical import (  # noqa: E402
-    ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
+    ArrayProbabilityCategoricalDistribution
 )
 from probly.representation.distribution.torch_categorical import (  # noqa: E402
-    TorchCategoricalDistribution,
     TorchCategoricalDistributionSample,
+    TorchProbabilityCategoricalDistribution,
 )
 from probly.representation.distribution.torch_gaussian import (  # noqa: E402
     TorchGaussianDistribution,
@@ -40,7 +41,7 @@ def _categorical_sample() -> TorchCategoricalDistributionSample:
         dtype=torch.float64,
     )
     return TorchCategoricalDistributionSample(
-        tensor=TorchCategoricalDistribution(probs),
+        tensor=TorchProbabilityCategoricalDistribution(probs),
         sample_dim=0,
     )
 
@@ -55,7 +56,7 @@ def _constant_categorical_sample() -> TorchCategoricalDistributionSample:
         dtype=torch.float64,
     )
     return TorchCategoricalDistributionSample(
-        tensor=TorchCategoricalDistribution(probs),
+        tensor=TorchProbabilityCategoricalDistribution(probs),
         sample_dim=0,
     )
 
@@ -131,7 +132,7 @@ def test_torch_results_match_numpy(cls) -> None:
         dtype=float,
     )
     np_sample = ArrayCategoricalDistributionSample(
-        array=ArrayCategoricalDistribution(np_sample_probs),
+        array=ArrayProbabilityCategoricalDistribution(np_sample_probs),
         sample_axis=0,
     )
     torch_sample = _categorical_sample()
@@ -213,7 +214,7 @@ def test_torch_labelwise_variance_vs_manual_formula() -> None:
 
 def test_torch_labelwise_single_distribution_measures() -> None:
     probs = torch.tensor([[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]], dtype=torch.float64)
-    dist = TorchCategoricalDistribution(probs)
+    dist = TorchProbabilityCategoricalDistribution(probs)
     p = dist.probabilities  # (N=2, K=3)
 
     torch.testing.assert_close(labelwise_entropy(dist), torch.sum(_torch_bh(p), dim=-1))
