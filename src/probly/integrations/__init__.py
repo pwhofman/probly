@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from probly.calibrator import calibrate
 from probly.predictor import predict
 from probly.representer import representer
 
@@ -33,6 +34,7 @@ _TU_PREDICTION_POSTPROCESSORS = (
 
 @predict.delayed_register(_TU_BATCHED_WRAPPERS + _TU_PREDICTION_POSTPROCESSORS)
 @representer.delayed_register(_TU_BATCHED_WRAPPERS + _TU_PREDICTION_POSTPROCESSORS)
+@calibrate.delayed_register(_TU_PREDICTION_POSTPROCESSORS)
 def _(_: type[object]) -> None:
     from . import torch_uncertainty as torch_uncertainty  # noqa: PLC0415
 

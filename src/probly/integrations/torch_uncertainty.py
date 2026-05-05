@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, Literal, overload, override
+from typing import TYPE_CHECKING, Any, Literal, overload, override
 
 import torch
 from torch_uncertainty.models.wrappers.batch_ensemble import BatchEnsemble
@@ -12,6 +12,7 @@ from torch_uncertainty.models.wrappers.deep_ensembles import _DeepEnsembles, _Re
 from torch_uncertainty.models.wrappers.mc_dropout import _MCDropout, _RegMCDropout
 from torch_uncertainty.models.wrappers.stochastic import StochasticModel
 from torch_uncertainty.models.wrappers.swag import SWAG
+from torch_uncertainty.post_processing.abstract import PostProcessing
 from torch_uncertainty.post_processing.calibration.bbq import BBQScaler
 from torch_uncertainty.post_processing.calibration.dirichlet_scaler import DirichletScaler
 from torch_uncertainty.post_processing.calibration.histogram_binning import HistogramBinningScaler
@@ -24,7 +25,9 @@ from torch_uncertainty.post_processing.conformal.raps import ConformalClsRAPS
 from torch_uncertainty.post_processing.conformal.thr import ConformalClsTHR
 from torch_uncertainty.post_processing.mc_batch_norm import MCBatchNorm
 
+from probly.calibrator import Calibrator, calibrate
 from probly.predictor import Predictor, predict, predict_raw
+from probly.representation.conformal_set._common import ConformalSet
 from probly.representation.conformal_set.torch import TorchOneHotConformalSet
 from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistributionSample,
@@ -34,6 +37,9 @@ from probly.representation.distribution.torch_categorical import (
 from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution, TorchGaussianDistributionSample
 from probly.representation.sample.torch import TorchSample
 from probly.representer import Representer, representer
+
+if TYPE_CHECKING:
+    from torch.utils.data import DataLoader
 
 type TorchUncertaintySampleKind = Literal["values", "logits", "probabilities", "gaussian"]
 
@@ -161,6 +167,7 @@ def _predict_batched_torch_uncertainty[**In, Out](
     return _reshape_batched_output(raw, _num_estimators(predictor), batch_size)
 
 
+@representer.register(_BATCHED_WRAPPER_TYPES)
 class TorchUncertaintySampleRepresenter[**In, Out](Representer[Any, In, Out, Any]):
     """Representer for torch-uncertainty wrappers with batched estimator outputs."""
 
@@ -187,25 +194,13 @@ class TorchUncertaintySampleRepresenter[**In, Out](Representer[Any, In, Out, Any
         raise ValueError(msg)
 
 
-representer.register(_BATCHED_WRAPPER_TYPES, TorchUncertaintySampleRepresenter)
-
-
-@predict.register(_CALIBRATION_TYPES)
-def _predict_torch_uncertainty_calibrator[**In, Out](
-    predictor: Predictor[In, Out], *args: In.args, **kwargs: In.kwargs
-) -> Out:
-    return predict_raw(predictor, *args, **kwargs)
-
-
+@representer.register(_CALIBRATION_TYPES)
 class TorchUncertaintyCalibratedLogitRepresenter(Representer[Any, Any, Any, TorchLogitCategoricalDistribution]):
     """Representer for torch-uncertainty calibration scalers that return logits."""
 
     @override
     def represent(self, *args: Any, **kwargs: Any) -> TorchLogitCategoricalDistribution:
         return TorchLogitCategoricalDistribution(predict(self.predictor, *args, **kwargs))
-
-
-representer.register(_CALIBRATION_TYPES, TorchUncertaintyCalibratedLogitRepresenter)
 
 
 @predict.register(_CONFORMAL_TYPES)
@@ -215,15 +210,26 @@ def _predict_torch_uncertainty_conformal[**In, Out](
     return TorchOneHotConformalSet(predict_raw(predictor, *args, **kwargs) > 0)
 
 
-class TorchUncertaintyConformalRepresenter(Representer[Any, Any, Any, Any]):
+@representer.register(_CONFORMAL_TYPES)
+class TorchUncertaintyConformalRepresenter[**In, Out: ConformalSet](Representer[Any, In, Out, Out]):
     """Representer for torch-uncertainty conformal classifiers."""
 
     @override
-    def represent(self, *args: Any, **kwargs: Any) -> Any:
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> Out:
         return predict(self.predictor, *args, **kwargs)
 
 
-representer.register(_CONFORMAL_TYPES, TorchUncertaintyConformalRepresenter)
+Calibrator.register(PostProcessing)
+
+
+@calibrate.register(PostProcessing)
+def _calibrate_torch_uncertainty_scaler[**In, Out](
+    predictor: PostProcessing,
+    dataloader: DataLoader,
+    **kwargs: Any,  # noqa: ANN401
+) -> Predictor[In, Out]:
+    predictor.fit(dataloader=dataloader, **kwargs)
+    return predictor
 
 
 __all__ = []

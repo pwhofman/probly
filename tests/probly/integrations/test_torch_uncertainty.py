@@ -8,8 +8,11 @@ pytest.importorskip("torch")
 pytest.importorskip("torch_uncertainty")
 import torch
 from torch import nn
+from torch.utils.data import DataLoader, TensorDataset
 import torch_uncertainty.models.wrappers as tu_wrappers
+from torch_uncertainty.post_processing.calibration import TemperatureScaler
 
+from probly.calibrator import calibrate
 from probly.predictor import predict
 from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistributionSample,
@@ -58,3 +61,15 @@ def test_torch_uncertainty_deep_ensemble_value_representer() -> None:
 
     assert isinstance(representation, TorchSample)
     assert representation.tensor.shape == (2, 4, 3)
+
+
+def test_torch_uncertainty_temperature_scaler_calibrate_returns_same_object() -> None:
+    scaler = TemperatureScaler(model=nn.Identity())
+    logits = torch.tensor([[2.0, 0.0], [0.0, 2.0], [1.0, 0.0], [0.0, 1.0]])
+    labels = torch.tensor([0, 1, 0, 1])
+    dataloader = DataLoader(TensorDataset(logits, labels), batch_size=2)
+
+    calibrated = calibrate(scaler, dataloader, progress=False)
+
+    assert calibrated is scaler
+    assert scaler.trained
