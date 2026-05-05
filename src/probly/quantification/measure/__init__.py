@@ -12,7 +12,7 @@ from .distribution import (
     mutual_information,
     vacuity,
 )
-from .sample import mean_squared_distance_to_scaled_one_hot, sample_variance
+from .sample import mean_squared_distance_to_scaled_one_hot, sample_variance, total_logit_sample_variance
 from .spectral import spectral_entropy
 
 __all__ = [
@@ -28,5 +28,6 @@ __all__ = [
     "mutual_information",
     "sample_variance",
     "spectral_entropy",
+    "total_logit_sample_variance",
     "vacuity",
 ]

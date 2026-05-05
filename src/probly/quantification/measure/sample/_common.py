@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from flextype import flexdispatch
 from probly.quantification._quantification import measure_atomic
+from probly.representation.distribution._common import CategoricalDistributionSample
 from probly.representation.sample._common import Sample
 
 if TYPE_CHECKING:
@@ -19,7 +20,9 @@ def sample_variance[T](sample: Sample[T]) -> T:
 
 
 @flexdispatch
-def mean_squared_distance_to_scaled_one_hot(sample: Sample, scale: float | None = None) -> ArrayLike:
+def mean_squared_distance_to_scaled_one_hot(
+    sample: CategoricalDistributionSample, scale: float | None = None
+) -> ArrayLike:
     r"""Mean over members of :math:`\| h_k - s\, e_{\arg\max_j h_{k,j}} \|_2^2`; class axis is last.
 
     Args:
@@ -28,4 +31,12 @@ def mean_squared_distance_to_scaled_one_hot(sample: Sample, scale: float | None 
             :cite:`mathelinDeepAntiregularizedEnsembles2023`.
     """
     msg = f"mean_squared_distance_to_scaled_one_hot not supported for sample of type {type(sample)}."
+    raise NotImplementedError(msg)
+
+
+@measure_atomic.register(CategoricalDistributionSample)
+@flexdispatch
+def total_logit_sample_variance(sample: CategoricalDistributionSample) -> ArrayLike:
+    """Measure uncertainty for samples via the variance of their total logits (logits summed across members)."""
+    msg = f"total_logit_sample_variance not supported for sample of type {type(sample)}."
     raise NotImplementedError(msg)

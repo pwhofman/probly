@@ -232,17 +232,3 @@ def _create_array_categorical_distribution_from_sequence(
     data: list[Any] | tuple[Any, ...],
 ) -> ArrayCategoricalDistribution:
     return ArrayProbabilityCategoricalDistribution(np.asarray(data))
-
-
-@create_categorical_distribution.register(ArrayCategoricalDistribution)
-def _create_array_categorical_distribution_from_instance(
-    data: ArrayCategoricalDistribution,
-) -> ArrayCategoricalDistribution:
-    return data
-
-
-@create_categorical_distribution_from_logits.register(np.ndarray)
-def _create_array_categorical_distribution_from_logits(
-    data: np.ndarray,
-) -> ArrayCategoricalDistribution:
-    return ArrayLogitCategoricalDistribution(data)

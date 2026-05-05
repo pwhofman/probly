@@ -227,17 +227,3 @@ class TorchCategoricalDistributionSample(  # ty:ignore[conflicting-metaclass]
     @classmethod
     def __instancehook__(cls, instance: object) -> bool:
         return super().__instancehook__(instance)
-
-
-@create_categorical_distribution.register(TorchCategoricalDistribution)
-def _create_torch_categorical_distribution_from_instance(
-    data: TorchCategoricalDistribution,
-) -> TorchCategoricalDistribution:
-    return data
-
-
-@create_categorical_distribution_from_logits.register(torch.Tensor)
-def _create_torch_categorical_distribution_from_logits(
-    data: torch.Tensor,
-) -> TorchCategoricalDistribution:
-    return TorchLogitCategoricalDistribution(data)

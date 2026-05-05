@@ -34,6 +34,7 @@ from .measure import (
     mutual_information,
     sample_variance,
     spectral_entropy,
+    total_logit_sample_variance,
     vacuity,
 )
 from .notion import (
@@ -80,5 +81,6 @@ __all__ = [
     "quantify",
     "sample_variance",
     "spectral_entropy",
+    "total_logit_sample_variance",
     "vacuity",
 ]
