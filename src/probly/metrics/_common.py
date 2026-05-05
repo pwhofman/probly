@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from flextype import flexdispatch
 
+# Number of decimal places used when rounding lower/upper bounds in credal-set coverage and efficiency.
+CREDAL_ROUND_DECIMALS: int = 3
+
 
 @flexdispatch
 def auc(x: object, y: object) -> object:

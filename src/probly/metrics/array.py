@@ -18,6 +18,7 @@ from probly.representation.credal_set.array import (
 )
 
 from ._common import (
+    CREDAL_ROUND_DECIMALS,
     auc,
     average_interval_width,
     average_precision_score,
@@ -31,14 +32,6 @@ from ._common import (
 
 if TYPE_CHECKING:
     from probly.representation.distribution import ArrayCategoricalDistribution
-
-# Number of decimal places used when rounding lower/upper bounds before the
-# probability-vector containment check.  Softmax outputs are never exactly 0,
-# so tiny floating-point residuals (e.g. 3e-5) in the lower envelope would
-# wrongly exclude a target probability of 0.  Rounding to this many decimals
-# collapses such residuals to 0 before the comparison, matching the behaviour
-# of the reference implementation.
-_CREDAL_ROUND_DECIMALS: int = 4
 
 
 @auc.register(np.ndarray)
@@ -257,14 +250,18 @@ def _credal_containment_coverage(lower: np.ndarray, upper: np.ndarray, y_true: n
         # Round before comparing so that tiny floating-point residuals in the
         # lower envelope (softmax is never exactly 0) do not incorrectly
         # exclude a target probability of 0.
-        lower_r = np.round(lower, decimals=_CREDAL_ROUND_DECIMALS)
-        upper_r = np.round(upper, decimals=_CREDAL_ROUND_DECIMALS)
+        lower_r = np.round(lower, decimals=CREDAL_ROUND_DECIMALS)
+        upper_r = np.round(upper, decimals=CREDAL_ROUND_DECIMALS)
         covered = np.all((lower_r <= y) & (y <= upper_r), axis=-1)
     return np.mean(covered)
 
 
 def _credal_interval_efficiency(lower: np.ndarray, upper: np.ndarray) -> np.floating:
     """Efficiency of a credal set as ``1 - mean(upper - lower)``.
+
+    Bounds are rounded to ``CREDAL_ROUND_DECIMALS`` decimals before subtracting
+    so floating-point residuals (e.g. softmax outputs near 0) do not perturb
+    the width.
 
     Args:
         lower: Lower probability envelope of shape ``(N, C)``.
@@ -273,7 +270,9 @@ def _credal_interval_efficiency(lower: np.ndarray, upper: np.ndarray) -> np.floa
     Returns:
         Scalar in ``(-inf, 1]``; higher means a tighter (more efficient) credal set.
     """
-    return np.float64(1.0 - float(np.mean(np.asarray(upper) - np.asarray(lower))))
+    lower_r = np.round(np.asarray(lower), decimals=CREDAL_ROUND_DECIMALS)
+    upper_r = np.round(np.asarray(upper), decimals=CREDAL_ROUND_DECIMALS)
+    return np.float64(1.0 - float(np.mean(upper_r - lower_r)))
 
 
 @coverage.register(ArrayConvexCredalSet)

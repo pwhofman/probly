@@ -26,6 +26,7 @@ from probly.metrics import (
     roc_auc_score,
     roc_curve,
 )
+from probly.metrics._common import CREDAL_ROUND_DECIMALS
 from probly.metrics.array import _convex_hull_lp_coverage
 from probly.representation.conformal_set.torch import TorchIntervalConformalSet, TorchOneHotConformalSet
 from probly.representation.credal_set.torch import (
@@ -37,11 +38,6 @@ from probly.representation.credal_set.torch import (
 
 if TYPE_CHECKING:
     from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
-
-# Number of decimal places used when rounding lower/upper bounds before the
-# probability-vector containment check.  Must match the numpy counterpart in
-# :mod:`probly.metrics.array` so that numpy and torch results agree.
-_CREDAL_ROUND_DECIMALS: int = 4
 
 
 @auc.register(torch.Tensor)
@@ -227,7 +223,7 @@ def _credal_containment_coverage_torch(lower: torch.Tensor, upper: torch.Tensor,
         # Round before comparing so that tiny floating-point residuals in the
         # lower envelope (softmax is never exactly 0) do not incorrectly
         # exclude a target probability of 0.
-        scale = 10**_CREDAL_ROUND_DECIMALS
+        scale = 10**CREDAL_ROUND_DECIMALS
         lower_r = torch.round(lower * scale) / scale
         upper_r = torch.round(upper * scale) / scale
         y = y.to(dtype=lower.dtype)
@@ -238,6 +234,10 @@ def _credal_containment_coverage_torch(lower: torch.Tensor, upper: torch.Tensor,
 def _credal_interval_efficiency_torch(lower: torch.Tensor, upper: torch.Tensor) -> float:
     """Efficiency of a credal set as ``1 - mean(upper - lower)``.
 
+    Bounds are rounded to ``CREDAL_ROUND_DECIMALS`` decimals before subtracting
+    so floating-point residuals (e.g. softmax outputs near 0) do not perturb
+    the width.
+
     Args:
         lower: Lower probability envelope of shape ``(N, C)``.
         upper: Upper probability envelope of shape ``(N, C)``.
@@ -245,7 +245,10 @@ def _credal_interval_efficiency_torch(lower: torch.Tensor, upper: torch.Tensor) 
     Returns:
         Scalar in ``(-inf, 1]``; higher means a tighter (more efficient) credal set.
     """
-    return float(1.0 - (upper - lower).float().mean().item())
+    scale = 10**CREDAL_ROUND_DECIMALS
+    lower_r = torch.round(lower * scale) / scale
+    upper_r = torch.round(upper * scale) / scale
+    return float(1.0 - (upper_r - lower_r).float().mean().item())
 
 
 @coverage.register(TorchConvexCredalSet)
