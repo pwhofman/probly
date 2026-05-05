@@ -18,13 +18,16 @@ from probly.representation.credal_set.array import (
     ArrayProbabilityIntervalsCredalSet,
     ArraySingletonCredalSet,
 )
-from probly.representation.distribution import ArrayCategoricalDistribution
+from probly.representation.distribution.array_categorical import (
+    ArrayCategoricalDistribution,
+    ArrayProbabilityCategoricalDistribution,
+)
 
 from ._credal_suite import CredalSuite
 
 
 def _categorical(probs: np.ndarray) -> ArrayCategoricalDistribution:
-    return ArrayCategoricalDistribution(probs)
+    return ArrayProbabilityCategoricalDistribution(probs)
 
 
 @pytest.fixture

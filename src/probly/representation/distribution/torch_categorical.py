@@ -78,7 +78,7 @@ class TorchCategoricalDistribution(
         if self._is_bernoulli:
             p = self._bernoulli_probability()
             q = 1 - p
-            return torch.stack((p, q), dim=-1)
+            return torch.stack((q, p), dim=-1)
 
         sums = torch.sum(self.unnormalized_probabilities, dim=-1, keepdim=True)
 
@@ -88,6 +88,11 @@ class TorchCategoricalDistribution(
     @property
     def log_probabilities(self) -> torch.Tensor:
         return torch.log(self.probabilities)
+
+    @override
+    @property
+    def logits(self) -> torch.Tensor:
+        return torch.log(self.probabilities if self._is_bernoulli else self.unnormalized_probabilities)
 
     @override
     @property

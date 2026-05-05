@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, override, runtime_checkable
 
+from probly.predictor import LogitClassifier
 from probly.quantification._quantification import decompose
 from probly.quantification.decomposition.decomposition import CachingDecomposition, EpistemicDecomposition
 from probly.quantification.measure.sample import (
@@ -27,7 +28,7 @@ class DarePredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
     """A predictor routed through the DARE method API."""
 
 
-@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
+@predictor_transformation(permitted_predictor_types=(LogitClassifier,), preserve_predictor_type=False)
 @DarePredictor.register_factory(autocast_builtins=True)
 def dare[**In, Out](base: Predictor[In, Out], num_members: int, reset_params: bool = True) -> DarePredictor[In, Out]:
     """Create a DARE predictor from a base predictor."""

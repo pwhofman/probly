@@ -40,23 +40,28 @@ class CategoricalDistribution[T](Distribution[T]):
 
     @property
     @abstractmethod
-    def unnormalized_probabilities(self) -> ArrayLike:
-        """Get the probabilities of the categorical distribution."""
-
-    @property
-    @abstractmethod
     def num_classes(self) -> int:
         """Get the number of classes."""
 
     @property
     @abstractmethod
+    def unnormalized_probabilities(self) -> ArrayLike:
+        """Get unnormalized probabilities of the categorical distribution."""
+
+    @property
+    @abstractmethod
     def probabilities(self) -> ArrayLike:
-        """Get the normalized probabilities of the categorical distribution."""
+        """Get the probabilities of the categorical distribution."""
+
+    @property
+    @abstractmethod
+    def logits(self) -> ArrayLike:
+        """Get logits of the categorical distribution."""
 
     @property
     @abstractmethod
     def log_probabilities(self) -> ArrayLike:
-        """Get (possibly unnormalized) log probabilities of the categorical distribution."""
+        """Get the log probabilities of the categorical distribution."""
 
 
 class DistributionSample[T: Distribution](RepresentationSample[T]):

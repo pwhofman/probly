@@ -209,7 +209,7 @@ def main() -> None:
     print("Clustering responses...")
     semantic_sample = cluster_answers_by_question(clusterer, text_sample)
     dense_semantic_sample = TorchCategoricalDistributionSample(
-        tensor=semantic_sample.tensor.to_categorical_distribution(),
+        tensor=semantic_sample.tensor.to_dense(),
         sample_dim=semantic_sample.sample_dim,
     )
     decomposition = decompose(dense_semantic_sample)

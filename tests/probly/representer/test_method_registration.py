@@ -13,7 +13,10 @@ from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPre
 from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.efficient_credal_prediction import EfficientCredalRepresenter, efficient_credal_prediction
 from probly.representation.credal_set import ProbabilityIntervalsCredalSet
-from probly.representation.distribution import ArrayCategoricalDistribution
+from probly.representation.distribution.array_categorical import (
+    ArrayCategoricalDistribution,
+    ArrayProbabilityCategoricalDistribution,
+)
 from probly.representer import (
     ConvexCredalSetRepresenter,
     ProbabilityIntervalsRepresenter,
@@ -29,7 +32,7 @@ class _DummyEnsemble(list[Callable[[], ArrayCategoricalDistribution]]):
 
 def _categorical_member(probabilities: list[float]) -> Callable[[], ArrayCategoricalDistribution]:
     def predict() -> ArrayCategoricalDistribution:
-        return ArrayCategoricalDistribution(np.asarray(probabilities))
+        return ArrayProbabilityCategoricalDistribution(np.asarray(probabilities))
 
     return predict
 

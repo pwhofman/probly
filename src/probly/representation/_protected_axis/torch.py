@@ -135,7 +135,7 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor | np.ndarray](TorchLikeImpl
         msg = "No torch-like protected value is available."
         raise TypeError(msg)
 
-    def with_protected_values(self, values: dict[str, TorchProtectedValue]) -> Self:
+    def with_protected_values(self, values: dict[str, TorchProtectedValue]) -> TorchAxisProtected[T]:
         """Return a copy with updated protected field values."""
         current_values = self.protected_values()
         updates: dict[str, object] = {}
@@ -143,14 +143,7 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor | np.ndarray](TorchLikeImpl
         for name in type(self).protected_axes:
             updates[name] = values.get(name, current_values[name])
 
-        return cast("Self", replace(cast("Any", self), **updates))
-
-    def with_protected_value(self, value: TorchProtectedValue) -> Self:
-        """Return a copy with a replaced primary protected value."""
-        if len(type(self).protected_axes) != 1:
-            msg = "with_protected_value is only supported for single-field protected objects."
-            raise TypeError(msg)
-        return self.with_protected_values({type(self).primary_protected_name(): value})
+        return replace(self, **updates)  # ty:ignore[invalid-argument-type]
 
     @override
     def __len__(self) -> int:
@@ -271,7 +264,7 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor | np.ndarray](TorchLikeImpl
         return candidate_values
 
     @override
-    def __getitem__(self, index: ToIndices, /) -> Self | T:
+    def __getitem__(self, index: ToIndices, /) -> TorchAxisProtected[T]:
         values = self.protected_values()
         indexed: dict[str, TorchProtectedValue] = {}
 
@@ -325,7 +318,7 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor | np.ndarray](TorchLikeImpl
         if not changed:
             return self
 
-        return self.with_protected_values(updates)
+        return self.with_protected_values(updates)  # ty:ignore[invalid-return-type]
 
     def __torch_like__(
         self,
@@ -372,7 +365,7 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor | np.ndarray](TorchLikeImpl
             name: value if isinstance(value, np.ndarray) else cast("TorchProtectedValue", cast("Any", value).detach())
             for name, value in self.protected_values().items()
         }
-        return self.with_protected_values(values)
+        return self.with_protected_values(values)  # ty:ignore[invalid-return-type]
 
     def reshape(self, *shape: int | tuple[int, ...]) -> Self:
         """Return a copy with reshaped protected values."""

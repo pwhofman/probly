@@ -67,17 +67,17 @@ class TorchSparseLogCategoricalDistribution(
     @override
     @property
     def unnormalized_probabilities(self) -> torch.Tensor:
-        return self.to_categorical_distribution().unnormalized_probabilities
+        return self.to_dense().unnormalized_probabilities
 
     @override
     @property
     def probabilities(self) -> torch.Tensor:
-        return self.to_categorical_distribution().probabilities
+        return self.to_dense().probabilities
 
     @override
     @property
     def log_probabilities(self) -> torch.Tensor:
-        return self.to_categorical_distribution().log_probabilities
+        return self.to_dense().log_probabilities
 
     @override
     @property
@@ -92,7 +92,7 @@ class TorchSparseLogCategoricalDistribution(
         """
         return replace(self, logits=torch.zeros_like(self.logits))
 
-    def to_categorical_distribution(self, num_classes: int | None = None) -> TorchCategoricalDistribution:
+    def to_dense(self, num_classes: int | None = None) -> TorchCategoricalDistribution:
         """Convert sparse grouped logits to a dense categorical distribution.
 
         Args:
@@ -136,12 +136,12 @@ class TorchSparseLogCategoricalDistribution(
         rng: torch.Generator | None = None,
     ) -> TorchSample[torch.Tensor]:
         """Sample from the equivalent dense categorical distribution."""
-        return self.to_categorical_distribution().sample(num_samples=num_samples, rng=rng)
+        return self.to_dense().sample(num_samples=num_samples, rng=rng)
 
     @override
     def numpy(self, *, force: bool = False) -> np.ndarray:
         """Convert dense probabilities to a numpy array."""
-        return self.to_categorical_distribution().numpy(force=force)
+        return self.to_dense().numpy(force=force)
 
 
 class TorchSparseLogCategoricalDistributionSample(  # ty:ignore[conflicting-metaclass]

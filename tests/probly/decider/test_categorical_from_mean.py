@@ -11,20 +11,23 @@ from probly.representation.credal_set.array import (
     ArrayDistanceBasedCredalSet,
     ArrayProbabilityIntervalsCredalSet,
 )
-from probly.representation.distribution import ArrayCategoricalDistribution
-from probly.representation.distribution.array_categorical import ArrayCategoricalDistributionSample
+from probly.representation.distribution.array_categorical import (
+    ArrayCategoricalDistribution,
+    ArrayCategoricalDistributionSample,
+    ArrayProbabilityCategoricalDistribution,
+)
 from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
 
 
 def test_categorical_from_mean_returns_categorical_distribution_unchanged() -> None:
-    distribution = ArrayCategoricalDistribution(np.array([[0.2, 0.3, 0.5]]))
+    distribution = ArrayProbabilityCategoricalDistribution(np.array([[0.2, 0.3, 0.5]]))
 
     assert categorical_from_mean(distribution) is distribution
 
 
 def test_categorical_from_mean_reduces_categorical_sample_to_mean_distribution() -> None:
     sample = ArrayCategoricalDistributionSample(
-        array=ArrayCategoricalDistribution(
+        array=ArrayProbabilityCategoricalDistribution(
             np.array(
                 [
                     [[2.0, 2.0, 0.0], [1.0, 3.0, 0.0]],
@@ -63,13 +66,13 @@ def test_categorical_from_mean_reduces_probability_intervals_to_center_distribut
 
 
 def test_categorical_from_mean_reduces_distance_based_credal_set_to_nominal_distribution() -> None:
-    nominal = ArrayCategoricalDistribution(np.array([[0.2, 0.3, 0.5]]))
+    nominal = ArrayProbabilityCategoricalDistribution(np.array([[0.2, 0.3, 0.5]]))
     credal_set = ArrayDistanceBasedCredalSet(nominal=nominal, radius=np.array([0.1]))
 
     assert categorical_from_mean(credal_set) is nominal
 
 
-def test_categorical_from_mean_reduces_one_hot_conformal_set_to_categorical_distribution() -> None:
+def test_categorical_from_mean_reduces_one_hot_conformal_set_to_dense() -> None:
     conformal_set = ArrayOneHotConformalSet(
         np.array(
             [

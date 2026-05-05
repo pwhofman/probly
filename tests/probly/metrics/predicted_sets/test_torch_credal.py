@@ -25,7 +25,7 @@ from probly.representation.credal_set.torch import (  # noqa: E402
     TorchDistanceBasedCredalSet,
     TorchProbabilityIntervalsCredalSet,
 )
-from probly.representation.distribution import ArrayCategoricalDistribution  # noqa: E402
+from probly.representation.distribution.array_categorical import ArrayProbabilityCategoricalDistribution  # noqa: E402
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution  # noqa: E402
 
 from ._credal_suite import CredalSuite  # noqa: E402
@@ -70,7 +70,7 @@ class TestTorch(CredalSuite):
 )
 def test_convex_numpy_torch_parity(probs: np.ndarray) -> None:
     """Convex coverage and efficiency agree across backends on identical inputs."""
-    np_cs = ArrayConvexCredalSet(array=ArrayCategoricalDistribution(probs))
+    np_cs = ArrayConvexCredalSet(array=ArrayProbabilityCategoricalDistribution(probs))
     tc_cs = TorchConvexCredalSet(tensor=TorchCategoricalDistribution(torch.as_tensor(probs)))
     y = np.array([1])
     assert coverage(np_cs, y) == pytest.approx(coverage(tc_cs, torch.as_tensor(y)))
@@ -81,7 +81,7 @@ def test_distance_numpy_torch_parity() -> None:
     nominal = np.array([[0.5, 0.3, 0.2]])
     radius = np.array([0.1])
     np_cs = ArrayDistanceBasedCredalSet(
-        nominal=ArrayCategoricalDistribution(nominal),
+        nominal=ArrayProbabilityCategoricalDistribution(nominal),
         radius=radius,
     )
     tc_cs = TorchDistanceBasedCredalSet(

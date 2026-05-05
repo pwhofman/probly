@@ -57,7 +57,7 @@ def test_sparse_log_categorical_converts_to_dense_categorical_distribution() -> 
         logits=torch.log(torch.tensor([[0.2, 0.3, 0.5], [0.25, 0.5, 0.25]])),
     )
 
-    dense = distribution.to_categorical_distribution()
+    dense = distribution.to_dense()
 
     assert isinstance(dense, TorchCategoricalDistribution)
     assert dense.num_classes == 4
@@ -73,7 +73,7 @@ def test_sparse_log_categorical_allows_explicit_extra_dense_classes() -> None:
         logits=torch.log(torch.tensor([0.4, 0.6])),
     )
 
-    dense = distribution.to_categorical_distribution(num_classes=5)
+    dense = distribution.to_dense(num_classes=5)
 
     assert dense.num_classes == 5
     assert torch.allclose(dense.probabilities, torch.tensor([0.4, 0.0, 0.6, 0.0, 0.0]))
@@ -100,4 +100,4 @@ def test_sparse_log_categorical_rejects_too_few_dense_classes() -> None:
     )
 
     with pytest.raises(ValueError, match="maximum group id"):
-        distribution.to_categorical_distribution(num_classes=2)
+        distribution.to_dense(num_classes=2)
