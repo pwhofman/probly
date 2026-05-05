@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
     from probly.layers.torch import GaussianMixtureHead
+    from probly.transformation.subensemble.torch import _FrozenBackbone
 
 
 import contextlib
@@ -45,7 +46,8 @@ from probly.method.efficient_credal_prediction import (
 )
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.subensemble import SubensemblePredictor
-from probly_benchmark import conformal, data, metadata, utils
+from probly.traverse_nn.utils import get_output_dim
+from probly_benchmark import conformal, data, metadata, models, utils
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.paths import CHECKPOINT_PATH
 from probly_benchmark.train_funcs import (
@@ -489,12 +491,51 @@ def _(
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
 ) -> None:
-    """Train a subensemble by training each head independently on a shared frozen backbone.
+    """Train a subensemble: optionally warm up the shared backbone, then fit each head.
 
-    Only the head (trainable) parameters are passed to the optimizer; the frozen
-    backbone parameters are excluded to avoid inflating optimizer state and to
-    prevent incorrect gradient-norm computations on zero-gradient parameters.
+    The shared backbone is always wrapped in :class:`_FrozenBackbone` at build time so
+    each head trains on fixed features. When ``cfg.pretrained`` is ``True`` the encoder
+    arrives already trained (e.g. from a torchvision/timm checkpoint) and we go straight
+    to fitting the heads. When ``cfg.pretrained`` is ``False`` the encoder is at random
+    init, so we first train a fresh ``Sequential(encoder, linear_head)`` end-to-end as
+    a regular base model and copy its trained encoder weights into the subensemble's
+    frozen backbone via ``load_state_dict``.
+
+    Only ``requires_grad=True`` parameters are passed to each per-head optimizer so the
+    frozen backbone does not inflate optimizer state nor distort gradient-norm
+    computations.
     """
+    if not cfg.pretrained:
+        num_classes = metadata.DATASETS[cfg.dataset].num_classes
+        warmup_encoder = models.get_base_model(
+            f"{cfg.base_model}_encoder",
+            num_classes,
+            pretrained=False,
+        ).to(device)
+        feature_dim = get_output_dim(warmup_encoder)
+        warmup_head = nn.Linear(feature_dim, num_classes).to(device)
+        warmup_model = nn.Sequential(warmup_encoder, warmup_head)
+
+        _training_loop(
+            warmup_model,
+            train_loader,
+            val_loader,
+            cfg,
+            device,
+            run,
+            train_kwargs,
+            train_fn=train_epoch_cross_entropy,
+            val_fn=validate_cross_entropy,
+            log_prefix="phase1/",
+        )
+
+        frozen_backbone = cast("_FrozenBackbone", next(model[0].children()))
+        frozen_backbone.module.load_state_dict(warmup_encoder.state_dict())
+
+        _shutdown_dataloader_workers(train_loader, "train")
+        if val_loader is not None:
+            _shutdown_dataloader_workers(val_loader, "val")
+
     for i, member in enumerate(model):
         trainable = [p for p in member.parameters() if p.requires_grad]
         _training_loop(
