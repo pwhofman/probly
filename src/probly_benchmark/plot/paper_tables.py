@@ -163,18 +163,20 @@ def _strip_leading_zero(value: float, decimals: int) -> str:
 
 
 def _format_cell(entry: dict | None, *, decimals: int, is_best: bool) -> str:
-    r"""Format one ``mean\,(std)`` cell, bolded when best.
+    r"""Format one ``$mean_{\pm std}$`` cell, bolded when best.
 
     Numbers drop their leading ``0`` (``.918`` instead of ``0.918``) since
-    every metric in these tables is a [0, 1] score; std is rendered in
-    parentheses with a thin space.
+    every metric in these tables is a [0, 1] score; the std is set as a
+    subscript with a ``\pm`` sign so the whole entry stays compact.
     """
     if entry is None:
         return "--"
     mean = _strip_leading_zero(entry["mean"], decimals)
     std = _strip_leading_zero(entry["std"], decimals)
-    body = f"{mean}\\,({std})"
-    return r"\textbf{" + body + "}" if is_best else body
+    body = f"{mean}_{{\\pm {std}}}"
+    if is_best:
+        return f"$\\mathbf{{{body}}}$"
+    return f"${body}$"
 
 
 def _group_header_row(name: str, n_cols: int) -> list[str]:
@@ -308,13 +310,17 @@ def _ood_table(
     lines.append(" ".join(cdash))
     lines.append(r"\noalign{\vskip " + _HEADER_VSKIP + "}")
 
-    # Sub-header row: Method multicolumn(2) + Near-OOD / Far-OOD per dataset.
+    # Sub-header row: Method multicolumn(2) + plain Near-OOD / Far-OOD per dataset.
     sub_header = r"\multicolumn{2}{@{}l}{\textbf{Method}}"
     for _ in datasets:
         for band in bands:
-            sub_header += f" & \\textbf{{{band.title()}-OOD}}"
+            sub_header += f" & {band.title()}-OOD"
     lines.append(sub_header + r" \\")
-    lines.append(r"\hdashline\noalign{\vskip " + _HEADER_VSKIP + "}")
+    # Split the mid-rule into per-dataset dashed segments (matches the spans
+    # at the top), instead of one full-width hdashline crossing the Method
+    # column.
+    lines.append(" ".join(cdash))
+    lines.append(r"\noalign{\vskip " + _HEADER_VSKIP + "}")
 
     def render_ood_row(method: str) -> str:
         row = f"{_cite_cell(method, citations)} & {method_labels[method]}"
