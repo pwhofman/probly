@@ -1297,22 +1297,36 @@ def _(
 ) -> None:
     """Train an EfficientCredalPredictor.
 
-    First train the base predictor with cross-entropy, then compute classwise
-    additive logit bounds on the training set and store them in the predictor's
-    ``lower`` and ``upper`` buffers.
+    When ``load_from: base`` is set in the method config, load the pre-trained
+    base predictor from wandb and skip base-model training. Otherwise, first
+    train the base predictor with cross-entropy. In both cases, compute
+    classwise additive logit bounds on the training set and store them in the
+    predictor's ``lower`` and ``upper`` buffers.
     """
-    _training_loop(
-        model,
-        train_loader,
-        val_loader,
-        cfg,
-        device,
-        run,
-        train_kwargs,
-        train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
-        val_fn=validate,
-    )
     model_ = cast("Any", model)
+    load_from = cfg.method.get("load_from")
+    if load_from == "base":
+        base_artifact_name = f"base_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+        base_model, _, source_run_id = utils.load_model_from_wandb(
+            base_artifact_name,
+            cfg.wandb.entity,
+            cfg.wandb.project,
+            device,
+        )
+        model_.predictor.load_state_dict(base_model.state_dict())
+        run.summary["base_run_id"] = source_run_id
+    else:
+        _training_loop(
+            model,
+            train_loader,
+            val_loader,
+            cfg,
+            device,
+            run,
+            train_kwargs,
+            train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
+            val_fn=validate,
+        )
     amp_enabled = cfg.get("amp", False)
     alpha = train_kwargs.get("alpha", 0.5)
     num_classes = metadata.DATASETS[cfg.dataset].num_classes

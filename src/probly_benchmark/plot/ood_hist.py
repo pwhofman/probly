@@ -24,9 +24,10 @@ _CONFIG_DIR = Path(__file__).parent.parent / "configs"
 def main(cfg: DictConfig) -> list[Figure]:
     """Plot uncertainty score histograms for OOD detection methods.
 
-    For each method defined in the config, all matching seeds are concatenated
-    into a single histogram showing the in-distribution vs out-of-distribution
-    score overlap. One figure is produced per method.
+    For each method defined in the config, one figure is produced showing
+    the in-distribution vs out-of-distribution score overlap. When multiple
+    OOD datasets are available, each dataset is shown as a separate subplot
+    within the method's figure. Seeds are concatenated before plotting.
 
     Args:
         cfg: Hydra config composed from an ``ood_hist`` comparison config.
@@ -36,43 +37,60 @@ def main(cfg: DictConfig) -> list[Figure]:
     """
     recipe_raw = OmegaConf.load(_CONFIG_DIR / "recipe" / f"{cfg.recipe}.yaml")
     recipe = recipe_raw if isinstance(recipe_raw, DictConfig) else DictConfig({})
-    ood_detection_defaults_raw = OmegaConf.load(_CONFIG_DIR / "ood_detection.yaml")
-    ood_detection_defaults = (
-        ood_detection_defaults_raw if isinstance(ood_detection_defaults_raw, DictConfig) else DictConfig({})
-    )
     dataset: str = cfg.get("dataset") or recipe.dataset
     base_model: str = cfg.get("base_model") or recipe.base_model
-    ood_dataset: str = (
-        cfg.get("ood_dataset") or recipe.get("ood_dataset") or ood_detection_defaults.get("ood_dataset", "")
-    )
 
+    ood_datasets: list[str] | None = list(cfg.ood_datasets) if cfg.get("ood_datasets") else None
     bins: int = cfg.get("bins", 50)
+    measure: str = cfg.get("measure", "default")
+    decomposition: str = cfg.get("decomposition", "epistemic")
     figures: list[Figure] = []
 
     for entry in cfg.methods:
-        runs = fetch_ood_runs(
+        runs_by_ds = fetch_ood_runs(
             cfg.wandb.entity,
             cfg.wandb.project,
             entry,
             dataset,
-            ood_dataset,
             base_model,
-            list(cfg.seeds) if cfg.get("seeds") else None,
+            ood_datasets=ood_datasets,
+            default_seeds=list(cfg.seeds) if cfg.get("seeds") else None,
+            measure=measure,
+            decomposition=decomposition,
         )
 
-        id_scores = np.concatenate([r["id_scores"] for r in runs])
-        ood_scores = np.concatenate([r["ood_scores"] for r in runs])
-
+        available_ds = sorted(runs_by_ds)
+        n_ds = len(available_ds)
         label = resolve_label(entry)
-        fig = cast(
-            "Figure",
-            plot_histogram(
-                id_scores=id_scores,
-                ood_scores=ood_scores,
-                bins=bins,
-                title=f"{label} - Score Distribution ({dataset} vs {ood_dataset})",
-            ),
-        )
+
+        if n_ds == 1:
+            ood_ds = available_ds[0]
+            runs = runs_by_ds[ood_ds]
+            id_scores = np.concatenate([r["id_scores"] for r in runs])
+            ood_scores = np.concatenate([r["ood_scores"] for r in runs])
+            fig = cast(
+                "Figure",
+                plot_histogram(
+                    id_scores=id_scores,
+                    ood_scores=ood_scores,
+                    bins=bins,
+                    title=f"{label} - Score Distribution ({dataset} vs {ood_ds})",
+                ),
+            )
+        else:
+            fig, axes = plt.subplots(1, n_ds, figsize=(5 * n_ds, 4), squeeze=False)
+            for ax, ood_ds in zip(axes[0], available_ds, strict=True):
+                runs = runs_by_ds[ood_ds]
+                id_scores = np.concatenate([r["id_scores"] for r in runs])
+                ood_scores = np.concatenate([r["ood_scores"] for r in runs])
+                ax.hist(id_scores, bins=bins, alpha=0.6, density=True, label=dataset)
+                ax.hist(ood_scores, bins=bins, alpha=0.6, density=True, label=ood_ds)
+                ax.set_title(ood_ds)
+                ax.set_xlabel("Uncertainty score")
+                ax.legend()
+            fig.suptitle(label)
+            fig.tight_layout()
+
         figures.append(fig)
 
         if cfg.get("filename_prefix"):
