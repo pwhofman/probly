@@ -14,3 +14,10 @@ method:
     # is an unbiased average so 10% (~128k samples, ~128/class) is plenty for last-layer
     # KFAC. Drop to 0.05 if the fit step is still the bottleneck.
     fit_subset: 0.1
+  # Downstream samplers must also use "nn" for the same intractability reason as `train`.
+  selective_prediction:
+    pred_type: "nn"
+  ood_detection:
+    pred_type: "nn"
+  active_learning:
+    pred_type: "nn"
