@@ -10,7 +10,7 @@ from probly.calibrator import calibrate
 from probly.method.calibration import isotonic_regression, sklearn_identity_logit_estimator
 from probly.method.conformal import conformal_lac
 from probly.method.ensemble import ensemble
-from probly.predictor import LogitClassifier, RandomPredictor
+from probly.predictor import BinaryLogitClassifier, RandomPredictor
 
 pytest.importorskip("sklearn")
 
@@ -100,7 +100,7 @@ def test_registry_pickle_roundtrip_for_sklearn_isotonic_calibrator() -> None:
     labels = rng.binomial(1, 1.0 / (1.0 + np.exp(-true_logits))).astype(int)
     distorted = (5.0 * true_logits - 2.0).reshape(-1, 1)
 
-    wrapped = isotonic_regression(sklearn_identity_logit_estimator(), predictor_type=LogitClassifier)
+    wrapped = isotonic_regression(sklearn_identity_logit_estimator(), predictor_type=BinaryLogitClassifier)
     calibrate(wrapped, labels, distorted)
 
     restored = registry_pickle.loads(registry_pickle.dumps(wrapped))

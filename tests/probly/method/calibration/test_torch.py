@@ -15,7 +15,7 @@ from probly.method.calibration import (
     vector_scaling,
 )
 from probly.method.conformal import conformal_lac
-from probly.predictor import LogitClassifier, predict, predict_raw
+from probly.predictor import BinaryLogitClassifier, predict, predict_raw
 
 pytest.importorskip("torch")
 import torch
@@ -169,14 +169,14 @@ def test_isotonic_state_dict_roundtrip_restores_calibration_state() -> None:
     probs = torch.sigmoid(x_calib)
     y_calib = torch.bernoulli(probs)
 
-    model = isotonic_regression(torch_identity_logit_model(), predictor_type=LogitClassifier)
+    model = isotonic_regression(torch_identity_logit_model(), predictor_type=BinaryLogitClassifier)
     calibrate(model, y_calib, x_calib)
     state_dict = model.state_dict()
     assert "_isotonic_x_knots" in state_dict
     assert "_isotonic_y_knots" in state_dict
     assert "_isotonic_num_knots" in state_dict
 
-    fresh = isotonic_regression(torch_identity_logit_model(), predictor_type=LogitClassifier)
+    fresh = isotonic_regression(torch_identity_logit_model(), predictor_type=BinaryLogitClassifier)
     fresh.load_state_dict(state_dict)
 
     test_logits = torch.linspace(-2.0, 2.0, 21)
@@ -252,14 +252,14 @@ def test_torch_isotonic_regression_matches_sklearn_on_identity_logits() -> None:
     x_calib = (5.0 * true_calib_logits - 2.0).unsqueeze(-1)
     x_test = (5.0 * true_test_logits - 2.0).unsqueeze(-1)
 
-    torch_wrapper = isotonic_regression(torch_identity_logit_model(), predictor_type=LogitClassifier)
-    sklearn_wrapper = isotonic_regression(sklearn_identity_logit_estimator(), predictor_type=LogitClassifier)
+    torch_wrapper = isotonic_regression(torch_identity_logit_model(), predictor_type=BinaryLogitClassifier)
+    sklearn_wrapper = isotonic_regression(sklearn_identity_logit_estimator(), predictor_type=BinaryLogitClassifier)
 
     calibrate(torch_wrapper, y_calib, x_calib)
     calibrate(sklearn_wrapper, y_calib.numpy().astype(int), x_calib.numpy())
 
-    torch_probs = predict(torch_wrapper, x_test).probabilities[..., -1].reshape(-1)
-    sklearn_probs = sklearn_wrapper.predict_proba(x_test.numpy())[:, 1]
+    torch_probs = predict(torch_wrapper, x_test).probabilities
+    sklearn_probs = sklearn_wrapper.predict_proba(x_test.numpy())
     _assert_torch_sklearn_probabilities_close(torch_probs, sklearn_probs, mean_abs_tol=3e-2, max_abs_tol=1.2e-1)
 
 
@@ -292,7 +292,7 @@ def test_isotonic_regression_rejects_multiclass_logits() -> None:
     """Isotonic regression currently supports binary logits only."""
     logits = torch.randn(64, 3)
     labels = torch.randint(0, 3, (64,))
-    model = isotonic_regression(torch_identity_logit_model(), predictor_type=LogitClassifier)
+    model = isotonic_regression(torch_identity_logit_model(), predictor_type=BinaryLogitClassifier)
     with pytest.raises(ValueError, match="binary logits only"):
         calibrate(model, labels, logits)
 
@@ -324,7 +324,7 @@ def test_isotonic_regression_improves_binary_nll_and_ece() -> None:
     distorted_calib_logits = 5.0 * true_calib_logits - 2.0
     distorted_test_logits = 5.0 * true_test_logits - 2.0
 
-    wrapper = isotonic_regression(torch_identity_logit_model(), predictor_type=LogitClassifier)
+    wrapper = isotonic_regression(torch_identity_logit_model(), predictor_type=BinaryLogitClassifier)
     raw_probs = torch.sigmoid(distorted_test_logits)
     raw_nll = _binary_nll_from_probs(raw_probs, y_test)
     raw_ece = _binary_ece_from_probs(raw_probs, y_test)

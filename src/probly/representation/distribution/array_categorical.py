@@ -54,7 +54,8 @@ class ArrayCategoricalDistribution(CategoricalDistribution, ArrayAxisProtected[n
     @override
     @property
     def unnormalized_probabilities(self) -> np.ndarray:
-        return np.exp(self.logits - np.max(self.logits, axis=-1, keepdims=True))
+        logits = self.logits
+        return np.exp(logits - np.max(logits, axis=-1, keepdims=True))
 
     @override
     @property
