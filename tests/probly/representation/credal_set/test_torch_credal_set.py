@@ -16,7 +16,10 @@ from probly.representation.credal_set.torch import (
     TorchDistanceBasedCredalSet,
     TorchProbabilityIntervalsCredalSet,
 )
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.distribution.torch_categorical import (
+    TorchCategoricalDistribution,
+    TorchProbabilityCategoricalDistribution,
+)
 from probly.representation.sample.torch import TorchSample
 
 
@@ -30,7 +33,7 @@ def test_torch_convex_credal_set_from_distribution_sample() -> None:
         dtype=torch.float64,
     )
     sample = TorchSample(
-        tensor=TorchCategoricalDistribution(probs),
+        tensor=TorchProbabilityCategoricalDistribution(probs),
         sample_dim=0,
     )
 
@@ -42,7 +45,7 @@ def test_torch_convex_credal_set_from_distribution_sample() -> None:
 
 def test_torch_convex_credal_set_barycenter_averages_normalized_probabilities() -> None:
     vertices = torch.tensor([[1.0, 1.0], [9.0, 1.0]], dtype=torch.float64)
-    cset = TorchConvexCredalSet(tensor=TorchCategoricalDistribution(vertices))
+    cset = TorchConvexCredalSet(tensor=TorchProbabilityCategoricalDistribution(vertices))
 
     barycenter = cset.barycenter
 
@@ -59,7 +62,7 @@ def test_torch_probability_intervals_numpy_and_shape_ops() -> None:
         dtype=torch.float64,
     )
     sample = TorchSample(
-        tensor=TorchCategoricalDistribution(probs),
+        tensor=TorchProbabilityCategoricalDistribution(probs),
         sample_dim=0,
     )
 
@@ -77,7 +80,7 @@ def test_torch_probability_intervals_numpy_and_shape_ops() -> None:
 def test_distance_credal_set_from_categorical_distribution() -> None:
     """Factory should accept TorchCategoricalDistribution directly."""
     probs = torch.tensor([[0.5, 0.3, 0.2], [0.4, 0.4, 0.2]], dtype=torch.float64)
-    center = TorchCategoricalDistribution(probs)
+    center = TorchProbabilityCategoricalDistribution(probs)
     radius = torch.tensor(0.1, dtype=torch.float64)
 
     result = create_distance_based_credal_set_from_center_and_radius(center, radius)

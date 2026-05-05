@@ -129,7 +129,7 @@ def test_greedy_clusterer_clusters_sample_with_batched_nli_calls() -> None:
     clustered = HFGreedySemanticClusterer(model, tokenizer, batch_size=2)(sample)
 
     assert isinstance(clustered, TorchSparseLogCategoricalDistribution)
-    assert torch.equal(clustered.logits, generation.log_likelihood)
+    assert torch.equal(clustered.entry_logits, generation.log_likelihood)
     assert torch.equal(clustered.group_ids, torch.tensor([[0, 0, 1], [0, 1, 1]]))
     assert tokenizer.pair_calls == [
         [("a", "b"), ("b", "a")],
@@ -187,7 +187,7 @@ def test_greedy_clusterer_preserves_outer_sample_axis_for_nested_samples() -> No
             ]
         ),
     )
-    assert torch.equal(clustered.tensor.logits, generation.log_likelihood)
+    assert torch.equal(clustered.tensor.entry_logits, generation.log_likelihood)
 
 
 def test_raw_text_generation_requires_axis_and_returns_raw_semantic_generation() -> None:
@@ -206,7 +206,7 @@ def test_raw_text_generation_requires_axis_and_returns_raw_semantic_generation()
 
     assert isinstance(clustered, TorchSparseLogCategoricalDistribution)
     assert torch.equal(clustered.group_ids, torch.tensor([[0, 1]]))
-    assert torch.equal(clustered.logits, generation.log_likelihood)
+    assert torch.equal(clustered.entry_logits, generation.log_likelihood)
 
 
 def test_single_generation_assigns_cluster_zero_without_nli_model_call() -> None:

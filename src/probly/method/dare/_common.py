@@ -5,11 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, override, runtime_checkable
 
+from probly.predictor import LogitClassifier
 from probly.quantification._quantification import decompose
 from probly.quantification.decomposition.decomposition import CachingDecomposition, EpistemicDecomposition
 from probly.quantification.measure.sample import (
     mean_squared_distance_to_scaled_one_hot,
-    sample_variance,
+    total_logit_sample_variance,
 )
 from probly.representation.distribution import CategoricalDistributionSample
 from probly.representation.representation import Representation
@@ -27,7 +28,7 @@ class DarePredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
     """A predictor routed through the DARE method API."""
 
 
-@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
+@predictor_transformation(permitted_predictor_types=(LogitClassifier,), preserve_predictor_type=False)
 @DarePredictor.register_factory(autocast_builtins=True)
 def dare[**In, Out](base: Predictor[In, Out], num_members: int, reset_params: bool = True) -> DarePredictor[In, Out]:
     """Create a DARE predictor from a base predictor."""
@@ -57,17 +58,15 @@ class DARERepresenter[**In, Out](IterableSampler[In, Out, DARERepresentation]): 
     def __init__(
         self,
         predictor: EnsemblePredictor[In, Out],
-        sample_factory: SampleFactory[Out, DARERepresentation] = create_sample,  # ty:ignore[invalid-type-arguments]
+        sample_factory: SampleFactory[Out, Sample] = create_sample,
         sample_axis: int = 0,
     ) -> None:
         """Initialize the DARE representer."""
-        super().__init__(predictor, sample_factory=sample_factory, sample_axis=sample_axis)
-
-    @override
-    @DARERepresentation.register_factory
-    def represent(self, *args: In.args, **kwargs: In.kwargs) -> DARERepresentation:
-        """Return a marked DARE sample representation for a given input."""
-        return self._create_sample(self._predict(*args, **kwargs))
+        super().__init__(
+            predictor,
+            sample_factory=DARERepresentation.register_factory(sample_factory),
+            sample_axis=sample_axis,
+        )
 
 
 representer.register(DarePredictor, DARERepresenter)
@@ -84,16 +83,15 @@ class DAREDecomposition[T](CachingDecomposition, EpistemicDecomposition[T]):
         class_axis: Axis summed for the dispersion term.
     """
 
-    sample: Sample
+    sample: CategoricalDistributionSample
     target_scale: float | None = None
-    class_axis: int = -1
 
     @override
     @property
     def _epistemic(self) -> T:
         """The DARE OOD score."""
         fit = mean_squared_distance_to_scaled_one_hot(self.sample, scale=self.target_scale)
-        dispersion = sample_variance(self.sample).sum(self.class_axis)
+        dispersion = total_logit_sample_variance(self.sample)
         return fit + dispersion
 
 

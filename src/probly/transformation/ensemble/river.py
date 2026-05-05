@@ -6,7 +6,7 @@ import numpy as np
 from river.forest import ARFClassifier, ARFRegressor
 
 from probly.predictor import predict_raw
-from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
+from probly.representation.distribution.array_categorical import ArrayProbabilityCategoricalDistribution
 
 from ._common import EnsembleCategoricalDistributionPredictor, EnsemblePredictor
 
@@ -15,7 +15,7 @@ EnsemblePredictor.register(ARFRegressor)
 
 
 @predict_raw.register(ARFClassifier)
-def predict_arf_ensemble(arf: ARFClassifier, x: dict[str, float]) -> list[ArrayCategoricalDistribution]:
+def predict_arf_ensemble(arf: ARFClassifier, x: dict[str, float]) -> list[ArrayProbabilityCategoricalDistribution]:
     """Extract aligned per-tree categorical distributions from an ARF."""
     if len(arf) == 0 and hasattr(arf, "_init_ensemble"):
         arf._init_ensemble(sorted(x.keys()))  # noqa: SLF001
@@ -43,7 +43,7 @@ def predict_arf_ensemble(arf: ARFClassifier, x: dict[str, float]) -> list[ArrayC
         else:
             for cls, p in pt.items():
                 probs[class_idx[cls]] = p / total
-        result.append(ArrayCategoricalDistribution(unnormalized_probabilities=probs))
+        result.append(ArrayProbabilityCategoricalDistribution(probs))
     return result
 
 

@@ -19,7 +19,9 @@ from probly.representation.credal_set.torch import (
     TorchDistanceBasedCredalSet,
     TorchProbabilityIntervalsCredalSet,
 )
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.distribution.torch_categorical import (
+    TorchProbabilityCategoricalDistribution,
+)
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -35,7 +37,7 @@ def _intervals_credal_set(lower: list, upper: list) -> TorchProbabilityIntervals
 
 def _convex_credal_set(vertices: list) -> TorchConvexCredalSet:
     t = torch.tensor(vertices, dtype=torch.float64)
-    return TorchConvexCredalSet(tensor=TorchCategoricalDistribution(t))
+    return TorchConvexCredalSet(tensor=TorchProbabilityCategoricalDistribution(t))
 
 
 # ---------------------------------------------------------------------------
@@ -130,7 +132,7 @@ def test_convex_batch_shape_preserved() -> None:
     """upper/lower entropy output shape matches batch dims of the credal set."""
     vertices = torch.rand(5, 4, 3, dtype=torch.float64)
     vertices = vertices / vertices.sum(dim=-1, keepdim=True)
-    cs = TorchConvexCredalSet(tensor=TorchCategoricalDistribution(vertices))
+    cs = TorchConvexCredalSet(tensor=TorchProbabilityCategoricalDistribution(vertices))
     assert upper_entropy(cs).shape == (5,)
     assert lower_entropy(cs).shape == (5,)
 
@@ -171,7 +173,7 @@ def test_generalized_hartley_base_consistency() -> None:
         [[0.6, 0.3, 0.1], [0.2, 0.5, 0.3], [0.4, 0.4, 0.2]],
         dtype=torch.float64,
     )
-    cs = TorchConvexCredalSet(tensor=TorchCategoricalDistribution(vertices))
+    cs = TorchConvexCredalSet(tensor=TorchProbabilityCategoricalDistribution(vertices))
     gh_nat = generalized_hartley(cs)
     gh_2 = generalized_hartley(cs, base=2.0)
     assert float(gh_2) == pytest.approx(float(gh_nat) / np.log(2), abs=1e-5)
@@ -184,7 +186,7 @@ def test_generalized_hartley_base_consistency() -> None:
 
 def _distance_credal_set(nominal: list[float], radius: float) -> TorchDistanceBasedCredalSet:
     return TorchDistanceBasedCredalSet(
-        nominal=TorchCategoricalDistribution(torch.tensor(nominal, dtype=torch.float64)),
+        nominal=TorchProbabilityCategoricalDistribution(torch.tensor(nominal, dtype=torch.float64)),
         radius=torch.tensor(radius, dtype=torch.float64),
     )
 
@@ -241,7 +243,7 @@ def test_distance_batch_shape_preserved() -> None:
     nominal = nominal / nominal.sum(dim=-1, keepdim=True)
     radius = torch.full((4,), 0.1, dtype=torch.float64)
     cs = TorchDistanceBasedCredalSet(
-        nominal=TorchCategoricalDistribution(nominal),
+        nominal=TorchProbabilityCategoricalDistribution(nominal),
         radius=radius,
     )
     assert upper_entropy(cs).shape == (4,)

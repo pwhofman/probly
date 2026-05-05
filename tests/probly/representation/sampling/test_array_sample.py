@@ -5,7 +5,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
+from probly.representation.distribution.array_categorical import (
+    ArrayCategoricalDistribution,
+    ArrayProbabilityCategoricalDistribution,
+)
 from probly.representation.sample import ArraySample
 
 
@@ -104,7 +107,7 @@ class TestArraySample:
 
     def test_sample_mean_of_categorical_distribution_preserves_distribution_type(self) -> None:
         probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
-        sample = ArraySample(ArrayCategoricalDistribution(probabilities), sample_axis=0)
+        sample = ArraySample(ArrayProbabilityCategoricalDistribution(probabilities), sample_axis=0)
 
         result = sample.sample_mean()
 
@@ -116,7 +119,7 @@ class TestArraySample:
     def test_weighted_sample_mean_of_categorical_distribution_uses_weights(self) -> None:
         probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
         weights = np.array([0.25, 0.75])
-        sample = ArraySample(ArrayCategoricalDistribution(probabilities), sample_axis=0, weights=weights)
+        sample = ArraySample(ArrayProbabilityCategoricalDistribution(probabilities), sample_axis=0, weights=weights)
 
         result = sample.sample_mean()
 

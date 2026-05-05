@@ -7,11 +7,14 @@ import pytest
 
 from probly.decider import categorical_from_maximin
 from probly.representation.credal_set.array import ArrayConvexCredalSet
-from probly.representation.distribution import ArrayCategoricalDistribution
+from probly.representation.distribution.array_categorical import (
+    ArrayCategoricalDistribution,
+    ArrayProbabilityCategoricalDistribution,
+)
 
 
 def test_maximin_picks_argmax_of_lower_probability_for_array_convex_credal_set() -> None:
-    vertices = ArrayCategoricalDistribution(np.array([[0.7, 0.2, 0.1], [0.5, 0.4, 0.1]]))
+    vertices = ArrayProbabilityCategoricalDistribution(np.array([[0.7, 0.2, 0.1], [0.5, 0.4, 0.1]]))
     credal_set = ArrayConvexCredalSet(array=vertices)
 
     decision = categorical_from_maximin(credal_set)
@@ -21,7 +24,7 @@ def test_maximin_picks_argmax_of_lower_probability_for_array_convex_credal_set()
 
 
 def test_maximin_handles_batched_array_convex_credal_set() -> None:
-    vertices = ArrayCategoricalDistribution(
+    vertices = ArrayProbabilityCategoricalDistribution(
         np.array(
             [
                 [[0.6, 0.3, 0.1], [0.4, 0.5, 0.1]],
@@ -41,7 +44,7 @@ def test_maximin_handles_batched_array_convex_credal_set() -> None:
 
 
 def test_maximin_breaks_ties_by_picking_first_index_for_array_convex_credal_set() -> None:
-    vertices = ArrayCategoricalDistribution(np.array([[0.5, 0.5, 0.0], [0.5, 0.5, 0.0]]))
+    vertices = ArrayProbabilityCategoricalDistribution(np.array([[0.5, 0.5, 0.0], [0.5, 0.5, 0.0]]))
     credal_set = ArrayConvexCredalSet(array=vertices)
 
     decision = categorical_from_maximin(credal_set)
@@ -50,7 +53,7 @@ def test_maximin_breaks_ties_by_picking_first_index_for_array_convex_credal_set(
 
 
 def test_maximin_returns_one_hot_distribution_for_array_convex_credal_set() -> None:
-    vertices = ArrayCategoricalDistribution(
+    vertices = ArrayProbabilityCategoricalDistribution(
         np.array(
             [
                 [[0.6, 0.3, 0.1], [0.4, 0.5, 0.1]],

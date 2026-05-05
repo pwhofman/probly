@@ -20,8 +20,8 @@ from probly.quantification.measure.distribution import (
     vacuity,
 )
 from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
+    ArrayProbabilityCategoricalDistribution,
 )
 from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
 from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution
@@ -53,7 +53,7 @@ def _change_base_natural_log(values: np.ndarray, base: None | float) -> np.ndarr
 def test_array_categorical_entropy_matches_scipy(
     probabilities: np.ndarray, base: None | float | Literal["normalize"]
 ) -> None:
-    distribution = ArrayCategoricalDistribution(probabilities)
+    distribution = ArrayProbabilityCategoricalDistribution(probabilities)
 
     measured = entropy(distribution, base=base)
     expected = scipy_entropy(probabilities, axis=-1, base=_resolve_categorical_base(base, probabilities.shape[-1]))
@@ -70,7 +70,7 @@ def test_array_categorical_entropy_normalize_maps_to_unit_interval() -> None:
         dtype=float,
     )
 
-    measured = entropy(ArrayCategoricalDistribution(probabilities), base="normalize")
+    measured = entropy(ArrayProbabilityCategoricalDistribution(probabilities), base="normalize")
 
     np.testing.assert_allclose(measured[0], 1.0, rtol=1e-12, atol=1e-12)
     np.testing.assert_allclose(measured[1], 0.0, rtol=1e-12, atol=1e-12)
@@ -125,7 +125,7 @@ def test_array_sample_second_order_measures_match_scipy(
     )
     probabilities = np.moveaxis(base_probabilities, 0, sample_axis)
     sample = ArrayCategoricalDistributionSample(
-        array=ArrayCategoricalDistribution(probabilities),
+        array=ArrayProbabilityCategoricalDistribution(probabilities),
         sample_axis=sample_axis,
     )
 
@@ -249,7 +249,7 @@ def test_identity_holds_for_array_categorical_sample(sample_axis: int, base: Non
     )
     probabilities = np.moveaxis(base_probabilities, 0, sample_axis)
     sample = ArrayCategoricalDistributionSample(
-        array=ArrayCategoricalDistribution(probabilities),
+        array=ArrayProbabilityCategoricalDistribution(probabilities),
         sample_axis=sample_axis,
     )
 
@@ -271,7 +271,7 @@ def test_array_sample_zero_one_measures_match_manual(sample_axis: int) -> None:
     )
     probabilities = np.moveaxis(base_probabilities, 0, sample_axis)
     sample = ArrayCategoricalDistributionSample(
-        array=ArrayCategoricalDistribution(probabilities),
+        array=ArrayProbabilityCategoricalDistribution(probabilities),
         sample_axis=sample_axis,
     )
 
@@ -300,7 +300,7 @@ def test_array_sample_zero_one_known_values() -> None:
         dtype=float,
     )
     sample = ArrayCategoricalDistributionSample(
-        array=ArrayCategoricalDistribution(probabilities),
+        array=ArrayProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 
@@ -321,7 +321,7 @@ def test_zero_one_identity_holds_for_array_categorical_sample(sample_axis: int) 
     )
     probabilities = np.moveaxis(base_probabilities, 0, sample_axis)
     sample = ArrayCategoricalDistributionSample(
-        array=ArrayCategoricalDistribution(probabilities),
+        array=ArrayProbabilityCategoricalDistribution(probabilities),
         sample_axis=sample_axis,
     )
 
