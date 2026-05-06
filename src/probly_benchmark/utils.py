@@ -489,9 +489,15 @@ def _build_uncalibrated_model_from_checkpoint(
         model.load_state_dict(state["laplace"])
         _to_device(model.model)
         model.model.eval()
-        if device.type == "mps":
-            model.prior_precision = model.prior_precision
-            _move_laplace_hessian_to_device(model, device)
+        # After moving the inner module to the target device, model._device now returns that
+        # device. The prior_precision setter ran during load_state_dict above when model._device
+        # was still CPU, so prior_precision stays on CPU and mismatches H (whose tensors were
+        # placed on the target device via torch.load's map_location). Re-trigger the setter so
+        # prior_precision lands on the target device, then move H and mean explicitly since they
+        # have no device-aware setter. Required on CUDA and MPS — safe (no-op) when already
+        # co-located.
+        model.prior_precision = model.prior_precision
+        _move_laplace_hessian_to_device(model, device)
     else:
         model.load_state_dict(checkpoint["model_state_dict"])
         _to_device(model)
