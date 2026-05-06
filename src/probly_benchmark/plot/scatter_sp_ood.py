@@ -83,40 +83,32 @@ def _load_rankings(
     return sp, ood
 
 
-def _per_dataset_points(
+def _per_band_points(
     sp_ranking: list[dict],
-    ood_near: list[dict],
-    ood_far: list[dict],
+    band_ranking: list[dict],
 ) -> dict[str, dict]:
-    """Build ``{method: {label, sp, ood}}`` for one ID dataset.
+    """Build ``{method: {label, sp, ood}}`` for one ID dataset and one OOD band.
 
-    ``sp`` is the method's Acc-AUC; ``ood`` is the mean of the near and
-    far AUROCs (only the bands where the method has data). Methods missing
-    either SP or OOD data are dropped.
+    Methods missing either the SP score or that band's OOD score are dropped.
     """
-    bag: dict[str, dict] = {}
-    for entry in sp_ranking:
-        bag.setdefault(entry["method"], {"label": entry["label"], "sp": None, "ood_means": []})
-        bag[entry["method"]]["sp"] = entry["mean"]
-    for ranking in (ood_near, ood_far):
-        for entry in ranking:
-            bag.setdefault(entry["method"], {"label": entry["label"], "sp": None, "ood_means": []})
-            bag[entry["method"]]["ood_means"].append(entry["mean"])
+    label_lookup: dict[str, str] = {entry["method"]: entry["label"] for entry in sp_ranking}
+    label_lookup.update({entry["method"]: entry["label"] for entry in band_ranking})
+
+    sp_lookup = {entry["method"]: entry["mean"] for entry in sp_ranking}
+    ood_lookup = {entry["method"]: entry["mean"] for entry in band_ranking}
 
     out: dict[str, dict] = {}
-    for method, p in bag.items():
-        if p["sp"] is None or not p["ood_means"]:
-            continue
+    for method in sp_lookup.keys() & ood_lookup.keys():
         out[method] = {
-            "label": p["label"],
-            "sp": p["sp"],
-            "ood": sum(p["ood_means"]) / len(p["ood_means"]),
+            "label": label_lookup.get(method, method),
+            "sp": sp_lookup[method],
+            "ood": ood_lookup[method],
         }
     return out
 
 
-def _combined_points(per_dataset: dict[str, dict[str, dict]]) -> dict[str, dict]:
-    """Average per-method scores across every dataset that has both SP and OOD."""
+def _combined_band_points(per_dataset: dict[str, dict[str, dict]]) -> dict[str, dict]:
+    """Average per-method (sp, ood) across every dataset that has both."""
     bag: dict[str, dict] = {}
     for points in per_dataset.values():
         for method, p in points.items():
@@ -150,13 +142,14 @@ def _draw_scatter(
     points: dict[str, dict],
     *,
     title: str,
+    ylabel: str,
     plot_config: PlotConfig,
     credal_keywords: list[str],
     marker_size: float,
     annotation_offset_pt: tuple[float, float],
     annotation_fontsize: float,
 ) -> Figure:
-    """Render the scatter for one variant (single dataset or combined)."""
+    """Render the scatter for one variant (single dataset / band, or combined)."""
     fig, ax = plt.subplots(figsize=(7.0, 5.5))
     if not points:
         ax.set_title(title + " (no data)")
@@ -195,7 +188,7 @@ def _draw_scatter(
     ax.set_xlim(*_autopad(sp_values))
     ax.set_ylim(*_autopad(ood_values))
     ax.set_xlabel("SP performance (Acc-AUC)")
-    ax.set_ylabel("OOD performance (mean AUROC)")
+    ax.set_ylabel(ylabel)
     ax.set_title(title)
     ax.grid(
         visible=True,
@@ -204,12 +197,6 @@ def _draw_scatter(
         color=plot_config.color_gridline,
     )
     ax.set_axisbelow(True)
-
-    # Compact legend explaining the marker shapes.
-    ax.scatter([], [], marker="o", s=marker_size, color=color, label="other", edgecolor="white", linewidth=0.8)
-    ax.scatter([], [], marker="^", s=marker_size, color=color, label="credal", edgecolor="white", linewidth=0.8)
-    ax.legend(loc="lower right", fontsize="small", frameon=True)
-
     fig.tight_layout()
     return fig
 
@@ -244,51 +231,62 @@ def main(cfg: DictConfig) -> dict[str, Path]:
     annotation_fontsize = float(cfg.get("annotation_fontsize", 9))
 
     sp, ood = _load_rankings(inputs)
+    bands = ("near", "far")
 
-    per_dataset: dict[str, dict[str, dict]] = {}
+    # Outer key is the OOD band, inner keys are ID datasets, leaf value is
+    # ``{method: {label, sp, ood}}``.
+    per_band: dict[str, dict[str, dict[str, dict]]] = {band: {} for band in bands}
     datasets = sorted(set(sp.keys()) | {ds for _band, ds in ood})
-    for ds in datasets:
-        per_dataset[ds] = _per_dataset_points(
-            sp_ranking=sp.get(ds, []),
-            ood_near=ood.get(("near", ds), []),
-            ood_far=ood.get(("far", ds), []),
-        )
+    for band in bands:
+        for ds in datasets:
+            per_band[band][ds] = _per_band_points(
+                sp_ranking=sp.get(ds, []),
+                band_ranking=ood.get((band, ds), []),
+            )
 
     written: dict[str, Path] = {}
 
-    for ds, points in per_dataset.items():
-        fig = _draw_scatter(
-            points,
-            title=f"SP vs OOD on {ds}",
-            plot_config=plot_config,
-            credal_keywords=credal_keywords,
-            marker_size=marker_size,
-            annotation_offset_pt=annotation_offset_pt,
-            annotation_fontsize=annotation_fontsize,
-        )
-        path = out_dir / f"scatter_sp_vs_ood_{ds}.pdf"
-        fig.savefig(path)
-        plt.close(fig)
-        written[ds] = path
-        print(f"Wrote {path}  ({len(points)} methods)")
+    for band in bands:
+        band_label = f"{band.title()}-OOD"
+        ylabel = f"{band_label} performance (AUROC)"
+        for ds, points in per_band[band].items():
+            if not points:
+                continue
+            fig = _draw_scatter(
+                points,
+                title=f"SP vs {band_label} on {ds}",
+                ylabel=ylabel,
+                plot_config=plot_config,
+                credal_keywords=credal_keywords,
+                marker_size=marker_size,
+                annotation_offset_pt=annotation_offset_pt,
+                annotation_fontsize=annotation_fontsize,
+            )
+            path = out_dir / f"scatter_sp_vs_ood_{band}_{ds}.pdf"
+            fig.savefig(path)
+            plt.close(fig)
+            written[f"{band}_{ds}"] = path
+            print(f"Wrote {path}  ({len(points)} methods)")
 
-    if len(per_dataset) >= 2:
-        combined = _combined_points(per_dataset)
-        ds_list = ", ".join(sorted(per_dataset))
-        fig = _draw_scatter(
-            combined,
-            title=f"SP vs OOD across {ds_list}",
-            plot_config=plot_config,
-            credal_keywords=credal_keywords,
-            marker_size=marker_size,
-            annotation_offset_pt=annotation_offset_pt,
-            annotation_fontsize=annotation_fontsize,
-        )
-        path = out_dir / "scatter_sp_vs_ood_both.pdf"
-        fig.savefig(path)
-        plt.close(fig)
-        written["both"] = path
-        print(f"Wrote {path}  ({len(combined)} methods, averaged over {len(per_dataset)} datasets)")
+        non_empty = {ds: pts for ds, pts in per_band[band].items() if pts}
+        if len(non_empty) >= 2:
+            combined = _combined_band_points(non_empty)
+            ds_list = ", ".join(sorted(non_empty))
+            fig = _draw_scatter(
+                combined,
+                title=f"SP vs {band_label} across {ds_list}",
+                ylabel=ylabel,
+                plot_config=plot_config,
+                credal_keywords=credal_keywords,
+                marker_size=marker_size,
+                annotation_offset_pt=annotation_offset_pt,
+                annotation_fontsize=annotation_fontsize,
+            )
+            path = out_dir / f"scatter_sp_vs_ood_{band}_both.pdf"
+            fig.savefig(path)
+            plt.close(fig)
+            written[f"{band}_both"] = path
+            print(f"Wrote {path}  ({len(combined)} methods, averaged over {len(non_empty)} datasets)")
 
     _ = cast("int", int(cfg.get("decimals", 3)))  # reserved for future tick formatting
     return written
