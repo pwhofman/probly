@@ -85,18 +85,10 @@ def _draw_bars(
     ax.set_xticklabels(labels, rotation=30, ha="right")
     ax.set_ylabel(ylabel)
     if subtitle:
-        # Lift the bold title so the regular-weight subtitle has room below.
-        ax.set_title(title, pad=18)
-        ax.annotate(
-            subtitle,
-            xy=(0.5, 1.005),
-            xycoords="axes fraction",
-            ha="center",
-            va="bottom",
-            fontsize=plot_config.label_fontsize * 0.85,
-            fontweight="normal",
-            color="#555555",
-        )
+        # Inline the subtitle on the same line as the bold title, same size
+        # but regular weight, via mathtext. Spaces in math mode need escaping.
+        subtitle_math = subtitle.replace(" ", r"\ ")
+        ax.set_title(f"{title}  $\\mathrm{{{subtitle_math}}}$")
     else:
         ax.set_title(title)
     if ylim is not None:

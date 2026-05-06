@@ -1,0 +1,24 @@
+defaults:
+  - _self_
+
+# One or more directories to scan for bar_*.ranking.json files.
+# Pass a single string (one dir) or a list (e.g. cifar10 + imagenet output dirs).
+inputs: ???
+
+# Where to write the .pdf files.
+save_path: ???
+
+# Marker / annotation styling.
+marker_size: 90
+annotation_offset_pt: [6, 5]
+annotation_fontsize: 9
+
+# Number of decimals on x/y axis ticks (display only).
+decimals: 3
+
+# Methods whose name contains any of these substrings render as triangles
+# instead of dots. Default catches credal_wrapper / credal_ensembling /
+# credal_bnn / credal_net / credal_relative_likelihood /
+# efficient_credal_prediction.
+credal_keywords:
+  - credal

@@ -29,6 +29,16 @@ def _apply_rc_defaults() -> None:
     rc["figure.titlesize"] = 16
     rc["figure.titleweight"] = 700
 
+    # Make mathtext render with Fira Sans too so inline mixed-weight titles
+    # (e.g. bold prefix + $\mathrm{...}$ regular suffix) stay visually
+    # consistent with the rest of the figure.
+    rc["mathtext.fontset"] = "custom"
+    rc["mathtext.rm"] = _FONT_FAMILY
+    rc["mathtext.it"] = f"{_FONT_FAMILY}:italic"
+    rc["mathtext.bf"] = f"{_FONT_FAMILY}:bold"
+    rc["mathtext.sf"] = _FONT_FAMILY
+    rc["mathtext.tt"] = _FONT_FAMILY
+
 
 _apply_rc_defaults()
 
