@@ -68,10 +68,10 @@ def main(cfg: DictConfig) -> None:
         msg = f"Unsupported decomposition: {cfg.decomposition!r}. Choose from {SUPPORTED_DECOMPOSITIONS}."
         raise ValueError(msg)
 
-    # ID scores are identical across OOD datasets for a given (method, seed).
-    # Try to fetch a previously logged artifact from wandb and skip the
-    # ID-set inference pass entirely on cache hit.
-    id_art_name = f"id_scores-{cfg.method.name}-{cfg.dataset}-{cfg.measure}-{cfg.decomposition}-seed{cfg.seed}"
+    # ID scores are identical across OOD datasets for a given trained model.
+    # Key the cache on run_id so that models with the same method/seed but different
+    # hyperparameters (e.g. different alpha) don't share stale id_scores.
+    id_art_name = f"id_scores-{run_id}-{cfg.dataset}-{cfg.measure}-{cfg.decomposition}"
     id_qualname = f"{cfg.wandb.entity}/{cfg.wandb.project}/{id_art_name}:latest"
     id_uncertainties: np.ndarray | None = None
     id_loaded_from_cache = False
@@ -114,6 +114,7 @@ def main(cfg: DictConfig) -> None:
             run.summary[f"{prefix}/{metric_name}"] = value
 
         common_meta = {
+            "run_id": run_id,
             "method": cfg.method.name,
             "dataset": cfg.dataset,
             "measure": cfg.measure,
@@ -121,7 +122,7 @@ def main(cfg: DictConfig) -> None:
             "seed": cfg.seed,
         }
 
-        # Log id_scores once per (method, seed); skip if we loaded from cache.
+        # Log id_scores once per trained model; skip if we loaded from cache.
         if not id_loaded_from_cache:
             _log_array_artifact(
                 run,
