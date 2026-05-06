@@ -301,3 +301,7 @@ data/
 # Paper (synced via Overleaf git)
 paper/
 paper_artifacts/
+
+src/probly_benchmark/first_order_results
+src/probly_benchmark/first_order_results_probly
+src/probly_benchmark/utils_first_order.py
