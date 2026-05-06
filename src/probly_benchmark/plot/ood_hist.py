@@ -48,18 +48,22 @@ def main(cfg: DictConfig) -> list[Figure]:
     figures: list[Figure] = []
 
     for entry in cfg.methods:
-        runs_by_ds = fetch_ood_runs(
-            cfg.wandb.entity,
-            cfg.wandb.project,
-            entry,
-            dataset,
-            base_model,
-            ood_datasets=ood_datasets,
-            default_seeds=list(cfg.seeds) if cfg.get("seeds") else None,
-            measure=measure,
-            decomposition=decomposition,
-            cache_mode=cache_mode,
-        )
+        try:
+            runs_by_ds = fetch_ood_runs(
+                cfg.wandb.entity,
+                cfg.wandb.project,
+                entry,
+                dataset,
+                base_model,
+                ood_datasets=ood_datasets,
+                default_seeds=list(cfg.seeds) if cfg.get("seeds") else None,
+                measure=measure,
+                decomposition=decomposition,
+                cache_mode=cache_mode,
+            )
+        except RuntimeError as exc:
+            warnings.warn(f"Skipping {entry.name}: {exc}", stacklevel=2)
+            continue
 
         # Drop OOD datasets where score arrays are empty (e.g. wandb large-array
         # placeholders that never got their h5 payload uploaded).

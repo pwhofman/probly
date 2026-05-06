@@ -93,17 +93,21 @@ def main(cfg: DictConfig) -> Figure:
     plot_config = PlotConfig()
     fig, ax = plt.subplots()
     for idx, entry in enumerate(selected):
-        runs = fetch_sp_runs(
-            cfg.wandb.entity,
-            cfg.wandb.project,
-            entry,
-            dataset,
-            base_model,
-            list(cfg.seeds) if cfg.get("seeds") else None,
-            measure=cfg.get("measure", "default"),
-            decomposition=cfg.get("decomposition", "total"),
-            cache_mode=cache_mode,
-        )
+        try:
+            runs = fetch_sp_runs(
+                cfg.wandb.entity,
+                cfg.wandb.project,
+                entry,
+                dataset,
+                base_model,
+                list(cfg.seeds) if cfg.get("seeds") else None,
+                measure=cfg.get("measure", "default"),
+                decomposition=cfg.get("decomposition", "total"),
+                cache_mode=cache_mode,
+            )
+        except RuntimeError as exc:
+            warnings.warn(f"Skipping {entry.name}: {exc}", stacklevel=2)
+            continue
 
         bin_losses_stack = np.stack([r["bin_losses"] for r in runs])
         mean_acc = 1.0 - bin_losses_stack.mean(axis=0)

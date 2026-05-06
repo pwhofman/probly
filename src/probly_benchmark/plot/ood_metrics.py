@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
+import warnings
 
 import hydra
 import matplotlib.pyplot as plt
@@ -181,18 +182,22 @@ def main(cfg: DictConfig) -> dict[str, tuple[Figure, str]]:
     # Fetch all runs for every method once; results keyed by method name then ood_dataset.
     runs_by_method: dict[str, dict[str, list[dict]]] = {}
     for entry in cast("list[DictConfig]", cfg.methods):
-        runs_by_method[entry.name] = fetch_ood_runs(
-            cfg.wandb.entity,
-            cfg.wandb.project,
-            entry,
-            dataset,
-            base_model,
-            ood_datasets=ood_datasets,
-            default_seeds=list(cfg.seeds) if cfg.get("seeds") else None,
-            measure=measure,
-            decomposition=decomposition,
-            cache_mode=cache_mode,
-        )
+        try:
+            runs_by_method[entry.name] = fetch_ood_runs(
+                cfg.wandb.entity,
+                cfg.wandb.project,
+                entry,
+                dataset,
+                base_model,
+                ood_datasets=ood_datasets,
+                default_seeds=list(cfg.seeds) if cfg.get("seeds") else None,
+                measure=measure,
+                decomposition=decomposition,
+                cache_mode=cache_mode,
+            )
+        except RuntimeError as exc:
+            warnings.warn(f"Skipping {entry.name}: {exc}", stacklevel=2)
+            continue
 
     # Collect the union of OOD datasets found across all methods.
     all_ood_datasets: list[str] = sorted({ds for method_runs in runs_by_method.values() for ds in method_runs})
