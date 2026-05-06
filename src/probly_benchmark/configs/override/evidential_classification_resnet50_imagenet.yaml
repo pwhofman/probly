@@ -9,5 +9,5 @@
 # resnet50_imagenet recipe (5/20 = 25%, vs Sensoy's 10/[50-100] = 10-20%).
 method:
   train:
-    kl_weight: 0.1
+    kl_weight: 0.01
     annealing_epochs: 5
