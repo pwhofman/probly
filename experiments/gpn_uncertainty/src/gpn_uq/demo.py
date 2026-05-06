@@ -1,17 +1,24 @@
-"""Synthetic graph node-classification demo for GPN variants."""
+"""Graph node-classification demos for GPN variants."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import logging
 from pathlib import Path
+import time
 from typing import Literal
 
 import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
+from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.patches import Polygon
 import numpy as np
 import torch
 from torch import nn
 from torch_geometric.data import Data
+from torch_geometric.datasets import Amazon
+import networkx as nx
 
 from probly.evaluation.tasks import selective_prediction
 from probly.predictor import predict
@@ -26,25 +33,53 @@ from probly.method.graph_posterior_network import (
 plt.rcParams["font.family"] = "DejaVu Sans"
 
 ModelName = Literal["GPN", "LOP-GPN", "CUQ-GNN"]
+ExperimentName = Literal["synthetic", "amazon-photo", "all"]
+LayoutName = Literal["forceatlas2", "precomputed"]
+MODEL_NAMES: tuple[ModelName, ...] = ("GPN", "LOP-GPN", "CUQ-GNN")
+DEFAULT_AMAZON_LAYOUT_PATH = Path(__file__).resolve().parents[2] / "assets" / "amazon_photo_gephi_layout.npy"
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
 class EvaluationResult:
     """Evaluation output for one trained model."""
 
-    accuracy: float
-    selective_area: float
+    accuracy: float | None
+    selective_area: float | None
     coverage: np.ndarray
     selective_loss: np.ndarray
     predictions: np.ndarray
     total_uncertainty: np.ndarray
     epistemic_uncertainty: np.ndarray
+    available: bool = True
+    dirichlet_alphas: np.ndarray | None = None
+    mixture_weights: np.ndarray | None = None
 
 
 def set_seed(seed: int) -> None:
     """Set numpy and torch random seeds."""
     np.random.seed(seed)
     torch.manual_seed(seed)
+
+
+def get_class_colors(num_classes: int) -> np.ndarray:
+    """Return a bright deterministic color palette for class predictions."""
+    base_colors = [
+        "#3A86FF",
+        "#FFB000",
+        "#5AD08A",
+        "#8338EC",
+        "#FB5607",
+        "#00B4D8",
+        "#B5179E",
+        "#6A994E",
+        "#FF006E",
+        "#577590",
+    ]
+    if num_classes <= len(base_colors):
+        return np.array(base_colors[:num_classes])
+    cmap = plt.get_cmap("tab20", num_classes)
+    return np.array([cmap(class_idx) for class_idx in range(num_classes)], dtype=object)
 
 
 def make_synthetic_graph(nodes_per_class: int = 24, seed: int = 0) -> Data:
@@ -127,6 +162,87 @@ def make_synthetic_graph(nodes_per_class: int = 24, seed: int = 0) -> Data:
     )
 
 
+def add_deterministic_masks(data: Data, seed: int, train_per_class: int = 20, val_per_class: int = 30) -> Data:
+    """Add deterministic stratified train, validation, and test masks to a graph."""
+    rng = np.random.default_rng(seed)
+    labels = data.y.cpu().numpy()
+    train_mask = np.zeros(len(labels), dtype=bool)
+    val_mask = np.zeros(len(labels), dtype=bool)
+    for class_idx in np.unique(labels):
+        class_nodes = np.where(labels == class_idx)[0]
+        shuffled = rng.permutation(class_nodes)
+        train_count = min(train_per_class, len(shuffled))
+        val_count = min(val_per_class, max(0, len(shuffled) - train_count))
+        train_mask[shuffled[:train_count]] = True
+        val_mask[shuffled[train_count : train_count + val_count]] = True
+    data.train_mask = torch.tensor(train_mask, dtype=torch.bool)
+    data.val_mask = torch.tensor(val_mask, dtype=torch.bool)
+    data.test_mask = ~(data.train_mask | data.val_mask)
+    return data
+
+
+def load_amazon_photo(data_dir: Path, seed: int) -> Data:
+    """Load Amazon Photos and attach deterministic node-classification masks."""
+    LOGGER.info("Loading Amazon Photos dataset from %s", data_dir / "amazon")
+    dataset = Amazon(root=str(data_dir / "amazon"), name="Photo")
+    data = dataset[0]
+    LOGGER.info("Loaded Amazon Photos: %d nodes, %d directed edges", data.num_nodes, data.edge_index.shape[1])
+    return add_deterministic_masks(data, seed=seed)
+
+
+def normalize_positions(pos: np.ndarray) -> np.ndarray:
+    """Center and scale graph positions for stable plotting."""
+    centered = pos - pos.mean(axis=0, keepdims=True)
+    scale = np.max(np.linalg.norm(centered, axis=1))
+    return centered / max(float(scale), 1e-6)
+
+
+def forceatlas2_positions(data: Data, cache_path: Path, seed: int, max_iter: int) -> np.ndarray:
+    """Compute or load deterministic ForceAtlas2 node positions."""
+    if cache_path.exists():
+        LOGGER.info("Loading cached ForceAtlas2 positions from %s", cache_path)
+        return np.load(cache_path)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    LOGGER.info("Computing ForceAtlas2 positions: seed=%d, iterations=%d", seed, max_iter)
+    start = time.perf_counter()
+    edge_index = data.edge_index.cpu().numpy()
+    graph = nx.Graph()
+    graph.add_nodes_from(range(data.num_nodes))
+    graph.add_edges_from((int(src), int(dst)) for src, dst in edge_index.T if src != dst)
+    layout = nx.forceatlas2_layout(
+        graph,
+        max_iter=max_iter,
+        scaling_ratio=2.0,
+        gravity=1.0,
+        seed=seed,
+    )
+    pos = np.array([layout[node] for node in range(data.num_nodes)], dtype=np.float32)
+    pos = normalize_positions(pos).astype(np.float32)
+    np.save(cache_path, pos)
+    LOGGER.info("Saved ForceAtlas2 positions to %s in %.1fs", cache_path, time.perf_counter() - start)
+    return pos
+
+
+def precomputed_positions(data: Data, layout_path: Path) -> np.ndarray:
+    """Load precomputed node positions for a graph.
+
+    Args:
+        data: Graph whose node count must match the layout.
+        layout_path: Path to a ``.npy`` file containing ``(num_nodes, 2)`` positions.
+
+    Returns:
+        Centered and scaled positions as ``float32``.
+    """
+    if not layout_path.exists():
+        raise FileNotFoundError(f"Precomputed layout file does not exist: {layout_path}")
+    LOGGER.info("Loading precomputed positions from %s", layout_path)
+    pos = np.load(layout_path)
+    expected_shape = (data.num_nodes, 2)
+    if pos.shape != expected_shape:
+        raise ValueError(f"Precomputed layout at {layout_path} has shape {pos.shape}; expected {expected_shape}")
+    return normalize_positions(pos).astype(np.float32)
+
+
 def build_model(name: ModelName, feature_dim: int, num_classes: int) -> nn.Module:
     """Build one GPN variant.
 
@@ -155,30 +271,165 @@ def build_model(name: ModelName, feature_dim: int, num_classes: int) -> nn.Modul
     raise ValueError(name)
 
 
-def train_model(model: nn.Module, data: Data, name: ModelName, epochs: int, lr: float) -> None:
+def train_model(model: nn.Module, data: Data, name: ModelName, epochs: int, lr: float, use_mixed_precision: bool) -> None:
     """Train a GPN model on the graph train mask."""
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
-    for _ in range(epochs):
+    scaler = torch.amp.GradScaler("cuda", enabled=use_mixed_precision)
+    log_every = max(1, epochs // 10)
+    start = time.perf_counter()
+    LOGGER.info(
+        "Training %s for %d epochs on %d labeled nodes%s",
+        name,
+        epochs,
+        int(data.train_mask.sum().item()),
+        " with CUDA float16 mixed precision" if use_mixed_precision else "",
+    )
+    for epoch in range(1, epochs + 1):
         model.train()
-        optimizer.zero_grad()
-        if name == "LOP-GPN":
-            alpha_features, mixture_weights = model.forward(data)
-            loss = mixture_uce_loss(alpha_features, mixture_weights[data.train_mask], data.y[data.train_mask], "mean")
-        else:
-            alpha = model(data)
-            loss = postnet_loss(alpha[data.train_mask], data.y[data.train_mask], entropy_weight=1e-5, reduction="mean")
-        loss.backward()
-        optimizer.step()
+        optimizer.zero_grad(set_to_none=True)
+        with torch.amp.autocast("cuda", dtype=torch.float16, enabled=use_mixed_precision):
+            if name == "LOP-GPN":
+                alpha_features, mixture_weights = model.forward(data)
+                loss = mixture_uce_loss(alpha_features, mixture_weights[data.train_mask], data.y[data.train_mask], "mean")
+            else:
+                alpha = model(data)
+                loss = postnet_loss(alpha[data.train_mask], data.y[data.train_mask], entropy_weight=1e-5, reduction="mean")
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
+        if epoch == 1 or epoch % log_every == 0 or epoch == epochs:
+            LOGGER.info("%s epoch %d/%d: loss=%.4f", name, epoch, epochs, float(loss.detach().cpu().item()))
+    LOGGER.info("Finished training %s in %.1fs", name, time.perf_counter() - start)
+
+
+def checkpoint_path(checkpoint_dir: Path, dataset_name: str, model_name: ModelName) -> Path:
+    """Return the checkpoint path for one dataset/model pair."""
+    safe_model_name = model_name.lower().replace("-", "_")
+    return checkpoint_dir / f"{dataset_name}_{safe_model_name}.pt"
+
+
+def train_or_load_model(
+    name: ModelName,
+    data: Data,
+    num_classes: int,
+    checkpoint_dir: Path,
+    dataset_name: str,
+    seed: int,
+    epochs: int,
+    lr: float,
+    device: torch.device,
+    retrain: bool,
+    use_mixed_precision: bool,
+) -> nn.Module:
+    """Load a cached model checkpoint or train and save a new model."""
+    model = build_model(name, data.x.shape[-1], num_classes).to(device)
+    path = checkpoint_path(checkpoint_dir, dataset_name, name)
+    if path.exists() and not retrain:
+        checkpoint = torch.load(path, map_location=device, weights_only=True)
+        compatible = (
+            checkpoint.get("feature_dim") == int(data.x.shape[-1])
+            and checkpoint.get("num_classes") == num_classes
+            and checkpoint.get("seed") == seed
+            and checkpoint.get("epochs") == epochs
+            and checkpoint.get("lr") == lr
+            and checkpoint.get("mixed_precision", False) == use_mixed_precision
+        )
+        if compatible:
+            LOGGER.info("Loading cached %s checkpoint from %s", name, path)
+            model.load_state_dict(checkpoint["model_state_dict"])
+            return model
+        LOGGER.info("Ignoring incompatible %s checkpoint at %s", name, path)
+    elif path.exists():
+        LOGGER.info("Retraining %s despite existing checkpoint at %s", name, path)
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    train_model(model, data, name, epochs, lr, use_mixed_precision=use_mixed_precision)
+    torch.save(
+        {
+            "model_state_dict": {key: value.detach().cpu() for key, value in model.state_dict().items()},
+            "model_name": name,
+            "dataset_name": dataset_name,
+            "feature_dim": int(data.x.shape[-1]),
+            "num_classes": num_classes,
+            "seed": seed,
+            "epochs": epochs,
+            "lr": lr,
+            "mixed_precision": use_mixed_precision,
+        },
+        path,
+    )
+    LOGGER.info("Saved %s checkpoint to %s", name, path)
+    return model
+
+
+def load_checkpointed_model(
+    name: ModelName,
+    data: Data,
+    num_classes: int,
+    checkpoint_dir: Path,
+    dataset_name: str,
+    device: torch.device,
+) -> nn.Module | None:
+    """Load an architecture-compatible checkpoint without training.
+
+    Args:
+        name: Model variant name.
+        data: Graph data used for inference.
+        num_classes: Number of target classes.
+        checkpoint_dir: Directory containing model checkpoints.
+        dataset_name: Dataset prefix used in checkpoint filenames.
+        device: Torch device for inference.
+
+    Returns:
+        A model with loaded weights, or ``None`` when no compatible checkpoint exists.
+    """
+    path = checkpoint_path(checkpoint_dir, dataset_name, name)
+    if not path.exists():
+        LOGGER.info("No %s checkpoint found at %s; using gray placeholder plot", name, path)
+        return None
+    model = build_model(name, data.x.shape[-1], num_classes).to(device)
+    checkpoint = torch.load(path, map_location=device, weights_only=True)
+    compatible = checkpoint.get("feature_dim") == int(data.x.shape[-1]) and checkpoint.get("num_classes") == num_classes
+    if not compatible:
+        LOGGER.info("Ignoring incompatible %s checkpoint at %s; using gray placeholder plot", name, path)
+        return None
+    LOGGER.info("Loading %s checkpoint from %s", name, path)
+    model.load_state_dict(checkpoint["model_state_dict"])
+    return model
+
+
+def missing_evaluation(data: Data) -> EvaluationResult:
+    """Return a placeholder result for an unavailable checkpoint."""
+    num_nodes = int(data.num_nodes)
+    return EvaluationResult(
+        accuracy=None,
+        selective_area=None,
+        coverage=np.array([], dtype=float),
+        selective_loss=np.array([], dtype=float),
+        predictions=np.full(num_nodes, -1, dtype=int),
+        total_uncertainty=np.zeros(num_nodes, dtype=float),
+        epistemic_uncertainty=np.zeros(num_nodes, dtype=float),
+        available=False,
+        dirichlet_alphas=None,
+        mixture_weights=None,
+    )
 
 
 @torch.no_grad()
-def evaluate_model(model: nn.Module, data: Data, n_bins: int) -> EvaluationResult:
+def evaluate_model(
+    model: nn.Module,
+    data: Data,
+    n_bins: int,
+    use_mixed_precision: bool,
+    include_density_parameters: bool = False,
+) -> EvaluationResult:
     """Evaluate accuracy, uncertainty decomposition, and selective prediction."""
+    start = time.perf_counter()
     model.eval()
-    distribution = predict(model, data)
-    probabilities = distribution.mean.probabilities
-    predictions = probabilities.argmax(dim=-1)
-    decomposition = quantify(distribution)
+    with torch.amp.autocast("cuda", dtype=torch.float16, enabled=use_mixed_precision):
+        distribution = predict(model, data)
+        probabilities = distribution.mean.probabilities
+        predictions = probabilities.argmax(dim=-1)
+        decomposition = quantify(distribution)
     total = decomposition.total.detach().cpu().numpy()
     epistemic = decomposition.epistemic.detach().cpu().numpy()
     mask = data.test_mask.cpu().numpy()
@@ -188,82 +439,217 @@ def evaluate_model(model: nn.Module, data: Data, n_bins: int) -> EvaluationResul
     selective_area, selective_loss = selective_prediction(total[mask], losses, n_bins=min(n_bins, int(mask.sum())))
     coverage = np.linspace(1.0, 1.0 / len(selective_loss), len(selective_loss))
     accuracy = float((pred_np[mask] == labels[mask]).mean())
-    return EvaluationResult(accuracy, selective_area, coverage, selective_loss, pred_np, total, epistemic)
+    dirichlet_alphas: np.ndarray | None = None
+    mixture_weights: np.ndarray | None = None
+    if include_density_parameters:
+        representation = model.predict_representation(data)
+        if hasattr(representation, "components") and hasattr(representation, "mixture_weights"):
+            dirichlet_alphas = representation.components.alphas.detach().cpu().numpy()
+            mixture_weights = representation.mixture_weights.detach().cpu().numpy()
+        else:
+            dirichlet_alphas = representation.alphas.detach().cpu().numpy()
+    LOGGER.info("Evaluated model: accuracy=%.3f, AULC=%.3f in %.1fs", accuracy, selective_area, time.perf_counter() - start)
+    return EvaluationResult(accuracy, selective_area, coverage, selective_loss, pred_np, total, epistemic, True, dirichlet_alphas, mixture_weights)
 
 
 def plot_selective(results: dict[ModelName, EvaluationResult], output_path: Path) -> None:
     """Plot selective-prediction curves."""
+    LOGGER.info("Writing selective-prediction plot to %s", output_path)
     _, ax = plt.subplots(figsize=(6.5, 4.0))
     for name, result in results.items():
-        ax.plot(result.coverage, result.selective_loss, marker="o", linewidth=2, label=f"{name} (AULC={result.selective_area:.3f})")
+        if not result.available or result.selective_area is None:
+            continue
+        ax.plot(result.coverage, 1.0 - result.selective_loss, linewidth=2.2, label=f"{name} (AULC={result.selective_area:.3f})")
     ax.set_xlabel("Coverage after rejecting most uncertain nodes")
-    ax.set_ylabel("Zero-one loss on retained nodes")
-    ax.set_title("Selective Prediction on Ambiguous Graph Nodes")
+    ax.set_ylabel("Accuracy on retained nodes")
+    ax.set_title("Selective Prediction Accuracy")
     ax.invert_xaxis()
     ax.grid(alpha=0.25)
-    ax.legend(frameon=False)
+    if any(result.available for result in results.values()):
+        ax.legend(frameon=False)
     plt.tight_layout()
     plt.savefig(output_path)
     plt.close()
 
 
-def plot_graph(data: Data, results: dict[ModelName, EvaluationResult], output_path: Path) -> None:
+def simplex_grid(resolution: int = 45) -> np.ndarray:
+    """Create barycentric coordinates on the three-class probability simplex."""
+    points: list[tuple[float, float, float]] = []
+    for blue in range(resolution + 1):
+        for yellow in range(resolution + 1 - blue):
+            green = resolution - blue - yellow
+            points.append((blue / resolution, yellow / resolution, green / resolution))
+    return np.asarray(points, dtype=float)
+
+
+def dirichlet_log_density(points: np.ndarray, alphas: np.ndarray, max_visual_concentration: float = 18.0) -> np.ndarray:
+    """Evaluate Dirichlet log density on simplex points."""
+    clipped = np.clip(points, 1e-6, 1.0)
+    alpha = np.asarray(alphas, dtype=float)
+    concentration = float(alpha.sum())
+    if concentration > max_visual_concentration:
+        mean = alpha / concentration
+        alpha = 1.0 + mean * (max_visual_concentration - len(alpha))
+    log_norm = float(torch.lgamma(torch.tensor(alpha.sum())) - torch.lgamma(torch.tensor(alpha)).sum())
+    return log_norm + ((alpha - 1.0) * np.log(clipped)).sum(axis=1)
+
+
+def node_simplex_density(result: EvaluationResult, node_idx: int, points: np.ndarray, top_components: int = 96) -> np.ndarray:
+    """Evaluate a node's predicted Dirichlet or Dirichlet-mixture density."""
+    if result.dirichlet_alphas is None:
+        return np.zeros(len(points), dtype=float)
+    if result.mixture_weights is None:
+        return dirichlet_log_density(points, result.dirichlet_alphas[node_idx])
+    weights = result.mixture_weights[node_idx]
+    component_count = min(top_components, len(weights))
+    component_idx = np.argsort(weights)[-component_count:]
+    component_weights = weights[component_idx]
+    component_weights = component_weights / max(float(component_weights.sum()), 1e-12)
+    component_alphas = result.dirichlet_alphas[node_idx, component_idx]
+    log_terms = np.vstack(
+        [np.log(max(float(weight), 1e-12)) + dirichlet_log_density(points, alpha) for weight, alpha in zip(component_weights, component_alphas, strict=True)]
+    )
+    max_log = log_terms.max(axis=0)
+    return max_log + np.log(np.exp(log_terms - max_log).sum(axis=0))
+
+
+def select_bridge_zoom_node(data: Data, results: dict[ModelName, EvaluationResult]) -> int | None:
+    """Pick a shared misclassified node on the blue-yellow bridge."""
+    labels = data.y.cpu().numpy()
+    pos = data.pos.cpu().numpy()
+    train_mask = data.train_mask.cpu().numpy()
+    available_results = [result for result in results.values() if result.available]
+    if not available_results:
+        return None
+    wrong_for_all = np.logical_and.reduce([result.predictions != labels for result in available_results])
+    bridge_candidates = np.flatnonzero(wrong_for_all & ~train_mask & np.isin(labels, [0, 1]))
+    if len(bridge_candidates) == 0:
+        bridge_candidates = np.flatnonzero(wrong_for_all & ~train_mask)
+    if len(bridge_candidates) == 0:
+        return None
+    blue_center = pos[labels == 0].mean(axis=0)
+    yellow_center = pos[labels == 1].mean(axis=0)
+    bridge_center = 0.5 * (blue_center + yellow_center)
+    scores = np.linalg.norm(pos[bridge_candidates] - bridge_center, axis=1)
+    return int(bridge_candidates[np.argmin(scores)])
+
+
+def draw_simplex_density_inset(
+    ax: plt.Axes,
+    result: EvaluationResult,
+    node_idx: int,
+    node_pos: np.ndarray,
+    inset_center: np.ndarray,
+    class_colors: np.ndarray,
+    density_color: str,
+) -> None:
+    """Draw a barycentric density inset below a highlighted graph node."""
+    if not result.available or result.dirichlet_alphas is None:
+        return
+    points = simplex_grid(resolution=75)
+    width = 0.72
+    height = 0.56
+    center = inset_center + np.array([0.0, -0.28])
+    top = center + np.array([0.0, 2.0 * height / 3.0])
+    bottom_left = center + np.array([-width / 2.0, -height / 3.0])
+    bottom_right = center + np.array([width / 2.0, -height / 3.0])
+    xy = points[:, [0]] * bottom_left + points[:, [1]] * bottom_right + points[:, [2]] * top
+    log_density = node_simplex_density(result, node_idx, points)
+    relative_density = np.exp(log_density - np.max(log_density))
+    density = relative_density**0.35
+    bottom_midpoint = 0.5 * (bottom_left + bottom_right)
+    ax.plot([node_pos[0], bottom_midpoint[0]], [node_pos[1], bottom_midpoint[1]], color="#2B2D33", linewidth=0.8, alpha=0.7, zorder=7)
+    density_cmap = LinearSegmentedColormap.from_list("error_density", ["#FFFFFF", "#FFB4C3", density_color])
+    ax.tripcolor(xy[:, 0], xy[:, 1], density, shading="gouraud", cmap=density_cmap, vmin=0.0, vmax=1.0, alpha=0.96, zorder=8)
+    ax.add_patch(Polygon([bottom_left, bottom_right, top], closed=True, fill=False, edgecolor="#2B2D33", linewidth=0.9, zorder=9))
+    ax.scatter([bottom_left[0], bottom_right[0], top[0]], [bottom_left[1], bottom_right[1], top[1]], s=22, c=class_colors[:3], edgecolors="#FFFFFF", linewidths=0.5, zorder=10)
+
+
+def plot_graph(
+    data: Data,
+    results: dict[ModelName, EvaluationResult],
+    output_path: Path,
+    title: str,
+    show_density_zoom: bool = False,
+) -> None:
     """Plot graph predictions and uncertainty for all model variants."""
+    LOGGER.info("Writing graph uncertainty plot to %s", output_path)
     pos = data.pos.cpu().numpy()
     edges = data.edge_index.cpu().numpy().T
     labels = data.y.cpu().numpy()
+    edge_pairs = np.unique(np.sort(edges, axis=1), axis=0)
+    segments = np.stack((pos[edge_pairs[:, 0]], pos[edge_pairs[:, 1]]), axis=1)
     fig, axes = plt.subplots(1, len(results), figsize=(14.5, 4.75), sharex=True, sharey=True)
     fig.patch.set_facecolor("#FFFFFF")
-    colors = np.array(["#3A86FF", "#FFB000", "#5AD08A"])
+    colors = get_class_colors(int(labels.max()) + 1)
     edge_color = "#DDE3EA"
     error_color = "#FF2D6D"
     train_color = "#8D96A6"
+    missing_color = "#B8C0CC"
     train_mask = data.train_mask.cpu().numpy()
+    zoom_node = select_bridge_zoom_node(data, results) if show_density_zoom else None
+    zoom_inset_center = None
+    if zoom_node is not None:
+        LOGGER.info("Selected node %d for synthetic Dirichlet density insets", zoom_node)
+        zoom_inset_center = np.vstack([pos[labels == class_idx].mean(axis=0) for class_idx in range(3)]).mean(axis=0)
     for ax, (name, result) in zip(axes, results.items(), strict=True):
         ax.set_facecolor("#FBFCFF")
-        for src, dst in edges[::2]:
-            ax.plot(
-                [pos[src, 0], pos[dst, 0]],
-                [pos[src, 1], pos[dst, 1]],
-                color=edge_color,
-                linewidth=0.45,
-                alpha=0.72,
-                zorder=0,
-            )
+        edge_collection = LineCollection(segments, colors=edge_color, linewidths=0.35, alpha=0.55, zorder=0, rasterized=True)
+        ax.add_collection(edge_collection)
         uncertainty = result.epistemic_uncertainty
         sizes = 18 + 150 * (uncertainty - uncertainty.min()) / max(float(np.ptp(uncertainty)), 1e-6)
-        wrong = result.predictions != labels
-        correct = ~wrong & ~train_mask
-        train = train_mask
-        wrong_test = wrong & ~train_mask
-        ax.scatter(
-            pos[correct, 0],
-            pos[correct, 1],
-            s=sizes[correct],
-            c=colors[result.predictions[correct]],
-            alpha=0.86,
-            edgecolors="#FFFFFF",
-            linewidths=0.65,
-        )
-        ax.scatter(
-            pos[wrong_test, 0],
-            pos[wrong_test, 1],
-            s=sizes[wrong_test],
-            c=error_color,
-            alpha=0.92,
-            edgecolors="none",
-            linewidths=0.0,
-        )
-        ax.scatter(
-            pos[train, 0],
-            pos[train, 1],
-            s=sizes[train],
-            c=train_color,
-            alpha=0.9,
-            edgecolors="#FFFFFF",
-            linewidths=0.65,
-        )
-        ax.set_title(f"{name}\naccuracy = {result.accuracy:.2f}", fontsize=10.5, fontweight="bold", color="#171A1F", pad=7)
+        if result.available:
+            wrong = result.predictions != labels
+            correct = ~wrong & ~train_mask
+            train = train_mask
+            wrong_test = wrong & ~train_mask
+            ax.scatter(
+                pos[correct, 0],
+                pos[correct, 1],
+                s=sizes[correct],
+                c=colors[result.predictions[correct]],
+                alpha=0.86,
+                edgecolors="#FFFFFF",
+                linewidths=0.65,
+                rasterized=True,
+            )
+            ax.scatter(
+                pos[wrong_test, 0],
+                pos[wrong_test, 1],
+                s=sizes[wrong_test],
+                c=error_color,
+                alpha=0.92,
+                edgecolors="none",
+                linewidths=0.0,
+                rasterized=True,
+            )
+            ax.scatter(
+                pos[train, 0],
+                pos[train, 1],
+                s=sizes[train],
+                c=train_color,
+                alpha=0.9,
+                edgecolors="#FFFFFF",
+                linewidths=0.65,
+                rasterized=True,
+            )
+            accuracy_label = f"{result.accuracy:.2f}" if result.accuracy is not None else "?"
+        else:
+            ax.scatter(
+                pos[:, 0],
+                pos[:, 1],
+                s=sizes,
+                c=missing_color,
+                alpha=0.86,
+                edgecolors="#FFFFFF",
+                linewidths=0.65,
+                rasterized=True,
+            )
+            accuracy_label = "?"
+        if zoom_node is not None:
+            if zoom_inset_center is not None:
+                draw_simplex_density_inset(ax, result, zoom_node, pos[zoom_node], zoom_inset_center, colors, error_color)
+        ax.set_title(f"{name}\naccuracy = {accuracy_label}", fontsize=10.5, fontweight="bold", color="#171A1F", pad=7)
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_aspect("equal")
@@ -271,7 +657,7 @@ def plot_graph(data: Data, results: dict[ModelName, EvaluationResult], output_pa
             spine.set_color("#D7DCE3")
             spine.set_linewidth(0.9)
     fig.suptitle(
-        "Prediction and Epistemic Uncertainty on a Synthetic Graph",
+        title,
         fontsize=11.5,
         fontweight="bold",
         color="#171A1F",
@@ -280,31 +666,206 @@ def plot_graph(data: Data, results: dict[ModelName, EvaluationResult], output_pa
     fig.text(
         0.5,
         0.035,
-        "color = prediction  |  size = epistemic uncertainty  |  red = classification error  |  gray = train data",
+        "color = prediction  |  size = epistemic uncertainty  |  red = classification error  |  inset = predicted density over class probabilities",
         ha="center",
         va="center",
         fontsize=8.8,
         color="#5A6472",
     )
     fig.subplots_adjust(left=0.035, right=0.99, bottom=0.105, top=0.85, wspace=0.14)
-    plt.savefig(output_path)
+    plt.savefig(output_path, dpi=450)
     plt.close()
 
 
-def run_demo(output_dir: Path, seed: int = 7, nodes_per_class: int = 120, epochs: int = 120, lr: float = 0.01) -> None:
-    """Train all variants and write demo plots and metrics."""
-    set_seed(seed)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    data = make_synthetic_graph(nodes_per_class=nodes_per_class, seed=seed)
-    num_classes = int(data.y.max().item()) + 1
-    results: dict[ModelName, EvaluationResult] = {}
-    for name in ("GPN", "LOP-GPN", "CUQ-GNN"):
-        model = build_model(name, data.x.shape[-1], num_classes)
-        train_model(model, data, name, epochs, lr)
-        results[name] = evaluate_model(model, data, n_bins=12)
-    plot_selective(results, output_dir / "selective_prediction.pdf")
-    plot_graph(data, results, output_dir / "graph_uncertainty.pdf")
+def write_metrics(results: dict[ModelName, EvaluationResult], output_path: Path) -> None:
+    """Write accuracy and selective-prediction metrics."""
     metrics = {
         name: {"accuracy": result.accuracy, "selective_area": result.selective_area} for name, result in results.items()
     }
-    (output_dir / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+    output_path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+    LOGGER.info("Wrote metrics to %s", output_path)
+
+
+def run_synthetic_demo(
+    output_dir: Path,
+    checkpoint_dir: Path,
+    seed: int,
+    nodes_per_class: int,
+    epochs: int,
+    lr: float,
+    device: torch.device,
+    retrain: bool,
+    inference_only: bool,
+    use_mixed_precision: bool,
+) -> None:
+    """Train synthetic graph variants and write plots and metrics."""
+    LOGGER.info("Starting synthetic demo: seed=%d, nodes_per_class=%d, device=%s", seed, nodes_per_class, device)
+    set_seed(seed)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    data = make_synthetic_graph(nodes_per_class=nodes_per_class, seed=seed).to(device)
+    LOGGER.info("Created synthetic graph: %d nodes, %d directed edges", data.num_nodes, data.edge_index.shape[1])
+    num_classes = int(data.y.max().item()) + 1
+    results: dict[ModelName, EvaluationResult] = {}
+    for name in MODEL_NAMES:
+        if inference_only:
+            model = load_checkpointed_model(name, data, num_classes, checkpoint_dir, "synthetic", device)
+        else:
+            model = train_or_load_model(
+                name,
+                data,
+                num_classes,
+                checkpoint_dir,
+                dataset_name="synthetic",
+                seed=seed,
+                epochs=epochs,
+                lr=lr,
+                device=device,
+                retrain=retrain,
+                use_mixed_precision=use_mixed_precision,
+            )
+        results[name] = (
+            missing_evaluation(data)
+            if model is None
+            else evaluate_model(
+                model,
+                data,
+                n_bins=100,
+                use_mixed_precision=use_mixed_precision,
+                include_density_parameters=True,
+            )
+        )
+    plot_selective(results, output_dir / "selective_prediction.pdf")
+    plot_graph(
+        data,
+        results,
+        output_dir / "graph_uncertainty.pdf",
+        "Prediction and Epistemic Uncertainty on a Synthetic Graph",
+        show_density_zoom=True,
+    )
+    write_metrics(results, output_dir / "metrics.json")
+
+
+def run_amazon_photo_demo(
+    output_dir: Path,
+    data_dir: Path,
+    checkpoint_dir: Path,
+    cache_dir: Path,
+    seed: int,
+    epochs: int,
+    lr: float,
+    forceatlas2_iterations: int,
+    layout: LayoutName,
+    layout_path: Path,
+    device: torch.device,
+    retrain: bool,
+    inference_only: bool,
+    use_mixed_precision: bool,
+) -> None:
+    """Train or load Amazon Photos variants and write plots and metrics."""
+    LOGGER.info(
+        "Starting Amazon Photos demo: seed=%d, epochs=%d, layout=%s, forceatlas2_iterations=%d, device=%s",
+        seed,
+        epochs,
+        layout,
+        forceatlas2_iterations,
+        device,
+    )
+    set_seed(seed)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    data = load_amazon_photo(data_dir=data_dir, seed=seed)
+    if layout == "precomputed":
+        pos = precomputed_positions(data, layout_path)
+    else:
+        pos = forceatlas2_positions(
+            data,
+            cache_dir / f"amazon_photo_forceatlas2_seed{seed}_iter{forceatlas2_iterations}.npy",
+            seed=seed,
+            max_iter=forceatlas2_iterations,
+        )
+    data.pos = torch.tensor(pos, dtype=torch.float)
+    data = data.to(device)
+    num_classes = int(data.y.max().item()) + 1
+    results: dict[ModelName, EvaluationResult] = {}
+    for name in MODEL_NAMES:
+        if inference_only:
+            model = load_checkpointed_model(name, data, num_classes, checkpoint_dir, "amazon_photo", device)
+        else:
+            model = train_or_load_model(
+                name,
+                data,
+                num_classes,
+                checkpoint_dir,
+                dataset_name="amazon_photo",
+                seed=seed,
+                epochs=epochs,
+                lr=lr,
+                device=device,
+                retrain=retrain,
+                use_mixed_precision=use_mixed_precision,
+            )
+        results[name] = missing_evaluation(data) if model is None else evaluate_model(model, data, n_bins=100, use_mixed_precision=use_mixed_precision)
+    plot_selective(results, output_dir / "amazon_photo_selective_prediction.pdf")
+    plot_graph(
+        data,
+        results,
+        output_dir / "amazon_photo_graph_uncertainty.pdf",
+        "Prediction and Epistemic Uncertainty on Amazon Photos",
+    )
+    write_metrics(results, output_dir / "amazon_photo_metrics.json")
+
+
+def run_demo(
+    output_dir: Path,
+    seed: int = 7,
+    nodes_per_class: int = 120,
+    epochs: int = 120,
+    lr: float = 0.01,
+    experiment: ExperimentName = "synthetic",
+    data_dir: Path = Path("data"),
+    checkpoint_dir: Path = Path("checkpoints"),
+    cache_dir: Path = Path("cache"),
+    amazon_epochs: int = 20,
+    forceatlas2_iterations: int = 10,
+    amazon_layout: LayoutName = "precomputed",
+    amazon_layout_path: Path = DEFAULT_AMAZON_LAYOUT_PATH,
+    device: str = "cpu",
+    retrain: bool = False,
+    inference_only: bool = False,
+) -> None:
+    """Run one or both GPN graph uncertainty demos."""
+    torch_device = torch.device(device)
+    if torch_device.type == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("CUDA was requested, but torch.cuda.is_available() is False")
+    use_mixed_precision = torch_device.type == "cuda"
+    if use_mixed_precision:
+        LOGGER.info("CUDA enabled: using float16 mixed precision for training and inference")
+    if experiment in {"synthetic", "all"}:
+        run_synthetic_demo(
+            output_dir,
+            checkpoint_dir=checkpoint_dir,
+            seed=seed,
+            nodes_per_class=nodes_per_class,
+            epochs=epochs,
+            lr=lr,
+            device=torch_device,
+            retrain=retrain,
+            inference_only=inference_only,
+            use_mixed_precision=use_mixed_precision,
+        )
+    if experiment in {"amazon-photo", "all"}:
+        run_amazon_photo_demo(
+            output_dir,
+            data_dir=data_dir,
+            checkpoint_dir=checkpoint_dir,
+            cache_dir=cache_dir,
+            seed=seed,
+            epochs=amazon_epochs,
+            lr=lr,
+            forceatlas2_iterations=forceatlas2_iterations,
+            layout=amazon_layout,
+            layout_path=amazon_layout_path,
+            device=torch_device,
+            retrain=retrain,
+            inference_only=inference_only,
+            use_mixed_precision=use_mixed_precision,
+        )

@@ -8,6 +8,7 @@ dependencies = [
   "torch-geometric>=2.6.0",
   "numpy",
   "matplotlib",
+  "networkx>=3.6",
 ]
 
 [dependency-groups]

@@ -436,6 +436,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "matplotlib" },
+    { name = "networkx" },
     { name = "numpy" },
     { name = "probly" },
     { name = "torch" },
@@ -450,6 +451,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "matplotlib" },
+    { name = "networkx", specifier = ">=3.6" },
     { name = "numpy" },
     { name = "probly", editable = "../../" },
     { name = "torch", specifier = ">=2.6.0" },
