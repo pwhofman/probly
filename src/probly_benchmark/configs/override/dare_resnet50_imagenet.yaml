@@ -5,3 +5,4 @@
 method:
   params:
     reset_params: false
+    threshold: 3.0
