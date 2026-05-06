@@ -16,7 +16,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--nodes-per-class", type=int, default=120)
     parser.add_argument("--epochs", type=int, default=120)
-    parser.add_argument("--amazon-epochs", type=int, default=100)
+    parser.add_argument("--amazon-epochs", type=int, default=2000)
     parser.add_argument("--lr", type=float, default=0.01)
     parser.add_argument("--data-dir", type=Path, default=Path("data"))
     parser.add_argument("--checkpoint-dir", type=Path, default=Path("checkpoints"))

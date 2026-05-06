@@ -7,7 +7,7 @@ import json
 import logging
 from pathlib import Path
 import time
-from typing import Literal
+from typing import Literal, Sequence
 
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
@@ -65,16 +65,16 @@ def set_seed(seed: int) -> None:
 def get_class_colors(num_classes: int) -> np.ndarray:
     """Return a bright deterministic color palette for class predictions."""
     base_colors = [
-        "#3A86FF",
-        "#FFB000",
-        "#5AD08A",
-        "#8338EC",
-        "#FB5607",
-        "#00B4D8",
-        "#B5179E",
-        "#6A994E",
-        "#FF006E",
-        "#577590",
+        "#1F77D0",
+        "#00A6D6",
+        "#34B3A0",
+        "#4CB944",
+        "#8BC34A",
+        "#C5C934",
+        "#F2C230",
+        "#5DADE2",
+        "#2E86AB",
+        "#A3D977",
     ]
     if num_classes <= len(base_colors):
         return np.array(base_colors[:num_classes])
@@ -243,18 +243,19 @@ def precomputed_positions(data: Data, layout_path: Path) -> np.ndarray:
     return normalize_positions(pos).astype(np.float32)
 
 
-def build_model(name: ModelName, feature_dim: int, num_classes: int) -> nn.Module:
+def build_model(name: ModelName, feature_dim: int, num_classes: int, encoder_dim: int = 24, latent_dim: int = 8) -> nn.Module:
     """Build one GPN variant.
 
     Args:
         name: Model variant name.
         feature_dim: Input feature dimension.
         num_classes: Number of target classes.
+        encoder_dim: Hidden dimension used by the encoder.
+        latent_dim: Latent dimension used by the GPN density model.
 
     Returns:
         A trainable GPN variant.
     """
-    encoder_dim = 24
     encoder = nn.Sequential(nn.Linear(feature_dim, encoder_dim), nn.ReLU(), nn.Linear(encoder_dim, encoder_dim), nn.ReLU())
     common: dict[str, int | float] = {
         "encoder_dim": encoder_dim,
@@ -263,11 +264,11 @@ def build_model(name: ModelName, feature_dim: int, num_classes: int) -> nn.Modul
         "teleport_probability": 0.12,
     }
     if name == "GPN":
-        return graph_posterior_network(encoder, 8, num_classes, **common)
+        return graph_posterior_network(encoder, latent_dim, num_classes, **common)
     if name == "LOP-GPN":
-        return lop_graph_posterior_network(encoder, 8, num_classes, **common)
+        return lop_graph_posterior_network(encoder, latent_dim, num_classes, **common)
     if name == "CUQ-GNN":
-        return cuq_graph_neural_network(encoder, 8, num_classes, convolution_name="appnp", **common)
+        return cuq_graph_neural_network(encoder, latent_dim, num_classes, convolution_name="appnp", **common)
     raise ValueError(name)
 
 
@@ -320,9 +321,11 @@ def train_or_load_model(
     device: torch.device,
     retrain: bool,
     use_mixed_precision: bool,
+    encoder_dim: int = 24,
+    latent_dim: int = 8,
 ) -> nn.Module:
     """Load a cached model checkpoint or train and save a new model."""
-    model = build_model(name, data.x.shape[-1], num_classes).to(device)
+    model = build_model(name, data.x.shape[-1], num_classes, encoder_dim=encoder_dim, latent_dim=latent_dim).to(device)
     path = checkpoint_path(checkpoint_dir, dataset_name, name)
     if path.exists() and not retrain:
         checkpoint = torch.load(path, map_location=device, weights_only=True)
@@ -333,6 +336,8 @@ def train_or_load_model(
             and checkpoint.get("epochs") == epochs
             and checkpoint.get("lr") == lr
             and checkpoint.get("mixed_precision", False) == use_mixed_precision
+            and checkpoint.get("encoder_dim", 24) == encoder_dim
+            and checkpoint.get("latent_dim", 8) == latent_dim
         )
         if compatible:
             LOGGER.info("Loading cached %s checkpoint from %s", name, path)
@@ -354,6 +359,8 @@ def train_or_load_model(
             "epochs": epochs,
             "lr": lr,
             "mixed_precision": use_mixed_precision,
+            "encoder_dim": encoder_dim,
+            "latent_dim": latent_dim,
         },
         path,
     )
@@ -368,6 +375,8 @@ def load_checkpointed_model(
     checkpoint_dir: Path,
     dataset_name: str,
     device: torch.device,
+    encoder_dim: int = 24,
+    latent_dim: int = 8,
 ) -> nn.Module | None:
     """Load an architecture-compatible checkpoint without training.
 
@@ -386,9 +395,14 @@ def load_checkpointed_model(
     if not path.exists():
         LOGGER.info("No %s checkpoint found at %s; using gray placeholder plot", name, path)
         return None
-    model = build_model(name, data.x.shape[-1], num_classes).to(device)
+    model = build_model(name, data.x.shape[-1], num_classes, encoder_dim=encoder_dim, latent_dim=latent_dim).to(device)
     checkpoint = torch.load(path, map_location=device, weights_only=True)
-    compatible = checkpoint.get("feature_dim") == int(data.x.shape[-1]) and checkpoint.get("num_classes") == num_classes
+    compatible = (
+        checkpoint.get("feature_dim") == int(data.x.shape[-1])
+        and checkpoint.get("num_classes") == num_classes
+        and checkpoint.get("encoder_dim", 24) == encoder_dim
+        and checkpoint.get("latent_dim", 8) == latent_dim
+    )
     if not compatible:
         LOGGER.info("Ignoring incompatible %s checkpoint at %s; using gray placeholder plot", name, path)
         return None
@@ -556,7 +570,7 @@ def draw_simplex_density_inset(
     xy = points[:, [0]] * bottom_left + points[:, [1]] * bottom_right + points[:, [2]] * top
     log_density = node_simplex_density(result, node_idx, points)
     relative_density = np.exp(log_density - np.max(log_density))
-    density = relative_density**0.35
+    density = np.where(relative_density > 1e-4, 0.16 + 0.84 * relative_density**0.28, 0.0)
     bottom_midpoint = 0.5 * (bottom_left + bottom_right)
     ax.plot([node_pos[0], bottom_midpoint[0]], [node_pos[1], bottom_midpoint[1]], color="#2B2D33", linewidth=0.8, alpha=0.7, zorder=7)
     density_cmap = LinearSegmentedColormap.from_list("error_density", ["#FFFFFF", "#FFB4C3", density_color])
@@ -565,22 +579,61 @@ def draw_simplex_density_inset(
     ax.scatter([bottom_left[0], bottom_right[0], top[0]], [bottom_left[1], bottom_right[1], top[1]], s=22, c=class_colors[:3], edgecolors="#FFFFFF", linewidths=0.5, zorder=10)
 
 
-def plot_graph(
+def largest_component_mask(num_nodes: int, edge_pairs: np.ndarray) -> np.ndarray:
+    """Return a mask selecting nodes in the largest connected component."""
+    graph = nx.Graph()
+    graph.add_nodes_from(range(num_nodes))
+    graph.add_edges_from((int(src), int(dst)) for src, dst in edge_pairs)
+    component = max(nx.connected_components(graph), key=len)
+    mask = np.zeros(num_nodes, dtype=bool)
+    mask[list(component)] = True
+    return mask
+
+
+def uncertainty_marker_sizes(uncertainty: np.ndarray, visible_mask: np.ndarray) -> np.ndarray:
+    """Map uncertainty to marker areas without letting outliers dominate dense graphs."""
+    visible_uncertainty = uncertainty[visible_mask]
+    if int(visible_mask.sum()) > 1000:
+        lower = float(np.percentile(visible_uncertainty, 82.0))
+        upper = float(np.percentile(visible_uncertainty, 99.2))
+        normalized = np.clip((uncertainty - lower) / max(upper - lower, 1e-6), 0.0, 1.0)
+        return 3.5 + 24.0 * normalized**1.6
+    lower = float(np.percentile(visible_uncertainty, 5.0))
+    upper = float(np.percentile(visible_uncertainty, 95.0))
+    normalized = np.clip((uncertainty - lower) / max(upper - lower, 1e-6), 0.0, 1.0)
+    return 18.0 + 120.0 * np.sqrt(normalized)
+
+
+def set_square_limits(ax: plt.Axes, pos: np.ndarray, pad_fraction: float = 0.04) -> None:
+    """Set equal square limits around the visible graph positions."""
+    min_xy = pos.min(axis=0)
+    max_xy = pos.max(axis=0)
+    center = 0.5 * (min_xy + max_xy)
+    half_width = 0.5 * float(np.max(max_xy - min_xy))
+    half_width = max(half_width * (1.0 + pad_fraction), 1e-6)
+    ax.set_xlim(center[0] - half_width, center[0] + half_width)
+    ax.set_ylim(center[1] - half_width, center[1] + half_width)
+
+
+def draw_graph_row(
+    axes: Sequence[plt.Axes],
     data: Data,
     results: dict[ModelName, EvaluationResult],
-    output_path: Path,
-    title: str,
     show_density_zoom: bool = False,
+    edge_linewidth: float = 0.35,
+    edge_alpha: float = 0.55,
+    show_column_titles: bool = True,
+    accuracy_inside: bool = False,
 ) -> None:
-    """Plot graph predictions and uncertainty for all model variants."""
-    LOGGER.info("Writing graph uncertainty plot to %s", output_path)
+    """Draw one dataset row of graph predictions and uncertainty."""
     pos = data.pos.cpu().numpy()
     edges = data.edge_index.cpu().numpy().T
     labels = data.y.cpu().numpy()
     edge_pairs = np.unique(np.sort(edges, axis=1), axis=0)
-    segments = np.stack((pos[edge_pairs[:, 0]], pos[edge_pairs[:, 1]]), axis=1)
-    fig, axes = plt.subplots(1, len(results), figsize=(14.5, 4.75), sharex=True, sharey=True)
-    fig.patch.set_facecolor("#FFFFFF")
+    visible_mask = largest_component_mask(len(pos), edge_pairs)
+    visible_edges = edge_pairs[visible_mask[edge_pairs[:, 0]] & visible_mask[edge_pairs[:, 1]]]
+    visible_pos = pos[visible_mask]
+    segments = np.stack((pos[visible_edges[:, 0]], pos[visible_edges[:, 1]]), axis=1)
     colors = get_class_colors(int(labels.max()) + 1)
     edge_color = "#DDE3EA"
     error_color = "#FF2D6D"
@@ -594,15 +647,15 @@ def plot_graph(
         zoom_inset_center = np.vstack([pos[labels == class_idx].mean(axis=0) for class_idx in range(3)]).mean(axis=0)
     for ax, (name, result) in zip(axes, results.items(), strict=True):
         ax.set_facecolor("#FBFCFF")
-        edge_collection = LineCollection(segments, colors=edge_color, linewidths=0.35, alpha=0.55, zorder=0, rasterized=True)
+        edge_collection = LineCollection(segments, colors=edge_color, linewidths=edge_linewidth, alpha=edge_alpha, zorder=0, rasterized=True)
         ax.add_collection(edge_collection)
         uncertainty = result.epistemic_uncertainty
-        sizes = 18 + 150 * (uncertainty - uncertainty.min()) / max(float(np.ptp(uncertainty)), 1e-6)
+        sizes = uncertainty_marker_sizes(uncertainty, visible_mask)
         if result.available:
             wrong = result.predictions != labels
-            correct = ~wrong & ~train_mask
-            train = train_mask
-            wrong_test = wrong & ~train_mask
+            correct = ~wrong & ~train_mask & visible_mask
+            train = train_mask & visible_mask
+            wrong_test = wrong & ~train_mask & visible_mask
             ax.scatter(
                 pos[correct, 0],
                 pos[correct, 1],
@@ -636,9 +689,9 @@ def plot_graph(
             accuracy_label = f"{result.accuracy:.2f}" if result.accuracy is not None else "?"
         else:
             ax.scatter(
-                pos[:, 0],
-                pos[:, 1],
-                s=sizes,
+                visible_pos[:, 0],
+                visible_pos[:, 1],
+                s=sizes[visible_mask],
                 c=missing_color,
                 alpha=0.86,
                 edgecolors="#FFFFFF",
@@ -649,13 +702,55 @@ def plot_graph(
         if zoom_node is not None:
             if zoom_inset_center is not None:
                 draw_simplex_density_inset(ax, result, zoom_node, pos[zoom_node], zoom_inset_center, colors, error_color)
-        ax.set_title(f"{name}\naccuracy = {accuracy_label}", fontsize=10.5, fontweight="bold", color="#171A1F", pad=7)
+        if accuracy_inside:
+            if show_column_titles:
+                ax.set_title(name, fontsize=11.0, fontweight="bold", color="#171A1F", pad=7)
+            ax.text(
+                0.035,
+                0.965,
+                f"accuracy = {accuracy_label}",
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=9.0,
+                fontweight="bold",
+                color="#171A1F",
+                bbox={"boxstyle": "round,pad=0.22", "facecolor": "#FBFCFF", "edgecolor": "none", "alpha": 0.86},
+                zorder=20,
+            )
+        elif show_column_titles:
+            ax.set_title(f"{name}\naccuracy = {accuracy_label}", fontsize=10.5, fontweight="bold", color="#171A1F", pad=7)
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_aspect("equal")
+        ax.set_box_aspect(1.0)
+        set_square_limits(ax, visible_pos)
         for spine in ax.spines.values():
             spine.set_color("#D7DCE3")
             spine.set_linewidth(0.9)
+
+
+def plot_graph(
+    data: Data,
+    results: dict[ModelName, EvaluationResult],
+    output_path: Path,
+    title: str,
+    show_density_zoom: bool = False,
+    edge_linewidth: float = 0.35,
+    edge_alpha: float = 0.55,
+) -> None:
+    """Plot graph predictions and uncertainty for all model variants."""
+    LOGGER.info("Writing graph uncertainty plot to %s", output_path)
+    fig, axes = plt.subplots(1, len(results), figsize=(14.5, 4.75), sharex=True, sharey=True)
+    fig.patch.set_facecolor("#FFFFFF")
+    draw_graph_row(
+        axes,
+        data,
+        results,
+        show_density_zoom=show_density_zoom,
+        edge_linewidth=edge_linewidth,
+        edge_alpha=edge_alpha,
+    )
     fig.suptitle(
         title,
         fontsize=11.5,
@@ -673,6 +768,61 @@ def plot_graph(
         color="#5A6472",
     )
     fig.subplots_adjust(left=0.035, right=0.99, bottom=0.105, top=0.85, wspace=0.14)
+    plt.savefig(output_path, dpi=450)
+    plt.close()
+
+
+def plot_unified_graph(
+    synthetic_data: Data,
+    synthetic_results: dict[ModelName, EvaluationResult],
+    amazon_data: Data,
+    amazon_results: dict[ModelName, EvaluationResult],
+    output_path: Path,
+) -> None:
+    """Plot synthetic and Amazon Photos graph results in one 2x3 figure."""
+    LOGGER.info("Writing unified graph uncertainty plot to %s", output_path)
+    fig, axes = plt.subplots(2, len(MODEL_NAMES), figsize=(14.5, 9.6), sharex="row", sharey="row")
+    fig.patch.set_facecolor("#FFFFFF")
+    draw_graph_row(
+        axes[0],
+        synthetic_data,
+        synthetic_results,
+        show_density_zoom=True,
+        edge_linewidth=0.65,
+        edge_alpha=0.82,
+        show_column_titles=True,
+        accuracy_inside=True,
+    )
+    draw_graph_row(
+        axes[1],
+        amazon_data,
+        amazon_results,
+        show_column_titles=False,
+        accuracy_inside=True,
+    )
+    fig.text(
+        0.5,
+        0.028,
+        "color = prediction  |  size = epistemic uncertainty  |  red = classification error  |  inset = predicted density over class probabilities",
+        ha="center",
+        va="center",
+        fontsize=8.8,
+        color="#5A6472",
+    )
+    fig.subplots_adjust(left=0.072, right=0.995, bottom=0.055, top=0.955, wspace=0.055, hspace=0.055)
+    for row_idx, label in enumerate(("Synthetic Clusters", "Amazon Photos")):
+        bbox = axes[row_idx, 0].get_position()
+        fig.text(
+            bbox.x0 - 0.034,
+            0.5 * (bbox.y0 + bbox.y1),
+            label,
+            ha="center",
+            va="center",
+            rotation=90,
+            fontsize=11.0,
+            fontweight="bold",
+            color="#171A1F",
+        )
     plt.savefig(output_path, dpi=450)
     plt.close()
 
@@ -697,7 +847,7 @@ def run_synthetic_demo(
     retrain: bool,
     inference_only: bool,
     use_mixed_precision: bool,
-) -> None:
+) -> tuple[Data, dict[ModelName, EvaluationResult]]:
     """Train synthetic graph variants and write plots and metrics."""
     LOGGER.info("Starting synthetic demo: seed=%d, nodes_per_class=%d, device=%s", seed, nodes_per_class, device)
     set_seed(seed)
@@ -741,8 +891,11 @@ def run_synthetic_demo(
         output_dir / "graph_uncertainty.pdf",
         "Prediction and Epistemic Uncertainty on a Synthetic Graph",
         show_density_zoom=True,
+        edge_linewidth=0.65,
+        edge_alpha=0.82,
     )
     write_metrics(results, output_dir / "metrics.json")
+    return data, results
 
 
 def run_amazon_photo_demo(
@@ -760,7 +913,7 @@ def run_amazon_photo_demo(
     retrain: bool,
     inference_only: bool,
     use_mixed_precision: bool,
-) -> None:
+) -> tuple[Data, dict[ModelName, EvaluationResult]]:
     """Train or load Amazon Photos variants and write plots and metrics."""
     LOGGER.info(
         "Starting Amazon Photos demo: seed=%d, epochs=%d, layout=%s, forceatlas2_iterations=%d, device=%s",
@@ -785,10 +938,22 @@ def run_amazon_photo_demo(
     data.pos = torch.tensor(pos, dtype=torch.float)
     data = data.to(device)
     num_classes = int(data.y.max().item()) + 1
+    encoder_dim = 32
+    default_latent_dim = 16
     results: dict[ModelName, EvaluationResult] = {}
     for name in MODEL_NAMES:
+        latent_dim = 8 if name == "GPN" else default_latent_dim
         if inference_only:
-            model = load_checkpointed_model(name, data, num_classes, checkpoint_dir, "amazon_photo", device)
+            model = load_checkpointed_model(
+                name,
+                data,
+                num_classes,
+                checkpoint_dir,
+                "amazon_photo",
+                device,
+                encoder_dim=encoder_dim,
+                latent_dim=latent_dim,
+            )
         else:
             model = train_or_load_model(
                 name,
@@ -802,6 +967,8 @@ def run_amazon_photo_demo(
                 device=device,
                 retrain=retrain,
                 use_mixed_precision=use_mixed_precision,
+                encoder_dim=encoder_dim,
+                latent_dim=latent_dim,
             )
         results[name] = missing_evaluation(data) if model is None else evaluate_model(model, data, n_bins=100, use_mixed_precision=use_mixed_precision)
     plot_selective(results, output_dir / "amazon_photo_selective_prediction.pdf")
@@ -812,6 +979,7 @@ def run_amazon_photo_demo(
         "Prediction and Epistemic Uncertainty on Amazon Photos",
     )
     write_metrics(results, output_dir / "amazon_photo_metrics.json")
+    return data, results
 
 
 def run_demo(
@@ -839,8 +1007,10 @@ def run_demo(
     use_mixed_precision = torch_device.type == "cuda"
     if use_mixed_precision:
         LOGGER.info("CUDA enabled: using float16 mixed precision for training and inference")
+    synthetic_output: tuple[Data, dict[ModelName, EvaluationResult]] | None = None
+    amazon_output: tuple[Data, dict[ModelName, EvaluationResult]] | None = None
     if experiment in {"synthetic", "all"}:
-        run_synthetic_demo(
+        synthetic_output = run_synthetic_demo(
             output_dir,
             checkpoint_dir=checkpoint_dir,
             seed=seed,
@@ -853,7 +1023,7 @@ def run_demo(
             use_mixed_precision=use_mixed_precision,
         )
     if experiment in {"amazon-photo", "all"}:
-        run_amazon_photo_demo(
+        amazon_output = run_amazon_photo_demo(
             output_dir,
             data_dir=data_dir,
             checkpoint_dir=checkpoint_dir,
@@ -868,4 +1038,14 @@ def run_demo(
             retrain=retrain,
             inference_only=inference_only,
             use_mixed_precision=use_mixed_precision,
+        )
+    if experiment == "all" and synthetic_output is not None and amazon_output is not None:
+        synthetic_data, synthetic_results = synthetic_output
+        amazon_data, amazon_results = amazon_output
+        plot_unified_graph(
+            synthetic_data,
+            synthetic_results,
+            amazon_data,
+            amazon_results,
+            output_dir / "unified_graph_uncertainty.pdf",
         )
