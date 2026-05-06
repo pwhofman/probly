@@ -93,6 +93,17 @@ def make_synthetic_graph(nodes_per_class: int = 24, seed: int = 0) -> Data:
             if rng.random() < 0.35 + same_class_bonus + bridge_bonus:
                 edges.add((i, int(j)))
                 edges.add((int(j), i))
+    for source_class in range(num_classes):
+        for target_class in range(source_class + 1, num_classes):
+            source_idx = np.where(y == source_class)[0]
+            target_idx = np.where(y == target_class)[0]
+            pair_distances = distances[np.ix_(source_idx, target_idx)]
+            for flat_index in np.argsort(pair_distances, axis=None)[:2]:
+                source_offset, target_offset = np.unravel_index(flat_index, pair_distances.shape)
+                source = int(source_idx[source_offset])
+                target = int(target_idx[target_offset])
+                edges.add((source, target))
+                edges.add((target, source))
     edge_index = torch.tensor(sorted(edges), dtype=torch.long).t().contiguous()
 
     train_mask = np.zeros(len(y), dtype=bool)
@@ -201,28 +212,86 @@ def plot_graph(data: Data, results: dict[ModelName, EvaluationResult], output_pa
     pos = data.pos.cpu().numpy()
     edges = data.edge_index.cpu().numpy().T
     labels = data.y.cpu().numpy()
-    fig, axes = plt.subplots(1, len(results), figsize=(14, 4.5), sharex=True, sharey=True)
-    colors = np.array(["#4C78A8", "#F58518", "#54A24B"])
+    fig, axes = plt.subplots(1, len(results), figsize=(14.5, 4.75), sharex=True, sharey=True)
+    fig.patch.set_facecolor("#FFFFFF")
+    colors = np.array(["#3A86FF", "#FFB000", "#5AD08A"])
+    edge_color = "#DDE3EA"
+    error_color = "#FF2D6D"
+    train_color = "#8D96A6"
+    train_mask = data.train_mask.cpu().numpy()
     for ax, (name, result) in zip(axes, results.items(), strict=True):
+        ax.set_facecolor("#FBFCFF")
         for src, dst in edges[::2]:
-            ax.plot([pos[src, 0], pos[dst, 0]], [pos[src, 1], pos[dst, 1]], color="#C8CDD3", linewidth=0.6, zorder=0)
-        uncertainty = result.total_uncertainty
-        sizes = 45 + 280 * (uncertainty - uncertainty.min()) / max(float(np.ptp(uncertainty)), 1e-6)
+            ax.plot(
+                [pos[src, 0], pos[dst, 0]],
+                [pos[src, 1], pos[dst, 1]],
+                color=edge_color,
+                linewidth=0.45,
+                alpha=0.72,
+                zorder=0,
+            )
+        uncertainty = result.epistemic_uncertainty
+        sizes = 18 + 150 * (uncertainty - uncertainty.min()) / max(float(np.ptp(uncertainty)), 1e-6)
         wrong = result.predictions != labels
-        ax.scatter(pos[:, 0], pos[:, 1], s=sizes, c=colors[result.predictions], alpha=0.82, edgecolors="#222222", linewidths=0.5)
-        ax.scatter(pos[wrong, 0], pos[wrong, 1], s=sizes[wrong] + 35, facecolors="none", edgecolors="#D62728", linewidths=1.8)
-        ax.scatter(pos[data.train_mask.cpu().numpy(), 0], pos[data.train_mask.cpu().numpy(), 1], marker="*", s=90, c="#111111")
-        ax.set_title(f"{name}\naccuracy={result.accuracy:.2f}")
+        correct = ~wrong & ~train_mask
+        train = train_mask
+        wrong_test = wrong & ~train_mask
+        ax.scatter(
+            pos[correct, 0],
+            pos[correct, 1],
+            s=sizes[correct],
+            c=colors[result.predictions[correct]],
+            alpha=0.86,
+            edgecolors="#FFFFFF",
+            linewidths=0.65,
+        )
+        ax.scatter(
+            pos[wrong_test, 0],
+            pos[wrong_test, 1],
+            s=sizes[wrong_test],
+            c=error_color,
+            alpha=0.92,
+            edgecolors="none",
+            linewidths=0.0,
+        )
+        ax.scatter(
+            pos[train, 0],
+            pos[train, 1],
+            s=sizes[train],
+            c=train_color,
+            alpha=0.9,
+            edgecolors="#FFFFFF",
+            linewidths=0.65,
+        )
+        ax.set_title(f"{name}\naccuracy = {result.accuracy:.2f}", fontsize=10.5, fontweight="bold", color="#171A1F", pad=7)
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_aspect("equal")
-    fig.suptitle("Node color = prediction, size = total uncertainty, red ring = mistake, star = labeled training node")
-    plt.tight_layout()
+        for spine in ax.spines.values():
+            spine.set_color("#D7DCE3")
+            spine.set_linewidth(0.9)
+    fig.suptitle(
+        "Prediction and Epistemic Uncertainty on a Synthetic Graph",
+        fontsize=11.5,
+        fontweight="bold",
+        color="#171A1F",
+        y=0.975,
+    )
+    fig.text(
+        0.5,
+        0.035,
+        "color = prediction  |  size = epistemic uncertainty  |  red = classification error  |  gray = train data",
+        ha="center",
+        va="center",
+        fontsize=8.8,
+        color="#5A6472",
+    )
+    fig.subplots_adjust(left=0.035, right=0.99, bottom=0.105, top=0.85, wspace=0.14)
     plt.savefig(output_path)
     plt.close()
 
 
-def run_demo(output_dir: Path, seed: int = 7, nodes_per_class: int = 24, epochs: int = 120, lr: float = 0.01) -> None:
+def run_demo(output_dir: Path, seed: int = 7, nodes_per_class: int = 120, epochs: int = 120, lr: float = 0.01) -> None:
     """Train all variants and write demo plots and metrics."""
     set_seed(seed)
     output_dir.mkdir(parents=True, exist_ok=True)

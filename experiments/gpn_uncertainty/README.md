@@ -26,5 +26,5 @@ uv run python scripts/run_gpn_demo.py --epochs 5 --nodes-per-class 12
 Outputs are written to `results/`:
 
 - `selective_prediction.pdf`: loss after rejecting increasingly uncertain test nodes.
-- `graph_uncertainty.pdf`: graph layout with predicted class color, uncertainty size, and wrong predictions outlined in red.
+- `graph_uncertainty.pdf`: graph layout with predicted class color, epistemic uncertainty size, and classification errors shown in red.
 - `metrics.json`: accuracy and selective-prediction area for each method.
