@@ -11,8 +11,8 @@ params:
   random_feature_init_std: 1.0
 
 selective_prediction:
-  num_samples: 10
+  num_samples: 100
 ood_detection:
-  num_samples: 10
+  num_samples: 100
 active_learning:
-  num_samples: 10
+  num_samples: 100

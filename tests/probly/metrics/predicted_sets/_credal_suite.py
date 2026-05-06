@@ -22,16 +22,38 @@ if TYPE_CHECKING:
 class CredalSuite:
     """Tests that exercise the envelope-based credal-set handlers per backend."""
 
-    def test_convex_uses_interval_dominance(
+    def test_convex_integer_labels(
         self, make_convex: Callable[[np.ndarray], Any], array_fn: Callable[..., Any]
     ) -> None:
-        """Coverage and efficiency on a single sample with two vertices."""
+        """Convex credal set: integer-label coverage uses interval-dominance."""
         probs = np.array([[[0.6, 0.3, 0.1], [0.4, 0.5, 0.1]]])
         cs = make_convex(probs)
         # lower = [0.4, 0.3, 0.1]; upper = [0.6, 0.5, 0.1]; max(lower) = 0.4.
-        # mask = upper >= 0.4 = [True, True, False]; truth 1 covered.
+        # mask = upper >= 0.4 = [True, True, False]; truth 1 covered, truth 2 not.
         assert coverage(cs, array_fn([1])) == pytest.approx(1.0)
-        assert efficiency(cs) == pytest.approx(2.0)
+        assert coverage(cs, array_fn([2])) == pytest.approx(0.0)
+
+    def test_convex_efficiency(self, make_convex: Callable[[np.ndarray], Any]) -> None:
+        """Convex credal set: efficiency = 1 - mean(upper - lower)."""
+        probs = np.array([[[0.6, 0.3, 0.1], [0.4, 0.5, 0.1]]])
+        cs = make_convex(probs)
+        # lower = [0.4, 0.3, 0.1]; upper = [0.6, 0.5, 0.1]; widths = [0.2, 0.2, 0.0].
+        # efficiency = 1 - mean([0.2, 0.2, 0.0]) = 1 - 0.4/3.
+        assert efficiency(cs) == pytest.approx(1.0 - 0.4 / 3)
+
+    def test_convex_prob_vector_coverage(
+        self, make_convex: Callable[[np.ndarray], Any], array_fn: Callable[..., Any]
+    ) -> None:
+        """Convex credal set: probability-vector target uses containment check."""
+        probs = np.array([[[0.6, 0.3, 0.1], [0.4, 0.5, 0.1]]])
+        cs = make_convex(probs)
+        # lower = [0.4, 0.3, 0.1]; upper = [0.6, 0.5, 0.1].
+        # [0.5, 0.4, 0.1] is inside: 0.4<=0.5<=0.6, 0.3<=0.4<=0.5, 0.1<=0.1<=0.1.
+        # [0.3, 0.5, 0.1] is outside: 0.4<=0.3 fails.
+        inside = array_fn(np.array([[0.5, 0.4, 0.1]]))
+        outside = array_fn(np.array([[0.3, 0.5, 0.1]]))
+        assert coverage(cs, inside) == pytest.approx(1.0)
+        assert coverage(cs, outside) == pytest.approx(0.0)
 
     def test_distance_based_envelope(
         self,
@@ -44,21 +66,48 @@ class CredalSuite:
         cs = make_distance(nominal, radius)
         assert coverage(cs, array_fn([0])) == pytest.approx(1.0)
         assert coverage(cs, array_fn([2])) == pytest.approx(0.0)
-        assert efficiency(cs) == pytest.approx(2.0)
+        # 1 - mean(upper - lower) over classes; envelope width 0.2 per class -> 1 - 0.2 = 0.8.
+        assert efficiency(cs) == pytest.approx(0.8)
         assert average_interval_width(cs) == pytest.approx(0.2)
 
-    def test_probability_intervals(
+    def test_probability_intervals_integer_labels(
         self,
         make_intervals: Callable[[np.ndarray, np.ndarray], Any],
         array_fn: Callable[..., Any],
     ) -> None:
-        """Probability-intervals credal set covers/excludes by interval dominance."""
+        """Probability-intervals: integer-label coverage uses interval-dominance."""
         lower = np.array([[0.1, 0.4, 0.05]])
         upper = np.array([[0.5, 0.6, 0.2]])
         cs = make_intervals(lower, upper)
+        # max(lower) = 0.4; mask = upper >= 0.4 = [T, T, F].
+        # truth 0 is in the set, truth 2 is not.
         assert coverage(cs, array_fn([0])) == pytest.approx(1.0)
         assert coverage(cs, array_fn([2])) == pytest.approx(0.0)
-        assert efficiency(cs) == pytest.approx(2.0)
+
+    def test_probability_intervals_efficiency(
+        self,
+        make_intervals: Callable[[np.ndarray, np.ndarray], Any],
+    ) -> None:
+        """Probability-intervals: efficiency = 1 - mean(upper - lower)."""
+        lower = np.array([[0.1, 0.4, 0.05]])
+        upper = np.array([[0.5, 0.6, 0.2]])
+        cs = make_intervals(lower, upper)
+        # widths = [0.4, 0.2, 0.15]; mean = 0.25; efficiency = 0.75.
+        assert efficiency(cs) == pytest.approx(0.75)
+
+    def test_probability_intervals_prob_vector_coverage(
+        self,
+        make_intervals: Callable[[np.ndarray, np.ndarray], Any],
+        array_fn: Callable[..., Any],
+    ) -> None:
+        """Probability-intervals: probability-vector target uses containment check."""
+        lower = np.array([[0.1, 0.4, 0.05], [0.1, 0.4, 0.05]])
+        upper = np.array([[0.5, 0.6, 0.2], [0.5, 0.6, 0.2]])
+        cs = make_intervals(lower, upper)
+        # [0.3, 0.5, 0.1]: 0.1<=0.3<=0.5, 0.4<=0.5<=0.6, 0.05<=0.1<=0.2 → inside.
+        # [0.0, 0.5, 0.1]: 0.1<=0.0 fails → outside.
+        targets = array_fn(np.array([[0.3, 0.5, 0.1], [0.0, 0.5, 0.1]]))
+        assert coverage(cs, targets) == pytest.approx(0.5)
 
     def test_probability_intervals_average_interval_width(
         self,

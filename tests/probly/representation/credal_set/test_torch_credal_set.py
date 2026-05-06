@@ -87,4 +87,7 @@ def test_distance_credal_set_from_categorical_distribution() -> None:
 
     assert isinstance(result, TorchDistanceBasedCredalSet)
     assert result.nominal is center  # should reuse, not re-wrap
-    assert torch.equal(result.radius, radius)
+    # Scalar radius is broadcast to one entry per sample so torch.cat across
+    # batches works under the protected-axes contract.
+    expected_radius = radius.expand(probs.shape[0])
+    assert torch.equal(result.radius, expected_radius)

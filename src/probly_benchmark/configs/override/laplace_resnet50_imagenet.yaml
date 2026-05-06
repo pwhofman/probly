@@ -14,3 +14,19 @@ method:
     # is an unbiased average so 10% (~128k samples, ~128/class) is plenty for last-layer
     # KFAC. Drop to 0.05 if the fit step is still the bottleneck.
     fit_subset: 0.1
+    # GLM-probit f_var is (B, 1000, 1000) per batch = 4*B MB; the native val batch (2048)
+    # gives 8 GB and OOMs. Match fit_batch_size for a stable ~128 MB peak.
+    prior_eval_batch_size: 32
+    # Cap the gridsearch val pass at ~4% of val (~5k samples on ImageNet's 128k val split).
+    # Per-grid-point pass ~= 5000/32 = 156 batches; 100 grid points x probit closed-form
+    # gives ~30-60 min total. Tighten (e.g. 0.02) further if compute is the bottleneck.
+    prior_eval_subset: 0.1
+    # 100 grid points x 5000 samples is fine; 20 also works if you want to halve runtime.
+    prior_grid_size: 100
+  # Downstream samplers must also use "nn" for the same intractability reason as `train`.
+  selective_prediction:
+    pred_type: "nn"
+  ood_detection:
+    pred_type: "nn"
+  active_learning:
+    pred_type: "nn"

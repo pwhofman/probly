@@ -12,3 +12,4 @@ higher_is_better:
   - "aupr"
 seeds: [1, 2, 3]
 show: false
+#ood_datasets: [mnist, svhn, textures, places365]  # leave unset to auto-discover from wandb runs

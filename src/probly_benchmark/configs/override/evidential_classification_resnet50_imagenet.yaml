@@ -1,8 +1,13 @@
 # @package _global_
 
-# Sensoy's default kl_weight=1.0 is tuned for MNIST; on ImageNet the regularizer
-# overpowers the data fit term and prevents alphas from sharpening. Drop the
-# final annealed weight to 0.001.
+# Sensoy's defaults are tuned for K=10 (MNIST). On K=1000 (ImageNet) the
+# Sensoy KL term scales ~linearly with K (verified KL/MSE ~118x at K=1000),
+# so kl_weight=1.0 pulls every alpha toward the uniform prior and collapses
+# the vacuity ranking to a near-constant. A 1/K-scaled weight restores a
+# data-fit / regularizer balance comparable to MNIST's K=10 regime.
+# annealing_epochs matches Sensoy's ~25% ratio for the 20-epoch
+# resnet50_imagenet recipe (5/20 = 25%, vs Sensoy's 10/[50-100] = 10-20%).
 method:
   train:
-    kl_weight: 0.001
+    kl_weight: 0.1
+    annealing_epochs: 5

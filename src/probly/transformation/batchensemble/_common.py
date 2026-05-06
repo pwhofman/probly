@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Literal, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
-from probly.predictor import Predictor
-from probly.representer._representer import DummyRepresenter, representer
+from probly.predictor import LogitClassifier, Predictor, predict
+from probly.representation.sample._common import Sample
+from probly.representer._representer import Representer, representer
 from probly.transformation.transformation import predictor_transformation
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, flexdispatch_traverser, traverse
@@ -23,7 +24,22 @@ class BatchEnsemblePredictor[**In, Out](Predictor[In, Out], Protocol):
     """Protocol marking a predictor whose linear/conv layers were swapped for BatchEnsemble layers."""
 
 
-representer.register(BatchEnsemblePredictor, DummyRepresenter)
+@flexdispatch
+def _wrap_batchensemble_logits(sample: Sample) -> Sample:
+    """Wrap a per-member logit sample as a typed distribution sample (default: passthrough)."""
+    return sample
+
+
+class BatchEnsembleRepresenter[**In, Out](Representer[Any, In, Out, Sample]):
+    """Represent batchensemble outputs as a per-member distribution sample."""
+
+    @override
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> Sample:
+        """Forward through the predictor and wrap as a distribution sample."""
+        return _wrap_batchensemble_logits(predict(self.predictor, *args, **kwargs))
+
+
+representer.register(BatchEnsemblePredictor, BatchEnsembleRepresenter)
 
 type InitMethod = Literal["random_sign", "normal"]
 
@@ -65,7 +81,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
     )
 
 
-@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
+@predictor_transformation(permitted_predictor_types=[LogitClassifier], preserve_predictor_type=False)
 @BatchEnsemblePredictor.register_factory
 def batchensemble[**In, Out](
     base: Predictor[In, Out],

@@ -18,6 +18,7 @@ from probly.representation.credal_set.array import (
 )
 
 from ._common import (
+    CREDAL_ROUND_DECIMALS,
     auc,
     average_interval_width,
     average_precision_score,
@@ -217,42 +218,140 @@ def _efficiency_array_discrete(y_pred: ArrayDiscreteCredalSet) -> np.floating:
     return np.mean(classes_picked.sum(axis=-1))
 
 
+def _credal_containment_coverage(lower: np.ndarray, upper: np.ndarray, y_true: np.ndarray) -> np.floating:
+    """Fraction of instances whose target lies inside the credal set's envelope.
+
+    Dispatches on the shape of ``y_true``:
+
+    * **Integer class labels** (``y_true.ndim == lower.ndim - 1``): covered when
+      the true class is selected by the interval-dominance rule, i.e.
+      ``upper[y] >= max_k lower[k]``.
+    * **Probability vectors** (``y_true.ndim == lower.ndim``): covered when
+      ``lower[k] <= y_true[k] <= upper[k]`` for all classes ``k``.
+
+    Args:
+        lower: Lower probability envelope of shape ``(..., C)``.
+        upper: Upper probability envelope of shape ``(..., C)``.
+        y_true: Integer class labels of shape ``(...)`` or target probability
+            vectors of shape ``(..., C)``.
+
+    Returns:
+        Mean containment indicator as a scalar float.
+    """
+    y = np.asarray(y_true)
+    if y.ndim < lower.ndim:
+        # Integer class labels: interval-dominance rule.
+        threshold = np.max(lower, axis=-1, keepdims=True)
+        mask = upper >= threshold
+        indices = y.astype(np.int64)[..., np.newaxis]
+        covered = np.take_along_axis(mask, indices, axis=-1).squeeze(-1)
+    else:
+        # Probability vectors: containment in [lower, upper] for all classes.
+        # Round before comparing so that tiny floating-point residuals in the
+        # lower envelope (softmax is never exactly 0) do not incorrectly
+        # exclude a target probability of 0.
+        lower_r = np.round(lower, decimals=CREDAL_ROUND_DECIMALS)
+        upper_r = np.round(upper, decimals=CREDAL_ROUND_DECIMALS)
+        covered = np.all((lower_r <= y) & (y <= upper_r), axis=-1)
+    return np.mean(covered)
+
+
+def _credal_interval_efficiency(lower: np.ndarray, upper: np.ndarray) -> np.floating:
+    """Efficiency of a credal set as ``1 - mean(upper - lower)``.
+
+    Bounds are rounded to ``CREDAL_ROUND_DECIMALS`` decimals before subtracting
+    so floating-point residuals (e.g. softmax outputs near 0) do not perturb
+    the width.
+
+    Args:
+        lower: Lower probability envelope of shape ``(N, C)``.
+        upper: Upper probability envelope of shape ``(N, C)``.
+
+    Returns:
+        Scalar in ``(-inf, 1]``; higher means a tighter (more efficient) credal set.
+    """
+    lower_r = np.round(np.asarray(lower), decimals=CREDAL_ROUND_DECIMALS)
+    upper_r = np.round(np.asarray(upper), decimals=CREDAL_ROUND_DECIMALS)
+    return np.float64(1.0 - float(np.mean(upper_r - lower_r)))
+
+
 @coverage.register(ArrayConvexCredalSet)
 def _coverage_array_convex(y_pred: ArrayConvexCredalSet, y_true: np.ndarray) -> np.floating:
-    """Interval-dominance coverage for a convex credal set."""
-    return _envelope_coverage(y_pred.lower(), y_pred.upper(), y_true)
+    """Containment coverage for a convex credal set.
+
+    Args:
+        y_pred: Convex credal set.
+        y_true: Target probability vectors of shape ``(N, C)``.
+
+    Returns:
+        Fraction of instances where the target lies in ``[lower, upper]`` for all classes.
+    """
+    return _credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
 
 
 @efficiency.register(ArrayConvexCredalSet)
 def _efficiency_array_convex(y_pred: ArrayConvexCredalSet) -> np.floating:
-    """Interval-dominance prediction-set cardinality for a convex credal set."""
-    return _envelope_efficiency(y_pred.lower(), y_pred.upper())
+    """Interval-width efficiency for a convex credal set: ``1 - mean(upper - lower)``.
+
+    Returns:
+        Scalar efficiency; higher means a tighter credal set.
+    """
+    return _credal_interval_efficiency(y_pred.lower(), y_pred.upper())
 
 
 @coverage.register(ArrayDistanceBasedCredalSet)
 def _coverage_array_distance(y_pred: ArrayDistanceBasedCredalSet, y_true: np.ndarray) -> np.floating:
-    """Interval-dominance coverage for a distance-based credal set."""
+    """Coverage for a distance-based (TV-ball) credal set.
+
+    With class-index targets: interval-dominance coverage on the envelope.
+
+    With first-order targets ``y_true`` of shape ``(..., C)``: distribution
+    membership ``mean(lambda_i in Q_i)`` via ``mean(TV(nominal_i, lambda_i) <= radius_i)``.
+    """
+    y_true_arr = np.asarray(y_true)
+    if y_true_arr.ndim >= 2 and y_true_arr.shape[-1] == y_pred.num_classes:
+        nominal = np.asarray(y_pred.nominal.probabilities)
+        target = y_true_arr.astype(nominal.dtype, copy=False)
+        tv = 0.5 * np.sum(np.abs(nominal - target), axis=-1)
+        radius = np.asarray(y_pred.radius, dtype=nominal.dtype)
+        return np.asarray(tv <= radius, dtype=np.float64).mean()
     return _envelope_coverage(y_pred.lower(), y_pred.upper(), y_true)
 
 
 @efficiency.register(ArrayDistanceBasedCredalSet)
 def _efficiency_array_distance(y_pred: ArrayDistanceBasedCredalSet) -> np.floating:
-    """Interval-dominance prediction-set cardinality for a distance-based credal set."""
-    return _envelope_efficiency(y_pred.lower(), y_pred.upper())
+    """Interval-width efficiency for a distance-based credal set: ``1 - mean(upper - lower)``.
+
+    Same semantic as ``ConvexCredalSet`` and ``ProbabilityIntervalsCredalSet``:
+    higher = tighter credal set.
+    """
+    return _credal_interval_efficiency(y_pred.lower(), y_pred.upper())
 
 
 @coverage.register(ArrayProbabilityIntervalsCredalSet)
 def _coverage_array_probability_intervals(
     y_pred: ArrayProbabilityIntervalsCredalSet, y_true: np.ndarray
 ) -> np.floating:
-    """Interval-dominance coverage for a probability-intervals credal set."""
-    return _envelope_coverage(y_pred.lower(), y_pred.upper(), y_true)
+    """Containment coverage for a probability-intervals credal set.
+
+    Args:
+        y_pred: Probability-intervals credal set.
+        y_true: Target probability vectors of shape ``(N, C)``.
+
+    Returns:
+        Fraction of instances where the target lies in ``[lower, upper]`` for all classes.
+    """
+    return _credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
 
 
 @efficiency.register(ArrayProbabilityIntervalsCredalSet)
 def _efficiency_array_probability_intervals(y_pred: ArrayProbabilityIntervalsCredalSet) -> np.floating:
-    """Interval-dominance prediction-set cardinality for a probability-intervals credal set."""
-    return _envelope_efficiency(y_pred.lower(), y_pred.upper())
+    """Interval-width efficiency for a probability-intervals credal set: ``1 - mean(upper - lower)``.
+
+    Returns:
+        Scalar efficiency; higher means a tighter credal set.
+    """
+    return _credal_interval_efficiency(y_pred.lower(), y_pred.upper())
 
 
 @average_interval_width.register(ArrayConvexCredalSet)

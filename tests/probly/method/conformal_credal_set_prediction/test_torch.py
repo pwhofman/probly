@@ -77,6 +77,19 @@ class TestConformalCredalSetCalibration:
         loaded = torch.load(path, weights_only=False)
         assert loaded.conformal_quantile == pytest.approx(original_q, abs=1e-10)
 
+    def test_calibrate_with_first_order_targets(self, model: DummySoftmaxModel) -> None:
+        """Calibrating with probability-vector targets matches a manual TV-quantile."""
+        x_calib = torch.randn(20, 4)
+        y_calib_first_order = torch.softmax(torch.randn(20, 3), dim=-1)
+        predictor = conformal_total_variation(model)
+        calibrated = calibrate(predictor, 0.1, y_calib_first_order, x_calib)
+
+        with torch.no_grad():
+            preds = model(x_calib)
+        manual_scores = tv_score_func(preds, y_calib_first_order)
+        expected_q = calculate_quantile(manual_scores.numpy(), 0.1)
+        assert calibrated.conformal_quantile == pytest.approx(expected_q, abs=1e-6)
+
 
 class TestConformalCredalSetPrediction:
     """Tests for prediction output."""

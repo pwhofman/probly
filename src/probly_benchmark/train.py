@@ -10,9 +10,9 @@ if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
     from probly.layers.torch import GaussianMixtureHead
+    from probly.transformation.subensemble.torch import _FrozenBackbone
 
 
-import contextlib
 import gc
 import pathlib
 import tempfile
@@ -45,7 +45,8 @@ from probly.method.efficient_credal_prediction import (
 )
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.subensemble import SubensemblePredictor
-from probly_benchmark import conformal, data, metadata, utils
+from probly.traverse_nn.utils import get_output_dim
+from probly_benchmark import conformal, data, metadata, models, utils
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.paths import CHECKPOINT_PATH
 from probly_benchmark.train_funcs import (
@@ -75,9 +76,22 @@ OPTIMIZERS = {
 
 
 def _get_state_dict(model: nn.Module | list[nn.Module]) -> dict | list[dict]:
-    """Return state dict(s) for a model or list of models."""
+    """Return state dict(s) for a model or list of models.
+
+    BaseLaplace.state_dict() only stores Laplace's own state (``mean``, ``H``, ``prior_precision``,
+    ``n_data``, etc.) and NOT the inner network's parameters. Saving that alone leaves a reload
+    with an untrained feature extractor, silently breaking every sampling-based prediction
+    (probit/MC accuracy collapses to chance even though training-time eval reports MAP accuracy).
+    Pair the Laplace state with the inner network's state_dict so the artifact round-trips.
+    """
     if isinstance(model, list):
         return [cast("nn.Module", m).state_dict() for m in model]
+    if isinstance(model, BaseLaplace):
+        inner = model.model.model if isinstance(model.model, FeatureExtractor) else model.model
+        return {
+            "laplace": model.state_dict(),
+            "inner_model": cast("nn.Module", inner).state_dict(),
+        }
     return model.state_dict()
 
 
@@ -455,30 +469,6 @@ def _(
         )
 
 
-def _shutdown_dataloader_workers(loader: DataLoader, name: str) -> None:
-    """Force any persistent worker processes held by ``loader`` to exit.
-
-    Args:
-        loader: The DataLoader whose persistent workers should be terminated.
-        name: Human-readable loader name used in the log line (e.g. ``"train"``,
-            ``"val"``).
-    """
-    iterator = getattr(loader, "_iterator", None)
-    if iterator is None:
-        return
-    shutdown = getattr(iterator, "_shutdown_workers", None)
-    if shutdown is not None:
-        # Iterator may already be partially torn down; best-effort cleanup.
-        with contextlib.suppress(Exception):
-            shutdown()
-    loader._iterator = None  # noqa: SLF001
-    gc.collect()
-    print(
-        f"[subensemble] Shut down persistent {name}_loader workers between members "
-        f"to release file handles / shared memory."
-    )
-
-
 @train_model.register(SubensemblePredictor)
 def _(
     model: SubensemblePredictor,
@@ -489,13 +479,61 @@ def _(
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
 ) -> None:
-    """Train a subensemble by training each head independently on a shared frozen backbone.
+    """Train a subensemble: optionally warm up the shared backbone, then fit each head.
 
-    Only the head (trainable) parameters are passed to the optimizer; the frozen
-    backbone parameters are excluded to avoid inflating optimizer state and to
-    prevent incorrect gradient-norm computations on zero-gradient parameters.
+    The shared backbone is always wrapped in :class:`_FrozenBackbone` at build time so
+    each head trains on fixed features. When ``cfg.pretrained`` is ``True`` the encoder
+    arrives already trained (e.g. from a torchvision/timm checkpoint) and we go straight
+    to fitting the heads. When ``cfg.pretrained`` is ``False`` the encoder is at random
+    init, so we first train a fresh ``Sequential(encoder, linear_head)`` end-to-end as
+    a regular base model and copy its trained encoder weights into the subensemble's
+    frozen backbone via ``load_state_dict``.
+
+    Only ``requires_grad=True`` parameters are passed to each per-head optimizer so the
+    frozen backbone does not inflate optimizer state nor distort gradient-norm
+    computations.
     """
+    if not cfg.pretrained:
+        num_classes = metadata.DATASETS[cfg.dataset].num_classes
+        warmup_encoder = models.get_base_model(
+            f"{cfg.base_model}_encoder",
+            num_classes,
+            pretrained=False,
+        ).to(device)
+        feature_dim = get_output_dim(warmup_encoder)
+        warmup_head = nn.Linear(feature_dim, num_classes).to(device)
+        warmup_model = nn.Sequential(warmup_encoder, warmup_head)
+
+        _training_loop(
+            warmup_model,
+            train_loader,
+            val_loader,
+            cfg,
+            device,
+            run,
+            train_kwargs,
+            train_fn=train_epoch_cross_entropy,
+            val_fn=validate_cross_entropy,
+            log_prefix="phase1/",
+        )
+
+        frozen_backbone = cast("_FrozenBackbone", next(model[0].children()))
+        frozen_backbone.module.load_state_dict(warmup_encoder.state_dict())
+
     for i, member in enumerate(model):
+        if i > 0:
+            # Long imagenet subensemble runs accumulate worker shared-memory / FD
+            # state in the parent process; new workers forked between members can
+            # then SIGABRT during validation. Drop the previous member's loaders
+            # entirely and rebuild fresh ones before training the next head.
+            # ``del`` lets refcounting GC the loader, which triggers the iterator's
+            # ``__del__`` -> ``_shutdown_workers``; ``gc.collect`` mops up any
+            # cyclic refs; ``empty_cache`` is belt-and-braces for GPU memory.
+            del train_loader, val_loader
+            gc.collect()
+            torch.cuda.empty_cache()
+            train_loader, val_loader = _rebuild_subensemble_loaders(cfg, i)
+
         trainable = [p for p in member.parameters() if p.requires_grad]
         _training_loop(
             member,
@@ -510,9 +548,37 @@ def _(
             log_prefix=f"member_{i}/",
             param_groups=[{"params": trainable}],
         )
-        _shutdown_dataloader_workers(train_loader, "train")
-        if val_loader is not None:
-            _shutdown_dataloader_workers(val_loader, "val")
+
+
+def _rebuild_subensemble_loaders(cfg: DictConfig, member_idx: int) -> tuple[DataLoader, DataLoader | None]:
+    """Build fresh train / val loaders for the next subensemble member.
+
+    For datasets whose train shuffle is driven by an explicit seed (imagenet's
+    webdataset, where ``loader_seed`` is plumbed into ``wds.WebDataset`` and
+    ``wds.detshuffle``), we offset the seed by ``member_idx`` so each head sees
+    a different data ordering -- imagenet's shard allocation is deterministic
+    on the sorted shard list regardless of seed, so this changes shuffling only,
+    not which shards are in train/val/cal/test. For other datasets the same
+    ``seed`` argument feeds ``random_split`` and would shift the train/val/cal
+    membership across members; we keep it stable there and rely on the
+    DataLoader's default shuffle (which advances global RNG state) to give
+    natural per-member shuffling.
+    """
+    base_seed = cfg.get("seed", 0) or 0
+    member_seed = base_seed + member_idx if cfg.dataset.lower() == "imagenet" else base_seed
+    loaders = data.get_data_train(
+        cfg.dataset,
+        member_seed,
+        val_split=cfg.val_split,
+        cal_split=cfg.get("cal_split", 0.0),
+        batch_size=cfg.batch_size,
+        num_workers=cfg.num_workers,
+        pin_memory=cfg.pin_memory,
+        persistent_workers=cfg.persistent_workers,
+        prefetch_factor=cfg.get("prefetch_factor", 4),
+        shuffle=True,
+    )
+    return loaders.train, loaders.validation
 
 
 def _split_batchensemble_params(
@@ -1198,38 +1264,74 @@ def _(
 ) -> None:
     """Fine-tune the underlying network, then fit the Laplace posterior post-hoc.
 
-    Phase 1 runs the standard supervised loop on the underlying ``nn.Module`` (laplace-torch's wrapped model).
-    Phase 2 calls ``BaseLaplace.fit(train_loader)`` and, if ``train_kwargs["optimize_prior"]`` is set, tunes
-    the prior precision by marginal-likelihood maximization.
+    When ``train_kwargs["load_from"] == "base"``, load the pre-trained base predictor
+    from wandb and skip Phase 1; otherwise run the standard supervised loop on the
+    underlying ``nn.Module`` (laplace-torch's wrapped model). Phase 2 calls
+    ``BaseLaplace.fit(train_loader)`` and, if ``train_kwargs["optimize_prior"]`` is set,
+    tunes the prior precision (gridsearch by default; see ``prior_optimization_method``).
     """
     # Extract model from BaseLaplace, if we do last layer mode, model.model is a FeatureExtractor, so unwrap it
     inner_model = model.model.model if isinstance(model.model, FeatureExtractor) else model.model
     # Problems with cuda + triton + compile if we compile this model, so we set a flag to skip it.
     inner_model._probly_skip_compile = True  # ty: ignore[unresolved-attribute]  # noqa: SLF001
-    _training_loop(
-        inner_model,
-        train_loader,
-        val_loader,
-        cfg,
-        device,
-        run,
-        train_kwargs,
-        train_fn=train_epoch_cross_entropy,
-        val_fn=validate_cross_entropy,
-    )
+    load_from = train_kwargs.get("load_from")
+    if load_from == "base":
+        base_artifact_name = f"base_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+        base_model, _, source_run_id = utils.load_model_from_wandb(
+            base_artifact_name,
+            cfg.wandb.entity,
+            cfg.wandb.project,
+            device,
+        )
+        inner_model.load_state_dict(base_model.state_dict())
+        run.summary["base_run_id"] = source_run_id
+    else:
+        _training_loop(
+            inner_model,
+            train_loader,
+            val_loader,
+            cfg,
+            device,
+            run,
+            train_kwargs,
+            train_fn=train_epoch_cross_entropy,
+            val_fn=validate_cross_entropy,
+        )
     fit_loader = data.build_laplace_fit_loader(train_loader, cfg, train_kwargs)
     model.fit(fit_loader)
     run.summary["laplace_fitted"] = True
     if train_kwargs.get("optimize_prior", False):
-        # ``pred_type`` is required by laplace-torch's signature but unused when ``method='marglik'``
-        # (marglik works directly on the closed-form log-marginal-likelihood); any value is fine.
-        model.optimize_prior_precision(
-            pred_type="glm",
-            method="marglik",
-            n_steps=train_kwargs.get("n_steps", 100),
-            lr=train_kwargs.get("lr", 0.1),
-        )
+        prior_method = train_kwargs.get("prior_optimization_method", "gridsearch")
+        if prior_method == "gridsearch" and val_loader is None:
+            print(
+                "[laplace] prior_optimization_method='gridsearch' requires val_loader "
+                "but val_split=0; falling back to 'marglik'."
+            )
+            prior_method = "marglik"
+        if prior_method == "gridsearch":
+            # Rebatch / optionally cap val_loader for the gridsearch — laplace-torch's
+            # GLM-probit path allocates a (B, C, C) f_var tensor per batch which OOMs at
+            # ImageNet's native batch size (2048 * 1000 * 1000 floats = 8 GB).
+            assert val_loader is not None  # Guarded by the marglik fallback above. # noqa: S101
+            prior_eval_loader = data.build_laplace_prior_eval_loader(val_loader, train_kwargs)
+            model.optimize_prior_precision(
+                method="gridsearch",
+                pred_type="glm",
+                link_approx="probit",
+                val_loader=prior_eval_loader,  # ty: ignore[invalid-argument-type]
+                grid_size=train_kwargs.get("prior_grid_size", 100),
+            )
+        else:  # "marglik" — known to under-regularize last-layer + KFAC; kept for opt-in compatibility.
+            # ``pred_type`` is required by laplace-torch's signature but unused when ``method='marglik'``
+            # (marglik works directly on the closed-form log-marginal-likelihood); any value is fine.
+            model.optimize_prior_precision(
+                pred_type="glm",
+                method="marglik",
+                n_steps=train_kwargs.get("n_steps", 100),
+                lr=train_kwargs.get("lr", 0.1),
+            )
         run.summary["laplace_prior_precision"] = float(model.prior_precision)
+        run.summary["laplace_prior_method"] = prior_method
 
 
 @train_model.register(EfficientCredalPredictor)
@@ -1244,22 +1346,36 @@ def _(
 ) -> None:
     """Train an EfficientCredalPredictor.
 
-    First train the base predictor with cross-entropy, then compute classwise
-    additive logit bounds on the training set and store them in the predictor's
-    ``lower`` and ``upper`` buffers.
+    When ``load_from: base`` is set in the method config, load the pre-trained
+    base predictor from wandb and skip base-model training. Otherwise, first
+    train the base predictor with cross-entropy. In both cases, compute
+    classwise additive logit bounds on the training set and store them in the
+    predictor's ``lower`` and ``upper`` buffers.
     """
-    _training_loop(
-        model,
-        train_loader,
-        val_loader,
-        cfg,
-        device,
-        run,
-        train_kwargs,
-        train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
-        val_fn=validate,
-    )
     model_ = cast("Any", model)
+    load_from = train_kwargs.get("load_from")
+    if load_from == "base":
+        base_artifact_name = f"base_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+        base_model, _, source_run_id = utils.load_model_from_wandb(
+            base_artifact_name,
+            cfg.wandb.entity,
+            cfg.wandb.project,
+            device,
+        )
+        model_.predictor.load_state_dict(base_model.state_dict())
+        run.summary["base_run_id"] = source_run_id
+    else:
+        _training_loop(
+            model,
+            train_loader,
+            val_loader,
+            cfg,
+            device,
+            run,
+            train_kwargs,
+            train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
+            val_fn=validate,
+        )
     amp_enabled = cfg.get("amp", False)
     alpha = train_kwargs.get("alpha", 0.5)
     num_classes = metadata.DATASETS[cfg.dataset].num_classes
@@ -1323,7 +1439,9 @@ def main(cfg: DictConfig) -> None:
     seed = cfg.get("seed", None)
     utils.set_seed(seed)
 
-    run_name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}{utils.supervised_loss_name_suffix(cfg)}_{run_id}"
+    alpha_suffix = utils.credal_alpha_name_suffix(cfg)
+    loss_suffix = utils.supervised_loss_name_suffix(cfg)
+    run_name = f"{cfg.method.name}{alpha_suffix}_{cfg.base_model}_{cfg.dataset}{loss_suffix}_{run_id}"
     run = wandb.init(
         id=run_id,
         name=run_name,

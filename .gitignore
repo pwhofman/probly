@@ -278,11 +278,15 @@ stubs/
 .claude/settings.local.json
 .claude/worktrees/
 
+# Local agent artifacts (specs, plans)
+docs/superpowers/
+
 # Weights and Biases
 wandb/
 
 # Hydra
 outputs/
+src/probly_benchmark/multirun
 
 # Server scripts
 server_scripts/

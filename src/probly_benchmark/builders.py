@@ -254,6 +254,11 @@ def _subensemble_builder(
     then duplicates the head ``num_heads`` times; with ``reset_params=True``
     each copy is re-initialized independently while the encoder stays
     untouched and frozen.
+
+    When ``ctx.pretrained`` is ``False`` the encoder is built at random init
+    here. The ``SubensemblePredictor`` training handler runs a backbone warmup
+    pass before fitting the heads, training the (still-frozen) encoder weights
+    via a temporary ``Sequential(encoder, warmup_head)`` model.
     """
     encoder = models.get_base_model(
         f"{ctx.base_model_name}_encoder",

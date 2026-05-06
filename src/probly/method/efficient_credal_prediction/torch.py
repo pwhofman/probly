@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import math
-from typing import cast
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 import torch
 from torch import nn
@@ -40,6 +43,13 @@ class TorchEfficientCredalPredictor(nn.Module):
     def upper_bounds(self) -> torch.Tensor:
         """Per-class upper probability bounds."""
         return cast("torch.Tensor", self.upper)
+
+    def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True, assign: bool = False) -> Any:  # noqa: ANN401
+        """Load state dict, promoting any None buffers that have tensors in ``state_dict``."""
+        for name in ("lower", "upper"):
+            if name in state_dict and isinstance(state_dict[name], torch.Tensor):
+                self.register_buffer(name, state_dict[name].clone())
+        return super().load_state_dict(state_dict, strict=strict, assign=assign)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass through the predictor."""

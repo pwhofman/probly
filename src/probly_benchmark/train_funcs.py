@@ -155,7 +155,7 @@ def train_epoch_batchensemble(
     criterion = _get_supervised_criterion(supervised_loss)
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
-        inputs_tiled = torch.tile(inputs, (num_members,) + (1,) * (inputs.dim() - 1))
+        inputs_tiled = tile_be_inputs(inputs, num_members)
         outputs = model(inputs_tiled)  # ty: ignore[call-non-callable]  # [E*B, num_classes]
         loss = criterion(outputs, targets.repeat(num_members))
     if scaler is not None:
