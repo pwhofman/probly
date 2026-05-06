@@ -33,7 +33,12 @@ class TorchPosteriorNetwork(nn.Module, PosteriorNetworkPredictor):
         self.latent_encoder = nn.Linear(self.encoder_dim, latent_dim)
         self.batch_norm = nn.BatchNorm1d(latent_dim)
         self.norm_flow = RadialNormalizingFlowStack(dim=latent_dim, num_classes=num_classes, num_flows=num_flows)
-        self.register_buffer("class_counts", torch.as_tensor(class_counts, dtype=torch.float))
+        counts = (
+            torch.ones(num_classes, dtype=torch.float)
+            if class_counts is None
+            else torch.as_tensor(class_counts, dtype=torch.float)
+        )
+        self.register_buffer("class_counts", counts)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of posterior network."""

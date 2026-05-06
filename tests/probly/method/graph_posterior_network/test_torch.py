@@ -12,6 +12,9 @@ from torch_geometric.data import Data  # noqa: E402
 from torch_geometric.utils import add_remaining_self_loops  # noqa: E402
 
 from probly.method.graph_posterior_network import (  # noqa: E402
+    CUQGraphNeuralNetworkPredictor,
+    GraphPosteriorNetworkPredictor,
+    LOPGraphPosteriorNetworkPredictor,
     cuq_graph_neural_network,
     graph_posterior_network,
     lop_graph_posterior_network,
@@ -70,6 +73,12 @@ def test_graph_posterior_network_predict_returns_dirichlet() -> None:
     assert distribution.alphas.shape == (data.num_nodes, 3)
 
 
+def test_graph_posterior_network_registers_graph_predictor_protocol() -> None:
+    model = graph_posterior_network(_encoder(), 3, 3, encoder_dim=5, num_flows=2, propagation_steps=2)
+
+    assert isinstance(model, GraphPosteriorNetworkPredictor)
+
+
 def test_graph_posterior_network_loss_backward() -> None:
     data = _tiny_graph()
     model = graph_posterior_network(_encoder(), 3, 3, encoder_dim=5, num_flows=2, propagation_steps=2)
@@ -97,6 +106,13 @@ def test_lop_graph_posterior_network_forward_raw_contains_mixture_terms() -> Non
     assert torch.isfinite(alpha_features).all()
     assert torch.isfinite(mixture_weights).all()
     assert (alpha_features > 0).all()
+
+
+def test_lop_graph_posterior_network_registers_lop_predictor_protocol() -> None:
+    model = lop_graph_posterior_network(_encoder(), 3, 3, encoder_dim=5, num_flows=2, propagation_steps=2)
+
+    assert isinstance(model, LOPGraphPosteriorNetworkPredictor)
+    assert not isinstance(model, GraphPosteriorNetworkPredictor)
 
 
 def test_lop_graph_posterior_network_sparse_propagation_matches_random_walk_ppr() -> None:
@@ -179,3 +195,18 @@ def test_cuq_graph_neural_network_forward_shape_and_positivity() -> None:
     assert alpha.shape == (data.num_nodes, 3)
     assert torch.isfinite(alpha).all()
     assert (alpha > 0).all()
+
+
+def test_cuq_graph_neural_network_registers_cuq_predictor_protocol() -> None:
+    model = cuq_graph_neural_network(
+        _encoder(),
+        3,
+        3,
+        encoder_dim=5,
+        num_flows=2,
+        propagation_steps=2,
+        convolution_name="appnp",
+    )
+
+    assert isinstance(model, CUQGraphNeuralNetworkPredictor)
+    assert not isinstance(model, GraphPosteriorNetworkPredictor)

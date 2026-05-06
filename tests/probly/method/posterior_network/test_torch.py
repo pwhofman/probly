@@ -154,6 +154,17 @@ def inputs() -> torch.Tensor:
     return torch.randn(max(BATCH, 2), IN_FEATURES)
 
 
+def test_postnet_default_class_counts_predicts_dirichlet(inputs: torch.Tensor) -> None:
+    torch.manual_seed(0)
+    model = posterior_network(_TinyEncoder(), latent_dim=LATENT_DIM, num_classes=NUM_CLASSES, num_flows=2)
+    model.eval()
+
+    dirichlet = predict(model, inputs)
+
+    assert isinstance(dirichlet, TorchDirichletDistribution)
+    assert dirichlet.alphas.shape == (inputs.shape[0], NUM_CLASSES)
+
+
 def test_postnet_decomposition_on_model_output(model: PosteriorNetworkPredictor, inputs: torch.Tensor) -> None:
     """End-to-end: a PostNet predictor's Dirichlet output feeds the decomposition cleanly."""
     model.eval()  # avoid BatchNorm running-stats mutation

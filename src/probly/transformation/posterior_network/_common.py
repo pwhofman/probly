@@ -37,7 +37,13 @@ def posterior_network[**In, Out: DirichletDistribution](
     num_flows: int = 6,
 ) -> PosteriorNetworkPredictor[In, Out]:
     """Create a Posterior Network predictor from an encoder based on :cite:`charpentierPosteriorNetwork2020`."""
-    return posterior_network_generator(encoder, latent_dim, num_classes, class_counts, num_flows)
+    return posterior_network_generator(
+        encoder,
+        latent_dim,
+        num_classes,
+        class_counts=class_counts,
+        num_flows=num_flows,
+    )
 
 
 @predict.register(PosteriorNetworkPredictor)

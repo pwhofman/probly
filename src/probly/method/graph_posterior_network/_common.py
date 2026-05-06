@@ -183,7 +183,7 @@ def graph_posterior_network[**In, Out: DirichletDistribution](
 
 
 @predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
-@GraphPosteriorNetworkPredictor.register_factory
+@LOPGraphPosteriorNetworkPredictor.register_factory
 def lop_graph_posterior_network[**In, Out: DirichletMixtureDistribution](
     input_encoder: Predictor[In, Out],
     latent_dim: int,
@@ -235,7 +235,7 @@ def lop_graph_posterior_network[**In, Out: DirichletMixtureDistribution](
 
 
 @predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
-@GraphPosteriorNetworkPredictor.register_factory
+@CUQGraphNeuralNetworkPredictor.register_factory
 def cuq_graph_neural_network[**In, Out: DirichletDistribution](
     input_encoder: Predictor[In, Out],
     latent_dim: int,
