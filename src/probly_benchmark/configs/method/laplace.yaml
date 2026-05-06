@@ -1,5 +1,6 @@
 # @package method
 name: "laplace"
+label: "Laplace"
 params:
 # Forwarded to laplace-torch's Laplace, see https://github.com/aleximmer/Laplace for docs.
 # params chosen according to paper recommendations

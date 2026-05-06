@@ -3,6 +3,7 @@ recipe: "resnet50_imagenet"
 filename: "imagenet_all_methods.pdf"
 
 methods:
+    -   name: "base"
     -   name: "batchensemble"
     -   name: "bayesian"
     -   name: "credal_bnn"

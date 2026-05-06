@@ -17,6 +17,9 @@ decimals: 3
 # auto-appended "Other" section at the end.
 # Set ``groups: []`` to render a flat table without group headers.
 groups:
+  - name: "Deterministic baseline"
+    methods:
+      - base
   - name: "Second-order methods"
     methods:
       - dropout
