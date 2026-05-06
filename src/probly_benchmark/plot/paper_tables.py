@@ -340,6 +340,87 @@ def _ood_table(
     return "\n".join(lines)
 
 
+def _per_dataset_table(
+    dataset: str,
+    sp_ranking: list[dict] | None,
+    ood_rankings: dict[str, list[dict]],
+    groups: list[dict],
+    citations: dict[str, str],
+    decimals: int,
+) -> str:
+    """Render one combined SP + OOD table for a single ID ``dataset``.
+
+    Columns: SP Acc-AUC, OOD Near-OOD AUROC, OOD Far-OOD AUROC. Rows are
+    grouped via the same ``groups`` spec as the across-dataset tables.
+    A method missing from one of the rankings shows ``--`` in that cell.
+    Only metric columns with at least one non-empty cell are emitted, so
+    a dataset with no OOD data still produces a valid SP-only table.
+    """
+    bands = ("near", "far")
+    columns: list[tuple[str, str, str]] = []  # (kind, header_label, key)
+    if sp_ranking:
+        columns.append(("sp", "SP Acc-AUC", "sp"))
+    columns.extend((band, f"{band.title()}-OOD", f"ood/{band}") for band in bands if ood_rankings.get(band))
+    if not columns:
+        msg = f"No SP or OOD rankings supplied for dataset {dataset!r}."
+        raise ValueError(msg)
+
+    rankings_for_labels: list[list[dict]] = []
+    if sp_ranking:
+        rankings_for_labels.append(sp_ranking)
+    rankings_for_labels.extend(ood_rankings.get(band, []) for band in bands)
+    method_labels = _collect_method_labels(rankings_for_labels)
+    sections = _grouped_sections(method_labels, groups)
+
+    sp_cells = {entry["method"]: entry for entry in (sp_ranking or [])}
+    ood_cells: dict[tuple[str, str], dict] = {}
+    for band in bands:
+        for entry in ood_rankings.get(band, []) or []:
+            ood_cells[(entry["method"], band)] = entry
+
+    best_per_col: dict[str, str] = {}
+    if sp_ranking:
+        best_per_col["sp"] = max(sp_ranking, key=lambda e: e["mean"])["method"]
+    for band in bands:
+        ranking = ood_rankings.get(band) or []
+        if ranking:
+            best_per_col[f"ood/{band}"] = max(ranking, key=lambda e: e["mean"])["method"]
+
+    n_data_cols = len(columns)
+    n_total_cols = 2 + n_data_cols
+    col_spec = "@{}l@{\\hspace{4pt}}l " + " ".join(["c"] * n_data_cols) + "@{}"
+    lines = [
+        _PREAMBLE.rstrip(),
+        f"% Per-dataset combined table for {dataset.upper()}.",
+        "{",
+        f"\\setlength{{\\tabcolsep}}{{{_TABCOLSEP_PT}pt}}",
+        f"\\renewcommand{{\\arraystretch}}{{{_ARRAYSTRETCH}}}",
+        r"\begin{tabular}{" + col_spec + "}",
+        r"\toprule",
+    ]
+
+    header = r"\multicolumn{2}{@{}l}{\textbf{Method}}"
+    for _kind, label, _key in columns:
+        header += f" & \\textbf{{{label}}}"
+    lines.append(header + r" \\")
+    lines.append(r"\hdashline\noalign{\vskip " + _HEADER_VSKIP + "}")
+
+    def render_row(method: str) -> str:
+        row = f"{_cite_cell(method, citations)} & {method_labels[method]}"
+        for kind, _label, key in columns:
+            cell = sp_cells.get(method) if kind == "sp" else ood_cells.get((method, kind))
+            row += " & " + _format_cell(
+                cell,
+                decimals=decimals,
+                is_best=best_per_col.get(key) == method,
+            )
+        return row + r" \\"
+
+    lines.extend(_emit_grouped_rows(sections, n_total_cols, render_row))
+    lines += [r"\bottomrule", r"\end{tabular}", "}", ""]
+    return "\n".join(lines)
+
+
 _AL_NOTION_ORDER = ("epistemic", "aleatoric", "total")
 _AL_NOTION_LABEL = {"epistemic": "EU", "aleatoric": "AU", "total": "TU"}
 
@@ -416,6 +497,34 @@ def _al_table(
     return "\n".join(lines)
 
 
+def _write_per_dataset_tables(
+    sp: dict[str, list[dict]],
+    ood: dict[tuple[str, str], list[dict]],
+    groups: list[dict],
+    citations: dict[str, str],
+    decimals: int,
+    out_dir: Path,
+) -> dict[str, Path]:
+    """Write one combined SP + OOD table per ID dataset to ``out_dir``."""
+    written: dict[str, Path] = {}
+    per_dataset_ids: set[str] = set(sp.keys()) | {ds for _band, ds in ood}
+    for ds in sorted(per_dataset_ids):
+        ood_for_ds = {band: ood.get((band, ds), []) for band in ("near", "far")}
+        text = _per_dataset_table(
+            dataset=ds,
+            sp_ranking=sp.get(ds),
+            ood_rankings=ood_for_ds,
+            groups=groups,
+            citations=citations,
+            decimals=decimals,
+        )
+        path = out_dir / f"paper_table_{ds}.tex"
+        path.write_text(text)
+        written[f"per_{ds}"] = path
+        print(f"Wrote {path}  (combined SP + OOD for {ds})")
+    return written
+
+
 @hydra.main(version_base=None, config_path="../plot_configs", config_name="paper_tables")
 def main(cfg: DictConfig) -> dict[str, Path]:
     """Build combined SP, OOD, and AL LaTeX tables from existing ranking JSONs.
@@ -484,6 +593,7 @@ def main(cfg: DictConfig) -> dict[str, Path]:
     else:
         print("No OOD ranking JSONs found in inputs; skipping paper_table_ood.tex.")
 
+    written.update(_write_per_dataset_tables(sp, ood, groups, citations, decimals, out_dir))
     return written
 
 
