@@ -8,6 +8,7 @@ import secrets
 from typing import TYPE_CHECKING, Any, cast
 
 from laplace.baselaplace import BaseLaplace
+from laplace.utils.feature_extractor import FeatureExtractor
 from laplace.utils.matrix import KronDecomposed
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
@@ -470,7 +471,22 @@ def _build_uncalibrated_model_from_checkpoint(
         # and the prior_precision setter also lands on CPU.  After that we move the inner module
         # to the target device, re-trigger the setter (which now moves prior_precision to the new
         # _device), and explicitly move H which has no device-aware setter of its own.
-        model.load_state_dict(checkpoint["model_state_dict"])
+        state = checkpoint["model_state_dict"]
+        if not (isinstance(state, dict) and "laplace" in state and "inner_model" in state):
+            # ``BaseLaplace.state_dict()`` only saves Laplace-internal state (``mean``, ``H``,
+            # ``prior_precision``, ...), NOT the inner network's parameters. Loading that alone
+            # leaves the feature extractor untrained and silently produces ~random predictions
+            # at sampling time. Old artifacts saved before train.py:_get_state_dict was patched
+            # are unrecoverable -- fail loud rather than serve wrong numbers.
+            msg = (
+                "BaseLaplace checkpoint is missing 'inner_model' -- likely saved with a buggy "
+                "version that only stored Laplace state. Sampling-based predictions would be "
+                "wrong (random feature extractor). Re-train Laplace to produce a fixed artifact."
+            )
+            raise RuntimeError(msg)
+        inner = model.model.model if isinstance(model.model, FeatureExtractor) else model.model
+        cast("nn.Module", inner).load_state_dict(state["inner_model"])
+        model.load_state_dict(state["laplace"])
         _to_device(model.model)
         model.model.eval()
         if device.type == "mps":

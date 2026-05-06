@@ -76,9 +76,22 @@ OPTIMIZERS = {
 
 
 def _get_state_dict(model: nn.Module | list[nn.Module]) -> dict | list[dict]:
-    """Return state dict(s) for a model or list of models."""
+    """Return state dict(s) for a model or list of models.
+
+    BaseLaplace.state_dict() only stores Laplace's own state (``mean``, ``H``, ``prior_precision``,
+    ``n_data``, etc.) and NOT the inner network's parameters. Saving that alone leaves a reload
+    with an untrained feature extractor, silently breaking every sampling-based prediction
+    (probit/MC accuracy collapses to chance even though training-time eval reports MAP accuracy).
+    Pair the Laplace state with the inner network's state_dict so the artifact round-trips.
+    """
     if isinstance(model, list):
         return [cast("nn.Module", m).state_dict() for m in model]
+    if isinstance(model, BaseLaplace):
+        inner = model.model.model if isinstance(model.model, FeatureExtractor) else model.model
+        return {
+            "laplace": model.state_dict(),
+            "inner_model": cast("nn.Module", inner).state_dict(),
+        }
     return model.state_dict()
 
 
