@@ -286,6 +286,7 @@ wandb/
 
 # Hydra
 outputs/
+src/probly_benchmark/multirun
 
 # Server scripts
 server_scripts/
