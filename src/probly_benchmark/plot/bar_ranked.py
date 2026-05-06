@@ -64,15 +64,23 @@ def _draw_bars(
     x = np.arange(len(labels))
 
     fig, ax = plt.subplots(figsize=(max(6.0, 0.6 * len(labels) + 2.0), 4.5))
+    bar_width = 0.8  # matplotlib default; explicit so we can size the side padding
     ax.bar(
         x,
         means,
+        width=bar_width,
         yerr=stds,
         capsize=4,
         color=plot_config.color(0),
         edgecolor="none",
         error_kw={"ecolor": "#333333", "elinewidth": 1.2, "capthick": 1.2},
     )
+    # Tight side margins: padding from the axis edge to the first/last bar
+    # equals the gap BETWEEN adjacent bars (= 1 - bar_width = 0.2 for the
+    # default), instead of matplotlib's 5% auto-margin which leaves much
+    # more empty space.
+    inter_bar_gap = 1.0 - bar_width
+    ax.set_xlim(-bar_width / 2 - inter_bar_gap, len(labels) - 1 + bar_width / 2 + inter_bar_gap)
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=30, ha="right")
     ax.set_ylabel(ylabel)
