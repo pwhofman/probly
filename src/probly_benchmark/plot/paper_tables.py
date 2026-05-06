@@ -151,6 +151,21 @@ _ARRAYSTRETCH = "1.15"
 _HEADER_VSKIP = "0.45em"
 
 
+def _title_lines(title: str) -> list[str]:
+    r"""Return the LaTeX lines that render a short title above a tabular.
+
+    Visible bold text via ``\noindent\textbf{...}`` so the file looks
+    self-titled in standalone preview, plus a ``% Title:`` comment for
+    quick scanning of the file. The user can swap ``\noindent\textbf``
+    for ``\caption{...}`` once they wrap the tabular in a ``\begin{table}``
+    float.
+    """
+    return [
+        f"% Title: {title}",
+        f"\\noindent\\textbf{{{title}}}\\par\\vspace{{0.3em}}",
+    ]
+
+
 def _strip_leading_zero(value: float, decimals: int) -> str:
     """Format ``value`` with ``decimals`` digits, dropping a leading ``0`` if present.
 
@@ -239,6 +254,7 @@ def _sp_table(
     col_spec = "@{}l@{\\hspace{4pt}}l " + " ".join(["c"] * n_data_cols) + "@{}"
     lines = [
         _PREAMBLE.rstrip(),
+        *_title_lines("Selective prediction (Acc-AUC)"),
         "{",
         f"\\setlength{{\\tabcolsep}}{{{_TABCOLSEP_PT}pt}}",
         f"\\renewcommand{{\\arraystretch}}{{{_ARRAYSTRETCH}}}",
@@ -294,6 +310,7 @@ def _ood_table(
     col_spec = "@{}l@{\\hspace{4pt}}l " + " ".join(["c" * n_band] * len(datasets)) + "@{}"
     lines = [
         _PREAMBLE.rstrip(),
+        *_title_lines("OOD detection (AUROC)"),
         "{",
         f"\\setlength{{\\tabcolsep}}{{{_TABCOLSEP_PT}pt}}",
         f"\\renewcommand{{\\arraystretch}}{{{_ARRAYSTRETCH}}}",
@@ -391,7 +408,7 @@ def _per_dataset_table(
     col_spec = "@{}l@{\\hspace{4pt}}l " + " ".join(["c"] * n_data_cols) + "@{}"
     lines = [
         _PREAMBLE.rstrip(),
-        f"% Per-dataset combined table for {display_name(dataset)}.",
+        *_title_lines(f"Results on {display_name(dataset)}"),
         "{",
         f"\\setlength{{\\tabcolsep}}{{{_TABCOLSEP_PT}pt}}",
         f"\\renewcommand{{\\arraystretch}}{{{_ARRAYSTRETCH}}}",
@@ -454,6 +471,7 @@ def _al_table(
     col_spec = "@{}l@{\\hspace{4pt}}l " + " ".join(["c" * n_notions] * len(datasets)) + "@{}"
     lines = [
         _PREAMBLE.rstrip(),
+        *_title_lines("Active learning (NAUC)"),
         "{",
         f"\\setlength{{\\tabcolsep}}{{{_TABCOLSEP_PT}pt}}",
         f"\\renewcommand{{\\arraystretch}}{{{_ARRAYSTRETCH}}}",
