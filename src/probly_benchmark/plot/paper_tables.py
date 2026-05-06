@@ -151,19 +151,26 @@ _ARRAYSTRETCH = "1.15"
 _HEADER_VSKIP = "0.45em"
 
 
-def _title_lines(title: str) -> list[str]:
-    r"""Return the LaTeX lines that render a short title above a tabular.
+def _table_open(*, title: str, label_key: str) -> list[str]:
+    r"""Return the LaTeX lines that open a numbered table float.
 
-    Visible bold text via ``\noindent\textbf{...}`` so the file looks
-    self-titled in standalone preview, plus a ``% Title:`` comment for
-    quick scanning of the file. The user can swap ``\noindent\textbf``
-    for ``\caption{...}`` once they wrap the tabular in a ``\begin{table}``
-    float.
+    Each table file is now self-contained: ``\begin{table}[t]`` with a
+    centered ``\caption{...}`` and ``\label{tab:<label_key>}``, the usual
+    ``\setlength{\tabcolsep}`` and ``\renewcommand{\arraystretch}`` tweaks,
+    and an opening for the user's ``\begin{tabular}{...}`` immediately
+    after. ``_TABLE_CLOSE`` closes both ``tabular`` and ``table``.
     """
     return [
-        f"% Title: {title}",
-        f"\\noindent\\textbf{{{title}}}\\par\\vspace{{0.3em}}",
+        r"\begin{table}[t]",
+        r"\centering",
+        f"\\caption{{{title}}}",
+        f"\\label{{tab:{label_key}}}",
+        f"\\setlength{{\\tabcolsep}}{{{_TABCOLSEP_PT}pt}}",
+        f"\\renewcommand{{\\arraystretch}}{{{_ARRAYSTRETCH}}}",
     ]
+
+
+_TABLE_CLOSE: tuple[str, ...] = (r"\end{tabular}", r"\end{table}", "")
 
 
 def _strip_leading_zero(value: float, decimals: int) -> str:
@@ -254,10 +261,7 @@ def _sp_table(
     col_spec = "@{}l@{\\hspace{4pt}}l " + " ".join(["c"] * n_data_cols) + "@{}"
     lines = [
         _PREAMBLE.rstrip(),
-        *_title_lines("Selective prediction (Acc-AUC)"),
-        "{",
-        f"\\setlength{{\\tabcolsep}}{{{_TABCOLSEP_PT}pt}}",
-        f"\\renewcommand{{\\arraystretch}}{{{_ARRAYSTRETCH}}}",
+        *_table_open(title="Selective prediction (Acc-AUC)", label_key="results-sp"),
         r"\begin{tabular}{" + col_spec + "}",
         r"\toprule",
     ]
@@ -279,7 +283,7 @@ def _sp_table(
         return row + r" \\"
 
     lines.extend(_emit_grouped_rows(sections, n_total_cols, render_sp_row))
-    lines += [r"\bottomrule", r"\end{tabular}", "}", ""]
+    lines += [r"\bottomrule", *_TABLE_CLOSE]
     return "\n".join(lines)
 
 
@@ -310,10 +314,7 @@ def _ood_table(
     col_spec = "@{}l@{\\hspace{4pt}}l " + " ".join(["c" * n_band] * len(datasets)) + "@{}"
     lines = [
         _PREAMBLE.rstrip(),
-        *_title_lines("OOD detection (AUROC)"),
-        "{",
-        f"\\setlength{{\\tabcolsep}}{{{_TABCOLSEP_PT}pt}}",
-        f"\\renewcommand{{\\arraystretch}}{{{_ARRAYSTRETCH}}}",
+        *_table_open(title="OOD detection (AUROC)", label_key="results-ood"),
         r"\begin{tabular}{" + col_spec + "}",
         r"\toprule",
     ]
@@ -353,7 +354,7 @@ def _ood_table(
         return row + r" \\"
 
     lines.extend(_emit_grouped_rows(sections, n_total_cols, render_ood_row))
-    lines += [r"\bottomrule", r"\end{tabular}", "}", ""]
+    lines += [r"\bottomrule", *_TABLE_CLOSE]
     return "\n".join(lines)
 
 
@@ -408,10 +409,7 @@ def _per_dataset_table(
     col_spec = "@{}l@{\\hspace{4pt}}l " + " ".join(["c"] * n_data_cols) + "@{}"
     lines = [
         _PREAMBLE.rstrip(),
-        *_title_lines(f"Results on {display_name(dataset)}"),
-        "{",
-        f"\\setlength{{\\tabcolsep}}{{{_TABCOLSEP_PT}pt}}",
-        f"\\renewcommand{{\\arraystretch}}{{{_ARRAYSTRETCH}}}",
+        *_table_open(title=f"Results on {display_name(dataset)}", label_key=f"results-{dataset}"),
         r"\begin{tabular}{" + col_spec + "}",
         r"\toprule",
     ]
@@ -434,7 +432,7 @@ def _per_dataset_table(
         return row + r" \\"
 
     lines.extend(_emit_grouped_rows(sections, n_total_cols, render_row))
-    lines += [r"\bottomrule", r"\end{tabular}", "}", ""]
+    lines += [r"\bottomrule", *_TABLE_CLOSE]
     return "\n".join(lines)
 
 
@@ -471,10 +469,7 @@ def _al_table(
     col_spec = "@{}l@{\\hspace{4pt}}l " + " ".join(["c" * n_notions] * len(datasets)) + "@{}"
     lines = [
         _PREAMBLE.rstrip(),
-        *_title_lines("Active learning (NAUC)"),
-        "{",
-        f"\\setlength{{\\tabcolsep}}{{{_TABCOLSEP_PT}pt}}",
-        f"\\renewcommand{{\\arraystretch}}{{{_ARRAYSTRETCH}}}",
+        *_table_open(title="Active learning (NAUC)", label_key="results-al"),
         r"\begin{tabular}{" + col_spec + "}",
         r"\toprule",
     ]
@@ -511,7 +506,7 @@ def _al_table(
         return row + r" \\"
 
     lines.extend(_emit_grouped_rows(sections, n_total_cols, render_al_row))
-    lines += [r"\bottomrule", r"\end{tabular}", "}", ""]
+    lines += [r"\bottomrule", *_TABLE_CLOSE]
     return "\n".join(lines)
 
 
