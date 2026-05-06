@@ -159,6 +159,12 @@ def _envelope_efficiency(lower: torch.Tensor, upper: torch.Tensor) -> float:
     return float(mask.float().sum(dim=-1).mean().item())
 
 
+def _is_first_order_target(y_true: object, num_classes: int) -> bool:
+    """Detect a first-order target tensor (probability vectors) vs class indices."""
+    y_true_t = torch.as_tensor(y_true)
+    return y_true_t.ndim >= 2 and y_true_t.shape[-1] == num_classes
+
+
 def _envelope_average_interval_width(lower: torch.Tensor, upper: torch.Tensor) -> float:
     return float((upper - lower).float().mean().item())
 
@@ -277,14 +283,34 @@ def _efficiency_torch_convex(y_pred: TorchConvexCredalSet) -> float:
 
 @coverage.register(TorchDistanceBasedCredalSet)
 def _coverage_torch_distance(y_pred: TorchDistanceBasedCredalSet, y_true: torch.Tensor) -> float:
-    """Interval-dominance coverage for a distance-based credal set."""
+    """Coverage for a distance-based (TV-ball) credal set.
+
+    With class-index targets: interval-dominance coverage on the envelope.
+
+    With first-order targets ``y_true`` of shape ``(..., C)``: the paper's
+    distribution-membership coverage ``mean(lambda_i in Q_i)``, computed as
+    ``mean(TV(nominal_i, lambda_i) <= radius_i)``.
+    """
+    if _is_first_order_target(y_true, y_pred.num_classes):
+        nominal = y_pred.nominal.probabilities
+        target = torch.as_tensor(y_true, device=nominal.device, dtype=nominal.dtype)
+        tv = 0.5 * torch.sum(torch.abs(nominal - target), dim=-1)
+        radius = torch.as_tensor(y_pred.radius, device=nominal.device, dtype=nominal.dtype)
+        return float((tv <= radius).float().mean().item())
     return _envelope_coverage(y_pred.lower(), y_pred.upper(), y_true)
 
 
 @efficiency.register(TorchDistanceBasedCredalSet)
 def _efficiency_torch_distance(y_pred: TorchDistanceBasedCredalSet) -> float:
-    """Interval-dominance prediction-set cardinality for a distance-based credal set."""
-    return _envelope_efficiency(y_pred.lower(), y_pred.upper())
+    """Interval-width efficiency for a distance-based credal set: ``1 - mean(upper - lower)``.
+
+    Same semantic as ``ConvexCredalSet`` and ``ProbabilityIntervalsCredalSet``:
+    higher = tighter credal set. For TV (L1) distance-based credal sets the
+    per-class envelope bounds ``[max(0, p_k - r), min(1, p_k + r)]`` are tight
+    (no optimization needed; the simplex constraint is automatically satisfied
+    for each individual class).
+    """
+    return _credal_interval_efficiency_torch(y_pred.lower(), y_pred.upper())
 
 
 @coverage.register(TorchProbabilityIntervalsCredalSet)

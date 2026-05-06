@@ -66,7 +66,8 @@ class CredalSuite:
         cs = make_distance(nominal, radius)
         assert coverage(cs, array_fn([0])) == pytest.approx(1.0)
         assert coverage(cs, array_fn([2])) == pytest.approx(0.0)
-        assert efficiency(cs) == pytest.approx(2.0)
+        # 1 - mean(upper - lower) over classes; envelope width 0.2 per class -> 1 - 0.2 = 0.8.
+        assert efficiency(cs) == pytest.approx(0.8)
         assert average_interval_width(cs) == pytest.approx(0.2)
 
     def test_probability_intervals_integer_labels(

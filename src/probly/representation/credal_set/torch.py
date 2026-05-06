@@ -412,14 +412,28 @@ def _create_probability_intervals_from_bounds(
     return TorchProbabilityIntervalsCredalSet(probs - lower, probs + upper)
 
 
+def _broadcast_radius_to_batch(radius: torch.Tensor | float, batch_size: int) -> torch.Tensor:
+    """Promote a scalar radius to a per-sample tensor matching the nominal's batch dim.
+
+    Per-sample radii are required for the protected-axes machinery to permit
+    ``torch.cat`` across a batch of credal sets — otherwise a scalar ``radius``
+    has no axis 0 to concatenate along.
+    """
+    radius_t = torch.as_tensor(radius)
+    if radius_t.ndim == 0:
+        radius_t = radius_t.expand(batch_size).contiguous()
+    return radius_t
+
+
 @create_distance_based_credal_set_from_center_and_radius.register(torch.Tensor)
 def _create_distance_based_credal_set_from_center_and_radius(
     center: torch.Tensor,
     radius: torch.Tensor,
 ) -> TorchDistanceBasedCredalSet:
+    batch_size = center.shape[0] if center.ndim >= 2 else 1
     return TorchDistanceBasedCredalSet(
         nominal=TorchProbabilityCategoricalDistribution(center),
-        radius=radius,
+        radius=_broadcast_radius_to_batch(radius, batch_size),
     )
 
 
@@ -428,9 +442,11 @@ def _create_distance_based_credal_set_from_categorical_distribution(
     center: TorchCategoricalDistribution,
     radius: torch.Tensor,
 ) -> TorchDistanceBasedCredalSet:
+    nominal_tensor = center.tensor
+    batch_size = nominal_tensor.shape[0] if nominal_tensor.ndim >= 2 else 1
     return TorchDistanceBasedCredalSet(
         nominal=center,
-        radius=torch.as_tensor(radius),
+        radius=_broadcast_radius_to_batch(radius, batch_size),
     )
 
 

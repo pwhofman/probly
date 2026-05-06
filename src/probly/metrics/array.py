@@ -301,14 +301,31 @@ def _efficiency_array_convex(y_pred: ArrayConvexCredalSet) -> np.floating:
 
 @coverage.register(ArrayDistanceBasedCredalSet)
 def _coverage_array_distance(y_pred: ArrayDistanceBasedCredalSet, y_true: np.ndarray) -> np.floating:
-    """Interval-dominance coverage for a distance-based credal set."""
+    """Coverage for a distance-based (TV-ball) credal set.
+
+    With class-index targets: interval-dominance coverage on the envelope.
+
+    With first-order targets ``y_true`` of shape ``(..., C)``: distribution
+    membership ``mean(lambda_i in Q_i)`` via ``mean(TV(nominal_i, lambda_i) <= radius_i)``.
+    """
+    y_true_arr = np.asarray(y_true)
+    if y_true_arr.ndim >= 2 and y_true_arr.shape[-1] == y_pred.num_classes:
+        nominal = np.asarray(y_pred.nominal.probabilities)
+        target = y_true_arr.astype(nominal.dtype, copy=False)
+        tv = 0.5 * np.sum(np.abs(nominal - target), axis=-1)
+        radius = np.asarray(y_pred.radius, dtype=nominal.dtype)
+        return np.asarray(tv <= radius, dtype=np.float64).mean()
     return _envelope_coverage(y_pred.lower(), y_pred.upper(), y_true)
 
 
 @efficiency.register(ArrayDistanceBasedCredalSet)
 def _efficiency_array_distance(y_pred: ArrayDistanceBasedCredalSet) -> np.floating:
-    """Interval-dominance prediction-set cardinality for a distance-based credal set."""
-    return _envelope_efficiency(y_pred.lower(), y_pred.upper())
+    """Interval-width efficiency for a distance-based credal set: ``1 - mean(upper - lower)``.
+
+    Same semantic as ``ConvexCredalSet`` and ``ProbabilityIntervalsCredalSet``:
+    higher = tighter credal set.
+    """
+    return _credal_interval_efficiency(y_pred.lower(), y_pred.upper())
 
 
 @coverage.register(ArrayProbabilityIntervalsCredalSet)

@@ -196,7 +196,8 @@ class TestDistanceBasedCredalSet:
         # upper = clip(nominal + 0.1) = [0.6, 0.4, 0.3]; mask = upper >= 0.4 = [T, T, F]
         assert coverage(cs, np.array([0])) == pytest.approx(1.0)
         assert coverage(cs, np.array([2])) == pytest.approx(0.0)
-        assert efficiency(cs) == pytest.approx(2.0)
+        # 1 - mean(upper - lower) over classes; envelope width 0.2 per class -> 1 - 0.2 = 0.8.
+        assert efficiency(cs) == pytest.approx(0.8)
 
 
 class TestProbabilityIntervalsCredalSet:

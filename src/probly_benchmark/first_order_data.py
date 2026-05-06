@@ -57,10 +57,7 @@ def main(cfg: DictConfig) -> None:
 
     outputs, targets = collect_outputs_targets(rep, data_loader, device, amp_enabled=cfg.get("amp", False))
 
-    ### coverage
     cov = coverage(outputs, targets)
-
-    ### efficiency
     eff = efficiency(outputs)
 
     if cfg.wandb.enabled:
