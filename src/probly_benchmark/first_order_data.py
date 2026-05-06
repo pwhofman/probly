@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
-from probly.metrics import coverage, efficiency
+from probly.metrics import convex_hull_coverage, efficiency
+from probly.metrics.torch import _credal_containment_coverage_torch
 from probly.representer import representer
 from probly_benchmark import (
     calibration,
@@ -57,13 +58,16 @@ def main(cfg: DictConfig) -> None:
 
     outputs, targets = collect_outputs_targets(rep, data_loader, device, amp_enabled=cfg.get("amp", False))
 
-    cov = coverage(outputs, targets)
+    outputs_any = cast("Any", outputs)
+    cov = _credal_containment_coverage_torch(outputs_any.lower(), outputs_any.upper(), targets)
     eff = efficiency(outputs)
+    chull_cov = convex_hull_coverage(outputs, targets)
 
     if cfg.wandb.enabled:
         run = init_wandb_for_evaluation(cfg, run_id)
         run.summary["coverage"] = cov
         run.summary["efficiency"] = eff
+        run.summary["convex_hull_coverage"] = chull_cov
         run.finish()
 
 
