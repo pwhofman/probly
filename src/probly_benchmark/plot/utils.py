@@ -16,6 +16,41 @@ _METHOD_CONFIG_DIR = Path(__file__).parent.parent / "configs" / "method"
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
+# Pretty-print mapping for dataset names in titles, table headers, axis
+# labels, and filenames-in-prose. Filesystem keys (cache paths, ranking JSON
+# stems) keep using the lowercase config strings -- only display strings go
+# through ``display_name`` below.
+_DATASET_DISPLAY_NAMES: dict[str, str] = {
+    "cifar10": "CIFAR-10",
+    "cifar100": "CIFAR-100",
+    "cifar10h": "CIFAR-10H",
+    "imagenet": "ImageNet",
+    "imagenet1k": "ImageNet-1K",
+    "imagenet200": "ImageNet-200",
+    "mnist": "MNIST",
+    "fashion_mnist": "Fashion-MNIST",
+    "svhn": "SVHN",
+    "places365": "Places365",
+    "textures": "Textures",
+    "ssb_hard": "SSB-Hard",
+    "ninco": "NINCO",
+    "inaturalist": "iNaturalist",
+    "openimage_o": "OpenImage-O",
+    "stl10": "STL-10",
+    "eurosat": "EuroSAT",
+    "sun397": "SUN397",
+    "tin": "TIN",
+}
+
+
+def display_name(name: str) -> str:
+    """Return the canonical display string for a dataset / OOD-dataset key.
+
+    Falls back to the key unchanged when no override is registered.
+    """
+    return _DATASET_DISPLAY_NAMES.get(name, name)
+
+
 def resolve_save_path(save_path: str | None) -> Path:
     """Resolve a ``save_path`` config value to an absolute output directory.
 

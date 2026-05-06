@@ -24,7 +24,7 @@ import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
 from probly.plot.config import PlotConfig
-from probly_benchmark.plot.utils import fetch_sp_runs, resolve_label, resolve_save_path
+from probly_benchmark.plot.utils import display_name, fetch_sp_runs, resolve_label, resolve_save_path
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -133,7 +133,7 @@ def main(cfg: DictConfig) -> Figure:
     ax.set_xlabel("Rejection rate")
     ax.set_ylabel("Accuracy")
     ax.set_xlim(0.0, 1.0)
-    ax.set_title(f"Top-{top_k} selective prediction on {dataset}")
+    ax.set_title(f"Top-{top_k} selective prediction on {display_name(dataset)}")
     ax.grid(
         visible=True,
         linestyle=plot_config.grid_linestyle,

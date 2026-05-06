@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
-from probly_benchmark.plot.utils import fetch_ood_runs, resolve_label, resolve_save_path
+from probly_benchmark.plot.utils import display_name, fetch_ood_runs, resolve_label, resolve_save_path
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -208,7 +208,7 @@ def main(cfg: DictConfig) -> dict[str, tuple[Figure, str]]:
         method_labels, per_method, metric_keys_set = _aggregate_methods(cfg.methods, runs_by_method, ood_ds)
         metric_keys = sorted(metric_keys_set)
 
-        fig = _make_bar_chart(method_labels, per_method, metric_keys, title=ood_ds)
+        fig = _make_bar_chart(method_labels, per_method, metric_keys, title=display_name(ood_ds))
         table = _make_latex_table(method_labels, per_method, metric_keys, higher_is_better)
 
         if cfg.get("filename") and cfg.get("filename_prefix"):

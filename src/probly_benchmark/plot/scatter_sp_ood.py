@@ -41,7 +41,7 @@ import matplotlib.pyplot as plt
 from omegaconf import DictConfig, OmegaConf
 
 from probly.plot.config import PlotConfig
-from probly_benchmark.plot.utils import resolve_save_path
+from probly_benchmark.plot.utils import display_name, resolve_save_path
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -254,7 +254,7 @@ def main(cfg: DictConfig) -> dict[str, Path]:
                 continue
             fig = _draw_scatter(
                 points,
-                title=f"SP vs {band_label} on {ds}",
+                title=f"SP vs {band_label} on {display_name(ds)}",
                 ylabel=ylabel,
                 plot_config=plot_config,
                 credal_keywords=credal_keywords,
@@ -271,7 +271,7 @@ def main(cfg: DictConfig) -> dict[str, Path]:
         non_empty = {ds: pts for ds, pts in per_band[band].items() if pts}
         if len(non_empty) >= 2:
             combined = _combined_band_points(non_empty)
-            ds_list = ", ".join(sorted(non_empty))
+            ds_list = ", ".join(display_name(ds) for ds in sorted(non_empty))
             fig = _draw_scatter(
                 combined,
                 title=f"SP vs {band_label} across {ds_list}",

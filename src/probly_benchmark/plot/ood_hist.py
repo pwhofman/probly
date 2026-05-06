@@ -12,7 +12,7 @@ import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
 from probly.plot.ood import plot_histogram
-from probly_benchmark.plot.utils import fetch_ood_runs, resolve_label, resolve_save_path
+from probly_benchmark.plot.utils import display_name, fetch_ood_runs, resolve_label, resolve_save_path
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -90,7 +90,7 @@ def main(cfg: DictConfig) -> list[Figure]:
                     id_scores=id_scores,
                     ood_scores=ood_scores,
                     bins=bins,
-                    title=f"{label} - Score Distribution ({dataset} vs {ood_ds})",
+                    title=f"{label} - Score Distribution ({display_name(dataset)} vs {display_name(ood_ds)})",
                 ),
             )
         else:
@@ -99,9 +99,9 @@ def main(cfg: DictConfig) -> list[Figure]:
                 runs = runs_by_ds[ood_ds]
                 id_scores = np.concatenate([r["id_scores"] for r in runs])
                 ood_scores = np.concatenate([r["ood_scores"] for r in runs])
-                ax.hist(id_scores, bins=bins, alpha=0.6, density=True, label=dataset)
-                ax.hist(ood_scores, bins=bins, alpha=0.6, density=True, label=ood_ds)
-                ax.set_title(ood_ds)
+                ax.hist(id_scores, bins=bins, alpha=0.6, density=True, label=display_name(dataset))
+                ax.hist(ood_scores, bins=bins, alpha=0.6, density=True, label=display_name(ood_ds))
+                ax.set_title(display_name(ood_ds))
                 ax.set_xlabel("Uncertainty score")
                 ax.legend()
             fig.suptitle(label)

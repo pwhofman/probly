@@ -27,7 +27,7 @@ from omegaconf import DictConfig, OmegaConf
 
 from probly.plot.config import PlotConfig
 from probly_benchmark.plot import ood_groups
-from probly_benchmark.plot.utils import fetch_ood_runs, fetch_sp_runs, resolve_label, resolve_save_path
+from probly_benchmark.plot.utils import display_name, fetch_ood_runs, fetch_sp_runs, resolve_label, resolve_save_path
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -161,7 +161,7 @@ def _run_sp(cfg: DictConfig, dataset: str, base_model: str) -> dict[str, tuple[F
     fig = _draw_bars(
         ranking,
         ylabel="Accuracy-AUC (1 - AR-AUROC)",
-        title=f"Selective prediction on {dataset}",
+        title=f"Selective prediction on {display_name(dataset)}",
     )
     return {"sp": (fig, ranking)}
 
@@ -239,7 +239,7 @@ def _run_ood(cfg: DictConfig, dataset: str, base_model: str) -> dict[str, tuple[
         fig = _draw_bars(
             items,
             ylabel="OOD AUROC",
-            title=f"{title_band} detection on {dataset}",
+            title=f"{title_band} detection on {display_name(dataset)}",
             subtitle=f"(avg over {len(bands[band_name])} datasets)",
         )
         out[band_name] = (fig, items)

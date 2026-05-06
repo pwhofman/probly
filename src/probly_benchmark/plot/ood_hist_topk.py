@@ -27,7 +27,7 @@ from omegaconf import DictConfig, OmegaConf
 
 from probly.plot.ood import plot_histogram
 from probly_benchmark.plot import ood_groups
-from probly_benchmark.plot.utils import fetch_ood_runs, resolve_label, resolve_save_path
+from probly_benchmark.plot.utils import display_name, fetch_ood_runs, resolve_label, resolve_save_path
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -162,7 +162,7 @@ def main(cfg: DictConfig) -> list[Path]:
 
                 id_scores = np.concatenate([r["id_scores"] for r in runs])
                 ood_scores = np.concatenate([r["ood_scores"] for r in runs])
-                title = f"{label}: {dataset} vs {ood_ds}"
+                title = f"{label}: {display_name(dataset)} vs {display_name(ood_ds)}"
                 fig = _draw_one_histogram(id_scores=id_scores, ood_scores=ood_scores, bins=bins, title=title)
 
                 out_path = out_dir / f"ood_hist_{dataset}_{band_name}_{ood_ds}_{entry.name}.pdf"

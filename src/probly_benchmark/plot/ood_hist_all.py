@@ -25,7 +25,7 @@ from omegaconf import DictConfig, OmegaConf
 
 from probly.plot.ood import plot_histogram
 from probly_benchmark.plot import ood_groups
-from probly_benchmark.plot.utils import fetch_ood_runs, resolve_label, resolve_save_path
+from probly_benchmark.plot.utils import display_name, fetch_ood_runs, resolve_label, resolve_save_path
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -122,7 +122,7 @@ def main(cfg: DictConfig) -> list[Path]:
             band = band_for_ds.get(ood_ds, "unknown")
             for run in survivors:
                 seed = run.get("seed")
-                title = f"{label}: {dataset} vs {ood_ds}"
+                title = f"{label}: {display_name(dataset)} vs {display_name(ood_ds)}"
                 if multiple:
                     title += f"  (seed {seed})"
                 fig = _draw_one_histogram(

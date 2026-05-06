@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
-from probly_benchmark.plot.utils import resolve_save_path
+from probly_benchmark.plot.utils import display_name, resolve_save_path
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -248,7 +248,7 @@ def _sp_table(
 
     header = r"\multicolumn{2}{@{}l}{\textbf{Method}}"
     for ds in datasets:
-        header += f" & \\textbf{{{ds.upper()}}}"
+        header += f" & \\textbf{{{display_name(ds)}}}"
     lines.append(header + r" \\")
     lines.append(r"\hdashline\noalign{\vskip " + _HEADER_VSKIP + "}")
 
@@ -306,7 +306,7 @@ def _ood_table(
     cdash: list[str] = []
     col_idx = 3  # columns 1,2 are the citation+name half of the Method multicol
     for ds in datasets:
-        spans += f" & \\multicolumn{{{n_band}}}{{c}}{{\\textbf{{{ds.upper()}}}}}"
+        spans += f" & \\multicolumn{{{n_band}}}{{c}}{{\\textbf{{{display_name(ds)}}}}}"
         cdash.append(f"\\cdashline{{{col_idx}-{col_idx + n_band - 1}}}")
         col_idx += n_band
     lines.append(spans + r" \\")
@@ -391,7 +391,7 @@ def _per_dataset_table(
     col_spec = "@{}l@{\\hspace{4pt}}l " + " ".join(["c"] * n_data_cols) + "@{}"
     lines = [
         _PREAMBLE.rstrip(),
-        f"% Per-dataset combined table for {dataset.upper()}.",
+        f"% Per-dataset combined table for {display_name(dataset)}.",
         "{",
         f"\\setlength{{\\tabcolsep}}{{{_TABCOLSEP_PT}pt}}",
         f"\\renewcommand{{\\arraystretch}}{{{_ARRAYSTRETCH}}}",
@@ -466,7 +466,7 @@ def _al_table(
     cdash: list[str] = []
     col_idx = 3
     for ds in datasets:
-        spans += f" & \\multicolumn{{{n_notions}}}{{c}}{{\\textbf{{{ds.upper().replace('_', '\\_')}}}}}"
+        spans += f" & \\multicolumn{{{n_notions}}}{{c}}{{\\textbf{{{display_name(ds).replace('_', '\\_')}}}}}"
         cdash.append(f"\\cdashline{{{col_idx}-{col_idx + n_notions - 1}}}")
         col_idx += n_notions
     lines.append(spans + r" \\")
