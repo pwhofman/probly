@@ -493,12 +493,16 @@ def _(
     frozen backbone does not inflate optimizer state nor distort gradient-norm
     computations.
     """
-    if not cfg.pretrained:
-        num_classes = metadata.DATASETS[cfg.dataset].num_classes
+    if not cfg.get("pretrained", False):
+        num_classes = train_kwargs["num_classes"]
+        base_model_name = train_kwargs["base_model_name"]
+        in_features = train_kwargs.get("in_features")
+        extra = {"in_features": in_features} if in_features is not None else {}
         warmup_encoder = models.get_base_model(
-            f"{cfg.base_model}_encoder",
+            f"{base_model_name}_encoder",
             num_classes,
             pretrained=False,
+            **extra,
         ).to(device)
         feature_dim = get_output_dim(warmup_encoder)
         warmup_head = nn.Linear(feature_dim, num_classes).to(device)
@@ -521,7 +525,7 @@ def _(
         frozen_backbone.module.load_state_dict(warmup_encoder.state_dict())
 
     for i, member in enumerate(model):
-        if i > 0:
+        if i > 0 and isinstance(cfg.get("dataset"), str):
             # Long imagenet subensemble runs accumulate worker shared-memory / FD
             # state in the parent process; new workers forked between members can
             # then SIGABRT during validation. Drop the previous member's loaders
@@ -529,6 +533,7 @@ def _(
             # ``del`` lets refcounting GC the loader, which triggers the iterator's
             # ``__del__`` -> ``_shutdown_workers``; ``gc.collect`` mops up any
             # cyclic refs; ``empty_cache`` is belt-and-braces for GPU memory.
+            # Skipped in the AL flow where the estimator provides the loader directly.
             del train_loader, val_loader
             gc.collect()
             torch.cuda.empty_cache()
@@ -1378,7 +1383,6 @@ def _(
         )
     amp_enabled = cfg.get("amp", False)
     alpha = train_kwargs.get("alpha", 0.5)
-    num_classes = metadata.DATASETS[cfg.dataset].num_classes
 
     logits_train, targets_train = utils.collect_outputs_targets_raw(
         model_.predictor,
@@ -1386,6 +1390,10 @@ def _(
         device,
         amp_enabled,
     )
+    try:
+        num_classes = metadata.DATASETS[cfg.dataset].num_classes
+    except (KeyError, TypeError):
+        num_classes = logits_train.shape[-1]
     lower, upper = compute_efficient_credal_prediction_bounds(
         logits_train,
         targets_train,
@@ -1477,6 +1485,8 @@ def main(cfg: DictConfig) -> None:
 
     method_kwargs = _build_method_kwargs(cfg)
     train_kwargs = _build_train_kwargs(cfg)
+    train_kwargs.setdefault("num_classes", num_classes)
+    train_kwargs.setdefault("base_model_name", cfg.base_model)
 
     context = BuildContext(
         base_model_name=cfg.base_model,

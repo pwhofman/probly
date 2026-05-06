@@ -51,17 +51,20 @@ def set_seed(seed: int | None) -> None:
     torch.cuda.manual_seed_all(seed)
 
 
-def get_device(device_id: int | None = None) -> torch.device:
-    """Return the best available device, or a specific CUDA device if requested.
+def get_device(device_id: int | str | None = None) -> torch.device:
+    """Return the best available device, or a specific device if requested.
 
     Args:
-        device_id: Optional CUDA device ID to use. If None, automatically selects the least utilized CUDA device.
-            Ignored if CUDA is not available.
+        device_id: Device specification. Can be an int (CUDA device index),
+            a string like ``"cpu"``, ``"mps"``, or ``"cuda:0"``, or ``None``
+            to auto-select the best available device.
 
     Returns:
         The selected torch.device.
 
     """
+    if isinstance(device_id, str):
+        return torch.device(device_id)
     if torch.cuda.is_available():
         if device_id is not None:
             return torch.device(f"cuda:{device_id}")
