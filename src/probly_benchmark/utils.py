@@ -99,8 +99,10 @@ def collect_outputs_targets(
     outputs = []
     targets = []
 
+    # BaseLaplace uses Cholesky decomposition internally which doesn't support float16.
+    use_amp = amp_enabled and not isinstance(getattr(rep, "predictor", None), BaseLaplace)
     for inputs, targets_ in tqdm(loader, desc="Batch"):
-        if amp_enabled:
+        if use_amp:
             with torch.amp.autocast(device.type):
                 outputs_ = rep.predict(inputs.to(device))
         else:
@@ -126,8 +128,10 @@ def collect_uncertainties(
     """
     uncertainties: list[torch.Tensor] = []
 
+    # BaseLaplace uses Cholesky decomposition internally which doesn't support float16.
+    use_amp = amp_enabled and not isinstance(getattr(rep, "predictor", None), BaseLaplace)
     for inputs, _ in tqdm(loader, desc="Batch"):
-        if amp_enabled:
+        if use_amp:
             with torch.amp.autocast(device.type):
                 outputs_ = rep.predict(inputs.to(device))
         else:
@@ -209,9 +213,11 @@ def collect_outputs_decisions_targets(
     all_mean_probs = []
     all_targets = []
 
+    # BaseLaplace uses Cholesky decomposition internally which doesn't support float16.
+    use_amp = amp_enabled and not isinstance(model, BaseLaplace)
     for inputs, targets_ in tqdm(loader, desc="Batch"):
         inputs_dev = inputs.to(device)
-        if amp_enabled:
+        if use_amp:
             with torch.amp.autocast(device.type):
                 outputs_ = rep.predict(inputs_dev)
                 decision = decide(model, inputs_dev, rep_kwargs=rep_kwargs)
@@ -252,9 +258,11 @@ def collect_outputs_targets_raw(
     model.eval()
     outputs = []
     targets = []
+    # BaseLaplace uses Cholesky decomposition internally which doesn't support float16.
+    use_amp = amp_enabled and not isinstance(model, BaseLaplace)
     for inputs_, targets_ in tqdm(loader, desc="Batch"):
         inputs = inputs_.to(device, non_blocking=True)
-        if amp_enabled:
+        if use_amp:
             with torch.amp.autocast(device.type):
                 outputs_ = model(inputs)
         else:
