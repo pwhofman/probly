@@ -8,6 +8,7 @@ import secrets
 from typing import TYPE_CHECKING, Any, cast
 
 from laplace.baselaplace import BaseLaplace
+from laplace.utils.matrix import KronDecomposed
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
 import torch
@@ -419,6 +420,20 @@ def _download_checkpoint_from_wandb(
     return checkpoint, run_id
 
 
+def _move_laplace_hessian_to_device(model: BaseLaplace, device: torch.device) -> None:
+    """Move Laplace H and mean to device; load_state_dict skips this for non-prior_precision fields."""
+    m = cast("Any", model)
+    h = m.H
+    if isinstance(h, KronDecomposed):
+        h.eigenvectors = [tuple(t.to(device) for t in pair) for pair in h.eigenvectors]
+        h.eigenvalues = [tuple(t.to(device) for t in pair) for pair in h.eigenvalues]
+        h.deltas = h.deltas.to(device)
+    elif isinstance(h, torch.Tensor):
+        m.H = h.to(device)
+    if isinstance(m.mean, torch.Tensor):
+        m.mean = m.mean.to(device)
+
+
 def _build_uncalibrated_model_from_checkpoint(
     checkpoint: dict[str, Any],
     device: torch.device,
@@ -451,12 +466,16 @@ def _build_uncalibrated_model_from_checkpoint(
             _to_device(m)
             m.eval()
     elif isinstance(model, BaseLaplace):
-        # Move inner nn.Module to device BEFORE load_state_dict so that BaseLaplace._device
-        # already returns the target device when the prior_precision setter is called (it
-        # unconditionally moves the value to self._device at assignment time).
-        _to_device(model.model)
+        # Load state dict first while model.model is still on CPU so that _device returns CPU
+        # and the prior_precision setter also lands on CPU.  After that we move the inner module
+        # to the target device, re-trigger the setter (which now moves prior_precision to the new
+        # _device), and explicitly move H which has no device-aware setter of its own.
         model.load_state_dict(checkpoint["model_state_dict"])
+        _to_device(model.model)
         model.model.eval()
+        if device.type == "mps":
+            model.prior_precision = model.prior_precision
+            _move_laplace_hessian_to_device(model, device)
     else:
         model.load_state_dict(checkpoint["model_state_dict"])
         _to_device(model)
