@@ -188,6 +188,12 @@ def create_categorical_distribution_from_logits[T](data: T) -> CategoricalDistri
     raise NotImplementedError(msg)
 
 
+@create_categorical_distribution_from_logits.register(CategoricalDistribution)
+def _(data: CategoricalDistribution) -> CategoricalDistribution:
+    """Passthrough for data already wrapped as a categorical distribution."""
+    return data
+
+
 @flexdispatch
 def create_bernoulli_distribution[T](data: T) -> BernoulliDistribution:
     """Create a Bernoulli distribution from backend-specific probability data."""

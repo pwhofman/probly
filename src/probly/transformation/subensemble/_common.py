@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from flextype import flexdispatch
-from probly.transformation.ensemble import EnsemblePredictor
+from probly.transformation.ensemble import EnsemblePredictor, register_ensemble_members
 from probly.transformation.transformation import predictor_transformation
 
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ def subensemble_generator[**In, H, Out](
     raise NotImplementedError(msg)
 
 
-@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
+@predictor_transformation(permitted_predictor_types=None, post_transform=register_ensemble_members)
 @SubensemblePredictor.register_factory(autocast_builtins=True)
 def subensemble[**In, H, Out](
     base: Predictor[In, H],
