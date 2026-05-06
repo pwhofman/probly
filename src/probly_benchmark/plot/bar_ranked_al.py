@@ -34,6 +34,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from omegaconf import DictConfig
 
+from probly.plot.config import PlotConfig
 from probly_benchmark.plot import cache_al
 from probly_benchmark.plot.utils import resolve_label, resolve_save_path
 
@@ -158,6 +159,7 @@ def _draw_plot(
     title: str,
 ) -> Figure:
     """Bar plot for UQ methods + horizontal baseline reference lines."""
+    plot_config = PlotConfig()
     if not bars:
         fig, ax = plt.subplots(figsize=(8.0, 5.0))
         ax.set_title(title + " (no UQ data)")
@@ -189,15 +191,34 @@ def _draw_plot(
         line.set_label(f"baseline / {baseline['strategy'].replace('_', ' ')}")
         legend_handles.append(line)
 
-    bar_handles = ax.bar(x, means, yerr=stds, capsize=3, color="#4C78A8", zorder=2)
+    bar_width = 0.8
+    bar_handles = ax.bar(
+        x,
+        means,
+        width=bar_width,
+        yerr=stds,
+        capsize=4,
+        color=plot_config.color(0),
+        edgecolor="none",
+        error_kw={"ecolor": "#333333", "elinewidth": 1.2, "capthick": 1.2},
+        zorder=2,
+    )
     bar_handles.set_label("UQ method")
 
+    # Side padding equals the inter-bar gap (matches bar_ranked.py).
+    inter_bar_gap = 1.0 - bar_width
+    ax.set_xlim(-bar_width / 2 - inter_bar_gap, len(bars) - 1 + bar_width / 2 + inter_bar_gap)
     ax.set_xticks(x)
     ax.set_xticklabels(method_labels, rotation=30, ha="right")
     ax.set_ylabel("NAUC")
     ax.set_title(title)
     ax.set_ylim(0.0, 1.0)
-    ax.yaxis.grid(visible=True, linestyle="--", alpha=0.5)
+    ax.yaxis.grid(
+        visible=True,
+        linestyle=plot_config.grid_linestyle,
+        alpha=plot_config.grid_alpha,
+        color=plot_config.color_gridline,
+    )
     ax.set_axisbelow(True)
     ax.legend(
         handles=[bar_handles, *legend_handles],

@@ -24,6 +24,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from omegaconf import DictConfig
 
+from probly.plot.config import PlotConfig
 from probly_benchmark.plot import cache_al
 from probly_benchmark.plot.utils import resolve_label, resolve_save_path
 
@@ -97,8 +98,8 @@ def _draw_curves(
     title: str,
 ) -> Figure:
     """Render one ``(dataset, notion)`` figure with overlaid top-K + baselines."""
+    plot_config = PlotConfig()
     fig, ax = plt.subplots(figsize=(7.0, 4.5))
-    cmap = plt.get_cmap("tab10")
     grey = plt.get_cmap("Greys")
 
     for idx, (label, x, mean, std) in enumerate(baseline_curves):
@@ -108,15 +109,30 @@ def _draw_curves(
             ax.fill_between(x, mean - std, mean + std, color=color, alpha=0.10, zorder=0)
 
     for idx, (label, x, mean, std) in enumerate(uq_curves):
-        color = cmap(idx % 10)
-        (line,) = ax.plot(x, mean, label=label, color=color, marker="o", markersize=3, zorder=2)
+        color = plot_config.color(idx)
+        ax.plot(
+            x,
+            mean,
+            label=label,
+            color=color,
+            marker="o",
+            markersize=3,
+            linewidth=plot_config.line_width,
+            zorder=2,
+        )
         if np.any(std > 0):
-            ax.fill_between(x, mean - std, mean + std, color=line.get_color(), alpha=0.15, zorder=1)
+            ax.fill_between(x, mean - std, mean + std, color=color, alpha=plot_config.fill_alpha, zorder=1)
 
     ax.set_xlabel("Labeled samples")
     ax.set_ylabel("Test accuracy")
     ax.set_title(title)
-    ax.grid(visible=True, linestyle="--", alpha=0.4)
+    ax.grid(
+        visible=True,
+        linestyle=plot_config.grid_linestyle,
+        alpha=plot_config.grid_alpha,
+        color=plot_config.color_gridline,
+    )
+    ax.set_axisbelow(True)
     ax.legend(fontsize="small", loc="lower right")
     fig.tight_layout()
     return fig
