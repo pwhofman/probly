@@ -1,40 +1,24 @@
 """Local cache for active-learning wandb run data.
 
-Mirrors the structure of :mod:`probly_benchmark.plot.cache` but tailored to
-the AL run shape: per-iteration ``test_accuracy`` lives in run history (not
-summary), and the cache key picks up the AL strategy plus three more axes
-that vary across the user's sweep (notion of uncertainty, supervised loss,
-calibration).
+Two-stage flow:
 
-Cache layout::
-
-    probly_cache/{entity}/{project}/{dataset_key}/{method}/{strategy}/
-        notion_{notion}/loss_{supervised_loss}/cal_{calibration}/seed_{seed}.json
-
-``dataset_key`` is the value used to identify a dataset in :data:`AL_DATASETS`,
-e.g. ``openml_6``, ``openml_155``, ``openml_156``, ``cifar10``,
-``fashion_mnist``.
+1. **Bulk download** (``cache_bulk_al.py``) -- pulls every finished run from
+   each source project verbatim into a raw store at
+   ``probly_cache/_raw/{entity}/{source_project}/{run_id}.json``. No
+   filtering, no dedup; just (config, summary, history) per run.
+2. **Analyze + dedup** (``cache_analyze_al.py``) -- walks the raw store,
+   applies the *complete* predicate (state, summary, history length),
+   classifies each run by the cache combo
+   ``(ds_key, method, strategy, notion, loss, cal, seed)``, picks the
+   newest complete run per combo, and writes the merged sink at
+   ``probly_cache/{entity}/{sink}/{ds_key}/{method}/{strategy}/notion_{notion}/loss_{loss}/cal_{cal}/seed_{seed}.json``.
 
 For non-uncertainty strategies the ``notion`` segment is ``notion_n_a`` (the
-strategy ignores the notion field). The wandb fetch filters on ``notion``
-only when the strategy is ``"uncertainty"``.
+strategy ignores the notion field).
 
-Each JSON record:
-
-.. code-block:: json
-
-    {
-      "run_id": "...",
-      "name": "al_dropout_openml_xh5xzvg4",
-      "entity": "probly",
-      "project": "al_openml_v1600_0505",
-      "fetched_at": "2026-...",
-      "config": {seed, dataset.{name,openml_id}, method.name, al_strategy.name, calibration.name, ...},
-      "summary": {"nauc": 0.72, "final_accuracy": 0.70},
-      "history": [{"iteration": 0, "labeled_size": 100, "test_accuracy": 0.755}, ...]
-    }
-
-Cache modes (``read | refresh | off``) match :mod:`probly_benchmark.plot.cache`.
+Each merged record carries ``source_project`` + ``source_run_id`` so the
+provenance of every cache cell stays traceable to the wandb run that
+produced it.
 """
 
 from __future__ import annotations
@@ -42,10 +26,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 import json
 from typing import TYPE_CHECKING, Any
-import warnings
 
 import numpy as np
-import wandb
 
 from probly_benchmark.paths import CACHE_PATH
 
@@ -53,10 +35,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
     from pathlib import Path
 
-    from omegaconf import DictConfig
-
-
-CacheMode = str  # "read" | "refresh" | "off"
+    import wandb
 
 
 # Summary scalars we care about. Anything else logged on the run is ignored.
@@ -281,12 +260,52 @@ def _history_from_run(run: wandb.apis.public.Run) -> list[dict[str, Any]]:
     return rows
 
 
-def _build_record_from_run(run: wandb.apis.public.Run, entity: str, project: str) -> dict[str, Any]:
+# --------------------------------------------------------------------------
+# Bulk download primitives (used by ``cache_bulk_al.py``)
+# --------------------------------------------------------------------------
+
+
+def raw_dir(entity: str, source_project: str) -> Path:
+    """Return the raw-cache directory for ``{entity}/{source_project}``."""
+    return CACHE_PATH / "_raw" / entity / source_project
+
+
+def raw_record_path(entity: str, source_project: str, run_id: str) -> Path:
+    """Return the path to a single raw cache file."""
+    return raw_dir(entity, source_project) / f"{run_id}.json"
+
+
+def save_raw_record(record: dict[str, Any]) -> None:
+    """Write one raw run record to the bulk store."""
+    path = raw_record_path(record["entity"], record["source_project"], record["run_id"])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w") as fh:
+        json.dump(record, fh, default=_json_default)
+
+
+def iter_raw_records(entity: str, source_project: str) -> Iterable[dict[str, Any]]:
+    """Yield every raw record cached for ``{entity}/{source_project}``."""
+    directory = raw_dir(entity, source_project)
+    if not directory.exists():
+        return
+    for path in sorted(directory.glob("*.json")):
+        with path.open() as fh:
+            yield json.load(fh)
+
+
+def build_raw_record(
+    run: wandb.apis.public.Run,
+    entity: str,
+    source_project: str,
+) -> dict[str, Any]:
+    """Build a raw record from a wandb run. Always succeeds (no filtering)."""
     return {
         "run_id": run.id,
         "name": run.name,
         "entity": entity,
-        "project": project,
+        "source_project": source_project,
+        "state": run.state,
+        "created_at": str(run.created_at),
         "fetched_at": datetime.now(UTC).isoformat(),
         "config": _config_to_dict(run.config),
         "summary": _summary_from_run(run),
@@ -294,153 +313,111 @@ def _build_record_from_run(run: wandb.apis.public.Run, entity: str, project: str
     }
 
 
-def _fetch_records_from_wandb(
-    entity: str,
-    project: str,
-    ds_key: str,
-    method: str,
-    strategy: str,
-    notion: str | None,
-    supervised_loss: str | None,
-    calibration: str | None,
-    seeds: Iterable[Any] | None,
-) -> list[dict[str, Any]]:
-    api = wandb.Api(timeout=60)
+# --------------------------------------------------------------------------
+# Classification (used by ``cache_analyze_al.py``)
+# --------------------------------------------------------------------------
 
-    filters: dict[str, Any] = {
-        "config.method.name": method,
-        "config.al_strategy.name": strategy,
-        "state": "finished",
-    }
-    if ds_key.startswith("openml_"):
-        filters["config.dataset.name"] = "openml"
-        filters["config.dataset.openml_id"] = int(ds_key.removeprefix("openml_"))
+
+# Status keys returned by :func:`classify_raw_record`.
+STATUS_COMPLETE = "complete"
+STATUS_WRONG_STATE = "wrong_state"
+STATUS_MISSING_SUMMARY = "missing_summary"
+STATUS_MISSING_N_ITER = "missing_n_iterations"
+STATUS_TRUNCATED = "truncated_history"
+STATUS_MISSING_AXES = "missing_combo_axes"
+
+
+def _check_summary(summary: dict[str, Any]) -> bool:
+    """Return ``True`` iff ``nauc`` and ``final_accuracy`` are present and parseable."""
+    nauc = summary.get("nauc")
+    final_acc = summary.get("final_accuracy")
+    if nauc is None or final_acc is None:
+        return False
+    try:
+        float(nauc)
+        float(final_acc)
+    except (TypeError, ValueError):
+        return False
+    return True
+
+
+def _extract_combo(cfg: dict[str, Any]) -> dict[str, Any] | None:
+    """Pull the cache-cell axes out of a config; return ``None`` if any are missing."""
+    method, strategy, notion, loss, calibration = _config_axes(cfg)
+    if method == "None" or strategy == "None":
+        return None
+
+    ds = cfg.get("dataset") or {}
+    if isinstance(ds, dict):
+        ds_name = ds.get("name")
+        ds_id = ds.get("openml_id")
     else:
-        filters["config.dataset.name"] = ds_key
-    # Notion only varies for the ``uncertainty`` strategy. Filter only when
-    # meaningful; non-uncertainty strategies often omit ``al_strategy.notion``
-    # in their configs entirely, so a strict match would return nothing.
-    if strategy == "uncertainty" and notion:
-        filters["config.al_strategy.notion"] = notion
-    if supervised_loss:
-        filters["config.supervised_loss.name"] = supervised_loss
-    if calibration:
-        filters["config.calibration.name"] = calibration
-    if seeds is not None:
-        filters["config.seed"] = {"$in": list(seeds)}
+        ds_name = ds
+        ds_id = None
+    if not isinstance(ds_name, str):
+        return None
+    try:
+        ds_key = dataset_key(ds_name, ds_id)
+    except (ValueError, KeyError):
+        return None
 
-    runs = api.runs(f"{entity}/{project}", filters=filters, order="-created_at")
+    seed = cfg.get("seed")
+    if seed is None:
+        return None
 
-    seen_seeds: set[Any] = set()
-    records: list[dict[str, Any]] = []
-    for run in runs:
-        seed = run.config.get("seed")
-        if seed in seen_seeds:
-            continue
-        seen_seeds.add(seed)
-        records.append(_build_record_from_run(run, entity, project))
-    return records
+    return {
+        "ds_key": ds_key,
+        "method": method,
+        "strategy": strategy,
+        "notion": notion,
+        "supervised_loss": loss,
+        "calibration": calibration,
+        "seed": seed,
+    }
 
 
-def _method_filters(method_entry: DictConfig | dict[str, Any]) -> str:
-    name = method_entry.get("name")
-    if not isinstance(name, str):
-        msg = f"Method entry must have a string 'name' field; got {method_entry!r}."
-        raise TypeError(msg)
-    return name
+def classify_raw_record(record: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    """Return ``(status, combo)`` for one raw record.
 
-
-def fetch_with_cache(
-    entity: str,
-    project: str,
-    *,
-    ds_key: str,
-    method_entry: DictConfig | dict[str, Any],
-    strategy: str,
-    notion: str | None = None,
-    supervised_loss: str | None = None,
-    calibration: str | None = None,
-    default_seeds: Iterable[Any] | None,
-    mode: CacheMode = "read",
-) -> list[dict[str, Any]]:
-    """Return cache-shaped AL records for one (method, strategy, ...) combo.
-
-    Args:
-        entity: W&B entity.
-        project: W&B project (e.g. ``"al_openml_v1600_0505"``).
-        ds_key: ``dataset_key(...)`` value (e.g. ``"openml_6"``).
-        method_entry: Method config entry. Must have ``name``; optionally
-            ``seeds``.
-        strategy: Acquisition strategy (``"uncertainty"``, ``"random"``, ...).
-        notion: Uncertainty notion (``"epistemic"`` / ``"total"`` /
-            ``"aleatoric"``). Only used when ``strategy == "uncertainty"``.
-        supervised_loss: Loss name (``"cross_entropy"`` / ``"label_smoothing"``
-            / ``"label_relaxation"``). Defaults to ``cross_entropy`` for
-            cache pathing.
-        calibration: Calibration name (``"none"`` / ``"temperature_scaling"``
-            / ``"vector_scaling"``).
-        default_seeds: Fallback seed list when ``method_entry`` has no seeds.
-        mode: ``"read"`` | ``"refresh"`` | ``"off"``.
-
-    Returns:
-        List of run-record dicts.
+    ``combo`` is a dict ``{ds_key, method, strategy, notion, supervised_loss,
+    calibration, seed}`` when ``status == "complete"``, else ``None``. ``status``
+    is one of the ``STATUS_*`` constants and tells you why a record was rejected.
     """
-    method = _method_filters(method_entry)
-    entry_seeds = method_entry.get("seeds") if hasattr(method_entry, "get") else None
-    seeds = (
-        list(entry_seeds) if entry_seeds is not None else (list(default_seeds) if default_seeds is not None else None)
-    )
+    if record.get("state") != "finished":
+        return STATUS_WRONG_STATE, None
 
-    args = (entity, project, ds_key, method, strategy, notion, supervised_loss, calibration)
+    if not _check_summary(record.get("summary") or {}):
+        return STATUS_MISSING_SUMMARY, None
 
-    if mode == "off":
-        return _fetch_records_from_wandb(*args, seeds)
+    cfg = record.get("config") or {}
+    n_iter_raw = cfg.get("n_iterations")
+    try:
+        n_iter = int(n_iter_raw) if n_iter_raw is not None else None
+    except (TypeError, ValueError):
+        n_iter = None
+    if n_iter is None:
+        return STATUS_MISSING_N_ITER, None
 
-    if mode == "refresh":
-        records = _fetch_records_from_wandb(*args, seeds)
-        for record in records:
-            save_run(record)
-        return records
+    history = record.get("history") or []
+    if len(history) < n_iter + 1:
+        return STATUS_TRUNCATED, None
 
-    if mode != "read":
-        msg = f"Unknown cache mode {mode!r}. Expected one of 'read', 'refresh', 'off'."
-        raise ValueError(msg)
+    combo = _extract_combo(cfg)
+    if combo is None:
+        return STATUS_MISSING_AXES, None
+    return STATUS_COMPLETE, combo
 
-    cached = load_runs(
-        entity,
-        project,
-        ds_key,
-        method,
-        strategy,
-        notion=notion,
-        supervised_loss=supervised_loss,
-        calibration=calibration,
-        seeds=seeds,
-    )
 
-    if seeds is None:
-        if cached:
-            return cached
-        records = _fetch_records_from_wandb(*args, None)
-        for record in records:
-            save_run(record)
-        return records
+def to_sink_record(raw_record: dict[str, Any], sink_project: str) -> dict[str, Any]:
+    """Adapt a raw record into the merged-sink record shape consumed by ``save_run``.
 
-    cached_seeds = {r["config"].get("seed") for r in cached}
-    missing = [s for s in seeds if s not in cached_seeds]
-    if not missing:
-        return cached
-
-    new_records = _fetch_records_from_wandb(*args, missing)
-    for record in new_records:
-        save_run(record)
-    fetched_seeds = {r["config"].get("seed") for r in new_records}
-    still_missing = [s for s in missing if s not in fetched_seeds]
-    if still_missing:
-        warnings.warn(
-            f"No finished AL run found for method '{method}' / strategy '{strategy}' / "
-            f"notion={notion!r} / loss={supervised_loss!r} / cal={calibration!r} on "
-            f"{ds_key} in {entity}/{project} for seeds={still_missing}.",
-            stacklevel=2,
-        )
-    return [*cached, *new_records]
+    Strips bulk-store-only fields and rewrites ``project`` to point at the
+    sink directory segment so :func:`save_run` lands the file in the merged
+    cache.
+    """
+    sink_record = dict(raw_record)
+    sink_record["entity"] = raw_record["entity"]
+    sink_record["project"] = sink_project
+    sink_record["source_project"] = raw_record["source_project"]
+    sink_record["source_run_id"] = raw_record["run_id"]
+    return sink_record

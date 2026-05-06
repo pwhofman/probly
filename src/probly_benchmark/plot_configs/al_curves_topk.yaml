@@ -2,12 +2,16 @@ defaults:
   - comparison: ???
   - _self_
 
-wandb:
+# Cache reads only -- no wandb traffic at plot time. Files are read from
+# probly_cache/{cache.entity}/{cache.sink}/. Use ``cache_wandb_al.py`` to
+# populate or refresh the sink directory ahead of time.
+cache:
   entity: "probly"
-  project: "al_openml_v1600_0505"
+  sink: "al_openml_merged"
+  mode: read   # only ``read`` is honored by this script.
 
 # OpenML task ids (or "cifar10" / "fashion_mnist") to render curves for.
-datasets: [openml_6, openml_155, openml_156]
+datasets: [openml_6, openml_156]
 
 # One PDF per (dataset, notion). Bars and curves both use the same notion.
 notions: [epistemic, aleatoric, total]
@@ -29,9 +33,6 @@ seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 top_k: 4
 
 show: false
-
-cache:
-  mode: read   # read | refresh | off
 
 # null -> FIGURE_PATH; relative paths resolve from repo root.
 # bar_ranked_al.py must have written

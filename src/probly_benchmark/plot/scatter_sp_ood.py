@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import hydra
 import matplotlib.pyplot as plt
@@ -288,7 +288,7 @@ def main(cfg: DictConfig) -> dict[str, Path]:
             written[f"{band}_both"] = path
             print(f"Wrote {path}  ({len(combined)} methods, averaged over {len(non_empty)} datasets)")
 
-    _ = cast("int", int(cfg.get("decimals", 3)))  # reserved for future tick formatting
+    _ = int(cfg.get("decimals", 3))  # reserved for future tick formatting
     return written
 
 

@@ -1,0 +1,17 @@
+defaults:
+  - _self_
+
+wandb:
+  entity: "probly"
+  source_projects:
+    - "al_openml_v1600_0505"
+    - "al_openml_v1342_0605"
+    - "al_openml_v1612_0605"
+
+# Skip runs whose raw cache file already exists (fast incremental update).
+# Set to ``true`` to re-download every run from every source project.
+refresh: false
+
+# Optional filter on dataset.openml_id. ``null`` means "every finished run".
+# Useful to focus on the two datasets we currently care about (6, 156).
+openml_id_filter: [6, 156]

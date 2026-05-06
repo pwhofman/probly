@@ -22,7 +22,6 @@ import warnings
 import hydra
 import matplotlib.pyplot as plt
 import numpy as np
-from omegaconf import DictConfig
 
 from probly.plot.config import PlotConfig
 from probly_benchmark.plot import cache_al
@@ -32,6 +31,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from matplotlib.figure import Figure
+    from omegaconf import DictConfig
 
 
 _NOTION_TITLE = {"epistemic": "Epistemic (EU)", "aleatoric": "Aleatoric (AU)", "total": "Total (TU)"}
@@ -142,28 +142,22 @@ def _gather_baseline_curves(
     cfg: DictConfig,
     *,
     ds_key: str,
-    cache_mode: str,
     default_seeds: list[int] | None,
 ) -> list[tuple[str, np.ndarray, np.ndarray, np.ndarray]]:
     bl = cfg.baselines
     out: list[tuple[str, np.ndarray, np.ndarray, np.ndarray]] = []
     for strategy in bl.get("strategies", []):
-        try:
-            records = cache_al.fetch_with_cache(
-                cfg.wandb.entity,
-                cfg.wandb.project,
-                ds_key=ds_key,
-                method_entry={"name": bl.method},
-                strategy=strategy,
-                notion=None,
-                supervised_loss=bl.supervised_loss,
-                calibration=bl.calibration,
-                default_seeds=default_seeds,
-                mode=cache_mode,
-            )
-        except (RuntimeError, ValueError) as exc:
-            warnings.warn(f"Baseline {bl.method}/{strategy} skipped: {exc}", stacklevel=2)
-            continue
+        records = cache_al.load_runs(
+            cfg.cache.entity,
+            cfg.cache.sink,
+            ds_key,
+            bl.method,
+            strategy,
+            notion=None,
+            supervised_loss=bl.supervised_loss,
+            calibration=bl.calibration,
+            seeds=default_seeds,
+        )
         arrays = _curve_arrays(records)
         if arrays is None:
             continue
@@ -179,7 +173,6 @@ def main(cfg: DictConfig) -> list[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     top_k = int(cfg.get("top_k", 4))
-    cache_mode = cfg.get("cache", DictConfig({})).get("mode", "read")
     default_seeds = list(cfg.seeds) if cfg.get("seeds") else None
     method_entries = cast("list[DictConfig]", cfg.methods)
     notions = list(cfg.notions)
@@ -190,7 +183,6 @@ def main(cfg: DictConfig) -> list[Path]:
         baseline_curves = _gather_baseline_curves(
             cfg,
             ds_key=ds_key,
-            cache_mode=cache_mode,
             default_seeds=default_seeds,
         )
         for notion in notions:
@@ -198,22 +190,17 @@ def main(cfg: DictConfig) -> list[Path]:
             selected = _select_top_k(method_entries, ranking, top_k, exclude={baseline_method})
             uq_curves: list[tuple[str, np.ndarray, np.ndarray, np.ndarray]] = []
             for entry in selected:
-                try:
-                    records = cache_al.fetch_with_cache(
-                        cfg.wandb.entity,
-                        cfg.wandb.project,
-                        ds_key=ds_key,
-                        method_entry=entry,
-                        strategy=cfg.uq_strategy,
-                        notion=notion,
-                        supervised_loss=cfg.supervised_loss,
-                        calibration=cfg.calibration,
-                        default_seeds=default_seeds,
-                        mode=cache_mode,
-                    )
-                except (RuntimeError, ValueError) as exc:
-                    warnings.warn(f"Skipping {entry.name}: {exc}", stacklevel=2)
-                    continue
+                records = cache_al.load_runs(
+                    cfg.cache.entity,
+                    cfg.cache.sink,
+                    ds_key,
+                    entry.name,
+                    cfg.uq_strategy,
+                    notion=notion,
+                    supervised_loss=cfg.supervised_loss,
+                    calibration=cfg.calibration,
+                    seeds=default_seeds,
+                )
                 arrays = _curve_arrays(records)
                 if arrays is None:
                     continue

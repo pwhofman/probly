@@ -1,0 +1,18 @@
+defaults:
+  - _self_
+
+# Source projects to scan in the raw store. Should match the projects you
+# bulk-downloaded with cache_bulk_al.py.
+wandb:
+  entity: "probly"
+  source_projects:
+    - "al_openml_v1600_0505"
+    - "al_openml_v1342_0605"
+    - "al_openml_v1612_0605"
+
+# Where the merged, deduped cache lands.
+cache:
+  sink: "al_openml_merged"
+
+# Optional restriction. ``null`` = keep every combo we find.
+allowed_datasets: [openml_6, openml_156]

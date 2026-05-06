@@ -32,7 +32,6 @@ import warnings
 import hydra
 import matplotlib.pyplot as plt
 import numpy as np
-from omegaconf import DictConfig
 
 from probly.plot.config import PlotConfig
 from probly_benchmark.plot import cache_al
@@ -42,6 +41,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from matplotlib.figure import Figure
+    from omegaconf import DictConfig
 
 
 _BASELINE_LINESTYLES = ("--", "-.", ":", (0, (3, 1, 1, 1)))
@@ -84,30 +84,24 @@ def _gather_uq(
     ds_key: str,
     method_entries: list[DictConfig],
     notion: str,
-    cache_mode: str,
     default_seeds: list[int] | None,
 ) -> list[dict]:
-    """Per-method NAUC entries for the bar plot at one notion."""
+    """Per-method NAUC entries for the bar plot at one notion (cache-only)."""
     out: list[dict] = []
     for entry in method_entries:
         if entry.name == cfg.baselines.method:
             continue
-        try:
-            records = cache_al.fetch_with_cache(
-                cfg.wandb.entity,
-                cfg.wandb.project,
-                ds_key=ds_key,
-                method_entry=entry,
-                strategy=cfg.uq_strategy,
-                notion=notion,
-                supervised_loss=cfg.supervised_loss,
-                calibration=cfg.calibration,
-                default_seeds=default_seeds,
-                mode=cache_mode,
-            )
-        except (RuntimeError, ValueError) as exc:
-            warnings.warn(f"Skipping {entry.name}: {exc}", stacklevel=2)
-            continue
+        records = cache_al.load_runs(
+            cfg.cache.entity,
+            cfg.cache.sink,
+            ds_key,
+            entry.name,
+            cfg.uq_strategy,
+            notion=notion,
+            supervised_loss=cfg.supervised_loss,
+            calibration=cfg.calibration,
+            seeds=default_seeds,
+        )
         agg = _aggregate_nauc(records)
         if agg is None:
             continue
@@ -121,29 +115,23 @@ def _gather_baselines(
     cfg: DictConfig,
     *,
     ds_key: str,
-    cache_mode: str,
     default_seeds: list[int] | None,
 ) -> list[dict]:
-    """Mean/std NAUC for each baseline strategy (always ``base`` method)."""
+    """Mean/std NAUC for each baseline strategy (always ``base`` method, cache-only)."""
     bl = cfg.baselines
     out: list[dict] = []
     for strategy in bl.strategies:
-        try:
-            records = cache_al.fetch_with_cache(
-                cfg.wandb.entity,
-                cfg.wandb.project,
-                ds_key=ds_key,
-                method_entry={"name": bl.method},
-                strategy=strategy,
-                notion=None,  # ignored for non-uncertainty
-                supervised_loss=bl.supervised_loss,
-                calibration=bl.calibration,
-                default_seeds=default_seeds,
-                mode=cache_mode,
-            )
-        except (RuntimeError, ValueError) as exc:
-            warnings.warn(f"Baseline {bl.method}/{strategy} skipped: {exc}", stacklevel=2)
-            continue
+        records = cache_al.load_runs(
+            cfg.cache.entity,
+            cfg.cache.sink,
+            ds_key,
+            bl.method,
+            strategy,
+            notion=None,  # ignored for non-uncertainty (cache uses notion_n_a)
+            supervised_loss=bl.supervised_loss,
+            calibration=bl.calibration,
+            seeds=default_seeds,
+        )
         agg = _aggregate_nauc(records)
         if agg is None:
             continue
@@ -235,7 +223,6 @@ def _per_dataset_notion(
     notion: str,
     method_entries: list[DictConfig],
     out_dir: Path,
-    cache_mode: str,
     default_seeds: list[int] | None,
 ) -> None:
     """Render one bar PDF + ranking JSON for ``(ds_key, notion)``."""
@@ -244,13 +231,11 @@ def _per_dataset_notion(
         ds_key=ds_key,
         method_entries=method_entries,
         notion=notion,
-        cache_mode=cache_mode,
         default_seeds=default_seeds,
     )
     baselines = _gather_baselines(
         cfg,
         ds_key=ds_key,
-        cache_mode=cache_mode,
         default_seeds=default_seeds,
     )
 
@@ -273,7 +258,6 @@ def main(cfg: DictConfig) -> None:
     out_dir = resolve_save_path(cfg.get("save_path"))
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    cache_mode = cfg.get("cache", DictConfig({})).get("mode", "read")
     default_seeds = list(cfg.seeds) if cfg.get("seeds") else None
     method_entries = cast("list[DictConfig]", cfg.methods)
 
@@ -285,7 +269,6 @@ def main(cfg: DictConfig) -> None:
                 notion,
                 method_entries,
                 out_dir,
-                cache_mode,
                 default_seeds,
             )
 

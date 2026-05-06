@@ -2,12 +2,18 @@ defaults:
   - comparison: ???
   - _self_
 
-wandb:
+# Cache reads only -- no wandb traffic at plot time. Files are read from
+# probly_cache/{cache.entity}/{cache.sink}/. Use ``cache_wandb_al.py`` to
+# populate or refresh the sink directory ahead of time.
+cache:
   entity: "probly"
-  project: "al_openml_v1600_0505"
+  sink: "al_openml_merged"
+  # ``mode`` is kept for symmetry with cache_wandb_al; only ``read`` is
+  # honored by this script (plot scripts never reach out to wandb).
+  mode: read
 
 # OpenML task ids (or "cifar10" / "fashion_mnist") to render bar plots for.
-datasets: [openml_6, openml_155, openml_156]
+datasets: [openml_6, openml_156]
 
 # One PDF per (dataset, notion). The bars in each plot show every UQ method
 # from cfg.methods using the ``uq_strategy`` at the listed notion;
@@ -29,9 +35,6 @@ baselines:
 seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 show: false
-
-cache:
-  mode: read   # read | refresh | off
 
 # null -> FIGURE_PATH; relative paths resolve from repo root
 save_path: null
