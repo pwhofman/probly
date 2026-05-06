@@ -7,11 +7,7 @@ import jax.numpy as jnp
 
 from ._common import (
     auc,
-    average_interval_size,
     average_precision_score,
-    average_set_size,
-    empirical_coverage_classification,
-    empirical_coverage_regression,
     precision_recall_curve,
     roc_auc_score,
     roc_curve,
@@ -90,24 +86,3 @@ def roc_auc_score_jax(y_true: jax.Array, y_score: jax.Array) -> jax.Array:
     """Compute area under the ROC curve for JAX arrays."""
     fpr, tpr, _ = roc_curve(y_true, y_score)
     return auc(fpr, tpr)  # ty:ignore[invalid-return-type]
-
-
-@empirical_coverage_classification.register(jnp.ndarray)
-def _empirical_coverage_classification_jax(y_pred: jnp.ndarray, y_true: jnp.ndarray) -> float:
-    contained = y_pred[jnp.arange(len(y_true)), y_true.astype(int)]
-    return contained.mean().item()
-
-
-@empirical_coverage_regression.register(jnp.ndarray)
-def _empirical_coverage_regression_jax(y_pred: jnp.ndarray, y_true: jnp.ndarray) -> float:
-    return ((y_true >= y_pred[:, 0]) & (y_true <= y_pred[:, 1])).mean().item()
-
-
-@average_set_size.register(jnp.ndarray)
-def _average_set_size_jax(y_pred: jnp.ndarray) -> float:
-    return y_pred.sum(axis=1).mean().item()
-
-
-@average_interval_size.register(jnp.ndarray)
-def _average_interval_size_jax(y_pred: jnp.ndarray) -> float:
-    return (y_pred[:, 1] - y_pred[:, 0]).mean().item()
