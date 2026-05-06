@@ -9,15 +9,16 @@ pytest.importorskip("torch_geometric")
 
 from torch import nn  # noqa: E402
 from torch_geometric.data import Data  # noqa: E402
+from torch_geometric.utils import add_remaining_self_loops  # noqa: E402
 
-from probly.predictor import predict  # noqa: E402
-from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: E402
-from probly.train.evidential.torch import mixture_uce_loss, postnet_loss  # noqa: E402
-from probly.transformation.graph_posterior_network import (  # noqa: E402
+from probly.method.graph_posterior_network import (  # noqa: E402
     cuq_graph_neural_network,
     graph_posterior_network,
     lop_graph_posterior_network,
 )
+from probly.predictor import predict  # noqa: E402
+from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: E402
+from probly.train.evidential.torch import mixture_uce_loss, postnet_loss  # noqa: E402
 
 
 def _tiny_graph() -> Data:
@@ -89,13 +90,62 @@ def test_lop_graph_posterior_network_forward_raw_contains_mixture_terms() -> Non
     assert isinstance(data.train_mask, torch.Tensor)
     assert isinstance(data.y, torch.Tensor)
 
-    raw = model.forward_raw(data)
+    alpha_features, mixture_weights = model(data)
 
-    assert raw.alpha.shape == (data.num_nodes, 3)
-    assert raw.alpha_features.shape == (data.num_nodes, 3)
-    assert raw.mixture_weights.shape == (data.num_nodes, data.num_nodes)
-    assert torch.isfinite(raw.alpha).all()
-    assert (raw.alpha > 0).all()
+    assert alpha_features.shape == (data.num_nodes, 3)
+    assert mixture_weights.shape == (data.num_nodes, data.num_nodes)
+    assert torch.isfinite(alpha_features).all()
+    assert torch.isfinite(mixture_weights).all()
+    assert (alpha_features > 0).all()
+
+
+def test_lop_graph_posterior_network_sparse_propagation_matches_random_walk_ppr() -> None:
+    data = _tiny_graph()
+    data.edge_index = torch.cat(
+        [
+            data.edge_index,
+            torch.tensor([[0, 0, 1], [2, 3, 4]], dtype=torch.long),
+        ],
+        dim=1,
+    )
+    model = lop_graph_posterior_network(_encoder(), 3, 3, encoder_dim=5, num_flows=2, propagation_steps=2)
+    assert isinstance(data.edge_index, torch.Tensor)
+    assert data.num_nodes is not None
+
+    _, mixture_weights = model(data)
+    edge_weight = torch.ones(data.edge_index.shape[1])
+    edge_index, edge_weight = add_remaining_self_loops(data.edge_index, edge_weight, 1.0, data.num_nodes)
+    adjacency = torch.zeros(data.num_nodes, data.num_nodes)
+    adjacency[edge_index[0], edge_index[1]] = edge_weight
+    degree = adjacency.sum(dim=1).clamp_min(1.0)
+    propagation_matrix = adjacency / degree.view(-1, 1)
+    expected = torch.eye(data.num_nodes)
+    for _ in range(2):
+        expected = 0.9 * propagation_matrix @ expected + 0.1 * torch.eye(data.num_nodes)
+
+    torch.testing.assert_close(mixture_weights, expected)
+    torch.testing.assert_close(mixture_weights.sum(dim=-1), torch.ones(data.num_nodes))
+
+
+def test_lop_graph_posterior_network_reuses_cached_propagation_weights() -> None:
+    data = _tiny_graph()
+    model = lop_graph_posterior_network(_encoder(), 3, 3, encoder_dim=5, num_flows=2, propagation_steps=2)
+
+    _, first_weights = model(data)
+    _, second_weights = model(data)
+
+    assert second_weights is first_weights
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required for autocast dtype checks.")
+def test_lop_graph_posterior_network_autocast_uses_float16_propagation_weights() -> None:
+    data = _tiny_graph().to("cuda")
+    model = lop_graph_posterior_network(_encoder(), 3, 3, encoder_dim=5, num_flows=2, propagation_steps=2).to("cuda")
+
+    with torch.amp.autocast("cuda", dtype=torch.float16):
+        _, mixture_weights = model(data)
+
+    assert mixture_weights.dtype == torch.float16
 
 
 def test_lop_mixture_uce_loss_backward() -> None:
@@ -104,8 +154,8 @@ def test_lop_mixture_uce_loss_backward() -> None:
     train_mask = torch.as_tensor(data.train_mask, dtype=torch.bool)
     y = torch.as_tensor(data.y, dtype=torch.long)
 
-    raw = model.forward_raw(data)
-    loss = mixture_uce_loss(raw.alpha_features, raw.mixture_weights[train_mask], y[train_mask])
+    alpha_features, mixture_weights = model(data)
+    loss = mixture_uce_loss(alpha_features, mixture_weights[train_mask], y[train_mask])
     loss.backward()
 
     assert model.latent_encoder.weight.grad is not None

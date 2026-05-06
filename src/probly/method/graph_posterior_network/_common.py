@@ -108,6 +108,8 @@ def lop_graph_posterior_network_generator[**In, Out: DirichletMixtureDistributio
     propagation_steps: int = 10,
     teleport_probability: float = 0.1,
     add_self_loops: bool = True,
+    cache_propagation_weights: bool = True,
+    propagation_weight_cache_size: int = 1,
 ) -> LOPGraphPosteriorNetworkPredictor[In, Out]:
     """Return a LOP graph posterior network given an encoder model."""
     msg = f"No LOP graph posterior network registered for type {type(input_encoder)}"
@@ -194,6 +196,8 @@ def lop_graph_posterior_network[**In, Out: DirichletMixtureDistribution](
     propagation_steps: int = 10,
     teleport_probability: float = 0.1,
     add_self_loops: bool = True,
+    cache_propagation_weights: bool = True,
+    propagation_weight_cache_size: int = 1,
 ) -> LOPGraphPosteriorNetworkPredictor[In, Out]:
     """Create a LOP-GPN predictor with approximate pooled Dirichlet outputs.
 
@@ -208,6 +212,8 @@ def lop_graph_posterior_network[**In, Out: DirichletMixtureDistribution](
         propagation_steps: Number of APPNP propagation steps.
         teleport_probability: APPNP teleport probability.
         add_self_loops: Whether APPNP should add self-loops.
+        cache_propagation_weights: Whether to cache dense LOP propagation weights per ``edge_index`` tensor.
+        propagation_weight_cache_size: Maximum number of ``edge_index`` tensors to cache.
 
     Returns:
         A LOP-GPN predictor returning approximate Dirichlet alphas.
@@ -223,6 +229,8 @@ def lop_graph_posterior_network[**In, Out: DirichletMixtureDistribution](
         propagation_steps=propagation_steps,
         teleport_probability=teleport_probability,
         add_self_loops=add_self_loops,
+        cache_propagation_weights=cache_propagation_weights,
+        propagation_weight_cache_size=propagation_weight_cache_size,
     )
 
 
