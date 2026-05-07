@@ -38,6 +38,7 @@ def test_registered_generator_called(dummy_predictor: Predictor) -> None:
         dummy_predictor,
         num_members=4,
         reset_params=True,
+        rngs=1,
     )
     assert result is expected_result
 
