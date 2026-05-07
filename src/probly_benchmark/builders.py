@@ -220,6 +220,7 @@ def _natural_posterior_network_builder(
         **_filter_params(method_fn, params),
     )
 
+
 def _subensemble_builder(
     method_fn: Callable[..., nn.Module],
     params: dict[str, Any],
