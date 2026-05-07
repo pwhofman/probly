@@ -90,7 +90,7 @@ def _get_state_dict(model: nn.Module | list[nn.Module]) -> dict | list[dict]:
         inner = model.model.model if isinstance(model.model, FeatureExtractor) else model.model
         return {
             "laplace": model.state_dict(),
-            "inner_model": cast("nn.Module", inner).state_dict(),
+            "inner_model": inner.state_dict(),
         }
     return model.state_dict()
 
