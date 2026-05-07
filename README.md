@@ -32,23 +32,38 @@ uv add probly
 
 ```python
 import probly
-import torch.nn.functional as F
+from probly.transformation.ensemble import ensemble
+from probly.representer import representer
+from probly.quantification import quantify
+from probly.evaluation.ood import evaluate_ood
 
 net = ...  # get neural network
-model = probly.method.dropout(net)  # make neural network a Dropout model
+
+# transform model
+model = ensemble(net, num_members=10)
+
 train(model)  # train model as usual
 
-data = ...  # get data
-data_ood = ...  # get out of distribution data
-sampler = probly.representation.Sampler(model, num_samples=20)
-sample = sampler.predict(data)  # predict an uncertainty representation
-sample_ood = sampler.predict(data_ood)
+# get data
+data_id = ... 
+data_ood = ...  
 
-eu = probly.quantification.classification.mutual_information(sample)  # quantify model's epistemic uncertainty
-eu_ood = probly.quantification.classification.mutual_information(sample_ood)
+# represent uncertainty
+rep = representer(model)
+out_id = rep.represent(data_id)
+out_ood = rep.represent(data_ood)
 
-auroc = probly.evaluation.tasks.out_of_distribution_detection(eu, eu_ood)  # evaluate model's uncertainty
+# quantify uncertainty
+eu_id = quantify(out_id).epistemic  
+eu_ood = quantify(out_ood).epistemic 
+
+# evaluate uncertainty
+auroc = evaluate_ood(eu_id, eu_ood)  
+print(auroc)
 ```
+
+## 🤝 Contributing
+Contributions are welcome - see [CONTRIBUTING.md](.github/CONTRIBUTING.md) for guidelines on adding methods, representations, or evaluation protocols.
 
 ## 📜 License
 This project is licensed under the [MIT License](https://github.com/pwhofman/probly/blob/main/LICENSE).
