@@ -24,6 +24,12 @@ def main() -> None:
     parser.add_argument("--forceatlas2-iterations", type=int, default=50)
     parser.add_argument("--amazon-layout", choices=("forceatlas2", "precomputed"), default="precomputed")
     parser.add_argument("--amazon-layout-path", type=Path, default=DEFAULT_AMAZON_LAYOUT_PATH)
+    parser.add_argument(
+        "--figure-dpi",
+        type=int,
+        default=200,
+        help="DPI for rasterized layers embedded in generated PDF figures.",
+    )
     parser.add_argument("--device", default="cpu", help="Torch device for model training and inference, e.g. 'cpu' or 'cuda'.")
     parser.add_argument("--retrain", action="store_true", help="Retrain models even when compatible checkpoints exist.")
     parser.add_argument(
@@ -48,6 +54,7 @@ def main() -> None:
         forceatlas2_iterations=args.forceatlas2_iterations,
         amazon_layout=args.amazon_layout,
         amazon_layout_path=args.amazon_layout_path,
+        figure_dpi=args.figure_dpi,
         device=args.device,
         retrain=args.retrain,
         inference_only=args.inference_only,

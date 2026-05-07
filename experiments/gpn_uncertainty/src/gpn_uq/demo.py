@@ -10,6 +10,7 @@ import time
 from typing import Literal, Sequence
 
 import matplotlib.pyplot as plt
+from matplotlib import font_manager
 from matplotlib.collections import LineCollection
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Polygon
@@ -30,7 +31,12 @@ from probly.method.graph_posterior_network import (
     lop_graph_posterior_network,
 )
 
-plt.rcParams["font.family"] = "DejaVu Sans"
+FIGURE_FONT_DIR = Path(__file__).resolve().parents[2] / "assets" / "fonts"
+for font_path in FIGURE_FONT_DIR.glob("FiraSans-*.ttf"):
+    font_manager.fontManager.addfont(font_path)
+plt.rcParams["font.family"] = "Fira Sans"
+plt.rcParams["pdf.fonttype"] = 42
+plt.rcParams["ps.fonttype"] = 42
 
 ModelName = Literal["GPN", "LOP-GPN", "CUQ-GNN"]
 ExperimentName = Literal["synthetic", "amazon-photo", "all"]
@@ -704,7 +710,7 @@ def draw_graph_row(
                 draw_simplex_density_inset(ax, result, zoom_node, pos[zoom_node], zoom_inset_center, colors, error_color)
         if accuracy_inside:
             if show_column_titles:
-                ax.set_title(name, fontsize=11.0, fontweight="bold", color="#171A1F", pad=7)
+                ax.set_title(name, fontsize=12.0, fontweight="bold", color="#171A1F", pad=7)
             ax.text(
                 0.035,
                 0.965,
@@ -712,14 +718,14 @@ def draw_graph_row(
                 transform=ax.transAxes,
                 ha="left",
                 va="top",
-                fontsize=9.0,
+                fontsize=10.0,
                 fontweight="bold",
                 color="#171A1F",
                 bbox={"boxstyle": "round,pad=0.22", "facecolor": "#FBFCFF", "edgecolor": "none", "alpha": 0.86},
                 zorder=20,
             )
         elif show_column_titles:
-            ax.set_title(f"{name}\naccuracy = {accuracy_label}", fontsize=10.5, fontweight="bold", color="#171A1F", pad=7)
+            ax.set_title(f"{name}\naccuracy = {accuracy_label}", fontsize=11.5, fontweight="bold", color="#171A1F", pad=7)
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_aspect("equal")
@@ -734,14 +740,14 @@ def plot_graph(
     data: Data,
     results: dict[ModelName, EvaluationResult],
     output_path: Path,
-    title: str,
+    figure_dpi: int,
     show_density_zoom: bool = False,
     edge_linewidth: float = 0.35,
     edge_alpha: float = 0.55,
 ) -> None:
     """Plot graph predictions and uncertainty for all model variants."""
     LOGGER.info("Writing graph uncertainty plot to %s", output_path)
-    fig, axes = plt.subplots(1, len(results), figsize=(14.5, 4.75), sharex=True, sharey=True)
+    fig, axes = plt.subplots(1, len(results), figsize=(4.2 * len(results), 4.75), sharex=True, sharey=True)
     fig.patch.set_facecolor("#FFFFFF")
     draw_graph_row(
         axes,
@@ -750,25 +756,10 @@ def plot_graph(
         show_density_zoom=show_density_zoom,
         edge_linewidth=edge_linewidth,
         edge_alpha=edge_alpha,
+        accuracy_inside=True,
     )
-    fig.suptitle(
-        title,
-        fontsize=11.5,
-        fontweight="bold",
-        color="#171A1F",
-        y=0.975,
-    )
-    fig.text(
-        0.5,
-        0.035,
-        "color = prediction  |  size = epistemic uncertainty  |  red = classification error  |  inset = predicted density over class probabilities",
-        ha="center",
-        va="center",
-        fontsize=8.8,
-        color="#5A6472",
-    )
-    fig.subplots_adjust(left=0.035, right=0.99, bottom=0.105, top=0.85, wspace=0.14)
-    plt.savefig(output_path, dpi=450)
+    fig.subplots_adjust(left=0.01, right=0.998, bottom=0.012, top=0.92, wspace=0.025)
+    plt.savefig(output_path, dpi=figure_dpi, bbox_inches="tight", pad_inches=0.01)
     plt.close()
 
 
@@ -778,10 +769,11 @@ def plot_unified_graph(
     amazon_data: Data,
     amazon_results: dict[ModelName, EvaluationResult],
     output_path: Path,
+    figure_dpi: int,
 ) -> None:
     """Plot synthetic and Amazon Photos graph results in one 2x3 figure."""
     LOGGER.info("Writing unified graph uncertainty plot to %s", output_path)
-    fig, axes = plt.subplots(2, len(MODEL_NAMES), figsize=(14.5, 9.6), sharex="row", sharey="row")
+    fig, axes = plt.subplots(2, len(MODEL_NAMES), figsize=(12.6, 9.6), sharex="row", sharey="row")
     fig.patch.set_facecolor("#FFFFFF")
     draw_graph_row(
         axes[0],
@@ -800,30 +792,21 @@ def plot_unified_graph(
         show_column_titles=False,
         accuracy_inside=True,
     )
-    fig.text(
-        0.5,
-        0.028,
-        "color = prediction  |  size = epistemic uncertainty  |  red = classification error  |  inset = predicted density over class probabilities",
-        ha="center",
-        va="center",
-        fontsize=8.8,
-        color="#5A6472",
-    )
-    fig.subplots_adjust(left=0.072, right=0.995, bottom=0.055, top=0.955, wspace=0.055, hspace=0.055)
+    fig.subplots_adjust(left=0.05, right=0.998, bottom=0.012, top=0.965, wspace=0.025, hspace=0.045)
     for row_idx, label in enumerate(("Synthetic Clusters", "Amazon Photos")):
         bbox = axes[row_idx, 0].get_position()
         fig.text(
-            bbox.x0 - 0.034,
+            bbox.x0 - 0.026,
             0.5 * (bbox.y0 + bbox.y1),
             label,
             ha="center",
             va="center",
             rotation=90,
-            fontsize=11.0,
+            fontsize=12.0,
             fontweight="bold",
             color="#171A1F",
         )
-    plt.savefig(output_path, dpi=450)
+    plt.savefig(output_path, dpi=figure_dpi, bbox_inches="tight", pad_inches=0.01)
     plt.close()
 
 
@@ -847,6 +830,7 @@ def run_synthetic_demo(
     retrain: bool,
     inference_only: bool,
     use_mixed_precision: bool,
+    figure_dpi: int,
 ) -> tuple[Data, dict[ModelName, EvaluationResult]]:
     """Train synthetic graph variants and write plots and metrics."""
     LOGGER.info("Starting synthetic demo: seed=%d, nodes_per_class=%d, device=%s", seed, nodes_per_class, device)
@@ -889,7 +873,16 @@ def run_synthetic_demo(
         data,
         results,
         output_dir / "graph_uncertainty.pdf",
-        "Prediction and Epistemic Uncertainty on a Synthetic Graph",
+        figure_dpi=figure_dpi,
+        show_density_zoom=True,
+        edge_linewidth=0.65,
+        edge_alpha=0.82,
+    )
+    plot_graph(
+        data,
+        {name: results[name] for name in ("GPN", "LOP-GPN")},
+        output_dir / "graph_uncertainty_min.pdf",
+        figure_dpi=figure_dpi,
         show_density_zoom=True,
         edge_linewidth=0.65,
         edge_alpha=0.82,
@@ -913,6 +906,7 @@ def run_amazon_photo_demo(
     retrain: bool,
     inference_only: bool,
     use_mixed_precision: bool,
+    figure_dpi: int,
 ) -> tuple[Data, dict[ModelName, EvaluationResult]]:
     """Train or load Amazon Photos variants and write plots and metrics."""
     LOGGER.info(
@@ -976,7 +970,7 @@ def run_amazon_photo_demo(
         data,
         results,
         output_dir / "amazon_photo_graph_uncertainty.pdf",
-        "Prediction and Epistemic Uncertainty on Amazon Photos",
+        figure_dpi=figure_dpi,
     )
     write_metrics(results, output_dir / "amazon_photo_metrics.json")
     return data, results
@@ -996,11 +990,15 @@ def run_demo(
     forceatlas2_iterations: int = 10,
     amazon_layout: LayoutName = "precomputed",
     amazon_layout_path: Path = DEFAULT_AMAZON_LAYOUT_PATH,
+    figure_dpi: int = 200,
     device: str = "cpu",
     retrain: bool = False,
     inference_only: bool = False,
 ) -> None:
     """Run one or both GPN graph uncertainty demos."""
+    if figure_dpi <= 0:
+        msg = "figure_dpi must be positive."
+        raise ValueError(msg)
     torch_device = torch.device(device)
     if torch_device.type == "cuda" and not torch.cuda.is_available():
         raise RuntimeError("CUDA was requested, but torch.cuda.is_available() is False")
@@ -1021,6 +1019,7 @@ def run_demo(
             retrain=retrain,
             inference_only=inference_only,
             use_mixed_precision=use_mixed_precision,
+            figure_dpi=figure_dpi,
         )
     if experiment in {"amazon-photo", "all"}:
         amazon_output = run_amazon_photo_demo(
@@ -1038,6 +1037,7 @@ def run_demo(
             retrain=retrain,
             inference_only=inference_only,
             use_mixed_precision=use_mixed_precision,
+            figure_dpi=figure_dpi,
         )
     if experiment == "all" and synthetic_output is not None and amazon_output is not None:
         synthetic_data, synthetic_results = synthetic_output
@@ -1048,4 +1048,5 @@ def run_demo(
             amazon_data,
             amazon_results,
             output_dir / "unified_graph_uncertainty.pdf",
+            figure_dpi=figure_dpi,
         )
