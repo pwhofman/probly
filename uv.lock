@@ -2006,6 +2006,7 @@ all-ml = [
     { name = "sentence-transformers" },
     { name = "torch" },
     { name = "torch-uncertainty" },
+    { name = "torch-geometric" },
     { name = "torchvision" },
     { name = "transformers" },
 ]
@@ -2051,6 +2052,7 @@ dev = [
     { name = "sphinxcontrib-bibtex" },
     { name = "torch" },
     { name = "torch-uncertainty" },
+    { name = "torch-geometric" },
     { name = "torchvision" },
     { name = "transformers" },
     { name = "ty" },
@@ -2102,6 +2104,11 @@ torch-uncertainty = [
     { name = "torch-uncertainty" },
     { name = "torchvision" },
 ]
+torch-geometric = [
+    { name = "torch" },
+    { name = "torch-geometric" },
+    { name = "torchvision" },
+]
 transformers = [
     { name = "accelerate" },
     { name = "sentence-transformers" },
@@ -2133,6 +2140,7 @@ all-ml = [
     { name = "sentence-transformers", specifier = ">=2.3.0" },
     { name = "torch", specifier = ">=2.6.0" },
     { name = "torch-uncertainty", specifier = ">=0.11.0" },
+    { name = "torch-geometric", specifier = ">=2.6.0" },
     { name = "torchvision", specifier = ">=0.21.0" },
     { name = "transformers", specifier = ">=4.33.2" },
 ]
@@ -2179,6 +2187,7 @@ dev = [
     { name = "torch", specifier = "<2.11.0" },
     { name = "torch", specifier = ">=2.6.0" },
     { name = "torch-uncertainty", specifier = ">=0.11.0" },
+    { name = "torch-geometric", specifier = ">=2.6.0" },
     { name = "torchvision", specifier = "<0.26.0" },
     { name = "torchvision", specifier = ">=0.21.0" },
     { name = "transformers", specifier = ">=4.33.2" },
@@ -2225,6 +2234,11 @@ torch-uncertainty = [
     { name = "lightning", specifier = ">=2.6.0" },
     { name = "torch", specifier = ">=2.6.0" },
     { name = "torch-uncertainty", specifier = ">=0.11.0" },
+    { name = "torchvision", specifier = ">=0.21.0" },
+]
+torch-geometric = [
+    { name = "torch", specifier = ">=2.6.0" },
+    { name = "torch-geometric", specifier = ">=2.6.0" },
     { name = "torchvision", specifier = ">=0.21.0" },
 ]
 transformers = [
@@ -3377,6 +3391,26 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/33/58/c568a2a4b99c82eee9fd4f88b2e2d70ae50c9a6dde96e825f4bdb332f1d8/torch_uncertainty-0.11.0.tar.gz", hash = "sha256:ec2ee0e12b1360e7b99d816060edea77a0a372013994bebd4128e12a7eb7a0f7", size = 216627, upload-time = "2026-03-24T14:00:02.25Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5e/58/33c2556bb7b890e0d110ab39833c7767af7fd0486f384682c13e6c83cfb2/torch_uncertainty-0.11.0-py3-none-any.whl", hash = "sha256:7a621737d7792dfd3c37fd0aecda67dc919ea245a681d3073bd127e975c711cf", size = 386908, upload-time = "2026-03-24T14:00:00.25Z" },
+]
+
+[[package]]
+name = "torch-geometric"
+version = "2.7.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "fsspec" },
+    { name = "jinja2" },
+    { name = "numpy" },
+    { name = "psutil" },
+    { name = "pyparsing" },
+    { name = "requests" },
+    { name = "tqdm" },
+    { name = "xxhash" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/75/63/b210152635902da7fe79fcdd16517fae108f457a0ed22c737e702a9afbae/torch_geometric-2.7.0.tar.gz", hash = "sha256:f9099e4aece1a9f618c84dbaac33a77f43139736698c7e8bddf3301ef1f2e8d4", size = 876725, upload-time = "2025-10-15T20:48:03.443Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1e/d3/4dffd7300500465e0b4a2ae917dcb2ce771de0b9a772670365799a27c024/torch_geometric-2.7.0-py3-none-any.whl", hash = "sha256:6e0cd3ad824d484651ef5d308fc66c687bfcf5ba040d56d1e0fe0f81f365e292", size = 1275346, upload-time = "2025-10-15T20:48:01.949Z" },
 ]
 
 [[package]]

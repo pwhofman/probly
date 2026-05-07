@@ -221,7 +221,7 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor | np.ndarray](TorchLikeImpl
         if self.ndim < 2:
             msg = "mT requires at least 2 batch dimensions."
             raise ValueError(msg)
-        return cast("Self", torch.transpose(cast("Any", self), -2, -1))
+        return self.transpose(-2, -1)
 
     @override
     @property
@@ -378,3 +378,7 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor | np.ndarray](TorchLikeImpl
             shape = shape[0]
 
         return torch.reshape(self, shape)  # ty:ignore[invalid-return-type, invalid-argument-type]
+
+    def gather(self, dim: int, index: torch.Tensor) -> Self:
+        """Return a copy with gathered protected values along a batch dimension."""
+        return torch.gather(self, dim, index)  # ty:ignore[no-matching-overload]

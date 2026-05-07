@@ -59,6 +59,10 @@ torch = [
     "torch>=2.6.0",         # first cp313 wheels
     "torchvision>=0.21.0"
 ]
+torch_geometric = [
+    { include-group = "torch" },
+    "torch-geometric>=2.6.0",
+]
 jax = [
     "jax>=0.8.1",
     "flax>=0.12.4"
@@ -86,6 +90,7 @@ torch-uncertainty = [
 ]
 all_ml = [
     { include-group = "torch" },
+    { include-group = "torch_geometric" },
     { include-group = "jax" },
     { include-group = "sklearn" },
     { include-group = "river" },

@@ -10,7 +10,9 @@ from probly.representation.distribution.torch_categorical import (
 )
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
 from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution
+from probly.representation.distribution.torch_mixture import TorchDirichletMixtureDistribution
 from probly.representation.distribution.torch_sparse_log_categorical import TorchSparseLogCategoricalDistribution
+from probly.representation.torch_functions import torch_average
 from probly.utils.torch import torch_entropy
 
 from ._common import (
@@ -108,6 +110,14 @@ def torch_categorical_sample_entropy_of_expected_predictive_distribution(
     return torch_categorical_entropy(expected_distribution, base=base)
 
 
+@entropy_of_expected_predictive_distribution.register(TorchDirichletMixtureDistribution)
+def torch_mixture_entropy_of_expected_predictive_distribution(
+    distribution: TorchDirichletMixtureDistribution, base: LogBase = None
+) -> torch.Tensor:
+    """Compute the entropy of the expected value of a torch mixture distribution."""
+    return torch_categorical_entropy(distribution.mean, base=base)
+
+
 # Conditional entropy
 
 
@@ -146,6 +156,15 @@ def torch_categorical_sample_conditional_entropy(
     return torch.mean(entropies, dim=axis)
 
 
+@conditional_entropy.register(TorchDirichletMixtureDistribution)
+def torch_mixture_conditional_entropy(
+    distribution: TorchDirichletMixtureDistribution, base: LogBase = None
+) -> torch.Tensor:
+    """Compute the component-weighted conditional entropy of a torch mixture distribution."""
+    component_entropy = torch_dirichlet_conditional_entropy(distribution.components, base=base)
+    return torch_average(component_entropy, dim=-1, weights=distribution.mixture_weights)
+
+
 # Mutual information
 
 
@@ -170,6 +189,16 @@ def torch_categorical_sample_mutual_information(
     expected_value_entropy = torch_categorical_entropy(torch.mean(p, dim=axis), base=base)
     conditional_entropy_value = torch.mean(torch_categorical_entropy(p, base=base), dim=axis)
     return expected_value_entropy - conditional_entropy_value
+
+
+@mutual_information.register(TorchDirichletMixtureDistribution)
+def torch_mixture_mutual_information(
+    distribution: TorchDirichletMixtureDistribution, base: LogBase = None
+) -> torch.Tensor:
+    """Compute mutual information of a torch mixture distribution."""
+    return torch_mixture_entropy_of_expected_predictive_distribution(
+        distribution, base=base
+    ) - torch_mixture_conditional_entropy(distribution, base=base)
 
 
 # Zero-one proper scoring rule measures

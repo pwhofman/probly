@@ -211,6 +211,21 @@ def _normalize_batch_reduction_dims(dim: object, batch_ndim: int) -> int | tuple
     raise TypeError(msg)
 
 
+def _expand_average_weights_for_protected_axes(
+    weights: object,
+    value: TorchProtectedValue,
+    axes_count: int,
+) -> object:
+    if not isinstance(weights, torch.Tensor) or axes_count == 0:
+        return weights
+
+    batch_ndim = value_ndim(value) - axes_count
+    if weights.ndim == batch_ndim:
+        return weights.reshape((*weights.shape, *((1,) * axes_count)))
+
+    return weights
+
+
 class _TorchFunction(Protocol):
     def __call__(
         self,
@@ -399,6 +414,13 @@ def protected_batch_reduction_function(  # noqa: PLR0912
                 field_kwargs["out"] = out_internals.values[name]
             else:
                 field_kwargs["out"] = out
+
+        if func is torch_average and "weights" in field_kwargs:
+            field_kwargs["weights"] = _expand_average_weights_for_protected_axes(
+                field_kwargs["weights"],
+                value,
+                axes_count,
+            )
 
         result = func(*tuple(field_args), **field_kwargs)
 
@@ -595,7 +617,7 @@ def protected_squeeze_function(
 
         result = value
         for axis in reversed(squeeze_dims):
-            result = func(cast("Any", result), dim=axis)
+            result = func(result, dim=axis)
         return result
 
     return _apply_unary(internals, op)
@@ -694,13 +716,68 @@ def protected_cat_function(
         else:
             result = func(field_values, dim=mapped_dim, out=out_value)
         if out_value is None:
-            results[name] = cast("TorchProtectedValue", result)
+            results[name] = result
 
     if out is not None:
         return out
 
     _validate_batch_sync(results, template.protected_axes)
     return template.create(results)
+
+
+@torch_function.register(torch.gather)
+@torch_internals_override(torch_param_pos=0)
+def protected_gather_function(
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    internals: TorchAxisProtectedInternals,
+) -> Any:  # noqa: ANN401
+    if _has_numpy_protected_value(internals):
+        return NotImplemented
+
+    dim = args[1] if len(args) > 1 else kwargs.get("dim")
+    index = args[2] if len(args) > 2 else kwargs.get("index")
+    out = kwargs.get("out")
+    sparse_grad = kwargs.get("sparse_grad", False)
+
+    if not isinstance(dim, int) or not isinstance(index, torch.Tensor):
+        return NotImplemented
+    if index.ndim != internals.batch_ndim:
+        msg = "gather index must have the same ndim as the protected object's batch dimensions."
+        raise ValueError(msg)
+
+    out_internals = torch_axis_protected_internals(out)
+    if out_internals is not None and out_internals.protected_axes != internals.protected_axes:
+        msg = "out must use the same protected_axes layout as input values."
+        raise ValueError(msg)
+    if out is not None and out_internals is None and len(internals.protected_axes) != 1:
+        msg = "non-protected out is only supported for single-field protected objects."
+        raise TypeError(msg)
+
+    results: dict[str, TorchProtectedValue] = {}
+    for name, axes_count in internals.protected_axes.items():
+        value = internals.values[name]
+        batch_ndim = value_ndim(value) - axes_count
+        mapped_dim = normalize_axis(dim, batch_ndim)
+
+        field_index = index
+        for _ in range(axes_count):
+            field_index = field_index.unsqueeze(-1)
+        if axes_count > 0:
+            target_shape = (*index.shape, *protected_shape(value_shape(value), axes_count))
+            field_index = field_index.expand(target_shape)
+
+        out_value = out_internals.values[name] if out_internals is not None else out
+        result = func(value, mapped_dim, field_index, sparse_grad=sparse_grad, out=out_value)
+        if out_value is None:
+            results[name] = result
+
+    if out is not None:
+        return out
+
+    _validate_batch_sync(results, internals.protected_axes)
+    return internals.create(results)
 
 
 @torch_function.register(torch.stack)
@@ -750,7 +827,7 @@ def protected_stack_function(
         else:
             result = func(field_values, dim=mapped_dim, out=out_value)
         if out_value is None:
-            results[name] = cast("TorchProtectedValue", result)
+            results[name] = result
 
     if out is not None:
         return out
