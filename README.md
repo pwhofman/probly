@@ -40,7 +40,7 @@ from probly.evaluation.ood import evaluate_ood
 net = ...  # get neural network
 
 # transform model
-model = ensemble(net, num_members=10)
+model = dropout(net, predictor_type='logit_classifier')
 
 train(model)  # train model as usual
 
@@ -49,7 +49,7 @@ data_id = ...
 data_ood = ...  
 
 # represent uncertainty
-rep = representer(model)
+rep = representer(model, num_samples=10)
 out_id = rep.represent(data_id)
 out_ood = rep.represent(data_ood)
 
