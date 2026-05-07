@@ -221,7 +221,7 @@ def average_interval_width[T](y_pred: T) -> float:
 
 
 @flexdispatch
-def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.0, **linprog_kwargs: object) -> float:
+def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.0005, **linprog_kwargs: object) -> float:
     """Empirical convex-hull coverage for distribution-valued targets.
 
     For each instance, the LP feasibility test

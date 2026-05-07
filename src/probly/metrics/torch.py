@@ -386,7 +386,7 @@ def _convex_hull_coverage_torch_convex(
     y_pred: TorchConvexCredalSet,
     y_true: TorchCategoricalDistribution,
     *,
-    epsilon: float = 0.0,
+    epsilon: float = 0.0005,
     **linprog_kwargs: object,
 ) -> object:
     """Hull coverage for a torch convex credal set; routes through the numpy LP solver.

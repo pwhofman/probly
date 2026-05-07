@@ -493,7 +493,7 @@ def _build_uncalibrated_model_from_checkpoint(
             )
             raise RuntimeError(msg)
         inner = model.model.model if isinstance(model.model, FeatureExtractor) else model.model
-        cast("nn.Module", inner).load_state_dict(state["inner_model"])
+        inner.load_state_dict(state["inner_model"])
         model.load_state_dict(state["laplace"])
         _to_device(model.model)
         model.model.eval()

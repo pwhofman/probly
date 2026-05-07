@@ -17,7 +17,7 @@ def torch_mean_squared_distance_to_scaled_one_hot(
     sample: TorchCategoricalDistributionSample, scale: float | None = None
 ) -> torch.Tensor:
     r"""Torch impl. Uses :math:`\|h_k - s e_c\|^2 = \|h_k\|^2 - 2s \max_j h_{k,j} + s^2` (no one-hot built)."""
-    tensor = sample.tensor.logits
+    tensor = sample.tensor.logits.float()
     num_classes = tensor.shape[-1]
     target_scale = float(num_classes) if scale is None else float(scale)
 
@@ -33,5 +33,5 @@ def torch_mean_squared_distance_to_scaled_one_hot(
 @total_logit_sample_variance.register(TorchCategoricalDistributionSample)
 def torch_total_logit_sample_variance(sample: TorchCategoricalDistributionSample) -> torch.Tensor:
     """Torch impl. Variance of total logits (logits summed across members)."""
-    tensor = sample.tensor.logits
+    tensor = sample.tensor.logits.float()
     return torch.var(tensor, dim=sample.sample_dim).sum(dim=-1)
