@@ -13,6 +13,7 @@ from probly.representation.distribution import (
     BernoulliDistribution,
     CategoricalDistribution,
     DirichletDistribution,
+    DirichletMixtureDistribution,
     Distribution,
     GaussianDistribution,
     create_bernoulli_distribution,
@@ -34,6 +35,7 @@ type PredictorName = Literal[
     "logit_classifier",
     "dirichlet_distribution_predictor",
     "evidential_classifier",
+    "dirichlet_mixture_distribution_predictor",
     "gaussian_distribution_predictor",
 ]
 
@@ -157,6 +159,13 @@ class BernoulliLogitDistributionPredictor[**In, Out: BernoulliDistribution](
 @runtime_checkable
 class DirichletDistributionPredictor[**In, Out: DirichletDistribution](DistributionPredictor[In, Out], Protocol):
     """Protocol for predictors that return a Dirichlet distribution over outputs."""
+
+
+@predictor_registry.multi_register(["dirichlet_mixture_distribution_predictor"])
+class DirichletMixtureDistributionPredictor[**In, Out: DirichletMixtureDistribution](
+    DistributionPredictor[In, Out], Protocol
+):
+    """Protocol for predictors that return a Dirichlet mixture distribution over outputs."""
 
 
 @predictor_registry.register("gaussian_distribution_predictor")

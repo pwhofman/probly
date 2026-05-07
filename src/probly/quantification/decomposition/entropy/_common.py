@@ -19,13 +19,14 @@ from probly.quantification.measure.distribution import (
 )
 from probly.representation.credal_set import CategoricalCredalSet
 from probly.representation.distribution import DistributionSample, SecondOrderDistribution
+from probly.representation.distribution._common import DirichletMixtureDistribution
 
 if TYPE_CHECKING:
     from probly.quantification.measure.distribution import SecondOrderDistributionLike
     from probly.quantification.measure.distribution._common import LogBase
 
 
-@decompose.register(SecondOrderDistribution | DistributionSample)
+@decompose.register(SecondOrderDistribution | DirichletMixtureDistribution | DistributionSample)
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
 class SecondOrderEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
     """Base class for entropy-based decomposition methods."""

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import hydra
+import numpy as np
 from omegaconf import DictConfig, OmegaConf
 import wandb
 import wandb.util
@@ -71,6 +72,17 @@ def _build_estimator(
     raw_train = cfg.method.get("train")
     train_kwargs = cast("dict[str, Any]", OmegaConf.to_container(raw_train, resolve=True)) if raw_train else {}
 
+    # ``method.active_learning`` may carry an optional ``train`` sub-block whose
+    # entries override (only at AL run time) the corresponding keys from the
+    # global ``method.train`` config. Anything else under ``method.active_learning``
+    # is forwarded to the representer as ``rep_kwargs``.
+    raw_al = cfg.method.get("active_learning")
+    al_block: dict[str, Any] = cast("dict[str, Any]", OmegaConf.to_container(raw_al, resolve=True)) if raw_al else {}
+    al_train_overrides = al_block.pop("train", None) or {}
+    if al_train_overrides:
+        train_kwargs = {**train_kwargs, **al_train_overrides}
+    rep_kwargs: dict[str, Any] = al_block
+
     needs_conformal = cfg.conformal.name != "none"
 
     if method == "base" and not needs_conformal:
@@ -84,10 +96,6 @@ def _build_estimator(
             device=device,
             in_features=in_features,
         )
-
-    rep_kwargs: dict[str, Any] = (
-        OmegaConf.to_container(cfg.method.active_learning, resolve=True) if cfg.method.get("active_learning") else {}
-    )  # ty: ignore[invalid-assignment]
 
     return UncertaintyEstimator(
         cfg=cfg,
@@ -166,6 +174,32 @@ def main(cfg: DictConfig) -> float:
         len(x_test),
         num_classes,
     )
+
+    # --- Optional pool / test subsampling for huge datasets (e.g. openml_155, _156).
+    # Caps the unlabeled pool and/or test set to a maximum size when the raw
+    # split exceeds the configured threshold. Drives a separate RNG stream
+    # (seed = cfg.seed + cfg.subsample_seed_offset) so the subsample is
+    # reproducible and independent of the model / strategy / estimator seed.
+    pool_cap = cfg.get("unlabeled_pool_max_size")
+    test_cap = cfg.get("test_max_size")
+    if pool_cap is not None or test_cap is not None:
+        sub_rng = np.random.default_rng(int(cfg.seed) + int(cfg.get("subsample_seed_offset", 0)))
+        if pool_cap is not None and len(x_train) > int(pool_cap):
+            idx = sub_rng.choice(len(x_train), size=int(pool_cap), replace=False)
+            x_train, y_train = x_train[idx], y_train[idx]
+            logger.info(
+                "Subsampled train pool: %d -> %d (unlabeled_pool_max_size)",
+                len(idx),
+                int(pool_cap),
+            )
+        if test_cap is not None and len(x_test) > int(test_cap):
+            idx = sub_rng.choice(len(x_test), size=int(test_cap), replace=False)
+            x_test, y_test = x_test[idx], y_test[idx]
+            logger.info(
+                "Subsampled test set:  %d -> %d (test_max_size)",
+                len(idx),
+                int(test_cap),
+            )
 
     # --- Pool ---
     pool = from_dataset(

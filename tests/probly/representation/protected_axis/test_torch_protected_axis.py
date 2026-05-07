@@ -107,6 +107,74 @@ def test_reshape_method_preserves_protected_axes() -> None:
     assert reshaped_with_tuple.protected_shape == (4,)
 
 
+def test_gather_preserves_protected_axes() -> None:
+    x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
+    index = torch.tensor([[2, 0], [1, 1]])
+
+    gathered = torch.gather(x, dim=1, index=index)
+
+    assert isinstance(gathered, SingleTensor)
+    assert tuple(gathered.tensor.shape) == (2, 2, 4)
+    assert gathered.shape == (2, 2)
+    assert gathered.protected_shape == (4,)
+    torch.testing.assert_close(
+        gathered.tensor, torch.gather(x.tensor, dim=1, index=index.unsqueeze(-1).expand(2, 2, 4))
+    )
+
+
+def test_gather_supports_negative_dim() -> None:
+    x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
+    index = torch.tensor([[2, 0], [1, 1]])
+
+    gathered = torch.gather(x, dim=-1, index=index)
+
+    assert isinstance(gathered, SingleTensor)
+    torch.testing.assert_close(
+        gathered.tensor, torch.gather(x.tensor, dim=1, index=index.unsqueeze(-1).expand(2, 2, 4))
+    )
+
+
+def test_gather_applies_to_all_fields() -> None:
+    x = InnerPairTensor(
+        left=torch.arange(24.0).reshape(2, 3, 4),
+        right=torch.arange(24.0).reshape(2, 3, 4) + 100,
+    )
+    index = torch.tensor([[2, 0], [1, 1]])
+    expanded_index = index.unsqueeze(-1).expand(2, 2, 4)
+
+    gathered = torch.gather(x, dim=1, index=index)
+
+    assert isinstance(gathered, InnerPairTensor)
+    assert tuple(gathered.left.shape) == (2, 2, 4)
+    assert tuple(gathered.right.shape) == (2, 2, 4)
+    torch.testing.assert_close(gathered.left, torch.gather(x.left, dim=1, index=expanded_index))
+    torch.testing.assert_close(gathered.right, torch.gather(x.right, dim=1, index=expanded_index))
+
+
+def test_gather_rejects_protected_axis_dim() -> None:
+    x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
+    index = torch.zeros((2, 3), dtype=torch.long)
+
+    with pytest.raises(ValueError, match="axis 2 is out of bounds"):
+        torch.gather(x, dim=2, index=index)
+
+
+def test_gather_rejects_index_with_wrong_batch_ndim() -> None:
+    x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
+    index = torch.zeros((2, 3, 1), dtype=torch.long)
+
+    with pytest.raises(ValueError, match="same ndim"):
+        torch.gather(x, dim=1, index=index)
+
+
+def test_gather_rejects_numpy_sidecar() -> None:
+    x = _mixed_tensor_numpy()
+    index = torch.tensor([[2, 0], [1, 1]])
+
+    with pytest.raises(TypeError):
+        torch.gather(x, dim=1, index=index)
+
+
 def test_unpermitted_torch_reductions_return_notimplemented() -> None:
     x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
 
@@ -142,6 +210,19 @@ def test_permitted_torch_average_reduces_only_batch_axes() -> None:
     assert isinstance(averaged, ReductionTensor)
     assert torch.allclose(averaged.tensor, torch_average(x.tensor, dim=0, weights=weights))
     assert averaged.shape == (3,)
+    assert averaged.protected_shape == (4,)
+
+
+def test_permitted_torch_average_expands_batch_shaped_weights_before_protected_axis() -> None:
+    x = ReductionTensor(torch.arange(24.0).reshape(2, 3, 4))
+    weights = torch.tensor([[1.0, 3.0, 1.0], [2.0, 1.0, 2.0]])
+
+    averaged = torch_average(x, dim=-1, weights=weights)
+
+    expected = torch_average(x.tensor, dim=1, weights=weights.unsqueeze(-1))
+    assert isinstance(averaged, ReductionTensor)
+    assert torch.allclose(averaged.tensor, expected)
+    assert averaged.shape == (2,)
     assert averaged.protected_shape == (4,)
 
 

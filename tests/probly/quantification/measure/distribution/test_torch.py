@@ -25,6 +25,7 @@ from probly.representation.distribution.torch_categorical import (
     TorchProbabilityCategoricalDistribution,
 )
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
+from probly.representation.distribution.torch_mixture import TorchMixtureDistribution
 
 CATEGORICAL_BASES: tuple[None | float | str, ...] = (None, 2.0, "normalize")
 
@@ -131,6 +132,41 @@ def test_torch_dirichlet_second_order_measures(base: None | float | str) -> None
     assert torch.allclose(measured_entropy_of_expected, expected_entropy_of_expected, rtol=rtol, atol=atol)
     assert torch.allclose(measured_conditional_entropy, expected_conditional_entropy, rtol=rtol, atol=atol)
     assert torch.allclose(measured_mutual_information, expected_mutual_information, rtol=rtol, atol=atol)
+
+
+@pytest.mark.parametrize("base", [None, 2.0])
+def test_torch_dirichlet_mixture_second_order_measures(base: None | float) -> None:
+    alphas = torch.tensor(
+        [
+            [[2.0, 1.0], [1.0, 3.0], [3.0, 1.0]],
+            [[1.0, 5.0], [4.0, 2.0], [2.0, 2.0]],
+        ],
+        dtype=torch.float64,
+    )
+    weights = torch.tensor([[1.0, 2.0, 1.0], [3.0, 1.0, 2.0]], dtype=torch.float64)
+    distribution = TorchMixtureDistribution(components=TorchDirichletDistribution(alphas), mixture_weights=weights)
+
+    normalized_weights = weights / weights.sum(dim=-1, keepdim=True)
+    component_means = alphas / alphas.sum(dim=-1, keepdim=True)
+    expected_mean = torch.sum(component_means * normalized_weights.unsqueeze(-1), dim=1)
+    expected_entropy_of_expected = Categorical(probs=expected_mean).entropy()
+    component_conditional_entropy = torch.digamma(alphas.sum(dim=-1) + 1.0) - torch.sum(
+        component_means * torch.digamma(alphas + 1.0), dim=-1
+    )
+    expected_conditional_entropy = torch.sum(component_conditional_entropy * normalized_weights, dim=-1)
+
+    if base is not None:
+        divisor = torch.log(torch.tensor(base, dtype=torch.float64))
+        expected_entropy_of_expected = expected_entropy_of_expected / divisor
+        expected_conditional_entropy = expected_conditional_entropy / divisor
+
+    expected_mutual_information = expected_entropy_of_expected - expected_conditional_entropy
+
+    assert torch.allclose(
+        entropy_of_expected_predictive_distribution(distribution, base=base), expected_entropy_of_expected
+    )
+    assert torch.allclose(conditional_entropy(distribution, base=base), expected_conditional_entropy)
+    assert torch.allclose(mutual_information(distribution, base=base), expected_mutual_information)
 
 
 @pytest.mark.parametrize("base", CATEGORICAL_BASES)
