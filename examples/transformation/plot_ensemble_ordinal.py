@@ -1,6 +1,6 @@
-"""==========================================
+"""===========================================
 Ensemble Ordinal Classification Uncertainty
-==========================================
+===========================================
 
 Demonstrate :func:`~probly.method.ensemble.ensemble`
 using a PyTorch multi-layer perceptron classifier on a dummy ordinal dataset.
@@ -41,7 +41,7 @@ y_train, y_test = torch.from_numpy(y_np[idx[:80]]), torch.from_numpy(y_np[idx[80
 
 # %%
 # Build and train the ensemble
-# -------------------------
+# ----------------------------
 # We use a simple PyTorch MLP and build an ensemble of 5.
 
 class MLPClassifier(nn.Module):

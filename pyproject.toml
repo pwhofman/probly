@@ -38,7 +38,7 @@ classifiers = [
 
 [tool.setuptools.packages.find]
 where = ["./src"]
-include = ["probly*", "pytraverse*", "flextype*"]
+include = ["probly", "probly.*", "pytraverse*", "flextype*"]
 
 [tool.setuptools.dynamic]
 version = { attr = "probly.__version__" }
