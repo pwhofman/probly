@@ -54,8 +54,8 @@ out_id = rep.represent(data_id)
 out_ood = rep.represent(data_ood)
 
 # quantify uncertainty
-eu_id = quantify(out_id).epistemic  
-eu_ood = quantify(out_ood).epistemic 
+eu_id = quantify(out_id).epistemic.detach().numpy()
+eu_ood = quantify(out_ood).epistemic.detach().numpy()
 
 # evaluate uncertainty
 auroc = evaluate_ood(eu_id, eu_ood)  
