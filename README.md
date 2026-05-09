@@ -45,8 +45,8 @@ model = dropout(net, predictor_type='logit_classifier')
 train(model)  # train model as usual
 
 # get data
-data_id = ... 
-data_ood = ...  
+data_id = ...
+data_ood = ...
 
 # represent uncertainty
 rep = representer(model, num_samples=10)
@@ -58,7 +58,7 @@ eu_id = quantify(out_id).epistemic.detach().numpy()
 eu_ood = quantify(out_ood).epistemic.detach().numpy()
 
 # evaluate uncertainty
-auroc = evaluate_ood(eu_id, eu_ood)  
+auroc = evaluate_ood(eu_id, eu_ood)
 print(auroc)
 ```
 
