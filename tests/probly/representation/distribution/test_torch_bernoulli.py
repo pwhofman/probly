@@ -89,3 +89,40 @@ def test_binary_logit_predictor_converts_to_bernoulli_distribution() -> None:
     torch.testing.assert_close(
         prediction.logits[..., 1] - prediction.logits[..., 0], torch.tensor([-1.0, 1.0], dtype=torch.float64)
     )
+
+
+def _torch_modules():
+    pytest.importorskip("torch")
+    import torch as _torch  # noqa: PLC0415
+
+    return _torch
+
+
+class TestTorchBernoulliDistribution:
+    """Torch-based Bernoulli distribution validation."""
+
+    def test_invalid_probabilities_raise(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_bernoulli import (  # noqa: PLC0415
+            TorchProbabilityBernoulliDistribution,
+        )
+
+        with pytest.raises(ValueError, match="must be in"):
+            TorchProbabilityBernoulliDistribution(tensor=torch.tensor([1.5]))
+
+    def test_negative_probabilities_raise(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_bernoulli import (  # noqa: PLC0415
+            TorchProbabilityBernoulliDistribution,
+        )
+
+        with pytest.raises(ValueError, match="must be in"):
+            TorchProbabilityBernoulliDistribution(tensor=torch.tensor([-0.1]))
+
+    def test_tensor_must_be_torch_tensor(self) -> None:
+        from probly.representation.distribution.torch_bernoulli import (  # noqa: PLC0415
+            TorchProbabilityBernoulliDistribution,
+        )
+
+        with pytest.raises(TypeError, match="torch tensor"):
+            TorchProbabilityBernoulliDistribution(tensor=[0.3])  # type: ignore[arg-type]

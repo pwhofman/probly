@@ -70,3 +70,27 @@ class TestTorch:
         scores = dirichlet_rl_score_func(dirichlet, y_true)
         expected = 1.0 - torch.tensor([10.0 / 10.0, 3.0 / 5.0])
         assert torch.allclose(scores, expected)
+
+
+class TestDirichletRLValidation:
+    def test_callable_requires_y_true(self) -> None:
+        from probly.conformal_scores import dirichlet_rl_score  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="y_true is required"):
+            dirichlet_rl_score(np.array([[1.0, 2.0]]))
+
+
+class TestDirichletRLTorch:
+    """Dirichlet-relative-likelihood torch coverage of the categorical adapter."""
+
+    def test_torch_dirichlet_distribution_input(self) -> None:
+        torch = pytest.importorskip("torch")
+        from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: PLC0415
+
+        alphas = torch.tensor([[10.0, 2.0, 1.0], [1.0, 5.0, 3.0]])
+        dist = TorchDirichletDistribution(alphas)
+        y_true = torch.tensor([0, 1])
+        result = dirichlet_rl_score_func(dist, y_true)
+        # alpha_y / max_alpha for y=0 (alpha=10, max=10) -> 0
+        # for y=1 (alpha=5, max=5) -> 0
+        np.testing.assert_allclose(result.numpy(), [0.0, 0.0], atol=1e-6)

@@ -187,3 +187,215 @@ class TestForwardPass:
         logits, densities = out(x)
         assert logits.shape == (2, NUM_CLASSES)
         assert densities.shape == (2, NUM_CLASSES)
+
+
+# --- Lower-level traverser & helper coverage ---
+
+
+def _torch_nn():
+    """Return torch + nn modules or skip the calling test if torch missing."""
+    pytest.importorskip("torch")
+    import torch as _torch  # noqa: PLC0415
+    from torch import nn as _nn  # noqa: PLC0415
+
+    return _torch, _nn
+
+
+class TestDDURepresentation:
+    """The TorchDDURepresentation dataclass."""
+
+    def test_can_construct(self) -> None:
+        _torch, _ = _torch_nn()
+        from probly.method.ddu.torch import TorchDDURepresentation  # noqa: PLC0415
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        rep = TorchDDURepresentation(
+            softmax=TorchProbabilityCategoricalDistribution(_torch.tensor([[0.5, 0.5]])),
+            densities=_torch.tensor([[1.0, 2.0]]),
+        )
+        assert rep.densities.shape == (1, 2)
+
+
+class TestNegativeLogDensity:
+    """Negative log density convertor."""
+
+    def test_with_torch_tensor(self) -> None:
+        _torch, _ = _torch_nn()
+        from probly.method.ddu.torch import torch_negative_log_density  # noqa: PLC0415
+
+        densities = _torch.tensor([[0.0, 0.0], [-1e10, 0.0]])
+        out = torch_negative_log_density(densities)
+        assert out.shape == (2,)
+
+
+class TestReLUReplacementTraverser:
+    """``torch_ddu_traverser`` replaces ReLU and ReLU6 with LeakyReLU."""
+
+    def test_relu6_replaced_with_leaky_relu(self) -> None:
+        _torch, _nn = _torch_nn()
+        from probly.method.ddu.torch import (  # noqa: PLC0415
+            HAS_RESIDUAL,
+            HEAD_MODULE,
+            SN_COEFF,
+            torch_ddu_traverser,
+        )
+        from probly.traverse_nn import nn_compose  # noqa: PLC0415
+        from pytraverse import traverse_with_state  # noqa: PLC0415
+
+        relu6 = _nn.ReLU6()
+        out, _ = traverse_with_state(
+            relu6,
+            nn_compose(torch_ddu_traverser),
+            init={HEAD_MODULE: None, SN_COEFF: 3.0, HAS_RESIDUAL: False},
+        )
+        assert isinstance(out, _nn.LeakyReLU)
+        assert out.negative_slope == 0.01
+
+    def test_relu_replaced_with_leaky_relu(self) -> None:
+        _torch, _nn = _torch_nn()
+        from probly.method.ddu.torch import (  # noqa: PLC0415
+            HAS_RESIDUAL,
+            HEAD_MODULE,
+            SN_COEFF,
+            torch_ddu_traverser,
+        )
+        from probly.traverse_nn import nn_compose  # noqa: PLC0415
+        from pytraverse import traverse_with_state  # noqa: PLC0415
+
+        out, _ = traverse_with_state(
+            _nn.ReLU(),
+            nn_compose(torch_ddu_traverser),
+            init={HEAD_MODULE: None, SN_COEFF: 3.0, HAS_RESIDUAL: False},
+        )
+        assert isinstance(out, _nn.LeakyReLU)
+
+
+class TestTorchDDUPredictorInit:
+    """End-to-end DDU predictor construction."""
+
+    def test_no_linear_raises(self) -> None:
+        _torch, _nn = _torch_nn()
+        from probly.method.ddu.torch import TorchDDUPredictor  # noqa: PLC0415
+
+        model = _nn.Sequential(_nn.ReLU(), _nn.Tanh())
+        with pytest.raises(ValueError, match=r"No nn\.Linear"):
+            TorchDDUPredictor(model)
+
+    def test_no_residual_warns(self) -> None:
+        _torch, _nn = _torch_nn()
+        from probly.method.ddu.torch import TorchDDUPredictor  # noqa: PLC0415
+
+        model = _nn.Sequential(_nn.Linear(4, 8), _nn.ReLU(), _nn.Linear(8, 3))
+        with pytest.warns(UserWarning, match="residual"):
+            TorchDDUPredictor(model)
+
+    def test_fit_density_head_runs(self) -> None:
+        import warnings as _warnings  # noqa: PLC0415
+
+        _torch, _nn = _torch_nn()
+        from probly.method.ddu.torch import TorchDDUPredictor  # noqa: PLC0415
+
+        _torch.manual_seed(0)
+        model = _nn.Sequential(_nn.Linear(4, 8), _nn.ReLU(), _nn.Linear(8, 3))
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("ignore", UserWarning)
+            ddu_pred = TorchDDUPredictor(model)
+        x = _torch.randn(20, 4)
+        labels = _torch.randint(0, 3, (20,))
+        ddu_pred.fit_density_head(x, labels)
+        assert _torch.any(ddu_pred.density_head.means != 0)
+
+    def test_predict_representation(self) -> None:
+        import warnings as _warnings  # noqa: PLC0415
+
+        _torch, _nn = _torch_nn()
+        from probly.method.ddu.torch import TorchDDUPredictor, TorchDDURepresentation  # noqa: PLC0415
+
+        _torch.manual_seed(0)
+        model = _nn.Sequential(_nn.Linear(4, 8), _nn.ReLU(), _nn.Linear(8, 3))
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("ignore", UserWarning)
+            ddu_pred = TorchDDUPredictor(model)
+        x = _torch.randn(2, 4)
+        rep = ddu_pred.predict_representation(x)
+        assert isinstance(rep, TorchDDURepresentation)
+        assert rep.densities.shape == (2, 3)
+
+
+class TestResidualDetection:
+    """The residual_detection_traverser detects skip connections."""
+
+    def test_detects_torch_add(self) -> None:
+        _torch, _nn = _torch_nn()
+        from probly.method.ddu.torch import (  # noqa: PLC0415
+            HAS_RESIDUAL,
+            HEAD_MODULE,
+            SN_COEFF,
+            residual_detection_traverser,
+        )
+        from probly.traverse_nn import nn_compose  # noqa: PLC0415
+        from pytraverse import traverse_with_state  # noqa: PLC0415
+
+        class ResidualBlock(_nn.Module):
+            def __init__(self) -> None:
+                super().__init__()
+                self.fc = _nn.Linear(4, 4)
+
+            def forward(self, x):
+                return _torch.add(x, self.fc(x))
+
+        block = ResidualBlock()
+        _, final_state = traverse_with_state(
+            block,
+            nn_compose(residual_detection_traverser),
+            init={HAS_RESIDUAL: False, HEAD_MODULE: None, SN_COEFF: 3.0},
+        )
+        assert final_state[HAS_RESIDUAL] is True
+
+    def test_detects_operator_add(self) -> None:
+        _torch, _nn = _torch_nn()
+        from probly.method.ddu.torch import (  # noqa: PLC0415
+            HAS_RESIDUAL,
+            HEAD_MODULE,
+            SN_COEFF,
+            residual_detection_traverser,
+        )
+        from probly.traverse_nn import nn_compose  # noqa: PLC0415
+        from pytraverse import traverse_with_state  # noqa: PLC0415
+
+        class ResidualBlock(_nn.Module):
+            def __init__(self) -> None:
+                super().__init__()
+                self.fc = _nn.Linear(4, 4)
+
+            def forward(self, x):
+                return x + self.fc(x)
+
+        block = ResidualBlock()
+        _, final_state = traverse_with_state(
+            block,
+            nn_compose(residual_detection_traverser),
+            init={HAS_RESIDUAL: False, HEAD_MODULE: None, SN_COEFF: 3.0},
+        )
+        assert final_state[HAS_RESIDUAL] is True
+
+    def test_returns_unchanged_when_already_detected(self) -> None:
+        _, _nn = _torch_nn()
+        from probly.method.ddu.torch import (  # noqa: PLC0415
+            HAS_RESIDUAL,
+            HEAD_MODULE,
+            SN_COEFF,
+            residual_detection_traverser,
+        )
+        from probly.traverse_nn import nn_compose  # noqa: PLC0415
+        from pytraverse import traverse_with_state  # noqa: PLC0415
+
+        block = _nn.Linear(4, 4)
+        _, final_state = traverse_with_state(
+            block,
+            nn_compose(residual_detection_traverser),
+            init={HAS_RESIDUAL: True, HEAD_MODULE: None, SN_COEFF: 3.0},
+        )
+        assert final_state[HAS_RESIDUAL] is True

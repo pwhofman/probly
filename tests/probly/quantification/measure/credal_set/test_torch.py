@@ -256,3 +256,65 @@ def test_distance_upper_entropy_base2() -> None:
     ue_nat = upper_entropy(cs)
     ue_2 = upper_entropy(cs, base=2.0)
     assert float(ue_2) == pytest.approx(float(ue_nat) / np.log(2), abs=1e-5)
+
+
+def _torch_modules():
+    """Skip the calling test if torch is unavailable; otherwise return the module."""
+    pytest.importorskip("torch")
+    import torch as _torch  # noqa: PLC0415
+
+    return _torch
+
+
+class TestQuantificationCredalSetTorchMeasures:
+    """Upper / lower entropy on a Dirichlet level set credal set."""
+
+    def test_upper_entropy_finite(self) -> None:
+        torch = _torch_modules()
+        from probly.quantification.measure.credal_set._common import upper_entropy  # noqa: PLC0415
+
+        # Force the torch dispatch to load.
+        import probly.quantification.measure.credal_set.torch  # noqa: F401, PLC0415
+        from probly.representation.credal_set.torch import TorchDirichletLevelSetCredalSet  # noqa: PLC0415
+
+        torch.manual_seed(0)
+        cred = TorchDirichletLevelSetCredalSet(
+            alphas=torch.tensor([[2.0, 5.0, 3.0]]),
+            threshold=torch.tensor(0.5),
+        )
+        result = upper_entropy(cred)
+        # Returns a finite tensor of the right batch shape.
+        assert torch.isfinite(result).all()
+        assert result.shape == (1,)
+
+    def test_lower_entropy_finite(self) -> None:
+        torch = _torch_modules()
+        from probly.quantification.measure.credal_set._common import lower_entropy  # noqa: PLC0415
+        import probly.quantification.measure.credal_set.torch  # noqa: F401, PLC0415
+        from probly.representation.credal_set.torch import TorchDirichletLevelSetCredalSet  # noqa: PLC0415
+
+        torch.manual_seed(0)
+        cred = TorchDirichletLevelSetCredalSet(
+            alphas=torch.tensor([[2.0, 5.0, 3.0]]),
+            threshold=torch.tensor(0.5),
+        )
+        result = lower_entropy(cred)
+        assert torch.isfinite(result).all()
+        assert result.shape == (1,)
+
+    def test_upper_entropy_with_explicit_base(self) -> None:
+        torch = _torch_modules()
+        from probly.quantification.measure.credal_set._common import upper_entropy  # noqa: PLC0415
+        import probly.quantification.measure.credal_set.torch  # noqa: F401, PLC0415
+        from probly.representation.credal_set.torch import TorchDirichletLevelSetCredalSet  # noqa: PLC0415
+
+        torch.manual_seed(0)
+        cred = TorchDirichletLevelSetCredalSet(
+            alphas=torch.tensor([[2.0, 5.0, 3.0]]),
+            threshold=torch.tensor(0.5),
+        )
+        result_nat = upper_entropy(cred, base=None)
+        result_normalized = upper_entropy(cred, base="normalize")
+        # Normalised entropy is in [0, 1].
+        assert (result_normalized <= 1.0 + 1e-5).all()
+        assert torch.isfinite(result_nat).all()
