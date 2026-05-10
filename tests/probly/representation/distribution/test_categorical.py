@@ -196,3 +196,113 @@ def test_hash_is_identity_based_and_distinguishes_instances() -> None:
 
     assert hash(dist_a) == hash(dist_a)
     assert hash(dist_a) != hash(dist_b)
+
+
+class TestArrayCategoricalDistributionPostprocessing:
+    """Ensure protected-axis processing rebuilds a ProbabilityCategoricalDistribution after np.mean."""
+
+    def test_mean_returns_probability_distribution(self) -> None:
+        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
+            ArrayLogitCategoricalDistribution,
+            ArrayProbabilityCategoricalDistribution,
+        )
+
+        # A LogitCategorical reduced via np.mean should land as a Probability distribution.
+        d = ArrayLogitCategoricalDistribution(array=np.array([[1.0, 2.0, 3.0], [3.0, 2.0, 1.0]]))
+        result = np.mean(d, axis=0)
+        # The mean of a logit-cat distribution should produce a probability distribution.
+        assert isinstance(result, ArrayProbabilityCategoricalDistribution)
+
+
+class TestArrayCategoricalDistribution:
+    """Validation, equality and sampling for the numpy categorical distribution."""
+
+    def test_negative_probabilities_raise(self) -> None:
+        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
+            ArrayProbabilityCategoricalDistribution,
+        )
+
+        with pytest.raises(ValueError, match="non-negative"):
+            ArrayProbabilityCategoricalDistribution(array=np.array([0.5, -0.1, 0.6]))
+
+    def test_zero_dim_array_raises(self) -> None:
+        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
+            ArrayProbabilityCategoricalDistribution,
+        )
+
+        with pytest.raises(ValueError, match="at least one dimension"):
+            ArrayProbabilityCategoricalDistribution(array=np.array(0.5))
+
+    def test_array_must_be_ndarray(self) -> None:
+        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
+            ArrayProbabilityCategoricalDistribution,
+        )
+
+        with pytest.raises(TypeError, match="numpy ndarray"):
+            ArrayProbabilityCategoricalDistribution(array=[0.5, 0.5])  # type: ignore[arg-type]
+
+    def test_logit_array_must_be_ndarray(self) -> None:
+        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
+            ArrayLogitCategoricalDistribution,
+        )
+
+        with pytest.raises(TypeError, match="numpy ndarray"):
+            ArrayLogitCategoricalDistribution(array=[0.5, 0.5])  # type: ignore[arg-type]
+
+    def test_logit_zero_dim_raises(self) -> None:
+        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
+            ArrayLogitCategoricalDistribution,
+        )
+
+        with pytest.raises(ValueError, match="at least one dimension"):
+            ArrayLogitCategoricalDistribution(array=np.array(0.5))
+
+    def test_eq_two_probability_distributions(self) -> None:
+        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
+            ArrayProbabilityCategoricalDistribution,
+        )
+
+        d1 = ArrayProbabilityCategoricalDistribution(array=np.array([[0.2, 0.3, 0.5]]))
+        d2 = ArrayProbabilityCategoricalDistribution(array=np.array([[0.4, 0.6, 1.0]]))
+        # After normalization both have the same probabilities.
+        assert bool(d1 == d2)
+
+    def test_eq_with_array(self) -> None:
+        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
+            ArrayProbabilityCategoricalDistribution,
+        )
+
+        d1 = ArrayProbabilityCategoricalDistribution(array=np.array([[0.2, 0.3, 0.5]]))
+        # Comparison with a raw array uses unnormalised probabilities.
+        eq = d1 == np.array([[0.2, 0.3, 0.5]])
+        assert bool(eq)
+
+    def test_logit_eq(self) -> None:
+        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
+            ArrayLogitCategoricalDistribution,
+        )
+
+        a = ArrayLogitCategoricalDistribution(array=np.array([[1.0, 2.0, 3.0]]))
+        b = ArrayLogitCategoricalDistribution(array=np.array([[1.0, 2.0, 3.0]]))
+        assert bool(a == b)
+
+    def test_logit_eq_with_array(self) -> None:
+        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
+            ArrayLogitCategoricalDistribution,
+        )
+
+        a = ArrayLogitCategoricalDistribution(array=np.array([[1.0, 2.0, 3.0]]))
+        eq = a == np.array([[1.0, 2.0, 3.0]])
+        assert bool(eq)
+
+    def test_hash(self) -> None:
+        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
+            ArrayLogitCategoricalDistribution,
+            ArrayProbabilityCategoricalDistribution,
+        )
+
+        a = ArrayProbabilityCategoricalDistribution(array=np.array([[0.5, 0.5]]))
+        b = ArrayLogitCategoricalDistribution(array=np.array([[0.0, 1.0]]))
+        # Identity-based hash returns ints.
+        assert isinstance(hash(a), int)
+        assert isinstance(hash(b), int)

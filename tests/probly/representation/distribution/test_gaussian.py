@@ -179,3 +179,134 @@ def test_copy_method() -> None:
     assert copied == dist
     assert copied is not dist
     assert copied.mean is not dist.mean
+
+
+class TestArrayGaussianDistribution:
+    """Numpy-based Gaussian distribution."""
+
+    def test_mismatched_shapes_raise(self) -> None:
+        from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="same shape"):
+            ArrayGaussianDistribution(mean=np.zeros((3,)), var=np.ones((4,)))
+
+    def test_non_positive_var_raises(self) -> None:
+        from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="must be positive"):
+            ArrayGaussianDistribution(mean=np.zeros((3,)), var=np.zeros((3,)))
+
+    def test_std_property(self) -> None:
+        from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution  # noqa: PLC0415
+
+        g = ArrayGaussianDistribution(mean=np.array([0.0, 1.0]), var=np.array([4.0, 9.0]))
+        np.testing.assert_allclose(g.std, [2.0, 3.0])
+
+    def test_quantile_scalar_q(self) -> None:
+        from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution  # noqa: PLC0415
+
+        g = ArrayGaussianDistribution(mean=np.array([0.0]), var=np.array([1.0]))
+        # At q=0.5, the median equals the mean.
+        np.testing.assert_allclose(g.quantile(0.5), [0.0], atol=1e-6)
+
+    def test_quantile_array_q(self) -> None:
+        from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution  # noqa: PLC0415
+
+        g = ArrayGaussianDistribution(mean=np.array([0.0]), var=np.array([1.0]))
+        result = g.quantile(np.array([0.5, 0.5]))
+        # Two queries -> two outputs each of shape (1,).
+        assert result.shape == (1, 2)
+
+    def test_sample_returns_correct_shape(self) -> None:
+        from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution  # noqa: PLC0415
+
+        g = ArrayGaussianDistribution(mean=np.zeros((3,)), var=np.ones((3,)))
+        samples = g.sample(num_samples=5)
+        assert samples.array.shape == (5, 3)
+        assert samples.sample_axis == 0
+
+    def test_sample_uses_rng(self) -> None:
+        from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution  # noqa: PLC0415
+
+        g = ArrayGaussianDistribution(mean=np.zeros((2,)), var=np.ones((2,)))
+        rng1 = np.random.default_rng(42)
+        rng2 = np.random.default_rng(42)
+        s1 = g.sample(num_samples=3, rng=rng1)
+        s2 = g.sample(num_samples=3, rng=rng2)
+        # Same seed -> same samples.
+        np.testing.assert_allclose(s1.array, s2.array)
+
+    def test_array_dunder_stacks_mean_var(self) -> None:
+        from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution  # noqa: PLC0415
+
+        g = ArrayGaussianDistribution(mean=np.array([1.0, 2.0]), var=np.array([0.5, 0.5]))
+        arr = np.asarray(g)
+        # Last axis stacks mean and var.
+        np.testing.assert_allclose(arr[..., 0], [1.0, 2.0])
+        np.testing.assert_allclose(arr[..., 1], [0.5, 0.5])
+
+    def test_addition_of_two_gaussians(self) -> None:
+        from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution  # noqa: PLC0415
+
+        g1 = ArrayGaussianDistribution(mean=np.array([1.0]), var=np.array([2.0]))
+        g2 = ArrayGaussianDistribution(mean=np.array([3.0]), var=np.array([5.0]))
+        result = g1 + g2
+        # Means add, variances add.
+        np.testing.assert_allclose(result.mean, [4.0])
+        np.testing.assert_allclose(result.var, [7.0])
+
+    def test_addition_with_constant(self) -> None:
+        from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution  # noqa: PLC0415
+
+        g = ArrayGaussianDistribution(mean=np.array([1.0]), var=np.array([2.0]))
+        result = g + 5.0
+        np.testing.assert_allclose(result.mean, [6.0])
+        np.testing.assert_allclose(result.var, [2.0])
+
+    def test_addition_with_unsupported_type_returns_not_implemented(self) -> None:
+        from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution  # noqa: PLC0415
+
+        g = ArrayGaussianDistribution(mean=np.array([1.0]), var=np.array([2.0]))
+        # The ufunc handler returns NotImplemented for non-numeric types -> Python falls back.
+        with pytest.raises(TypeError):
+            _ = g + object()  # type: ignore[operator]
+
+    def test_eq_compares_parameters(self) -> None:
+        from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution  # noqa: PLC0415
+
+        g1 = ArrayGaussianDistribution(mean=np.array([1.0]), var=np.array([2.0]))
+        g2 = ArrayGaussianDistribution(mean=np.array([1.0]), var=np.array([2.0]))
+        assert bool((g1 == g2).all())
+
+    def test_hash_independent_from_value(self) -> None:
+        from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution  # noqa: PLC0415
+
+        g = ArrayGaussianDistribution(mean=np.array([1.0]), var=np.array([2.0]))
+        # Identity hash; just check it's an int.
+        assert isinstance(hash(g), int)
+
+
+class TestCreateGaussianDistribution:
+    """The ``create_gaussian_distribution`` factory."""
+
+    def test_with_var(self) -> None:
+        from probly.representation.distribution import create_gaussian_distribution  # noqa: PLC0415
+
+        g = create_gaussian_distribution(np.array([0.0, 1.0]), np.array([1.0, 2.0]))
+        np.testing.assert_allclose(g.mean, [0.0, 1.0])
+        np.testing.assert_allclose(g.var, [1.0, 2.0])
+
+    def test_without_var_uses_packed_layout(self) -> None:
+        from probly.representation.distribution import create_gaussian_distribution  # noqa: PLC0415
+
+        # Last axis 2 -> [mean, var].
+        packed = np.array([[1.0, 0.5], [2.0, 0.7]])
+        g = create_gaussian_distribution(packed)
+        np.testing.assert_allclose(g.mean, [1.0, 2.0])
+        np.testing.assert_allclose(g.var, [0.5, 0.7])
+
+    def test_without_var_wrong_packed_shape_raises(self) -> None:
+        from probly.representation.distribution import create_gaussian_distribution  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match=r"\(\.\.\., 2\)"):
+            create_gaussian_distribution(np.array([1.0, 2.0, 3.0]))

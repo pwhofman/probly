@@ -267,6 +267,9 @@ exclude_also = [
     "def __repr__",
     "if __name__ == .__main__.:",
     "\\s*\\.\\.\\.\\s*",
+    "pragma: no cover",
+    "@overload",
+    "@(typing\\.)?overload",
 ]
 exclude_lines = ["if TYPE_CHECKING"]
 

@@ -95,3 +95,37 @@ def test_binary_logit_predictor_converts_to_bernoulli_distribution() -> None:
 
     assert isinstance(prediction, ArrayBernoulliDistribution)
     np.testing.assert_allclose(prediction.logits[..., 1] - prediction.logits[..., 0], np.array([-1.0, 1.0]))
+
+
+class TestArrayBernoulliDistribution:
+    """Numpy-based Bernoulli distribution validation (concrete implementations)."""
+
+    def test_invalid_probabilities_raise(self) -> None:
+        from probly.representation.distribution.array_bernoulli import (  # noqa: PLC0415
+            ArrayProbabilityBernoulliDistribution,
+        )
+
+        with pytest.raises(ValueError, match="must be in"):
+            ArrayProbabilityBernoulliDistribution(array=np.array([1.5]))
+
+    def test_negative_probabilities_raise(self) -> None:
+        from probly.representation.distribution.array_bernoulli import (  # noqa: PLC0415
+            ArrayProbabilityBernoulliDistribution,
+        )
+
+        with pytest.raises(ValueError, match="must be in"):
+            ArrayProbabilityBernoulliDistribution(array=np.array([-0.1]))
+
+    def test_array_must_be_ndarray(self) -> None:
+        from probly.representation.distribution.array_bernoulli import (  # noqa: PLC0415
+            ArrayProbabilityBernoulliDistribution,
+        )
+
+        with pytest.raises(TypeError, match="numpy ndarray"):
+            ArrayProbabilityBernoulliDistribution(array=[0.3])  # type: ignore[arg-type]
+
+    def test_logit_array_must_be_ndarray(self) -> None:
+        from probly.representation.distribution.array_bernoulli import ArrayLogitBernoulliDistribution  # noqa: PLC0415
+
+        with pytest.raises(TypeError, match="numpy ndarray"):
+            ArrayLogitBernoulliDistribution(array=[0.3])  # type: ignore[arg-type]

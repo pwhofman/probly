@@ -223,3 +223,120 @@ def test_sum_is_not_supported_for_categorical_distribution() -> None:
 
     with pytest.raises(TypeError):
         torch.sum(dist, dim=0)
+
+
+def _torch_modules():
+    pytest.importorskip("torch")
+    import torch as _torch  # noqa: PLC0415
+
+    return _torch
+
+
+class TestTorchCategoricalDistribution:
+    """Validation, equality and properties for the torch categorical distribution."""
+
+    def test_validation_negative_probabilities_raise(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        with pytest.raises(ValueError, match="non-negative"):
+            TorchProbabilityCategoricalDistribution(tensor=torch.tensor([-0.5, 0.5]))
+
+    def test_validation_zero_dim_raises(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        with pytest.raises(ValueError, match="at least one dimension"):
+            TorchProbabilityCategoricalDistribution(tensor=torch.tensor(0.5))
+
+    def test_validation_must_be_tensor(self) -> None:
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        with pytest.raises(TypeError, match="torch tensor"):
+            TorchProbabilityCategoricalDistribution(tensor=[0.5, 0.5])  # type: ignore[arg-type]
+
+    def test_logit_validation_must_be_tensor(self) -> None:
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchLogitCategoricalDistribution,
+        )
+
+        with pytest.raises(TypeError, match="torch tensor"):
+            TorchLogitCategoricalDistribution(tensor=[0.5, 0.5])  # type: ignore[arg-type]
+
+    def test_logit_zero_dim_raises(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchLogitCategoricalDistribution,
+        )
+
+        with pytest.raises(ValueError, match="at least one dimension"):
+            TorchLogitCategoricalDistribution(tensor=torch.tensor(0.5))
+
+    def test_eq_two_probability_distributions(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        a = TorchProbabilityCategoricalDistribution(tensor=torch.tensor([[0.2, 0.3, 0.5]]))
+        b = TorchProbabilityCategoricalDistribution(tensor=torch.tensor([[0.4, 0.6, 1.0]]))
+        # Normalisation makes them equal.
+        assert bool((a == b).all())
+
+    def test_eq_with_tensor(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        a = TorchProbabilityCategoricalDistribution(tensor=torch.tensor([[0.5, 0.5]]))
+        eq = a == torch.tensor([[0.5, 0.5]])
+        assert bool(eq)
+
+    def test_logit_eq(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchLogitCategoricalDistribution,
+        )
+
+        a = TorchLogitCategoricalDistribution(tensor=torch.tensor([[1.0, 2.0, 3.0]]))
+        b = TorchLogitCategoricalDistribution(tensor=torch.tensor([[1.0, 2.0, 3.0]]))
+        assert bool((a == b).all())
+
+    def test_logit_eq_with_tensor(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchLogitCategoricalDistribution,
+        )
+
+        a = TorchLogitCategoricalDistribution(tensor=torch.tensor([[1.0, 2.0]]))
+        eq = a == torch.tensor([[1.0, 2.0]])
+        assert bool(eq)
+
+    def test_hash(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchLogitCategoricalDistribution,
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        a = TorchProbabilityCategoricalDistribution(tensor=torch.tensor([[0.5, 0.5]]))
+        b = TorchLogitCategoricalDistribution(tensor=torch.tensor([[0.0, 1.0]]))
+        assert isinstance(hash(a), int)
+        assert isinstance(hash(b), int)
+
+    def test_numpy_conversion(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        d = TorchProbabilityCategoricalDistribution(tensor=torch.tensor([[0.5, 0.5]]))
+        arr = d.numpy()
+        np.testing.assert_allclose(arr, [[0.5, 0.5]])
