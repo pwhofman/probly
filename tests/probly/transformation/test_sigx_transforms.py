@@ -1,8 +1,15 @@
-"""Tests for the helpers in ``probly.transformation._sigx_transforms``."""
+"""Tests for the helpers in ``probly.transformation._sigx_transforms``.
+
+The module under test imports ``sigx_gen`` at module top level. ``sigx_gen``
+is only present in the ``lint`` dependency group (it's used to generate type
+stubs at lint time), so we skip the entire module when it isn't installed.
+"""
 
 from __future__ import annotations
 
 import pytest
+
+pytest.importorskip("sigx_gen")
 
 
 class TestSigxTransformsHelpers:
