@@ -22,7 +22,7 @@ from sklearn.metrics import roc_auc_score
 import torch
 from torch import nn
 
-from probly.method.sngp import sngp
+from probly.method.sngp import reset_precision_matrix, sngp
 from probly.quantification import quantify
 from probly.representer import representer
 
@@ -81,7 +81,8 @@ opt = torch.optim.Adam(sngp_model.parameters(), lr=1e-3)
 sngp_model.train()
 
 # 4. Train for an appropriate number of epochs
-for epoch in range(1500):
+for epoch in range(300):
+    reset_precision_matrix(sngp_model)
     out = sngp_model(X_tensor)
     logits = out[0] if isinstance(out, tuple) else getattr(out, "mean", out)
     loss = nn.functional.cross_entropy(logits, y_tensor)
@@ -104,9 +105,9 @@ grid_tensor = torch.from_numpy(grid).float()
 
 with torch.no_grad():
     # Convert from nats (default) to bits to get a [0, 1] scale like the paper
-    epistemic_unc = quantify(rep.represent(grid_tensor)).epistemic.numpy() / np.log(2)
+    test_unc = quantify(rep.represent(grid_tensor)).total.numpy() / np.log(2)
 
-epistemic_unc = epistemic_unc.reshape(xx.shape)
+test_unc = test_unc.reshape(xx.shape)
 
 # %%
 # 5. Plot the epistemic uncertainty surface
@@ -115,10 +116,10 @@ epistemic_unc = epistemic_unc.reshape(xx.shape)
 fig, ax = plt.subplots(figsize=(7, 5), dpi=150)
 
 levels = np.linspace(0.0, 1.0, 100)
-contour = ax.contourf(xx, yy, epistemic_unc, levels=levels, cmap="viridis", antialiased=True)
+contour = ax.contourf(xx, yy, test_unc, levels=levels, cmap="viridis", antialiased=True)
 
 cbar = plt.colorbar(contour, ticks=[0.0, 0.25, 0.5, 0.75, 1.0])
-cbar.set_label("Epistemic Uncertainty (bits)", fontsize=12, fontweight='bold')
+cbar.set_label("Predictive Uncertainty (bits)", fontsize=12, fontweight='bold')
 
 ax.scatter(X[y == 0, 0], X[y == 0, 1], color="#ff7f0e", edgecolor="white", linewidths=0.5, s=25, zorder=3, label="Class 0")
 ax.scatter(X[y == 1, 0], X[y == 1, 1], color="#1f77b4", edgecolor="white", linewidths=0.5, s=25, zorder=3, label="Class 1")
@@ -138,16 +139,16 @@ X_ood = np.column_stack([
 ])
 
 with torch.no_grad():
-    epistemic_id = quantify(rep.represent(X_tensor)).epistemic.numpy() / np.log(2)
-    epistemic_ood = quantify(rep.represent(torch.from_numpy(X_ood).float())).epistemic.numpy() / np.log(2)
+    unc_id = quantify(rep.represent(X_tensor)).total.numpy() / np.log(2)
+    unc_ood = quantify(rep.represent(torch.from_numpy(X_ood).float())).total.numpy() / np.log(2)
 
 labels = np.concatenate([np.zeros(len(X)), np.ones(len(X_ood))])
-scores = np.concatenate([epistemic_id, epistemic_ood])
+scores = np.concatenate([unc_id, unc_ood])
 auroc = roc_auc_score(labels, scores)
 
 ax.scatter(X_ood[:, 0], X_ood[:, 1], color="#d62728", marker="x", s=30, alpha=1.0, linewidths=1.5, zorder=4, label="OOD Data")
 
-ax.set_title(f"SNGP Distance-Aware Epistemic Uncertainty\n(OOD AUROC: {auroc:.3f})", fontsize=14, fontweight='bold')
+ax.set_title(f"SNGP Distance-Aware Predictive Uncertainty\n(OOD AUROC: {auroc:.3f})", fontsize=14, fontweight='bold')
 ax.legend(loc="upper right", framealpha=0.95, edgecolor="black")
 
 fig.tight_layout()
