@@ -14,3 +14,14 @@ class MLPClassifier(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.net(x)
+
+class SequentialModel(nn.Sequential):
+
+    def __init__(self) -> None:
+        super().__init__(
+            nn.Linear(2, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, 2),
+        )
