@@ -57,5 +57,5 @@ for member in ensemble_model:
 ensemble_model.eval()
 rep = representer(ensemble_model)
 
-plot = plot_example_uncertainty(X, X_tensor, y, rep, title="Ensemble Predictive Uncertainty")
+plot = plot_example_uncertainty(X, y, rep, title="Ensemble Predictive Uncertainty")
 plot.show()

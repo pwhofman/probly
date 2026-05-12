@@ -56,5 +56,5 @@ for epoch in range(300):
 batchensemble_model.eval()
 rep = representer(batchensemble_model, num_samples=800)
 
-plot = plot_example_uncertainty(X, X_tensor, y, rep, title="BatchEnsemble Predictive Uncertainty")
+plot = plot_example_uncertainty(X, y, rep, title="BatchEnsemble Predictive Uncertainty")
 plot.show()

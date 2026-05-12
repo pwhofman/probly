@@ -66,5 +66,5 @@ for epoch in range(500):
 subensemble_model.eval()
 rep = representer(subensemble_model)
 
-plot = plot_example_uncertainty(X, X_tensor, y, rep, title="Sub-Ensemble Predictive Uncertainty")
+plot = plot_example_uncertainty(X, y, rep, title="Sub-Ensemble Predictive Uncertainty")
 plot.show()

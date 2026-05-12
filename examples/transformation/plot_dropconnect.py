@@ -53,5 +53,5 @@ for epoch in range(300):
 dropconnect_model.eval()
 rep = representer(dropconnect_model, num_samples=400)
 
-plot = plot_example_uncertainty(X, X_tensor, y, rep, title="DropConnect Predictive Uncertainty")
+plot = plot_example_uncertainty(X, y, rep, title="DropConnect Predictive Uncertainty")
 plot.show()

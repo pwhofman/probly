@@ -7,7 +7,6 @@ from probly.quantification import quantify
 
 def plot_example_uncertainty(
     X,
-    X_tensor,
     y,
     rep,
     title: str = "Predictive Uncertainty",

@@ -52,5 +52,5 @@ for epoch in range(300):
 dropout_model.eval()
 rep = representer(dropout_model, num_samples=50)
 
-plot = plot_example_uncertainty(X, X_tensor, y, rep, title="Dropout Predictive Uncertainty")
+plot = plot_example_uncertainty(X, y, rep, title="Dropout Predictive Uncertainty")
 plot.show()

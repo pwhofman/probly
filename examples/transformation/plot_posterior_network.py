@@ -61,5 +61,5 @@ posterior_network_model.eval()
 rep = representer(posterior_network_model)
 
 # Dirichlet total uncertainty is not bounded by 1 bit, so use auto-scaling.
-plot = plot_example_uncertainty(X, X_tensor, y, rep, title="Posterior Network Predictive Uncertainty", vmin=None, vmax=None)
+plot = plot_example_uncertainty(X, y, rep, title="Posterior Network Predictive Uncertainty", vmin=None, vmax=None)
 plot.show()
