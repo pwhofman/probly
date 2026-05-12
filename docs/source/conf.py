@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 _here = Path(__file__).resolve().parent
 sys.path.insert(0, str(_here))  # make _sphinx_helpers importable
 sys.path.insert(0, str(_here.parent / "src"))
+sys.path.insert(0, str(_here.parent.parent))  # make examples.utils importable
 
 from _sphinx_helpers import make_linkcode_resolve  # noqa: E402
 
@@ -104,7 +105,7 @@ sphinx_gallery_conf = {
     "doc_module": ("probly",),
     "reference_url": {"probly": None},
     "filename_pattern": r"plot_.*\.py",
-    "ignore_pattern": r".*/llm/.*",
+    "ignore_pattern": r"(__init__|.*/llm/.*)\.py",
     "plot_gallery": True,
     "download_all_examples": False,
     "notebook_extensions": set(),
