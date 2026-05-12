@@ -41,7 +41,7 @@ __all__ = [
     "dropout",
     "ensemble",
     "interval_classifier",
-    "posterior_network",
     "normal_inverse_gamma_head",
+    "posterior_network",
     "subensemble",
 ]
