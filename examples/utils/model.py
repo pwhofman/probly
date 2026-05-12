@@ -1,7 +1,10 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-class MLPClassifier(nn.Module):
+from probly.predictor import LogitClassifier
+
+
+class MLPClassifier(nn.Module, LogitClassifier):
     def __init__(self) -> None:
         super().__init__()
         self.net = nn.Sequential(
