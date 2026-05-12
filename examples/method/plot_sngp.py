@@ -95,5 +95,5 @@ for epoch in range(300):
 sngp_model.eval()
 rep = representer(sngp_model, num_samples=800)
 
-plot = plot_example_uncertainty(X, X_tensor, y, rep)
+plot = plot_example_uncertainty(X, X_tensor, y, rep, title="SNGP Predictive Uncertainty")
 plot.show()

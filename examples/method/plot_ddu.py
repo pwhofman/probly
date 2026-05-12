@@ -1,3 +1,11 @@
+"""
+DDU on Two Moons
+=================
+
+DDU (Deterministic Uncertainty Quantification) uses spectral normalisation
+and feature-space density estimation to produce uncertainty estimates.
+"""
+
 from __future__ import annotations
 
 from sklearn.datasets import make_moons

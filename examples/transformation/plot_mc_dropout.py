@@ -1,3 +1,12 @@
+"""=======================================
+MC Dropout on Two Moons
+=======================================
+
+MC Dropout keeps dropout active at inference time, producing stochastic
+predictions that can be averaged to estimate predictive uncertainty.
+Uncertainty concentrates at the decision boundary between classes.
+"""
+
 from __future__ import annotations
 
 from sklearn.datasets import make_moons
@@ -5,20 +14,29 @@ import torch
 from torch import nn
 
 from probly.representer import representer
-from probly.method.dropout import dropout
+from probly.transformation import dropout
 
 from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
+
+# %%
+# 1. Prepare the Two Moons dataset
 
 X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
+# %%
+# 2. Wrap the base model with MC Dropout
+
 base_model = MLPClassifier()
 
 dropout_model = dropout(base_model, p=0.25)
 
-opt = torch.optim.Adam(base_model.parameters(), lr=1e-3)
+# %%
+# 3. Train
+
+opt = torch.optim.Adam(dropout_model.parameters(), lr=1e-3)
 
 dropout_model.train()
 for epoch in range(300):
@@ -28,8 +46,11 @@ for epoch in range(300):
     loss.backward()
     opt.step()
 
+# %%
+# 4. Evaluate predictive uncertainty
+
 dropout_model.eval()
-rep = representer(dropout_model, num_samples=500)
+rep = representer(dropout_model, num_samples=50)
 
 plot = plot_example_uncertainty(X, X_tensor, y, rep, title="Dropout Predictive Uncertainty")
 plot.show()
