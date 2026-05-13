@@ -75,7 +75,7 @@ river = [
 ]
 laplace = [
     "laplace-torch>=0.2.0",
-    "curvlinops-for-pytorch>=2.0,<3.0"  # laplace-torch 0.2.2.2 imports curvlinops._base._LinearOperator, removed in 3.x
+    "curvlinops-for-pytorch>=2.0,<4.0"  # laplace-torch 0.2.2.2 imports curvlinops._base._LinearOperator, removed in 3.x
 ]
 transformers = [
     { include-group = "torch" },
