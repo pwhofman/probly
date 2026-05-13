@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Literal, Self, Unpack, cast, override
+from typing import TYPE_CHECKING, Any, Literal, Self, cast, override
 
 import numpy as np
 
@@ -16,7 +16,7 @@ from probly.representation.array_like import (
     ToIndices,
     to_numpy_array_like,
 )
-from probly.representation.sample._common import Sample, SampleAxis, SampleParams, create_sample
+from probly.representation.sample._common import Sample, SampleAxis, create_sample
 from probly.representation.sample.array_functions import (
     ArraySampleInternals,
     array_function,
@@ -70,7 +70,6 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
         weights: Iterable[float] | None = None,
         sample_axis: SampleAxis = "auto",
         dtype: DTypeLike | None = None,
-        **_kwargs: Unpack[SampleParams],
     ) -> Self:
         """Create an ArraySample from a sequence of samples.
 
@@ -107,7 +106,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
 
     @override
     @classmethod
-    def from_sample(cls, sample: Sample[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike | None = None) -> Self:  # ty:ignore[invalid-method-override]
+    def from_sample(cls, sample: Sample[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike | None = None) -> Self:
         if isinstance(sample, NumpyArrayLikeConvertible):
             array_sample = to_numpy_array_like(sample, dtype=dtype)
             if not isinstance(array_sample, ArraySample):

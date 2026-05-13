@@ -105,11 +105,6 @@ class SNGPRepresenter[**In, Out](Representer[Any, In, Out, CategoricalDistributi
         return compute_categorical_sample_from_logits(sampled_logits)
 
 
-def register(cls: type, traverser: flexdispatch_traverser) -> None:
-    """Register a class to be transformed by SNGP."""
-    traverser.register(cls=cls, traverser=sngp_traverser, vars={CLONE: True})
-
-
 @predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
 @SNGPPredictor.register_factory
 def sngp[**In, Out: GaussianDistribution](
