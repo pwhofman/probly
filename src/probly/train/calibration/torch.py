@@ -15,7 +15,7 @@ class ExpectedCalibrationError(nn.Module):
         self.bins: torch.Tensor, the actual bins for calibration
     """
 
-    def __init__(self, num_bins: int = 10) -> None:
+    def __init__(self, num_bins: int = 15) -> None:
         """Initializes an instance of the ExpectedCalibrationError class.
 
         Args:
@@ -38,7 +38,10 @@ class ExpectedCalibrationError(nn.Module):
             loss: torch.Tensor, mean loss value
         """
         confs, preds = torch.max(inputs, dim=1)
-        bin_indices = torch.bucketize(confs, self.bins.to(inputs.device), right=True) - 1
+        # Clamp so confidence == 1.0 lands in the last bin instead of being dropped.
+        bin_indices = (torch.bucketize(confs, self.bins.to(inputs.device), right=True) - 1).clamp_(
+            min=0, max=self.num_bins - 1
+        )
         num_instances = inputs.shape[0]
         loss: torch.Tensor = torch.tensor(0, dtype=torch.float32, device=inputs.device)
         for i in range(self.num_bins):
