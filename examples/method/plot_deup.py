@@ -67,7 +67,7 @@ optimizer_phase1 = torch.optim.Adam(
 )
 
 deup_model.train()
-for epoch in range(250):
+for epoch in range(300):
     for inputs, targets in train_loader:
         inputs, targets = inputs.to(device), targets.to(device)
 
@@ -106,7 +106,7 @@ optimizer_phase2 = torch.optim.Adam(deup_model.error_head.parameters(), lr=1e-2)
 mse_loss_fn = nn.MSELoss()
 
 deup_model.train()
-for epoch in range(100):
+for epoch in range(150):
     for inputs, targets in train_loader:
         inputs, targets = inputs.to(device), targets.to(device)
 
