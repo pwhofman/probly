@@ -5,10 +5,15 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from probly.representation.credal_set._common import (
+    ProbabilityIntervalsCredalSet,
+    create_mle_probability_intervals,
+)
 from probly.representation.credal_set.array import (
     ArrayConvexCredalSet,
     ArrayDiscreteCredalSet,
     ArrayDistanceBasedCredalSet,
+    ArrayMLEProbabilityIntervalsCredalSet,
     ArrayProbabilityIntervalsCredalSet,
     ArraySingletonCredalSet,
 )
@@ -261,3 +266,84 @@ class TestFromSampleTypeError:
         sample = ArraySample(array=np.array([[0.5, 0.5], [0.3, 0.7]]), sample_axis=0)
         with pytest.raises(TypeError, match="ArrayCategoricalDistribution"):
             ArrayDiscreteCredalSet.from_sample(sample)
+
+
+class TestArrayMLEProbabilityIntervalsCredalSet:
+    """MLE-aware interval credal set behaviour."""
+
+    def test_from_array_sample_stores_first_member_as_mle(self) -> None:
+        probs = np.array([[[0.5, 0.5]], [[0.3, 0.7]]], dtype=float)
+        sample = ArraySample(
+            array=ArrayProbabilityCategoricalDistribution(array=probs),
+            sample_axis=0,
+        )
+
+        credal = ArrayMLEProbabilityIntervalsCredalSet.from_array_sample(sample)
+
+        np.testing.assert_allclose(credal.mle.probabilities, [[0.5, 0.5]])
+
+    def test_from_array_sample_bounds_match_plain_intervals(self) -> None:
+        probs = np.array([[[0.5, 0.5]], [[0.3, 0.7]]], dtype=float)
+        sample = ArraySample(
+            array=ArrayProbabilityCategoricalDistribution(array=probs),
+            sample_axis=0,
+        )
+
+        mle_credal = ArrayMLEProbabilityIntervalsCredalSet.from_array_sample(sample)
+        plain_credal = ArrayProbabilityIntervalsCredalSet.from_array_sample(sample)
+
+        np.testing.assert_allclose(mle_credal.lower_bounds, plain_credal.lower_bounds)
+        np.testing.assert_allclose(mle_credal.upper_bounds, plain_credal.upper_bounds)
+
+    def test_mle_inside_bounds(self) -> None:
+        probs = np.array([[[0.5, 0.5]], [[0.3, 0.7]]], dtype=float)
+        sample = ArraySample(
+            array=ArrayProbabilityCategoricalDistribution(array=probs),
+            sample_axis=0,
+        )
+
+        credal = ArrayMLEProbabilityIntervalsCredalSet.from_array_sample(sample)
+
+        assert np.all(credal.mle.probabilities >= credal.lower_bounds)
+        assert np.all(credal.mle.probabilities <= credal.upper_bounds)
+
+    def test_barycenter_is_interval_center_not_mle(self) -> None:
+        probs = np.array([[[0.5, 0.5]], [[0.3, 0.7]]], dtype=float)
+        sample = ArraySample(
+            array=ArrayProbabilityCategoricalDistribution(array=probs),
+            sample_axis=0,
+        )
+
+        credal = ArrayMLEProbabilityIntervalsCredalSet.from_array_sample(sample)
+        plain = ArrayProbabilityIntervalsCredalSet.from_array_sample(sample)
+
+        np.testing.assert_allclose(
+            credal.barycenter.probabilities,
+            plain.barycenter.probabilities,
+        )
+
+    def test_isinstance_probability_intervals(self) -> None:
+        credal = ArrayMLEProbabilityIntervalsCredalSet(
+            lower_bounds=np.array([[0.1, 0.2]]),
+            upper_bounds=np.array([[0.5, 0.6]]),
+            mle=np.array([[0.3, 0.7]]),
+        )
+
+        assert isinstance(credal, ArrayProbabilityIntervalsCredalSet)
+        assert isinstance(credal, ProbabilityIntervalsCredalSet)
+
+    def test_factory_dispatch_via_create_mle_probability_intervals(self) -> None:
+        probs = np.array([[[0.5, 0.5]], [[0.3, 0.7]]], dtype=float)
+        dist = ArrayProbabilityCategoricalDistribution(array=probs)
+
+        credal = create_mle_probability_intervals(dist)
+
+        assert isinstance(credal, ArrayMLEProbabilityIntervalsCredalSet)
+        np.testing.assert_allclose(credal.mle.probabilities, [[0.5, 0.5]])
+
+    def test_mle_is_required_argument(self) -> None:
+        with pytest.raises(TypeError, match="mle"):
+            ArrayMLEProbabilityIntervalsCredalSet(
+                lower_bounds=np.array([[0.1, 0.2]]),
+                upper_bounds=np.array([[0.5, 0.6]]),
+            )

@@ -181,3 +181,24 @@ class TestLazyTorchRegistration:
 
         result = torch_compute_representative_sample(sample, alpha=0.0, distance="euclidean")
         assert result is sample
+
+
+class TestMLEProbabilityIntervalsRepresenter:
+    """The MLE interval representer wraps an iterable predictor and produces an MLE credal set."""
+
+    def test_represent_returns_mle_probability_intervals_credal_set(self) -> None:
+        from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor  # noqa: PLC0415
+        from probly.representation.credal_set._common import MLEProbabilityIntervalsCredalSet  # noqa: PLC0415
+        from probly.representer import MLEProbabilityIntervalsRepresenter  # noqa: PLC0415
+
+        predictor = CredalRelativeLikelihoodPredictor.register_instance(_ensemble())
+        rep = MLEProbabilityIntervalsRepresenter(predictor)
+
+        cset = rep.represent()
+
+        assert isinstance(cset, MLEProbabilityIntervalsCredalSet)
+        # MLE corresponds to the first ensemble member [0.8, 0.2]
+        np.testing.assert_allclose(cset.mle.probabilities, [0.8, 0.2])
+        # Bounds span min/max over [0.8, 0.2] and [0.3, 0.7]
+        np.testing.assert_allclose(cset.lower_bounds, [0.3, 0.2])
+        np.testing.assert_allclose(cset.upper_bounds, [0.8, 0.7])

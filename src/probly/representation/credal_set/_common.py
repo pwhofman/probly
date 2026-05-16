@@ -73,6 +73,21 @@ class ProbabilityIntervalsCredalSet[T: CategoricalDistribution](CategoricalCreda
     """A credal set defined by probability intervals over outcomes."""
 
 
+class MLEProbabilityIntervalsCredalSet[T: CategoricalDistribution](ProbabilityIntervalsCredalSet[T]):
+    """Probability intervals augmented with a distinguished MLE distribution.
+
+    Structurally identical to ``ProbabilityIntervalsCredalSet`` (same bounds, same envelopes,
+    same barycenter), with an additional ``mle`` attribute that holds the categorical
+    distribution chosen by the method as its point predictive distribution. The MLE is
+    guaranteed to lie within ``[lower_bounds, upper_bounds]`` element-wise.
+    """
+
+    @property
+    @abstractmethod
+    def mle(self) -> T:
+        """Return the distinguished predictive distribution."""
+
+
 class DirichletLevelSetCredalSet[T: CategoricalDistribution](CategoricalCredalSet[T]):
     """A credal set defined as a Dirichlet density level set."""
 
@@ -96,6 +111,18 @@ def create_probability_intervals[T: CategoricalDistribution](sample: Sample[T]) 
 
 
 @flexdispatch
+def create_mle_probability_intervals[T: CategoricalDistribution](
+    sample: Sample[T],
+) -> MLEProbabilityIntervalsCredalSet:
+    """Create an MLE probability-interval credal set from a sample.
+
+    The first sample becomes the MLE; the bounds are min/max over all samples.
+    """
+    msg = f"No MLE probability intervals factory registered for sample type {type(sample)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
 def create_convex_credal_set[T: CategoricalDistribution](sample: Sample[T]) -> ConvexCredalSet[T]:
     """Create a convex credal set from a sample."""
     msg = f"No convex credal set factory registered for sample type {type(sample)}"
@@ -115,6 +142,22 @@ def create_probability_intervals_from_lower_upper_array[T: ArrayLike](
 ) -> ProbabilityIntervalsCredalSet:
     """Create a probability-interval credal set from an array of lower and upper probabilities."""
     msg = f"No probability intervals factory registered for array type {type(array)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def create_mle_probability_intervals_from_lower_upper_array[T: ArrayLike, D: CategoricalDistribution](
+    array: T,
+    mle: D,
+) -> MLEProbabilityIntervalsCredalSet:
+    """Create an MLE probability-interval credal set from a packed bounds array and an MLE.
+
+    Args:
+        array: Packed bounds tensor with shape ``(..., 2C)`` where the first ``C`` slots are
+            per-class lower bounds and the last ``C`` slots are per-class upper bounds.
+        mle: The distinguished predictive distribution stored alongside the bounds.
+    """
+    msg = f"No MLE probability intervals factory registered for array type {type(array)}"
     raise NotImplementedError(msg)
 
 

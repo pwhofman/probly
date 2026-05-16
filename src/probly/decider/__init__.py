@@ -1,11 +1,17 @@
 """Deciders reduce representations to a desired decision space (e.g., second-order to first-order distribution)."""
 
 from ._decider import Decider
-from .categorical_distribution import categorical_from_maximin, categorical_from_mean, mean_field_categorical
+from .categorical_distribution import (
+    categorical_from_maximin,
+    categorical_from_mean,
+    categorical_from_mle,
+    mean_field_categorical,
+)
 
 __all__ = [
     "Decider",
     "categorical_from_maximin",
     "categorical_from_mean",
+    "categorical_from_mle",
     "mean_field_categorical",
 ]

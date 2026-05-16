@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, ClassVar, Self, override
 
 import numpy as np
@@ -14,11 +14,13 @@ from probly.representation.credal_set._common import (
     ConvexCredalSet,
     DiscreteCredalSet,
     DistanceBasedCredalSet,
+    MLEProbabilityIntervalsCredalSet,
     ProbabilityIntervalsCredalSet,
     SingletonCredalSet,
     create_convex_credal_set,
     create_distance_based_credal_set,
     create_distance_based_credal_set_from_center_and_radius,
+    create_mle_probability_intervals,
     create_probability_intervals,
 )
 from probly.representation.distribution import ArrayCategoricalDistribution
@@ -302,6 +304,50 @@ class ArrayProbabilityIntervalsCredalSet(
         return ArrayProbabilityCategoricalDistribution(center)
 
 
+@dataclass(frozen=True, slots=True, weakref_slot=True)
+class ArrayMLEProbabilityIntervalsCredalSet(
+    ArrayProbabilityIntervalsCredalSet,
+    MLEProbabilityIntervalsCredalSet[ArrayCategoricalDistribution],
+):
+    """Probability intervals with a stored MLE categorical distribution."""
+
+    lower_bounds: np.ndarray
+    upper_bounds: np.ndarray
+    mle: ArrayCategoricalDistribution = field()
+    protected_axes: ClassVar[dict[str, int]] = {
+        "lower_bounds": 1,
+        "upper_bounds": 1,
+        "mle": 0,
+    }
+
+    def __post_init__(self) -> None:
+        """Validate the bounds and coerce the MLE into a categorical distribution."""
+        if self.lower_bounds.shape != self.upper_bounds.shape:
+            msg = "Lower and upper bounds must have the same shape."
+            raise ValueError(msg)
+        object.__setattr__(self, "mle", _ensure_array_categorical_distribution(self.mle))
+
+    @override
+    @classmethod
+    def from_sample(cls, sample: Sample[ArrayCategoricalDistribution]) -> Self:
+        if isinstance(sample, ArrayCategoricalDistribution):
+            sample = ArraySample(array=sample, sample_axis=0)
+        array_sample = ArraySample.from_sample(sample)
+        if not isinstance(array_sample.array, ArrayCategoricalDistribution):
+            msg = "Expected ArraySample[ArrayCategoricalDistribution] for categorical credal sets."
+            raise TypeError(msg)
+        return cls.from_array_sample(array_sample)
+
+    @override
+    @classmethod
+    def from_array_sample(cls, sample: ArraySample[ArrayCategoricalDistribution]) -> Self:
+        probabilities = sample.samples.probabilities
+        lower_bounds = np.min(probabilities, axis=0)
+        upper_bounds = np.max(probabilities, axis=0)
+        mle = ArrayProbabilityCategoricalDistribution(probabilities[0])
+        return cls(lower_bounds=lower_bounds, upper_bounds=upper_bounds, mle=mle)
+
+
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class ArraySingletonCredalSet(
     ArrayAxisProtected[ArrayCategoricalDistribution],
@@ -345,6 +391,10 @@ class ArraySingletonCredalSet(
 
 
 create_probability_intervals.register(ArrayCategoricalDistribution, ArrayProbabilityIntervalsCredalSet.from_sample)
+create_mle_probability_intervals.register(
+    ArrayCategoricalDistribution, ArrayMLEProbabilityIntervalsCredalSet.from_sample
+)
+create_mle_probability_intervals.register(ArraySample, ArrayMLEProbabilityIntervalsCredalSet.from_array_sample)
 create_convex_credal_set.register(ArraySample, ArrayConvexCredalSet.from_array_sample)
 create_distance_based_credal_set.register(ArraySample, ArrayDistanceBasedCredalSet.from_array_sample)
 

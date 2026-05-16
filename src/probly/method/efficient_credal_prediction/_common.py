@@ -8,8 +8,8 @@ from flextype import flexdispatch
 from probly.predictor import LogitClassifier, predict
 from probly.representation.array_like import ArrayLike
 from probly.representation.credal_set import (
-    ProbabilityIntervalsCredalSet,
-    create_probability_intervals_from_lower_upper_array,
+    MLEProbabilityIntervalsCredalSet,
+    create_mle_probability_intervals_from_lower_upper_array,
 )
 from probly.representation.distribution import CategoricalDistribution
 from probly.representer._representer import Representer, representer
@@ -111,16 +111,17 @@ def compute_efficient_credal_bounds[T: ArrayLike](logits: T, lower: T, upper: T)
 
 
 @representer.register(EfficientCredalPredictor)
-class EfficientCredalRepresenter[**In, Out: CategoricalDistribution, C: ProbabilityIntervalsCredalSet](
+class EfficientCredalRepresenter[**In, Out: CategoricalDistribution, C: MLEProbabilityIntervalsCredalSet](
     Representer[Any, In, Out, C]
 ):
-    """Builds a credal set from the base logits and the calibrated logit-space offsets.
+    """Builds an MLE-aware credal set from the base logits and the calibrated logit-space offsets.
 
     For each class ``k``, the kth logit is perturbed by ``lower[k]`` and
     ``upper[k]`` (signed: ``lower`` is non-positive, ``upper`` is non-negative)
     independently of the others, and the result is softmaxed. The credal set's
     ``i``th lower (resp. upper) bound is the min (resp. max) of the ``i``th
-    coordinate across the 2K resulting distributions.
+    coordinate across the 2K resulting distributions. The base predictor's
+    distribution is stored as the MLE.
     """
 
     predictor: EfficientCredalPredictor[In, Out]
@@ -139,6 +140,6 @@ class EfficientCredalRepresenter[**In, Out: CategoricalDistribution, C: Probabil
                 "predictor.lower / predictor.upper before requesting a representation."
             )
             raise RuntimeError(msg)
-        logits = predict(self.predictor, *args, **kwargs).logits
-        packed = compute_efficient_credal_bounds(logits, self.predictor.lower, self.predictor.upper)
-        return create_probability_intervals_from_lower_upper_array(packed)  # ty:ignore[invalid-return-type]
+        base_dist = predict(self.predictor, *args, **kwargs)
+        packed = compute_efficient_credal_bounds(base_dist.logits, self.predictor.lower, self.predictor.upper)
+        return create_mle_probability_intervals_from_lower_upper_array(packed, base_dist)  # ty:ignore[invalid-return-type]

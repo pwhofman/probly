@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, override
 
 import torch
@@ -14,11 +14,14 @@ from probly.representation.credal_set._common import (
     ConvexCredalSet,
     DirichletLevelSetCredalSet,
     DistanceBasedCredalSet,
+    MLEProbabilityIntervalsCredalSet,
     ProbabilityIntervalsCredalSet,
     create_convex_credal_set,
     create_dirichlet_level_set_credal_set,
     create_distance_based_credal_set,
     create_distance_based_credal_set_from_center_and_radius,
+    create_mle_probability_intervals,
+    create_mle_probability_intervals_from_lower_upper_array,
     create_probability_intervals,
     create_probability_intervals_from_bounds,
     create_probability_intervals_from_lower_upper_array,
@@ -391,8 +394,56 @@ class TorchProbabilityIntervalsCredalSet(
         return TorchProbabilityCategoricalDistribution(intersection_probability(self.lower_bounds, self.upper_bounds))
 
 
+@dataclass(frozen=True, slots=True, weakref_slot=True)
+class TorchMLEProbabilityIntervalsCredalSet(
+    TorchProbabilityIntervalsCredalSet,
+    MLEProbabilityIntervalsCredalSet[TorchCategoricalDistribution],
+):
+    """Probability intervals with a stored MLE categorical distribution."""
+
+    lower_bounds: torch.Tensor
+    upper_bounds: torch.Tensor
+    mle: TorchCategoricalDistribution = field()
+    protected_axes: ClassVar[dict[str, int]] = {
+        "lower_bounds": 1,
+        "upper_bounds": 1,
+        "mle": 0,
+    }
+
+    def __post_init__(self) -> None:
+        """Coerce the MLE into a categorical distribution."""
+        object.__setattr__(self, "mle", _ensure_torch_categorical_distribution(self.mle))
+
+    @override
+    @classmethod
+    def from_sample(cls, sample: Sample[TorchCategoricalDistribution]) -> Self:
+        if isinstance(sample, TorchCategoricalDistribution):
+            sample = TorchSample(tensor=sample, sample_dim=0)
+        torch_sample = TorchSample.from_iterable(sample.samples, sample_dim=0)
+        if not isinstance(torch_sample.tensor, TorchCategoricalDistribution):
+            msg = "Expected TorchSample[TorchCategoricalDistribution] for categorical credal sets."
+            raise TypeError(msg)
+        return cls.from_torch_sample(cast("TorchSample[TorchCategoricalDistribution]", torch_sample))
+
+    @override
+    @classmethod
+    def from_torch_sample(
+        cls,
+        sample: TorchSample[TorchCategoricalDistribution],
+    ) -> Self:
+        probabilities = _sample_probabilities(sample)
+        lower_bounds = torch.min(probabilities, dim=0).values
+        upper_bounds = torch.max(probabilities, dim=0).values
+        mle = TorchProbabilityCategoricalDistribution(probabilities[0])
+        return cls(lower_bounds=lower_bounds, upper_bounds=upper_bounds, mle=mle)
+
+
 create_probability_intervals.register(TorchCategoricalDistribution, TorchProbabilityIntervalsCredalSet.from_sample)
 create_probability_intervals.register(TorchSample, TorchProbabilityIntervalsCredalSet.from_torch_sample)
+create_mle_probability_intervals.register(
+    TorchCategoricalDistribution, TorchMLEProbabilityIntervalsCredalSet.from_sample
+)
+create_mle_probability_intervals.register(TorchSample, TorchMLEProbabilityIntervalsCredalSet.from_torch_sample)
 create_convex_credal_set.register(TorchSample, TorchConvexCredalSet.from_torch_sample)
 create_distance_based_credal_set.register(TorchSample, TorchDistanceBasedCredalSet.from_torch_sample)
 
@@ -403,6 +454,21 @@ def _create_probability_intervals_from_lower_upper_array(
 ) -> TorchProbabilityIntervalsCredalSet:
     lower_bounds, upper_bounds = bounds.reshape(*bounds.shape[:-1], 2, -1).unbind(dim=-2)
     return TorchProbabilityIntervalsCredalSet(lower_bounds, upper_bounds)
+
+
+@create_mle_probability_intervals_from_lower_upper_array.register(torch.Tensor)
+def _create_mle_probability_intervals_from_lower_upper_array(
+    bounds: torch.Tensor,
+    mle: torch.Tensor | TorchCategoricalDistribution,
+) -> TorchMLEProbabilityIntervalsCredalSet:
+    lower_bounds, upper_bounds = bounds.reshape(*bounds.shape[:-1], 2, -1).unbind(dim=-2)
+    # Coerce here even though __post_init__ also coerces: ty rejects the
+    # torch.Tensor | TorchCategoricalDistribution union at the constructor call site.
+    return TorchMLEProbabilityIntervalsCredalSet(
+        lower_bounds=lower_bounds,
+        upper_bounds=upper_bounds,
+        mle=_ensure_torch_categorical_distribution(mle),
+    )
 
 
 @create_probability_intervals_from_bounds.register(torch.Tensor)

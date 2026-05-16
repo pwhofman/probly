@@ -19,6 +19,7 @@ from probly.representation.distribution.array_categorical import (
 )
 from probly.representer import (
     ConvexCredalSetRepresenter,
+    MLEProbabilityIntervalsRepresenter,
     ProbabilityIntervalsRepresenter,
     RepresentativeConvexCredalSetRepresenter,
     SampleMeanConvexCredalSetRepresenter,
@@ -83,27 +84,40 @@ def test_credal_wrapper_uses_probability_interval_representer() -> None:
     assert isinstance(rep, ProbabilityIntervalsRepresenter)
 
 
-def test_credal_relative_likelihood_uses_probability_interval_representer() -> None:
+def test_credal_relative_likelihood_uses_mle_probability_intervals_representer() -> None:
     predictor = CredalRelativeLikelihoodPredictor.register_instance(_ensemble())
 
     rep = representer(predictor)
 
-    assert isinstance(rep, ProbabilityIntervalsRepresenter)
+    assert isinstance(rep, MLEProbabilityIntervalsRepresenter)
+    # Backward-compatibility: MLEProbabilityIntervalsCredalSet inherits from
+    # ProbabilityIntervalsCredalSet, so consumers that only check the parent
+    # credal-set type behave unchanged.
+    output = rep.represent()
+    assert isinstance(output, ProbabilityIntervalsCredalSet)
 
 
 def test_efficient_credal_prediction_uses_method_local_representer() -> None:
     torch = pytest.importorskip("torch")
     nn = pytest.importorskip("torch.nn")
 
+    from probly.predictor import predict  # noqa: PLC0415
+    from probly.representation.credal_set import MLEProbabilityIntervalsCredalSet  # noqa: PLC0415
+
     predictor = efficient_credal_prediction(nn.Linear(2, 2), predictor_type="logit_classifier")
     predictor.lower = torch.zeros(2)
     predictor.upper = torch.zeros(2)
 
     rep = representer(predictor)
-    output = rep.predict(torch.ones(1, 2))
+    x = torch.ones(1, 2)
+    output = rep.predict(x)
 
     assert isinstance(rep, EfficientCredalRepresenter)
     assert isinstance(output, ProbabilityIntervalsCredalSet)
+    assert isinstance(output, MLEProbabilityIntervalsCredalSet)
+    # MLE matches the base distribution at the same input.
+    expected_mle = predict(predictor, x)
+    assert torch.allclose(output.mle.probabilities, expected_mle.probabilities)
 
 
 def test_credal_bnn_representer_yields_k_vertex_credal_set_torch() -> None:

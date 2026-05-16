@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from flextype import flexdispatch
-from probly.representation.credal_set._common import CategoricalCredalSet
+from probly.representation.credal_set._common import CategoricalCredalSet, MLEProbabilityIntervalsCredalSet
 from probly.representation.distribution import (
     CategoricalDistribution,
     CategoricalDistributionSample,
@@ -35,6 +35,18 @@ def categorical_from_maximin(representation: Representation) -> CategoricalDistr
     raise NotImplementedError(msg)
 
 
+@flexdispatch
+def categorical_from_mle(representation: Representation) -> CategoricalDistribution:
+    """Create a categorical distribution via the maximum-likelihood-estimator rule.
+
+    Returns the stored MLE distribution for representations that explicitly carry one
+    (e.g., ``MLEProbabilityIntervalsCredalSet``). Representations without a method-defined
+    MLE raise ``NotImplementedError``.
+    """
+    msg = f"categorical_from_mle decider not supported for {type(representation).__name__}."
+    raise NotImplementedError(msg)
+
+
 @categorical_from_mean.register(CategoricalDistribution)
 def _(distribution: CategoricalDistribution) -> CategoricalDistribution:
     return distribution
@@ -53,6 +65,11 @@ def _(distribution: DirichletDistribution) -> CategoricalDistribution:
 @categorical_from_mean.register(CategoricalCredalSet)
 def _(credal_set: CategoricalCredalSet) -> CategoricalDistribution:
     return credal_set.barycenter
+
+
+@categorical_from_mle.register(MLEProbabilityIntervalsCredalSet)
+def _(credal_set: MLEProbabilityIntervalsCredalSet) -> CategoricalDistribution:
+    return credal_set.mle
 
 
 @categorical_from_mean.register(GaussianDistribution)

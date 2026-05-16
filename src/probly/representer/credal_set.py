@@ -9,8 +9,16 @@ from typing import TYPE_CHECKING, Any, override
 from flextype import flexdispatch
 from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
 from probly.predictor import IterablePredictor, predict
-from probly.representation.credal_set import create_convex_credal_set, create_probability_intervals
-from probly.representation.credal_set._common import ConvexCredalSet, ProbabilityIntervalsCredalSet
+from probly.representation.credal_set import (
+    create_convex_credal_set,
+    create_mle_probability_intervals,
+    create_probability_intervals,
+)
+from probly.representation.credal_set._common import (
+    ConvexCredalSet,
+    MLEProbabilityIntervalsCredalSet,
+    ProbabilityIntervalsCredalSet,
+)
 from probly.representation.distribution import CategoricalDistribution
 from probly.representation.sample import Sample, create_sample
 from probly.representer._representer import Representer
@@ -84,6 +92,36 @@ class ProbabilityIntervalsRepresenter[**In, Out: CategoricalDistribution, C: Pro
         return cset  # ty:ignore[invalid-return-type]
 
 
+class MLEProbabilityIntervalsRepresenter[**In, Out: CategoricalDistribution, C: MLEProbabilityIntervalsCredalSet](
+    Representer[Any, In, Iterable[Out], C]
+):
+    """Build MLE probability intervals from an iterable categorical predictor.
+
+    The first member's prediction is stored as the MLE; bounds are min/max over all members.
+    """
+
+    predictor: IterablePredictor[In, Out]
+
+    def __init__(self, predictor: IterablePredictor[In, Out]) -> None:
+        """Initialize the representer.
+
+        Args:
+            predictor: The iterable predictor; its first member supplies the MLE.
+        """
+        super().__init__(predictor)
+
+    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Sample[Out]:
+        """Predict the outputs from the iterable predictor."""
+        predictions = predict(self.predictor, *args, **kwargs)
+        return create_sample(predictions)
+
+    @override
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:
+        """Build MLE probability intervals for the given input."""
+        cset = create_mle_probability_intervals(self._predict(*args, **kwargs))
+        return cset  # ty:ignore[invalid-return-type]
+
+
 class RepresentativeConvexCredalSetRepresenter[**In, Out: CategoricalDistribution, C: ConvexCredalSet](
     ConvexCredalSetRepresenter[In, Out, C]
 ):
@@ -153,6 +191,7 @@ def _(_: type) -> None:
 
 __all__ = [
     "ConvexCredalSetRepresenter",
+    "MLEProbabilityIntervalsRepresenter",
     "ProbabilityIntervalsRepresenter",
     "RepresentativeConvexCredalSetRepresenter",
     "SampleMeanConvexCredalSetRepresenter",

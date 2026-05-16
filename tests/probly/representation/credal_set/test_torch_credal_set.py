@@ -9,11 +9,15 @@ pytest.importorskip("torch")
 import torch
 
 from probly.representation.credal_set._common import (
+    ProbabilityIntervalsCredalSet,
     create_distance_based_credal_set_from_center_and_radius,
+    create_mle_probability_intervals,
+    create_mle_probability_intervals_from_lower_upper_array,
 )
 from probly.representation.credal_set.torch import (
     TorchConvexCredalSet,
     TorchDistanceBasedCredalSet,
+    TorchMLEProbabilityIntervalsCredalSet,
     TorchProbabilityIntervalsCredalSet,
 )
 from probly.representation.distribution.torch_categorical import (
@@ -331,3 +335,128 @@ class TestCreateFromBounds:
         upper = torch.tensor([[0.1, 0.1]])
         cred = create_probability_intervals_from_bounds(probs, lower, upper)
         assert isinstance(cred, TorchProbabilityIntervalsCredalSet)
+
+
+class TestTorchMLEProbabilityIntervalsCredalSet:
+    """MLE-aware torch interval credal set behaviour."""
+
+    def test_from_torch_sample_stores_first_member_as_mle(self) -> None:
+        probs = torch.tensor(
+            [[[0.5, 0.5]], [[0.3, 0.7]]],
+            dtype=torch.float64,
+        )
+        sample = TorchSample(
+            tensor=TorchProbabilityCategoricalDistribution(probs),
+            sample_dim=0,
+        )
+
+        credal = TorchMLEProbabilityIntervalsCredalSet.from_torch_sample(sample)
+
+        assert torch.allclose(credal.mle.probabilities, torch.tensor([[0.5, 0.5]], dtype=torch.float64))
+
+    def test_from_torch_sample_bounds_match_plain_intervals(self) -> None:
+        probs = torch.tensor(
+            [[[0.5, 0.5]], [[0.3, 0.7]]],
+            dtype=torch.float64,
+        )
+        sample = TorchSample(
+            tensor=TorchProbabilityCategoricalDistribution(probs),
+            sample_dim=0,
+        )
+
+        mle_credal = TorchMLEProbabilityIntervalsCredalSet.from_torch_sample(sample)
+        plain_credal = TorchProbabilityIntervalsCredalSet.from_torch_sample(sample)
+
+        assert torch.allclose(mle_credal.lower_bounds, plain_credal.lower_bounds)
+        assert torch.allclose(mle_credal.upper_bounds, plain_credal.upper_bounds)
+
+    def test_mle_inside_bounds(self) -> None:
+        probs = torch.tensor(
+            [[[0.5, 0.5]], [[0.3, 0.7]]],
+            dtype=torch.float64,
+        )
+        sample = TorchSample(
+            tensor=TorchProbabilityCategoricalDistribution(probs),
+            sample_dim=0,
+        )
+
+        credal = TorchMLEProbabilityIntervalsCredalSet.from_torch_sample(sample)
+
+        assert torch.all(credal.mle.probabilities >= credal.lower_bounds)
+        assert torch.all(credal.mle.probabilities <= credal.upper_bounds)
+
+    def test_barycenter_is_interval_center_not_mle(self) -> None:
+        probs = torch.tensor(
+            [[[0.5, 0.5]], [[0.3, 0.7]]],
+            dtype=torch.float64,
+        )
+        sample = TorchSample(
+            tensor=TorchProbabilityCategoricalDistribution(probs),
+            sample_dim=0,
+        )
+
+        credal = TorchMLEProbabilityIntervalsCredalSet.from_torch_sample(sample)
+        plain = TorchProbabilityIntervalsCredalSet.from_torch_sample(sample)
+
+        assert torch.allclose(credal.barycenter.probabilities, plain.barycenter.probabilities)
+
+    def test_isinstance_probability_intervals(self) -> None:
+        lower = torch.tensor([[0.1, 0.2]], dtype=torch.float64)
+        upper = torch.tensor([[0.5, 0.6]], dtype=torch.float64)
+        mle = TorchProbabilityCategoricalDistribution(torch.tensor([[0.3, 0.7]], dtype=torch.float64))
+
+        credal = TorchMLEProbabilityIntervalsCredalSet(
+            lower_bounds=lower,
+            upper_bounds=upper,
+            mle=mle,
+        )
+
+        assert isinstance(credal, TorchProbabilityIntervalsCredalSet)
+        assert isinstance(credal, ProbabilityIntervalsCredalSet)
+
+    def test_factory_dispatch_via_create_mle_probability_intervals_distribution(self) -> None:
+        probs = torch.tensor(
+            [[[0.5, 0.5]], [[0.3, 0.7]]],
+            dtype=torch.float64,
+        )
+        dist = TorchProbabilityCategoricalDistribution(probs)
+
+        credal = create_mle_probability_intervals(dist)
+
+        assert isinstance(credal, TorchMLEProbabilityIntervalsCredalSet)
+        assert torch.allclose(credal.mle.probabilities, torch.tensor([[0.5, 0.5]], dtype=torch.float64))
+
+    def test_factory_dispatch_via_create_mle_probability_intervals_torch_sample(self) -> None:
+        probs = torch.tensor(
+            [[[0.5, 0.5]], [[0.3, 0.7]]],
+            dtype=torch.float64,
+        )
+        sample = TorchSample(
+            tensor=TorchProbabilityCategoricalDistribution(probs),
+            sample_dim=0,
+        )
+
+        credal = create_mle_probability_intervals(sample)
+
+        assert isinstance(credal, TorchMLEProbabilityIntervalsCredalSet)
+
+    def test_mle_is_required_argument(self) -> None:
+        lower = torch.tensor([[0.1, 0.2]], dtype=torch.float64)
+        upper = torch.tensor([[0.5, 0.6]], dtype=torch.float64)
+        with pytest.raises(TypeError, match="mle"):
+            TorchMLEProbabilityIntervalsCredalSet(
+                lower_bounds=lower,
+                upper_bounds=upper,
+            )
+
+    def test_factory_dispatch_via_create_mle_probability_intervals_from_lower_upper_array(self) -> None:
+        # Packed (B, 2C) layout: first C are lower bounds, last C are upper bounds.
+        packed = torch.tensor([[0.3, 0.2, 0.8, 0.7]], dtype=torch.float64)
+        mle = TorchProbabilityCategoricalDistribution(torch.tensor([[0.5, 0.5]], dtype=torch.float64))
+
+        credal = create_mle_probability_intervals_from_lower_upper_array(packed, mle)
+
+        assert isinstance(credal, TorchMLEProbabilityIntervalsCredalSet)
+        assert torch.allclose(credal.lower_bounds, torch.tensor([[0.3, 0.2]], dtype=torch.float64))
+        assert torch.allclose(credal.upper_bounds, torch.tensor([[0.8, 0.7]], dtype=torch.float64))
+        assert torch.allclose(credal.mle.probabilities, torch.tensor([[0.5, 0.5]], dtype=torch.float64))
