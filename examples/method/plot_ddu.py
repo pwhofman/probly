@@ -18,16 +18,22 @@ from probly.method.ddu import ddu
 from examples.utils.model import MiniResNet1D
 from examples.utils.plotting_decomp import plot_example_uncertainty_decomp
 
+# %%
+# 1. Prepare the Two Moons dataset
 X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
+# %%
+# 2. Set up the base model
 base_model = MiniResNet1D(n_classes=2)
 
 ddu_model = ddu(base_model, sn_coeff=1.5)
 
 opt = torch.optim.Adam(base_model.parameters(), lr=1e-3)
 
+# %%
+# 3. Train the DDU model
 ddu_model.train()
 for epoch in range(300):
     out = ddu_model(X_tensor)
@@ -39,6 +45,9 @@ for epoch in range(300):
     loss.backward()
     opt.step()
 
+
+# %%
+# 4. Evaluate predictive uncertainty
 ddu_model.eval()
 rep = representer(ddu_model)
 
