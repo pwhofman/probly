@@ -302,6 +302,9 @@ experiments/**/*.pdf
 # Local data / model caches
 data/
 
+# Scratch scripts (one-off tests, quick experiments)
+scratch/
+
 # Paper (synced via Overleaf git)
 paper/
 paper_artifacts/
