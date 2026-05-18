@@ -62,5 +62,5 @@ for member in dare_model:
 dare_model.eval()
 rep = IterableSampler(dare_model)
 
-plot = plot_example_uncertainty(X, y, rep, title="DARE Predictive Uncertainty", vmin=None, vmax=None)
+plot = plot_example_uncertainty(X, y, rep, title="DARE Predictive Uncertainty")
 plot.show()
