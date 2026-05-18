@@ -20,14 +20,14 @@ from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
 
 # %%
-# 1. Prepare the Two Moons dataset
+# Prepare the Two Moons dataset
 
 X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
 # %%
-# 2. Create the ensemble from a base model
+# Create the ensemble from a base model
 
 base_model = MLPClassifier()
 
@@ -38,21 +38,20 @@ ensemble_model = ensemble(
 )
 
 # %%
-# 3. Train each member independently
+# Train each member independently
 
 ensemble_model.train()
 for member in ensemble_model:
     opt = torch.optim.Adam(member.parameters(), lr=1e-3)
     for epoch in range(250):
+        opt.zero_grad()
         out = member(X_tensor)
         loss = nn.functional.cross_entropy(out, y_tensor)
-
-        opt.zero_grad()
         loss.backward()
         opt.step()
 
 # %%
-# 4. Evaluate predictive uncertainty
+# Evaluate predictive uncertainty
 
 ensemble_model.eval()
 rep = representer(ensemble_model)
