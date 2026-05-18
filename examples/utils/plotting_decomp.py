@@ -60,28 +60,17 @@ def plot_example_uncertainty_decomp(
     rng = np.random.default_rng(42)
     angles = rng.uniform(0, 2 * np.pi, 150)
     radii = np.sqrt(rng.uniform(0, 1, 150))
-    X_ood = np.column_stack([
+    '''X_ood = np.column_stack([
         1.5 + radii * 0.8 * np.cos(angles),
         -2.2 + radii * 0.3 * np.sin(angles)
-    ])
+    ])'''
 
     with torch.no_grad():
         decomp_id = quantify(rep.represent(X_tensor))
         unc_id = (decomp_id._aleatoric + decomp_id._epistemic).numpy() / np.log(2)
         unc_id = unc_id.sum(-1) if unc_id.ndim > 1 else unc_id
 
-        decomp_ood = quantify(rep.represent(torch.from_numpy(X_ood).float()))
-        unc_ood = (decomp_ood._aleatoric + decomp_ood._epistemic).numpy() / np.log(2)
-        unc_ood = unc_ood.sum(-1) if unc_ood.ndim > 1 else unc_ood
 
-    labels = np.concatenate([np.zeros(len(X)), np.ones(len(X_ood))])
-    scores = np.concatenate([unc_id, unc_ood])
-    auroc = roc_auc_score(labels, scores)
-
-    ax.scatter(X_ood[:, 0], X_ood[:, 1], color="#d62728", marker="x", s=30, alpha=1.0, linewidths=1.5, zorder=4,
-               label="OOD Data")
-
-    ax.set_title(f"{title}\n(OOD AUROC: {auroc:.3f})", fontsize=14, fontweight='bold')
     ax.legend(loc="upper right", framealpha=0.95, edgecolor="black")
 
     fig.tight_layout()

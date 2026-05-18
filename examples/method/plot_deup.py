@@ -31,7 +31,7 @@ from examples.utils.plotting import plot_example_uncertainty
 # %%
 # 1. Prepare the Two Moons dataset
 
-X, y = make_moons(n_samples=500, noise=0.15, random_state=0)
+X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
