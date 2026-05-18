@@ -57,7 +57,7 @@ class JaxArraySample(Sample[jax.Array]):
         weights: Iterable[float] | None = None,
         sample_axis: SampleAxis = "auto",
         dtype: DTypeLike | None = None,
-    ) -> Self:  # ty: ignore[invalid-method-override]
+    ) -> Self:
         """Create an JaxArraySample from a sequence of samples.
 
         Args:
@@ -100,7 +100,7 @@ class JaxArraySample(Sample[jax.Array]):
         sample: Sample[jax.Array],
         sample_axis: SampleAxis = "auto",
         dtype: DTypeLike | None = None,
-    ) -> Self:  # ty: ignore[invalid-method-override]
+    ) -> Self:
         if isinstance(sample, JaxArraySample):
             sample_array = sample.array
             sample_weights = sample.weights

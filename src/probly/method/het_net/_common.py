@@ -19,6 +19,8 @@ from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_tr
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from probly.representation.sample import SampleAxis
+
 
 class HetNetRepresentation[T: CategoricalDistribution](CategoricalDistributionSample[T]):
     """A sample of categorical distributions produced by a HetNets model.
@@ -91,7 +93,7 @@ def _[**In](
 
 
 def create_het_net_sample[Out: CategoricalDistribution](
-    predictions: Iterable[Out], sample_axis: int = -1
+    predictions: Iterable[Out], sample_axis: SampleAxis = "auto"
 ) -> HetNetRepresentation:
     """Create a HetNets sample representation from repeated predictions.
 
