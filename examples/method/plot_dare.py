@@ -13,7 +13,7 @@ from sklearn.datasets import make_moons
 import torch
 from torch import nn
 
-from probly.representer import representer
+from probly.representer import IterableSampler
 from probly.method.dare import dare
 from probly.train.dare.torch import dare_regularizer
 
@@ -36,6 +36,7 @@ dare_model = dare(
     base_model,
     num_members=3,
     reset_params=True,
+    predictor_type="logit_classifier",
 )
 
 # %%
@@ -59,7 +60,7 @@ for member in dare_model:
 # 4. Evaluate predictive uncertainty
 
 dare_model.eval()
-rep = representer(dare_model)
+rep = IterableSampler(dare_model)
 
-plot = plot_example_uncertainty(X, y, rep, title="DARE Predictive Uncertainty", vmin=None, vmax=None)
+plot = plot_example_uncertainty(X, y, rep, title="DARE Predictive Uncertainty")
 plot.show()

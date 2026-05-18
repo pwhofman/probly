@@ -20,7 +20,12 @@ def plot_example_uncertainty(
 
     with torch.no_grad():
         decomp = quantify(rep.represent(grid_tensor))
-        unc = decomp.total if hasattr(decomp, "total") else decomp.epistemic
+        if hasattr(decomp, "total"):
+            unc = decomp.total
+        elif hasattr(decomp, "epistemic"):
+            unc = decomp.epistemic
+        else:
+            unc = decomp.aleatoric
         test_unc = unc.numpy() / np.log(2)
         if test_unc.ndim > 1:
             test_unc = test_unc.sum(-1)
