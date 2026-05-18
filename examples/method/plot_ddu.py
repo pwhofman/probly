@@ -9,6 +9,7 @@ and feature-space density estimation to produce uncertainty estimates.
 from __future__ import annotations
 
 from sklearn.datasets import make_moons
+from sklearn.preprocessing import StandardScaler
 import torch
 from torch import nn
 import numpy as np
@@ -21,8 +22,10 @@ from examples.utils.plotting import plot_example_uncertainty
 
 #%%
 #1. Prepare the Two Moons dataset
-X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
-X_tensor = torch.from_numpy(X).float()
+X_raw, y = make_moons(n_samples=500, noise=0.05, random_state=0)
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X_raw)
+X_tensor = torch.from_numpy(X_scaled).float()
 y_tensor = torch.from_numpy(y).long()
 
 #%%
@@ -49,11 +52,15 @@ for epoch in range(500):
 #4. Fitting Density Head
 ddu_model.eval()
 
-ddu_model.fit_density_head(X_tensor, y_tensor)
+noise_std = 0.2
+noise = torch.randn_like(X_tensor) * noise_std
+X_noisy = X_tensor + noise
+
+ddu_model.fit_density_head(X_noisy, y_tensor)
 
 #%%
 #5. Evaluate predictive uncertainty
 rep = representer(ddu_model)
 
-plot = plot_example_uncertainty(X, y, rep, title="DDU Predictive Uncertainty (Corrected)", vmin=None, vmax=None)
+plot = plot_example_uncertainty(X_scaled, y, rep, title="DDU Predictive Uncertainty", vmin=None, vmax=None)
 plot.show()
