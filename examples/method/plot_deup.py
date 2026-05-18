@@ -45,13 +45,13 @@ base_model = MLPClassifier()
 
 deup_model = deup(
     base_model,
-    hidden_size= 512,
-    n_hidden_layers= 2,
+    hidden_size=512,
+    n_hidden_layers=2,
     stationarizing_features=[
-        "log_maf_density",
-        "log_due_variance",
+        "log_gmm_density",
+        "log_mc_dropout_variance",
     ],
-    sn_coeff=1.5
+    predictor_type="logit_classifier",
 )
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -67,7 +67,7 @@ optimizer_phase1 = torch.optim.Adam(
 )
 
 deup_model.train()
-for epoch in range(300):
+for epoch in range(150):
     for inputs, targets in train_loader:
         inputs, targets = inputs.to(device), targets.to(device)
 
@@ -91,7 +91,7 @@ for param in deup_model.encoder.parameters():
 for param in deup_model.classification_head.parameters():
     param.requires_grad = False
 
-# Fit stationarizing feature providers
+# Fit stationarizing feature providers on in-distribution data only
 deup_model.eval()
 for provider in deup_model.providers:
     provider.fit(
@@ -101,20 +101,36 @@ for provider in deup_model.providers:
         device,
     )
 
+# Clamp stationarizing features to [-10, 10] so that OOD inputs with extreme
+# GMM log-densities don't compound to huge finite values through the error head.
+# Applied after provider fitting so the scalers are computed on real values.
+_orig_phi = deup_model._compute_stationarizing_features
+deup_model._compute_stationarizing_features = lambda *a: _orig_phi(*a).clamp(-10.0, 10.0)
+
+# Augment Phase 2 with OOD points: random locations + random labels give high CE,
+# teaching the error head to associate low-density features with high predicted error.
+ood_X = torch.FloatTensor(500, 2).uniform_(-3, 3)
+ood_y = torch.randint(0, 2, (500,))
+phase2_loader = DataLoader(
+    torch.utils.data.ConcatDataset([dataset, torch.utils.data.TensorDataset(ood_X, ood_y)]),
+    batch_size=64,
+    shuffle=True,
+)
+
 # Train the error head
 optimizer_phase2 = torch.optim.Adam(deup_model.error_head.parameters(), lr=1e-2)
 mse_loss_fn = nn.MSELoss()
 
 deup_model.train()
-for epoch in range(150):
-    for inputs, targets in train_loader:
+for epoch in range(250):
+    for inputs, targets in phase2_loader:
         inputs, targets = inputs.to(device), targets.to(device)
 
         with torch.no_grad():
             features = deup_model.encoder(inputs)
             logits = deup_model.classification_head(features)
             per_sample_ce = nn.functional.cross_entropy(logits, targets, reduction="none")
-            log10_ce_target = torch.log10(torch.clamp(per_sample_ce, min=1e-6))
+            log10_ce_target = torch.log10(torch.clamp(per_sample_ce, min=1e-6, max=1e4))
 
             stationarizing_features = deup_model._compute_stationarizing_features(features, logits)
 
