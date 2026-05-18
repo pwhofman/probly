@@ -16,7 +16,7 @@ from probly.representer import representer
 from probly.method.ddu import ddu
 
 from examples.utils.model import MiniResNet1D
-from examples.utils.plotting_decomp import plot_example_uncertainty_decomp
+from examples.utils.plotting import plot_example_uncertainty
 
 # %%
 # 1. Prepare the Two Moons dataset
@@ -51,5 +51,5 @@ for epoch in range(300):
 ddu_model.eval()
 rep = representer(ddu_model)
 
-plot = plot_example_uncertainty_decomp(X, X_tensor, y, rep, title="DDU Predictive Uncertainty")
+plot = plot_example_uncertainty(X_tensor, y, rep, title="DDU Predictive Uncertainty", vmin = None, vmax = None)
 plot.show()
