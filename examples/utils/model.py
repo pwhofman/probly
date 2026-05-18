@@ -75,3 +75,26 @@ class MiniResNet1D(nn.Module):
         x = torch.flatten(x, 1)  # [N, 32]
 
         return self.fc(x)
+class ResFFNLayer(nn.Module):
+    def __init__(self, hidden_dim: int = 128) -> None:
+        super().__init__()
+        self.linear = nn.Linear(hidden_dim, hidden_dim)
+        self.norm = nn.LayerNorm(hidden_dim)
+        self.relu = nn.ReLU()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return x + self.relu(self.norm(self.linear(x)))
+
+
+class ResFFN(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.first = nn.Linear(2, 128)
+        self.layers = nn.ModuleList([ResFFNLayer(128) for _ in range(12)])
+        self.last = nn.Linear(128, 2)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = torch.relu(self.first(x))
+        for layer in self.layers:
+            x = layer(x)
+        return self.last(x)
