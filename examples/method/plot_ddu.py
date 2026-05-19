@@ -1,9 +1,12 @@
-"""
-DDU on Two Moons
-=================
+"""=========================================
+Deep Deterministic Uncertainty on Two Moons
+=========================================
 
-DDU (Deterministic Uncertainty Quantification) uses spectral normalisation
-and feature-space density estimation to produce uncertainty estimates.
+This example demonstrates the Deep Deterministic Uncertainty (DDU) method
+on the classic 2-D "Two Moons" classification dataset. It trains a
+PyTorch Residual Feed-Forward Network (ResFFN) wrapped with the DDU
+framework, which combines spectral normalization with a deep ensemble
+of feature extractors.
 """
 
 from __future__ import annotations
