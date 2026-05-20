@@ -15,6 +15,12 @@ from probly.representation.credal_set.array import (
     ArrayProbabilityIntervalsCredalSet,
     ArraySingletonCredalSet,
 )
+from probly.representation.credal_set.torch import (
+    TorchConvexCredalSet,
+    TorchDirichletLevelSetCredalSet,
+    TorchDistanceBasedCredalSet,
+    TorchProbabilityIntervalsCredalSet,
+)
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -457,3 +463,91 @@ def _draw_discrete_set_spider(
             m_label = label if m_idx == 0 else None
             ax.plot(theta, member, color=color, linewidth=config.line_width, zorder=3, label=m_label)
             ax.scatter(theta, member, color=color, s=config.marker_size, zorder=4)
+
+
+@_draw_credal_set_spider.register(TorchDistanceBasedCredalSet)
+def _draw_distance_based_spider(
+    data: TorchDistanceBasedCredalSet,
+    ax: Axes,
+    config: PlotConfig,
+    series_labels: list[str] | None,
+) -> None:
+    data = data.reshape(-1)
+    theta = _get_theta(data.num_classes)
+    lower_all = data.lower().detach().cpu().numpy()
+    upper_all = data.upper().detach().cpu().numpy()
+    nominal_all = data.nominal.unnormalized_probabilities.detach().cpu().numpy()
+    n_sets = lower_all.shape[0]
+    for idx in range(n_sets):
+        color = config.color(idx)
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
+        _draw_intervals_on_spokes(ax, theta, lower_all[idx], upper_all[idx], color, config, label=label)
+        ax.scatter(theta, nominal_all[idx], color=color, s=config.marker_size, zorder=4)
+
+
+@_draw_credal_set_spider.register(TorchProbabilityIntervalsCredalSet)
+def _draw_intervals_spider_torch(
+    data: TorchProbabilityIntervalsCredalSet,
+    ax: Axes,
+    config: PlotConfig,
+    series_labels: list[str] | None,
+) -> None:
+    data = data.reshape(-1)
+    theta = _get_theta(data.num_classes)
+    lower_all = data.lower_bounds.detach().cpu().numpy()
+    upper_all = data.upper_bounds.detach().cpu().numpy()
+    n_sets = lower_all.shape[0]
+    for idx in range(n_sets):
+        color = config.color(idx)
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
+        lower = lower_all[idx]
+        upper = upper_all[idx]
+        if np.allclose(lower, upper):
+            ax.plot(theta, lower, color=color, linewidth=config.line_width, label=label, zorder=3)
+            ax.scatter(theta, lower, color=color, s=config.marker_size, zorder=4)
+        else:
+            _draw_intervals_on_spokes(ax, theta, lower, upper, color, config, label=label)
+
+
+@_draw_credal_set_spider.register(TorchDirichletLevelSetCredalSet)
+def _draw_dirichlet_spider_torch(
+    data: TorchDirichletLevelSetCredalSet,
+    ax: Axes,
+    config: PlotConfig,
+    series_labels: list[str] | None,
+) -> None:
+    data = data.reshape(-1)
+    theta = _get_theta(data.num_classes)
+    lower_all = data.lower().detach().cpu().numpy()
+    upper_all = data.upper().detach().cpu().numpy()
+    nominal_all = data.barycenter.unnormalized_probabilities.detach().cpu().numpy()
+    n_sets = lower_all.shape[0]
+    for idx in range(n_sets):
+        color = config.color(idx)
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
+        _draw_intervals_on_spokes(ax, theta, lower_all[idx], upper_all[idx], color, config, label=label)
+        ax.scatter(theta, nominal_all[idx], color=color, s=config.marker_size, zorder=4)
+
+
+@_draw_credal_set_spider.register(TorchConvexCredalSet)
+def _draw_convex_set_spider_torch(
+    data: TorchConvexCredalSet,
+    ax: Axes,
+    config: PlotConfig,
+    series_labels: list[str] | None,
+) -> None:
+    theta = _get_theta(data.num_classes)
+    arr = data.reshape(-1).tensor.unnormalized_probabilities.detach().cpu().numpy()
+    n_sets = arr.shape[0]
+    for idx in range(n_sets):
+        color = config.color(idx)
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
+        pts = arr[idx]
+
+        for member in pts:
+            ax.plot(theta, member, color=color, linewidth=config.line_width, alpha=0.6, zorder=3)
+
+        _draw_convex_spider_envelope(ax, theta, pts, color, config.fill_alpha)
+
+        if label is not None:
+            ax.fill([], [], facecolor=color, alpha=config.fill_alpha, label=label)
