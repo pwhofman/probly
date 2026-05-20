@@ -10,16 +10,17 @@ import numpy as np
 
 from probly.plot.config import PlotConfig
 
-from ._binary import _draw_credal_set_binary, _setup_binary_axes
-from ._radar_axes import _get_radar_axes
-from ._spider import _draw_credal_set_spider, _setup_spider_axes
-from ._ternary import _draw_credal_set_ternary
-
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from mpltern import TernaryAxes
 
-    from probly.representation.credal_set.array import ArrayCategoricalCredalSet, ArraySingletonCredalSet
+    from probly.representation.credal_set._common import CategoricalCredalSet, SingletonCredalSet
+    from probly.representation.credal_set.array import (
+        ArrayCategoricalCredalSet,
+    )
+    from probly.representation.credal_set.torch import (
+        TorchCategoricalCredalSet,
+    )
 
 __all__ = ["plot_credal_set"]
 
@@ -30,15 +31,62 @@ _MIN_SPIDER_CLASSES = 4
 _OVERLAY_GT_COLOR = "#2c3e50"
 
 
+def _to_numpy(val: object) -> np.ndarray:
+    """Safely detach tensors to numpy arrays, or pass arrays through."""
+    if hasattr(val, "detach"):
+        return val.detach().cpu().numpy()  # ty: ignore[call-non-callable]
+    return np.asarray(val)
+
+
+def _flatten_batch[T: CategoricalCredalSet](data: T) -> T:
+    """Flatten batch dimensions if the credal set supports it (Torch or Array)."""
+    reshape_fn = getattr(data, "reshape", None)
+    if callable(reshape_fn):
+        return reshape_fn(-1)
+
+    msg = (
+        f"Input of type {type(data).__name__} is not a supported batched credal set. "
+        "Plotting requires credal sets from standard backends (Torch or Array) that implement '.reshape()'."
+    )
+    raise TypeError(msg)
+
+
+def _get_unnormalized_probabilities(
+    data: ArrayCategoricalCredalSet | TorchCategoricalCredalSet | SingletonCredalSet,
+) -> np.ndarray:
+    """Extract unnormalized probabilities from either Array or Torch representations."""
+    if hasattr(data, "unnormalized_probabilities"):
+        return _to_numpy(data.unnormalized_probabilities)
+    if hasattr(data, "array") and hasattr(data.array, "unnormalized_probabilities"):
+        return _to_numpy(data.array.unnormalized_probabilities)
+    if hasattr(data, "tensor") and hasattr(data.tensor, "unnormalized_probabilities"):
+        return _to_numpy(data.tensor.unnormalized_probabilities)
+    if hasattr(data, "barycenter") and hasattr(
+        data.barycenter, "unnormalized_probabilities"
+    ):  # For DirichletLevelSetCredalSet
+        return _to_numpy(data.barycenter.unnormalized_probabilities)
+    if hasattr(data, "nominal") and hasattr(data.nominal, "unnormalized_probabilities"):
+        return _to_numpy(data.nominal.unnormalized_probabilities)
+
+    msg = f"Cannot extract probabilities from {type(data).__name__}"
+    raise TypeError(msg)
+
+
+from ._binary import _draw_credal_set_binary, _setup_binary_axes  # noqa : E402 # necessary to avoid circular imports
+from ._radar_axes import _get_radar_axes  # noqa : E402
+from ._spider import _draw_credal_set_spider, _setup_spider_axes  # noqa : E402
+from ._ternary import _draw_credal_set_ternary  # noqa : E402
+
+
 def _draw_overlay_binary(
     ax: Axes,
     config: PlotConfig,
-    ground_truth: ArraySingletonCredalSet | None,
+    ground_truth: SingletonCredalSet | None,
 ) -> None:
     """Draw ground_truth overlay on binary axes."""
     if ground_truth is None:
         return
-    gt = ground_truth.reshape(-1).array.unnormalized_probabilities
+    gt = _get_unnormalized_probabilities(ground_truth)
     for idx in range(gt.shape[0]):
         ax.scatter(
             gt[idx, 1],
@@ -54,13 +102,13 @@ def _draw_overlay_binary(
 def _draw_overlay_ternary(
     ax: Axes,
     config: PlotConfig,
-    ground_truth: ArraySingletonCredalSet | None,
+    ground_truth: SingletonCredalSet | None,
 ) -> None:
     """Draw ground_truth overlay on ternary axes."""
     if ground_truth is None:
         return
     ternary_ax = cast("TernaryAxes", ax)
-    gt = ground_truth.reshape(-1).array.unnormalized_probabilities
+    gt = _get_unnormalized_probabilities(ground_truth)
     for idx in range(gt.shape[0]):
         # Slices (not scalars) are needed for mpltern's scatter API
         ternary_ax.scatter(
@@ -79,12 +127,12 @@ def _draw_overlay_spider(
     ax: Axes,
     theta: np.ndarray,
     config: PlotConfig,
-    ground_truth: ArraySingletonCredalSet | None,
+    ground_truth: SingletonCredalSet | None,
 ) -> None:
     """Draw ground_truth overlay on spider axes."""
     if ground_truth is None:
         return
-    gt = ground_truth.reshape(-1).array.unnormalized_probabilities
+    gt = _get_unnormalized_probabilities(ground_truth)
     for idx in range(gt.shape[0]):
         values = gt[idx]
         ax.plot(
@@ -108,18 +156,18 @@ def _draw_overlay_spider(
 
 def _has_legend(
     series_labels: list[str] | None,
-    ground_truth: ArraySingletonCredalSet | None,
+    ground_truth: SingletonCredalSet | None,
 ) -> bool:
     return series_labels is not None or ground_truth is not None
 
 
 def _plot_binary(
-    data: ArrayCategoricalCredalSet,
+    data: ArrayCategoricalCredalSet | TorchCategoricalCredalSet,
     labels: list[str],
     config: PlotConfig,
     series_labels: list[str] | None,
     title: str | None,
-    ground_truth: ArraySingletonCredalSet | None,
+    ground_truth: SingletonCredalSet | None,
 ) -> Axes:
     fig, ax = plt.subplots(figsize=(config.figure_size[0], 1.2), dpi=config.dpi)
     _setup_binary_axes(ax, labels, config)
@@ -135,13 +183,13 @@ def _plot_binary(
 
 
 def _plot_ternary(
-    data: ArrayCategoricalCredalSet,
+    data: ArrayCategoricalCredalSet | TorchCategoricalCredalSet,
     labels: list[str],
     config: PlotConfig,
     series_labels: list[str] | None,
     title: str | None,
     gridlines: bool,
-    ground_truth: ArraySingletonCredalSet | None,
+    ground_truth: SingletonCredalSet | None,
 ) -> Axes:
     fig = plt.figure(figsize=config.figure_size, dpi=config.dpi)
     ternary_ax = cast("TernaryAxes", fig.add_subplot(projection="ternary"))
@@ -168,13 +216,13 @@ def _plot_ternary(
 
 
 def _plot_spider(
-    data: ArrayCategoricalCredalSet,
+    data: ArrayCategoricalCredalSet | TorchCategoricalCredalSet,
     labels: list[str],
     config: PlotConfig,
     series_labels: list[str] | None,
     title: str | None,
     gridlines: bool,
-    ground_truth: ArraySingletonCredalSet | None,
+    ground_truth: SingletonCredalSet | None,
 ) -> Axes:
     radar_cls = _get_radar_axes(data.num_classes)
     fig = plt.figure(figsize=config.figure_size, dpi=config.dpi)
@@ -195,7 +243,7 @@ def _plot_spider(
 
 
 def plot_credal_set(
-    data: ArrayCategoricalCredalSet,
+    data: ArrayCategoricalCredalSet | TorchCategoricalCredalSet,
     *,
     title: str | None = None,
     labels: list[str] | None = None,
@@ -203,9 +251,9 @@ def plot_credal_set(
     config: PlotConfig | None = None,
     show: bool = False,
     gridlines: bool = True,
-    ground_truth: ArraySingletonCredalSet | None = None,
+    ground_truth: SingletonCredalSet | None = None,
 ) -> Axes:
-    """Plot an Array credal set.
+    """Plot a Categorical credal set.
 
     For 2-class credal sets, renders a horizontal interval plot where the
     x-axis represents P(class 2). For 3-class credal sets, renders a ternary
@@ -217,17 +265,17 @@ def plot_credal_set(
 
     The following types are supported:
 
-    - :class:`~probly.representation.credal_set.array.ArrayProbabilityIntervalsCredalSet`:
+    - :class:`~probly.representation.credal_set._common.ProbabilityIntervalsCredalSet`:
       drawn as a filled interval (2-class), feasibility envelope (3-class), or
       constant-width bars on spokes (4+ classes).
-    - :class:`~probly.representation.credal_set.array.ArrayDistanceBasedCredalSet`:
+    - :class:`~probly.representation.credal_set._common.DistanceBasedCredalSet`:
       drawn as a filled interval/envelope/bars with the nominal distribution
       marked as a point.
-    - :class:`~probly.representation.credal_set.array.ArrayConvexCredalSet` /
-      :class:`~probly.representation.credal_set.array.ArrayDiscreteCredalSet`:
+    - :class:`~probly.representation.credal_set._common.ConvexCredalSet` /
+      :class:`~probly.representation.credal_set._common.DiscreteCredalSet`:
       drawn as an interval with vertex markers (2-class), convex hull envelope
       (3-class), or min/max envelope (4+ classes).
-    - :class:`~probly.representation.credal_set.array.ArraySingletonCredalSet`:
+    - :class:`~probly.representation.credal_set._common.SingletonCredalSet`:
       drawn as a single scatter marker or closed envelope on spokes.
 
     Args:
@@ -242,7 +290,7 @@ def plot_credal_set(
             4+-class (spider) plots. Defaults to ``True``.
         ground_truth: Optional ground-truth distribution to overlay as a star
             marker. Must be an
-            :class:`~probly.representation.credal_set.array.ArraySingletonCredalSet`
+            :class:`~probly.representation.credal_set._common.SingletonCredalSet`
             with the same number of classes as ``data``.
 
     Returns:
@@ -250,10 +298,15 @@ def plot_credal_set(
 
     Raises:
         ValueError: If labels length does not match the number of classes.
-        NotImplementedError: If ``data`` is not a supported Array credal set type.
+        NotImplementedError: If ``data`` is not a supported credal set type.
     """
     num_classes = data.num_classes
     config = config or PlotConfig()
+
+    # Centralized flattening of batch dimensions for plotting
+    data = _flatten_batch(data)
+    if ground_truth is not None:
+        ground_truth = _flatten_batch(ground_truth)
 
     if num_classes == _NUM_BINARY_CLASSES:
         labels = labels or ["C0", "C1"]

@@ -76,8 +76,24 @@ def _compute_interval_vertices(lower: np.ndarray, upper: np.ndarray) -> np.ndarr
                     vertices.append(p)
 
     if not vertices:
-        msg = "No feasible vertices found. Check that the probability intervals are valid and overlap the simplex."
-        raise ValueError(msg)
+        # Fallback for when bounds do not intersect the simplex (e.g. unnormalized logits).
+        # Evaluate the 8 corners of the bounding box and normalize them.
+        for x in [lower[0], upper[0]]:
+            for y in [lower[1], upper[1]]:
+                for z in [lower[2], upper[2]]:
+                    corner = np.array([x, y, z])
+                    if np.any(corner < 0) or np.sum(corner) > 1.5:
+                        # Assume these are logits and apply softmax
+                        e_x = np.exp(corner - np.max(corner))
+                        p = e_x / e_x.sum()
+                    else:
+                        # Assume they are unnormalized probabilities
+                        s = np.sum(corner)
+                        p = corner / s if s > 1e-9 else np.ones(3) / 3.0
+                    vertices.append(p.tolist())
+        pts = np.array(vertices)
+        pts = np.unique(np.round(pts, decimals=8), axis=0)
+        return _compute_convex_hull_vertices(pts)
 
     pts = np.array(vertices)
     pts = np.unique(np.round(pts, decimals=10), axis=0)  # remove near-duplicate vertices

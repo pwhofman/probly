@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from flextype import flexdispatch
+from probly.plot.credal.plot import _get_unnormalized_probabilities, _to_numpy
 from probly.representation.credal_set.array import (
     ArrayConvexCredalSet,
     ArrayDiscreteCredalSet,
@@ -16,11 +17,9 @@ from probly.representation.credal_set.array import (
 )
 from probly.representation.credal_set.torch import (
     TorchConvexCredalSet,
-    TorchDirichletLevelSetCredalSet,
     TorchDistanceBasedCredalSet,
     TorchProbabilityIntervalsCredalSet,
 )
-from pytraverse import GlobalVariable
 
 from ._geometry import _compute_convex_hull_vertices, _compute_interval_vertices
 
@@ -28,14 +27,10 @@ if TYPE_CHECKING:
     from mpltern import TernaryAxes
 
     from probly.plot.config import PlotConfig
-    from probly.representation.credal_set._common import (
-        CategoricalCredalSet,
-    )
-
+    from probly.representation.credal_set.array import ArrayCategoricalCredalSet
+    from probly.representation.credal_set.torch import TorchCategoricalCredalSet
 
 _NUM_TERNARY_CLASSES = 3
-
-NUM_TERNARY_CLASSES = GlobalVariable[int]("_NUM_TERNARY_CLASSES", "Number of classes for ternary credal set plotting")
 
 
 def _draw_polygon(
@@ -62,7 +57,7 @@ def _draw_polygon(
 
 @flexdispatch
 def _draw_credal_set_ternary(
-    data: CategoricalCredalSet,
+    data: TorchCategoricalCredalSet | ArrayCategoricalCredalSet,
     ternary_ax: TernaryAxes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
@@ -89,8 +84,7 @@ def _draw_singleton(
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    data = data.reshape(-1)
-    pts = data.array.unnormalized_probabilities
+    pts = _get_unnormalized_probabilities(data)
     n_sets = pts.shape[0]
 
     for idx in range(n_sets):
@@ -100,15 +94,17 @@ def _draw_singleton(
         ternary_ax.scatter(p[0:1], p[1:2], p[2:3], color=color, s=config.marker_size, zorder=3, label=label)
 
 
-@_draw_credal_set_ternary.register(ArrayProbabilityIntervalsCredalSet)
+@_draw_credal_set_ternary.register(ArrayProbabilityIntervalsCredalSet | TorchProbabilityIntervalsCredalSet)
 def _draw_intervals(
-    data: ArrayProbabilityIntervalsCredalSet,
+    data: ArrayProbabilityIntervalsCredalSet | TorchProbabilityIntervalsCredalSet,
     ternary_ax: TernaryAxes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    lower_all = data.lower_bounds.reshape(-1, _NUM_TERNARY_CLASSES)
-    upper_all = data.upper_bounds.reshape(-1, _NUM_TERNARY_CLASSES)
+    lower_all = _to_numpy(data.lower_bounds).reshape(-1, _NUM_TERNARY_CLASSES)
+    upper_all = _to_numpy(data.upper_bounds).reshape(-1, _NUM_TERNARY_CLASSES)
+    lower_all = _to_numpy(data.lower_bounds)
+    upper_all = _to_numpy(data.upper_bounds)
     n_sets = lower_all.shape[0]
 
     for idx in range(n_sets):
@@ -123,19 +119,28 @@ def _draw_intervals(
             ternary_ax.scatter(pt[0:1], pt[1:2], pt[2:3], color=color, s=config.marker_size, zorder=3, label=label)
             continue
 
+        # If the polygon is very small visually, draw a marker so it's not invisible.
+        if np.max(np.ptp(unique_verts, axis=0)) < 0.02:
+            pt = np.mean(unique_verts, axis=0)
+            ternary_ax.scatter(pt[0:1], pt[1:2], pt[2:3], color=color, s=config.marker_size, zorder=3, label=label)
+            label = None
+
         _draw_polygon(ternary_ax, vertices, color, config, label=label)
 
 
-@_draw_credal_set_ternary.register(ArrayDistanceBasedCredalSet)
+@_draw_credal_set_ternary.register(ArrayDistanceBasedCredalSet | TorchDistanceBasedCredalSet)
 def _draw_distance_based(
-    data: ArrayDistanceBasedCredalSet,
+    data: ArrayDistanceBasedCredalSet | TorchDistanceBasedCredalSet,
     ternary_ax: TernaryAxes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    lower_all = data.lower().reshape(-1, _NUM_TERNARY_CLASSES)
-    upper_all = data.upper().reshape(-1, _NUM_TERNARY_CLASSES)
-    nominal_all = data.nominal.unnormalized_probabilities.reshape(-1, _NUM_TERNARY_CLASSES)
+    lower_all = _to_numpy(data.lower()).reshape(-1, _NUM_TERNARY_CLASSES)
+    upper_all = _to_numpy(data.upper()).reshape(-1, _NUM_TERNARY_CLASSES)
+    nominal_all = _get_unnormalized_probabilities(data).reshape(-1, _NUM_TERNARY_CLASSES)
+    lower_all = _to_numpy(data.lower())
+    upper_all = _to_numpy(data.upper())
+    nominal_all = _get_unnormalized_probabilities(data)
     n_sets = lower_all.shape[0]
 
     for idx in range(n_sets):
@@ -161,7 +166,7 @@ def _draw_discrete_set(
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    arr = data.reshape(-1).array.unnormalized_probabilities
+    arr = _get_unnormalized_probabilities(data)
     n_sets = arr.shape[0]
 
     for idx in range(n_sets):
@@ -171,129 +176,14 @@ def _draw_discrete_set(
         ternary_ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2], color=color, s=config.marker_size, zorder=3, label=label)
 
 
-@_draw_credal_set_ternary.register(ArrayConvexCredalSet)
+@_draw_credal_set_ternary.register(ArrayConvexCredalSet | TorchConvexCredalSet)
 def _draw_convex_set(
-    data: ArrayConvexCredalSet,
+    data: ArrayConvexCredalSet | TorchConvexCredalSet,
     ternary_ax: TernaryAxes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    arr = data.reshape(-1).array.unnormalized_probabilities
-    n_sets = arr.shape[0]
-
-    for idx in range(n_sets):
-        color = config.color(idx)
-        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
-        pts = arr[idx]
-
-        pts = np.unique(np.round(pts, decimals=10), axis=0)
-        n_pts = len(pts)
-
-        if n_pts == 1:
-            ternary_ax.scatter(
-                pts[:, 0], pts[:, 1], pts[:, 2], color=color, s=config.marker_size, zorder=3, label=label
-            )
-            continue
-
-        if n_pts == 2:
-            ternary_ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2], color=color, s=config.marker_size, zorder=3)
-            ternary_ax.plot(pts[:, 0], pts[:, 1], pts[:, 2], color=color, linewidth=config.line_width, label=label)
-            continue
-
-        ternary_ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2], color=color, s=config.marker_size, zorder=3)
-        hull_pts = _compute_convex_hull_vertices(pts)
-        _draw_polygon(ternary_ax, hull_pts, color, config, label=label)
-
-
-@_draw_credal_set_ternary.register(TorchDistanceBasedCredalSet)
-def _draw_distance_based(
-    data: TorchDistanceBasedCredalSet,
-    ternary_ax: TernaryAxes,
-    config: PlotConfig,
-    series_labels: list[str] | None = None,
-) -> None:
-    lower_all = data.lower().reshape(-1, _NUM_TERNARY_CLASSES).detach().cpu().numpy()
-    upper_all = data.upper().reshape(-1, _NUM_TERNARY_CLASSES).detach().cpu().numpy()
-    nominal_all = data.nominal.unnormalized_probabilities.reshape(-1, _NUM_TERNARY_CLASSES).detach().cpu().numpy()
-    n_sets = lower_all.shape[0]
-
-    for idx in range(n_sets):
-        color = config.color(idx)
-        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
-        vertices = _compute_interval_vertices(lower_all[idx], upper_all[idx])
-
-        unique_verts = np.unique(np.round(vertices, decimals=8), axis=0)
-        if len(unique_verts) <= 1:
-            pt = unique_verts[0] if len(unique_verts) == 1 else vertices[0]
-            ternary_ax.scatter(pt[0:1], pt[1:2], pt[2:3], color=color, s=config.marker_size, zorder=3, label=label)
-        else:
-            _draw_polygon(ternary_ax, vertices, color, config, label=label)
-
-        nom = nominal_all[idx]
-        ternary_ax.scatter(nom[0:1], nom[1:2], nom[2:3], color=color, s=config.marker_size, zorder=3)
-
-
-@_draw_credal_set_ternary.register(TorchProbabilityIntervalsCredalSet)
-def _draw_intervals_ternary_torch(
-    data: TorchProbabilityIntervalsCredalSet,
-    ternary_ax: TernaryAxes,
-    config: PlotConfig,
-    series_labels: list[str] | None = None,
-) -> None:
-    lower_all = data.lower_bounds.reshape(-1, _NUM_TERNARY_CLASSES).detach().cpu().numpy()
-    upper_all = data.upper_bounds.reshape(-1, _NUM_TERNARY_CLASSES).detach().cpu().numpy()
-    n_sets = lower_all.shape[0]
-
-    for idx in range(n_sets):
-        vertices = _compute_interval_vertices(lower_all[idx], upper_all[idx])
-        color = config.color(idx)
-        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
-
-        unique_verts = np.unique(np.round(vertices, decimals=8), axis=0)
-        if len(unique_verts) <= 1:
-            pt = unique_verts[0] if len(unique_verts) == 1 else vertices[0]
-            ternary_ax.scatter(pt[0:1], pt[1:2], pt[2:3], color=color, s=config.marker_size, zorder=3, label=label)
-            continue
-
-        _draw_polygon(ternary_ax, vertices, color, config, label=label)
-
-
-@_draw_credal_set_ternary.register(TorchDirichletLevelSetCredalSet)
-def _draw_dirichlet_ternary_torch(
-    data: TorchDirichletLevelSetCredalSet,
-    ternary_ax: TernaryAxes,
-    config: PlotConfig,
-    series_labels: list[str] | None = None,
-) -> None:
-    lower_all = data.lower().reshape(-1, _NUM_TERNARY_CLASSES).detach().cpu().numpy()
-    upper_all = data.upper().reshape(-1, _NUM_TERNARY_CLASSES).detach().cpu().numpy()
-    nominal_all = data.barycenter.unnormalized_probabilities.reshape(-1, _NUM_TERNARY_CLASSES).detach().cpu().numpy()
-    n_sets = lower_all.shape[0]
-
-    for idx in range(n_sets):
-        color = config.color(idx)
-        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
-        vertices = _compute_interval_vertices(lower_all[idx], upper_all[idx])
-
-        unique_verts = np.unique(np.round(vertices, decimals=8), axis=0)
-        if len(unique_verts) <= 1:
-            pt = unique_verts[0] if len(unique_verts) == 1 else vertices[0]
-            ternary_ax.scatter(pt[0:1], pt[1:2], pt[2:3], color=color, s=config.marker_size, zorder=3, label=label)
-        else:
-            _draw_polygon(ternary_ax, vertices, color, config, label=label)
-
-        nom = nominal_all[idx]
-        ternary_ax.scatter(nom[0:1], nom[1:2], nom[2:3], color=color, s=config.marker_size, zorder=3)
-
-
-@_draw_credal_set_ternary.register(TorchConvexCredalSet)
-def _draw_convex_ternary_torch(
-    data: TorchConvexCredalSet,
-    ternary_ax: TernaryAxes,
-    config: PlotConfig,
-    series_labels: list[str] | None = None,
-) -> None:
-    arr = data.reshape(-1).tensor.unnormalized_probabilities.detach().cpu().numpy()
+    arr = _get_unnormalized_probabilities(data)
     n_sets = arr.shape[0]
 
     for idx in range(n_sets):
