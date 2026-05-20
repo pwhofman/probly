@@ -6,12 +6,13 @@ This example demonstrates the Direct Epistemic Uncertainty Prediction (DEUP)
 method on the 2-D "Two Moons" classification dataset.
 
 DEUP trains a model in two phases:
-1.  **Phase 1**: Train the base classifier (encoder + classification head)
-    with standard cross-entropy loss.
 
-2.  **Phase 2**: Freeze the base classifier and train an "error head" to
-    predict the per-sample cross-entropy loss, using stationarizing features
-    derived from the base classifier's outputs.
+1. **Phase 1**: Train the base classifier (encoder + classification head)
+   with standard cross-entropy loss.
+
+2. **Phase 2**: Freeze the base classifier and train an "error head" to
+   predict the per-sample cross-entropy loss, using stationarizing features
+   derived from the base classifier's outputs.
 
 The predicted error score serves as a measure of epistemic uncertainty.
 """
