@@ -15,7 +15,7 @@ out-of-distribution regions.
 
 from __future__ import annotations
 
-from sklearn.datasets import make_moons
+from sklearn.datasets import make_blobs, make_moons
 import torch
 from torch import nn
 
@@ -25,11 +25,17 @@ from probly.representer import representer
 from examples.utils.plotting import plot_example_uncertainty
 
 # %%
-# 1. Prepare the Two Moons dataset
+# 1. Prepare the Two Moons dataset and the Blobs dataset
 
-X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
-X_tensor = torch.from_numpy(X).float()
-y_tensor = torch.from_numpy(y).long()
+X_moons, y_moons = make_moons(n_samples=500, noise=0.05, random_state=0)
+X_moons_tensor = torch.from_numpy(X_moons).float()
+y__moons_tensor = torch.from_numpy(y_moons).long()
+
+
+X_blobs, y_blobs = make_blobs(n_samples=500, centers=[[-1.0, -1.0], [1.0, 1.0]], cluster_std=0.5, random_state=0)
+X_blobs_tensor = torch.from_numpy(X_blobs).float()
+y_blobs_tensor = torch.from_numpy(y_blobs).long()
+
 
 # %%
 # 2. Define a deep residual network and wrap it with SNGP
@@ -61,39 +67,75 @@ class ResFFN(nn.Module):
             x = layer(x)
         return self.last(x)
 
-# 1. Use the Residual Network (CRITICAL)
-base_model = ResFFN()
+base_model_moons = ResFFN()
 
-# 2. Configure SNGP parameters
-sngp_model = sngp(
-    base_model,
+sngp_model_moons = sngp(
+    base_model_moons,
     num_random_features=128,
-    ridge_penalty=0.01,  # A balanced penalty for ResFFN
+    ridge_penalty=0.01,
     norm_multiplier=0.9,
     n_power_iterations=1,
 )
-opt = torch.optim.Adam(sngp_model.parameters(), lr=1e-3)
+opt = torch.optim.Adam(sngp_model_moons.parameters(), lr=1e-3)
+
+
+base_model_blobs = ResFFN()
+
+sngp_model_blobs = sngp(
+    base_model_blobs,
+    num_random_features=128,
+    ridge_penalty=0.01,
+    norm_multiplier=0.9,
+    n_power_iterations=1,
+)
+opt_blobs = torch.optim.Adam(sngp_model_blobs.parameters(), lr=1e-3)
 
 # %%
 # 3. Train the SNGP model
-sngp_model.train()
+sngp_model_moons.train()
 
-# 4. Train for an appropriate number of epochs
 for epoch in range(300):
-    reset_precision_matrix(sngp_model)
-    out = sngp_model(X_tensor)
+    reset_precision_matrix(sngp_model_moons)
+    out = sngp_model_moons(X_moons_tensor)
     logits = out[0] if isinstance(out, tuple) else getattr(out, "mean", out)
-    loss = nn.functional.cross_entropy(logits, y_tensor)
+    loss = nn.functional.cross_entropy(logits, y__moons_tensor)
 
     opt.zero_grad()
     loss.backward()
     opt.step()
 
+
+sngp_model_blobs.train()
+
+for epoch in range(300):
+    reset_precision_matrix(sngp_model_blobs)
+    out = sngp_model_blobs(X_blobs_tensor)
+    logits = out[0] if isinstance(out, tuple) else getattr(out, "mean", out)
+    loss = nn.functional.cross_entropy(logits, y_blobs_tensor)
+
+    opt_blobs.zero_grad()
+    loss.backward()
+    opt_blobs.step()
+
 # %%
 # 4. Evaluate Epistemic Uncertainty over a 2D Grid
 
-sngp_model.eval()
-rep = representer(sngp_model, num_samples=800)
+sngp_model_moons.eval()
+rep_moons = representer(sngp_model_moons, num_samples=800)
 
-plot = plot_example_uncertainty(X, y, rep, title="SNGP Predictive Uncertainty")
-plot.show()
+plot_moons = plot_example_uncertainty(X_moons, y_moons, rep_moons, xlim=(-3.0, 3.0), ylim=(-3.0, 3.0), title="SNGP Predictive Uncertainty")
+plot_moons.show()
+
+
+sngp_model_blobs.eval()
+rep_blobs = representer(sngp_model_blobs, num_samples=800)
+
+plot_blobs = plot_example_uncertainty(
+    X_blobs,
+    y_blobs,
+    rep_blobs,
+    title="SNGP Predictive Uncertainty (Blobs)",
+    xlim=(-5.0, 5.0),
+    ylim=(-5.0, 5.0),
+)
+plot_blobs.show()
