@@ -60,6 +60,10 @@ for member in credal_model:
         opt.step()
     member.eval()
 
+# %%
+# 4. Predict and plot the credal sets
+# -----------------------------------
+
 rep = representer(credal_model)
 X_test = torch.tensor([
     [-7.0, -4.0],

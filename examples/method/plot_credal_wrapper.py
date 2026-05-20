@@ -48,7 +48,6 @@ base_model = MLPClassifier(in_features=2, hidden_features=64, out_features=3)
 # 3. Train base model and wrap with Credal Wrapper
 # ------------------------------------------------
 
-
 probabilistic_base_model = nn.Sequential(base_model, nn.Softmax(dim=1))
 credal_model = credal_wrapper(probabilistic_base_model, predictor_type="probabilistic_classifier", num_members=5)
 
@@ -63,6 +62,10 @@ for member in credal_model:
         opt.step()
     member.eval()
 
+# %%
+# 4. Predict and plot the credal sets
+# -----------------------------------
+
 rep = representer(credal_model)
 
 X_test = torch.tensor([
@@ -71,10 +74,6 @@ X_test = torch.tensor([
     [0.0, 8.0],
 ])
 credal_sets = rep.predict(X_test)
-
-# %%
-# 4. Plot the credal sets on a simplex
-# ------------------------------------
 
 plot = plot_credal_set(
     credal_sets,
