@@ -28,7 +28,6 @@ X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
-# DataLoader is needed for Laplace to compute the Hessian
 dataset = TensorDataset(X_tensor, y_tensor)
 fit_loader = DataLoader(dataset, batch_size=32)
 

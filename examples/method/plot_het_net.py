@@ -41,7 +41,6 @@ y_tensor = torch.from_numpy(y).long()
 
 base_model = SequentialModel()
 
-# 2. Configure HET-Net parameters
 het_net_model = het_net(
     base_model,
     predictor_type="logit_classifier"
@@ -52,7 +51,6 @@ opt = torch.optim.Adam(het_net_model.parameters(), lr=1e-3)
 # 3. Train the HET-Net model
 het_net_model.train()
 
-# 4. Train for an appropriate number of epochs
 for epoch in range(500):
     out = het_net_model(X_tensor)
     logits = out[0] if isinstance(out, tuple) else out
