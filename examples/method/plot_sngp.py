@@ -1,6 +1,6 @@
-"""=========================================
+"""====================================
 SNGP Distance Awareness on Two Moons
-=========================================
+====================================
 
 This example replicates the toy experiment from Figure 1 of the SNGP paper
 (::cite::`liu2022SNGP`). It trains a PyTorch ResNet wrapped with SNGP on the

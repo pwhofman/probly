@@ -5,14 +5,16 @@ from probly.predictor import LogitClassifier
 
 
 class MLPClassifier(nn.Module, LogitClassifier):
-    def __init__(self) -> None:
+    def __init__(
+        self, in_features: int = 2, hidden_features: int = 64, out_features: int = 2
+    ) -> None:
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(2, 64),
+            nn.Linear(in_features, hidden_features),
             nn.ReLU(),
-            nn.Linear(64, 64),
+            nn.Linear(hidden_features, hidden_features),
             nn.ReLU(),
-            nn.Linear(64, 2),
+            nn.Linear(hidden_features, out_features),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

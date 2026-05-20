@@ -1,6 +1,6 @@
-"""=======================================
+"""==============================
 Posterior Network on Two Moons
-=======================================
+==============================
 
 A Posterior Network estimates class-conditional feature densities via
 normalizing flows to produce Dirichlet-based uncertainty estimates.

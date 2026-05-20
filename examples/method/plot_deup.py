@@ -1,6 +1,6 @@
-"""=======================================
+"""=================
 DEUP on Two Moons
-=======================================
+=================
 
 This example demonstrates the Direct Epistemic Uncertainty Prediction (DEUP)
 method on the 2-D "Two Moons" classification dataset.

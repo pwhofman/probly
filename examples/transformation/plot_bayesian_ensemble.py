@@ -1,6 +1,6 @@
-"""=======================================
+"""==============================
 Bayesian Ensemble on Two Moons
-=======================================
+==============================
 
 A Bayesian Ensemble combines multiple Bayesian Neural Networks, capturing
 both within-model and between-model uncertainty.

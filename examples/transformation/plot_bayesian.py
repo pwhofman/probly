@@ -1,6 +1,6 @@
-"""=======================================
+"""====================================
 Bayesian Neural Network on Two Moons
-=======================================
+====================================
 
 A Bayesian Neural Network replaces point-weight estimates with weight
 distributions, enabling uncertainty estimates via posterior sampling.

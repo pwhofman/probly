@@ -1,6 +1,6 @@
-"""=========================================
+"""===========================================
 Deep Deterministic Uncertainty on Two Moons
-=========================================
+===========================================
 
 This example demonstrates the Deep Deterministic Uncertainty (DDU) method
 on the classic 2-D "Two Moons" classification dataset. It trains a

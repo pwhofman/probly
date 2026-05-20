@@ -1,6 +1,6 @@
-"""=======================================
+"""=================
 DARE on Two Moons
-=======================================
+=================
 
 DARE (Deep Anti-Regularized Ensembles) adds an anti-regularization term
 once the task loss drops below a threshold, pushing ensemble members apart

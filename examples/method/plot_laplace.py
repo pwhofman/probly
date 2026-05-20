@@ -1,6 +1,6 @@
-"""
+"""==================================
 Laplace Approximation on Two Moons
-===================================
+==================================
 
 The Laplace Approximation is a post-hoc method that turns a deterministically
 trained neural network into a Bayesian Neural Network by approximating the

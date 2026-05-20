@@ -1,6 +1,6 @@
-"""
+"""================
 DUQ on Two Moons
-=================
+================
 """
 
 from __future__ import annotations

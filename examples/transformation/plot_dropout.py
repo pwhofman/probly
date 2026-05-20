@@ -1,6 +1,6 @@
-"""========================================
+"""===================================
 Applying the Dropout Transformation
-========================================
+===================================
 
 Transform a standard PyTorch model with :func:`~probly.method.dropout`
 so that dropout stays active during inference (MC-Dropout).

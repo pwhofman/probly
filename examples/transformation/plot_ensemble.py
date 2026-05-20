@@ -1,6 +1,6 @@
-"""=======================================
+"""==========================
 Deep Ensemble on Two Moons
-=======================================
+==========================
 
 A Deep Ensemble trains multiple independent models from different random
 initializations, using prediction disagreement as an uncertainty signal.

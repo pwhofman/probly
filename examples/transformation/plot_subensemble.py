@@ -1,6 +1,6 @@
-"""=======================================
+"""=========================
 Sub-Ensemble on Two Moons
-=======================================
+=========================
 
 A Sub-Ensemble freezes a shared backbone and trains multiple independent
 heads, reducing the cost of full ensembles. Uncertainty is higher in

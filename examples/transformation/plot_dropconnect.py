@@ -1,6 +1,6 @@
-"""=======================================
+"""========================
 DropConnect on Two Moons
-=======================================
+========================
 
 DropConnect randomly drops individual weights rather than activations at
 inference time, producing stochastic predictions similar to MC Dropout.

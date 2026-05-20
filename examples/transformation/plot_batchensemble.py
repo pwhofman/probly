@@ -1,6 +1,6 @@
-"""=======================================
+"""==========================
 BatchEnsemble on Two Moons
-=======================================
+==========================
 
 BatchEnsemble approximates a deep ensemble efficiently by applying
 per-member rank-1 perturbations to shared weight matrices.

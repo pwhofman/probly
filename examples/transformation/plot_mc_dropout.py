@@ -1,6 +1,6 @@
-"""=======================================
+"""=======================
 MC Dropout on Two Moons
-=======================================
+=======================
 
 MC Dropout keeps dropout active at inference time, producing stochastic
 predictions that can be averaged to estimate predictive uncertainty.
