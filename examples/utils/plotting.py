@@ -1,3 +1,5 @@
+from types import ModuleType
+
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,7 +16,7 @@ def plot_example_uncertainty(
     vmax: float | None = 1.0,
     xlim: tuple[float, float] = (-3.0, 3.0),
     ylim: tuple[float, float] = (-3.0, 3.0),
-) -> None:
+) -> ModuleType:
     grid_res = 200
     xx, yy = np.meshgrid(np.linspace(xlim[0], xlim[1], grid_res), np.linspace(ylim[0], ylim[1], grid_res))
     grid = np.c_[xx.ravel(), yy.ravel()]

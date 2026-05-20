@@ -1,10 +1,10 @@
-"""====================================
-SNGP Distance Awareness on Two Moons
-====================================
+"""==================================
+SNGP Distance Awareness on 2D Toys
+==================================
 
 This example replicates the toy experiment from Figure 1 of the SNGP paper
-(::cite::`liu2022SNGP`). It trains a PyTorch ResNet wrapped with SNGP on the
-classic 2-D "Two Moons" classification dataset.
+(:cite:`liu2020SNGP`). It trains a PyTorch ResNet wrapped with SNGP on the
+classic 2-D Two Moons and Blobs classification datasets.
 
 Unlike standard neural networks which confidently extrapolate far away
 from the training data, SNGP's Gaussian Process replaces the final layer.
@@ -29,7 +29,7 @@ from examples.utils.plotting import plot_example_uncertainty
 
 X_moons, y_moons = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_moons_tensor = torch.from_numpy(X_moons).float()
-y__moons_tensor = torch.from_numpy(y_moons).long()
+y_moons_tensor = torch.from_numpy(y_moons).long()
 
 
 X_blobs, y_blobs = make_blobs(n_samples=500, centers=[[-1.0, -1.0], [1.0, 1.0]], cluster_std=0.5, random_state=0)
@@ -98,7 +98,7 @@ for epoch in range(300):
     reset_precision_matrix(sngp_model_moons)
     out = sngp_model_moons(X_moons_tensor)
     logits = out[0] if isinstance(out, tuple) else getattr(out, "mean", out)
-    loss = nn.functional.cross_entropy(logits, y__moons_tensor)
+    loss = nn.functional.cross_entropy(logits, y_moons_tensor)
 
     opt.zero_grad()
     loss.backward()
