@@ -59,7 +59,7 @@ credal_model = credal_wrapper(probabilistic_base_model, predictor_type="probabil
 for member in credal_model:
     member.train()
     opt = torch.optim.Adam(member.parameters(), lr=0.01)
-    for _ in range(5):
+    for _ in range(2):
         opt.zero_grad()
         # member[0] is the SimpleMLP which yields raw logits needed for cross_entropy
         logits = member[0](X_train_tensor)

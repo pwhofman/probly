@@ -60,7 +60,7 @@ base_model = SimpleMLP()
 # Pre-train the base deterministic model
 base_model.train()
 opt_base = torch.optim.Adam(base_model.parameters(), lr=0.01)
-for _ in range(100):
+for _ in range(10):
     opt_base.zero_grad()
     logits = base_model(X_train_tensor)
     loss = nn.functional.cross_entropy(logits, y_train_tensor)
