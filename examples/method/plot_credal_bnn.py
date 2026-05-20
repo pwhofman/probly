@@ -41,20 +41,6 @@ y_test_tensor = torch.from_numpy(y_test_data).long()
 # 2. Define a base deterministic model
 # ------------------------------------
 
-class SimpleMLP(nn.Module):
-    def __init__(self) -> None:
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(2, 64),
-            nn.ReLU(),
-            nn.Linear(64, 64),
-            nn.ReLU(),
-            nn.Linear(64, 3),
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.net(x)
-
 base_model = MLPClassifier(in_features=2, hidden_features=64, out_features=3)
 
 # %%
@@ -71,7 +57,7 @@ for member in credal_model:
     opt = torch.optim.Adam(member.parameters(), lr=0.01)
     for _ in range(2):
         opt.zero_grad()
-        # member[0] is the SimpleMLP which yields raw logits needed for cross_entropy
+        # member[0] is the base model which yields raw logits needed for cross_entropy
         logits = member[0](X_train_tensor)
         loss = nn.functional.cross_entropy(logits, y_train_tensor)
         loss.backward()

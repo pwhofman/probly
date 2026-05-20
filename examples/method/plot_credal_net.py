@@ -17,6 +17,7 @@ from torch import nn
 from probly.method.credal_net import credal_net
 from probly.plot.credal import plot_credal_set
 from probly.representer import representer
+from examples.utils.model import MLPClassifier
 
 # Set random seeds for reproducibility
 np.random.seed(42)
@@ -37,21 +38,7 @@ y_train_tensor = torch.from_numpy(y_train).long()
 # 2. Define a base deterministic model
 # ------------------------------------
 
-class SimpleMLP(nn.Module):
-    def __init__(self) -> None:
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(2, 64),
-            nn.ReLU(),
-            nn.Linear(64, 64),
-            nn.ReLU(),
-            nn.Linear(64, 3),
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.net(x)
-
-base_model = SimpleMLP()
+base_model = MLPClassifier(in_features=2, hidden_features=64, out_features=3)
 
 # %%
 # 3. Train base model and wrap with Credal Net

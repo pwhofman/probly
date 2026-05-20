@@ -61,7 +61,7 @@ for member in credal_model:
     opt = torch.optim.Adam(member.parameters(), lr=0.01)
     for _ in range(2):
         opt.zero_grad()
-        # member[0] is the SimpleMLP which yields raw logits needed for cross_entropy
+        # member[0] is the base model which yields raw logits needed for cross_entropy
         logits = member[0](X_train_tensor)
         loss = nn.functional.cross_entropy(logits, y_train_tensor)
         loss.backward()
