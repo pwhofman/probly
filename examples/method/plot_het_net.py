@@ -9,6 +9,7 @@ from sklearn.datasets import make_moons
 import torch
 from torch import nn
 import torch.nn.functional as F
+import numpy as np
 
 from probly.method.het_net import het_net
 from probly.predictor import LogitClassifier
@@ -20,17 +21,14 @@ from examples.utils.model import SequentialModel
 # %%
 # 1. Prepare the Two Moons dataset with heteroscedastic noise
 
-import numpy as np
+
 
 X, y = make_moons(n_samples=500, noise=0.0, random_state=0)
 rng = np.random.default_rng(0)
 
-# Introduce flexible heteroscedastic noise with the same inverted profile for each moon
 noise_scale = np.zeros_like(X[:, 0])
-# Class 0 (typically blue): Inverted profile, decreases towards the right (noisy -> less noisy)
-noise_scale[y == 0] = 0.1 + 0.3 * np.clip(1.0 - X[y == 0, 0], 0, None)
-# Class 1 (typically orange): Inverted profile, decreases towards the right (noisy -> less noisy)
-noise_scale[y == 1] = 0.1 + 0.3 * np.clip(2.0 - X[y == 1, 0], 0, None)
+noise_scale[y == 0] = 0.05 + 1.0 * np.clip(-X[y == 0, 0], 0, None)
+noise_scale[y == 1] = 0.05 + 1.0 * np.clip(X[y == 1, 0] - 1.5, 0, None)
 
 X += rng.normal(scale=np.expand_dims(noise_scale, 1), size=X.shape)
 

@@ -12,9 +12,11 @@ def plot_example_uncertainty(
     title: str = "Predictive Uncertainty",
     vmin: float | None = 0.0,
     vmax: float | None = 1.0,
+    xlim: tuple[float, float] = (-3.0, 3.0),
+    ylim: tuple[float, float] = (-3.0, 3.0),
 ) -> None:
     grid_res = 200
-    xx, yy = np.meshgrid(np.linspace(-3.0, 3.0, grid_res), np.linspace(-3.0, 3.0, grid_res))
+    xx, yy = np.meshgrid(np.linspace(xlim[0], xlim[1], grid_res), np.linspace(ylim[0], ylim[1], grid_res))
     grid = np.c_[xx.ravel(), yy.ravel()]
     grid_tensor = torch.from_numpy(grid).float()
 
@@ -46,8 +48,8 @@ def plot_example_uncertainty(
     ax.scatter(X[y == 0, 0], X[y == 0, 1], color="#ff7f0e", edgecolor="white", linewidths=0.5, s=25, zorder=3, label="Class 0")
     ax.scatter(X[y == 1, 0], X[y == 1, 1], color="#1f77b4", edgecolor="white", linewidths=0.5, s=25, zorder=3, label="Class 1")
 
-    ax.set_xlim(-3, 3)
-    ax.set_ylim(-3, 3)
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
     ax.set_title(title, fontsize=14, fontweight="bold")
     ax.legend(loc="upper right", framealpha=0.95, edgecolor="black")
 
