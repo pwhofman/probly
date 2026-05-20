@@ -55,7 +55,8 @@ for _ in range(10):
     opt_base.step()
 
 # Wrap the pre-trained base model into a credal net, inheriting its weights
-credal_model = credal_net(base_model, predictor_type="logit_classifier", use_base_weights=True)
+prob_model = nn.Sequential(base_model, nn.Softmax(dim=1))
+credal_model = credal_net(prob_model, predictor_type="probabilistic_classifier", use_base_weights=True)
 
 # %%
 # 4. Predict and plot the credal sets
