@@ -27,7 +27,7 @@ torch.manual_seed(42)
 
 
 # %%
-# 1. Prepare a 3-class dataset
+# Prepare a 3-class dataset
 # ----------------------------
 
 centers = [[-7.0, -4.0], [0.0, 8.0], [7.0, -4.0]]
@@ -39,13 +39,13 @@ X_test_tensor = torch.from_numpy(X_test_data).float()
 y_test_tensor = torch.from_numpy(y_test_data).long()
 
 # %%
-# 2. Define a base deterministic model
+# Define a base deterministic model
 # ------------------------------------
 
 base_model = MLPClassifier(in_features=2, hidden_features=64, out_features=3)
 
 # %%
-# 3. Train base model and wrap with Credal Wrapper
+# Train base model and wrap with Credal Wrapper
 # ------------------------------------------------
 
 probabilistic_base_model = nn.Sequential(base_model, nn.Softmax(dim=1))
@@ -63,7 +63,7 @@ for member in credal_model:
     member.eval()
 
 # %%
-# 4. Predict and plot the credal sets
+# Predict and plot the credal sets
 # -----------------------------------
 
 rep = representer(credal_model)

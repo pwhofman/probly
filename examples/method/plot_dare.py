@@ -21,14 +21,14 @@ from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
 
 # %%
-# 1. Prepare the Two Moons dataset
+# Prepare the Two Moons dataset
 
 X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
 # %%
-# 2. Create the DARE ensemble
+# Create the DARE ensemble
 
 base_model = MLPClassifier()
 
@@ -40,7 +40,7 @@ dare_model = dare(
 )
 
 # %%
-# 3. Train each member with the DARE anti-regularization term
+# Train each member with the DARE anti-regularization term
 
 dare_model.train()
 threshold = 0.4
@@ -57,7 +57,7 @@ for member in dare_model:
         opt.step()
 
 # %%
-# 4. Evaluate predictive uncertainty
+# Evaluate predictive uncertainty
 
 dare_model.eval()
 rep = IterableSampler(dare_model)

@@ -25,7 +25,7 @@ from probly.representer import representer
 from examples.utils.plotting import plot_example_uncertainty
 
 # %%
-# 1. Prepare the Two Moons dataset and the Blobs dataset
+# Prepare the Two Moons dataset and the Blobs dataset
 
 X_moons, y_moons = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_moons_tensor = torch.from_numpy(X_moons).float()
@@ -38,7 +38,7 @@ y_blobs_tensor = torch.from_numpy(y_blobs).long()
 
 
 # %%
-# 2. Define a deep residual network and wrap it with SNGP
+# Define a deep residual network and wrap it with SNGP
 #
 # The SNGP paper explicitly uses a 12-layer, 128-unit deep residual network (ResFFN-12-128)
 # to demonstrate that SNGP preserves distance awareness even in deep architectures.
@@ -91,7 +91,7 @@ sngp_model_blobs = sngp(
 opt_blobs = torch.optim.Adam(sngp_model_blobs.parameters(), lr=1e-3)
 
 # %%
-# 3. Train the SNGP model
+# Train the SNGP model
 sngp_model_moons.train()
 
 for epoch in range(300):
@@ -118,7 +118,7 @@ for epoch in range(300):
     opt_blobs.step()
 
 # %%
-# 4. Evaluate Epistemic Uncertainty over a 2D Grid
+# Evaluate Epistemic Uncertainty over a 2D Grid
 
 sngp_model_moons.eval()
 rep_moons = representer(sngp_model_moons, num_samples=800)

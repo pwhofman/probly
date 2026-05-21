@@ -19,7 +19,7 @@ from examples.utils.plotting import plot_example_uncertainty
 from examples.utils.model import SequentialModel
 
 # %%
-# 1. Prepare the Two Moons dataset with heteroscedastic noise
+# Prepare the Two Moons dataset with heteroscedastic noise
 
 
 
@@ -36,7 +36,7 @@ X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
 # %%
-# 2. Define a sequential model and wrap it with HET-Net
+# Define a sequential model and wrap it with HET-Net
 #
 
 base_model = SequentialModel()
@@ -48,7 +48,7 @@ het_net_model = het_net(
 opt = torch.optim.Adam(het_net_model.parameters(), lr=1e-3)
 
 # %%
-# 3. Train the HET-Net model
+# Train the HET-Net model
 het_net_model.train()
 
 for epoch in range(500):
@@ -61,7 +61,7 @@ for epoch in range(500):
     opt.step()
 
 # %%
-# 4. Evaluate Epistemic Uncertainty over a 2D Grid
+# Evaluate Epistemic Uncertainty over a 2D Grid
 
 het_net_model.eval()
 rep = representer(het_net_model, num_samples=800)
