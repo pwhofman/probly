@@ -32,7 +32,7 @@ dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 # 2. Create Evidential Model
 
 base_model = MLPClassifier()
-evidential_model = evidential_classification(base_model)
+evidential_model = evidential_classification(base_model, predictor_type="logit_classifier")
 
 # %%
 # 3. Train using unified_evidential_train

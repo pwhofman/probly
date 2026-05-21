@@ -27,7 +27,7 @@ y_tensor = torch.from_numpy(y).long()
 
 base_model = MLPClassifier()
 
-duq_model = duq(base_model)
+duq_model = duq(base_model, predictor_type="logit_classifier")
 
 # %%
 # 3. Train
