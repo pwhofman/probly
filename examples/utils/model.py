@@ -1,10 +1,9 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from probly.predictor import LogitClassifier
 
 
-class MLPClassifier(nn.Module, LogitClassifier):
+class MLPClassifier(nn.Module):
     def __init__(
         self, in_features: int = 2, hidden_features: int = 64, out_features: int = 2
     ) -> None:
