@@ -35,6 +35,7 @@ ensemble_model = ensemble(
     base_model,
     num_members=3,
     reset_params=True,
+    predictor_type="logit_classifier",
 )
 
 # %%

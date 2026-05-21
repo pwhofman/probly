@@ -3,8 +3,9 @@ Sub-Ensemble on Two Moons
 =========================
 
 A Sub-Ensemble freezes a shared backbone and trains multiple independent
-heads, reducing the cost of full ensembles. Uncertainty is higher in
-out-of-distribution regions due to head diversity in the shared feature space.
+heads, giving ensemble-style uncertainty at a fraction of the cost. Because
+the backbone is shared, diversity -- and thus uncertainty -- comes solely
+from head disagreement rather than full model disagreement.
 """
 
 from __future__ import annotations
@@ -20,14 +21,14 @@ from examples.utils.plotting import plot_example_uncertainty
 from examples.utils.model import SequentialModel
 
 # %%
-# 1. Prepare the Two Moons dataset
+# Prepare the Two Moons dataset
 
 X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
 # %%
-# 2. Pre-train the shared backbone
+# Pre-train the shared backbone
 
 base_model = SequentialModel()
 base_model.train()
@@ -42,7 +43,7 @@ for epoch in range(250):
 print(f"backbone loss: {loss:.4f}")
 
 # %%
-# 3. Create the sub-ensemble from the pre-trained backbone
+# Create the sub-ensemble from the pre-trained backbone
 
 subensemble_model = subensemble(
     base_model,
@@ -53,7 +54,7 @@ subensemble_model = subensemble(
 )
 
 # %%
-# 4. Train each head independently
+# Train each head independently
 
 subensemble_model.train()
 for member in subensemble_model:
@@ -66,7 +67,7 @@ for member in subensemble_model:
         opt.step()
 
 # %%
-# 5. Evaluate predictive uncertainty
+# Evaluate predictive uncertainty
 
 subensemble_model.eval()
 rep = representer(subensemble_model)

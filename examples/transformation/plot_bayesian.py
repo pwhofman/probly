@@ -20,21 +20,28 @@ from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
 
 # %%
-# 1. Prepare the Two Moons dataset
+# Prepare the Two Moons dataset
 
 X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
 # %%
-# 2. Wrap the base model as a Bayesian Neural Network
+# Wrap the base model as a Bayesian Neural Network
 
 base_model = MLPClassifier()
 
-bayesian_model = bayesian(base_model)
+bayesian_model = bayesian(
+    base_model,
+    use_base_weights=False,
+    posterior_std=0.05,
+    prior_mean=0.0,
+    prior_std=1.0,
+    predictor_type="logit_classifier",
+)
 
 # %%
-# 3. Train
+# Train
 
 opt = torch.optim.Adam(bayesian_model.parameters(), lr=1e-3)
 
@@ -48,7 +55,7 @@ for epoch in range(300):
     opt.step()
 
 # %%
-# 4. Evaluate predictive uncertainty
+# Evaluate predictive uncertainty
 
 bayesian_model.eval()
 rep = representer(bayesian_model, num_samples=200)

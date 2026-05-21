@@ -20,21 +20,29 @@ from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
 
 # %%
-# 1. Prepare the Two Moons dataset
+# Prepare the Two Moons dataset
 
 X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
 # %%
-# 2. Wrap the base model as a Bayesian Ensemble
+# Wrap the base model as a Bayesian Ensemble
 
 base_model = MLPClassifier()
 
-bayesian_ensemble_model = bayesian_ensemble(base_model, num_members=5)
+bayesian_ensemble_model = bayesian_ensemble(
+    base_model,
+    num_members=5,
+    use_base_weights=True,
+    posterior_std=0.05,
+    prior_mean=0.0,
+    prior_std=1.0,
+    predictor_type="logit_classifier",
+)
 
 # %%
-# 3. Train each member independently
+# Train each member independently
 
 for member in bayesian_ensemble_model:
     member.train()
@@ -48,7 +56,7 @@ for member in bayesian_ensemble_model:
         opt.step()
 
 # %%
-# 4. Evaluate predictive uncertainty
+# Evaluate predictive uncertainty
 
 for member in bayesian_ensemble_model:
     member.eval()

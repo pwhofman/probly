@@ -20,21 +20,21 @@ from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
 
 # %%
-# 1. Prepare the Two Moons dataset
+# Prepare the Two Moons dataset
 
 X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
 # %%
-# 2. Wrap the base model with DropConnect
+# Wrap the base model with DropConnect
 
 base_model = MLPClassifier()
 
-dropconnect_model = dropconnect(base_model, p=0.25)
+dropconnect_model = dropconnect(base_model, p=0.25, predictor_type="logit_classifier",)
 
 # %%
-# 3. Train
+# Train
 
 opt = torch.optim.Adam(dropconnect_model.parameters(), lr=1e-3)
 
@@ -48,7 +48,7 @@ for epoch in range(300):
     opt.step()
 
 # %%
-# 4. Evaluate predictive uncertainty
+# Evaluate predictive uncertainty
 
 dropconnect_model.eval()
 rep = representer(dropconnect_model, num_samples=400)
