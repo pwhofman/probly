@@ -2,9 +2,11 @@
 DARE on Two Moons
 =================
 
-DARE (Deep Anti-Regularized Ensembles) adds an anti-regularization term
-once the task loss drops below a threshold, pushing ensemble members apart
-in weight space to improve out-of-distribution detection.
+DARE (Deep Anti-Regularized Ensembles) adds a per-member anti-regularization
+term, active once the task loss drops below a threshold, that pushes each
+member's weights to larger magnitudes. Preventing weight collapse preserves
+the diversity introduced by different initializations, improving ensemble
+out-of-distribution detection.
 """
 
 from __future__ import annotations
