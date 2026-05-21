@@ -41,7 +41,7 @@ def plot_example_uncertainty(
     vmin = test_unc.min() if vmin is None else vmin
     vmax = test_unc.max() if vmax is None else vmax
     levels = np.linspace(vmin, vmax, 100)
-    contour = ax.contourf(xx, yy, test_unc, levels=levels, cmap="viridis", antialiased=True)
+    contour = ax.contourf(xx, yy, test_unc, levels=levels, cmap="viridis", antialiased=True, extend="both")
 
     ticks = np.linspace(vmin, vmax, 5)
     cbar = plt.colorbar(contour, ticks=ticks)
