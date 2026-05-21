@@ -1,6 +1,11 @@
 """====================================================================
-Evidential Deep Learning on Two Moons using unified_evidential_train
+Evidential Deep Learning on Two Moons
 ====================================================================
+
+Evidential Deep Learning replaces the standard softmax output with
+a Dirichlet distribution over a simplex. The output is an evidence
+vector, the method therefore directly learns evidence for each class to
+directly predict the distribution.
 """
 
 from __future__ import annotations
@@ -18,7 +23,7 @@ from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
 
 # %%
-# 1. Prepare the Two Moons dataset
+# Prepare the Two Moons dataset
 
 X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
@@ -29,15 +34,13 @@ dataset = TensorDataset(X_tensor, y_tensor)
 dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
 # %%
-# 2. Create Evidential Model
+# Wrap the base model with DropConnect
 
 base_model = MLPClassifier()
 evidential_model = evidential_classification(base_model, predictor_type="logit_classifier")
 
 # %%
-# 3. Train using unified_evidential_train
-
-
+# Train using unified_evidential_train
 
 unified_evidential_train(
     mode="EDL",
@@ -50,8 +53,9 @@ unified_evidential_train(
     lr=1e-3,
     device="cpu"
 )
+
 # %%
-# 4. Evaluate predictive uncertainty
+# Evaluate predictive uncertainty
 
 evidential_model.eval()
 rep = representer(evidential_model, num_samples=200)

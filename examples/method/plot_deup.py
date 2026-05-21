@@ -2,19 +2,10 @@
 DEUP on Two Moons
 =================
 
-This example demonstrates the Direct Epistemic Uncertainty Prediction (DEUP)
-method on the 2-D "Two Moons" classification dataset.
-
-DEUP trains a model in two phases:
-
-1. **Phase 1**: Train the base classifier (encoder + classification head)
-   with standard cross-entropy loss.
-
-2. **Phase 2**: Freeze the base classifier and train an "error head" to
-   predict the per-sample cross-entropy loss, using stationarizing features
-   derived from the base classifier's outputs.
-
-The predicted error score serves as a measure of epistemic uncertainty.
+Direct epistemic uncertainty prediction trains a base classifier
+and then a separate error head to explicitly predict per-sample
+classification errors, using this predicted error score as a
+direct measure of the model's uncertainty regarding its own knowledge.
 """
 
 from __future__ import annotations
@@ -31,7 +22,7 @@ from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
 
 # %%
-# 1. Prepare the Two Moons dataset
+# Prepare the Two Moons dataset
 
 X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
@@ -41,7 +32,7 @@ dataset = TensorDataset(X_tensor, y_tensor)
 train_loader = DataLoader(dataset, batch_size=64, shuffle=True)
 
 # %%
-# 2. Create the DEUP predictor from a base model
+# Wrap the base model with DEUP
 
 base_model = MLPClassifier()
 
@@ -60,7 +51,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 deup_model.to(device)
 
 # %%
-# 3. Phase 1 Training: Train the base classifier (encoder + classification head)
+# Phase 1 Training: Train the base classifier (encoder + classification head)
 
 print("Phase 1 Training: Base Classifier")
 optimizer_phase1 = torch.optim.Adam(
@@ -73,7 +64,6 @@ for epoch in range(150):
     for inputs, targets in train_loader:
         inputs, targets = inputs.to(device), targets.to(device)
 
-        # In Phase 1, only use the encoder and classification head
         features = deup_model.encoder(inputs)
         logits = deup_model.classification_head(features)
         loss = nn.functional.cross_entropy(logits, targets)
@@ -83,7 +73,7 @@ for epoch in range(150):
         optimizer_phase1.step()
 
 # %%
-# 4. Phase 2 Training: Fit stationarizing features and train the error head
+# Phase 2 Training: Fit stationarizing features and train the error head
 
 print("\nPhase 2 Training: Error Head")
 
@@ -93,7 +83,9 @@ for param in deup_model.encoder.parameters():
 for param in deup_model.classification_head.parameters():
     param.requires_grad = False
 
+# %%
 # Fit stationarizing feature providers on in-distribution data only
+
 deup_model.eval()
 for provider in deup_model.providers:
     provider.fit(
@@ -103,14 +95,11 @@ for provider in deup_model.providers:
         device,
     )
 
-# Clamp stationarizing features to [-10, 10] so that OOD inputs with extreme
-# GMM log-densities don't compound to huge finite values through the error head.
-# Applied after provider fitting so the scalers are computed on real values.
+
 _orig_phi = deup_model._compute_stationarizing_features
 deup_model._compute_stationarizing_features = lambda *a: _orig_phi(*a).clamp(-10.0, 10.0)
 
-# Augment Phase 2 with OOD points: random locations + random labels give high CE,
-# teaching the error head to associate low-density features with high predicted error.
+
 ood_X = torch.FloatTensor(500, 2).uniform_(-3, 3)
 ood_y = torch.randint(0, 2, (500,))
 phase2_loader = DataLoader(
@@ -119,9 +108,14 @@ phase2_loader = DataLoader(
     shuffle=True,
 )
 
+# %%
 # Train the error head
+
 optimizer_phase2 = torch.optim.Adam(deup_model.error_head.parameters(), lr=1e-2)
 mse_loss_fn = nn.MSELoss()
+
+# %%
+# Train
 
 deup_model.train()
 for epoch in range(250):
@@ -144,7 +138,7 @@ for epoch in range(250):
         optimizer_phase2.step()
 
 # %%
-# 5. Evaluate predictive uncertainty
+# Evaluate predictive uncertainty
 
 deup_model.eval()
 rep = representer(deup_model)
