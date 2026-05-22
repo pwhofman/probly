@@ -15,19 +15,19 @@ from probly.representation.credal_set.array import (
     ArrayProbabilityIntervalsCredalSet,
     ArraySingletonCredalSet,
 )
-from probly.representation.credal_set.torch import (
-    TorchConvexCredalSet,
-    TorchDirichletLevelSetCredalSet,
-    TorchDistanceBasedCredalSet,
-    TorchProbabilityIntervalsCredalSet,
-)
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
     from probly.plot.config import PlotConfig
     from probly.representation.credal_set.array import ArrayCategoricalCredalSet
-    from probly.representation.credal_set.torch import TorchCategoricalCredalSet
+    from probly.representation.credal_set.torch import (
+        TorchCategoricalCredalSet,
+        TorchConvexCredalSet,
+        TorchDirichletLevelSetCredalSet,
+        TorchDistanceBasedCredalSet,
+        TorchProbabilityIntervalsCredalSet,
+    )
 
 
 _NUM_BINARY_CLASSES = 2
@@ -124,7 +124,7 @@ def _draw_singleton_binary(
         ax.scatter(arr[idx, 1], 0, color=color, s=config.marker_size, zorder=3, label=label)
 
 
-@_draw_credal_set_binary.register(ArrayProbabilityIntervalsCredalSet | TorchProbabilityIntervalsCredalSet)
+@_draw_credal_set_binary.register(ArrayProbabilityIntervalsCredalSet)
 def _draw_intervals_binary(
     data: ArrayProbabilityIntervalsCredalSet | TorchProbabilityIntervalsCredalSet,
     ax: Axes,
@@ -149,9 +149,7 @@ def _draw_intervals_binary(
             _draw_binary_interval(ax, low, high, color, config, label=label)
 
 
-@_draw_credal_set_binary.register(
-    ArrayDistanceBasedCredalSet | TorchDistanceBasedCredalSet | TorchDirichletLevelSetCredalSet
-)
+@_draw_credal_set_binary.register(ArrayDistanceBasedCredalSet)
 def _draw_distance_based_binary(
     data: ArrayDistanceBasedCredalSet | TorchDistanceBasedCredalSet | TorchDirichletLevelSetCredalSet,
     ax: Axes,
@@ -169,7 +167,7 @@ def _draw_distance_based_binary(
         ax.scatter(nominal_all[idx, 1], 0, color=color, s=config.marker_size, zorder=3)
 
 
-@_draw_credal_set_binary.register(ArrayDiscreteCredalSet | ArrayConvexCredalSet | TorchConvexCredalSet)
+@_draw_credal_set_binary.register(ArrayDiscreteCredalSet | ArrayConvexCredalSet)
 def _draw_vertex_set_binary(
     data: ArrayDiscreteCredalSet | ArrayConvexCredalSet | TorchConvexCredalSet,
     ax: Axes,

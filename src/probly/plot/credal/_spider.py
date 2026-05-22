@@ -15,18 +15,18 @@ from probly.representation.credal_set.array import (
     ArrayProbabilityIntervalsCredalSet,
     ArraySingletonCredalSet,
 )
-from probly.representation.credal_set.torch import (
-    TorchConvexCredalSet,
-    TorchDistanceBasedCredalSet,
-    TorchProbabilityIntervalsCredalSet,
-)
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
     from probly.plot.config import PlotConfig
     from probly.representation.credal_set.array import ArrayCategoricalCredalSet
-    from probly.representation.credal_set.torch import TorchCategoricalCredalSet
+    from probly.representation.credal_set.torch import (
+        TorchCategoricalCredalSet,
+        TorchConvexCredalSet,
+        TorchDistanceBasedCredalSet,
+        TorchProbabilityIntervalsCredalSet,
+    )
 
 
 def _setup_spider_axes(
@@ -376,7 +376,7 @@ def _draw_singleton_spider(
         ax.scatter(theta, values, color=color, s=config.marker_size, zorder=4)
 
 
-@_draw_credal_set_spider.register(ArrayProbabilityIntervalsCredalSet | TorchProbabilityIntervalsCredalSet)
+@_draw_credal_set_spider.register(ArrayProbabilityIntervalsCredalSet)
 def _draw_intervals_spider(
     data: ArrayProbabilityIntervalsCredalSet | TorchProbabilityIntervalsCredalSet,
     ax: Axes,
@@ -405,7 +405,7 @@ def _draw_intervals_spider(
             _draw_intervals_on_spokes(ax, theta, lower, upper, color, config, label=label)
 
 
-@_draw_credal_set_spider.register(ArrayDistanceBasedCredalSet | TorchDistanceBasedCredalSet)
+@_draw_credal_set_spider.register(ArrayDistanceBasedCredalSet)
 def _draw_distance_based_spider(
     data: ArrayDistanceBasedCredalSet | TorchDistanceBasedCredalSet,
     ax: Axes,
@@ -424,7 +424,7 @@ def _draw_distance_based_spider(
         ax.scatter(theta, nominal_all[idx], color=color, s=config.marker_size, zorder=4)
 
 
-@_draw_credal_set_spider.register(ArrayConvexCredalSet | TorchConvexCredalSet)
+@_draw_credal_set_spider.register(ArrayConvexCredalSet)
 def _draw_convex_set_spider(
     data: ArrayConvexCredalSet | TorchConvexCredalSet,
     ax: Axes,

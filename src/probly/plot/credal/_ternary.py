@@ -15,11 +15,6 @@ from probly.representation.credal_set.array import (
     ArrayProbabilityIntervalsCredalSet,
     ArraySingletonCredalSet,
 )
-from probly.representation.credal_set.torch import (
-    TorchConvexCredalSet,
-    TorchDistanceBasedCredalSet,
-    TorchProbabilityIntervalsCredalSet,
-)
 
 from ._geometry import _compute_convex_hull_vertices, _compute_interval_vertices
 
@@ -28,7 +23,12 @@ if TYPE_CHECKING:
 
     from probly.plot.config import PlotConfig
     from probly.representation.credal_set.array import ArrayCategoricalCredalSet
-    from probly.representation.credal_set.torch import TorchCategoricalCredalSet
+    from probly.representation.credal_set.torch import (
+        TorchCategoricalCredalSet,
+        TorchConvexCredalSet,
+        TorchDistanceBasedCredalSet,
+        TorchProbabilityIntervalsCredalSet,
+    )
 
 _NUM_TERNARY_CLASSES = 3
 
@@ -94,7 +94,7 @@ def _draw_singleton(
         ternary_ax.scatter(p[0:1], p[1:2], p[2:3], color=color, s=config.marker_size, zorder=3, label=label)
 
 
-@_draw_credal_set_ternary.register(ArrayProbabilityIntervalsCredalSet | TorchProbabilityIntervalsCredalSet)
+@_draw_credal_set_ternary.register(ArrayProbabilityIntervalsCredalSet)
 def _draw_intervals(
     data: ArrayProbabilityIntervalsCredalSet | TorchProbabilityIntervalsCredalSet,
     ternary_ax: TernaryAxes,
@@ -128,7 +128,7 @@ def _draw_intervals(
         _draw_polygon(ternary_ax, vertices, color, config, label=label)
 
 
-@_draw_credal_set_ternary.register(ArrayDistanceBasedCredalSet | TorchDistanceBasedCredalSet)
+@_draw_credal_set_ternary.register(ArrayDistanceBasedCredalSet)
 def _draw_distance_based(
     data: ArrayDistanceBasedCredalSet | TorchDistanceBasedCredalSet,
     ternary_ax: TernaryAxes,
@@ -176,7 +176,7 @@ def _draw_discrete_set(
         ternary_ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2], color=color, s=config.marker_size, zorder=3, label=label)
 
 
-@_draw_credal_set_ternary.register(ArrayConvexCredalSet | TorchConvexCredalSet)
+@_draw_credal_set_ternary.register(ArrayConvexCredalSet)
 def _draw_convex_set(
     data: ArrayConvexCredalSet | TorchConvexCredalSet,
     ternary_ax: TernaryAxes,
