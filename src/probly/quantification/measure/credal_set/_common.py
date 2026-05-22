@@ -17,7 +17,6 @@ type LogBase = float | Literal["normalize"] | None
 def upper_entropy(
     credal_set: CredalSet,
     base: LogBase = None,
-    n_jobs: int | None = None,
     *,
     return_distribution: Literal[False] = False,
 ) -> ArrayLike: ...
@@ -25,7 +24,6 @@ def upper_entropy(
 def upper_entropy(
     credal_set: CredalSet,
     base: LogBase = None,
-    n_jobs: int | None = None,
     *,
     return_distribution: Literal[True],
 ) -> tuple[ArrayLike, ArrayLike]: ...
@@ -33,7 +31,6 @@ def upper_entropy(
 def upper_entropy(
     credal_set: CredalSet,
     base: LogBase = None,
-    n_jobs: int | None = None,
     *,
     return_distribution: bool = False,
 ) -> ArrayLike | tuple[ArrayLike, ArrayLike]:
@@ -50,7 +47,6 @@ def upper_entropy(
 def lower_entropy(
     credal_set: CredalSet,
     base: LogBase = None,
-    n_jobs: int | None = None,
     *,
     return_distribution: Literal[False] = False,
 ) -> ArrayLike: ...
@@ -58,7 +54,6 @@ def lower_entropy(
 def lower_entropy(
     credal_set: CredalSet,
     base: LogBase = None,
-    n_jobs: int | None = None,
     *,
     return_distribution: Literal[True],
 ) -> tuple[ArrayLike, ArrayLike]: ...
@@ -66,7 +61,6 @@ def lower_entropy(
 def lower_entropy(
     credal_set: CredalSet,
     base: LogBase = None,
-    n_jobs: int | None = None,
     *,
     return_distribution: bool = False,
 ) -> ArrayLike | tuple[ArrayLike, ArrayLike]:
