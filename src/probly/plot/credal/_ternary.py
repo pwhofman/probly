@@ -103,8 +103,6 @@ def _draw_intervals(
 ) -> None:
     lower_all = _to_numpy(data.lower_bounds).reshape(-1, _NUM_TERNARY_CLASSES)
     upper_all = _to_numpy(data.upper_bounds).reshape(-1, _NUM_TERNARY_CLASSES)
-    lower_all = _to_numpy(data.lower_bounds)
-    upper_all = _to_numpy(data.upper_bounds)
     n_sets = lower_all.shape[0]
 
     for idx in range(n_sets):
@@ -138,9 +136,6 @@ def _draw_distance_based(
     lower_all = _to_numpy(data.lower()).reshape(-1, _NUM_TERNARY_CLASSES)
     upper_all = _to_numpy(data.upper()).reshape(-1, _NUM_TERNARY_CLASSES)
     nominal_all = _get_unnormalized_probabilities(data).reshape(-1, _NUM_TERNARY_CLASSES)
-    lower_all = _to_numpy(data.lower())
-    upper_all = _to_numpy(data.upper())
-    nominal_all = _get_unnormalized_probabilities(data)
     n_sets = lower_all.shape[0]
 
     for idx in range(n_sets):
