@@ -24,7 +24,6 @@ if TYPE_CHECKING:
     from probly.representation.credal_set.torch import (
         TorchCategoricalCredalSet,
         TorchConvexCredalSet,
-        TorchDirichletLevelSetCredalSet,
         TorchDistanceBasedCredalSet,
         TorchProbabilityIntervalsCredalSet,
     )
@@ -151,7 +150,7 @@ def _draw_intervals_binary(
 
 @_draw_credal_set_binary.register(ArrayDistanceBasedCredalSet)
 def _draw_distance_based_binary(
-    data: ArrayDistanceBasedCredalSet | TorchDistanceBasedCredalSet | TorchDirichletLevelSetCredalSet,
+    data: ArrayDistanceBasedCredalSet | TorchDistanceBasedCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None = None,

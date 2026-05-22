@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from probly.representation.credal_set.torch import (
     TorchConvexCredalSet,
-    TorchDirichletLevelSetCredalSet,
     TorchDistanceBasedCredalSet,
     TorchProbabilityIntervalsCredalSet,
 )
@@ -30,7 +29,6 @@ from ._ternary import (
 
 _draw_credal_set_binary.register(TorchProbabilityIntervalsCredalSet)(_draw_intervals_binary)
 _draw_credal_set_binary.register(TorchDistanceBasedCredalSet)(_draw_distance_based_binary)
-_draw_credal_set_binary.register(TorchDirichletLevelSetCredalSet)(_draw_distance_based_binary)
 _draw_credal_set_binary.register(TorchConvexCredalSet)(_draw_vertex_set_binary)
 
 _draw_credal_set_spider.register(TorchProbabilityIntervalsCredalSet)(_draw_intervals_spider)
