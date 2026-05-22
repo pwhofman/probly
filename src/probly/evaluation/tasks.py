@@ -13,8 +13,6 @@ def selective_prediction(criterion: np.ndarray, losses: np.ndarray, n_bins: int 
     literature the sorting is done in descending order, i.e.
     the losses with the largest criterion are rejected first.
 
-    Based on :cite:`lakshminarayananSimpleScalable2017`.
-
     Args:
         criterion: Criterion values of shape (n_instances,).
         losses: Loss values of shape (n_instances,).
@@ -22,7 +20,7 @@ def selective_prediction(criterion: np.ndarray, losses: np.ndarray, n_bins: int 
 
     Returns:
         A tuple containing:
-            - auroc: Area under the loss curve.
+            - aurc: Area under the risk / loss curve.
             - bin_losses: Loss per bin of shape (n_bins,).
 
     """
@@ -37,5 +35,5 @@ def selective_prediction(criterion: np.ndarray, losses: np.ndarray, n_bins: int 
         bin_losses[i] = np.mean(losses_sorted[(i * bin_len) :])
 
     # Also compute the area under the loss curve based on the bin losses.
-    auroc = float(np.trapezoid(bin_losses, np.linspace(0, 1, n_bins)))
-    return float(auroc), bin_losses
+    aurc = float(np.trapezoid(bin_losses, np.linspace(0, 1, n_bins)))
+    return float(aurc), bin_losses
