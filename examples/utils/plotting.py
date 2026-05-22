@@ -22,6 +22,12 @@ def plot_example_uncertainty(
     grid = np.c_[xx.ravel(), yy.ravel()]
     grid_tensor = torch.from_numpy(grid).float()
 
+    try:
+        device = next(rep.predictor.parameters()).device
+        grid_tensor = grid_tensor.to(device)
+    except (AttributeError, StopIteration):
+        pass
+
     with torch.no_grad():
         decomp = quantify(rep.represent(grid_tensor))
         if hasattr(decomp, "total"):
@@ -30,7 +36,7 @@ def plot_example_uncertainty(
             unc = decomp.epistemic
         else:
             unc = decomp.aleatoric
-        test_unc = unc.numpy() / np.log(2)
+        test_unc = unc.cpu().numpy() / np.log(2)
         if test_unc.ndim > 1:
             test_unc = test_unc.sum(-1)
 
