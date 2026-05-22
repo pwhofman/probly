@@ -63,6 +63,10 @@ def _compute_interval_vertices(lower: np.ndarray, upper: np.ndarray) -> np.ndarr
     Raises:
         ValueError: If no feasible vertices are found.
     """
+    if lower.sum() > 1.0 + 1e-9:
+        msg = "No feasible vertices: lower bounds sum exceeds 1."
+        raise ValueError(msg)
+
     vertices: list[list[float]] = []
     for i, j, k in [(0, 1, 2), (1, 2, 0), (0, 2, 1)]:
         for x in [lower[i], upper[i]]:
