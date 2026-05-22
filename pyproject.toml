@@ -14,7 +14,6 @@ dependencies = [
     "mpltern>=0.6.0",
     "numpy>=2.1.0",         # first cp313 wheels
     "tqdm>=4.25.0",
-    "joblib>=1.1.0",
 ]
 authors = [
     { name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de" },
