@@ -40,7 +40,7 @@ X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
 # %%
-# Define a sequential model and wrap it with HET-Net
+# Define a sequential model and wrap it with Het-Net
 #
 
 base_model = SequentialModel()
@@ -52,7 +52,7 @@ het_net_model = het_net(
 opt = torch.optim.Adam(het_net_model.parameters(), lr=1e-3)
 
 # %%
-# Train the HET-Net model
+# Train the Het-Net model
 het_net_model.train()
 
 for epoch in range(500):

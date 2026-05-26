@@ -29,7 +29,7 @@ X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
 # %%
-# Wrap the base model with DropConnect
+# Wrap the base model with DUQ
 
 base_model = MLPClassifier()
 

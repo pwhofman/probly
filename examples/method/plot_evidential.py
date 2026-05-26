@@ -34,7 +34,7 @@ dataset = TensorDataset(X_tensor, y_tensor)
 dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
 # %%
-# Wrap the base model with DropConnect
+# Wrap the base model with Evidential Classification
 
 base_model = MLPClassifier()
 evidential_model = evidential_classification(base_model, predictor_type="logit_classifier")
