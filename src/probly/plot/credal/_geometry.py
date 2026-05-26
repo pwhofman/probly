@@ -83,7 +83,7 @@ def _compute_interval_vertices(lower: np.ndarray, upper: np.ndarray) -> np.ndarr
                     vertices.append(p)
 
     if not vertices:
-        msg = "No feasible vertices found within the given bounds."
+        msg = "No feasible vertices found. Check that the probability intervals are valid and overlap the simplex."
         raise ValueError(msg)
 
     pts = np.array(vertices)

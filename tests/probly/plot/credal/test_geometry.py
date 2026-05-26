@@ -96,3 +96,9 @@ class TestGeometryHelpers:
         upper = np.array([0.2, 0.2, 0.2])
         with pytest.raises(ValueError, match="upper bounds sum less than 1"):
             _compute_interval_vertices(lower, upper)
+
+    def test_interval_vertices_no_feasible_vertices_raises(self) -> None:
+        lower = np.array([np.nan, np.nan, np.nan])
+        upper = np.array([np.nan, np.nan, np.nan])
+        with pytest.raises(ValueError, match="No feasible vertices found"):
+            _compute_interval_vertices(lower, upper)
