@@ -1,0 +1,35 @@
+# @package method
+name: "deup"
+label: "DEUP"
+params:
+  # Width of each hidden layer in the error head MLP (feature_dim -> hidden_size^n -> 1).
+  # Reference implementation uses 1024:
+  # Lahlou et al., "DEUP: Direct Epistemic Uncertainty Prediction", 2022
+  # (https://arxiv.org/abs/2102.08501), examples/ood_detection/ood_train_deup.py.
+  hidden_size: 1024
+  # Number of hidden layers in the error head MLP (minimum 1).
+  # Reference implementation uses 5.
+  n_hidden_layers: 5
+  # Stationarizing features fed to the error head (Lahlou et al., Sec. 2.2).
+  # log_maf_density: MAF normalizing flow density in encoder feature space.
+  # log_due_variance: SVGP posterior variance (DUE); also enables spectral norm.
+  stationarizing_features:
+    - log_maf_density
+    - log_due_variance
+  # sn_coeff: spectral norm Lipschitz coefficient. Omit to use the default
+  # (auto-enabled at 3.0 when log_due_variance is present, off otherwise).
+# Fraction of the training set (or val shards for webdataset) held out for
+# phase-2 error-head fitting. Must be disjoint from val to avoid downward
+# bias in the per-sample CE targets. See Lahlou et al. (2022) Sec. 2.1.
+cal_split: 0.05
+train:
+  # Number of epochs for phase-2 error-head training. The reference uses 1
+  # epoch per active-learning round on a large multi-predictor OOS dataset;
+  # with a small calibration split 5 epochs avoids overfitting while
+  # providing enough passes for convergence.
+  error_head_epochs: 5
+  # Learning rate for the phase-2 error-head optimizer.
+  # Reference implementation: SGD with lr=0.005, momentum=0.9.
+  error_head_lr: 0.005
+  # Momentum for the SGD optimizer used in phase-2 error-head training.
+  error_head_momentum: 0.9

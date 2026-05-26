@@ -1,0 +1,14 @@
+# @package _global_
+
+# The KL divergence in the ELBO already acts as L2-style regularization toward
+# the prior, so the optimizer's weight_decay is double-counted regularization
+# and pulls weights tighter than intended. Set to 0 here.
+optimizer:
+  params:
+    weight_decay: 0
+
+# Smaller posterior std such that pretrained weights are not perturbed too much at start
+method:
+  params:
+    posterior_std: 0.001
+    prior_std: 0.05

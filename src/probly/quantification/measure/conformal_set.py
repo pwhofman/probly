@@ -9,7 +9,7 @@ from probly.representation.conformal_set import ConformalSet
 
 
 @measure_atomic.register(ConformalSet)
-def measure_conformal_set_size(conformal_set: ConformalSet) -> Any:  # noqa: ANN401
+def conformal_set_size(conformal_set: ConformalSet) -> Any:  # noqa: ANN401
     """Measure conformal-set uncertainty by set size.
 
     Args:

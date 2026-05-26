@@ -382,6 +382,42 @@ def torch_permute_function(
     return create_sample(res, sample_dim=new_sample_dim, weights=weights)
 
 
+@torch_function.multi_register([torch.movedim, torch.moveaxis])
+@torch_internals_override(torch_sample_param_pos=0)
+def torch_movedim_function(
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    create_sample: TorchSampleCreator,
+    tensor: TorchLike,
+    sample_dim: int,
+    weights: torch.Tensor | None,
+) -> Any:  # noqa: ANN401
+    """Implementation of torch.movedim and torch.moveaxis for sample tensors."""
+    source = args[1] if len(args) > 1 else kwargs.get("source")
+    destination = args[2] if len(args) > 2 else kwargs.get("destination")
+    if not isinstance(source, int) or not isinstance(destination, int):
+        return NotImplemented
+
+    ndim = tensor.ndim
+    normalized_source = source if source >= 0 else ndim + source
+    normalized_destination = destination if destination >= 0 else ndim + destination
+    if normalized_source < 0 or normalized_source >= ndim:
+        return NotImplemented
+    if normalized_destination < 0 or normalized_destination >= ndim:
+        return NotImplemented
+
+    if sample_dim == normalized_source:
+        new_sample_dim = normalized_destination
+    else:
+        dims = [axis for axis in range(ndim) if axis != normalized_source]
+        dims.insert(normalized_destination, normalized_source)
+        new_sample_dim = dims.index(sample_dim)
+
+    res = func(*args, **kwargs)
+    return create_sample(res, sample_dim=new_sample_dim, weights=weights)
+
+
 @torch_function.register(torch.adjoint)
 @torch_internals_override(torch_sample_param_pos=0)
 def torch_adjoint_function(

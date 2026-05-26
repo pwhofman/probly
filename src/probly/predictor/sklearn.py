@@ -13,6 +13,8 @@ from sklearn.linear_model import LogisticRegression, LogisticRegressionCV, SGDCl
 from sklearn.neighbors import NearestCentroid
 
 from ._common import (
+    BernoulliDistributionPredictor,
+    BernoulliLogitDistributionPredictor,
     CategoricalDistributionPredictor,
     GaussianDistributionPredictor,
     LogitDistributionPredictor,
@@ -46,6 +48,13 @@ def _probabilities_to_logits(probabilities: object) -> np.ndarray:
     return np.log(np.clip(probs, np.finfo(float).tiny, 1.0))
 
 
+def _extract_binary_probability(probabilities: object) -> np.ndarray:
+    probs = np.asarray(probabilities, dtype=float)
+    if probs.ndim >= 1 and probs.shape[-1] <= 2:
+        return probs[..., -1]
+    return probs
+
+
 def _has_safe_decision_function(predictor: BaseEstimator) -> bool:
     if isinstance(predictor, _SAFE_DECISION_FUNCTION_TYPES):
         return True
@@ -74,11 +83,26 @@ def _sklearn_logit_prediction[**In](predictor: BaseEstimator, *args: In.args, **
     raise NotImplementedError(msg)
 
 
+def _sklearn_binary_logit_prediction[**In](predictor: BaseEstimator, *args: In.args, **kwargs: In.kwargs) -> np.ndarray:
+    logits = _sklearn_logit_prediction(predictor, *args, **kwargs)
+    if logits.ndim >= 1 and logits.shape[-1] <= 2:
+        return logits[..., 1] - logits[..., -1]
+    return logits
+
+
 @predict_raw.register(BaseEstimator)
 def predict_sklearn[**In](predictor: BaseEstimator, /, *args: In.args, **kwargs: In.kwargs) -> Any:  # noqa: ANN401
     """Predict for sklearn estimators."""
+    if isinstance(predictor, BernoulliLogitDistributionPredictor):
+        return _sklearn_binary_logit_prediction(predictor, *args, **kwargs)
+
     if isinstance(predictor, LogitDistributionPredictor):
         return _sklearn_logit_prediction(predictor, *args, **kwargs)
+
+    if isinstance(predictor, BernoulliDistributionPredictor):
+        predict_proba = _callable_attribute(predictor, "predict_proba")
+        if predict_proba is not None:
+            return _extract_binary_probability(predict_proba(*args, **kwargs))
 
     if isinstance(predictor, CategoricalDistributionPredictor):
         predict_proba = _callable_attribute(predictor, "predict_proba")

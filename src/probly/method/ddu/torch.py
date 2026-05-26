@@ -3,18 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import math
 import operator
 from typing import TYPE_CHECKING, ClassVar
 import warnings
 
 import torch
 from torch import nn
-import torch.nn.functional as F
 from torch.nn.utils import parametrize
 
+from probly.layers.torch import GaussianMixtureHead, SNCoeffParametrization
 from probly.representation._protected_axis.torch import TorchAxisProtected
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.distribution.torch_categorical import (
+    TorchCategoricalDistribution,
+    TorchProbabilityCategoricalDistribution,
+)
 from probly.traverse_nn import nn_compose, nn_traverser
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, singledispatch_traverser, traverse_with_state
 
@@ -49,54 +51,6 @@ def torch_negative_log_density(densities: torch.Tensor) -> torch.Tensor:
 SN_COEFF = GlobalVariable[float]("SN_COEFF", default=3.0)
 HAS_RESIDUAL = GlobalVariable[bool]("HAS_RESIDUAL", default=False)
 HEAD_MODULE: GlobalVariable[nn.Module | None] = GlobalVariable("HEAD_MODULE", default=None)
-
-
-class _SNCoeffParametrization(nn.Module):
-    """Weight parametrization that clips the spectral norm to at most coeff.
-
-    Uses one step of power iteration to estimate the spectral norm and then
-    scales the weight so that ||W||_2 <= coeff.
-    """
-
-    def __init__(self, coeff: float, weight: torch.Tensor) -> None:
-        """Initialize the parametrization.
-
-        Args:
-            coeff: Maximum allowed spectral norm.
-            weight: Reference weight tensor used for shape and device.
-        """
-        super().__init__()
-        self.coeff = coeff
-        self._u: torch.Tensor
-        self.register_buffer("_u", F.normalize(torch.randn(weight.shape[0], device=weight.device), dim=0))
-
-    def forward(self, weight: torch.Tensor) -> torch.Tensor:
-        """Rescale weight so that its spectral norm is at most coeff.
-
-        Args:
-            weight: The original weight tensor.
-
-        Returns:
-            Rescaled weight tensor.
-        """
-        w_mat = weight.reshape(weight.shape[0], -1)
-        with torch.no_grad():
-            v = F.normalize(w_mat.T @ self._u, dim=0)
-            u = F.normalize(w_mat @ v, dim=0)
-            self._u.copy_(u)
-        sigma = u @ (w_mat @ v)
-        return weight * (self.coeff / sigma.clamp(min=self.coeff))
-
-    def right_inverse(self, weight: torch.Tensor) -> torch.Tensor:
-        """Identity right-inverse to support state_dict loading.
-
-        Args:
-            weight: The parametrized weight.
-
-        Returns:
-            The weight unchanged.
-        """
-        return weight
 
 
 @singledispatch_traverser
@@ -136,7 +90,7 @@ def _(obj: nn.Linear, state: State) -> tuple[nn.Module, State]:
     if state[HEAD_MODULE] is None:
         state[HEAD_MODULE] = obj
         return nn.Identity(), state
-    parametrize.register_parametrization(obj, "weight", _SNCoeffParametrization(state[SN_COEFF], obj.weight))
+    parametrize.register_parametrization(obj, "weight", SNCoeffParametrization(state[SN_COEFF], obj.weight))
     return obj, state
 
 
@@ -165,10 +119,10 @@ def _(obj: nn.Conv2d, state: State) -> tuple[nn.Module, State]:
             if obj.bias is not None and new_conv.bias is not None:
                 new_conv.bias.copy_(obj.bias)
         parametrize.register_parametrization(
-            new_conv, "weight", _SNCoeffParametrization(state[SN_COEFF], new_conv.weight)
+            new_conv, "weight", SNCoeffParametrization(state[SN_COEFF], new_conv.weight)
         )
         return nn.Sequential(avg_pool, new_conv), state
-    parametrize.register_parametrization(obj, "weight", _SNCoeffParametrization(state[SN_COEFF], obj.weight))
+    parametrize.register_parametrization(obj, "weight", SNCoeffParametrization(state[SN_COEFF], obj.weight))
     return obj, state
 
 
@@ -182,110 +136,6 @@ def _(obj: nn.ReLU, state: State) -> tuple[nn.Module, State]:  # noqa: ARG001
 def _(obj: nn.ReLU6, state: State) -> tuple[nn.Module, State]:  # noqa: ARG001
     """Replace ReLU6 with LeakyReLU(0.01)."""
     return nn.LeakyReLU(negative_slope=0.01, inplace=False), state
-
-
-class GaussianMixtureHead(nn.Module):
-    """Per-class Gaussian density head for DDU.
-
-    Implements the GDA density estimator from
-    :cite:`mukhotiDeepDeterministicUncertainty2023`: one full-covariance
-    Gaussian per class with class-frequency mixing weights.
-
-    After fitting, ``forward`` returns the marginal log-density
-    ``log q(z) = log sum_c pi_c * N(z; mu_c, Sigma_c)`` — a single scalar per
-    sample used as the epistemic uncertainty score.
-
-    Buffers:
-        means: Per-class mean vectors, shape (num_classes, feature_dim).
-        scale_tril: Lower-triangular Cholesky factor of each per-class covariance,
-            shape (num_classes, feature_dim, feature_dim).
-        log_pi: Log class-frequency priors, shape (num_classes,).
-    """
-
-    means: torch.Tensor
-    scale_tril: torch.Tensor
-    log_pi: torch.Tensor
-
-    def __init__(self, num_classes: int, feature_dim: int) -> None:
-        """Initialize with uniform priors, identity covariance, and zero means.
-
-        Args:
-            num_classes: Number of classes (one Gaussian component per class).
-            feature_dim: Dimensionality of the feature vectors.
-        """
-        super().__init__()
-        self.num_classes = num_classes
-        self.feature_dim = feature_dim
-        self.register_buffer("means", torch.zeros(num_classes, feature_dim))
-        self.register_buffer(
-            "scale_tril",
-            torch.eye(feature_dim).unsqueeze(0).repeat(num_classes, 1, 1),
-        )
-        self.register_buffer(
-            "log_pi",
-            torch.full((num_classes,), -math.log(num_classes)),
-        )
-        # Jitter schedule for making sample covariances positive definite.
-        # Start from 0, try increasingly large values until torch.linalg.cholesky succeeds.
-        self._jitters = [0.0] + [10**exp for exp in range(-308, 0, 1)]
-
-    def fit(self, features: torch.Tensor, labels: torch.Tensor) -> None:
-        """Estimate per-class means, covariances, and mixing weights.
-
-        Per-class means and unbiased sample covariances are computed from the
-        provided training features.  The class-frequency prior
-        ``pi_c = N_c / N`` is stored as ``log_pi``.  The minimum jitter
-        ``eps * I`` that makes the Cholesky decomposition succeed is added to
-        each covariance matrix before factorising, matching the robustness
-        strategy of the reference implementation.
-
-        Args:
-            features: Feature vectors of shape (N, feature_dim).
-            labels: Integer class labels of shape (N,).
-        """
-        n_total = len(labels)
-        means = torch.zeros_like(self.means)
-        scale_trils = torch.eye(self.feature_dim, device=features.device).unsqueeze(0).repeat(self.num_classes, 1, 1)
-        log_pi = torch.full((self.num_classes,), float("-inf"), device=features.device)
-        eye = torch.eye(self.feature_dim, device=features.device)
-        for c in range(self.num_classes):
-            mask = labels == c
-            count = int(mask.sum().item())
-            if count == 0:
-                continue
-            log_pi[c] = torch.tensor(count / n_total, device=features.device).log()
-            if count < 2:
-                continue
-            z = features[mask]
-            mu = z.mean(0)
-            centered = z - mu
-            cov = (centered.T @ centered) / (count - 1)
-            means[c] = mu
-            for jitter_eps in self._jitters:
-                try:
-                    scale_trils[c] = torch.linalg.cholesky(cov + jitter_eps * eye)
-                    break
-                except torch.linalg.LinAlgError:
-                    continue
-        self.means.copy_(means)
-        self.scale_tril.copy_(scale_trils)
-        self.log_pi.copy_(log_pi)
-
-    def forward(self, features: torch.Tensor) -> torch.Tensor:
-        """Compute per-class log-densities for each sample.
-
-        Returns ``log(pi_c * N(z; mu_c, Sigma_c))`` for every class *c*,
-        i.e. the class-prior-weighted Gaussian log-likelihood.
-
-        Args:
-            features: Feature vectors of shape (N, feature_dim).
-
-        Returns:
-            Per-class log-density scores of shape (N, num_classes).
-        """
-        dist = torch.distributions.MultivariateNormal(loc=self.means, scale_tril=self.scale_tril, validate_args=False)
-        # log_prob broadcasts (N, 1, D) against batch shape (C,) -> (N, C)
-        return self.log_pi + dist.log_prob(features.unsqueeze(1))
 
 
 @ddu_generator.register(nn.Module)
@@ -371,6 +221,6 @@ class TorchDDUPredictor(nn.Module, DDUPredictor[[torch.Tensor], TorchDDURepresen
         logits, densities = self.forward(x)
 
         return TorchDDURepresentation(
-            TorchCategoricalDistribution(torch.softmax(logits, dim=-1)),
+            TorchProbabilityCategoricalDistribution(torch.softmax(logits, dim=-1)),
             densities,
         )

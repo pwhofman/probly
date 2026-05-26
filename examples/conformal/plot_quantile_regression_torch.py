@@ -25,7 +25,7 @@ from sklearn.datasets import load_diabetes
 from sklearn.model_selection import KFold, train_test_split
 
 from probly.calibrator import calibrate
-from probly.metrics._common import average_interval_size, empirical_coverage_regression
+from probly.evaluation import coverage, efficiency
 from probly.method.conformal import conformal_cqr, conformal_cqr_r, conformal_uacqr
 from probly.method.ensemble import EnsemblePredictor, ensemble
 from probly.representer import representer
@@ -104,8 +104,8 @@ with torch.no_grad():
     calibrated_model = calibrate(conformal_cqr(model), ALPHA, y_calib_t, X_calib_t)
     output = representer(calibrated_model).predict(X_test_t)
 
-cqr_cov = empirical_coverage_regression(output, y_test_t)
-cqr_size = average_interval_size(output)
+cqr_cov = coverage(output, y_test_t)
+cqr_size = efficiency(output)
 print(f"CQR  — coverage: {cqr_cov:.3f}, avg interval size: {cqr_size:.1f}")
 
 # %%
@@ -116,8 +116,8 @@ with torch.no_grad():
     calibrated_model = calibrate(conformal_cqr_r(model), ALPHA, y_calib_t, X_calib_t)
     output = representer(calibrated_model).predict(X_test_t)
 
-cqrr_cov = empirical_coverage_regression(output, y_test_t)
-cqrr_size = average_interval_size(output)
+cqrr_cov = coverage(output, y_test_t)
+cqrr_size = efficiency(output)
 print(f"CQRr — coverage: {cqrr_cov:.3f}, avg interval size: {cqrr_size:.1f}")
 
 # %%
@@ -142,20 +142,20 @@ calibrated_model = calibrate(conformal_uacqr(ensemble_net), ALPHA, y_calib_t, X_
 representation = representer(calibrated_model)
 output = representation.predict(X_test_t)
 
-uacqr_cov = empirical_coverage_regression(output, y_test_t)
-uacqr_size = average_interval_size(output)
+uacqr_cov = coverage(output, y_test_t)
+uacqr_size = efficiency(output)
 print(f"UACQR — coverage: {uacqr_cov:.3f}, avg interval size: {uacqr_size:.1f}")
 
 calibrated_model = calibrate(conformal_cqr(ensemble_net), ALPHA, y_calib_t, X_calib_t)
 output = representer(calibrated_model).predict(X_test_t)
-cqr_cov_ens = empirical_coverage_regression(output, y_test_t)
-cqr_size_ens = average_interval_size(output)
+cqr_cov_ens = coverage(output, y_test_t)
+cqr_size_ens = efficiency(output)
 print(f"CQR (ensemble)  — coverage: {cqr_cov_ens:.3f}, avg interval size: {cqr_size_ens:.1f}")
 
 calibrated_model = calibrate(conformal_cqr_r(ensemble_net), ALPHA, y_calib_t, X_calib_t)
 output = representer(calibrated_model).predict(X_test_t)
-cqrr_cov_ens = empirical_coverage_regression(output, y_test_t)
-cqrr_size_ens = average_interval_size(output)
+cqrr_cov_ens = coverage(output, y_test_t)
+cqrr_size_ens = efficiency(output)
 print(f"CQRr (ensemble) — coverage: {cqrr_cov_ens:.3f}, avg interval size: {cqrr_size_ens:.1f}")
 
 
@@ -190,8 +190,8 @@ for fold, (train_idx, test_idx) in enumerate(KFold(n_splits=5, shuffle=True, ran
         for name, conformal_func in [("CQR", conformal_cqr), ("CQRr", conformal_cqr_r)]:
             calibrated_model = calibrate(conformal_func(fold_model), ALPHA, y_calib_t, X_calib_t)
             output = representer(calibrated_model).predict(X_test_t)
-            cov = empirical_coverage_regression(output, y_test_t)
-            size = average_interval_size(output)
+            cov = coverage(output, y_test_t)
+            size = efficiency(output)
             res[name].append((cov, size))
 
     # Ensemble QuantileNet
@@ -208,8 +208,8 @@ for fold, (train_idx, test_idx) in enumerate(KFold(n_splits=5, shuffle=True, ran
     for name, conformal_func in [("UACQR", conformal_uacqr), ("CQR (ens)", conformal_cqr), ("CQRr (ens)", conformal_cqr_r)]:
         calibrated_model = calibrate(conformal_func(ens_net), ALPHA, y_calib_t, X_calib_t)
         output = representer(calibrated_model).predict(X_test_t)
-        cov = empirical_coverage_regression(output, y_test_t)
-        size = average_interval_size(output)
+        cov = coverage(output, y_test_t)
+        size = efficiency(output)
         res[name].append((cov, size))
 
 for name, vals in res.items():

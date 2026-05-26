@@ -124,3 +124,281 @@ class TestJaxArraySample:
 
         with pytest.raises(ValueError, match="ddof"):
             sample.sample_var(ddof=1)
+
+
+def _jax_modules():
+    """Return (jax, jnp) or skip."""
+    pytest.importorskip("jax")
+    import jax as _jax  # noqa: PLC0415
+    import jax.numpy as _jnp  # noqa: PLC0415
+
+    return _jax, _jnp
+
+
+class TestJaxArraySampleEdgeCases:
+    """JaxArraySample validation and operations."""
+
+    def test_invalid_sample_axis(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        a = jnp.zeros((2, 3))
+        with pytest.raises(ValueError, match="out of bounds"):
+            JaxArraySample(a, sample_axis=2)
+
+    def test_negative_sample_axis_normalised(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        a = jnp.zeros((2, 3))
+        s = JaxArraySample(a, sample_axis=-1)
+        assert s.sample_axis == 1
+
+    def test_negative_sample_axis_too_negative(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        a = jnp.zeros((2, 3))
+        with pytest.raises(ValueError, match="out of bounds"):
+            JaxArraySample(a, sample_axis=-3)
+
+    def test_array_must_be_jax_array(self) -> None:
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        with pytest.raises(TypeError, match="JAX array"):
+            JaxArraySample(np.zeros((2, 3)), sample_axis=0)  # type: ignore[arg-type]
+
+    def test_weights_shape_mismatch(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="weights must have shape"):
+            JaxArraySample(jnp.zeros((2, 3)), sample_axis=0, weights=jnp.zeros(5))
+
+    def test_T_property(self) -> None:  # noqa: N802
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample(jnp.arange(6).reshape(2, 3), sample_axis=0)
+        assert s.T.shape == (3, 2)
+
+    def test_mT_property(self) -> None:  # noqa: N802
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample(jnp.arange(6).reshape(2, 3), sample_axis=0)
+        assert s.mT.shape == (3, 2)
+
+    def test_size_property(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample(jnp.arange(6).reshape(2, 3), sample_axis=0)
+        assert s.size == 6
+
+    def test_dtype_property(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample(jnp.arange(6, dtype=jnp.float32).reshape(2, 3), sample_axis=0)
+        assert s.dtype == jnp.float32
+
+    def test_device_property(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample(jnp.arange(6).reshape(2, 3), sample_axis=0)
+        assert s.device is not None
+
+    def test_array_namespace(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample(jnp.arange(6).reshape(2, 3), sample_axis=0)
+        assert s.__array_namespace__() is not None
+
+    def test_ndim_property(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample(jnp.zeros((2, 3, 4)), sample_axis=0)
+        assert s.ndim == 3
+
+    def test_samples_property_moves_axis(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample(jnp.arange(24).reshape(2, 3, 4), sample_axis=2)
+        assert s.samples.shape == (4, 2, 3)
+
+    def test_samples_property_axis_zero(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample(jnp.arange(24).reshape(2, 3, 4), sample_axis=0)
+        assert s.samples.shape == (2, 3, 4)
+
+    def test_sample_size(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample(jnp.zeros((5, 3)), sample_axis=0)
+        assert s.sample_size == 5
+
+    def test_sample_mean_unweighted(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample(jnp.arange(6, dtype=jnp.float32).reshape(2, 3), sample_axis=0)
+        np.testing.assert_allclose(np.asarray(s.sample_mean()), [1.5, 2.5, 3.5])
+
+    def test_sample_mean_weighted(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample(
+            jnp.array([[1.0, 2.0], [3.0, 4.0]]),
+            sample_axis=0,
+            weights=jnp.array([1.0, 0.0]),
+        )
+        np.testing.assert_allclose(np.asarray(s.sample_mean()), [1.0, 2.0])
+
+    def test_sample_std_unweighted(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample(jnp.array([1.0, 2.0, 3.0]), sample_axis=0)
+        np.testing.assert_allclose(np.asarray(s.sample_std()), float(np.std([1.0, 2.0, 3.0])))
+
+    def test_sample_std_weighted(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample(
+            jnp.array([1.0, 2.0, 3.0]),
+            sample_axis=0,
+            weights=jnp.array([1.0, 1.0, 1.0]),
+        )
+        np.testing.assert_allclose(np.asarray(s.sample_std()), float(np.std([1.0, 2.0, 3.0])))
+
+    def test_sample_var_weighted_ddof_raises(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample(
+            jnp.array([1.0, 2.0, 3.0]),
+            sample_axis=0,
+            weights=jnp.array([1.0, 1.0, 1.0]),
+        )
+        with pytest.raises(ValueError, match="ddof > 0"):
+            s.sample_var(ddof=1)
+
+    def test_concat_two_jax_samples(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        a = JaxArraySample(jnp.arange(6).reshape(2, 3), sample_axis=0)
+        b = JaxArraySample(jnp.arange(6, 12).reshape(2, 3), sample_axis=0)
+        c = a.concat(b)
+        assert c.array.shape == (4, 3)
+
+    def test_concat_with_weights(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        a = JaxArraySample(
+            jnp.arange(6).reshape(2, 3),
+            sample_axis=0,
+            weights=jnp.array([0.5, 0.5]),
+        )
+        b = JaxArraySample(
+            jnp.arange(6, 12).reshape(2, 3),
+            sample_axis=0,
+        )
+        c = a.concat(b)
+        # b had no weights, so they get filled with ones.
+        np.testing.assert_allclose(np.asarray(c.weights), [0.5, 0.5, 1.0, 1.0])
+
+    def test_move_sample_axis(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        a = JaxArraySample(jnp.arange(24).reshape(2, 3, 4), sample_axis=0)
+        moved = a.move_sample_axis(2)
+        assert moved.sample_axis == 2
+        assert moved.array.shape == (3, 4, 2)
+
+    def test_array_dunder(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        a = JaxArraySample(jnp.arange(6).reshape(2, 3), sample_axis=0)
+        np_a = np.asarray(a)
+        assert isinstance(np_a, np.ndarray)
+
+    def test_copy(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        a = JaxArraySample(jnp.arange(6).reshape(2, 3), sample_axis=0, weights=jnp.array([0.5, 0.5]))
+        c = a.copy()
+        assert c.weights is not None
+        np.testing.assert_array_equal(np.asarray(c.array), np.asarray(a.array))
+
+    def test_to_device_same_device_returns_self(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        a = JaxArraySample(jnp.arange(6).reshape(2, 3), sample_axis=0)
+        out = a.to_device(a.device)
+        assert out is a
+
+    def test_to_device_with_stream_raises(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        a = JaxArraySample(jnp.arange(6).reshape(2, 3), sample_axis=0)
+        with pytest.raises(NotImplementedError, match="stream"):
+            a.to_device(a.device, stream=1)
+
+    def test_len(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample(jnp.arange(6).reshape(2, 3), sample_axis=0)
+        assert len(s) == 2
+
+    def test_from_iterable_auto_axis(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample.from_iterable(jnp.arange(12).reshape(3, 4))
+        # auto -> -1
+        assert s.sample_axis == 1
+
+    def test_from_iterable_zero_dim_raises(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="Cannot infer"):
+            JaxArraySample.from_iterable(jnp.array(5))
+
+    def test_from_iterable_empty_raises(self) -> None:
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="Cannot infer"):
+            JaxArraySample.from_iterable([])
+
+    def test_from_iterable_with_dtype(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample.from_iterable(jnp.arange(12).reshape(3, 4), dtype=jnp.float32)
+        assert s.array.dtype == jnp.float32
+
+    def test_from_iterable_explicit_axis(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        s = JaxArraySample.from_iterable(jnp.arange(12).reshape(3, 4), sample_axis=0)
+        assert s.sample_axis == 0

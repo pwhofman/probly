@@ -18,6 +18,7 @@ from probly.quantification import measure, quantify
 from probly.representation.distribution.array_categorical import (
     ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
+    ArrayProbabilityCategoricalDistribution,
 )
 from probly.representation.sample._common import create_sample
 from probly.representer import representer
@@ -64,9 +65,9 @@ class TestPredictRaw:
 
 class TestCreateSampleFix:
     def test_create_sample_preserves_distribution_type(self):
-        d1 = ArrayCategoricalDistribution(unnormalized_probabilities=np.array([0.3, 0.7]))
-        d2 = ArrayCategoricalDistribution(unnormalized_probabilities=np.array([0.6, 0.4]))
-        d3 = ArrayCategoricalDistribution(unnormalized_probabilities=np.array([0.5, 0.5]))
+        d1 = ArrayProbabilityCategoricalDistribution(array=np.array([0.3, 0.7]))
+        d2 = ArrayProbabilityCategoricalDistribution(array=np.array([0.6, 0.4]))
+        d3 = ArrayProbabilityCategoricalDistribution(array=np.array([0.5, 0.5]))
 
         sample = create_sample([d1, d2, d3])
 
@@ -75,8 +76,8 @@ class TestCreateSampleFix:
 
     def test_create_sample_shape(self):
         dists = [
-            ArrayCategoricalDistribution(unnormalized_probabilities=np.array([0.2, 0.8])),
-            ArrayCategoricalDistribution(unnormalized_probabilities=np.array([0.5, 0.5])),
+            ArrayProbabilityCategoricalDistribution(array=np.array([0.2, 0.8])),
+            ArrayProbabilityCategoricalDistribution(array=np.array([0.5, 0.5])),
         ]
         sample = create_sample(dists)
 
@@ -87,8 +88,8 @@ class TestCreateSampleFix:
         assert sample.array.unnormalized_probabilities.shape == (2, 2)
 
     def test_create_sample_values_match(self):
-        d1 = ArrayCategoricalDistribution(unnormalized_probabilities=np.array([0.3, 0.7]))
-        d2 = ArrayCategoricalDistribution(unnormalized_probabilities=np.array([0.6, 0.4]))
+        d1 = ArrayProbabilityCategoricalDistribution(array=np.array([0.3, 0.7]))
+        d2 = ArrayProbabilityCategoricalDistribution(array=np.array([0.6, 0.4]))
         sample = create_sample([d1, d2])
 
         np.testing.assert_array_equal(

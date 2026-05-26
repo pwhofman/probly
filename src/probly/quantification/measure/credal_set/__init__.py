@@ -1,6 +1,6 @@
 """Uncertainty measures for credal sets."""
 
-from probly.lazy_types import TORCH_TENSOR_LIKE
+from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
 
 from ._common import (
     generalized_hartley,
@@ -9,9 +9,9 @@ from ._common import (
 )
 
 
-@upper_entropy.delayed_register((TORCH_TENSOR_LIKE,))
-@lower_entropy.delayed_register((TORCH_TENSOR_LIKE,))
-@generalized_hartley.delayed_register((TORCH_TENSOR_LIKE,))
+@upper_entropy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@lower_entropy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@generalized_hartley.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 

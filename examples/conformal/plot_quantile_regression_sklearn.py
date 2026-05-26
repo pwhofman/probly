@@ -28,7 +28,7 @@ from sklearn.linear_model import QuantileRegressor
 from sklearn.model_selection import KFold, train_test_split
 
 from probly.calibrator import calibrate
-from probly.metrics._common import average_interval_size, empirical_coverage_regression
+from probly.evaluation import coverage, efficiency
 from probly.method.conformal import conformal_cqr, conformal_cqr_r
 from probly.representer import representer
 
@@ -86,8 +86,8 @@ model.fit(X_train, y_train)
 
 calibrated_model = calibrate(conformal_cqr(model), ALPHA, y_calib, X_calib)
 output = representer(calibrated_model).predict(X_test)
-cqr_cov = empirical_coverage_regression(output, y_test)
-cqr_size = average_interval_size(output)
+cqr_cov = coverage(output, y_test)
+cqr_size = efficiency(output)
 print(f"CQR  — coverage: {cqr_cov:.3f}, avg interval size: {cqr_size:.1f}")
 
 # %%
@@ -97,8 +97,8 @@ print(f"CQR  — coverage: {cqr_cov:.3f}, avg interval size: {cqr_size:.1f}")
 
 calibrated_model = calibrate(conformal_cqr_r(model), ALPHA, y_calib, X_calib)
 output = representer(calibrated_model).predict(X_test)
-cqrr_cov = empirical_coverage_regression(output, y_test)
-cqrr_size = average_interval_size(output)
+cqrr_cov = coverage(output, y_test)
+cqrr_size = efficiency(output)
 print(f"CQRr — coverage: {cqrr_cov:.3f}, avg interval size: {cqrr_size:.1f}")
 
 # %%
@@ -115,8 +115,8 @@ for fold, (train_idx, test_idx) in enumerate(KFold(n_splits=5, shuffle=True, ran
     for name, calibrate_func in [("CQR", conformal_cqr), ("CQRr", conformal_cqr_r)]:
         calibrated_model = calibrate(calibrate_func(fold_model), ALPHA, y_calib, X_calib)
         output = representer(calibrated_model).predict(X_test)
-        cov = empirical_coverage_regression(output, y_test)
-        size = average_interval_size(output)
+        cov = coverage(output, y_test)
+        size = efficiency(output)
         res[name].append((cov, size))
 
 for name, vals in res.items():

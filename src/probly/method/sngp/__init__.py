@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import TORCH_MODULE, TORCH_SAMPLE
+from probly.lazy_types import TORCH_MODULE, TORCH_TENSOR, TORCH_TENSOR_LIKE
 
 from ._common import (
+    SNGPDecomposition,
     SNGPPredictor,
     SNGPRepresenter,
+    _collect_skipped_param_bearing_layer_classes,
     compute_categorical_sample_from_logits,
-    register,
+    reset_precision_matrix,
     sngp,
     sngp_traverser,
 )
@@ -16,20 +18,23 @@ from ._common import (
 
 ## Torch
 @sngp_traverser.delayed_register(TORCH_MODULE)
+@reset_precision_matrix.delayed_register(TORCH_MODULE)
+@_collect_skipped_param_bearing_layer_classes.delayed_register(TORCH_MODULE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-@compute_categorical_sample_from_logits.delayed_register(TORCH_SAMPLE)
+@compute_categorical_sample_from_logits.delayed_register((TORCH_TENSOR_LIKE, TORCH_TENSOR))
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
 __all__ = [
+    "SNGPDecomposition",
     "SNGPPredictor",
     "SNGPRepresenter",
     "compute_categorical_sample_from_logits",
-    "register",
+    "reset_precision_matrix",
     "sngp",
     "sngp_traverser",
 ]

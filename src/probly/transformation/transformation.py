@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Collection
 from contextvars import ContextVar
 import functools
-from typing import TYPE_CHECKING, Any, Protocol, overload
+from typing import Any, Protocol, cast, overload
 
 from probly.predictor import Predictor, PredictorName, predictor_registry
 
@@ -21,9 +22,6 @@ except ImportError:
         return decorator
 
 
-if TYPE_CHECKING:
-    from collections.abc import Callable, Collection
-
 current_predictor_type: ContextVar[tuple[Predictor, type[Predictor] | None]] = ContextVar(
     "current_predictor_type", default=(None, None)
 )
@@ -36,32 +34,43 @@ class PredictorTransformation[PIn: Predictor, **In, POut: Predictor](Protocol):
         """Call the method."""
 
 
+class PredictorTransformationDecorator(Protocol):
+    """Protocol for predictor transformation decorators."""
+
+    def __call__[F: Callable[..., Predictor]](
+        self,
+        func: F,
+        /,
+    ) -> F:
+        """Decorate a predictor transformation."""
+
+
 @overload
-def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
+def predictor_transformation(
     permitted_predictor_types: Collection[type[Predictor]] | None,
     *,
     preserve_predictor_type: bool = False,
     auto_infer_predictor_type: bool = True,
-) -> Callable[[PredictorTransformation[Pin, In, POut]], PredictorTransformation[Pin, In, POut]]: ...
+) -> PredictorTransformationDecorator: ...
 
 
 @overload
-def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
+def predictor_transformation(
     permitted_predictor_types: Collection[type[Predictor]] | None,
     *,
     auto_infer_predictor_type: bool = True,
-    post_transform: Callable[[POut, type[Predictor] | None], POut],
-) -> Callable[[PredictorTransformation[Pin, In, POut]], PredictorTransformation[Pin, In, POut]]: ...
+    post_transform: Callable[[Any, type[Predictor] | None], Any],
+) -> PredictorTransformationDecorator: ...
 
 
 @stub_transform_factory("probly.transformation._sigx_transforms:predictor_transformation_transform")
-def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
+def predictor_transformation(
     permitted_predictor_types: Collection[type[Predictor]] | None,
     *,
     preserve_predictor_type: bool = False,
     auto_infer_predictor_type: bool = True,
-    post_transform: Callable[[POut, type[Predictor] | None], POut] | None = None,
-) -> Callable[[PredictorTransformation[Pin, In, POut]], PredictorTransformation[Pin, In, POut]]:
+    post_transform: Callable[[Any, type[Predictor] | None], Any] | None = None,
+) -> PredictorTransformationDecorator:
     """Decorator factory for predictor transformation methods.
 
     Args:
@@ -82,16 +91,16 @@ def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
         keyword argument when calling the transformation method.
     """
 
-    def decorator(
-        func: PredictorTransformation[Pin, In, POut],
-    ) -> PredictorTransformation[Pin, In, POut]:
+    def decorator[F: Callable[..., Predictor]](
+        func: F,
+    ) -> F:
         @functools.wraps(func)
         def wrapper(  # noqa: PLR0912
-            base: Pin,
+            base: Any,  # noqa: ANN401
             *args: Any,  # noqa: ANN401
             predictor_type: PredictorName | type[Predictor] | None = None,
             **kwargs: Any,  # noqa: ANN401
-        ) -> POut:
+        ) -> Any:  # noqa: ANN401
             cur_base, cur_type = current_predictor_type.get()
             inferred_type = cur_type if base is cur_base else None
             if permitted_predictor_types is not None:
@@ -123,7 +132,7 @@ def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
                 base = predictor_type.register_instance(base)
 
             tok = current_predictor_type.set((base, predictor_type))
-            res = func(base, *args, **kwargs)  # ty:ignore[invalid-argument-type]
+            res = func(base, *args, **kwargs)
 
             if post_transform is not None:
                 res = post_transform(res, predictor_type)
@@ -134,6 +143,6 @@ def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
 
             return res
 
-        return wrapper
+        return cast("F", wrapper)
 
     return decorator

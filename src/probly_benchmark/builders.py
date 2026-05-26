@@ -25,12 +25,14 @@ from tqdm import tqdm
 
 from probly.method.batchensemble import batchensemble
 from probly.method.bayesian import bayesian
+from probly.method.credal_bnn import credal_bnn
 from probly.method.credal_ensembling import credal_ensembling
 from probly.method.credal_net import credal_net
 from probly.method.credal_relative_likelihood import credal_relative_likelihood
 from probly.method.credal_wrapper import credal_wrapper
 from probly.method.dare import dare
 from probly.method.ddu import ddu
+from probly.method.deup import deup
 from probly.method.dropconnect import dropconnect
 from probly.method.dropout import dropout
 from probly.method.duq import duq
@@ -40,6 +42,7 @@ from probly.method.evidential.classification import evidential_classification
 from probly.method.het_net import het_net
 from probly.method.natural_posterior_network import natural_posterior_network
 from probly.method.posterior_network import posterior_network
+from probly.method.sngp import sngp
 from probly.method.subensemble import subensemble
 from probly.traverse_nn.utils import get_output_dim
 from probly_benchmark import models
@@ -57,6 +60,7 @@ METHODS = {
     "bayesian": bayesian,
     "dare": dare,
     "ddu": ddu,
+    "deup": deup,
     "dropout": dropout,
     "dropconnect": dropconnect,
     "duq": duq,
@@ -65,12 +69,14 @@ METHODS = {
     "natural_posterior_network": natural_posterior_network,
     "posterior_network": posterior_network,
     "ensemble": ensemble,
+    "credal_bnn": credal_bnn,
     "credal_ensembling": credal_ensembling,
     "credal_net": credal_net,
     "credal_relative_likelihood": credal_relative_likelihood,
     "credal_wrapper": credal_wrapper,
     "efficient_credal_prediction": efficient_credal_prediction,
     "het_net": het_net,
+    "sngp": sngp,
     "subensemble": subensemble,
 }
 
@@ -215,16 +221,6 @@ def _natural_posterior_network_builder(
     )
 
 
-def _credal_relative_likelihood_builder(
-    method_fn: Callable[..., nn.Module],
-    params: dict[str, Any],
-    ctx: BuildContext,
-) -> nn.Module:
-    """Build credal relative likelihood and wrap the plain list in nn.ModuleList."""
-    model = _default_builder(method_fn, params, ctx)
-    return nn.ModuleList(model) if isinstance(model, list) else model  # ty: ignore[invalid-argument-type]
-
-
 def _subensemble_builder(
     method_fn: Callable[..., nn.Module],
     params: dict[str, Any],
@@ -248,6 +244,11 @@ def _subensemble_builder(
     then duplicates the head ``num_heads`` times; with ``reset_params=True``
     each copy is re-initialized independently while the encoder stays
     untouched and frozen.
+
+    When ``ctx.pretrained`` is ``False`` the encoder is built at random init
+    here. The ``SubensemblePredictor`` training handler runs a backbone warmup
+    pass before fitting the heads, training the (still-frozen) encoder weights
+    via a temporary ``Sequential(encoder, warmup_head)`` model.
     """
     encoder = models.get_base_model(
         f"{ctx.base_model_name}_encoder",
@@ -284,7 +285,6 @@ BUILDERS: dict[str, Builder] = {
     "laplace": _laplace_builder,
     "natural_posterior_network": _natural_posterior_network_builder,
     "posterior_network": _posterior_network_builder,
-    "credal_relative_likelihood": _credal_relative_likelihood_builder,
     "subensemble": _subensemble_builder,
 }
 

@@ -6,5 +6,6 @@ from pathlib import Path
 
 DATA_PATH = Path("~/datasets").expanduser()
 IMAGENET_SHARD_PATH = Path("~/sharded_imagenet").expanduser()
+IMAGENET_TORCH_PATH = Path("~/torch_imagenet").expanduser()
 CHECKPOINT_PATH = Path("~/checkpoints").expanduser()
 FIGURE_PATH = Path("~/figures").expanduser()

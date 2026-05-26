@@ -11,8 +11,8 @@ from probly.quantification.measure.distribution import (
     mutual_information,
 )
 from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
+    ArrayProbabilityCategoricalDistribution,
 )
 from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
 
@@ -39,7 +39,7 @@ def _array_categorical_sample() -> ArrayCategoricalDistributionSample:
         dtype=float,
     )
     return ArrayCategoricalDistributionSample(
-        array=ArrayCategoricalDistribution(probabilities),
+        array=ArrayProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 

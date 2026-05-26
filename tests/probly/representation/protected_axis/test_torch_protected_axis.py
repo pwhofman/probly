@@ -43,10 +43,40 @@ class InnerPairTensor(TorchAxisProtected[Any]):
 
 
 @dataclass(frozen=True, slots=True)
+class MixedTensorNumpy(TorchAxisProtected[Any]):
+    tensor: torch.Tensor
+    sidecar: np.ndarray
+    protected_axes: ClassVar[dict[str, int]] = {"tensor": 1, "sidecar": 1}
+
+
+@dataclass(frozen=True, slots=True)
+class MixedBatchTensorNumpy(TorchAxisProtected[Any]):
+    tensor: torch.Tensor
+    sidecar: np.ndarray
+    protected_axes: ClassVar[dict[str, int]] = {"tensor": 0, "sidecar": 0}
+
+
+@dataclass(frozen=True, slots=True)
+class MixedReductionTensorNumpy(TorchAxisProtected[Any]):
+    tensor: torch.Tensor
+    sidecar: np.ndarray
+    protected_axes: ClassVar[dict[str, int]] = {"tensor": 1, "sidecar": 1}
+    permitted_functions: ClassVar[set[Any]] = {torch.sum}
+
+
+@dataclass(frozen=True, slots=True)
 class OuterNestedTensor(TorchAxisProtected[Any]):
     inner: InnerPairTensor
     aux: torch.Tensor
     protected_axes: ClassVar[dict[str, int]] = {"inner": 1, "aux": 1}
+
+
+def _mixed_tensor_numpy() -> MixedTensorNumpy:
+    sidecar = np.asarray([f"v{i}" for i in range(24)], dtype=object).reshape(2, 3, 4)
+    return MixedTensorNumpy(
+        tensor=torch.arange(24.0).reshape(2, 3, 4),
+        sidecar=sidecar,
+    )
 
 
 def test_single_field_torch_functions_preserve_type() -> None:
@@ -75,6 +105,74 @@ def test_reshape_method_preserves_protected_axes() -> None:
     assert tuple(reshaped_with_tuple.tensor.shape) == (1, 6, 4)
     assert reshaped_with_tuple.shape == (1, 6)
     assert reshaped_with_tuple.protected_shape == (4,)
+
+
+def test_gather_preserves_protected_axes() -> None:
+    x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
+    index = torch.tensor([[2, 0], [1, 1]])
+
+    gathered = torch.gather(x, dim=1, index=index)
+
+    assert isinstance(gathered, SingleTensor)
+    assert tuple(gathered.tensor.shape) == (2, 2, 4)
+    assert gathered.shape == (2, 2)
+    assert gathered.protected_shape == (4,)
+    torch.testing.assert_close(
+        gathered.tensor, torch.gather(x.tensor, dim=1, index=index.unsqueeze(-1).expand(2, 2, 4))
+    )
+
+
+def test_gather_supports_negative_dim() -> None:
+    x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
+    index = torch.tensor([[2, 0], [1, 1]])
+
+    gathered = torch.gather(x, dim=-1, index=index)
+
+    assert isinstance(gathered, SingleTensor)
+    torch.testing.assert_close(
+        gathered.tensor, torch.gather(x.tensor, dim=1, index=index.unsqueeze(-1).expand(2, 2, 4))
+    )
+
+
+def test_gather_applies_to_all_fields() -> None:
+    x = InnerPairTensor(
+        left=torch.arange(24.0).reshape(2, 3, 4),
+        right=torch.arange(24.0).reshape(2, 3, 4) + 100,
+    )
+    index = torch.tensor([[2, 0], [1, 1]])
+    expanded_index = index.unsqueeze(-1).expand(2, 2, 4)
+
+    gathered = torch.gather(x, dim=1, index=index)
+
+    assert isinstance(gathered, InnerPairTensor)
+    assert tuple(gathered.left.shape) == (2, 2, 4)
+    assert tuple(gathered.right.shape) == (2, 2, 4)
+    torch.testing.assert_close(gathered.left, torch.gather(x.left, dim=1, index=expanded_index))
+    torch.testing.assert_close(gathered.right, torch.gather(x.right, dim=1, index=expanded_index))
+
+
+def test_gather_rejects_protected_axis_dim() -> None:
+    x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
+    index = torch.zeros((2, 3), dtype=torch.long)
+
+    with pytest.raises(ValueError, match="axis 2 is out of bounds"):
+        torch.gather(x, dim=2, index=index)
+
+
+def test_gather_rejects_index_with_wrong_batch_ndim() -> None:
+    x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
+    index = torch.zeros((2, 3, 1), dtype=torch.long)
+
+    with pytest.raises(ValueError, match="same ndim"):
+        torch.gather(x, dim=1, index=index)
+
+
+def test_gather_rejects_numpy_sidecar() -> None:
+    x = _mixed_tensor_numpy()
+    index = torch.tensor([[2, 0], [1, 1]])
+
+    with pytest.raises(TypeError):
+        torch.gather(x, dim=1, index=index)
 
 
 def test_unpermitted_torch_reductions_return_notimplemented() -> None:
@@ -115,6 +213,19 @@ def test_permitted_torch_average_reduces_only_batch_axes() -> None:
     assert averaged.protected_shape == (4,)
 
 
+def test_permitted_torch_average_expands_batch_shaped_weights_before_protected_axis() -> None:
+    x = ReductionTensor(torch.arange(24.0).reshape(2, 3, 4))
+    weights = torch.tensor([[1.0, 3.0, 1.0], [2.0, 1.0, 2.0]])
+
+    averaged = torch_average(x, dim=-1, weights=weights)
+
+    expected = torch_average(x.tensor, dim=1, weights=weights.unsqueeze(-1))
+    assert isinstance(averaged, ReductionTensor)
+    assert torch.allclose(averaged.tensor, expected)
+    assert averaged.shape == (2,)
+    assert averaged.protected_shape == (4,)
+
+
 def test_unpermitted_torch_average_returns_notimplemented() -> None:
     x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
 
@@ -141,6 +252,102 @@ def test_reshape_method_applies_to_all_fields() -> None:
     assert isinstance(reshaped, PairTensor)
     assert tuple(reshaped.first.shape) == (3, 2)
     assert tuple(reshaped.second.shape) == (3, 2)
+
+
+def test_mixed_numpy_sidecar_structural_unary_ops() -> None:
+    x = _mixed_tensor_numpy()
+
+    reshaped = x.reshape(3, 2)
+    assert isinstance(reshaped, MixedTensorNumpy)
+    assert tuple(reshaped.tensor.shape) == (3, 2, 4)
+    np.testing.assert_array_equal(reshaped.sidecar, np.reshape(x.sidecar, (3, 2, 4)))
+
+    transposed = torch.transpose(x, 0, 1)
+    assert isinstance(transposed, MixedTensorNumpy)
+    assert tuple(transposed.tensor.shape) == (3, 2, 4)
+    np.testing.assert_array_equal(transposed.sidecar, np.swapaxes(x.sidecar, 0, 1))
+
+    permuted = torch.permute(x, (1, 0))
+    assert isinstance(permuted, MixedTensorNumpy)
+    assert tuple(permuted.tensor.shape) == (3, 2, 4)
+    np.testing.assert_array_equal(permuted.sidecar, np.transpose(x.sidecar, (1, 0, 2)))
+
+    unsqueezed = torch.unsqueeze(x, dim=1)
+    assert isinstance(unsqueezed, MixedTensorNumpy)
+    assert tuple(unsqueezed.tensor.shape) == (2, 1, 3, 4)
+    np.testing.assert_array_equal(unsqueezed.sidecar, np.expand_dims(x.sidecar, axis=1))
+
+    squeezed = torch.squeeze(unsqueezed, dim=1)
+    assert isinstance(squeezed, MixedTensorNumpy)
+    assert tuple(squeezed.tensor.shape) == (2, 3, 4)
+    np.testing.assert_array_equal(squeezed.sidecar, x.sidecar)
+
+    not_squeezed = torch.squeeze(x, dim=0)
+    assert isinstance(not_squeezed, MixedTensorNumpy)
+    assert tuple(not_squeezed.tensor.shape) == (2, 3, 4)
+    np.testing.assert_array_equal(not_squeezed.sidecar, x.sidecar)
+
+    moved = torch.moveaxis(x, 0, 1)
+    assert isinstance(moved, MixedTensorNumpy)
+    assert tuple(moved.tensor.shape) == (3, 2, 4)
+    np.testing.assert_array_equal(moved.sidecar, np.moveaxis(x.sidecar, 0, 1))
+
+    matrix_transposed = x.mT
+    assert isinstance(matrix_transposed, MixedTensorNumpy)
+    assert tuple(matrix_transposed.tensor.shape) == (3, 2, 4)
+    np.testing.assert_array_equal(matrix_transposed.sidecar, np.swapaxes(x.sidecar, 0, 1))
+
+    adjointed = x.mH
+    assert isinstance(adjointed, MixedTensorNumpy)
+    assert tuple(adjointed.tensor.shape) == (3, 2, 4)
+    np.testing.assert_array_equal(adjointed.sidecar, np.swapaxes(x.sidecar, 0, 1))
+
+
+def test_mixed_numpy_sidecar_sequence_ops() -> None:
+    x = _mixed_tensor_numpy()
+
+    stacked = torch.stack((x, x), dim=0)
+    assert isinstance(stacked, MixedTensorNumpy)
+    assert tuple(stacked.tensor.shape) == (2, 2, 3, 4)
+    np.testing.assert_array_equal(stacked.sidecar, np.stack((x.sidecar, x.sidecar), axis=0))
+
+    cat = torch.cat((x, x), dim=1)
+    assert isinstance(cat, MixedTensorNumpy)
+    assert tuple(cat.tensor.shape) == (2, 6, 4)
+    np.testing.assert_array_equal(cat.sidecar, np.concatenate((x.sidecar, x.sidecar), axis=1))
+
+
+def test_mixed_numpy_sidecar_index_to_and_detach() -> None:
+    x = MixedBatchTensorNumpy(
+        tensor=torch.tensor([1.0, 2.0], requires_grad=True),
+        sidecar=np.asarray(["a", "b"], dtype=object),
+    )
+
+    indexed = x[1]
+    assert isinstance(indexed, MixedBatchTensorNumpy)
+    assert tuple(indexed.tensor.shape) == ()
+    assert indexed.sidecar.shape == ()
+    assert indexed.sidecar.item() == "b"
+    assert torch.equal(indexed.tensor, torch.tensor(2.0))
+
+    converted = x.to(dtype=torch.float64)
+    assert converted.sidecar is x.sidecar
+    assert converted.tensor.dtype == torch.float64
+
+    detached = x.detach()
+    assert detached.sidecar is x.sidecar
+    assert not detached.tensor.requires_grad
+
+
+def test_mixed_numpy_sidecar_rejects_non_structural_torch_ops() -> None:
+    x = _mixed_tensor_numpy()
+
+    with pytest.raises(TypeError):
+        _ = torch.clone(x)
+
+    reducible = MixedReductionTensorNumpy(tensor=x.tensor, sidecar=x.sidecar)
+    with pytest.raises(TypeError):
+        _ = torch.sum(reducible)
 
 
 def test_multi_field_index_and_assignment() -> None:

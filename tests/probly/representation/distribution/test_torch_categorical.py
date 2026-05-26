@@ -8,8 +8,16 @@ import pytest
 pytest.importorskip("torch")
 import torch
 
-from probly.representation.distribution import create_categorical_distribution
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.distribution import (
+    CategoricalDistributionSample,
+    create_categorical_distribution,
+    create_categorical_distribution_from_logits,
+)
+from probly.representation.distribution.torch_categorical import (
+    TorchCategoricalDistribution,
+    TorchLogitCategoricalDistribution,
+    TorchProbabilityCategoricalDistribution,
+)
 from probly.representation.sample.torch import TorchSample
 from probly.representation.torch_functions import torch_average
 
@@ -20,13 +28,23 @@ def test_create_categorical_distribution_from_torch_tensor() -> None:
     dist = create_categorical_distribution(probabilities)
 
     assert isinstance(dist, TorchCategoricalDistribution)
+    assert isinstance(dist, TorchProbabilityCategoricalDistribution)
     assert torch.equal(dist.probabilities, probabilities)
+
+
+def test_create_categorical_distribution_from_torch_logits() -> None:
+    logits = torch.tensor([[1000.0, 1001.0]], dtype=torch.float64)
+
+    dist = create_categorical_distribution_from_logits(logits)
+
+    assert isinstance(dist, TorchLogitCategoricalDistribution)
+    assert torch.allclose(dist.probabilities, torch.softmax(logits, dim=-1))
 
 
 def test_accepts_relative_non_negative_probabilities() -> None:
     probabilities = torch.tensor([[2.0, 3.0, 5.0], [1.0, 1.0, 1.0]], dtype=torch.float64)
 
-    dist = TorchCategoricalDistribution(probabilities)
+    dist = TorchProbabilityCategoricalDistribution(probabilities)
 
     assert dist.shape == (2,)
     assert dist.num_classes == 3
@@ -36,32 +54,22 @@ def test_rejects_negative_relative_probabilities() -> None:
     probabilities = torch.tensor([1.0, -1.0, 2.0], dtype=torch.float64)
 
     with pytest.raises(ValueError, match="non-negative"):
-        TorchCategoricalDistribution(probabilities)
+        TorchProbabilityCategoricalDistribution(probabilities)
 
 
 def test_entropy_normalizes_relative_probabilities() -> None:
     probabilities = torch.tensor([[2.0, 3.0, 5.0]], dtype=torch.float64)
-    dist = TorchCategoricalDistribution(probabilities)
+    dist = TorchProbabilityCategoricalDistribution(probabilities)
 
     normalized = probabilities / torch.sum(probabilities, dim=-1, keepdim=True)
     expected = -torch.sum(normalized * torch.log(normalized), dim=-1)
 
-    assert torch.allclose(dist.entropy, expected)
-
-
-def test_entropy_bernoulli_formula() -> None:
-    probabilities = torch.tensor([[0.25], [0.5], [0.75]], dtype=torch.float64)
-    dist = TorchCategoricalDistribution(probabilities)
-
-    p = probabilities[:, 0]
-    expected = -(p * torch.log(p) + (1 - p) * torch.log(1 - p))
-
-    assert torch.allclose(dist.entropy, expected)
+    assert torch.allclose(dist.entropy(), expected)
 
 
 def test_sampling_relative_probabilities_matches_normalized_distribution() -> None:
     probabilities = torch.tensor([[2.0, 3.0, 5.0]], dtype=torch.float64)
-    dist = TorchCategoricalDistribution(probabilities)
+    dist = TorchProbabilityCategoricalDistribution(probabilities)
     rng = torch.Generator().manual_seed(0)
 
     sample = dist.sample(num_samples=30_000, rng=rng)
@@ -78,22 +86,16 @@ def test_sampling_relative_probabilities_matches_normalized_distribution() -> No
     assert torch.allclose(frequencies, expected, atol=0.02)
 
 
-def test_sampling_bernoulli_produces_binary_samples_with_correct_mean() -> None:
-    probabilities = torch.tensor([[0.3]], dtype=torch.float64)
-    dist = TorchCategoricalDistribution(probabilities)
-    rng = torch.Generator().manual_seed(1)
+def test_plain_torch_sample_over_categorical_distribution_matches_distribution_sample_protocol() -> None:
+    dist = TorchProbabilityCategoricalDistribution(torch.tensor([[0.2, 0.8], [0.4, 0.6]], dtype=torch.float64))
+    sample = TorchSample(tensor=dist, sample_dim=0)
 
-    sample = dist.sample(num_samples=40_000, rng=rng)
-
-    assert isinstance(sample, TorchSample)
-    assert sample.tensor.shape == (40_000, 1)
-    assert torch.all((sample.tensor == 0) | (sample.tensor == 1))
-    assert float(torch.mean(sample.tensor.to(dtype=torch.float64))) == pytest.approx(0.3, abs=0.02)
+    assert isinstance(sample, CategoricalDistributionSample)
 
 
 def test_numpy_array_interop() -> None:
     probabilities = torch.tensor([[0.2, 0.8]], dtype=torch.float64)
-    dist = TorchCategoricalDistribution(probabilities)
+    dist = TorchProbabilityCategoricalDistribution(probabilities)
 
     array = np.asarray(dist, dtype=np.float32)
 
@@ -104,7 +106,7 @@ def test_numpy_array_interop() -> None:
 
 def test_getitem_cannot_index_class_axis_directly() -> None:
     probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
-    dist = TorchCategoricalDistribution(probabilities)
+    dist = TorchProbabilityCategoricalDistribution(probabilities)
 
     with pytest.raises(IndexError):
         _ = dist[:, :, 0]
@@ -112,7 +114,7 @@ def test_getitem_cannot_index_class_axis_directly() -> None:
 
 def test_expand_dims_last_inserts_before_class_axis() -> None:
     probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
-    dist = TorchCategoricalDistribution(probabilities)
+    dist = TorchProbabilityCategoricalDistribution(probabilities)
 
     expanded = torch.unsqueeze(dist, dim=-1)
 
@@ -123,7 +125,7 @@ def test_expand_dims_last_inserts_before_class_axis() -> None:
 
 def test_reshape_inserts_before_class_axis() -> None:
     probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
-    dist = TorchCategoricalDistribution(probabilities)
+    dist = TorchProbabilityCategoricalDistribution(probabilities)
 
     reshaped = torch.reshape(dist, (6, 1))
 
@@ -134,7 +136,7 @@ def test_reshape_inserts_before_class_axis() -> None:
 
 def test_reshape_method_inserts_before_class_axis() -> None:
     probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
-    dist = TorchCategoricalDistribution(probabilities)
+    dist = TorchProbabilityCategoricalDistribution(probabilities)
 
     reshaped = dist.reshape(6, 1)
 
@@ -145,7 +147,7 @@ def test_reshape_method_inserts_before_class_axis() -> None:
 
 def test_cat_preserves_distribution_type() -> None:
     probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
-    dist = TorchCategoricalDistribution(probabilities)
+    dist = TorchProbabilityCategoricalDistribution(probabilities)
 
     concatenated = torch.cat((dist, dist), dim=-1)
 
@@ -156,7 +158,7 @@ def test_cat_preserves_distribution_type() -> None:
 
 def test_cat_aliases_preserve_distribution_type() -> None:
     probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
-    dist = TorchCategoricalDistribution(probabilities)
+    dist = TorchProbabilityCategoricalDistribution(probabilities)
 
     concatenated_concat = torch.concat((dist, dist), dim=-1)
     concatenated_concatenate = torch.concatenate((dist, dist), dim=-1)
@@ -169,7 +171,7 @@ def test_cat_aliases_preserve_distribution_type() -> None:
 
 def test_stack_preserves_distribution_type() -> None:
     probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
-    dist = TorchCategoricalDistribution(probabilities)
+    dist = TorchProbabilityCategoricalDistribution(probabilities)
 
     stacked = torch.stack((dist, dist), dim=0)
 
@@ -186,7 +188,7 @@ def test_mean_preserves_distribution_type_and_class_axis() -> None:
         ],
         dtype=torch.float64,
     )
-    dist = TorchCategoricalDistribution(unnormalized)
+    dist = TorchProbabilityCategoricalDistribution(unnormalized)
 
     meaned = torch.mean(dist, dim=0)
 
@@ -205,7 +207,7 @@ def test_average_preserves_distribution_type_and_uses_weights() -> None:
         dtype=torch.float64,
     )
     weights = torch.tensor([0.25, 0.75], dtype=torch.float64)
-    dist = TorchCategoricalDistribution(unnormalized)
+    dist = TorchProbabilityCategoricalDistribution(unnormalized)
 
     averaged = torch_average(dist, dim=0, weights=weights)
 
@@ -217,7 +219,124 @@ def test_average_preserves_distribution_type_and_uses_weights() -> None:
 
 
 def test_sum_is_not_supported_for_categorical_distribution() -> None:
-    dist = TorchCategoricalDistribution(torch.tensor([[1.0, 1.0], [9.0, 1.0]], dtype=torch.float64))
+    dist = TorchProbabilityCategoricalDistribution(torch.tensor([[1.0, 1.0], [9.0, 1.0]], dtype=torch.float64))
 
     with pytest.raises(TypeError):
         torch.sum(dist, dim=0)
+
+
+def _torch_modules():
+    pytest.importorskip("torch")
+    import torch as _torch  # noqa: PLC0415
+
+    return _torch
+
+
+class TestTorchCategoricalDistribution:
+    """Validation, equality and properties for the torch categorical distribution."""
+
+    def test_validation_negative_probabilities_raise(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        with pytest.raises(ValueError, match="non-negative"):
+            TorchProbabilityCategoricalDistribution(tensor=torch.tensor([-0.5, 0.5]))
+
+    def test_validation_zero_dim_raises(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        with pytest.raises(ValueError, match="at least one dimension"):
+            TorchProbabilityCategoricalDistribution(tensor=torch.tensor(0.5))
+
+    def test_validation_must_be_tensor(self) -> None:
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        with pytest.raises(TypeError, match="torch tensor"):
+            TorchProbabilityCategoricalDistribution(tensor=[0.5, 0.5])  # type: ignore[arg-type]
+
+    def test_logit_validation_must_be_tensor(self) -> None:
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchLogitCategoricalDistribution,
+        )
+
+        with pytest.raises(TypeError, match="torch tensor"):
+            TorchLogitCategoricalDistribution(tensor=[0.5, 0.5])  # type: ignore[arg-type]
+
+    def test_logit_zero_dim_raises(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchLogitCategoricalDistribution,
+        )
+
+        with pytest.raises(ValueError, match="at least one dimension"):
+            TorchLogitCategoricalDistribution(tensor=torch.tensor(0.5))
+
+    def test_eq_two_probability_distributions(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        a = TorchProbabilityCategoricalDistribution(tensor=torch.tensor([[0.2, 0.3, 0.5]]))
+        b = TorchProbabilityCategoricalDistribution(tensor=torch.tensor([[0.4, 0.6, 1.0]]))
+        # Normalisation makes them equal.
+        assert bool((a == b).all())
+
+    def test_eq_with_tensor(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        a = TorchProbabilityCategoricalDistribution(tensor=torch.tensor([[0.5, 0.5]]))
+        eq = a == torch.tensor([[0.5, 0.5]])
+        assert bool(eq)
+
+    def test_logit_eq(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchLogitCategoricalDistribution,
+        )
+
+        a = TorchLogitCategoricalDistribution(tensor=torch.tensor([[1.0, 2.0, 3.0]]))
+        b = TorchLogitCategoricalDistribution(tensor=torch.tensor([[1.0, 2.0, 3.0]]))
+        assert bool((a == b).all())
+
+    def test_logit_eq_with_tensor(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchLogitCategoricalDistribution,
+        )
+
+        a = TorchLogitCategoricalDistribution(tensor=torch.tensor([[1.0, 2.0]]))
+        eq = a == torch.tensor([[1.0, 2.0]])
+        assert bool(eq)
+
+    def test_hash(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchLogitCategoricalDistribution,
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        a = TorchProbabilityCategoricalDistribution(tensor=torch.tensor([[0.5, 0.5]]))
+        b = TorchLogitCategoricalDistribution(tensor=torch.tensor([[0.0, 1.0]]))
+        assert isinstance(hash(a), int)
+        assert isinstance(hash(b), int)
+
+    def test_numpy_conversion(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        d = TorchProbabilityCategoricalDistribution(tensor=torch.tensor([[0.5, 0.5]]))
+        arr = d.numpy()
+        np.testing.assert_allclose(arr, [[0.5, 0.5]])

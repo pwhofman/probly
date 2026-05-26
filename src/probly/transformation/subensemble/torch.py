@@ -68,4 +68,11 @@ def generate_torch_subensemble(
     heads = ensemble(head, num_members=num_heads, reset_params=reset_params)
     frozen_backbone = _FrozenBackbone(backbone)
 
-    return nn.ModuleList([nn.Sequential(frozen_backbone, h) for h in heads])
+    members = [nn.Sequential(frozen_backbone, h) for h in heads]
+    for m in members:
+        # Compiling members via torch.compile traces through _FrozenBackbone.forward
+        # which uses `with torch.no_grad()`, creating a graph break. Recompiling the
+        # same shared frozen backbone for each of the N members can corrupt CUDA state,
+        # surfacing as DataLoader worker SIGABRT during validation. Skip compilation.
+        m._probly_skip_compile = True  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+    return nn.ModuleList(members)

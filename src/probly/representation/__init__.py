@@ -20,4 +20,7 @@ __all__ = [
     "DiscreteCredalSet",
     "Representation",
     "Sample",
+    "TorchEmbedding",
+    "TorchEmbeddingSample",
+    "TorchEmbeddingSampleSample",
 ]

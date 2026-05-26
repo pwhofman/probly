@@ -7,6 +7,7 @@ import torch
 from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistribution,
     TorchCategoricalDistributionSample,
+    TorchProbabilityCategoricalDistribution,
 )
 from probly.representation.sample.torch import TorchSample
 from probly.representer.credal_set import compute_representative_sample
@@ -31,7 +32,7 @@ def torch_compute_representative_sample(
         _, idx = torch.topk(dist, k=k, dim=sample_dim, largest=False)
         selected_probs = torch.gather(probs, dim=sample_dim, index=idx.unsqueeze(-1).expand(-1, -1, probs.shape[-1]))
         return TorchCategoricalDistributionSample(
-            tensor=TorchCategoricalDistribution(selected_probs),
+            tensor=TorchProbabilityCategoricalDistribution(selected_probs),
             sample_dim=sample.sample_dim,
         )
     msg = f"Distance {distance} not implemented for torch tensors."

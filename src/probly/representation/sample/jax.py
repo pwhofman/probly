@@ -39,7 +39,7 @@ class JaxArraySample(Sample[jax.Array]):
             if self.sample_axis < -self.array.ndim:
                 msg = f"sample_axis {self.sample_axis} out of bounds for array with ndim {self.array.ndim}."
                 raise ValueError(msg)
-            super().__setattr__("sample_axis", self.array.ndim + self.sample_axis)
+            super(type(self), self).__setattr__("sample_axis", self.array.ndim + self.sample_axis)
 
         if not isinstance(self.array, jax.Array):
             msg = "array must be a JAX array."
@@ -57,7 +57,7 @@ class JaxArraySample(Sample[jax.Array]):
         weights: Iterable[float] | None = None,
         sample_axis: SampleAxis = "auto",
         dtype: DTypeLike | None = None,
-    ) -> Self:  # ty: ignore[invalid-method-override]
+    ) -> Self:
         """Create an JaxArraySample from a sequence of samples.
 
         Args:
@@ -100,7 +100,7 @@ class JaxArraySample(Sample[jax.Array]):
         sample: Sample[jax.Array],
         sample_axis: SampleAxis = "auto",
         dtype: DTypeLike | None = None,
-    ) -> Self:  # ty: ignore[invalid-method-override]
+    ) -> Self:
         if isinstance(sample, JaxArraySample):
             sample_array = sample.array
             sample_weights = sample.weights

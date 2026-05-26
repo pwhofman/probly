@@ -22,6 +22,7 @@ from probly.representation.credal_set._common import (
     create_probability_intervals,
 )
 from probly.representation.distribution import ArrayCategoricalDistribution
+from probly.representation.distribution.array_categorical import ArrayProbabilityCategoricalDistribution
 from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
@@ -33,7 +34,7 @@ if TYPE_CHECKING:
 def _ensure_array_categorical_distribution(value: object) -> ArrayCategoricalDistribution:
     if isinstance(value, ArrayCategoricalDistribution):
         return value
-    return ArrayCategoricalDistribution(np.asarray(value))
+    return ArrayProbabilityCategoricalDistribution(np.asarray(value))
 
 
 def _probability_interval_center(lower_bounds: np.ndarray, upper_bounds: np.ndarray) -> np.ndarray:
@@ -298,7 +299,7 @@ class ArrayProbabilityIntervalsCredalSet(
     def barycenter(self) -> ArrayCategoricalDistribution:
         """Compute the barycenter of the credal set as the center of the probability intervals."""
         center = _probability_interval_center(self.lower_bounds, self.upper_bounds)
-        return ArrayCategoricalDistribution(center)
+        return ArrayProbabilityCategoricalDistribution(center)
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]

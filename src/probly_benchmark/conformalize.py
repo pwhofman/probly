@@ -12,7 +12,7 @@ import torch
 import wandb
 import wandb.util
 
-from probly.metrics import average_set_size, empirical_coverage_classification
+from probly.evaluation import coverage as compute_coverage, efficiency as compute_efficiency
 from probly_benchmark import calibration, conformal, data, utils
 from probly_benchmark.paths import CHECKPOINT_PATH
 
@@ -134,8 +134,8 @@ def main(cfg: DictConfig) -> None:
     conformal_sets = conformal.predict_conformal_sets(logit_conformalizer, logits)
 
     metrics = {
-        "coverage": float(empirical_coverage_classification(conformal_sets, targets)),
-        "average_set_size": float(average_set_size(conformal_sets)),
+        "coverage": float(compute_coverage(conformal_sets, targets)),
+        "efficiency": float(compute_efficiency(conformal_sets)),
     }
     metrics.update(conformal.extract_conformal_metrics(cfg, logit_conformalizer))
     log_metrics = {f"conformal/{key}": value for key, value in metrics.items()}

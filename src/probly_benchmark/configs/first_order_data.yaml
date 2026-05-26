@@ -1,0 +1,21 @@
+defaults:
+  - _self_
+  - supervised_loss: cross_entropy
+  - calibration: none
+  - conformal: none
+  - recipe: ???
+  - method: ???
+
+first_order_dataset: "cifar10h"
+base_model: "resnet18"
+seed: 1
+batch_size: 512
+amp: true
+# Must match the cal_split that conformalize_credal_set used so the artifact
+# lookup name (which embeds cal_split) resolves and the held-out test split
+# is reproduced byte-identically.
+cal_split: 0.2
+wandb:
+  enabled: true
+  entity: "probly"
+  project: "cifar10-benchmark"

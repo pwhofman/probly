@@ -69,7 +69,7 @@ base_model = ResFFN()
 # 2. Configure SNGP parameters
 sngp_model = sngp(
     base_model,
-    num_inducing=128,
+    num_random_features=128,
     ridge_penalty=0.01,  # A balanced penalty for ResFFN
     norm_multiplier=0.9,
     n_power_iterations=1,

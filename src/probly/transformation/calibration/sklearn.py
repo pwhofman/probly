@@ -14,7 +14,7 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.frozen import FrozenEstimator
 
 from probly.calibrator import calibrate
-from probly.predictor import LogitClassifier
+from probly.predictor import BinaryLogitClassifier, LogitClassifier
 from probly.transformation.calibration import CalibrationPredictor
 
 from ._common import CalibrationMethodConfig, calibration_generator
@@ -53,6 +53,7 @@ class _VectorScalingState:
 
 
 @LogitClassifier.register
+@BinaryLogitClassifier.register
 class SklearnIdentityLogitEstimator(ClassifierMixin, BaseEstimator):
     """Pass-through sklearn estimator returning provided logits unchanged."""
 

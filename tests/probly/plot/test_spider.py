@@ -16,7 +16,7 @@ from probly.representation.credal_set.array import (
     ArrayProbabilityIntervalsCredalSet,
     ArraySingletonCredalSet,
 )
-from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
+from probly.representation.distribution.array_categorical import ArrayProbabilityCategoricalDistribution
 
 mpl.use("Agg")
 
@@ -33,7 +33,7 @@ def _close_figures():
 class TestSpiderPlot:
     def test_singleton(self):
         data = ArraySingletonCredalSet(
-            array=ArrayCategoricalDistribution(np.array([[0.3, 0.2, 0.1, 0.15, 0.25]])),
+            array=ArrayProbabilityCategoricalDistribution(np.array([[0.3, 0.2, 0.1, 0.15, 0.25]])),
         )
         ax = plot_credal_set(data, title="Singleton Spider")
         assert f"radar_{NUM_CLASSES}" in ax.name

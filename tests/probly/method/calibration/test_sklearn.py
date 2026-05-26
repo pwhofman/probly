@@ -17,6 +17,7 @@ from probly.method.calibration import (
     vector_scaling,
 )
 from probly.method.conformal import conformal_lac
+from probly.predictor import BinaryLogitClassifier
 from probly.transformation.calibration.sklearn import SklearnVectorScalingPredictor
 
 pytest.importorskip("sklearn")
@@ -74,7 +75,8 @@ def test_temperature_platt_and_isotonic_return_builtin_calibrated_classifier_cv(
 
     x, y = _make_binary_data(1)
 
-    calibrated_model = method(LogisticRegression(max_iter=400).fit(x, y))
+    kwargs = {"predictor_type": BinaryLogitClassifier} if method is isotonic_regression else {}
+    calibrated_model = method(LogisticRegression(max_iter=400).fit(x, y), **kwargs)
 
     assert isinstance(calibrated_model, CalibratedClassifierCV)
 

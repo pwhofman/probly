@@ -4,6 +4,8 @@ defaults:
   - conformal: none
   - method: ??? # user must specify a method.
   - recipe: ??? # user must specify a recipe.
+  # Optional combo-specific overrides keyed on (method, recipe)
+  - optional override: ${method}_${recipe}
 
 seed: 1
 wandb:

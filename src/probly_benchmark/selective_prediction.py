@@ -2,25 +2,25 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
-from probly.decider import categorical_from_mean
 from probly.evaluation.tasks import selective_prediction
-from probly.quantification import quantify
 from probly.representer import representer
 from probly_benchmark import calibration, data, utils
-from probly_benchmark.utils import init_wandb_for_evaluation, load_model_for_evaluation
+from probly_benchmark.uncertainty import SUPPORTED_DECOMPOSITIONS
+from probly_benchmark.utils import (
+    collect_uncertainties_decisions_targets,
+    init_wandb_for_evaluation,
+    load_model_for_evaluation,
+)
 
 if TYPE_CHECKING:
     import numpy as np
 
-    from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
-
 _SUPPORTED_LOSSES = ("zero_one",)
-_SUPPORTED_DECOMPOSITIONS = ("aleatoric", "epistemic", "total")
 
 
 def _compute_loss(mean_probs: np.ndarray, labels: np.ndarray, loss: str) -> np.ndarray:
@@ -73,30 +73,31 @@ def main(cfg: DictConfig) -> None:
     )  # ty: ignore[invalid-assignment]
     rep = representer(model, **rep_kwargs)
 
-    outputs, targets = utils.collect_outputs_targets(
+    if cfg.decomposition not in SUPPORTED_DECOMPOSITIONS:
+        msg = f"Unsupported decomposition: {cfg.decomposition!r}. Choose from {SUPPORTED_DECOMPOSITIONS}."
+        raise ValueError(msg)
+
+    uncertainties_t, mean_probs_t, targets_t = collect_uncertainties_decisions_targets(
+        model,
         rep,
         test_loader,
         device,
-        cfg.get("amp", False),
+        cfg.decomposition,
+        rep_kwargs=rep_kwargs or None,
+        amp_enabled=cfg.get("amp", False),
     )
-    if cfg.decomposition not in _SUPPORTED_DECOMPOSITIONS:
-        msg = f"Unsupported decomposition: {cfg.decomposition!r}. Choose from {_SUPPORTED_DECOMPOSITIONS}."
-        raise ValueError(msg)
-
-    decomposition = quantify(outputs)
-    uncertainties = decomposition[cfg.decomposition].detach().cpu().numpy()  # ty:ignore[not-subscriptable]
-
-    mean_probs = cast("TorchCategoricalDistribution", categorical_from_mean(outputs)).cpu().numpy()
-
-    labels = targets.numpy()
+    uncertainties = uncertainties_t.detach().cpu().numpy()
+    mean_probs = mean_probs_t.detach().cpu().numpy()
+    labels = targets_t.detach().cpu().numpy()
     loss = _compute_loss(mean_probs, labels, cfg.loss)
     auroc, bin_losses = selective_prediction(uncertainties, loss, n_bins=cfg.n_bins)
     print(f"Selective prediction AUROC: {auroc:.4f}")
 
     if cfg.wandb.enabled:
         run = init_wandb_for_evaluation(cfg, run_id)
-        run.summary["sp/auroc"] = auroc
-        run.summary["sp/bin_losses"] = bin_losses.tolist()
+        prefix = f"sp/{cfg.measure}/{cfg.decomposition}"
+        run.summary[f"{prefix}/auroc"] = auroc
+        run.summary[f"{prefix}/bin_losses"] = bin_losses.tolist()
         run.finish()
 
 

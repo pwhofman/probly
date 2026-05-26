@@ -1,0 +1,16 @@
+# @package _global_
+
+# Two competing forces set the optimal latent_dim H on K=1000:
+#   - H wants to grow: H * K classifier head, separability of 1000 classes,
+#     and information preservation from D_feat=2048 ResNet-50 features.
+#   - H wants to shrink: radial flow expressiveness, baseline log_evidence
+#     decay (~ -0.155 * H), and 20-epoch optimization budget.
+#
+# In a K=1000 / D=2048 joint-training smoke test (1500 steps), H=32 reaches
+# ~94% acc with vacuity AUROC ~0.70 - still in the regime where the classifier
+# is confidently-wrong on hard cases, which inverts vacuity rankings. Bumping
+# to H=64 keeps accuracy (~95%) and lifts vacuity AUROC to ~0.98. H=128
+# regresses accuracy to ~85% under the 20-epoch budget (flow underconverges).
+method:
+  params:
+    latent_dim: 64

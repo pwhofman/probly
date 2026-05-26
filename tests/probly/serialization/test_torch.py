@@ -14,7 +14,7 @@ from probly.method.conformal import LACConformalSetPredictor, conformal_lac
 from probly.method.dropout import DropoutPredictor, dropout
 from probly.method.ensemble import ensemble
 from probly.method.evidential import evidential_regression
-from probly.predictor import LogitClassifier, RandomPredictor, predict
+from probly.predictor import BinaryLogitClassifier, LogitClassifier, RandomPredictor, predict
 
 torch = pytest.importorskip("torch")
 from torch import nn  # noqa: E402
@@ -167,7 +167,7 @@ def test_torch_weights_only_roundtrip_restores_isotonic_calibration_state() -> N
     logits = torch.randn(400)
     labels = torch.bernoulli(torch.sigmoid(logits))
 
-    model = isotonic_regression(torch_identity_logit_model(), predictor_type=LogitClassifier)
+    model = isotonic_regression(torch_identity_logit_model(), predictor_type=BinaryLogitClassifier)
     calibrate(model, labels, logits)
 
     state_dict = model.state_dict()
@@ -181,7 +181,7 @@ def test_torch_weights_only_roundtrip_restores_isotonic_calibration_state() -> N
     buffer.seek(0)
     loaded_state_dict = torch.load(buffer, weights_only=True)
 
-    fresh = isotonic_regression(torch_identity_logit_model(), predictor_type=LogitClassifier)
+    fresh = isotonic_regression(torch_identity_logit_model(), predictor_type=BinaryLogitClassifier)
     fresh.load_state_dict(loaded_state_dict)
 
     x_test = torch.linspace(-3.0, 3.0, 25)

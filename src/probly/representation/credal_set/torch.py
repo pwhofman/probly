@@ -23,7 +23,10 @@ from probly.representation.credal_set._common import (
     create_probability_intervals_from_bounds,
     create_probability_intervals_from_lower_upper_array,
 )
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.distribution.torch_categorical import (
+    TorchCategoricalDistribution,
+    TorchProbabilityCategoricalDistribution,
+)
 from probly.representation.sample.torch import TorchSample
 from probly.utils.torch import intersection_probability
 
@@ -36,7 +39,7 @@ if TYPE_CHECKING:
 def _ensure_torch_categorical_distribution(value: object) -> TorchCategoricalDistribution:
     if isinstance(value, TorchCategoricalDistribution):
         return value
-    return TorchCategoricalDistribution(torch.as_tensor(value))
+    return TorchProbabilityCategoricalDistribution(torch.as_tensor(value))
 
 
 def _sample_probabilities(
@@ -94,13 +97,21 @@ class TorchConvexCredalSet(
     ) -> Self:
         probabilities = _sample_probabilities(sample)
         vertices = torch.moveaxis(probabilities, 0, -2)
-        return cls(tensor=TorchCategoricalDistribution(vertices))
+        return cls(tensor=TorchProbabilityCategoricalDistribution(vertices))
 
     @override
     @property
     def num_classes(self) -> int:
         """Get the number of classes."""
         return self.tensor.num_classes
+
+    def lower(self) -> torch.Tensor:
+        """Return the per-class lower probability envelope of the convex hull."""
+        return torch.amin(self.tensor.probabilities, dim=-2)
+
+    def upper(self) -> torch.Tensor:
+        """Return the per-class upper probability envelope of the convex hull."""
+        return torch.amax(self.tensor.probabilities, dim=-2)
 
     @override
     @property
@@ -138,7 +149,7 @@ class TorchDistanceBasedCredalSet(
         tv_dists = 0.5 * torch.sum(diff, dim=-1)
         radius = torch.max(tv_dists, dim=0).values
         return cls(
-            nominal=TorchCategoricalDistribution(nominal),
+            nominal=TorchProbabilityCategoricalDistribution(nominal),
             radius=torch.as_tensor(radius),
         )
 
@@ -314,7 +325,7 @@ class TorchDirichletLevelSetCredalSet(
     @property
     def barycenter(self) -> TorchCategoricalDistribution:
         """Return the Dirichlet mean as the barycenter."""
-        return TorchCategoricalDistribution(self.alphas / self.alphas.sum(dim=-1, keepdim=True))
+        return TorchProbabilityCategoricalDistribution(self.alphas / self.alphas.sum(dim=-1, keepdim=True))
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
@@ -361,6 +372,14 @@ class TorchProbabilityIntervalsCredalSet(
         """Compute interval width for each class."""
         return self.upper_bounds - self.lower_bounds
 
+    def lower(self) -> torch.Tensor:
+        """Return the per-class lower probability envelope (alias for ``lower_bounds``)."""
+        return self.lower_bounds
+
+    def upper(self) -> torch.Tensor:
+        """Return the per-class upper probability envelope (alias for ``upper_bounds``)."""
+        return self.upper_bounds
+
     def contains(self, probabilities: torch.Tensor) -> torch.Tensor:
         """Check whether probabilities are inside the intervals."""
         within_bounds = (probabilities >= self.lower_bounds) & (probabilities <= self.upper_bounds)
@@ -369,7 +388,7 @@ class TorchProbabilityIntervalsCredalSet(
     @override
     @property
     def barycenter(self) -> TorchCategoricalDistribution:
-        return TorchCategoricalDistribution(intersection_probability(self.lower_bounds, self.upper_bounds))
+        return TorchProbabilityCategoricalDistribution(intersection_probability(self.lower_bounds, self.upper_bounds))
 
 
 create_probability_intervals.register(TorchCategoricalDistribution, TorchProbabilityIntervalsCredalSet.from_sample)
@@ -393,14 +412,38 @@ def _create_probability_intervals_from_bounds(
     return TorchProbabilityIntervalsCredalSet(probs - lower, probs + upper)
 
 
+def _broadcast_radius_to_batch(
+    radius: torch.Tensor | float,
+    batch_size: int,
+    *,
+    device: torch.device | None = None,
+    dtype: torch.dtype | None = None,
+) -> torch.Tensor:
+    """Promote a scalar radius to a per-sample tensor matching the nominal's batch dim.
+
+    Per-sample radii are required for the protected-axes machinery to permit
+    ``torch.cat`` across a batch of credal sets. Also aligns device/dtype with
+    the center so downstream ``nominal - radius`` doesn't raise a device error.
+    """
+    radius_t = torch.as_tensor(radius)
+    if device is not None:
+        radius_t = radius_t.to(device=device)
+    if dtype is not None:
+        radius_t = radius_t.to(dtype=dtype)
+    if radius_t.ndim == 0:
+        radius_t = radius_t.expand(batch_size).contiguous()
+    return radius_t
+
+
 @create_distance_based_credal_set_from_center_and_radius.register(torch.Tensor)
 def _create_distance_based_credal_set_from_center_and_radius(
     center: torch.Tensor,
     radius: torch.Tensor,
 ) -> TorchDistanceBasedCredalSet:
+    batch_size = center.shape[0] if center.ndim >= 2 else 1
     return TorchDistanceBasedCredalSet(
-        nominal=TorchCategoricalDistribution(center),
-        radius=radius,
+        nominal=TorchProbabilityCategoricalDistribution(center),
+        radius=_broadcast_radius_to_batch(radius, batch_size, device=center.device, dtype=center.dtype),
     )
 
 
@@ -409,9 +452,11 @@ def _create_distance_based_credal_set_from_categorical_distribution(
     center: TorchCategoricalDistribution,
     radius: torch.Tensor,
 ) -> TorchDistanceBasedCredalSet:
+    nominal_tensor = center.tensor
+    batch_size = nominal_tensor.shape[0] if nominal_tensor.ndim >= 2 else 1
     return TorchDistanceBasedCredalSet(
         nominal=center,
-        radius=torch.as_tensor(radius),
+        radius=_broadcast_radius_to_batch(radius, batch_size, device=nominal_tensor.device, dtype=nominal_tensor.dtype),
     )
 
 

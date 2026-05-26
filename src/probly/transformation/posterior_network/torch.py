@@ -21,22 +21,29 @@ class TorchPosteriorNetwork(nn.Module, PosteriorNetworkPredictor):
         encoder: nn.Module,
         latent_dim: int,
         num_classes: int,
-        class_counts: list | torch.Tensor,
+        *,
+        encoder_dim: int | None = None,
+        class_counts: list | torch.Tensor | None = None,
         num_flows: int = 6,
     ) -> None:
         """Initialize a posterior network."""
         super().__init__()
         self.encoder = encoder
-        encoder_dim = get_output_dim(encoder)
-        self.fc = nn.Linear(encoder_dim, latent_dim)
+        self.encoder_dim = get_output_dim(encoder) if encoder_dim is None else encoder_dim
+        self.latent_encoder = nn.Linear(self.encoder_dim, latent_dim)
         self.batch_norm = nn.BatchNorm1d(latent_dim)
         self.norm_flow = RadialNormalizingFlowStack(dim=latent_dim, num_classes=num_classes, num_flows=num_flows)
-        self.register_buffer("class_counts", torch.tensor(class_counts, dtype=torch.float))
+        counts = (
+            torch.ones(num_classes, dtype=torch.float)
+            if class_counts is None
+            else torch.as_tensor(class_counts, dtype=torch.float)
+        )
+        self.register_buffer("class_counts", counts)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of posterior network."""
         x = self.encoder(x)
-        x = self.fc(x)
+        x = self.latent_encoder(x)
         x = self.batch_norm(x)
         log_density = self.norm_flow.log_prob(x)
         # Compute alphas in fp32: under AMP, exp() of a moderately negative

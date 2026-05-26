@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from probly.representer import ConvexCredalSetRepresenter, representer
+from probly.representer import SampleMeanConvexCredalSetRepresenter, representer
 from probly.transformation.bayesian_ensemble import BayesianEnsemblePredictor, bayesian_ensemble
 
 
@@ -14,7 +14,7 @@ class CredalBNNPredictor[**In, Out](BayesianEnsemblePredictor[In, Out], Protocol
 
 
 credal_bnn = CredalBNNPredictor.register_factory(bayesian_ensemble, autocast_builtins=True)
-representer.register(CredalBNNPredictor, ConvexCredalSetRepresenter)
+representer.register(CredalBNNPredictor, SampleMeanConvexCredalSetRepresenter)
 
 
 __all__ = ["CredalBNNPredictor", "credal_bnn"]

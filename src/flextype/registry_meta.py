@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABCMeta
 import functools
-from typing import TYPE_CHECKING, Any, Protocol, is_protocol, overload, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, cast, is_protocol, overload, runtime_checkable
 from weakref import ReferenceType, WeakSet, ref
 
 from flextype.isinstance import _find_closest_string_type, _split_lazy_type
@@ -415,7 +415,10 @@ class ProtocolRegistryMeta[T](RegistryMeta[T], type(Protocol)):
                 subclasshook = _lazy_subclass_hook
             else:
                 if isinstance(subclasshook, classmethod):
-                    subclasshook = subclasshook.__func__
+                    subclasshook = cast(
+                        "Callable[[RegistryMeta[T], type], bool]",
+                        subclasshook.__func__,
+                    )
                 subclasshook = _lazy_subclass_hook_with_pre_hook(subclasshook)
             cls.__subclasshook__ = subclasshook  # ty:ignore[invalid-assignment]
 

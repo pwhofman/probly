@@ -7,20 +7,26 @@ import random
 import secrets
 from typing import TYPE_CHECKING, Any, cast
 
+from laplace.baselaplace import BaseLaplace
+from laplace.utils.feature_extractor import FeatureExtractor
+from laplace.utils.matrix import KronDecomposed
 import numpy as np
-from omegaconf import OmegaConf
+from omegaconf import DictConfig, OmegaConf
 import torch
 from tqdm import tqdm
 import wandb
 
+from probly.quantification import quantify
 from probly_benchmark import calibration, conformal, metadata
 from probly_benchmark.builders import BuildContext, build_model
+from probly_benchmark.decision import decide
+from probly_benchmark.uncertainty import select_uncertainty
 
 if TYPE_CHECKING:
-    from omegaconf import DictConfig
     from torch import nn
     from torch.utils.data import DataLoader
 
+    from probly.quantification.notion import NotionName
     from probly.representation import Representation
     from probly.representer import Representer
 
@@ -93,8 +99,10 @@ def collect_outputs_targets(
     outputs = []
     targets = []
 
+    # BaseLaplace uses Cholesky decomposition internally which doesn't support float16.
+    use_amp = amp_enabled and not isinstance(getattr(rep, "predictor", None), BaseLaplace)
     for inputs, targets_ in tqdm(loader, desc="Batch"):
-        if amp_enabled:
+        if use_amp:
             with torch.amp.autocast(device.type):
                 outputs_ = rep.predict(inputs.to(device))
         else:
@@ -103,6 +111,124 @@ def collect_outputs_targets(
         targets.append(targets_)
 
     return torch.cat(outputs), torch.cat(targets)
+
+
+@torch.no_grad()
+def collect_uncertainties(
+    rep: Representer,
+    loader: torch.utils.data.DataLoader,
+    device: torch.device,
+    decomposition: NotionName,
+    amp_enabled: bool = False,
+) -> torch.Tensor:
+    """Collect per-batch uncertainty scores; quantify per batch then concat.
+
+    Per-batch quantification preserves method-specific decomposition markers
+    that ``torch.cat`` on the underlying representations would strip.
+    """
+    uncertainties: list[torch.Tensor] = []
+
+    # BaseLaplace uses Cholesky decomposition internally which doesn't support float16.
+    use_amp = amp_enabled and not isinstance(getattr(rep, "predictor", None), BaseLaplace)
+    for inputs, _ in tqdm(loader, desc="Batch"):
+        if use_amp:
+            with torch.amp.autocast(device.type):
+                outputs_ = rep.predict(inputs.to(device))
+        else:
+            outputs_ = rep.predict(inputs.to(device))
+        uncertainty = cast("torch.Tensor", select_uncertainty(quantify(outputs_), decomposition))
+        uncertainties.append(uncertainty)
+
+    return torch.cat(uncertainties)
+
+
+@torch.no_grad()
+def collect_uncertainties_decisions_targets(
+    model: nn.Module,
+    rep: Representer,
+    loader: DataLoader,
+    device: torch.device,
+    decomposition: NotionName,
+    rep_kwargs: dict[str, Any] | None = None,
+    amp_enabled: bool = False,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Per-batch ``(uncertainties, mean_probs, targets)`` for selective prediction.
+
+    Per-batch counterpart to :func:`collect_outputs_decisions_targets` — quantifies
+    each batch immediately so method-specific decomposition markers survive concat.
+    """
+    uncertainties: list[torch.Tensor] = []
+    all_mean_probs: list[torch.Tensor] = []
+    all_targets: list[torch.Tensor] = []
+
+    # BaseLaplace uses Cholesky decomposition internally which doesn't support float16.
+    use_amp = amp_enabled and not isinstance(model, BaseLaplace)
+    for inputs, targets_ in tqdm(loader, desc="Batch"):
+        inputs_dev = inputs.to(device)
+        if use_amp:
+            with torch.amp.autocast(device.type):
+                outputs_ = rep.predict(inputs_dev)
+                decision = decide(model, inputs_dev, rep_kwargs=rep_kwargs)
+        else:
+            outputs_ = rep.predict(inputs_dev)
+            decision = decide(model, inputs_dev, rep_kwargs=rep_kwargs)
+        uncertainty = cast("torch.Tensor", select_uncertainty(quantify(outputs_), decomposition))
+        uncertainties.append(uncertainty)
+        all_mean_probs.append(cast("torch.Tensor", decision.probabilities))
+        all_targets.append(targets_)
+
+    return torch.cat(uncertainties), torch.cat(all_mean_probs), torch.cat(all_targets)
+
+
+@torch.no_grad()
+def collect_outputs_decisions_targets(
+    model: nn.Module,
+    rep: Representer,
+    loader: DataLoader,
+    device: torch.device,
+    rep_kwargs: dict[str, Any] | None = None,
+    amp_enabled: bool = False,
+) -> tuple[Representation, np.ndarray, torch.Tensor]:
+    """Collect representer outputs, decisions, and targets from a data loader.
+
+    Runs a single pass over the data loader, producing both the uncertainty
+    representation (for quantification) and the per-sample class-probability
+    decision (for loss computation) in one go.
+
+    Args:
+        model: The model passed to :func:`~probly_benchmark.decision.decide`.
+        rep: A representer to produce uncertainty representations.
+        loader: DataLoader to iterate over.
+        device: Device to run inference on.
+        rep_kwargs: Representer parameters forwarded to ``decide``.
+        amp_enabled: Whether to use automatic mixed precision.
+
+    Returns:
+        A tuple containing:
+            - outputs: Concatenated representer outputs.
+            - mean_probs: Class probabilities of shape ``(n, n_classes)`` as a numpy array.
+            - targets: Concatenated target tensor.
+    """
+    all_outputs = []
+    all_mean_probs = []
+    all_targets = []
+
+    # BaseLaplace uses Cholesky decomposition internally which doesn't support float16.
+    use_amp = amp_enabled and not isinstance(model, BaseLaplace)
+    for inputs, targets_ in tqdm(loader, desc="Batch"):
+        inputs_dev = inputs.to(device)
+        if use_amp:
+            with torch.amp.autocast(device.type):
+                outputs_ = rep.predict(inputs_dev)
+                decision = decide(model, inputs_dev, rep_kwargs=rep_kwargs)
+        else:
+            outputs_ = rep.predict(inputs_dev)
+            decision = decide(model, inputs_dev, rep_kwargs=rep_kwargs)
+        all_outputs.append(outputs_)
+        all_mean_probs.append(decision.numpy(force=True))  # ty:ignore[unresolved-attribute]
+        all_targets.append(targets_)
+
+    return torch.cat(all_outputs), np.concatenate(all_mean_probs, axis=0), torch.cat(all_targets)
 
 
 @torch.no_grad()
@@ -132,10 +258,11 @@ def collect_outputs_targets_raw(
     model.eval()
     outputs = []
     targets = []
-
+    # BaseLaplace uses Cholesky decomposition internally which doesn't support float16.
+    use_amp = amp_enabled and not isinstance(model, BaseLaplace)
     for inputs_, targets_ in tqdm(loader, desc="Batch"):
         inputs = inputs_.to(device, non_blocking=True)
-        if amp_enabled:
+        if use_amp:
             with torch.amp.autocast(device.type):
                 outputs_ = model(inputs)
         else:
@@ -157,6 +284,26 @@ def get_supervised_loss_name(cfg: DictConfig) -> str:
 def _safe_artifact_token(value: object) -> str:
     """Make a value safe for use in a wandb artifact name segment."""
     return "".join(char if char.isalnum() or char in "._-" else "_" for char in str(value))
+
+
+_CREDAL_ALPHA_METHODS = frozenset({"credal_relative_likelihood", "efficient_credal_prediction"})
+
+
+def credal_alpha_name_suffix(cfg: DictConfig) -> str:
+    """Return the alpha suffix for credal methods whose artifacts differ by alpha.
+
+    Args:
+        cfg: Hydra config containing ``method.name`` and ``method.train.alpha``.
+
+    Returns:
+        A string like ``_alpha0_5`` when the method is alpha-dependent, else ``""``.
+    """
+    if cfg.method.name not in _CREDAL_ALPHA_METHODS:
+        return ""
+    alpha = cfg.method.get("train", {}).get("alpha")
+    if alpha is None:
+        return ""
+    return f"_alpha{_safe_artifact_token(alpha)}"
 
 
 def supervised_loss_name_suffix(cfg: DictConfig) -> str:
@@ -221,9 +368,13 @@ def resolve_artifact_name(
     """
     calibration_suffix = calibration_name_suffix(cfg) if include_calibration else ""
     conformal_suffix = conformal_name_suffix(cfg) if include_conformal else ""
+    # cal_split is only embedded in artifact names produced by conformal fitting runs
+    # (conformalize_credal_set.yaml). For methods trained without conformal, the
+    # artifact was saved without a cal_split suffix, so don't add one here either.
+    cal_split_suffix = cal_split_name_suffix(cfg) if conformal_suffix else ""
     return (
-        f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
-        f"{cal_split_name_suffix(cfg)}"
+        f"{cfg.method.name}{credal_alpha_name_suffix(cfg)}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+        f"{cal_split_suffix}"
         f"{supervised_loss_name_suffix(cfg)}"
         f"{calibration_suffix}"
         f"{conformal_suffix}"
@@ -253,7 +404,7 @@ def _download_checkpoint_from_wandb(
     device: torch.device,
 ) -> tuple[dict[str, Any], str]:
     """Download a model artifact from wandb and return the raw checkpoint."""
-    api = wandb.Api()
+    api = wandb.Api(timeout=60)
     full_name = f"{entity}/{project}/{artifact_name}:latest"
 
     try:
@@ -272,9 +423,24 @@ def _download_checkpoint_from_wandb(
         msg = f"Expected exactly one .pt file in artifact, found {len(pt_files)}"
         raise RuntimeError(msg)
 
-    checkpoint = torch.load(pt_files[0], map_location=device, weights_only=False)
+    load_device = torch.device("cpu") if device.type == "mps" else device
+    checkpoint = torch.load(pt_files[0], map_location=load_device, weights_only=False)
     run_id = artifact.logged_by().id
     return checkpoint, run_id
+
+
+def _move_laplace_hessian_to_device(model: BaseLaplace, device: torch.device) -> None:
+    """Move Laplace H and mean to device; load_state_dict skips this for non-prior_precision fields."""
+    m = cast("Any", model)
+    h = m.H
+    if isinstance(h, KronDecomposed):
+        h.eigenvectors = [tuple(t.to(device) for t in pair) for pair in h.eigenvectors]
+        h.eigenvalues = [tuple(t.to(device) for t in pair) for pair in h.eigenvalues]
+        h.deltas = h.deltas.to(device)
+    elif isinstance(h, torch.Tensor):
+        m.H = h.to(device)
+    if isinstance(m.mean, torch.Tensor):
+        m.mean = m.mean.to(device)
 
 
 def _build_uncalibrated_model_from_checkpoint(
@@ -295,11 +461,55 @@ def _build_uncalibrated_model_from_checkpoint(
         train_loader=None,
     )
 
+    def _to_device(m: nn.Module) -> nn.Module:
+        if device.type == "mps":
+            m = m.to(torch.float32)
+        return m.to(device)
+
     build_method = target_method if target_method is not None else cfg["method"]["name"]
     model = build_model(build_method, method_params, ctx)
-    model.load_state_dict(checkpoint["model_state_dict"])
-    model.to(device)
-    model.eval()
+    if isinstance(model, list):
+        for m, state in zip(model, checkpoint["model_state_dict"], strict=True):
+            m = cast("nn.Module", m)
+            m.load_state_dict(state)
+            _to_device(m)
+            m.eval()
+    elif isinstance(model, BaseLaplace):
+        # Load state dict first while model.model is still on CPU so that _device returns CPU
+        # and the prior_precision setter also lands on CPU.  After that we move the inner module
+        # to the target device, re-trigger the setter (which now moves prior_precision to the new
+        # _device), and explicitly move H which has no device-aware setter of its own.
+        state = checkpoint["model_state_dict"]
+        if not (isinstance(state, dict) and "laplace" in state and "inner_model" in state):
+            # ``BaseLaplace.state_dict()`` only saves Laplace-internal state (``mean``, ``H``,
+            # ``prior_precision``, ...), NOT the inner network's parameters. Loading that alone
+            # leaves the feature extractor untrained and silently produces ~random predictions
+            # at sampling time. Old artifacts saved before train.py:_get_state_dict was patched
+            # are unrecoverable -- fail loud rather than serve wrong numbers.
+            msg = (
+                "BaseLaplace checkpoint is missing 'inner_model' -- likely saved with a buggy "
+                "version that only stored Laplace state. Sampling-based predictions would be "
+                "wrong (random feature extractor). Re-train Laplace to produce a fixed artifact."
+            )
+            raise RuntimeError(msg)
+        inner = model.model.model if isinstance(model.model, FeatureExtractor) else model.model
+        inner.load_state_dict(state["inner_model"])
+        model.load_state_dict(state["laplace"])
+        _to_device(model.model)
+        model.model.eval()
+        # After moving the inner module to the target device, model._device now returns that
+        # device. The prior_precision setter ran during load_state_dict above when model._device
+        # was still CPU, so prior_precision stays on CPU and mismatches H (whose tensors were
+        # placed on the target device via torch.load's map_location). Re-trigger the setter so
+        # prior_precision lands on the target device, then move H and mean explicitly since they
+        # have no device-aware setter. Required on CUDA and MPS — safe (no-op) when already
+        # co-located.
+        model.prior_precision = model.prior_precision
+        _move_laplace_hessian_to_device(model, device)
+    else:
+        model.load_state_dict(checkpoint["model_state_dict"])
+        _to_device(model)
+        model.eval()
     return model, cfg
 
 
@@ -424,7 +634,12 @@ def load_model_for_evaluation(
         return load_model_from_wandb(artifact_name, cfg.wandb.entity, cfg.wandb.project, device)
 
     source_method, member_index = _parse_load_from(load_from)
-    artifact_name = f"{source_method}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+    source_alpha = ""
+    if isinstance(load_from, DictConfig):
+        alpha_val = load_from.get("alpha")
+        if alpha_val is not None:
+            source_alpha = f"_alpha{_safe_artifact_token(alpha_val)}"
+    artifact_name = f"{source_method}{source_alpha}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
 
     if member_index is not None:
         model, train_cfg, run_id = load_model_from_wandb(artifact_name, cfg.wandb.entity, cfg.wandb.project, device)
@@ -441,7 +656,7 @@ def load_model_for_evaluation(
 
 def _find_existing_run_id(entity: str, project: str, run_name: str) -> str | None:
     """Return the ID of the most recent wandb run with the given display name, or None."""
-    api = wandb.Api()
+    api = wandb.Api(timeout=60)
     runs = api.runs(
         f"{entity}/{project}",
         filters={"display_name": run_name},
@@ -478,7 +693,7 @@ def init_wandb_for_evaluation(
         ``run.finish()``.
     """
     if cfg.method.get("load_from"):
-        run_name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+        run_name = f"{cfg.method.name}{credal_alpha_name_suffix(cfg)}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
         existing_id = _find_existing_run_id(cfg.wandb.entity, cfg.wandb.project, run_name)
         if existing_id is not None:
             return wandb.init(
@@ -490,7 +705,7 @@ def init_wandb_for_evaluation(
         # Fetch the source run's config so training-relevant parameters are
         # carried over (e.g. base_model, dataset, seed, training hyperparams).
         # The current eval cfg is merged on top, so method-specific overrides win.
-        api = wandb.Api()
+        api = wandb.Api(timeout=60)
         source_run = api.run(f"{cfg.wandb.entity}/{cfg.wandb.project}/{run_id}")
         source_config: dict[str, Any] = dict(source_run.config)
         return wandb.init(

@@ -1,0 +1,24 @@
+defaults:
+  - _self_
+  - supervised_loss: cross_entropy
+  - calibration: none
+  - conformal: tv
+  - recipe: ???
+  - method: ???
+
+first_order_dataset: "cifar10h"
+seed: 1
+wandb:
+  enabled: true
+  entity: "probly"
+  project: "test"
+
+# models will always be saved in wandb, but this option controls whether they are also saved to disk
+save_to_disk: false
+
+amp: true
+
+cal_split: 0.2
+
+# When "base", load `base_{base_model}_{dataset}_{seed}`; null falls back to resolve_artifact_name.
+load_from: "base"

@@ -1,0 +1,6 @@
+# @package _global_
+
+# 0.05 to keep W_l init near linear to preserve imagenet weights
+method:
+  params:
+    random_feature_init_std: 0.05

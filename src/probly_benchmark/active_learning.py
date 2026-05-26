@@ -6,11 +6,11 @@ import fcntl
 import json
 import logging
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import hydra
+import numpy as np
 from omegaconf import DictConfig, OmegaConf
-import torch
 import wandb
 import wandb.util
 
@@ -26,28 +26,31 @@ from probly.evaluation.active_learning import (
     compute_nauc,
     from_dataset,
 )
-from probly.quantification.notion import EpistemicUncertainty, Notion, TotalUncertainty
+from probly_benchmark import utils
 from probly_benchmark.al_estimators import BaseEstimator, UncertaintyEstimator
 from probly_benchmark.data import get_data_al
 from probly_benchmark.metadata import AL_DATASETS
-from probly_benchmark.utils import set_seed
+from probly_benchmark.uncertainty import SUPPORTED_DECOMPOSITIONS
+
+if TYPE_CHECKING:
+    import torch
+
+    from probly.quantification.notion import NotionName
 
 logger = logging.getLogger(__name__)
 
-_UNCERTAINTY_NOTIONS = {"EU": EpistemicUncertainty, "TU": TotalUncertainty}
 
-
-def _resolve_notion(cfg: DictConfig) -> type[Notion]:
+def _resolve_notion(cfg: DictConfig) -> NotionName:
     """Read the uncertainty notion from the strategy config and validate it."""
-    notion_key = cfg.al_strategy.get("notion", "EU")
-    permitted = list(cfg.al_strategy.get("permitted_notions", list(_UNCERTAINTY_NOTIONS)))
-    if notion_key not in permitted:
-        msg = f"Notion {notion_key!r} is not permitted for strategy {cfg.al_strategy.name!r}. Allowed: {permitted}"
+    notion = cfg.al_strategy.get("notion", "epistemic")
+    permitted = list(cfg.al_strategy.get("permitted_notions", list(SUPPORTED_DECOMPOSITIONS)))
+    if notion not in permitted:
+        msg = f"Notion {notion!r} is not permitted for strategy {cfg.al_strategy.name!r}. Allowed: {permitted}"
         raise ValueError(msg)
-    if notion_key not in _UNCERTAINTY_NOTIONS:
-        msg = f"Unknown uncertainty notion {notion_key!r}. Known: {list(_UNCERTAINTY_NOTIONS)}"
+    if notion not in SUPPORTED_DECOMPOSITIONS:
+        msg = f"Unknown uncertainty notion {notion!r}. Choose from {SUPPORTED_DECOMPOSITIONS}."
         raise ValueError(msg)
-    return _UNCERTAINTY_NOTIONS[notion_key]
+    return cast("NotionName", notion)
 
 
 def _build_estimator(
@@ -69,6 +72,17 @@ def _build_estimator(
     raw_train = cfg.method.get("train")
     train_kwargs = cast("dict[str, Any]", OmegaConf.to_container(raw_train, resolve=True)) if raw_train else {}
 
+    # ``method.active_learning`` may carry an optional ``train`` sub-block whose
+    # entries override (only at AL run time) the corresponding keys from the
+    # global ``method.train`` config. Anything else under ``method.active_learning``
+    # is forwarded to the representer as ``rep_kwargs``.
+    raw_al = cfg.method.get("active_learning")
+    al_block: dict[str, Any] = cast("dict[str, Any]", OmegaConf.to_container(raw_al, resolve=True)) if raw_al else {}
+    al_train_overrides = al_block.pop("train", None) or {}
+    if al_train_overrides:
+        train_kwargs = {**train_kwargs, **al_train_overrides}
+    rep_kwargs: dict[str, Any] = al_block
+
     needs_conformal = cfg.conformal.name != "none"
 
     if method == "base" and not needs_conformal:
@@ -82,9 +96,6 @@ def _build_estimator(
             device=device,
             in_features=in_features,
         )
-
-    raw_al = cfg.method.get("active_learning")
-    rep_kwargs = cast("dict[str, Any]", OmegaConf.to_container(raw_al, resolve=True)) if raw_al else {}
 
     return UncertaintyEstimator(
         cfg=cfg,
@@ -146,8 +157,8 @@ def _append_result(results_file: Path, result: dict[str, Any]) -> None:
 @hydra.main(version_base=None, config_path="configs/", config_name="active_learning")
 def main(cfg: DictConfig) -> float:
     """Run a single active learning experiment."""
-    set_seed(cfg.seed)
-    device = torch.device(cfg.device)
+    utils.set_seed(cfg.seed)
+    device = utils.get_device(cfg.get("device", None))
 
     # --- Data ---
     dataset_kwargs: dict[str, Any] = {}
@@ -163,6 +174,32 @@ def main(cfg: DictConfig) -> float:
         len(x_test),
         num_classes,
     )
+
+    # --- Optional pool / test subsampling for huge datasets (e.g. openml_155, _156).
+    # Caps the unlabeled pool and/or test set to a maximum size when the raw
+    # split exceeds the configured threshold. Drives a separate RNG stream
+    # (seed = cfg.seed + cfg.subsample_seed_offset) so the subsample is
+    # reproducible and independent of the model / strategy / estimator seed.
+    pool_cap = cfg.get("unlabeled_pool_max_size")
+    test_cap = cfg.get("test_max_size")
+    if pool_cap is not None or test_cap is not None:
+        sub_rng = np.random.default_rng(int(cfg.seed) + int(cfg.get("subsample_seed_offset", 0)))
+        if pool_cap is not None and len(x_train) > int(pool_cap):
+            idx = sub_rng.choice(len(x_train), size=int(pool_cap), replace=False)
+            x_train, y_train = x_train[idx], y_train[idx]
+            logger.info(
+                "Subsampled train pool: %d -> %d (unlabeled_pool_max_size)",
+                len(idx),
+                int(pool_cap),
+            )
+        if test_cap is not None and len(x_test) > int(test_cap):
+            idx = sub_rng.choice(len(x_test), size=int(test_cap), replace=False)
+            x_test, y_test = x_test[idx], y_test[idx]
+            logger.info(
+                "Subsampled test set:  %d -> %d (test_max_size)",
+                len(idx),
+                int(test_cap),
+            )
 
     # --- Pool ---
     pool = from_dataset(
