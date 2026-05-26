@@ -49,7 +49,7 @@ posterior_network_model = posterior_network(
 opt = torch.optim.Adam(posterior_network_model.parameters(), lr=1e-3)
 
 posterior_network_model.train()
-for epoch in range(1000):
+for epoch in range(750):
     out = posterior_network_model(X_tensor)
     log_probs = torch.digamma(out) - torch.digamma(out.sum(dim=-1, keepdim=True))
     loss = nn.functional.nll_loss(log_probs, y_tensor)

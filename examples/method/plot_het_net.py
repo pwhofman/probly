@@ -1,5 +1,5 @@
 """====================
-HET-Net on Two Moons
+Het-Net on Two Moons
 ====================
 """
 
@@ -27,8 +27,12 @@ X, y = make_moons(n_samples=500, noise=0.0, random_state=0)
 rng = np.random.default_rng(0)
 
 noise_scale = np.zeros_like(X[:, 0])
-noise_scale[y == 0] = 0.05 + 1.0 * np.clip(-X[y == 0, 0], 0, None)
-noise_scale[y == 1] = 0.05 + 1.0 * np.clip(X[y == 1, 0] - 1.5, 0, None)
+
+x0 = X[y == 0, 0]
+noise_scale[y == 0] = 0.05 + 0.4 * (np.max(x0) - x0) / (np.max(x0) - np.min(x0))
+
+x1 = X[y == 1, 0]
+noise_scale[y == 1] = 0.05 + 0.4 * (x1 - np.min(x1)) / (np.max(x1) - np.min(x1))
 
 X += rng.normal(scale=np.expand_dims(noise_scale, 1), size=X.shape)
 
