@@ -17,7 +17,7 @@ def replace_torch_dropconnect(
     rng_collection: Any = None,  # noqa: ANN401, ARG001
     rngs: Any = None,  # noqa: ANN401, ARG001
 ) -> DropConnectLinear:
-    """Replace a given layer by a DropConnectLinear layer based on :cite:`mobinyDropConnectEffective2019`."""
+    """Replace a given layer by a DropConnectLinear layer based on :cite:`mobiny2021dropconnect`."""
     return DropConnectLinear(obj, p=p)
 
 

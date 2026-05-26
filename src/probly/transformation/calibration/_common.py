@@ -65,7 +65,7 @@ def calibration_generator[**In, Out](
 @predictor_transformation(permitted_predictor_types=(LogitClassifier,), preserve_predictor_type=True)
 @CalibrationPredictor.register_factory
 def temperature_scaling[**In, Out](base: Predictor[In, Out]) -> CalibrationPredictor[In, Out]:
-    """Create a temperature scaling calibration wrapper."""
+    """Create a temperature scaling calibration wrapper based on :cite:`guoOnCalibration2017`."""
     return calibration_generator(
         base,
         config=CalibrationMethodConfig(method="temperature", vector_scale=False, use_bias=False),
@@ -88,7 +88,7 @@ def vector_scaling[**In, Out](
     base: Predictor[In, Out],
     num_classes: int | None = None,
 ) -> CalibrationPredictor[In, Out]:
-    """Create a vector scaling calibration wrapper."""
+    """Create a vector scaling calibration wrapper based on :cite:`guoOnCalibration2017`."""
     if num_classes is not None and num_classes <= 1:
         msg = f"vector scaling expects num_classes > 1, but got {num_classes}."
         raise ValueError(msg)

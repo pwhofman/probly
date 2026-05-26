@@ -26,8 +26,8 @@ def _enforce_train_mode(obj: torch.nn.Module, state: State) -> tuple[torch.nn.Mo
 def register_forced_train_mode(cls: LazyType) -> None:
     """Register a class to be forced into train mode during sampling.
 
-    This enables Monte Carlo sampling techniques like MC Dropout :cite:`galDropoutBayesian2016` or DropConnect :cite:
-    `mobinyDropConnectEffective2019`.
+    This enables Monte Carlo sampling techniques like MC Dropout :cite:`galDropoutBayesian2016`
+    or DropConnect :cite:`mobiny2021dropconnect`.
     """
     sampling_preparation_traverser.register(cls, _enforce_train_mode)
 

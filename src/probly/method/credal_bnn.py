@@ -14,6 +14,21 @@ class CredalBNNPredictor[**In, Out](BayesianEnsemblePredictor[In, Out], Protocol
 
 
 credal_bnn = CredalBNNPredictor.register_factory(bayesian_ensemble, autocast_builtins=True)
+_credal_bnn_doc = """\
+Create a Credal BNN predictor from a base predictor based on :cite:`caprio2023credalbnn`.
+
+Args:
+    base: Predictor, The base model to replicate into a Bayesian ensemble.
+    use_base_weights: bool, If True, the weights of the base model are used as the prior mean. Default is False.
+    posterior_std: float | list | None, Initial posterior standard deviation(s). Default is 0.05.
+    prior_mean: float | list | None, Prior mean(s). Default is 0.0.
+    prior_std: float | list | None, Prior standard deviation(s). Default is 1.0.
+    num_members: int, Number of BNN ensemble members. Default is 5.
+
+Returns:
+    CredalBNNPredictor, The credal BNN predictor outputting a convex credal set.
+"""
+credal_bnn.__doc__ = _credal_bnn_doc
 representer.register(CredalBNNPredictor, SampleMeanConvexCredalSetRepresenter)
 
 

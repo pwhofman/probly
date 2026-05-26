@@ -57,7 +57,7 @@ def het_net[**In, Out: CategoricalDistribution](
     temperature: float = 1.0,
     is_parameter_efficient: bool = False,
 ) -> HetNetPredictor[In, Out]:
-    """Create a HetNets predictor from a base predictor base on :cite:`collier2021hetnets`.
+    """Create a HetNets predictor from a base predictor base on :cite:`collier2021correlated`.
 
     Args:
         base: The base model to be transformed.

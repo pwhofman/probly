@@ -1499,7 +1499,7 @@ class IntSoftmax(nn.Module):
 
 
 class HeteroscedasticLayer(nn.Module):
-    """A unified PyTorch implementation of the Heteroscedastic layer based on :cite:`collier2021hetnets`.
+    """A unified PyTorch implementation of the Heteroscedastic layer based on :cite:`collier2021correlated`.
 
     Attributes:
         in_features: int, number of input features.
@@ -1620,7 +1620,7 @@ class _SpectralNormParametrization(nn.Module):
     provide a well-conditioned initial estimate of the dominant singular
     vectors.
 
-    Behaviorally matches :cite:`liu2020SNGP` Eq. 10:
+    Behaviorally matches :cite:`liu2020simple` Eq. 10:
     ``W = c * W / sigma`` if ``sigma > c`` else ``W``, with ``sigma`` estimated
     by power iteration on the unfolded weight matrix.
 
@@ -1690,7 +1690,7 @@ class _SpectralNormParametrization(nn.Module):
 
 
 class SNGPLayer(nn.Module):
-    """Spectral-normalized Neural Gaussian Process (SNGP) layer based on :cite:`liu2020SNGP`.
+    """Spectral-normalized Neural Gaussian Process (SNGP) layer based on :cite:`liu2020simple`.
 
     Replaces the model's final linear classifier with a random-Fourier-feature
     Gaussian process whose posterior covariance is estimated by Laplace
