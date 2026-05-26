@@ -40,10 +40,9 @@ opt = torch.optim.Adam(dropconnect_model.parameters(), lr=1e-3)
 
 dropconnect_model.train()
 for epoch in range(300):
+    opt.zero_grad()
     out = dropconnect_model(X_tensor)
     loss = nn.functional.cross_entropy(out, y_tensor)
-
-    opt.zero_grad()
     loss.backward()
     opt.step()
 

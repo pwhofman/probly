@@ -15,6 +15,7 @@ from torch import nn
 
 from probly.representer import representer
 from probly.transformation import bayesian
+from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
 
 from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
@@ -47,10 +48,11 @@ opt = torch.optim.Adam(bayesian_model.parameters(), lr=1e-3)
 
 bayesian_model.train()
 for epoch in range(300):
-    out = bayesian_model(X_tensor)
-    loss = nn.functional.cross_entropy(out, y_tensor)
-
+    criterion = ELBOLoss(1e-5)
     opt.zero_grad()
+    out = bayesian_model(X_tensor)
+    kl = collect_kl_divergence(bayesian_model)
+    loss = criterion(out, y_tensor, kl)
     loss.backward()
     opt.step()
 

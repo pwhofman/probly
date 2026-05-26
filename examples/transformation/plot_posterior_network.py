@@ -16,6 +16,7 @@ from torch import nn
 
 from probly.representer import representer
 from probly.transformation import posterior_network
+from probly.train.evidential.torch import postnet_loss
 
 from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
@@ -49,11 +50,10 @@ posterior_network_model = posterior_network(
 opt = torch.optim.Adam(posterior_network_model.parameters(), lr=1e-3)
 
 posterior_network_model.train()
-for epoch in range(750):
-    out = posterior_network_model(X_tensor)
-    log_probs = torch.digamma(out) - torch.digamma(out.sum(dim=-1, keepdim=True))
-    loss = nn.functional.nll_loss(log_probs, y_tensor)
+for epoch in range(1000):
     opt.zero_grad()
+    alpha = posterior_network_model(X_tensor)
+    loss = postnet_loss(alpha, y, entropy_weight=1e-5)
     loss.backward()
     opt.step()
 
