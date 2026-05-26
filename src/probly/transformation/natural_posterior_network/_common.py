@@ -87,7 +87,22 @@ def natural_posterior_network[**In, Out: DirichletDistribution](
     certainty_budget: CertaintyBudget = "normal",
     alpha_prior: float = 1.0,
 ) -> NaturalPosteriorNetworkPredictor[In, Out]:
-    """Create a Natural Posterior Network predictor based on :cite:`charpentierNaturalPosteriorNetwork2022`."""
+    """Create a Natural Posterior Network predictor based on :cite:`charpentierNaturalPosteriorNetwork2022`.
+
+    Args:
+        encoder: The base encoder predictor mapping inputs to a latent embedding.
+        latent_dim: Dimensionality of the latent space produced by the encoder.
+        num_classes: Number of output classes.
+        num_flows: Number of normalizing flow steps used to estimate the density.
+        certainty_budget: Scaling scheme applied to the log-density before
+            exponentiation. One of ``"constant"``, ``"exp-half"``, ``"exp"``, or
+            ``"normal"``. Defaults to ``"normal"``.
+        alpha_prior: Dirichlet prior concentration shared across all classes.
+
+    Returns:
+        A :class:`NaturalPosteriorNetworkPredictor` wrapping the encoder with a
+        normalizing-flow density head and a Dirichlet evidence layer.
+    """
     return natural_posterior_network_generator(
         encoder, latent_dim, num_classes, num_flows, certainty_budget, alpha_prior
     )
