@@ -136,6 +136,22 @@ class TestSpiderPlot:
         ax = plot_credal_set(data, title="8-class spider")
         assert f"radar_{nc}" in ax.name
 
+    def test_intervals_zero_width_draws_line(self):
+        # When all lower == upper the spider draws a line instead of bars.
+        v = np.array([[0.2, 0.2, 0.2, 0.2, 0.2]])
+        data = ArrayProbabilityIntervalsCredalSet(lower_bounds=v, upper_bounds=v)
+        ax = plot_credal_set(data)
+        assert f"radar_{NUM_CLASSES}" in ax.name
+
+    def test_intervals_tiny_width_draws_marker(self):
+        # When max(upper - lower) < 0.02 a midpoint line/scatter is drawn in addition to bars.
+        data = ArrayProbabilityIntervalsCredalSet(
+            lower_bounds=np.array([[0.195, 0.195, 0.195, 0.195, 0.195]]),
+            upper_bounds=np.array([[0.205, 0.205, 0.205, 0.205, 0.205]]),
+        )
+        ax = plot_credal_set(data)
+        assert f"radar_{NUM_CLASSES}" in ax.name
+
 
 @pytest.mark.usefixtures("_close_figures")
 class TestGroundTruthOverlay:
@@ -224,6 +240,12 @@ class TestRaySegmentR:
         # Ray along x-axis, segment entirely in y>0 region far away
         p_start = np.array([0.0, 2.0])
         p_end = np.array([1.0, 2.0])
+        assert _ray_segment_r(1.0, 0.0, p_start, p_end) is None
+
+    def test_ray_intersection_behind_origin(self):
+        # Segment is behind the ray origin (r < 0) -> should return None.
+        p_start = np.array([-2.0, -1.0])
+        p_end = np.array([-2.0, 1.0])
         assert _ray_segment_r(1.0, 0.0, p_start, p_end) is None
 
 
