@@ -982,7 +982,7 @@ def _(
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
 ) -> None:
-    """Train a DUQ predictor :cite:`vanAmersfoortDUQ2020`.
+    """Train a DUQ predictor :cite:`vanAmersfoortUncertaintyEstimation2020`.
 
     Disables AMP because the gradient penalty requires a stable second-order
     autograd graph that ``torch.amp.autocast`` does not support across all
@@ -1135,7 +1135,7 @@ def _fit_deup_error_head(
 ) -> None:
     """Train the DEUP error head on out-of-sample log10-scaled CE targets.
 
-    Phase-2 training of DEUP :cite:`lahlou2021deup`.
+    Phase-2 training of DEUP :cite:`lahlouDirectEpistemic2023`.
     The ``encoder`` and ``classification_head`` are frozen.
 
     Steps:
@@ -1193,7 +1193,7 @@ def _(
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
 ) -> None:
-    """Train a DEUP predictor :cite:`lahlou2021deup`.
+    """Train a DEUP predictor :cite:`lahlouDirectEpistemic2023`.
 
     Phase 1 trains ``encoder`` and ``classification_head`` end-to-end with
     standard cross-entropy, identical to a plain classifier.  The

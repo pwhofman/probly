@@ -31,7 +31,7 @@ class DarePredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
 @predictor_transformation(permitted_predictor_types=(LogitClassifier,), preserve_predictor_type=False)
 @DarePredictor.register_factory(autocast_builtins=True)
 def dare[**In, Out](base: Predictor[In, Out], num_members: int, reset_params: bool = True) -> DarePredictor[In, Out]:
-    """Create a DARE predictor from a base predictor based on :cite:`de2023deep`.
+    """Create a DARE predictor from a base predictor based on :cite:`demathelinDeepAntiRegularized2023`.
 
     Args:
         base: Predictor, The base logit classifier to replicate into an ensemble.
@@ -84,7 +84,7 @@ representer.register(DarePredictor, DARERepresenter)
 @decompose.register(DARERepresentation)
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
 class DAREDecomposition[T](CachingDecomposition, EpistemicDecomposition[T]):
-    """DARE OOD score (Appendix F, Eq. 35 :cite:`de2023deep`): fit + dispersion.
+    """DARE OOD score (Appendix F, Eq. 35 :cite:`demathelinDeepAntiRegularized2023`): fit + dispersion.
 
     Args:
         sample: Logits sample across ensemble members; class axis is last.

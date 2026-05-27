@@ -249,7 +249,7 @@ class SNGPDecomposition[T](CachingDecomposition, EpistemicDecomposition[T]):
     """Decomposition based on SNGP's Dempster-Shafer epistemic uncertainty.
 
     Implements the single uncertainty quantity used by SNGP
-    :cite:`liu2020simple` for OOD detection (Sec. 5.2 +
+    :cite:`liuSimplePrincipled2020` for OOD detection (Sec. 5.2 +
     Appendix C, Eq. 15). For an SNGP-style Gaussian distribution
     ``N(h, sigma^2)`` over K-class logits:
 

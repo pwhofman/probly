@@ -18,7 +18,7 @@ credal_relative_likelihood = CredalRelativeLikelihoodPredictor.register_factory(
 )
 credal_relative_likelihood.__doc__ = """Create a Credal Relative Likelihood predictor from a base predictor.
 
-Based on :cite:`lohr2025credal`.
+Based on :cite:`lohrCredalPrediction2025`.
 
 Args:
     base: Predictor, The base classifier to replicate into a class-bias ensemble.

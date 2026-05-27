@@ -649,7 +649,9 @@ def _inverse_softplus(x: torch.Tensor) -> torch.Tensor:
 
 
 class DropConnectLinear(nn.Module):
-    """Custom Linear layer with DropConnect applied to weights during training based on :cite:`mobiny2021dropconnect`.
+    """Custom Linear layer with DropConnect applied to weights during training.
+
+    Based on :cite:`mobinyDropConnectEffective2021`.
 
     Attributes:
         in_features: int, number of input features.
@@ -1110,7 +1112,7 @@ def unpack_interval(x: torch.Tensor, channel_dim: int = 1) -> tuple[torch.Tensor
 
 
 class IntConv2d(nn.Module):
-    """Interval-arithmetic 2D convolution based on :cite:`wang2024credalnet`.
+    """Interval-arithmetic 2D convolution based on :cite:`wangCredalDeepEnsembles2024`.
 
     Has paired center and radius kernels (and biases); the radius weight and
     bias are clamped to non-negative values inside ``forward``. Inputs and
@@ -1204,7 +1206,7 @@ class IntConv2d(nn.Module):
 
 
 class IntLinear(nn.Module):
-    """Interval-arithmetic linear layer based on :cite:`wang2024credalnet`.
+    """Interval-arithmetic linear layer based on :cite:`wangCredalDeepEnsembles2024`.
 
     1D analogue of :class:`IntConv2d`. Inputs and outputs are packed
     ``(..., 2 * features)`` (lower half then upper); the same non-negativity
@@ -1273,7 +1275,7 @@ class IntLinear(nn.Module):
 
 
 class IntBatchNorm2d(nn.Module):
-    """Interval-valued batch normalization for 2D feature maps based on :cite:`wang2024credalnet`.
+    """Interval-valued batch normalization for 2D feature maps based on :cite:`wangCredalDeepEnsembles2024`.
 
     Inputs and outputs are packed ``(B, 2C, H, W)``. Splits into
     ``center = (lo + hi)/2`` and ``radius = (hi - lo)/2``, normalizes each
@@ -1367,7 +1369,7 @@ class IntBatchNorm2d(nn.Module):
 
 
 class IntBatchNorm1d(nn.Module):
-    """Interval-valued batch normalization for 1D features based on :cite:`wang2024credalnet`.
+    """Interval-valued batch normalization for 1D features based on :cite:`wangCredalDeepEnsembles2024`.
 
     1D analogue of :class:`IntBatchNorm2d`, used after :class:`IntLinear` on
     flattened features. Inputs and outputs are packed ``(B, 2 * num_features)``.
@@ -1458,7 +1460,7 @@ class IntBatchNorm1d(nn.Module):
 
 
 class IntSoftmax(nn.Module):
-    """Interval SoftMax head based on :cite:`wang2024credalnet`.
+    """Interval SoftMax head based on :cite:`wangCredalDeepEnsembles2024`.
 
     Applies Eq. 7 of the paper in ``(lo, hi)`` parameterization, then the
     Section 3.3 reachability clip so the output is always a valid (reachable)
@@ -1499,7 +1501,9 @@ class IntSoftmax(nn.Module):
 
 
 class HeteroscedasticLayer(nn.Module):
-    """A unified PyTorch implementation of the Heteroscedastic layer based on :cite:`collier2021correlated`.
+    """A unified PyTorch implementation of the Heteroscedastic layer.
+
+    Based on :cite:`collierCorrelatedInputDependent2021`.
 
     Attributes:
         in_features: int, number of input features.
@@ -1620,7 +1624,7 @@ class _SpectralNormParametrization(nn.Module):
     provide a well-conditioned initial estimate of the dominant singular
     vectors.
 
-    Behaviorally matches :cite:`liu2020simple` Eq. 10:
+    Behaviorally matches :cite:`liuSimplePrincipled2020` Eq. 10:
     ``W = c * W / sigma`` if ``sigma > c`` else ``W``, with ``sigma`` estimated
     by power iteration on the unfolded weight matrix.
 
@@ -1690,7 +1694,7 @@ class _SpectralNormParametrization(nn.Module):
 
 
 class SNGPLayer(nn.Module):
-    """Spectral-normalized Neural Gaussian Process (SNGP) layer based on :cite:`liu2020simple`.
+    """Spectral-normalized Neural Gaussian Process (SNGP) layer based on :cite:`liuSimplePrincipled2020`.
 
     Replaces the model's final linear classifier with a random-Fourier-feature
     Gaussian process whose posterior covariance is estimated by Laplace
@@ -1994,7 +1998,7 @@ class SNCoeffParametrization(nn.Module):
     via :meth:`right_inverse`.
 
     Used by DDU (:cite:`mukhotiDeepDeterministicUncertainty2023`) and DEUP
-    (:cite:`lahlou2021deup`) to enforce Lipschitz
+    (:cite:`lahlouDirectEpistemic2023`) to enforce Lipschitz
     continuity on the encoder.
     """
 

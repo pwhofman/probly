@@ -97,7 +97,7 @@ def dempster_shafer_uncertainty(
 
     For a Gaussian distribution N(h, sigma^2) over K-class logits, this is the
     Dempster-Shafer / vacuity metric used by SNGP
-    :cite:`liu2020simple` (Eq. 15) and originally introduced
+    :cite:`liuSimplePrincipled2020` (Eq. 15) and originally introduced
     by :cite:`sensoyEvidentialDeep2018`:
 
     .. math::

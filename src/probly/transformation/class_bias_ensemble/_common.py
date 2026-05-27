@@ -31,7 +31,7 @@ class_bias_ensemble_traverser = flexdispatch_traverser[object](name="class_bias_
 def class_bias_ensemble[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True, tobias_value: int = 100
 ) -> ClassBiasEnsemblePredictor[In, Out]:
-    """Create an ensemble with class-specific final-layer bias initialization based on :cite:`lohr2025credal`.
+    """Create an ensemble with class-specific final-layer bias initialization based on :cite:`lohrCredalPrediction2025`.
 
     Args:
         base: The base model to be used for the class-bias ensemble.

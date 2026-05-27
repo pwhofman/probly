@@ -34,7 +34,7 @@ def _compute_bounds_numpy(
     ``exp(ll(logits + x * e_k) - ll(logits))`` where ``ll`` is the mean
     per-sample log-likelihood.
 
-    Based on :cite:`DBLP:journals/corr/abs-2603-08495` and the reference implementation at
+    Based on :cite:`hofmanEfficientCredal2026` and the reference implementation at
     https://github.com/pwhofman/efficient-credal-prediction/blob/main/models.py.
 
     Args:

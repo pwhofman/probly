@@ -15,7 +15,7 @@ class CredalBNNPredictor[**In, Out](BayesianEnsemblePredictor[In, Out], Protocol
 
 credal_bnn = CredalBNNPredictor.register_factory(bayesian_ensemble, autocast_builtins=True)
 _credal_bnn_doc = """\
-Create a Credal BNN predictor from a base predictor based on :cite:`caprio2023credalbnn`.
+Create a Credal BNN predictor from a base predictor based on :cite:`caprioCredalBayesian2024`.
 
 Args:
     base: Predictor, The base model to replicate into a Bayesian ensemble.

@@ -65,7 +65,9 @@ def duq[**In, Out: DUQRepresentation](
     length_scale: float = 0.1,
     gamma: float = 0.999,
 ) -> DUQPredictor[In, Out]:
-    """Replace the final classifier head with an RBF centroid head based on :cite:`vanAmersfoortDUQ2020`.
+    """Replace the final classifier head with an RBF centroid head.
+
+    Based on :cite:`vanAmersfoortUncertaintyEstimation2020`.
 
     Args:
         base: Predictor, The base logit classifier whose final linear head is replaced.
