@@ -17,7 +17,7 @@ quantile defines the radius of a
 
     \mathcal{C}(x) = \{p : \mathrm{TV}(p, \hat{p}(x)) \leq q_{\alpha}\}
 
-See *Javanmardi, Stutz & Hullermeier,
+See *Javanmardi, Stutz & Hüllermeier,
 "Conformalized Credal Set Predictors", NeurIPS 2024*.
 """
 
