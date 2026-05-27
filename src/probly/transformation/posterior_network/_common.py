@@ -39,14 +39,14 @@ def posterior_network[**In, Out: DirichletDistribution](
     """Create a Posterior Network predictor from an encoder based on :cite:`charpentierPosteriorNetwork2020`.
 
     Args:
-        encoder: Predictor, The backbone predictor mapping inputs to a latent embedding.
-        latent_dim: int, Dimensionality of the encoder's output embedding.
-        num_classes: int, Number of target classes.
-        class_counts: list | None, Per-class sample counts for the prior Dirichlet concentration. Default is None.
-        num_flows: int, Number of affine coupling steps in the normalizing flow. Default is 6.
+        encoder: The backbone predictor mapping inputs to a latent embedding.
+        latent_dim: Dimensionality of the encoder's output embedding.
+        num_classes: Number of target classes.
+        class_counts: Per-class sample counts for the prior Dirichlet concentration. Default is None.
+        num_flows: Number of affine coupling steps in the normalizing flow. Default is 6.
 
     Returns:
-        PosteriorNetworkPredictor, The posterior network predictor outputting a DirichletDistribution.
+        The posterior network predictor outputting a DirichletDistribution.
     """
     return posterior_network_generator(
         encoder,

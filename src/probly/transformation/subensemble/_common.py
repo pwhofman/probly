@@ -49,14 +49,14 @@ def subensemble[**In, H, Out](
             `head` is duplicated `num_heads` times to form the subensemble heads.
 
     Args:
-        base: Predictor, The model to be used as backbone or to create the backbone and heads.
-        num_heads: int, The number of heads in the subensemble.
-        head: Predictor, Optional model to be used as head of the subensemble.
-        reset_params: bool, Whether to reset the parameters of each head.
-        head_layer: int, Optional the number of layers used to create the head if no head model is provided.
+        base: The model to be used as backbone or to create the backbone and heads.
+        num_heads: The number of heads in the subensemble.
+        head: Optional model to be used as head of the subensemble.
+        reset_params: Whether to reset the parameters of each head.
+        head_layer: The number of layers used to create the head if no head model is provided.
 
     Returns:
-        SubensemblePredictor, The subensemble predictor.
+        The subensemble predictor.
 
     Raises:
         ValueError: If `head_layer` or `num_heads` is not a positive integer.

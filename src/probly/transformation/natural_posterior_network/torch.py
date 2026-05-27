@@ -47,19 +47,7 @@ class TorchNaturalPosteriorNetwork(nn.Module, NaturalPosteriorNetworkPredictor):
         certainty_budget: CertaintyBudget = "normal",
         alpha_prior: float = 1.0,
     ) -> None:
-        """Initialize a natural posterior network.
-
-        Args:
-            encoder: Feature encoder mapping inputs to a feature tensor of
-                shape ``(B, encoder_dim)``.
-            latent_dim: Dimension ``H`` of the latent space.
-            num_classes: Number of output classes ``K``.
-            num_flows: Number of radial flow layers in the shared flow.
-            certainty_budget: Named scheme for scaling ``log p(z)`` before
-                exponentiation. Defaults to ``"normal"``.
-            alpha_prior: Per-class Dirichlet prior parameter (uniform across
-                classes). Defaults to ``1.0``.
-        """
+        """Initialize a natural posterior network."""
         super().__init__()
         self.encoder = encoder
         encoder_dim = get_output_dim(encoder)

@@ -90,14 +90,14 @@ def natural_posterior_network[**In, Out: DirichletDistribution](
     """Create a Natural Posterior Network predictor based on :cite:`charpentierNaturalPosteriorNetwork2022`.
 
     Args:
-        encoder: The base encoder predictor mapping inputs to a latent embedding.
-        latent_dim: Dimensionality of the latent space produced by the encoder.
-        num_classes: Number of output classes.
-        num_flows: Number of normalizing flow steps used to estimate the density.
-        certainty_budget: Scaling scheme applied to the log-density before
+        encoder: The base encoder predictor mapping inputs to a latent embedding of shape ``(B, encoder_dim)``.
+        latent_dim: Dimension ``H`` of the latent space produced by the encoder.
+        num_classes: Number of output classes ``K``.
+        num_flows: Number of radial flow layers in the shared normalizing flow.
+        certainty_budget: Named scheme for scaling ``log p(z)`` before
             exponentiation. One of ``"constant"``, ``"exp-half"``, ``"exp"``, or
             ``"normal"``. Defaults to ``"normal"``.
-        alpha_prior: Dirichlet prior concentration shared across all classes.
+        alpha_prior: Per-class Dirichlet prior concentration, uniform across classes. Defaults to ``1.0``.
 
     Returns:
         A :class:`NaturalPosteriorNetworkPredictor` wrapping the encoder with a
