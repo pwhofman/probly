@@ -85,9 +85,20 @@ class TestGeometryHelpers:
         for v in verts:
             np.testing.assert_allclose(v, [0.3, 0.3, 0.4], atol=1e-9)
 
-    def test_interval_vertices_empty_raises(self) -> None:
-        # Lower bounds sum > 1 -> infeasible, no vertices.
+    def test_interval_vertices_lower_sum_exceeds_one_raises(self) -> None:
         lower = np.array([0.6, 0.6, 0.6])
         upper = np.array([0.7, 0.7, 0.7])
-        with pytest.raises(ValueError, match="No feasible vertices"):
+        with pytest.raises(ValueError, match="lower bounds sum exceeds 1"):
+            _compute_interval_vertices(lower, upper)
+
+    def test_interval_vertices_upper_sum_below_one_raises(self) -> None:
+        lower = np.array([0.0, 0.0, 0.0])
+        upper = np.array([0.2, 0.2, 0.2])
+        with pytest.raises(ValueError, match="upper bounds sum less than 1"):
+            _compute_interval_vertices(lower, upper)
+
+    def test_interval_vertices_no_feasible_vertices_raises(self) -> None:
+        lower = np.array([np.nan, np.nan, np.nan])
+        upper = np.array([np.nan, np.nan, np.nan])
+        with pytest.raises(ValueError, match="No feasible vertices found"):
             _compute_interval_vertices(lower, upper)

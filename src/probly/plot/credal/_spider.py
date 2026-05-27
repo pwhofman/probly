@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 
 from flextype import flexdispatch
+from probly.plot.credal._data import _get_unnormalized_probabilities, _to_numpy
 from probly.representation.credal_set.array import (
-    ArrayCategoricalCredalSet,
     ArrayConvexCredalSet,
     ArrayDiscreteCredalSet,
     ArrayDistanceBasedCredalSet,
@@ -20,6 +20,13 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
     from probly.plot.config import PlotConfig
+    from probly.representation.credal_set.array import ArrayCategoricalCredalSet
+    from probly.representation.credal_set.torch import (
+        TorchCategoricalCredalSet,
+        TorchConvexCredalSet,
+        TorchDistanceBasedCredalSet,
+        TorchProbabilityIntervalsCredalSet,
+    )
 
 
 def _setup_spider_axes(
@@ -331,7 +338,7 @@ def _draw_intervals_on_spokes(
 
 @flexdispatch
 def _draw_credal_set_spider(
-    data: ArrayCategoricalCredalSet,
+    data: ArrayCategoricalCredalSet | TorchCategoricalCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None,
@@ -359,27 +366,26 @@ def _draw_singleton_spider(
     series_labels: list[str] | None,
 ) -> None:
     theta = _get_theta(data.num_classes)
-    arr = data.array.reshape(-1)
+    arr = _get_unnormalized_probabilities(data)
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
         label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
-        values = arr[idx].unnormalized_probabilities
+        values = arr[idx]
         ax.plot(theta, values, color=color, linewidth=config.line_width, label=label, zorder=3)
         ax.scatter(theta, values, color=color, s=config.marker_size, zorder=4)
 
 
 @_draw_credal_set_spider.register(ArrayProbabilityIntervalsCredalSet)
 def _draw_intervals_spider(
-    data: ArrayProbabilityIntervalsCredalSet,
+    data: ArrayProbabilityIntervalsCredalSet | TorchProbabilityIntervalsCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None,
 ) -> None:
-    data = data.reshape(-1)
     theta = _get_theta(data.num_classes)
-    lower_all = data.lower()
-    upper_all = data.upper()
+    lower_all = _to_numpy(data.lower_bounds)
+    upper_all = _to_numpy(data.upper_bounds)
     n_sets = lower_all.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -390,21 +396,26 @@ def _draw_intervals_spider(
             ax.plot(theta, lower, color=color, linewidth=config.line_width, label=label, zorder=3)
             ax.scatter(theta, lower, color=color, s=config.marker_size, zorder=4)
         else:
+            # If the interval is very small visually, draw a marker so it's not invisible.
+            if np.max(upper - lower) < 0.02:
+                mid = (lower + upper) / 2.0
+                ax.plot(theta, mid, color=color, linewidth=config.line_width, label=label, zorder=3)
+                ax.scatter(theta, mid, color=color, s=config.marker_size, zorder=4)
+                label = None
             _draw_intervals_on_spokes(ax, theta, lower, upper, color, config, label=label)
 
 
 @_draw_credal_set_spider.register(ArrayDistanceBasedCredalSet)
 def _draw_distance_based_spider(
-    data: ArrayDistanceBasedCredalSet,
+    data: ArrayDistanceBasedCredalSet | TorchDistanceBasedCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None,
 ) -> None:
-    data = data.reshape(-1)
     theta = _get_theta(data.num_classes)
-    lower_all = data.lower()
-    upper_all = data.upper()
-    nominal_all = data.nominal.unnormalized_probabilities
+    lower_all = _to_numpy(data.lower())
+    upper_all = _to_numpy(data.upper())
+    nominal_all = _get_unnormalized_probabilities(data)
     n_sets = lower_all.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -415,18 +426,18 @@ def _draw_distance_based_spider(
 
 @_draw_credal_set_spider.register(ArrayConvexCredalSet)
 def _draw_convex_set_spider(
-    data: ArrayConvexCredalSet,
+    data: ArrayConvexCredalSet | TorchConvexCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None,
 ) -> None:
     theta = _get_theta(data.num_classes)
-    arr = data.reshape(-1)
-    n_sets = arr.shape[0]
+    unnorm = _get_unnormalized_probabilities(data)
+    n_sets = unnorm.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
         label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
-        pts = arr[idx].array.unnormalized_probabilities
+        pts = unnorm[idx]
 
         for member in pts:
             ax.plot(theta, member, color=color, linewidth=config.line_width, alpha=0.6, zorder=3)
@@ -445,11 +456,11 @@ def _draw_discrete_set_spider(
     series_labels: list[str] | None,
 ) -> None:
     theta = _get_theta(data.num_classes)
-    arr = data.reshape(-1)
-    n_sets = arr.shape[0]
+    unnorm = _get_unnormalized_probabilities(data)
+    n_sets = unnorm.shape[0]
     for idx in range(n_sets):
         label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
-        pts = arr[idx].array.unnormalized_probabilities
+        pts = unnorm[idx]
 
         for m_idx, member in enumerate(pts):
             # Each member gets a unique color (unlike convex sets which use one color per batch element)

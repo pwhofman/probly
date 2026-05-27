@@ -85,3 +85,12 @@ class TestBinaryPlot:
         ax = plot_credal_set(data, ground_truth=gt)
         # The legend should be present (overlay forces it on)
         assert ax.get_legend() is not None
+
+    def test_intervals_binary_tiny_width_draws_marker(self) -> None:
+        # When high - low < 0.02 the code draws a scatter marker in addition to the band.
+        data = ArrayProbabilityIntervalsCredalSet(
+            lower_bounds=np.array([[0.5, 0.500]]),
+            upper_bounds=np.array([[0.5, 0.510]]),
+        )
+        ax = plot_credal_set(data)
+        assert ax is not None
