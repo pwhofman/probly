@@ -1,6 +1,6 @@
-r"""=============================================
+r"""==============================================
 Conformalized Credal Set Prediction — PyTorch.
-=============================================
+==============================================
 
 Conformalized credal set predictors combine conformal prediction with
 imprecise probabilities.  Instead of a prediction set (a set of labels),
