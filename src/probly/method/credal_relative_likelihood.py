@@ -21,14 +21,13 @@ credal_relative_likelihood.__doc__ = """Create a Credal Relative Likelihood pred
 Based on :cite:`lohrCredalPrediction2025`.
 
 Args:
-    base: Predictor, The base classifier to replicate into a class-bias ensemble.
-    num_members: int, Number of ensemble members, one per class by convention.
-    reset_params: bool, Whether to reset the parameters of each member. Default is True.
-    tobias_value: float, Magnitude of the class-specific bias initialization. Default is 3.0.
+    base: The base classifier to replicate into a class-bias ensemble.
+    num_members: Number of ensemble members, one per class by convention.
+    reset_params: Whether to reset the parameters of each member. Default is True.
+    tobias_value: Magnitude of the class-specific bias initialization. Default is 3.0.
 
 Returns:
-    CredalRelativeLikelihoodPredictor, The credal relative likelihood predictor outputting a
-    ProbabilityIntervalsCredalSet.
+    The credal relative likelihood predictor outputting a ProbabilityIntervalsCredalSet.
 """
 representer.register(CredalRelativeLikelihoodPredictor, ProbabilityIntervalsRepresenter)
 

@@ -36,10 +36,10 @@ _evidential_classification_doc = """\
 Create an Evidential Deep Learning predictor based on :cite:`sensoyEvidentialDeep2018`.
 
 Args:
-    base: Predictor, The base classification model to attach the Dirichlet head to.
+    base: The base classification model to attach the Dirichlet head to.
 
 Returns:
-    EvidentialClassificationPredictor, The evidential classification predictor outputting a DirichletDistribution.
+    The evidential classification predictor outputting a DirichletDistribution.
 """
 evidential_classification.__doc__ = _evidential_classification_doc
 

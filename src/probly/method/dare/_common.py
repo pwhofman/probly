@@ -34,12 +34,12 @@ def dare[**In, Out](base: Predictor[In, Out], num_members: int, reset_params: bo
     """Create a DARE predictor from a base predictor based on :cite:`demathelinDeepAntiRegularized2023`.
 
     Args:
-        base: Predictor, The base logit classifier to replicate into an ensemble.
-        num_members: int, Number of ensemble members.
-        reset_params: bool, Whether to reset the parameters of each member. Default is True.
+        base: The base logit classifier to replicate into an ensemble.
+        num_members: Number of ensemble members.
+        reset_params: Whether to reset the parameters of each member. Default is True.
 
     Returns:
-        DarePredictor, The DARE predictor.
+        The DARE predictor.
     """
     return ensemble(base, num_members=num_members, reset_params=reset_params)
 

@@ -32,12 +32,12 @@ def credal_ensembling[**In, Out: CategoricalDistribution](
     """Create a credal ensembling predictor from a base predictor based on :cite:`nguyenCredalEnsembling2025`.
 
     Args:
-        base: Predictor, The base classifier to replicate into an ensemble.
-        num_members: int, Number of ensemble members; each produces one vertex of the output credal set.
-        reset_params: bool, Whether to reset the parameters of each member. Default is True.
+        base: The base classifier to replicate into an ensemble.
+        num_members: Number of ensemble members; each produces one vertex of the output credal set.
+        reset_params: Whether to reset the parameters of each member. Default is True.
 
     Returns:
-        CredalEnsemblingPredictor, The credal ensembling predictor outputting a convex credal set.
+        The credal ensembling predictor outputting a convex credal set.
     """
     return ensemble(base, num_members=num_members, reset_params=reset_params)
 

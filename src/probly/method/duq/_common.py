@@ -70,13 +70,13 @@ def duq[**In, Out: DUQRepresentation](
     Based on :cite:`vanAmersfoortUncertaintyEstimation2020`.
 
     Args:
-        base: Predictor, The base logit classifier whose final linear head is replaced.
-        centroid_size: int, Dimensionality of the per-class RBF centroids. Default is 256.
-        length_scale: float, RBF kernel length scale. Default is 0.1.
-        gamma: float, Exponential moving-average discount factor for updating the centroids. Default is 0.999.
+        base: The base logit classifier whose final linear head is replaced.
+        centroid_size: Dimensionality of the per-class RBF centroids. Default is 256.
+        length_scale: RBF kernel length scale. Default is 0.1.
+        gamma: Exponential moving-average discount factor for updating the centroids. Default is 0.999.
 
     Returns:
-        DUQPredictor, The DUQ predictor.
+        The DUQ predictor.
     """
     return duq_generator(base, centroid_size, length_scale, gamma)
 

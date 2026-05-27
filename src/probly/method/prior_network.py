@@ -22,10 +22,10 @@ prior_network.__doc__ = """Create a Prior Network predictor from a base predicto
 Based on :cite:`malininPredictiveUncertaintyEstimation2018`.
 
 Args:
-    base: Predictor, The base logit classifier to be wrapped with a Dirichlet exp activation.
+    base: The base logit classifier to be wrapped with a Dirichlet exp activation.
 
 Returns:
-    PriorNetworkPredictor, The prior network predictor outputting a Dirichlet distribution.
+    The prior network predictor outputting a Dirichlet distribution.
 """
 
 __all__ = ["PriorNetworkPredictor", "prior_network"]
