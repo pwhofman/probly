@@ -32,7 +32,7 @@ uv add probly
 
 ```python
 import probly
-from probly.transformation.ensemble import ensemble
+from probly.transformation.dropout import dropout
 from probly.representer import representer
 from probly.quantification import quantify
 from probly.evaluation.ood import evaluate_ood
