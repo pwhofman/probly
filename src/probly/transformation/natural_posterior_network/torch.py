@@ -15,25 +15,7 @@ from ._common import CertaintyBudget, budget_log_scale, natural_posterior_networ
 
 @natural_posterior_network_generator.register(nn.Module)
 class TorchNaturalPosteriorNetwork(nn.Module, NaturalPosteriorNetworkPredictor):
-    """Torch implementation of the Natural Posterior Network.
-
-    Computes a Bayesian posterior update over a Dirichlet distribution per
-    sample. The encoder is projected to a low-dim latent ``z``; a single
-    shared normalizing flow yields ``log p(z)``; a small linear classifier
-    on the latent yields class log-probabilities ``log chi(x)``. The
-    Dirichlet parameters are returned as
-    ``alpha = alpha_prior + n(x) * chi(x)``, where ``n(x)`` is the
-    budget-scaled, clamped exponential of ``log p(z)``.
-
-    Attributes:
-        encoder: User-supplied feature encoder.
-        fc: Projection from encoder features to the latent space.
-        batch_norm: Per-feature normalization of the latent before the flow.
-        norm_flow: Single shared normalizing flow modelling ``p(z)``.
-        classifier: Linear classifier producing class logits from the latent.
-        certainty_budget: The selected budget scheme.
-        log_scale: Additive constant applied to ``log p(z)`` per the budget.
-    """
+    """Torch implementation of the Natural Posterior Network."""
 
     alpha_prior: torch.Tensor
     """Buffer holding the per-class Dirichlet prior parameters."""
@@ -60,15 +42,7 @@ class TorchNaturalPosteriorNetwork(nn.Module, NaturalPosteriorNetworkPredictor):
         self.register_buffer("alpha_prior", torch.full((num_classes,), float(alpha_prior)))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass returning Dirichlet concentration parameters.
-
-        Args:
-            x: Input tensor consumed by the encoder.
-
-        Returns:
-            Dirichlet concentration parameters of shape ``(B, num_classes)``,
-            all strictly positive.
-        """
+        """Forward pass returning Dirichlet concentration parameters."""
         z = self.batch_norm(self.fc(self.encoder(x)))
         log_pz = self.norm_flow.log_prob(z).squeeze(-1)
         log_evidence = (log_pz + self.log_scale).clamp(-30.0, 30.0)

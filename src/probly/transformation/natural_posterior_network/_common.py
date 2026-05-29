@@ -89,6 +89,14 @@ def natural_posterior_network[**In, Out: DirichletDistribution](
 ) -> NaturalPosteriorNetworkPredictor[In, Out]:
     """Create a Natural Posterior Network predictor based on :cite:`charpentierNaturalPosteriorNetwork2022`.
 
+    Computes a Bayesian posterior update over a Dirichlet distribution per
+    sample. The encoder is projected to a low-dim latent ``z``; a single
+    shared normalizing flow yields ``log p(z)``; a small linear classifier
+    on the latent yields class log-probabilities ``log chi(x)``. The
+    Dirichlet parameters are returned as
+    ``alpha = alpha_prior + n(x) * chi(x)``, where ``n(x)`` is the
+    budget-scaled, clamped exponential of ``log p(z)``.
+
     Args:
         encoder: The base encoder predictor mapping inputs to a latent embedding of shape ``(B, encoder_dim)``.
         latent_dim: Dimension ``H`` of the latent space produced by the encoder.
