@@ -103,10 +103,14 @@ def plot_example_uncertainty(
         else:
             unc = decomp.aleatoric
         test_unc = unc.cpu().numpy() / np.log(2)
+
         if test_unc.ndim > 1:
             test_unc = test_unc.sum(-1)
 
+        test_unc = np.clip(test_unc, 0, 1)
+
     test_unc = test_unc.reshape(xx.shape)
+
 
     fig, ax = plt.subplots(figsize=(7, 5), dpi=150)
 

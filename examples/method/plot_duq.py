@@ -14,12 +14,15 @@ from __future__ import annotations
 from sklearn.datasets import make_moons
 import torch
 from torch import nn
+import torch.nn.functional as F
+from torch.amp import autocast
 
 from probly.representer import representer
 from probly.method.duq import duq
 
 from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
+
 
 # %%
 # Prepare the Two Moons dataset
@@ -42,11 +45,34 @@ opt = torch.optim.Adam(duq_model.parameters(), lr=1e-3)
 
 duq_model.train()
 for epoch in range(300):
+    num_classes = 2
+    targets_onehot = F.one_hot(y_tensor, num_classes).float()
+    gradient_penalty = 0.5
+    use_gp = gradient_penalty > 0.0
+    if use_gp:
+        X_tensor = X_tensor.detach().requires_grad_(True)
     out = duq_model(X_tensor)
     loss = nn.functional.cross_entropy(out, y_tensor)
 
     opt.zero_grad()
-    loss.backward()
+    with autocast(X_tensor.device.type, dtype=torch.bfloat16, enabled=True):
+        kernel_values = duq_model(X_tensor)
+        loss = F.binary_cross_entropy(kernel_values, targets_onehot, reduction="mean")
+
+        gradients = torch.autograd.grad(
+            outputs=kernel_values,
+            inputs=X_tensor,
+            grad_outputs=torch.ones_like(kernel_values),
+            create_graph=True,
+            retain_graph=True,
+        )[0]
+        flat_gradients = gradients.flatten(start_dim=1)
+        grad_norm = flat_gradients.norm(2, dim=1)
+        duq_penalty = ((grad_norm - 1.0) ** 2).mean()
+
+        total = loss + gradient_penalty * duq_penalty if use_gp else loss
+
+    total.backward()
     opt.step()
 
 # %%
