@@ -67,7 +67,7 @@ batchensemble_model = batchensemble(
 
 # %%
 # Fine-tuning
-# --------
+# -----------
 #
 # Fine-tune the rank-1 factors (and shared weights) with standard cross-entropy
 # on a tiled batch.  The batch must be repeated ``num_members`` times so that
