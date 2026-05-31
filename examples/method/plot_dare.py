@@ -23,14 +23,20 @@ from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
 
 # %%
-# Prepare the Two Moons dataset
+# Setup
+# -----
 
 X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
 # %%
-# Create the DARE ensemble
+# Model
+# -----
+#
+# DARE wraps an ensemble of independent members. Each member is trained with
+# an anti-regularization term that fires when the per-batch cross-entropy drops
+# below `threshold`, pushing weights to larger norms and preserving diversity.
 
 base_model = MLPClassifier()
 
@@ -42,24 +48,28 @@ dare_model = dare(
 )
 
 # %%
-# Train each member with the DARE anti-regularization term
+# Training
+# --------
+#
+# Train each member with cross-entropy minus the DARE anti-regularization term.
+# The anti-regularizer only activates once the batch loss falls below threshold.
 
 dare_model.train()
 threshold = 0.4
 for member in dare_model:
     opt = torch.optim.Adam(member.parameters(), lr=1e-3)
     for epoch in range(250):
+        opt.zero_grad()
         out = member(X_tensor)
         loss = nn.functional.cross_entropy(out, y_tensor)
         reg = dare_regularizer(member, device="cpu", loss=loss.detach(), threshold=threshold)
         total = loss - reg
-
-        opt.zero_grad()
         total.backward()
         opt.step()
 
 # %%
-# Evaluate predictive uncertainty
+# Uncertainty Evaluation
+# ----------------------
 
 dare_model.eval()
 rep = IterableSampler(dare_model)

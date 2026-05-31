@@ -2,10 +2,8 @@
 Posterior Network on Two Moons
 ==============================
 
-Unlike discriminative methods, a Posterior Network increases uncertainty
-with distance from the training data rather than only at decision boundaries.
-It achieves this by fitting per-class density models (normalizing flows) on
-the feature space, producing Dirichlet-parameterized predictions.
+Output Dirichlet concentration parameters whose evidence comes from normalizing-flow density estimates in a learned latent space.
+Uncertainty grows with distance from training data, not just near decision boundaries.
 """
 
 from __future__ import annotations
@@ -22,30 +20,45 @@ from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
 
 # %%
-# Prepare the Two Moons dataset
+# Setup
+# -----
 
 X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
 # %%
-# Wrap the base model with Posterior Network
+# Model
+# -----
 #
-# The final classification layer is stripped so the normalizing flow
-# operates on 64D features rather than 2D logits.
+# Strip the final classification layer so the normalizing flows receive feature
+# vectors instead of class logits.
+#
+# ``class_counts`` scales flow densities into Dirichlet pseudo-counts:
+# ``alpha = 1 + exp(log_density) * class_count``. Passing 1 (the default) keeps
+# all alphas near 1 regardless of density, making uncertainty meaningless.
 
 base_model = MLPClassifier()
 backbone = nn.Sequential(*list(base_model.net)[:-1])
+class_counts = [int((y == c).sum()) for c in range(2)]
 
 posterior_network_model = posterior_network(
     backbone,
-    latent_dim=8,
+    latent_dim=6,    # dimension of the normalizing-flow latent space
     num_classes=2,
+    num_flows=6,     # number of flow steps per class; more = more expressive density model
+    class_counts=class_counts,
     predictor_type="logit_classifier",
 )
 
 # %%
-# Train with the UCE loss (expected log-likelihood under the Dirichlet)
+# Training
+# --------
+#
+# The model outputs Dirichlet concentration parameters (alpha), not logits.
+# postnet_loss computes the UCE: expected log-likelihood under the Dirichlet.
+# entropy_weight adds a small Dirichlet-entropy term that prevents concentration
+# parameters from collapsing to near-zero early in training.
 
 opt = torch.optim.Adam(posterior_network_model.parameters(), lr=1e-3)
 
@@ -53,12 +66,13 @@ posterior_network_model.train()
 for epoch in range(1000):
     opt.zero_grad()
     alpha = posterior_network_model(X_tensor)
-    loss = postnet_loss(alpha, y, entropy_weight=1e-5)
+    loss = postnet_loss(alpha, y_tensor, entropy_weight=1e-5)
     loss.backward()
     opt.step()
 
 # %%
-# Evaluate predictive uncertainty
+# Uncertainty Evaluation
+# ----------------------
 
 posterior_network_model.eval()
 rep = representer(posterior_network_model)

@@ -2,9 +2,7 @@
 Deep Ensemble on Two Moons
 ==========================
 
-A Deep Ensemble trains multiple independent models from different random
-initializations, using prediction disagreement as an uncertainty signal.
-Uncertainty concentrates at the decision boundary between classes.
+Train several independent copies of the same network from different initializations and average their predictions.
 """
 
 from __future__ import annotations
@@ -20,26 +18,33 @@ from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
 
 # %%
-# Prepare the Two Moons dataset
+# Setup
+# -----
 
 X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
 # %%
-# Create the ensemble from a base model
+# Model
+# -----
 
 base_model = MLPClassifier()
 
 ensemble_model = ensemble(
     base_model,
     num_members=3,
-    reset_params=True,
+    reset_params=True,  # fresh init per member maximizes diversity
     predictor_type="logit_classifier",
 )
 
 # %%
-# Train each member independently
+# Training
+# --------
+#
+# Train each member independently with standard cross-entropy.
+# The uncertainty signal comes from disagreement between members,
+# not from the loss itself.
 
 ensemble_model.train()
 for member in ensemble_model:
@@ -52,7 +57,8 @@ for member in ensemble_model:
         opt.step()
 
 # %%
-# Evaluate predictive uncertainty
+# Uncertainty Evaluation
+# ----------------------
 
 ensemble_model.eval()
 rep = representer(ensemble_model)

@@ -2,9 +2,7 @@
 DropConnect on Two Moons
 ========================
 
-DropConnect randomly drops individual weights rather than activations at
-inference time, producing stochastic predictions similar to MC Dropout.
-Uncertainty concentrates at the decision boundary between classes.
+Mask individual weights instead of activations and average several stochastic forward passes at inference.
 """
 
 from __future__ import annotations
@@ -20,21 +18,31 @@ from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
 
 # %%
-# Prepare the Two Moons dataset
+# Setup
+# -----
 
 X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
 # %%
-# Wrap the base model with DropConnect
+# Model
+# -----
 
 base_model = MLPClassifier()
 
-dropconnect_model = dropconnect(base_model, p=0.25, predictor_type="logit_classifier",)
+dropconnect_model = dropconnect(
+    base_model,
+    p=0.5,  # per-weight masking probability (kept active at inference)
+    predictor_type="logit_classifier",
+)
 
 # %%
-# Train
+# Training
+# --------
+#
+# Standard cross-entropy with mini-batches.  Weight masking is applied at
+# every forward pass, both during training and at inference time.
 
 opt = torch.optim.Adam(dropconnect_model.parameters(), lr=1e-3)
 
@@ -47,7 +55,8 @@ for epoch in range(300):
     opt.step()
 
 # %%
-# Evaluate predictive uncertainty
+# Uncertainty Evaluation
+# ----------------------
 
 dropconnect_model.eval()
 rep = representer(dropconnect_model, num_samples=400)

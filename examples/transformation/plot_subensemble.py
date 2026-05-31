@@ -2,10 +2,8 @@
 Sub-Ensemble on Two Moons
 =========================
 
-A Sub-Ensemble freezes a shared backbone and trains multiple independent
-heads, giving ensemble-style uncertainty at a fraction of the cost. Because
-the backbone is shared, diversity -- and thus uncertainty -- comes solely
-from head disagreement rather than full model disagreement.
+Share a frozen pre-trained backbone across several independent classification heads.
+Useful when an expensive backbone is already trained and only lightweight heads should be replicated to obtain uncertainty.
 """
 
 from __future__ import annotations
@@ -21,14 +19,16 @@ from examples.utils.plotting import plot_example_uncertainty
 from examples.utils.model import SequentialModel
 
 # %%
-# Prepare the Two Moons dataset
+# Setup
+# -----
 
 X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
 # %%
-# Pre-train the shared backbone
+# Backbone Pre-training
+# ---------------------
 
 base_model = SequentialModel()
 base_model.train()
@@ -43,22 +43,28 @@ for epoch in range(250):
 print(f"backbone loss: {loss:.4f}")
 
 # %%
-# Create the sub-ensemble from the pre-trained backbone
+# Model
+# -----
+# ``subensemble`` requires an nn.Sequential for head_layer slicing.
 
 subensemble_model = subensemble(
     base_model,
     num_heads=3,
     reset_params=True,
-    head_layer=2,
+    head_layer=2,  # split point: lower = more diversity, higher = more sharing
     predictor_type="logit_classifier",
 )
 
 # %%
-# Train each head independently
+# Training
+# --------
+#
+# Only head parameters have requires_grad=True; the frozen backbone is skipped by the optimizer.
 
 subensemble_model.train()
 for member in subensemble_model:
-    opt = torch.optim.Adam(member.parameters(), lr=1e-3)
+    trainable = [p for p in member.parameters() if p.requires_grad]
+    opt = torch.optim.Adam(trainable, lr=1e-3)
     for epoch in range(250):
         opt.zero_grad()
         out = member(X_tensor)
@@ -67,7 +73,8 @@ for member in subensemble_model:
         opt.step()
 
 # %%
-# Evaluate predictive uncertainty
+# Uncertainty Evaluation
+# ----------------------
 
 subensemble_model.eval()
 rep = representer(subensemble_model)
