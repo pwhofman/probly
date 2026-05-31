@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from flextype import flexdispatch
-from probly.plot.credal.plot import _get_unnormalized_probabilities, _to_numpy
+from probly.plot.credal._data import _get_unnormalized_probabilities, _to_numpy
 from probly.representation.credal_set.array import (
     ArrayConvexCredalSet,
     ArrayDiscreteCredalSet,
@@ -29,7 +29,6 @@ if TYPE_CHECKING:
     )
 
 
-_NUM_BINARY_CLASSES = 2
 _BINARY_Y_HEIGHT = 0.05
 _BINARY_Y_PAD = 0.02
 

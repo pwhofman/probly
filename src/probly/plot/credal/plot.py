@@ -10,11 +10,17 @@ import numpy as np
 
 from probly.plot.config import PlotConfig
 
+from ._binary import _draw_credal_set_binary, _setup_binary_axes
+from ._data import _flatten_batch, _get_unnormalized_probabilities
+from ._radar_axes import _get_radar_axes
+from ._spider import _draw_credal_set_spider, _setup_spider_axes
+from ._ternary import _draw_credal_set_ternary
+
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from mpltern import TernaryAxes
 
-    from probly.representation.credal_set._common import CategoricalCredalSet, SingletonCredalSet
+    from probly.representation.credal_set._common import SingletonCredalSet
     from probly.representation.credal_set.array import (
         ArrayCategoricalCredalSet,
     )
@@ -29,53 +35,6 @@ _NUM_TERNARY_CLASSES = 3
 _MIN_SPIDER_CLASSES = 4
 
 _OVERLAY_GT_COLOR = "#2c3e50"
-
-
-def _to_numpy(val: object) -> np.ndarray:
-    """Safely detach tensors to numpy arrays, or pass arrays through."""
-    if hasattr(val, "detach"):
-        return val.detach().cpu().numpy()  # ty: ignore[call-non-callable]
-    return np.asarray(val)
-
-
-def _flatten_batch[T: CategoricalCredalSet](data: T) -> T:
-    """Flatten batch dimensions if the credal set supports it (Torch or Array)."""
-    reshape_fn = getattr(data, "reshape", None)
-    if callable(reshape_fn):
-        return reshape_fn(-1)
-
-    msg = (
-        f"Input of type {type(data).__name__} is not a supported batched credal set. "
-        "Plotting requires credal sets from standard backends (Torch or Array) that implement '.reshape()'."
-    )
-    raise TypeError(msg)
-
-
-def _get_unnormalized_probabilities(
-    data: ArrayCategoricalCredalSet | TorchCategoricalCredalSet | SingletonCredalSet,
-) -> np.ndarray:
-    """Extract unnormalized probabilities from either Array or Torch representations."""
-    if hasattr(data, "unnormalized_probabilities"):
-        return _to_numpy(data.unnormalized_probabilities)
-    if hasattr(data, "array") and hasattr(data.array, "unnormalized_probabilities"):
-        return _to_numpy(data.array.unnormalized_probabilities)
-    if hasattr(data, "tensor") and hasattr(data.tensor, "unnormalized_probabilities"):
-        return _to_numpy(data.tensor.unnormalized_probabilities)
-    if hasattr(data, "barycenter") and hasattr(
-        data.barycenter, "unnormalized_probabilities"
-    ):  # For DirichletLevelSetCredalSet
-        return _to_numpy(data.barycenter.unnormalized_probabilities)
-    if hasattr(data, "nominal") and hasattr(data.nominal, "unnormalized_probabilities"):
-        return _to_numpy(data.nominal.unnormalized_probabilities)
-
-    msg = f"Cannot extract probabilities from {type(data).__name__}"
-    raise TypeError(msg)
-
-
-from ._binary import _draw_credal_set_binary, _setup_binary_axes  # noqa : E402 # necessary to avoid circular imports
-from ._radar_axes import _get_radar_axes  # noqa : E402
-from ._spider import _draw_credal_set_spider, _setup_spider_axes  # noqa : E402
-from ._ternary import _draw_credal_set_ternary  # noqa : E402
 
 
 def _draw_overlay_binary(
