@@ -18,6 +18,7 @@ def plot_mnist_uncertainty(
     is_ensemble: bool = False,
     title: str = "Most Uncertain Test Predictions",
     n_top: int = 5,
+    unit: str = "bits",
 ) -> ModuleType:
     num_classes = mean_probs.shape[1]
     top_idx = uncertainty.argsort()[-n_top:][::-1]
@@ -36,7 +37,7 @@ def plot_mnist_uncertainty(
         axes[0, col].imshow(img, cmap="gray")
         axes[0, col].set_title(
             f"True: {int(y_test[idx])} | Pred: {int(preds[idx])}\n"
-            f"U = {uncertainty[idx]:.2f} bits"
+            f"U = {uncertainty[idx]:.2f} {unit}"
         )
         axes[0, col].axis("off")
 
