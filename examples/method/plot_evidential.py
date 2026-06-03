@@ -12,58 +12,81 @@ from __future__ import annotations
 
 from sklearn.datasets import make_moons
 import torch
+from torch import nn
 from torch.utils.data import TensorDataset, DataLoader
+
 
 from probly.representer import representer
 from probly.method.evidential import evidential_classification
-from probly.train.evidential.torch import evidential_log_loss
-from probly.train.evidential.torch import unified_evidential_train
+from probly.train.evidential.torch import evidential_mse_loss, evidential_kl_divergence
+
 
 from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
 
 # %%
-# Prepare the Two Moons dataset
+# Setup
+# -----
 
 X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_tensor = torch.from_numpy(X).float()
 y_tensor = torch.from_numpy(y).long()
 
-
 dataset = TensorDataset(X_tensor, y_tensor)
 dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
 # %%
-# Wrap the base model with Evidential Classification
+# Model
+# -----
+#
 
 base_model = MLPClassifier()
 evidential_model = evidential_classification(base_model, predictor_type="logit_classifier")
 
 # %%
-# Train using unified_evidential_train
+# Training
+# --------
+#
+# Train using the evidential loss, which combines MSE for the evidence
+# and a KL-divergence term to regularize the distribution.
+# The KL-weight is annealed over the first few epochs to allow the model
+# to learn the evidence before enforcing the prior.
 
-unified_evidential_train(
-    mode="EDL",
-    model=evidential_model,
-    dataloader=dataloader,
-    loss_fn=evidential_log_loss,
-    oodloader=None,
-    class_count=None,
-    epochs=300,
-    lr=1e-3,
-    device="cpu"
-)
+opt = torch.optim.Adam(evidential_model.parameters(), lr=1e-3)
+grad_clip_norm = 0.5
+
+kl_weight = 1.0
+annealing_epochs = 10
+
+evidential_model.train()
+for epoch in range (300):
+
+    if annealing_epochs == 0:
+        lambda_t = kl_weight
+    else:
+        lambda_t = kl_weight * min(1.0, epoch / annealing_epochs)
+
+    for inputs, targets in dataloader:
+
+        opt.zero_grad()
+
+        alpha = evidential_model(inputs)
+
+        loss_val = evidential_mse_loss(alpha, targets) + lambda_t * evidential_kl_divergence(alpha, targets)
+
+        loss_val.backward()
+
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(evidential_model.parameters(), grad_clip_norm)
+
+        opt.step()
 
 # %%
-# Evaluate predictive uncertainty
+# Evaluation
+# ----------
 
 evidential_model.eval()
 rep = representer(evidential_model, num_samples=200)
 
-plot = plot_example_uncertainty(
-    X, y, rep,
-    title="Evidential Classification Predictive Uncertainty",
-    vmin=None,
-    vmax=None
-)
+plot = plot_example_uncertainty(X, y, rep,title="Evidential Classification Predictive Uncertainty")
 plot.show()
