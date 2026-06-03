@@ -63,7 +63,7 @@ posterior_network_model = posterior_network(
 opt = torch.optim.Adam(posterior_network_model.parameters(), lr=1e-3)
 
 posterior_network_model.train()
-for epoch in range(1000):
+for _epoch in range(1000):
     opt.zero_grad()
     alpha = posterior_network_model(X_tensor)
     loss = postnet_loss(alpha, y_tensor, entropy_weight=1e-5)
