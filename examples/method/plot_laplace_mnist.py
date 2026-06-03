@@ -68,8 +68,8 @@ for _epoch in range(5):
 # Laplace Approximation
 # ---------------------
 #
-# Fit a Kronecker-factored Laplace approximation over the last layer on the
-# full training set.  No retraining is needed.
+# Fit a Kronecker-factored (KFAC) Laplace approximation over the last layer of
+# the trained model.  No retraining is needed.
 
 flat_model.eval()
 

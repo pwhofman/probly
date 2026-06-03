@@ -21,8 +21,11 @@ from probly.evaluation.ood import evaluate_ood
 from probly.method.credal_net import credal_net
 from probly.metrics import roc_curve
 from probly.plot import plot_histogram, plot_roc_curve
+from probly.predictor import predict_raw
 from probly.quantification import quantify
 from probly.representer import representer
+from probly.train.credal.torch import intersection_probability_ce_loss
+from probly.utils.torch import intersection_probability
 from probly_benchmark.data import load_mnist
 
 from examples.utils.model import MLPClassifier
@@ -40,44 +43,41 @@ y_test = torch.cat(list(y_test_batches))
 images_test = (X_test.view(-1, 28, 28) * 255).byte()
 
 # %%
-# Base Model
-# ----------
+# Model
+# -----
 #
-# Train a standard classifier; Credal Net wraps it post-hoc by converting the
-# deterministic weights into intervals centered on the trained values.
+# Wrap a base classifier with ``credal_net`` so each weight becomes a learnable
+# interval; ``use_base_weights=True`` initializes the interval centers from the
+# (untrained) base weights.
 
 base_model = MLPClassifier(in_features=28 * 28, hidden_features=256, out_features=10)
-
-base_model.train()
-opt = torch.optim.Adam(base_model.parameters(), lr=1e-3)
-for _epoch in range(5):
-    correct, total = 0, 0
-    for X_batch, y_batch in train_loader:
-        X_flat = X_batch.view(-1, 28 * 28)
-        opt.zero_grad()
-        logits = base_model(X_flat)
-        loss = nn.functional.cross_entropy(logits, y_batch)
-        loss.backward()
-        opt.step()
-        correct += (logits.detach().argmax(-1) == y_batch).sum().item()
-        total += len(y_batch)
-    if correct / total >= 0.97:
-        break
-
-# %%
-# Credal Net
-# ----------
-#
-# Wrap the trained model; ``use_base_weights=True`` seeds the interval
-# centers from the trained weights so no retraining is required.
-
-base_model.eval()
 prob_model = nn.Sequential(base_model, nn.Softmax(dim=1))
 credal_model = credal_net(
     prob_model,
     predictor_type="probabilistic_classifier",
     use_base_weights=True,
 )
+
+# %%
+# Training
+# --------
+#
+# Train the wrapped credal net directly with the intersection-probability
+# cross-entropy loss (Eq. 14 of :cite:`wang2024credalnet`), which operates on
+# the packed ``(lower, upper)`` interval output produced by ``predict_raw``.
+
+opt = torch.optim.Adam(credal_model.parameters(), lr=1e-3)
+
+credal_model.train()
+for _epoch in range(5):
+    for X_batch, y_batch in train_loader:
+        X_flat = X_batch.view(-1, 28 * 28)
+        opt.zero_grad()
+        output = predict_raw(credal_model, X_flat)
+        loss = intersection_probability_ce_loss(output, y_batch)
+        loss.backward()
+        opt.step()
+credal_model.eval()
 
 # %%
 # Uncertainty Quantification
@@ -98,9 +98,14 @@ if uncertainty.ndim > 1:
 # %%
 # Predictions
 # -----------
+#
+# The point prediction is the intersection probability of the learned
+# ``(lower, upper)`` class-probability interval.
 
 with torch.no_grad():
-    mean_probs = prob_model(X_test).numpy()
+    raw = predict_raw(credal_model, X_test)
+    n_classes = raw.shape[-1] // 2
+    mean_probs = intersection_probability(raw[..., :n_classes], raw[..., n_classes:]).numpy()
 
 accuracy = (mean_probs.argmax(-1) == y_test.numpy()).mean() * 100
 print(f"Test accuracy: {accuracy:.1f}%")

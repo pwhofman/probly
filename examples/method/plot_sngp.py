@@ -2,15 +2,17 @@
 SNGP Distance Awareness on 2D Toys
 ==================================
 
-This example replicates the toy experiment from Figure 1 of the SNGP paper
-(:cite:`liu2020SNGP`). It trains a PyTorch ResNet wrapped with SNGP on the
-classic 2-D Two Moons and Blobs classification datasets.
-
-Unlike standard neural networks which confidently extrapolate far away
-from the training data, SNGP's Gaussian Process replaces the final layer.
-This allows it to inherently measure the distance between a new input and
-the training manifold, smoothly increasing epistemic uncertainty in
+Spectral-normalized Neural Gaussian Process (SNGP, :cite:`liu2020SNGP`) wraps a
+deep backbone with spectral normalization and replaces its final dense layer
+with a random Fourier feature approximation to a Gaussian Process.  Spectral
+normalization preserves input-space distance in the feature map, so the GP
+posterior variance grows smoothly as inputs move away from the training
+distribution -- unlike a standard network that extrapolates confidently into
 out-of-distribution regions.
+
+This example replicates the toy experiment from Figure 1 of the SNGP paper on
+the classic 2-D Two Moons and Blobs datasets using a 12-layer, 128-unit deep
+residual network (ResFFN-12-128).
 """
 
 from __future__ import annotations
@@ -25,23 +27,29 @@ from probly.representer import representer
 from examples.utils.plotting import plot_example_uncertainty
 
 # %%
-# Prepare the Two Moons dataset and the Blobs dataset
+# Setup
+# -----
+#
+# Prepare the Two Moons and Blobs datasets.
 
 X_moons, y_moons = make_moons(n_samples=500, noise=0.05, random_state=0)
 X_moons_tensor = torch.from_numpy(X_moons).float()
 y_moons_tensor = torch.from_numpy(y_moons).long()
 
 
-X_blobs, y_blobs = make_blobs(n_samples=500, centers=[[-1.0, -1.0], [1.0, 1.0]], cluster_std=0.5, random_state=0)
+X_blobs, y_blobs = make_blobs(
+    n_samples=500, centers=[[-1.0, -1.0], [1.0, 1.0]], cluster_std=0.5, random_state=0
+)
 X_blobs_tensor = torch.from_numpy(X_blobs).float()
 y_blobs_tensor = torch.from_numpy(y_blobs).long()
 
 
 # %%
-# Define a deep residual network and wrap it with SNGP
+# Model
+# -----
 #
-# The SNGP paper explicitly uses a 12-layer, 128-unit deep residual network (ResFFN-12-128)
-# to demonstrate that SNGP preserves distance awareness even in deep architectures.
+# SNGP wraps the ResFFN backbone with spectral normalization and replaces its
+# linear output head with a random Fourier feature approximation to a GP.
 
 class ResFFNLayer(nn.Module):
     def __init__(self, hidden_dim: int = 128) -> None:
@@ -67,63 +75,64 @@ class ResFFN(nn.Module):
             x = layer(x)
         return self.last(x)
 
-base_model_moons = ResFFN()
 
 sngp_model_moons = sngp(
-    base_model_moons,
+    ResFFN(),
     num_random_features=128,
     ridge_penalty=0.01,
     norm_multiplier=0.9,
     n_power_iterations=1,
 )
-opt = torch.optim.Adam(sngp_model_moons.parameters(), lr=1e-3)
-
-
-base_model_blobs = ResFFN()
-
 sngp_model_blobs = sngp(
-    base_model_blobs,
+    ResFFN(),
     num_random_features=128,
     ridge_penalty=0.01,
     norm_multiplier=0.9,
     n_power_iterations=1,
 )
-opt_blobs = torch.optim.Adam(sngp_model_blobs.parameters(), lr=1e-3)
 
 # %%
-# Train the SNGP model
-sngp_model_moons.train()
-
-for epoch in range(300):
-    reset_precision_matrix(sngp_model_moons)
-    out = sngp_model_moons(X_moons_tensor)
-    logits = out[0] if isinstance(out, tuple) else getattr(out, "mean", out)
-    loss = nn.functional.cross_entropy(logits, y_moons_tensor)
-
-    opt.zero_grad()
-    loss.backward()
-    opt.step()
+# Training
+# --------
+#
+# The GP precision matrix is reset at the start of every epoch so it
+# accumulates statistics across the full training set.  The loss is
+# cross-entropy on the GP MAP logits returned by the model.
 
 
-sngp_model_blobs.train()
+def train_sngp(model: nn.Module, X: torch.Tensor, y: torch.Tensor, epochs: int = 300) -> None:
+    opt = torch.optim.Adam(model.parameters(), lr=1e-3)
+    model.train()
+    for _epoch in range(epochs):
+        reset_precision_matrix(model)
+        out = model(X)
+        logits = out[0] if isinstance(out, tuple) else getattr(out, "mean", out)
+        loss = nn.functional.cross_entropy(logits, y)
+        opt.zero_grad()
+        loss.backward()
+        opt.step()
 
-for epoch in range(300):
-    reset_precision_matrix(sngp_model_blobs)
-    out = sngp_model_blobs(X_blobs_tensor)
-    logits = out[0] if isinstance(out, tuple) else getattr(out, "mean", out)
-    loss = nn.functional.cross_entropy(logits, y_blobs_tensor)
 
-    opt_blobs.zero_grad()
-    loss.backward()
-    opt_blobs.step()
+train_sngp(sngp_model_moons, X_moons_tensor, y_moons_tensor)
+train_sngp(sngp_model_blobs, X_blobs_tensor, y_blobs_tensor)
 
 # %%
-# Evaluate Epistemic Uncertainty over a 2D Grid
+# Uncertainty Evaluation
+# ----------------------
+#
+# Evaluate the predictive uncertainty over a 2-D grid using the representer.
 
 sngp_model_moons.eval()
 rep_moons = representer(sngp_model_moons, num_samples=800)
 
-plot_moons = plot_example_uncertainty(X_moons, y_moons, rep_moons, xlim=(-3.0, 3.0), ylim=(-3.0, 3.0), title="SNGP Predictive Uncertainty")
+plot_moons = plot_example_uncertainty(
+    X_moons,
+    y_moons,
+    rep_moons,
+    xlim=(-3.0, 3.0),
+    ylim=(-3.0, 3.0),
+    title="SNGP Predictive Uncertainty",
+)
 plot_moons.show()
 
 

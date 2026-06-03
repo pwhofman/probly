@@ -61,8 +61,9 @@ opt = torch.optim.Adam(sngp_model.parameters(), lr=1e-3)
 # Training
 # --------
 #
-# The precision matrix is reset at the start of each epoch so it accumulates
-# across the full training set rather than per-batch.
+# The GP precision matrix is reset at the start of every epoch so it
+# accumulates statistics across the full training set.  The loss is
+# cross-entropy on the GP MAP logits returned by the model.
 
 sngp_model.train()
 for _epoch in range(5):

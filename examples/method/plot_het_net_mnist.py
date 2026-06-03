@@ -12,11 +12,12 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from torch import nn
+import torch.nn.functional as F
 
 from torchvision import datasets, transforms
 
 from probly.evaluation.ood import evaluate_ood
+from probly.layers.torch import HeteroscedasticLayer
 from probly.method.het_net import het_net
 from probly.metrics import roc_curve
 from probly.plot import plot_histogram, plot_roc_curve
@@ -53,25 +54,35 @@ het_net_model = het_net(base_model, predictor_type="logit_classifier")
 # Training
 # --------
 #
-# Standard cross-entropy training; the noise head is learned jointly.
+# Setting ``training_samples = S`` on every ``HeteroscedasticLayer`` makes the
+# head draw S noise samples per input in a single vectorized forward pass and
+# return the log of the softmax-averaged probabilities, optimized with NLL.
 
 opt = torch.optim.Adam(het_net_model.parameters(), lr=1e-3)
+training_samples = 4
+
+het_layers = [m for m in het_net_model.modules() if isinstance(m, HeteroscedasticLayer)]
+for layer in het_layers:
+    layer.training_samples = training_samples
 
 het_net_model.train()
-for _epoch in range(5):
-    correct, total = 0, 0
-    for X_batch, y_batch in train_loader:
-        X_flat = X_batch.view(-1, 28 * 28)
-        opt.zero_grad()
-        out = het_net_model(X_flat)
-        logits = out[0] if isinstance(out, tuple) else out
-        loss = nn.functional.cross_entropy(logits, y_batch)
-        loss.backward()
-        opt.step()
-        correct += (logits.detach().argmax(-1) == y_batch).sum().item()
-        total += len(y_batch)
-    if correct / total >= 0.97:
-        break
+try:
+    for _epoch in range(5):
+        correct, total = 0, 0
+        for X_batch, y_batch in train_loader:
+            X_flat = X_batch.view(-1, 28 * 28)
+            opt.zero_grad()
+            log_probs = het_net_model(X_flat)
+            loss = F.nll_loss(log_probs, y_batch)
+            loss.backward()
+            opt.step()
+            correct += (log_probs.detach().argmax(-1) == y_batch).sum().item()
+            total += len(y_batch)
+        if correct / total >= 0.97:
+            break
+finally:
+    for layer in het_layers:
+        layer.training_samples = 1
 
 # %%
 # Uncertainty Quantification
