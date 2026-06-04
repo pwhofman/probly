@@ -13,6 +13,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
 from torchvision import datasets, transforms
@@ -23,7 +24,7 @@ from probly.metrics import roc_curve
 from probly.plot import plot_histogram, plot_roc_curve
 from probly.quantification import quantify
 from probly.representer import representer
-from probly.train.evidential.torch import evidential_log_loss, unified_evidential_train
+from probly.train.evidential.torch import evidential_log_loss, evidential_kl_divergence
 from probly_benchmark.data import load_mnist
 
 from examples.utils.model import MLPClassifier
@@ -51,9 +52,10 @@ evidential_model = evidential_classification(base_model, predictor_type="logit_c
 # Training
 # --------
 #
-# ``unified_evidential_train`` runs the EDL training loop which combines
-# the evidential log-loss with a KL-divergence regularizer that grows with
-# the epoch, encouraging the model to reserve evidence for seen categories.
+# Train using the evidential log-loss, which combines MSE for the evidence
+# and a KL-divergence term to regularize the distribution.
+# The KL-weight is annealed over the first few epochs to allow the model
+# to learn the evidence before enforcing the prior.
 
 X_train_batches, y_train_batches = zip(*train_loader)
 X_train_flat = torch.cat([x.view(-1, 28 * 28) for x in X_train_batches])
@@ -65,17 +67,33 @@ flat_dataloader = DataLoader(
     shuffle=True,
 )
 
-unified_evidential_train(
-    mode="EDL",
-    model=evidential_model,
-    dataloader=flat_dataloader,
-    loss_fn=evidential_log_loss,
-    oodloader=None,
-    class_count=None,
-    epochs=5,
-    lr=1e-3,
-    device="cpu",
-)
+opt = torch.optim.Adam(evidential_model.parameters(), lr=1e-3)
+grad_clip_norm = 0.5
+
+kl_weight = 0.01
+annealing_epochs = 2
+
+evidential_model.train()
+for epoch in range(5):
+
+    if annealing_epochs == 0:
+        lambda_t = kl_weight
+    else:
+        lambda_t = kl_weight * min(1.0, epoch / annealing_epochs)
+
+    for inputs, targets in flat_dataloader:
+        opt.zero_grad()
+
+        alpha = evidential_model(inputs)
+
+        loss_val = evidential_log_loss(alpha, targets) + lambda_t * evidential_kl_divergence(alpha, targets)
+
+        loss_val.backward()
+
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(evidential_model.parameters(), grad_clip_norm)
+
+        opt.step()
 
 # %%
 # Uncertainty Quantification

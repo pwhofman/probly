@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch.amp import autocast
+from torch import nn
 
 from torchvision import datasets, transforms
 
@@ -55,6 +55,8 @@ duq_model = duq(base_model, predictor_type="logit_classifier")
 # penalty that enforces a bi-Lipschitz constraint on the feature map.
 
 opt = torch.optim.Adam(duq_model.parameters(), lr=1e-3)
+criterion = nn.BCELoss(reduction = "mean")
+
 gradient_penalty = 0.5
 num_classes = 10
 
@@ -65,20 +67,20 @@ for _epoch in range(5):
         X_flat = X_batch.view(-1, 28 * 28).detach().requires_grad_(True)
         targets_onehot = F.one_hot(y_batch, num_classes).float()
 
-        with autocast(X_flat.device.type, dtype=torch.bfloat16, enabled=True):
-            kernel_values = duq_model(X_flat)
-            loss = F.binary_cross_entropy(kernel_values, targets_onehot, reduction="mean")
 
-            gradients = torch.autograd.grad(
-                outputs=kernel_values,
-                inputs=X_flat,
-                grad_outputs=torch.ones_like(kernel_values),
-                create_graph=True,
-                retain_graph=True,
-            )[0]
-            grad_norm = gradients.flatten(start_dim=1).norm(2, dim=1)
-            duq_penalty = ((grad_norm - 1.0) ** 2).mean()
-            total_loss = loss + gradient_penalty * duq_penalty
+        kernel_values = duq_model(X_flat)
+        loss = criterion(kernel_values, targets_onehot)
+
+        gradients = torch.autograd.grad(
+            outputs=kernel_values,
+            inputs=X_flat,
+            grad_outputs=torch.ones_like(kernel_values),
+            create_graph=True,
+            retain_graph=True,
+        )[0]
+        grad_norm = gradients.flatten(start_dim=1).norm(2, dim=1)
+        duq_penalty = ((grad_norm - 1.0) ** 2).mean()
+        total_loss = loss + gradient_penalty * duq_penalty
 
         opt.zero_grad()
         total_loss.backward()

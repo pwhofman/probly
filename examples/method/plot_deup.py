@@ -2,10 +2,10 @@
 DEUP on Two Moons
 =================
 
-Direct epistemic uncertainty prediction trains a base classifier
-and then a separate error head to explicitly predict per-sample
-classification errors, using this predicted error score as a
-direct measure of the model's uncertainty regarding its own knowledge.
+Direct Epistemic Uncertainty Prediction (DEUP) trains a base classifier in
+phase one, then trains a separate error head in phase two that explicitly
+predicts per-sample cross-entropy errors using stationarizing features.
+The predicted error score serves as a direct measure of epistemic uncertainty.
 """
 
 from __future__ import annotations
@@ -14,7 +14,6 @@ from sklearn.datasets import make_moons
 import torch
 from torch import nn
 from torch.utils.data import ConcatDataset, DataLoader, TensorDataset
-from typing import Any
 
 from probly.method.deup import deup
 from probly.representer import representer
@@ -36,13 +35,6 @@ train_loader = DataLoader(dataset, batch_size=64, shuffle=True)
 # %%
 # Model
 # -----
-#
-# Wrap the base model with DEUP. We define stationarizing features that combine
-# density estimates and dropout variance to create a robust input for the error head.
-#
-# The model is moved to the available device (GPU if present, otherwise CPU) to ensure
-# efficient computation during training and density fitting, while maintaining compatibility
-# across different hardware setups without manual code changes.
 
 base_model = MLPClassifier()
 
@@ -65,50 +57,52 @@ deup_model.to(device)
 # ---------------------------------
 #
 # Train the encoder and classification head with standard cross-entropy loss.
-# Gradient clipping is applied to ensure stability.
 
-opt_main = torch.optim.Adam(
+optimizer_phase1 = torch.optim.Adam(
     list(deup_model.encoder.parameters()) + list(deup_model.classification_head.parameters()),
     lr=1e-3
 )
 criterion = nn.CrossEntropyLoss()
-grad_clip_norm = 0.5
 
 deup_model.train()
 for epoch in range(50):
     for inputs, targets in train_loader:
         inputs, targets = inputs.to(device), targets.to(device)
-        opt_main.zero_grad()
 
         features = deup_model.encoder(inputs)
         logits = deup_model.classification_head(features)
         loss = criterion(logits, targets)
 
+        optimizer_phase1.zero_grad()
         loss.backward()
-        if grad_clip_norm is not None:
-            nn.utils.clip_grad_norm_(deup_model.parameters(), grad_clip_norm)
-        opt_main.step()
-
-# Freeze the encoder and classification head
-for param in deup_model.encoder.parameters():
-    param.requires_grad = False
-for param in deup_model.classification_head.parameters():
-    param.requires_grad = False
+        optimizer_phase1.step()
 
 # %%
 # Phase 2: Prepare Stationarizing Features & OOD Data
 # ---------------------------------------------------
 #
-# 1. Fit auxiliary providers (e.g., GMM, Dropout) to compute stationarizing features.
-# 2. Generate synthetic OOD data (uniform noise) to teach the error head about
+# Collecting the DEUP error targets.
+#
+# 1. Freeze the backbone.
+# 2. Fit auxiliary providers (e.g., GMM, Dropout) to compute stationarizing features.
+# 3. Generate synthetic OOD data (uniform noise) to teach the error head about
 #    high-error regions.
-# 3. Compute features and target error values (log of BCE loss) for all data.
+# 4. Compute features and target error values (log of BCE loss) for all data.
 
-providers: list[Any] = list(getattr(deup_model, "providers", []))
+for param in deup_model.encoder.parameters():
+    param.requires_grad = False
+for param in deup_model.classification_head.parameters():
+    param.requires_grad = False
 
-for provider in providers:
-    provider.to(device)
-    provider.fit(deup_model.encoder, deup_model.classification_head, train_loader, device, False)
+
+deup_model.eval()
+for provider in deup_model.providers:
+    provider.fit(
+        deup_model.encoder,
+        deup_model.classification_head,
+        train_loader,
+        device,
+    )
 
 _orig_phi = deup_model._compute_stationarizing_features
 deup_model._compute_stationarizing_features = lambda *a: _orig_phi(*a).clamp(-10.0, 10.0)
@@ -124,11 +118,11 @@ phase2_loader = DataLoader(
 )
 
 bce_criterion = nn.BCELoss(reduction="none")
-deup_model.eval()
 
 all_phi: list[torch.Tensor] = []
 all_targets: list[torch.Tensor] = []
 
+deup_model.eval()
 with torch.no_grad():
     for inputs_, targets_ in phase2_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
@@ -155,7 +149,7 @@ error_head_loader = torch.utils.data.DataLoader(error_head_dataset, batch_size=6
 
 # %%
 # Phase 3: Training Error Head
-# -------------------------
+# ----------------------------
 #
 # Train the error head to predict the target error values from the stationarizing features.
 # This head acts as the final uncertainty estimator.

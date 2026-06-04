@@ -2,11 +2,11 @@
 DUQ on Two Moons
 ================
 
-Deep Uncertainty Quantification (DUQ) replaces the standard softmax output with a
+Deep Uncertainty Quantification (DUQ) replaces the standard softmax head with a
 radial basis function (RBF) network that maps feature representations to per-class
 centroids.
-The epistemic uncertainty can be estimated by measuring the kernel distance
-between an input's representation and these learned centroids.
+Uncertainty is estimated from the kernel distances between an input's representation
+and the learned centroids.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from __future__ import annotations
 from sklearn.datasets import make_moons
 import torch
 import torch.nn.functional as F
+from torch import nn
 
 from probly.representer import representer
 from probly.method.duq import duq
@@ -35,29 +36,29 @@ y_tensor = torch.from_numpy(y).long()
 # -----
 
 base_model = MLPClassifier()
-
 duq_model = duq(base_model, predictor_type="logit_classifier")
 
 # %%
 # Training
 # --------
-# Train the model with cross-entropy plus a gradient penalty.
-# The penalty enforces Lipschitz continuity by keeping gradient norms
-# close to 1, ensuring the uncertainty estimates remain reliable.
+#
+# DUQ uses binary cross-entropy on the kernel outputs together with a gradient
+# penalty that enforces a bi-Lipschitz constraint on the feature map.
 
 opt = torch.optim.Adam(duq_model.parameters(), lr=1e-3)
+criterion = nn.BCELoss(reduction = "mean")
+
 gradient_penalty = 0.5
+num_classes = 2
 
 duq_model.train()
 for epoch in range(300):
-    num_classes = 2
     targets_onehot = F.one_hot(y_tensor, num_classes).float()
 
-    gradient_penalty = 0.5
     X_tensor.requires_grad_(True)
 
     kernel_values = duq_model(X_tensor)
-    loss = F.binary_cross_entropy(kernel_values, targets_onehot, reduction="mean")
+    loss = criterion(kernel_values, targets_onehot)
 
     gradients = torch.autograd.grad(
         outputs=kernel_values,

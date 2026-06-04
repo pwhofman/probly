@@ -55,6 +55,7 @@ ddu_model = ddu(base_model, sn_coeff=5.0, predictor_type="logit_classifier")
 # --------
 
 opt = torch.optim.Adam(ddu_model.parameters(), lr=1e-3)
+criterion = nn.CrossEntropyLoss()
 
 ddu_model.train()
 for _epoch in range(5):
@@ -62,9 +63,11 @@ for _epoch in range(5):
     for X_batch, y_batch in train_loader:
         X_flat = X_batch.view(-1, 28 * 28)
         opt.zero_grad()
-        out = ddu_model(X_flat)
-        logits = out[0] if isinstance(out, tuple) else getattr(out, "mean", out)
-        loss = nn.functional.cross_entropy(logits, y_batch)
+        features = ddu_model.encoder(X_flat)
+        logits = ddu_model.classification_head(features)
+
+        loss = criterion(logits, y_batch)
+
         loss.backward()
         opt.step()
         correct += (logits.detach().argmax(-1) == y_batch).sum().item()

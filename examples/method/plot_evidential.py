@@ -2,10 +2,10 @@
 Evidential Deep Learning on Two Moons
 ====================================================================
 
-Evidential Deep Learning replaces the standard softmax output with
-a Dirichlet distribution over a simplex. The output is an evidence
-vector, the method therefore directly learns evidence for each class to
-directly predict the distribution.
+Evidential Deep Learning replaces the softmax output with a Dirichlet
+distribution, learning to predict the distribution over class probabilities
+directly.  Uncertainty is high when evidence is spread across many classes
+or concentrated on a class the model has not seen before.
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ evidential_model = evidential_classification(base_model, predictor_type="logit_c
 # Training
 # --------
 #
-# Train using the evidential loss, which combines MSE for the evidence
+# Train using the evidential log-loss, which combines MSE for the evidence
 # and a KL-divergence term to regularize the distribution.
 # The KL-weight is annealed over the first few epochs to allow the model
 # to learn the evidence before enforcing the prior.
@@ -55,8 +55,8 @@ evidential_model = evidential_classification(base_model, predictor_type="logit_c
 opt = torch.optim.Adam(evidential_model.parameters(), lr=1e-3)
 grad_clip_norm = 0.5
 
-kl_weight = 1.0
-annealing_epochs = 10
+kl_weight = 0.5
+annealing_epochs = 30
 
 evidential_model.train()
 for epoch in range (300):

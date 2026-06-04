@@ -68,7 +68,7 @@ deup_model.to(device)
 
 # %%
 # Phase 1 Training: Base Classifier
-# -----------------------------------
+# ---------------------------------
 #
 # Train the encoder and classification head with standard cross-entropy.
 
@@ -77,6 +77,7 @@ optimizer_phase1 = torch.optim.Adam(
     list(deup_model.encoder.parameters()) + list(deup_model.classification_head.parameters()),
     lr=1e-3,
 )
+criterion = nn.CrossEntropyLoss()
 
 deup_model.train()
 for _epoch in range(5):
@@ -85,7 +86,7 @@ for _epoch in range(5):
         inputs, targets = inputs.to(device), targets.to(device)
         features = deup_model.encoder(inputs)
         logits = deup_model.classification_head(features)
-        loss = nn.functional.cross_entropy(logits, targets)
+        loss = criterion(logits, targets)
         optimizer_phase1.zero_grad()
         loss.backward()
         optimizer_phase1.step()
@@ -95,12 +96,16 @@ for _epoch in range(5):
         break
 
 # %%
-# Phase 2 Training: Error Head
-# -----------------------------
+# Phase 2: Prepare Stationarizing Features & OOD Data
+# ---------------------------------------------------
 #
-# Freeze the backbone, fit stationarizing feature providers on in-distribution
-# data, then train the error head on both in-distribution and OOD (uniform
-# noise) inputs.
+# Collecting the DEUP error targets.
+#
+# 1. Freeze the backbone.
+# 2. Fit auxiliary providers (e.g., GMM, Dropout) to compute stationarizing features.
+# 3. Generate synthetic OOD data (uniform noise) to teach the error head about
+#    high-error regions.
+# 4. Compute features and target error values (log of BCE loss) for all data.
 
 print("\nPhase 2: Training error head")
 
@@ -122,6 +127,8 @@ _orig_phi = deup_model._compute_stationarizing_features
 # clamp stationarizing features to prevent exploding inputs to the error head
 deup_model._compute_stationarizing_features = lambda *a: _orig_phi(*a).clamp(-10.0, 10.0)
 
+# Augment the in-distribution data with synthetic uniform-noise OOD so the
+# error head sees high-error regions and learns to flag off-manifold inputs.
 ood_X = torch.FloatTensor(len(X_train), 28 * 28).uniform_(0, 1)
 ood_y = torch.randint(0, 10, (len(X_train),))
 phase2_loader = DataLoader(
@@ -130,24 +137,56 @@ phase2_loader = DataLoader(
     shuffle=True,
 )
 
-optimizer_phase2 = torch.optim.Adam(deup_model.error_head.parameters(), lr=1e-2)
+bce_criterion = nn.BCELoss(reduction="none")
+
+all_phi: list[torch.Tensor] = []
+all_targets: list[torch.Tensor] = []
+
+deup_model.eval()
+with torch.no_grad():
+    for inputs_, targets_ in phase2_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+
+        features = deup_model.encoder(inputs)
+        logits = deup_model.classification_head(features)
+
+        phi = deup_model._compute_stationarizing_features(features, logits)  # noqa: SLF001
+
+        probs = torch.softmax(logits.float(), dim=-1).detach().cpu()
+        one_hot = nn.functional.one_hot(targets_, num_classes=probs.size(-1)).float().detach().cpu()
+        per_sample_bce = bce_criterion(probs, one_hot).sum(dim=-1)
+
+        target_val = torch.log10(per_sample_bce.clamp(min=1e-10)).clamp(min=-5.0)
+
+        all_phi.append(phi.detach().cpu())
+        all_targets.append(target_val.detach().cpu())
+
+phi_all = torch.cat(all_phi)
+targets_all = torch.cat(all_targets)
+
+error_head_dataset = torch.utils.data.TensorDataset(phi_all, targets_all)
+error_head_loader = torch.utils.data.DataLoader(error_head_dataset, batch_size=64, shuffle=True, drop_last=False)
+
+# %%
+# Phase 3: Training Error Head
+# ----------------------------
+#
+# Train the error head to predict the target error values from the stationarizing features.
+# This head acts as the final uncertainty estimator.
+
+deup_model.error_head.to(device)
+opt_error = torch.optim.SGD(deup_model.error_head.parameters(), lr=0.005, momentum=0.9)
 mse_loss_fn = nn.MSELoss()
 
-deup_model.train()
-for _epoch in range(5):
-    for inputs, targets in phase2_loader:
-        inputs, targets = inputs.to(device), targets.to(device)
-        with torch.no_grad():
-            features = deup_model.encoder(inputs)
-            logits = deup_model.classification_head(features)
-            per_sample_ce = nn.functional.cross_entropy(logits, targets, reduction="none")
-            log10_ce_target = torch.log10(torch.clamp(per_sample_ce, min=1e-6, max=1e4))
-            stationarizing_features = deup_model._compute_stationarizing_features(features, logits)
-        predicted_log10_error = deup_model.error_head(stationarizing_features)
-        loss = mse_loss_fn(predicted_log10_error, log10_ce_target)
-        optimizer_phase2.zero_grad()
+deup_model.error_head.train()
+for epoch in range(20):
+    for phi_batch, tgt_batch in error_head_loader:
+        phi, tgt = phi_batch.to(device, non_blocking=True), tgt_batch.to(device, non_blocking=True)
+
+        loss = nn.functional.mse_loss(deup_model.error_head(phi), tgt)
+        opt_error.zero_grad()
         loss.backward()
-        optimizer_phase2.step()
+        opt_error.step()
 
 # %%
 # Uncertainty Quantification
