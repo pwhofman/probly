@@ -83,6 +83,7 @@ def plot_example_uncertainty(
     vmax: float | None = 1.0,
     xlim: tuple[float, float] = (-3.0, 3.0),
     ylim: tuple[float, float] = (-3.0, 3.0),
+    kind: str = "auto",
 ) -> ModuleType:
     grid_res = 200
     xx, yy = np.meshgrid(np.linspace(xlim[0], xlim[1], grid_res), np.linspace(ylim[0], ylim[1], grid_res))
@@ -97,12 +98,15 @@ def plot_example_uncertainty(
 
     with torch.no_grad():
         decomp = quantify(rep.represent(grid_tensor))
-        if hasattr(decomp, "total"):
-            unc = decomp.total
-        elif hasattr(decomp, "epistemic"):
-            unc = decomp.epistemic
+        if kind == "auto":
+            if hasattr(decomp, "total"):
+                unc = decomp.total
+            elif hasattr(decomp, "epistemic"):
+                unc = decomp.epistemic
+            else:
+                unc = decomp.aleatoric
         else:
-            unc = decomp.aleatoric
+            unc = getattr(decomp, kind)
         test_unc = unc.cpu().numpy() / np.log(2)
 
         if test_unc.ndim > 1:

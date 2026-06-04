@@ -78,5 +78,9 @@ for _epoch in range(1000):
 natpn_model.eval()
 rep = representer(natpn_model)
 
-plot = plot_example_uncertainty(X, y, rep, title="Natural Posterior Network Predictive Uncertainty")
+plot = plot_example_uncertainty(
+    X, y, rep,
+    title="Natural Posterior Network Predictive Uncertainty",
+    kind="aleatoric",
+)
 plot.show()

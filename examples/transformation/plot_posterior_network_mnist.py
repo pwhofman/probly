@@ -105,7 +105,7 @@ for _epoch in range(10):
         X_flat = X_batch.view(-1, 28 * 28)
         opt.zero_grad()
         alpha = posterior_network_model(X_flat)
-        loss = postnet_loss(alpha, y_batch, entropy_weight=1e-5, reduction="mean")
+        loss = postnet_loss(alpha, y_batch, entropy_weight=1e-5)
         loss.backward()
         opt.step()
         correct += (alpha.detach().argmax(-1) == y_batch).sum().item()
