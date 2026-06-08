@@ -15,7 +15,17 @@ from ._common import CertaintyBudget, budget_log_scale, natural_posterior_networ
 
 @natural_posterior_network_generator.register(nn.Module)
 class TorchNaturalPosteriorNetwork(nn.Module, NaturalPosteriorNetworkPredictor):
-    """Torch implementation of the Natural Posterior Network."""
+    """Torch implementation of the Natural Posterior Network.
+
+    Attributes:
+       encoder: User-supplied feature encoder.
+       fc: Projection from encoder features to the latent space.
+       batch_norm: Per-feature normalization of the latent before the flow.
+       norm_flow: Single shared normalizing flow modelling ``p(z)``.
+       classifier: Linear classifier producing class logits from the latent.
+       certainty_budget: The selected budget scheme.
+       log_scale: Additive constant applied to ``log p(z)`` per the budget.
+    """
 
     alpha_prior: torch.Tensor
     """Buffer holding the per-class Dirichlet prior parameters."""
