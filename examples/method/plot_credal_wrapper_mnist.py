@@ -47,10 +47,9 @@ images_test = (X_test.view(-1, 28, 28) * 255).byte()
 # predictions into probability intervals.
 
 base_model = MLPClassifier(in_features=28 * 28, hidden_features=256, out_features=10)
-prob_model = nn.Sequential(base_model, nn.Softmax(dim=1))
 credal_model = credal_wrapper(
-    prob_model,
-    predictor_type="probabilistic_classifier",
+    base_model,
+    predictor_type="logit_classifier",
     num_members=5,
 )
 
@@ -69,7 +68,7 @@ for member in credal_model:
         for X_batch, y_batch in train_loader:
             X_flat = X_batch.view(-1, 28 * 28)
             opt.zero_grad()
-            logits = member[0](X_flat)
+            logits = member(X_flat)
             loss = nn.functional.cross_entropy(logits, y_batch)
             loss.backward()
             opt.step()
@@ -104,7 +103,7 @@ if uncertainty.ndim > 1:
 # -----------
 
 with torch.no_grad():
-    member_probs = torch.stack([member(X_test) for member in credal_model]).numpy()
+    member_probs = torch.stack([member(X_test).softmax(-1) for member in credal_model]).numpy()
 mean_probs = member_probs.mean(0)
 
 accuracy = (mean_probs.argmax(-1) == y_test.numpy()).mean() * 100
@@ -119,8 +118,6 @@ plot = plot_mnist_uncertainty(
     y_test,
     uncertainty,
     mean_probs,
-    member_probs=member_probs,
-    is_ensemble=True,
     title="Top-5 Most Uncertain Test Predictions (Credal Wrapper)",
 )
 plot.show()

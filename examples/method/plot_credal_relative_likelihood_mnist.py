@@ -40,51 +40,64 @@ y_test = torch.cat(list(y_test_batches))
 images_test = (X_test.view(-1, 28, 28) * 255).byte()
 
 # %%
-# Base Model
-# ----------
-#
-# First train the base model to convergence; the credal ensemble is initialized
-# from its weights and each member is then fine-tuned.
+# Model
+# -----
 
 base_model = MLPClassifier(in_features=28 * 28, hidden_features=256, out_features=10)
-
-base_model.train()
-opt_base = torch.optim.Adam(base_model.parameters(), lr=1e-3)
-for _epoch in range(5):
-    correct, total = 0, 0
-    for X_batch, y_batch in train_loader:
-        X_flat = X_batch.view(-1, 28 * 28)
-        opt_base.zero_grad()
-        logits = base_model(X_flat)
-        loss = nn.functional.cross_entropy(logits, y_batch)
-        loss.backward()
-        opt_base.step()
-        correct += (logits.detach().argmax(-1) == y_batch).sum().item()
-        total += len(y_batch)
-    if correct / total >= 0.97:
-        break
-
-# %%
-# Credal Model
-# ------------
-
+num_members = 5
 credal_model = credal_relative_likelihood(
     base_model,
     predictor_type="logit_classifier",
-    num_members=5,
+    num_members=num_members,
 )
+members = list(credal_model)
 
-for member in credal_model:
+
+def _train_one_epoch(member: torch.nn.Module, lr: float) -> None:
     member.train()
-    opt = torch.optim.Adam(member.parameters(), lr=1e-4)
-    for _epoch in range(3):
-        for X_batch, y_batch in train_loader:
-            X_flat = X_batch.view(-1, 28 * 28)
-            opt.zero_grad()
-            logits = member(X_flat)
-            loss = nn.functional.cross_entropy(logits, y_batch)
-            loss.backward()
-            opt.step()
+    opt = torch.optim.Adam(member.parameters(), lr=lr)
+    for X_batch, y_batch in train_loader:
+        X_flat = X_batch.view(-1, 28 * 28)
+        opt.zero_grad()
+        loss = nn.functional.cross_entropy(member(X_flat), y_batch)
+        loss.backward()
+        opt.step()
+
+
+@torch.no_grad()
+def _log_likelihood(member: torch.nn.Module) -> float:
+    member.eval()
+    total, count = 0.0, 0
+    for X_batch, y_batch in train_loader:
+        log_probs = nn.functional.log_softmax(member(X_batch.view(-1, 28 * 28)), dim=-1)
+        total += log_probs.gather(1, y_batch.unsqueeze(1)).sum().item()
+        count += y_batch.numel()
+    return total / count
+
+
+# %%
+# Training
+# --------
+#
+# The first member is trained to convergence on the full data; each subsequent
+# member is trained only until its relative likelihood reaches a per-member
+# threshold, mirroring the benchmark training recipe.
+
+for _epoch in range(5):
+    _train_one_epoch(members[0], lr=1e-3)
+max_ll = _log_likelihood(members[0])
+
+alpha = 0.5
+thresholds = torch.linspace(alpha, 1.0, num_members)[:-1].tolist()
+
+for member, threshold in zip(members[1:], thresholds, strict=True):
+    for _epoch in range(5):
+        _train_one_epoch(member, lr=1e-3)
+        rel_lik = float(np.exp(_log_likelihood(member) - max_ll))
+        if rel_lik >= threshold:
+            break
+
+for member in members:
     member.eval()
 
 # %%
@@ -125,8 +138,6 @@ plot = plot_mnist_uncertainty(
     y_test,
     uncertainty,
     mean_probs,
-    member_probs=member_probs,
-    is_ensemble=True,
     title="Top-5 Most Uncertain Test Predictions (Credal Relative Likelihood)",
 )
 plot.show()

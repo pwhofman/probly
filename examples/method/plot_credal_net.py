@@ -59,7 +59,7 @@ credal_model = credal_net(prob_model, predictor_type="probabilistic_classifier",
 opt = torch.optim.Adam(credal_model.parameters(), lr=1e-2)
 
 credal_model.train()
-for _epoch in range(300):
+for _epoch in range(10):
     opt.zero_grad()
     output = predict_raw(credal_model, X_train_tensor)
     loss = intersection_probability_ce_loss(output, y_train_tensor)
