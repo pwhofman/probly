@@ -91,5 +91,6 @@ ddu_model.eval()
 
 rep = representer(ddu_model)
 
-plot = plot_example_uncertainty(X, y, rep, title="DDU Predictive Uncertainty")
+plot = plot_example_uncertainty(X, y, rep, title="DDU Predictive Uncertainty", notion="epistemic", log_scale=True)
+
 plot.show()

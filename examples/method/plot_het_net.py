@@ -92,5 +92,5 @@ finally:
 het_net_model.eval()
 rep = representer(het_net_model, num_samples=800)
 
-plot = plot_example_uncertainty(X, y, rep, title="HET-Net Predictive Uncertainty")
+plot = plot_example_uncertainty(X, y, rep, title="HET-Net Predictive Uncertainty", notion="aleatoric")
 plot.show()

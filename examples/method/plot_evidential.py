@@ -88,5 +88,5 @@ for epoch in range (300):
 evidential_model.eval()
 rep = representer(evidential_model, num_samples=200)
 
-plot = plot_example_uncertainty(X, y, rep,title="Evidential Classification Predictive Uncertainty")
+plot = plot_example_uncertainty(X, y, rep, title="Evidential Classification Predictive Uncertainty", notion="epistemic")
 plot.show()

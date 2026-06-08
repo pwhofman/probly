@@ -84,5 +84,5 @@ for epoch in range(300):
 duq_model.eval()
 rep = representer(duq_model)
 
-plot = plot_example_uncertainty(X, y, rep, title="DUQ Predictive Uncertainty")
+plot = plot_example_uncertainty(X, y, rep, title="DUQ Predictive Uncertainty", notion="total")
 plot.show()

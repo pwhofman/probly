@@ -81,6 +81,6 @@ rep = representer(natpn_model)
 plot = plot_example_uncertainty(
     X, y, rep,
     title="Natural Posterior Network Predictive Uncertainty",
-    kind="aleatoric",
+    notion="total",
 )
 plot.show()

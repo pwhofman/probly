@@ -85,10 +85,10 @@ X_test = torch.tensor([
 ])
 credal_sets = rep.predict(X_test)
 
-plot = plot_credal_set(
-    credal_sets,
-    title="Credal Wrapper Predictions (3-Class)",
-    labels=["Class 0", "Class 1", "Class 2"],
-    series_labels=["Near Class 0", "OOD Point", "Near Class 1"],
-    show=True,
-)
+# plot = plot_credal_set(
+#     credal_sets,
+#     title="Credal Wrapper Predictions (3-Class)",
+#     labels=["Class 0", "Class 1", "Class 2"],
+#     series_labels=["Near Class 0", "OOD Point", "Near Class 1"],
+#     show=True,
+# )

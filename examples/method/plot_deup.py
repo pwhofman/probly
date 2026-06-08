@@ -175,5 +175,5 @@ for epoch in range(200):
 deup_model.error_head.eval()
 
 rep = representer(deup_model)
-plot = plot_example_uncertainty(X, y, rep, title="DEUP Predictive Uncertainty")
+plot = plot_example_uncertainty(X, y, rep, title="DEUP Predictive Uncertainty", notion="total", log_scale=True)
 plot.show()

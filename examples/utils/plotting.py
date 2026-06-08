@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from types import ModuleType
+from typing import Literal
 
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+from matplotlib.ticker import FormatStrFormatter
 
 from probly.quantification import quantify
 
@@ -74,62 +77,72 @@ def plot_mnist_uncertainty(
     return plt
 
 
+_GRID_RES = 200
+
+
+_UncertaintyKind = Literal["total", "epistemic", "aleatoric"]
+
+
+def _select_uncertainty(decomp, notion: _UncertaintyKind | None) -> torch.Tensor:
+    candidates = (notion,) if notion is not None else ("total", "epistemic", "aleatoric")
+    for name in candidates:
+        value = getattr(decomp, name, None)
+        if value is not None:
+            return value
+    raise AttributeError(f"Decomposition exposes none of {candidates}.")
+
+
 def plot_example_uncertainty(
     X,
     y,
     rep,
     title: str = "Predictive Uncertainty",
-    vmin: float | None = 0.0,
-    vmax: float | None = 1.0,
+    notion: _UncertaintyKind | None = None,
+    vmin: float | None = None,
+    vmax: float | None = None,
     xlim: tuple[float, float] = (-3.0, 3.0),
     ylim: tuple[float, float] = (-3.0, 3.0),
-    kind: str = "auto",
+    log_scale: bool = False,
 ) -> ModuleType:
-    grid_res = 200
-    xx, yy = np.meshgrid(np.linspace(xlim[0], xlim[1], grid_res), np.linspace(ylim[0], ylim[1], grid_res))
-    grid = np.c_[xx.ravel(), yy.ravel()]
-    grid_tensor = torch.from_numpy(grid).float()
-
-    try:
-        device = next(rep.predictor.parameters()).device
-        grid_tensor = grid_tensor.to(device)
-    except (AttributeError, StopIteration):
-        pass
+    xx, yy = np.meshgrid(
+        np.linspace(xlim[0], xlim[1], _GRID_RES),
+        np.linspace(ylim[0], ylim[1], _GRID_RES),
+    )
+    grid = torch.from_numpy(np.c_[xx.ravel(), yy.ravel()]).float()
 
     with torch.no_grad():
-        decomp = quantify(rep.represent(grid_tensor))
-        if kind == "auto":
-            if hasattr(decomp, "total"):
-                unc = decomp.total
-            elif hasattr(decomp, "epistemic"):
-                unc = decomp.epistemic
-            else:
-                unc = decomp.aleatoric
-        else:
-            unc = getattr(decomp, kind)
-        test_unc = unc.cpu().numpy() / np.log(2)
-
-        if test_unc.ndim > 1:
-            test_unc = test_unc.sum(-1)
-
-        test_unc = np.clip(test_unc, 0, 1)
-
-    test_unc = test_unc.reshape(xx.shape)
-
+        unc = _select_uncertainty(quantify(rep.represent(grid)), notion)
+    test_unc = unc.detach().cpu().numpy().reshape(xx.shape)
 
     fig, ax = plt.subplots(figsize=(7, 5), dpi=150)
+    if log_scale:
+        positive = test_unc[test_unc > 0]
+        lo = float(positive.min()) if vmin is None else vmin
+        hi = float(test_unc.max()) if vmax is None else vmax
+        norm = LogNorm(vmin=lo, vmax=hi)
+        levels = np.geomspace(lo, hi, 100)
+        contour = ax.contourf(
+            xx, yy, np.clip(test_unc, lo, None),
+            levels=levels, cmap="viridis", antialiased=True, extend="both", norm=norm,
+        )
+        cbar = plt.colorbar(contour)
+    else:
+        lo = float(test_unc.min()) if vmin is None else vmin
+        hi = float(test_unc.max()) if vmax is None else vmax
+        contour = ax.contourf(
+            xx, yy, test_unc,
+            levels=np.linspace(lo, hi, 100),
+            cmap="viridis", antialiased=True, extend="both",
+        )
+        cbar = plt.colorbar(contour, ticks=np.linspace(lo, hi, 5))
 
-    vmin = test_unc.min() if vmin is None else vmin
-    vmax = test_unc.max() if vmax is None else vmax
-    levels = np.linspace(vmin, vmax, 100)
-    contour = ax.contourf(xx, yy, test_unc, levels=levels, cmap="viridis", antialiased=True, extend="both")
+    notion_label = (notion or "predictive").capitalize()
+    cbar.set_label(f"{notion_label} Uncertainty", fontsize=12, fontweight="bold")
+    cbar.ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
 
-    ticks = np.linspace(vmin, vmax, 5)
-    cbar = plt.colorbar(contour, ticks=ticks)
-    cbar.set_label("Predictive Uncertainty (bits)", fontsize=12, fontweight="bold")
-
-    ax.scatter(X[y == 0, 0], X[y == 0, 1], color="#ff7f0e", edgecolor="white", linewidths=0.5, s=25, zorder=3, label="Class 0")
-    ax.scatter(X[y == 1, 0], X[y == 1, 1], color="#1f77b4", edgecolor="white", linewidths=0.5, s=25, zorder=3, label="Class 1")
+    for label, mask, color in (("Class 0", y == 0, "#ff7f0e"), ("Class 1", y == 1, "#1f77b4")):
+        ax.scatter(X[mask, 0], X[mask, 1], color=color, edgecolor="white",
+                   linewidths=0.5, s=25, zorder=3, label=label)
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)

@@ -70,5 +70,5 @@ for epoch in range(300):
 bayesian_model.eval()
 rep = representer(bayesian_model, num_samples=200)
 
-plot = plot_example_uncertainty(X, y, rep, title="Bayesian Predictive Uncertainty")
+plot = plot_example_uncertainty(X, y, rep, title="Bayesian Predictive Uncertainty", notion="total")
 plot.show()

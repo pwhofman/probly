@@ -108,6 +108,7 @@ plot_moons = plot_example_uncertainty(
     xlim=(-3.0, 3.0),
     ylim=(-3.0, 3.0),
     title="SNGP Predictive Uncertainty",
+    notion="total",
 )
 plot_moons.show()
 
@@ -122,5 +123,6 @@ plot_blobs = plot_example_uncertainty(
     title="SNGP Predictive Uncertainty (Blobs)",
     xlim=(-5.0, 5.0),
     ylim=(-5.0, 5.0),
+    notion="total",
 )
 plot_blobs.show()

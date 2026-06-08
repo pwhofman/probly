@@ -71,5 +71,5 @@ for member in bayesian_ensemble_model:
     member.eval()
 rep = representer(bayesian_ensemble_model)
 
-plot = plot_example_uncertainty(X, y, rep, title="Bayesian Ensemble Predictive Uncertainty")
+plot = plot_example_uncertainty(X, y, rep, title="Bayesian Ensemble Predictive Uncertainty", notion="total")
 plot.show()

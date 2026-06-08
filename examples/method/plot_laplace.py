@@ -76,5 +76,5 @@ laplace_model.fit(fit_loader)
 
 rep = representer(laplace_model, num_samples=200)
 
-plot = plot_example_uncertainty(X, y, rep, title="Laplace Predictive Uncertainty")
+plot = plot_example_uncertainty(X, y, rep, title="Laplace Predictive Uncertainty", notion="total")
 plot.show()

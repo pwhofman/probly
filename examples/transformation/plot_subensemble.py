@@ -79,5 +79,5 @@ for member in subensemble_model:
 subensemble_model.eval()
 rep = representer(subensemble_model)
 
-plot = plot_example_uncertainty(X, y, rep, title="Sub-Ensemble Predictive Uncertainty", vmin=None, vmax=None)
+plot = plot_example_uncertainty(X, y, rep, title="Sub-Ensemble Predictive Uncertainty", notion="total")
 plot.show()
