@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 
 from flextype import flexdispatch
-from probly.plot.credal._data import _get_unnormalized_probabilities, _to_numpy
+from probly.plot.credal._data import _get_probabilities, _to_numpy
 from probly.representation.credal_set.array import (
     ArrayConvexCredalSet,
     ArrayDiscreteCredalSet,
@@ -366,7 +366,7 @@ def _draw_singleton_spider(
     series_labels: list[str] | None,
 ) -> None:
     theta = _get_theta(data.num_classes)
-    arr = _get_unnormalized_probabilities(data)
+    arr = _get_probabilities(data)
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -415,7 +415,7 @@ def _draw_distance_based_spider(
     theta = _get_theta(data.num_classes)
     lower_all = _to_numpy(data.lower())
     upper_all = _to_numpy(data.upper())
-    nominal_all = _get_unnormalized_probabilities(data)
+    nominal_all = _get_probabilities(data)
     n_sets = lower_all.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -432,12 +432,12 @@ def _draw_convex_set_spider(
     series_labels: list[str] | None,
 ) -> None:
     theta = _get_theta(data.num_classes)
-    unnorm = _get_unnormalized_probabilities(data)
-    n_sets = unnorm.shape[0]
+    probs = _get_probabilities(data)
+    n_sets = probs.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
         label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
-        pts = unnorm[idx]
+        pts = probs[idx]
 
         for member in pts:
             ax.plot(theta, member, color=color, linewidth=config.line_width, alpha=0.6, zorder=3)
@@ -456,11 +456,11 @@ def _draw_discrete_set_spider(
     series_labels: list[str] | None,
 ) -> None:
     theta = _get_theta(data.num_classes)
-    unnorm = _get_unnormalized_probabilities(data)
-    n_sets = unnorm.shape[0]
+    probs = _get_probabilities(data)
+    n_sets = probs.shape[0]
     for idx in range(n_sets):
         label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
-        pts = unnorm[idx]
+        pts = probs[idx]
 
         for m_idx, member in enumerate(pts):
             # Each member gets a unique color (unlike convex sets which use one color per batch element)

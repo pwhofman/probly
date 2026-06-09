@@ -16,7 +16,7 @@ from ._binary import (
     _draw_intervals_binary,
     _draw_vertex_set_binary,
 )
-from ._data import _get_unnormalized_probabilities, _to_numpy
+from ._data import _get_probabilities, _to_numpy
 from ._spider import (
     _draw_convex_set_spider,
     _draw_credal_set_spider,
@@ -46,11 +46,11 @@ _draw_credal_set_ternary.register(TorchDistanceBasedCredalSet)(_draw_distance_ba
 _draw_credal_set_ternary.register(TorchConvexCredalSet)(_draw_convex_set)
 
 
-@_get_unnormalized_probabilities.register(TorchConvexCredalSet)
+@_get_probabilities.register(TorchConvexCredalSet)
 def _convex_probabilities(data: TorchConvexCredalSet) -> np.ndarray:
-    return _to_numpy(data.tensor.unnormalized_probabilities)
+    return _to_numpy(data.tensor.probabilities)
 
 
-@_get_unnormalized_probabilities.register(TorchDistanceBasedCredalSet)
+@_get_probabilities.register(TorchDistanceBasedCredalSet)
 def _distance_based_probabilities(data: TorchDistanceBasedCredalSet) -> np.ndarray:
-    return _to_numpy(data.nominal.unnormalized_probabilities)
+    return _to_numpy(data.nominal.probabilities)

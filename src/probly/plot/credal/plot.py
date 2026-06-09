@@ -11,7 +11,7 @@ import numpy as np
 from probly.plot.config import PlotConfig
 
 from ._binary import _draw_credal_set_binary, _setup_binary_axes
-from ._data import _flatten_batch, _get_unnormalized_probabilities
+from ._data import _flatten_batch, _get_probabilities
 from ._radar_axes import _get_radar_axes
 from ._spider import _draw_credal_set_spider, _setup_spider_axes
 from ._ternary import _draw_credal_set_ternary
@@ -45,7 +45,7 @@ def _draw_overlay_binary(
     """Draw ground_truth overlay on binary axes."""
     if ground_truth is None:
         return
-    gt = _get_unnormalized_probabilities(ground_truth)
+    gt = _get_probabilities(ground_truth)
     for idx in range(gt.shape[0]):
         ax.scatter(
             gt[idx, 1],
@@ -67,7 +67,7 @@ def _draw_overlay_ternary(
     if ground_truth is None:
         return
     ternary_ax = cast("TernaryAxes", ax)
-    gt = _get_unnormalized_probabilities(ground_truth)
+    gt = _get_probabilities(ground_truth)
     for idx in range(gt.shape[0]):
         # Slices (not scalars) are needed for mpltern's scatter API
         ternary_ax.scatter(
@@ -91,7 +91,7 @@ def _draw_overlay_spider(
     """Draw ground_truth overlay on spider axes."""
     if ground_truth is None:
         return
-    gt = _get_unnormalized_probabilities(ground_truth)
+    gt = _get_probabilities(ground_truth)
     for idx in range(gt.shape[0]):
         values = gt[idx]
         ax.plot(

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from flextype import flexdispatch
-from probly.plot.credal._data import _get_unnormalized_probabilities, _to_numpy
+from probly.plot.credal._data import _get_probabilities, _to_numpy
 from probly.representation.credal_set.array import (
     ArrayConvexCredalSet,
     ArrayDiscreteCredalSet,
@@ -114,7 +114,7 @@ def _draw_singleton_binary(
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    arr = _get_unnormalized_probabilities(data)
+    arr = _get_probabilities(data)
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -156,7 +156,7 @@ def _draw_distance_based_binary(
 ) -> None:
     lower_all = _to_numpy(data.lower())
     upper_all = _to_numpy(data.upper())
-    nominal_all = _get_unnormalized_probabilities(data)
+    nominal_all = _get_probabilities(data)
     n_sets = lower_all.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -172,7 +172,7 @@ def _draw_vertex_set_binary(
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    arr = _get_unnormalized_probabilities(data)
+    arr = _get_probabilities(data)
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
