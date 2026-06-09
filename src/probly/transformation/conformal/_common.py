@@ -47,7 +47,7 @@ class ConformalSetPredictor[**In, T, Out: ConformalSet](
     Calibrator[Concatenate[float, Out, In], T],
     Protocol,
 ):
-    """Predictor wrapper returning conformal sets."""
+    """Predictor wrapper returning conformal sets based on :cite:`angelopoulosGentleIntroduction2021`."""
 
     predictor: Predictor[In, Any]
     non_conformity_score: NonConformityScore[Any, Any] | None

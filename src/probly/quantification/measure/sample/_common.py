@@ -28,7 +28,7 @@ def mean_squared_distance_to_scaled_one_hot(
     Args:
         sample: Logits sample across ensemble members.
         scale: Scale ``s``; ``None`` uses K (num classes). Matches DARE Eq. 35
-            :cite:`mathelinDeepAntiregularizedEnsembles2023`.
+            :cite:`demathelinDeepAntiRegularized2023`.
     """
     msg = f"mean_squared_distance_to_scaled_one_hot not supported for sample of type {type(sample)}."
     raise NotImplementedError(msg)

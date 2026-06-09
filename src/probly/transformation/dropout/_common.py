@@ -50,13 +50,13 @@ def dropout[T: Predictor](
     """Create a Dropout predictor from a base predictor based on :cite:`galDropoutBayesian2016`.
 
     Args:
-        base: Predictor, The base model to be used for dropout.
-        p: float, The probability of dropping out a neuron.  Default is 0.25.
-        rng_collection: Optional str for flax layer initialization. Default is "dropout".
-        rngs: Optional rngs for flax layer initialization (types: rnglib.Rngs | rnglib.RngStream | int), default: 1.
+        base: The base model to be used for dropout.
+        p: The probability of dropping out a neuron. Default is 0.25.
+        rng_collection: Optional rng collection name for flax layer initialization. Default is "dropout".
+        rngs: Optional rngs for flax layer initialization. Default is 1.
 
     Returns:
-        Predictor, The DropOut predictor.
+        The DropOut predictor.
     """
     if p < 0 or p > 1:
         msg = f"The probability p must be between 0 and 1, but got {p} instead."

@@ -90,7 +90,7 @@ class NaturalPosteriorDecomposition[T](
       estimate the aleatoric uncertainty"*. For categorical y the target
       distribution at chi^post = alpha / alpha_0 is Cat(alpha / alpha_0).
     - Epistemic uncertainty: ``K / alpha_0``, the vacuity introduced by
-      :cite:`sensoyEvidentialDeepLearning2018`. Appendix E uses the predicted
+      :cite:`sensoyEvidentialDeep2018`. Appendix E uses the predicted
       evidence ``n^post = alpha_0`` directly; vacuity is its monotone
       transform into ``(0, 1]`` (high = uncertain).
 

@@ -65,7 +65,19 @@ def duq[**In, Out: DUQRepresentation](
     length_scale: float = 0.1,
     gamma: float = 0.999,
 ) -> DUQPredictor[In, Out]:
-    r"""Replace the final classifier head with an RBF centroid head."""
+    """Replace the final classifier head with an RBF centroid head.
+
+    Based on :cite:`vanAmersfoortUncertaintyEstimation2020`.
+
+    Args:
+        base: The base logit classifier whose final linear head is replaced.
+        centroid_size: Dimensionality of the per-class RBF centroids. Default is 256.
+        length_scale: RBF kernel length scale. Default is 0.1.
+        gamma: Exponential moving-average discount factor for updating the centroids. Default is 0.999.
+
+    Returns:
+        The DUQ predictor.
+    """
     return duq_generator(base, centroid_size, length_scale, gamma)
 
 

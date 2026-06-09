@@ -32,6 +32,16 @@ class EvidentialClassificationPredictor[**In, Out: DirichletDistribution](
 evidential_classification = EvidentialClassificationPredictor.register_factory(
     dirichlet_clipped_exp_one_activation,
 )
+_evidential_classification_doc = """\
+Create an Evidential Deep Learning predictor based on :cite:`sensoyEvidentialDeep2018`.
+
+Args:
+    base: The base classification model to attach the Dirichlet head to.
+
+Returns:
+    The evidential classification predictor outputting a DirichletDistribution.
+"""
+evidential_classification.__doc__ = _evidential_classification_doc
 
 
 @runtime_checkable
@@ -80,7 +90,7 @@ class EvidentialClassificationDecomposition[T](CachingDecomposition, EpistemicDe
     """Decomposition based on Evidential Deep Learning for classification.
 
     Implements the single uncertainty quantity of EDL
-    :cite:`sensoyEvidentialDeepLearning2018`. For a Dirichlet distribution
+    :cite:`sensoyEvidentialDeep2018`. For a Dirichlet distribution
     Dir(alpha) with K classes and S = sum_c alpha_c, the only uncertainty
     measure formally proposed by the paper is the vacuity:
 
