@@ -3,3 +3,6 @@
 .. currentmodule:: {{ module }}
 
 .. autofunction:: {{ objname }}
+
+.. minigallery:: {{ fullname }}
+   :add-heading:
