@@ -32,6 +32,18 @@ def test_expected_calibration_error(
     validate_loss(loss)
 
 
+def test_expected_calibration_error_confidence_one() -> None:
+    # Regression: torch.bucketize(1.0, linspace(0, 1, n_bins+1), right=True) - 1 == n_bins,
+    # which would silently drop conf=1.0 samples from the loop and bias ECE downward.
+    # All samples wrong with max-prob 1.0 -> perfect miscalibration -> ECE = 1.0.
+    num_classes = 3
+    probs = torch.zeros(4, num_classes)
+    probs[:, 0] = 1.0
+    targets = torch.ones(4, dtype=torch.long)  # never class 0 -> all wrong
+    loss = ExpectedCalibrationError(num_bins=10)(probs, targets)
+    torch.testing.assert_close(loss, torch.tensor(1.0))
+
+
 def test_label_relaxation_loss(
     sample_outputs: tuple[Tensor, Tensor],
 ) -> None:
