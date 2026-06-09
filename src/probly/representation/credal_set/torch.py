@@ -50,7 +50,7 @@ def _sample_probabilities(
         msg = "Torch categorical credal sets require samples of TorchCategoricalDistribution."
         raise TypeError(msg)
 
-    return sample_values.unnormalized_probabilities
+    return sample_values.probabilities
 
 
 class TorchCategoricalCredalSet(CategoricalCredalSet, ABC):
@@ -164,7 +164,7 @@ class TorchDistanceBasedCredalSet(
 
         For L1/TV distance, the tightest element-wise lower bound is max(0, nominal - radius).
         """
-        nominal = self.nominal.unnormalized_probabilities
+        nominal = self.nominal.probabilities
         r = self.radius
         if isinstance(r, torch.Tensor) and r.dim() == nominal.dim() - 1:
             r = r.unsqueeze(-1)
@@ -176,7 +176,7 @@ class TorchDistanceBasedCredalSet(
 
         For L1/TV distance, the tightest element-wise upper bound is min(1, nominal + radius).
         """
-        nominal = self.nominal.unnormalized_probabilities
+        nominal = self.nominal.probabilities
         r = self.radius
         if isinstance(r, torch.Tensor) and r.dim() == nominal.dim() - 1:
             r = r.unsqueeze(-1)

@@ -44,8 +44,8 @@ def _flatten_batch[T: CategoricalCredalSet](data: T) -> T:
 
 
 @flexdispatch
-def _get_unnormalized_probabilities(data: object) -> np.ndarray:
-    """Extract the unnormalized probability array backing a credal set.
+def _get_probabilities(data: object) -> np.ndarray:
+    """Extract the probability array backing a credal set.
 
     The shape of the returned array depends on the credal set type: singleton
     and distance-based sets return one distribution per batch element, while
@@ -55,7 +55,7 @@ def _get_unnormalized_probabilities(data: object) -> np.ndarray:
         data: The credal set to extract probabilities from.
 
     Returns:
-        The unnormalized probabilities as a NumPy array.
+        The probabilities as a NumPy array.
 
     Raises:
         NotImplementedError: If no handler is registered for the given type.
@@ -64,11 +64,11 @@ def _get_unnormalized_probabilities(data: object) -> np.ndarray:
     raise NotImplementedError(msg)
 
 
-@_get_unnormalized_probabilities.register(ArraySingletonCredalSet | ArrayDiscreteCredalSet | ArrayConvexCredalSet)
+@_get_probabilities.register(ArraySingletonCredalSet | ArrayDiscreteCredalSet | ArrayConvexCredalSet)
 def _array_probabilities(data: ArraySingletonCredalSet | ArrayDiscreteCredalSet | ArrayConvexCredalSet) -> np.ndarray:
-    return _to_numpy(data.array.unnormalized_probabilities)
+    return _to_numpy(data.array.probabilities)
 
 
-@_get_unnormalized_probabilities.register(ArrayDistanceBasedCredalSet)
+@_get_probabilities.register(ArrayDistanceBasedCredalSet)
 def _nominal_probabilities(data: ArrayDistanceBasedCredalSet) -> np.ndarray:
-    return _to_numpy(data.nominal.unnormalized_probabilities)
+    return _to_numpy(data.nominal.probabilities)
