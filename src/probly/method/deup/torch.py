@@ -89,7 +89,7 @@ class ErrorPredictionHead(nn.Module):
     r"""MLP that predicts :math:`\log_{10}` of the per-sample loss.
 
     Following the reference implementation of
-    :cite:`lahlou2021deup`, the head takes **only**
+    :cite:`lahlouDirectEpistemic2023`, the head takes **only**
     stationarizing features :math:`\phi(x) \in \mathbb{R}^k` (e.g. log-density
     and log-model-variance) and outputs a real-valued scalar trained with MSE
     against :math:`\log_{10}(\ell(x))` — the base-10 logarithm of the
@@ -257,7 +257,7 @@ class LogGMMDensity(StationarizingFeatureProvider):
 
     Approximates the density-based stationarizing feature
     :math:`\log \hat{q}(x|D)` of
-    :cite:`lahlou2021deup` (Sec. 2.2) by fitting a
+    :cite:`lahlouDirectEpistemic2023` (Sec. 2.2) by fitting a
     Gaussian Discriminant Analysis model on training-set encoder
     features (one full-covariance Gaussian per class with class-frequency
     mixing weights) and returning the marginal
@@ -322,7 +322,7 @@ class LogMCDropoutVariance(StationarizingFeatureProvider):
 
     Approximates the model-variance stationarizing feature
     :math:`\log \hat{V}` of
-    :cite:`lahlou2021deup` by applying
+    :cite:`lahlouDirectEpistemic2023` by applying
     feature-level dropout stochastically at inference time:
 
     1. The frozen classification head is stored during :meth:`_fit_internal`.
@@ -513,7 +513,7 @@ class LogDUEVariance(StationarizingFeatureProvider):
     r"""SVGP posterior variance as a distance-aware model-uncertainty proxy.
 
     Implements the DUE variance stationarizing feature
-    :math:`\log \hat{V}` following :cite:`amersfoortSimpleScalableEpistemic2021`.
+    :math:`\log \hat{V}` following :cite:`vanAmersfoortImprovingDeterministic2021`.
     Fits a multi-output Sparse Variational GP (SVGP, one output per class) using
     :mod:`gpytorch` on encoder features, then returns the sum of posterior
     variances across class outputs on a log scale.

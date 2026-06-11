@@ -41,7 +41,7 @@ def interval_classifier[**In, Out: ProbabilityIntervalsCredalSet](
     base: Predictor[In, Out],
     use_base_weights: bool = USE_BASE_WEIGHTS.default,
 ) -> IntervalClassifierPredictor[In, Out]:
-    """Create an interval classifier from a base classifier.
+    """Create an interval classifier from a base classifier based on :cite:`wangCredalDeepEnsembles2024`.
 
     Replaces every ``Conv2d``, ``BatchNorm2d``, ``BatchNorm1d``, and ``Linear``
     in the base network with its interval counterpart, and replaces the last
