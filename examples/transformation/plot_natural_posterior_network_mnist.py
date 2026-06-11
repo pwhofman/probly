@@ -10,17 +10,11 @@ training data, not just near decision boundaries.
 
 from __future__ import annotations
 
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from torch import nn
 
-from torchvision import datasets, transforms
-
-from probly.evaluation.ood import evaluate_ood
 from probly.method.natural_posterior_network import natural_posterior_network
-from probly.metrics import roc_curve
-from probly.plot import plot_histogram, plot_roc_curve
 from probly.train.evidential.torch import postnet_loss
 from probly_benchmark.data import load_mnist
 
@@ -146,57 +140,3 @@ plot = plot_mnist_uncertainty(
     title="Top-5 Most Uncertain Test Predictions (Natural Posterior Network)",
 )
 plot.show()
-
-# %%
-# OOD Detection
-# -------------
-#
-# Fashion MNIST shares MNIST's image format (28x28 grayscale) but contains
-# clothing categories the model was never trained on.  The same predictive
-# entropy used above is computed on the OOD inputs.
-
-ood_dataset = datasets.FashionMNIST(
-    "~/.cache/mnist", train=False, download=True, transform=transforms.ToTensor()
-)
-X_ood = torch.stack([ood_dataset[i][0].flatten() for i in range(len(ood_dataset))])
-
-with torch.no_grad():
-    alpha_ood = natpn_model(X_ood)
-mean_probs_ood = alpha_ood.numpy() / alpha_ood.numpy().sum(-1, keepdims=True)
-
-uncertainty_ood = -(mean_probs_ood * np.log(mean_probs_ood + eps)).sum(-1) / np.log(2)
-
-# %%
-# Score Histogram
-# ---------------
-#
-# The ID distribution should be tightly concentrated near zero (high confidence);
-# the OOD distribution should shift right (higher entropy).
-
-fig = plot_histogram(
-    uncertainty,
-    uncertainty_ood,
-    title="Predictive Entropy: MNIST (ID) vs Fashion MNIST (OOD)",
-)
-fig.axes[0].set_xlabel("Predictive Entropy (bits)")
-plt.show()
-
-# %%
-# ROC Curve
-# ---------
-#
-# AUROC measures how well entropy separates ID from OOD samples end-to-end.
-# A perfect detector scores 1.0; random guessing scores 0.5.
-
-ood_metrics = evaluate_ood(uncertainty, uncertainty_ood, metrics=["auroc", "fpr"])
-labels = np.concatenate([np.zeros(len(uncertainty)), np.ones(len(uncertainty_ood))])
-preds = np.concatenate([uncertainty, uncertainty_ood])
-fpr_curve, tpr_curve, _ = roc_curve(labels, preds)
-
-fig = plot_roc_curve(
-    fpr_curve,
-    tpr_curve,
-    auroc=ood_metrics["auroc"],
-    fpr95=ood_metrics["fpr"],
-)
-plt.show()

@@ -10,18 +10,12 @@ input's representation and the learned centroids.
 
 from __future__ import annotations
 
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn
 
-from torchvision import datasets, transforms
-
-from probly.evaluation.ood import evaluate_ood
 from probly.method.duq import duq
-from probly.metrics import roc_curve
-from probly.plot import plot_histogram, plot_roc_curve
 from probly.quantification import quantify
 from probly.representer import representer
 from probly_benchmark.data import load_mnist
@@ -132,61 +126,3 @@ plot = plot_mnist_uncertainty(
     title="Top-5 Most Uncertain Test Predictions (DUQ)",
 )
 plot.show()
-
-# %%
-# OOD Detection
-# -------------
-#
-# Fashion MNIST shares MNIST's image format but contains clothing categories
-# the model was never trained on.  The same representer from the UQ section is
-# applied to the OOD data -- no new inference setup needed.
-
-ood_dataset = datasets.FashionMNIST(
-    "~/.cache/mnist", train=False, download=True, transform=transforms.ToTensor()
-)
-X_ood = torch.stack([ood_dataset[i][0].flatten() for i in range(len(ood_dataset))])
-
-with torch.no_grad():
-    representation_ood = rep.represent(X_ood)
-
-uq_ood = quantify(representation_ood)
-_unc_ood = uq_ood.total if hasattr(uq_ood, "total") else (uq_ood.epistemic if hasattr(uq_ood, "epistemic") else uq_ood.aleatoric)
-uncertainty_ood = _unc_ood.detach().numpy() if isinstance(_unc_ood, torch.Tensor) else np.asarray(_unc_ood)
-uncertainty_ood = uncertainty_ood / np.log(2)
-if uncertainty_ood.ndim > 1:
-    uncertainty_ood = uncertainty_ood.sum(axis=-1)
-
-# %%
-# Score Histogram
-# ---------------
-#
-# The ID distribution should be tightly concentrated near zero (high confidence);
-# the OOD distribution should shift right (higher entropy).
-
-fig = plot_histogram(
-    uncertainty,
-    uncertainty_ood,
-    title="Predictive Entropy: MNIST (ID) vs Fashion MNIST (OOD)",
-)
-fig.axes[0].set_xlabel("Predictive Entropy (bits)")
-plt.show()
-
-# %%
-# ROC Curve
-# ---------
-#
-# AUROC measures how well entropy separates ID from OOD samples end-to-end.
-# A perfect detector scores 1.0; random guessing scores 0.5.
-
-ood_metrics = evaluate_ood(uncertainty, uncertainty_ood, metrics=["auroc", "fpr"])
-labels = np.concatenate([np.zeros(len(uncertainty)), np.ones(len(uncertainty_ood))])
-preds = np.concatenate([uncertainty, uncertainty_ood])
-fpr_curve, tpr_curve, _ = roc_curve(labels, preds)
-
-fig = plot_roc_curve(
-    fpr_curve,
-    tpr_curve,
-    auroc=ood_metrics["auroc"],
-    fpr95=ood_metrics["fpr"],
-)
-plt.show()

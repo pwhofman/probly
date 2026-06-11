@@ -10,16 +10,10 @@ by different initializations and improving out-of-distribution detection.
 
 from __future__ import annotations
 
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from torch import nn
 
-from torchvision import datasets, transforms
-
-from probly.evaluation.ood import evaluate_ood
-from probly.metrics import roc_curve
-from probly.plot import plot_histogram, plot_roc_curve
 from probly.method.dare import dare
 from probly.train.dare.torch import dare_regularizer
 from probly_benchmark.data import load_mnist
@@ -111,64 +105,6 @@ plot = plot_mnist_uncertainty(
     y_test,
     uncertainty,
     mean_probs,
-    member_probs=member_probs,
-    is_ensemble=True,
     title="Top-5 Most Uncertain Test Predictions (DARE)",
 )
 plot.show()
-
-# %%
-# OOD Detection
-# -------------
-#
-# DARE's anti-regularization is specifically designed to improve OOD detection
-# by preserving member diversity.  Fashion MNIST provides a natural test:
-# same image format as MNIST, but clothing categories the ensemble never saw.
-
-ood_dataset = datasets.FashionMNIST(
-    "~/.cache/mnist", train=False, download=True, transform=transforms.ToTensor()
-)
-X_ood = torch.stack([ood_dataset[i][0].flatten() for i in range(len(ood_dataset))])
-
-with torch.no_grad():
-    member_probs_ood = torch.stack(
-        [m(X_ood).softmax(-1) for m in dare_model]
-    ).numpy()
-mean_probs_ood = member_probs_ood.mean(0)
-
-uncertainty_ood = -(mean_probs_ood * np.log(mean_probs_ood + eps)).sum(-1) / np.log(2)
-
-# %%
-# Score Histogram
-# ---------------
-#
-# The ID distribution should be tightly concentrated near zero (high confidence);
-# the OOD distribution should shift right (higher entropy).
-
-fig = plot_histogram(
-    uncertainty,
-    uncertainty_ood,
-    title="Predictive Entropy: MNIST (ID) vs Fashion MNIST (OOD)",
-)
-fig.axes[0].set_xlabel("Predictive Entropy (bits)")
-plt.show()
-
-# %%
-# ROC Curve
-# ---------
-#
-# AUROC measures how well entropy separates ID from OOD samples end-to-end.
-# A perfect detector scores 1.0; random guessing scores 0.5.
-
-ood_metrics = evaluate_ood(uncertainty, uncertainty_ood, metrics=["auroc", "fpr"])
-labels = np.concatenate([np.zeros(len(uncertainty)), np.ones(len(uncertainty_ood))])
-preds = np.concatenate([uncertainty, uncertainty_ood])
-fpr_curve, tpr_curve, _ = roc_curve(labels, preds)
-
-fig = plot_roc_curve(
-    fpr_curve,
-    tpr_curve,
-    auroc=ood_metrics["auroc"],
-    fpr95=ood_metrics["fpr"],
-)
-plt.show()
