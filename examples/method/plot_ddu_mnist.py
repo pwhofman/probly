@@ -25,7 +25,7 @@ from probly.quantification import quantify
 from probly.representer import representer
 from probly_benchmark.data import load_mnist
 
-from examples.utils.model import MLPClassifier
+from examples.utils.model import ResFFN
 from examples.utils.plotting import plot_mnist_uncertainty
 
 # %%
@@ -47,7 +47,8 @@ images_test = (X_test.view(-1, 28, 28) * 255).byte()
 # to smooth the Lipschitz constant of the feature map, which is required for
 # the density score to be a reliable distance proxy.
 
-base_model = MLPClassifier(in_features=28 * 28, hidden_features=256, out_features=10)
+base_model = ResFFN(in_features = 28*28, hidden_features = 256, out_features = 10)
+
 ddu_model = ddu(base_model, sn_coeff=5.0, predictor_type="logit_classifier")
 
 # %%
@@ -84,12 +85,25 @@ for _epoch in range(5):
 
 ddu_model.eval()
 
-X_train_batches, y_train_batches = zip(*train_loader)
-X_train = torch.cat([x.view(-1, 28 * 28) for x in X_train_batches])
-y_train = torch.cat(list(y_train_batches))
+all_features = []
+all_labels = []
 
 with torch.no_grad():
-    ddu_model.fit_density_head(X_train, y_train)
+    for inputs, targets in train_loader:
+        if inputs.dim() == 4:
+            inputs_flat = inputs.view(inputs.size(0), -1)
+        else:
+            inputs_flat = inputs
+
+        features = ddu_model.encoder(inputs_flat)
+        all_features.append(features.detach().cpu())
+        all_labels.append(targets.detach().cpu())
+
+features_cat = torch.cat(all_features)
+labels_cat = torch.cat(all_labels)
+
+density_head = ddu_model.density_head
+density_head.fit(features_cat, labels_cat)
 
 # %%
 # Uncertainty Quantification
