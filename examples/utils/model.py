@@ -42,11 +42,17 @@ class ResFFNLayer(nn.Module):
 
 
 class ResFFN(nn.Module):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        in_features: int = 2,
+        hidden_features: int = 128,
+        out_features: int = 2,
+    ) -> None:
         super().__init__()
-        self.first = nn.Linear(2, 128)
-        self.layers = nn.ModuleList([ResFFNLayer(128) for _ in range(12)])
-        self.last = nn.Linear(128, 2)
+
+        self.first = nn.Linear(in_features, hidden_features)
+        self.layers = nn.ModuleList([ResFFNLayer(hidden_features) for _ in range(12)])
+        self.last = nn.Linear(hidden_features, out_features)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = torch.relu(self.first(x))
