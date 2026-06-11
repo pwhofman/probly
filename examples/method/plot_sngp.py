@@ -2,7 +2,7 @@
 SNGP Distance Awareness on 2D Toys
 ==================================
 
-Spectral-normalized Neural Gaussian Process (SNGP, :cite:`liu2020SNGP`) wraps a
+Spectral-normalized Neural Gaussian Process (SNGP, :cite:`liuSimplePrincipled2020`) wraps a
 deep backbone with spectral normalization and replaces its final dense layer
 with a random Fourier feature approximation to a Gaussian Process.  Spectral
 normalization preserves input-space distance in the feature map, so the GP
