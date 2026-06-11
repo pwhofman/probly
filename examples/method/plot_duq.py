@@ -2,11 +2,10 @@
 DUQ on Two Moons
 ================
 
-Deep Uncertainty Quantification (DUQ) replaces the standard softmax head with a
-radial basis function (RBF) network that maps feature representations to per-class
-centroids.
-Uncertainty is estimated from the kernel distances between an input's representation
-and the learned centroids.
+Deep Uncertainty Quantification (DUQ) replaces the softmax head with a radial
+basis function (RBF) network that maps feature representations to per-class
+centroids.  Uncertainty is estimated from the kernel distances between an
+input's representation and the learned centroids.
 """
 
 from __future__ import annotations
@@ -53,9 +52,8 @@ num_classes = 2
 
 duq_model.train()
 for epoch in range(300):
-    targets_onehot = F.one_hot(y_tensor, num_classes).float()
-
     X_tensor.requires_grad_(True)
+    targets_onehot = F.one_hot(y_tensor, num_classes).float()
 
     kernel_values = duq_model(X_tensor)
     loss = criterion(kernel_values, targets_onehot)

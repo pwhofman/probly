@@ -1,6 +1,6 @@
-"""====================================================================
-Evidential Deep Learning on Two Moons
-====================================================================
+"""========================
+Evidential on Two Moons
+========================
 
 Evidential Deep Learning replaces the softmax output with a Dirichlet
 distribution, learning to predict the distribution over class probabilities
@@ -67,7 +67,6 @@ for epoch in range (300):
         lambda_t = kl_weight * min(1.0, epoch / annealing_epochs)
 
     for inputs, targets in dataloader:
-
         opt.zero_grad()
 
         alpha = evidential_model(inputs)
