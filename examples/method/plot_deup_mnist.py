@@ -32,6 +32,10 @@ from examples.utils.plotting import plot_mnist_uncertainty
 # %%
 # Setup
 # -----
+SEED = 42
+torch.manual_seed(SEED)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(SEED)
 
 train_loader, test_loader = load_mnist(batch_size=256)
 
@@ -84,9 +88,11 @@ for _epoch in range(5):
     correct, total = 0, 0
     for inputs, targets in train_loader_flat:
         inputs, targets = inputs.to(device), targets.to(device)
+
         features = deup_model.encoder(inputs)
         logits = deup_model.classification_head(features)
         loss = criterion(logits, targets)
+
         optimizer_phase1.zero_grad()
         loss.backward()
         optimizer_phase1.step()
@@ -115,13 +121,11 @@ for param in deup_model.classification_head.parameters():
     param.requires_grad = False
 
 deup_model.eval()
-for provider in deup_model.providers:
-    provider.fit(
-        deup_model.encoder,
-        deup_model.classification_head,
-        train_loader_flat,
-        device,
-    )
+providers = list(getattr(deup_model, "providers", []))
+
+for provider in providers:
+    provider.to(device)
+    provider.fit(deup_model.encoder, deup_model.classification_head, train_loader_flat, device)
 
 _orig_phi = deup_model._compute_stationarizing_features
 # clamp stationarizing features to prevent exploding inputs to the error head
@@ -139,8 +143,8 @@ phase2_loader = DataLoader(
 
 bce_criterion = nn.BCELoss(reduction="none")
 
-all_phi: list[torch.Tensor] = []
-all_targets: list[torch.Tensor] = []
+all_phi = []
+all_targets = []
 
 deup_model.eval()
 with torch.no_grad():
