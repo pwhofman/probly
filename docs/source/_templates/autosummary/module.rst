@@ -1,4 +1,6 @@
-{{ fullname | escape | underline }}
+{% set _parts = fullname.split('.') %}
+{% set _short = (_parts[2:] | join('.')) or _parts[-1] %}
+{{ _short | escape | underline }}
 
 .. automodule:: {{ fullname }}
    :no-members:
