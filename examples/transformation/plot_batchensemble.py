@@ -96,3 +96,5 @@ rep = representer(batchensemble_model, num_samples=800)
 
 plot = plot_example_uncertainty(X, y, rep, title="BatchEnsemble Predictive Uncertainty", notion="total")
 plot.show()
+
+#test: docs workflow
