@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, labeled, synchronize, reopened]
 
 permissions:
   contents: read
@@ -13,6 +13,9 @@ permissions:
 jobs:
   doc_build:
     name: Test Documentation Build
+    # Incremental by default; the "CI: run-docs" label or a manual dispatch
+    # forces a full uncached build (label matched by substring: name has emoji).
     uses: ./.github/workflows/_docs-build.yml
     with:
       strict: true
+      docs-cache: ${{ github.event_name != 'workflow_dispatch' && !contains(join(github.event.pull_request.labels.*.name, ','), 'run-docs') }}
