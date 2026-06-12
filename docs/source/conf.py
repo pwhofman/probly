@@ -111,8 +111,8 @@ sphinx_gallery_conf = {
     "download_all_examples": False,
     "notebook_extensions": set(),
     # By default only examples whose source changed (MD5 mismatch) re-execute;
-    # set PROBLY_DOCS_RUN_STALE_EXAMPLES=1 to force re-running all examples.
-    "run_stale_examples": os.environ.get("PROBLY_DOCS_RUN_STALE_EXAMPLES", "0") == "1",
+    # set FORCE_CLEAN=1 to force re-running all examples.
+    "run_stale_examples": os.environ.get("FORCE_CLEAN"),
     # Don't kill the whole build if one example errors
     "abort_on_example_error": False,
     "default_thumb_file": str(REPO_ROOT / "docs" / "source" / "_static" / "logo" / "logo_light.png"),
