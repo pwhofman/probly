@@ -2030,6 +2030,7 @@ dev = [
     { name = "gpytorch" },
     { name = "hydra-core" },
     { name = "jax" },
+    { name = "joblib" },
     { name = "laplace-torch" },
     { name = "lightning" },
     { name = "nflows" },
@@ -2060,6 +2061,7 @@ dev = [
 ]
 docs = [
     { name = "furo" },
+    { name = "joblib" },
     { name = "sphinx" },
     { name = "sphinx-copybutton" },
     { name = "sphinx-gallery" },
@@ -2163,6 +2165,7 @@ dev = [
     { name = "gpytorch", specifier = ">=1.11" },
     { name = "hydra-core", specifier = ">=1.3.1" },
     { name = "jax", specifier = ">=0.8.1" },
+    { name = "joblib" },
     { name = "laplace-torch", specifier = ">=0.2.0" },
     { name = "lightning", specifier = ">=2.6.0" },
     { name = "nflows", specifier = ">=0.14" },
@@ -2195,6 +2198,7 @@ dev = [
 ]
 docs = [
     { name = "furo" },
+    { name = "joblib" },
     { name = "sphinx", specifier = ">=9.0.0" },
     { name = "sphinx-copybutton" },
     { name = "sphinx-gallery" },

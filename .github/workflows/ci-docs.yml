@@ -2,8 +2,16 @@ name: Docs CI
 
 on:
   workflow_dispatch:
+    inputs:
+      docs-cache:
+        description: "Restore the docs build cache (incremental). Leave off for a full uncached rebuild."
+        type: boolean
+        default: false
   push:
     branches: [main]
+  schedule:
+    # Weekly full strict build; also seeds the docs build cache for PR builds.
+    - cron: "0 4 * * 1"
   pull_request:
     types: [opened, labeled, synchronize, reopened]
 
@@ -13,9 +21,14 @@ permissions:
 jobs:
   doc_build:
     name: Test Documentation Build
-    # Incremental by default; the "CI: run-docs" label or a manual dispatch
-    # forces a full uncached build (label matched by substring: name has emoji).
+    # PRs build incrementally (cached); the "CI: run-docs" label, a push to
+    # main, or the weekly schedule forces a full uncached build (label matched
+    # by substring: name has emoji). Manual dispatch defaults to a full build
+    # but can opt into the cache via the docs-cache input -- run it on a PR's
+    # branch to force a full rebuild of that PR.
     uses: ./.github/workflows/_docs-build.yml
     with:
       strict: true
-      docs-cache: ${{ github.event_name != 'workflow_dispatch' && !contains(join(github.event.pull_request.labels.*.name, ','), 'run-docs') }}
+      docs-cache: >-
+        ${{ (github.event_name == 'workflow_dispatch' && inputs.docs-cache) ||
+            (github.event_name == 'pull_request' && !contains(join(github.event.pull_request.labels.*.name, ','), 'run-docs')) }}
