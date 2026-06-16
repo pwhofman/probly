@@ -9,7 +9,7 @@ import torch.nn
 
 from probly.layers.torch import DropConnectLinear
 
-from ._common import CLEANUP_FUNCS, sampling_preparation_traverser
+from ._common import CLEANUP_FUNCS, SHARED_DROPOUT_MASK, sampling_preparation_traverser
 
 if TYPE_CHECKING:
     from flextype.isinstance import LazyType
@@ -47,6 +47,10 @@ def _install_shared_dropout_hook(obj: torch.nn.Dropout, state: State) -> tuple[t
     The hook is registered via ``CLEANUP_FUNCS`` and removed automatically after
     sampling.
     """
+    if not state[SHARED_DROPOUT_MASK]:
+        _, state = _enforce_train_mode(obj, state)
+        return obj, state
+
     p = obj.p
     if p == 0.0:
         return obj, state
