@@ -60,7 +60,7 @@ for epoch in range(300):
 # ----------------------
 
 dropout_model.eval()
-rep = representer(dropout_model, num_samples=400)
+rep = representer(dropout_model, num_samples=400, shared_dropout_mask=True) # shared_dropout_mask=True to apply a single shared binary mask over the output instead of one per batch element
 
 plot = plot_example_uncertainty(X, y, rep, title="Dropout Predictive Uncertainty", notion="total")
 plot.show()
