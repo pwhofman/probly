@@ -1,54 +1,66 @@
-"""========================================
-Applying the Dropout Transformation
-========================================
+"""=======================
+MC Dropout on Two Moons
+=======================
 
-Transform a standard PyTorch model with :func:`~probly.method.dropout`
-so that dropout stays active during inference (MC-Dropout).
+Keep dropout active at inference and average several stochastic forward passes.
 """
 
 from __future__ import annotations
 
+from sklearn.datasets import make_moons
 import torch
 from torch import nn
-import torch.nn.functional as F
 
-from probly.method.dropout import dropout
+from probly.representer import representer
+from probly.transformation import dropout
 
-# %%
-# Define a base model
-# -------------------
-
-torch.manual_seed(42)
-
-
-class TinyNet(nn.Module):
-    """Small classifier with two hidden layers."""
-
-    def __init__(self, p: float = 0.3) -> None:
-        super().__init__()
-        self.fc1 = nn.Linear(16, 32)
-        self.do1 = nn.Dropout(p)
-        self.fc2 = nn.Linear(32, 8)
-        self.do2 = nn.Dropout(p)
-        self.out = nn.Linear(8, 3)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = F.relu(self.fc1(x))
-        x = self.do1(x)
-        x = F.relu(self.fc2(x))
-        x = self.do2(x)
-        return self.out(x)
-
-
-base_model = TinyNet(p=0.3).eval()
+from examples.utils.model import MLPClassifier
+from examples.utils.plotting import plot_example_uncertainty
 
 # %%
-# Apply the transformation
-# ------------------------
-# A single call to ``dropout`` wraps the model so that dropout remains active
-# even in eval mode — enabling Monte-Carlo inference.
+# Setup
+# -----
 
-mc_model = dropout(base_model)
-mc_model.eval()
+X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
+X_tensor = torch.from_numpy(X).float()
+y_tensor = torch.from_numpy(y).long()
 
-print(mc_model)
+# %%
+# Model
+# -----
+
+base_model = MLPClassifier()
+
+dropout_model = dropout(
+    base_model,
+    p=0.5,  # zeroing probability (kept active at inference)
+    predictor_type="logit_classifier",
+)
+
+# %%
+# Training
+# --------
+#
+# Standard cross-entropy with mini-batches.  Dropout stays active at
+# inference time, which is what enables repeated forward passes to produce
+# a distribution over predictions.
+
+opt = torch.optim.Adam(dropout_model.parameters(), lr=1e-3)
+
+dropout_model.train()
+for epoch in range(300):
+    opt.zero_grad()
+    out = dropout_model(X_tensor)
+    loss = nn.functional.cross_entropy(out, y_tensor)
+    loss.backward()
+    opt.step()
+
+# %%
+# Uncertainty Evaluation
+# ----------------------
+
+dropout_model.eval()
+rep = representer(dropout_model, num_samples=400)
+
+plot = plot_example_uncertainty(X, y, rep, title="Dropout Predictive Uncertainty", notion="total")
+plot.show()

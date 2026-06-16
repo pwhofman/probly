@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from flextype import flexdispatch
-from probly.plot.credal._data import _get_unnormalized_probabilities, _to_numpy
+from probly.plot.credal._data import _get_probabilities, _to_numpy
 from probly.representation.credal_set.array import (
     ArrayConvexCredalSet,
     ArrayDiscreteCredalSet,
@@ -84,7 +84,7 @@ def _draw_singleton(
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    pts = _get_unnormalized_probabilities(data)
+    pts = _get_probabilities(data)
     n_sets = pts.shape[0]
 
     for idx in range(n_sets):
@@ -135,7 +135,7 @@ def _draw_distance_based(
 ) -> None:
     lower_all = _to_numpy(data.lower()).reshape(-1, _NUM_TERNARY_CLASSES)
     upper_all = _to_numpy(data.upper()).reshape(-1, _NUM_TERNARY_CLASSES)
-    nominal_all = _get_unnormalized_probabilities(data).reshape(-1, _NUM_TERNARY_CLASSES)
+    nominal_all = _get_probabilities(data).reshape(-1, _NUM_TERNARY_CLASSES)
     n_sets = lower_all.shape[0]
 
     for idx in range(n_sets):
@@ -161,7 +161,7 @@ def _draw_discrete_set(
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    arr = _get_unnormalized_probabilities(data)
+    arr = _get_probabilities(data)
     n_sets = arr.shape[0]
 
     for idx in range(n_sets):
@@ -178,7 +178,7 @@ def _draw_convex_set(
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    arr = _get_unnormalized_probabilities(data)
+    arr = _get_probabilities(data)
     n_sets = arr.shape[0]
 
     for idx in range(n_sets):

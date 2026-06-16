@@ -7,7 +7,7 @@ import pytest
 
 from probly.plot.credal._data import (
     _flatten_batch,
-    _get_unnormalized_probabilities,
+    _get_probabilities,
     _to_numpy,
 )
 from probly.representation.credal_set.array import ArraySingletonCredalSet
@@ -46,13 +46,13 @@ class TestDataHelpers:
         arr = np.array([[0.4, 0.6]])
         np.testing.assert_array_equal(_to_numpy(_FakeTensor(arr)), arr)
 
-    def test_get_unnormalized_probabilities_dispatches_array_set(self) -> None:
+    def test_get_probabilities_dispatches_array_set(self) -> None:
         data = ArraySingletonCredalSet(array=np.array([[0.3, 0.7]]))
-        np.testing.assert_allclose(_get_unnormalized_probabilities(data), [[0.3, 0.7]])
+        np.testing.assert_allclose(_get_probabilities(data), [[0.3, 0.7]])
 
-    def test_get_unnormalized_probabilities_unregistered_type_raises(self) -> None:
+    def test_get_probabilities_unregistered_type_raises(self) -> None:
         with pytest.raises(NotImplementedError, match="Cannot extract probabilities from"):
-            _get_unnormalized_probabilities(object())
+            _get_probabilities(object())
 
     def test_flatten_batch_without_reshape_raises(self) -> None:
         with pytest.raises(TypeError, match="is not a supported batched credal set"):

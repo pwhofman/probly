@@ -74,6 +74,8 @@ def ddu[**In, Out: DDURepresentation](
 ) -> DDUPredictor[In, Out]:
     """Apply spectral normalization and add a Gaussian-mixture density head.
 
+    Based on :cite:`mukhotiDeepDeterministicUncertainty2023`.
+
     Args:
         base: Base classification model to be transformed.
         sn_coeff: Lipschitz coefficient for spectral normalization.

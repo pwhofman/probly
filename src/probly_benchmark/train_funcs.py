@@ -222,7 +222,7 @@ def train_epoch_het_net(
 
     Sets ``training_samples`` on every HeteroscedasticLayer so sampling is vectorized
     inside a single forward pass: the backbone runs once and the het layer draws S noise
-    samples in one GPU op, following :cite:`collier2021hetnets`.
+    samples in one GPU op, following :cite:`collierCorrelatedInputDependent2021`.
     """
     het_layers = [m for m in cast("nn.Module", model).modules() if isinstance(m, HeteroscedasticLayer)]
     for layer in het_layers:
@@ -529,7 +529,7 @@ def _duq_bce_loss(kernel_values: torch.Tensor, targets_onehot: torch.Tensor) -> 
 
     Each kernel value :math:`K_c(x) \in [0, 1]` is treated as an independent
     Bernoulli probability and compared against the one-hot target. Matches the
-    reference DUQ training objective :cite:`vanamersfoortDUQ2020`.
+    reference DUQ training objective :cite:`vanAmersfoortUncertaintyEstimation2020`.
     """
     return F.binary_cross_entropy(kernel_values, targets_onehot, reduction="mean")
 
@@ -564,7 +564,7 @@ def train_epoch_duq(
     gradient_penalty: float = 0.5,
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> torch.Tensor | float:
-    """Train a DUQ predictor for one step :cite:`vanamersfoortDUQ2020`.
+    """Train a DUQ predictor for one step :cite:`vanAmersfoortUncertaintyEstimation2020`.
 
     Combines binary cross-entropy on the per-class kernel values with the
     two-sided input-gradient penalty, then performs an EMA update of the class

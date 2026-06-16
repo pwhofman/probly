@@ -207,7 +207,7 @@ class ArrayDistanceBasedCredalSet(
         For L1/TV distance, the tightest element-wise lower bound is max(0, nominal - radius).
         """
         # Ensure radius is broadcastable to nominal (add last dim if needed)
-        nominal = self.nominal.unnormalized_probabilities
+        nominal = self.nominal.probabilities
         r = self.radius
         if isinstance(r, np.ndarray) and r.ndim == nominal.ndim - 1:
             r = np.expand_dims(r, axis=-1)
@@ -221,7 +221,7 @@ class ArrayDistanceBasedCredalSet(
         For L1/TV distance, the tightest element-wise upper bound is min(1, nominal + radius).
         """
         # Ensure radius is broadcastable to nominal (add last dim if needed)
-        nominal = self.nominal.unnormalized_probabilities
+        nominal = self.nominal.probabilities
         r = self.radius
         if isinstance(r, np.ndarray) and r.ndim == nominal.ndim - 1:
             r = np.expand_dims(r, axis=-1)
@@ -331,12 +331,12 @@ class ArraySingletonCredalSet(
     @override
     def lower(self) -> np.ndarray:
         """Return the lower probabilities of the credal set."""
-        return self.array.unnormalized_probabilities
+        return self.array.probabilities
 
     @override
     def upper(self) -> np.ndarray:
         """Return the upper probabilities of the credal set."""
-        return self.array.unnormalized_probabilities
+        return self.array.probabilities
 
     @override
     @property

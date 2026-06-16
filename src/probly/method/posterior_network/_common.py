@@ -78,7 +78,7 @@ class PosteriorNetworkDecomposition[T](
       ("Alea. Conf" / "OOD Alea" in every results table); this implementation
       flips it to a complement so that high values indicate high uncertainty.
     - Epistemic uncertainty: ``K / alpha_0``, the vacuity introduced by
-      :cite:`sensoyEvidentialDeepLearning2018`. This is monotonically
+      :cite:`sensoyEvidentialDeep2018`. This is monotonically
       equivalent to the paper's *"OOD Epist"* score ``alpha_0`` while being
       bounded in ``(0, 1]``.
 

@@ -9,6 +9,10 @@ on:
         description: "Treat warnings as errors (-W flag)"
         type: boolean
         default: false
+      docs-cache:
+        description: "Restore cached gallery output so unchanged examples (MD5 match) are not re-executed"
+        type: boolean
+        default: false
 
 permissions:
     contents: read
@@ -27,8 +31,41 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: uv sync
+      - name: Restore gallery cache
+        if: inputs.docs-cache
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: |
+            docs/source/auto_examples
+            docs/source/gen_modules
+          key: sphinx-gallery-${{ hashFiles('uv.lock') }}-${{ github.run_id }}
+          restore-keys: |
+            sphinx-gallery-${{ hashFiles('uv.lock') }}-
+      - name: Remove cached output of deleted examples
+        # orphaned gallery pages are in no toctree and fail -W builds
+        if: inputs.docs-cache
+        run: |
+          [ -d docs/source/auto_examples ] || exit 0
+          find docs/source/auto_examples -name 'plot_*.rst' | while read -r rst; do
+            rel="${rst#docs/source/auto_examples/}"
+            if [ ! -f "examples/${rel%.rst}.py" ]; then
+              rm -f "${rst%.rst}".*
+            fi
+          done
       - name: Build Sphinx documentation
-        run: uv run sphinx-build ${{ inputs.strict && '-W' || '' }} -b html docs/source docs/build/html
+        run: >
+          uv run sphinx-build
+          ${{ inputs.strict && '-W' || '' }}
+          -j auto
+          -b html docs/source docs/build/html
+      - name: Save gallery cache
+        if: always()
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: |
+            docs/source/auto_examples
+            docs/source/gen_modules
+          key: sphinx-gallery-${{ hashFiles('uv.lock') }}-${{ github.run_id }}
       - name: Upload docs artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:

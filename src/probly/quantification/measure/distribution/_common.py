@@ -81,7 +81,7 @@ def vacuity(distribution: SecondOrderDistributionLike) -> ArrayLike:
     For a Dirichlet distribution Dir(alpha) with K classes and alpha_0 = sum_c alpha_c,
     the vacuity is defined as K / alpha_0 and lies in (0, 1]. It corresponds to the
     "I do not know" mass in Dempster-Shafer / subjective-logic theory introduced by
-    :cite:`sensoyEvidentialDeepLearning2018`, and is equivalent (up to the constant K)
+    :cite:`sensoyEvidentialDeep2018`, and is equivalent (up to the constant K)
     to the inverse of the predicted evidence in Natural Posterior Networks
     :cite:`charpentierNaturalPosteriorNetwork2022`.
     """
@@ -97,8 +97,8 @@ def dempster_shafer_uncertainty(
 
     For a Gaussian distribution N(h, sigma^2) over K-class logits, this is the
     Dempster-Shafer / vacuity metric used by SNGP
-    :cite:`liuSNGPSpectralNormalizedNeural2020` (Eq. 15) and originally introduced
-    by :cite:`sensoyEvidentialDeepLearning2018`:
+    :cite:`liuSimplePrincipled2020` (Eq. 15) and originally introduced
+    by :cite:`sensoyEvidentialDeep2018`:
 
     .. math::
 

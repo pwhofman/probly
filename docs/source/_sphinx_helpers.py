@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import inspect
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -20,6 +21,11 @@ def make_linkcode_resolve(repo_root: Path) -> Callable[[str, dict[str, str]], st
     Returns:
         A callable suitable for assignment to ``linkcode_resolve`` in ``conf.py``.
     """
+    # Line anchors are computed from the build checkout, so the link must point
+    # at exactly that revision. In GitHub Actions, GITHUB_REPOSITORY/GITHUB_SHA
+    # identify the built repository and commit; locally fall back to main.
+    repository = os.environ.get("GITHUB_REPOSITORY", "pwhofman/probly")
+    revision = os.environ.get("GITHUB_SHA", "main")
 
     def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
         """Return a URL to the source for the given Python object for Sphinx linkcode.
@@ -46,8 +52,6 @@ def make_linkcode_resolve(repo_root: Path) -> Callable[[str, dict[str, str]], st
         except (ModuleNotFoundError, AttributeError, TypeError, OSError, ValueError):
             return None
 
-        base = "https://github.com/n-teGruppe/probly"
-        branch = "sphinx_gallery"
-        return f"{base}/blob/{branch}/{relpath}#L{lineno}"
+        return f"https://github.com/{repository}/blob/{revision}/{relpath}#L{lineno}"
 
     return linkcode_resolve

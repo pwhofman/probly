@@ -20,6 +20,7 @@ from probly.transformation.dropout import dropout
 from probly.transformation.ensemble import ensemble
 from probly.transformation.interval_classifier import interval_classifier
 from probly.transformation.normal_inverse_gamma_head import normal_inverse_gamma_head
+from probly.transformation.posterior_network import posterior_network
 from probly.transformation.subensemble import subensemble
 
 __all__ = [
@@ -41,5 +42,6 @@ __all__ = [
     "ensemble",
     "interval_classifier",
     "normal_inverse_gamma_head",
+    "posterior_network",
     "subensemble",
 ]

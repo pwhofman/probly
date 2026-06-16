@@ -54,7 +54,7 @@ def bayesian_ensemble[**In, Out](
     prior_std: float | list[float] | None = PRIOR_STD.default,
     num_members: int = NUM_MEMBERS.default,
 ) -> BayesianEnsemblePredictor[In, Out]:
-    """Create an ensemble of Bayesian-layer transformed predictors.
+    """Create an ensemble of Bayesian-layer transformed predictors based on :cite:`blundellWeightUncertainty2015`.
 
     Args:
         base: The base model to be used for the Bayesian ensemble.
