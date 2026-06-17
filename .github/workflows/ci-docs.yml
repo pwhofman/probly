@@ -13,7 +13,7 @@ on:
     # Weekly full strict build; also seeds the docs build cache for PR builds.
     - cron: "0 4 * * 1"
   pull_request:
-    types: [opened, labeled, synchronize, reopened]
+    types: [opened, labeled, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
@@ -21,6 +21,12 @@ permissions:
 jobs:
   doc_build:
     name: Test Documentation Build
+    # Skip draft PRs (the "CI: run-docs" label still forces a build on a draft);
+    # always build for pushes, the schedule, and manual dispatch.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.draft == false ||
+      contains(join(github.event.pull_request.labels.*.name, ','), 'run-docs')
     # PRs build incrementally (cached); the "CI: run-docs" label, a push to
     # main, or the weekly schedule forces a full uncached build (label matched
     # by substring: name has emoji). Manual dispatch defaults to a full build
