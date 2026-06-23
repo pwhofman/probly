@@ -15,10 +15,25 @@ from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
 import numpy as np
+from PIL import Image
 import pytest
 import torch
 
-from probly.datasets.torch import CIFAR10C, CIFAR10H, Benthic, ImageNetReaL, Plankton, Treeversity1, Treeversity6
+from probly.datasets.torch import (
+    CIFAR10C,
+    CIFAR10H,
+    CIFAR10HDCIC,
+    Benthic,
+    DCICDataset,
+    ImageNetReaL,
+    MiceBone,
+    Pig,
+    Plankton,
+    Synthetic,
+    Treeversity1,
+    Treeversity6,
+    Turkey,
+)
 
 
 def patch_cifar10_init(self: CIFAR10, root: str, train: bool, transform: Callable[..., Any], download: bool) -> None:  # noqa: ARG001, the init requires these arguments
@@ -50,6 +65,58 @@ def test_imagenetreal(tmp_path: Path) -> None:
     dataset = ImageNetReaL(str(tmp_path))
     for dist in dataset.dists:
         assert torch.isclose(torch.sum(dist), torch.tensor(1.0))
+    # __getitem__ lazily loads via self.loader and applies the transform.
+    dataset.loader = lambda _path: Image.new("RGB", (2, 2))
+    dataset.transform = lambda sample: sample
+    sample, dist = dataset[0]
+    assert isinstance(sample, Image.Image)
+    assert torch.isclose(torch.sum(dist), torch.tensor(1.0))
+
+
+def _write_fake_dcic(root: Path) -> None:
+    """Write a tiny DCIC dataset (annotations.json + two images) under ``root``."""
+    root.mkdir(parents=True, exist_ok=True)
+    # image_path is resolved relative to root.parent (DCICDataset sets self.root = root.parent).
+    annotations = [
+        {
+            "annotations": [
+                {"image_path": f"{root.name}/img0.png", "class_label": 0},
+                {"image_path": f"{root.name}/img0.png", "class_label": 1},
+                {"image_path": f"{root.name}/img1.png", "class_label": 1},
+            ]
+        }
+    ]
+    with (root / "annotations.json").open("w") as f:
+        json.dump(annotations, f)
+    for name in ("img0.png", "img1.png"):
+        Image.new("RGB", (4, 4)).save(root / name)
+
+
+def test_dcic_dataset_first_order(tmp_path: Path) -> None:
+    _write_fake_dcic(tmp_path / "DS")
+    dataset = DCICDataset(tmp_path / "DS", first_order=True)
+    assert len(dataset) == 2
+    image, target = dataset[0]
+    assert isinstance(image, Image.Image)
+    assert image.size == (4, 4)
+    assert target.shape == (dataset.num_classes,)
+    assert torch.isclose(target.sum(), torch.tensor(1.0))
+
+
+def test_dcic_dataset_class_labels_with_transform(tmp_path: Path) -> None:
+    _write_fake_dcic(tmp_path / "DS")
+    dataset = DCICDataset(tmp_path / "DS", transform=lambda _img: torch.zeros(3), first_order=False)
+    image, target = dataset[1]
+    assert torch.equal(image, torch.zeros(3))  # transform applied
+    assert target.ndim == 0  # a single sampled class index
+
+
+@patch("probly.datasets.torch.DCICDataset.__init__", return_value=None)
+def test_cifar10h_dcic(mock_dcic_init: MagicMock) -> None:
+    root = "some/path"
+    _ = CIFAR10HDCIC(root, first_order=False)
+    expected = Path(root) / "CIFAR10H"
+    mock_dcic_init.assert_called_once_with(expected, None, first_order=False)
 
 
 @patch("probly.datasets.torch.DCICDataset.__init__", return_value=None)
@@ -65,6 +132,38 @@ def test_plankton(mock_dcic_init: MagicMock) -> None:
     root = "some/path"
     _ = Plankton(root, first_order=False)
     expected = Path(root) / "Plankton"
+    mock_dcic_init.assert_called_once_with(expected, None, first_order=False)
+
+
+@patch("probly.datasets.torch.DCICDataset.__init__", return_value=None)
+def test_micebone(mock_dcic_init: MagicMock) -> None:
+    root = "some/path"
+    _ = MiceBone(root, first_order=False)
+    expected = Path(root) / "MiceBone"
+    mock_dcic_init.assert_called_once_with(expected, None, first_order=False)
+
+
+@patch("probly.datasets.torch.DCICDataset.__init__", return_value=None)
+def test_pig(mock_dcic_init: MagicMock) -> None:
+    root = "some/path"
+    _ = Pig(root, first_order=False)
+    expected = Path(root) / "Pig"
+    mock_dcic_init.assert_called_once_with(expected, None, first_order=False)
+
+
+@patch("probly.datasets.torch.DCICDataset.__init__", return_value=None)
+def test_synthetic(mock_dcic_init: MagicMock) -> None:
+    root = "some/path"
+    _ = Synthetic(root, first_order=False)
+    expected = Path(root) / "Synthetic"
+    mock_dcic_init.assert_called_once_with(expected, None, first_order=False)
+
+
+@patch("probly.datasets.torch.DCICDataset.__init__", return_value=None)
+def test_turkey(mock_dcic_init: MagicMock) -> None:
+    root = "some/path"
+    _ = Turkey(root, first_order=False)
+    expected = Path(root) / "Turkey"
     mock_dcic_init.assert_called_once_with(expected, None, first_order=False)
 
 
@@ -126,9 +225,16 @@ def test_cifar10c_slicing_and_getitem(tmp_path: Path) -> None:
 
 def test_cifar10c_transform_applied(tmp_path: Path) -> None:
     _write_fake_cifar10c(tmp_path / "CIFAR-10-C", "fog")
-    dataset = CIFAR10C(tmp_path, "fog", severity=1, transform=lambda _im: "transformed")
-    img, _ = dataset[0]
+    dataset = CIFAR10C(
+        tmp_path,
+        "fog",
+        severity=1,
+        transform=lambda _im: "transformed",
+        target_transform=lambda target: target + 100,
+    )
+    img, target = dataset[0]
     assert img == "transformed"
+    assert target == 100  # target_transform applied to the integer label 0
 
 
 @patch("probly.datasets.torch.download_and_extract_archive")
