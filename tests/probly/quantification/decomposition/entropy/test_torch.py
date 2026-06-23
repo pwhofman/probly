@@ -14,8 +14,8 @@ from probly.quantification.measure.distribution import (
     mutual_information,
 )
 from probly.representation.distribution.torch_categorical import (
-    TorchCategoricalDistribution,
     TorchCategoricalDistributionSample,
+    TorchProbabilityCategoricalDistribution,
 )
 
 
@@ -29,7 +29,7 @@ def _torch_categorical_sample() -> TorchCategoricalDistributionSample:
         dtype=torch.float64,
     )
     return TorchCategoricalDistributionSample(
-        tensor=TorchCategoricalDistribution(probabilities),
+        tensor=TorchProbabilityCategoricalDistribution(probabilities),
         sample_dim=0,
     )
 

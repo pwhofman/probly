@@ -9,14 +9,19 @@ from torch import nn
 
 from probly.layers.torch import BatchEnsembleConv2d, BatchEnsembleLinear
 from probly.predictor import predict
+from probly.representation.distribution._common import create_categorical_distribution_from_logits
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistributionSample
 from probly.representation.sample.torch import TorchSample
 
-from ._common import BatchEnsemblePredictor, _attach_num_members, register
+from ._common import BatchEnsemblePredictor, _attach_num_members, _wrap_batchensemble_logits, register
 
 
 def tile_inputs(x: torch.Tensor, num_members: int) -> torch.Tensor:
-    """Tile the leading batch dim by ``num_members`` for a BatchEnsemble forward pass."""
-    return torch.tile(x, (num_members,) + (1,) * (x.dim() - 1))
+    """Tile the leading batch dim by ``num_members``, preserving ``channels_last`` for 4D inputs."""
+    out = torch.tile(x, (num_members,) + (1,) * (x.dim() - 1))
+    if x.dim() == 4 and x.is_contiguous(memory_format=torch.channels_last):
+        out = out.contiguous(memory_format=torch.channels_last)
+    return out
 
 
 @_attach_num_members.register(nn.Module)
@@ -45,6 +50,19 @@ def predict_batchensemble(
     raw = predictor(tile_inputs(x, num_members))
     out = raw.view(num_members, b, *raw.shape[1:])
     return TorchSample(tensor=out, sample_dim=0)
+
+
+@_wrap_batchensemble_logits.register(TorchSample)
+def _torch_wrap_batchensemble_logits(sample: TorchSample[Any]) -> TorchCategoricalDistributionSample:
+    """Wrap per-member logits as a categorical sample (assumes a logit-classifier base)."""
+    tensor = sample.tensor
+    sample_dim = sample.sample_dim
+    if tensor.ndim >= 3 and sample_dim == 0:
+        tensor = tensor.transpose(0, 1)
+        sample_dim = 1
+
+    distribution = create_categorical_distribution_from_logits(tensor)
+    return TorchCategoricalDistributionSample(tensor=distribution, sample_dim=sample_dim)  # ty: ignore[invalid-argument-type]
 
 
 def replace_torch_batchensemble_linear(

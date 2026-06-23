@@ -552,6 +552,75 @@ def postnet_loss(
     return loss
 
 
+def mixture_uce_loss(
+    alpha: torch.Tensor,
+    mixture_weights: torch.Tensor,
+    y: torch.Tensor,
+    reduction: str = "sum",
+) -> torch.Tensor:
+    """Compute the LOP-GPN mixture uncertainty cross-entropy loss.
+
+    Args:
+        alpha: Feature-level Dirichlet concentration parameters with shape ``(N, C)``.
+        mixture_weights: Dense mixture weights with shape ``(B, N)``.
+        y: Ground-truth labels for the mixed nodes with shape ``(B,)``.
+        reduction: Reduction to apply, either ``"mean"``, ``"sum"``, or ``"none"``.
+
+    Returns:
+        Mixture uncertainty cross-entropy loss.
+
+    Raises:
+        ValueError: If ``reduction`` is unsupported.
+    """
+    alpha_sum = alpha.sum(dim=-1)
+    mixture_sum_digamma = mixture_weights @ digamma(alpha_sum).view(-1, 1)
+    mixture_digamma = mixture_weights @ digamma(alpha)
+    batch_idx = torch.arange(y.shape[0], device=y.device)
+    loss = mixture_sum_digamma.squeeze(-1) - mixture_digamma[batch_idx, y]
+    if reduction == "mean":
+        return loss.mean()
+    if reduction == "sum":
+        return loss.sum()
+    if reduction == "none":
+        return loss
+    msg = f"Unsupported reduction: {reduction!r}."
+    raise ValueError(msg)
+
+
+def lop_gpn_loss(
+    alpha_features: torch.Tensor,
+    mixture_weights: torch.Tensor,
+    y: torch.Tensor,
+    entropy_regularization: torch.Tensor | None = None,
+    entropy_weight: float = 0.0,
+    reduction: str = "sum",
+) -> torch.Tensor:
+    """Compute a simple LOP-GPN loss from mixture UCE and optional entropy regularization.
+
+    Args:
+        alpha_features: Feature-level Dirichlet concentration parameters with shape ``(N, C)``.
+        mixture_weights: Dense mixture weights with shape ``(B, N)``.
+        y: Ground-truth labels for the mixed nodes with shape ``(B,)``.
+        entropy_regularization: Optional per-sample entropy regularizer.
+        entropy_weight: Weight applied to ``entropy_regularization``.
+        reduction: Reduction to apply, either ``"mean"``, ``"sum"``, or ``"none"``.
+
+    Returns:
+        Scalar or per-sample LOP-GPN loss.
+    """
+    loss = mixture_uce_loss(alpha_features, mixture_weights, y, reduction=reduction)
+    if entropy_regularization is None or entropy_weight == 0.0:
+        return loss
+    if reduction == "mean":
+        return loss - entropy_weight * entropy_regularization.mean()
+    if reduction == "sum":
+        return loss - entropy_weight * entropy_regularization.sum()
+    if reduction == "none":
+        return loss - entropy_weight * entropy_regularization
+    msg = f"Unsupported reduction: {reduction!r}."
+    raise ValueError(msg)
+
+
 def natpn_loss(
     alpha: torch.Tensor,
     y: torch.Tensor,

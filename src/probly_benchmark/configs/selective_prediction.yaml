@@ -10,6 +10,7 @@ dataset: "cifar10"
 base_model: "resnet18"
 seed: 1
 n_bins: 50
+measure: "default"
 decomposition: "total"
 loss: "zero_one"
 batch_size: 512

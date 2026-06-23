@@ -8,13 +8,19 @@ from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
 from flextype import flexdispatch
 from probly.representation.representation import Representation
-from probly.representation.sample._common import Sample
+from probly.representation.sample._common import RepresentationSample, Sample
 
 if TYPE_CHECKING:
     from probly.representation.array_like import ArrayLike
 
 type DistributionType = Literal[
-    "gaussian", "dirichlet", "categorical", "empirical_second_order_categorical", "point_prediction"
+    "gaussian",
+    "dirichlet",
+    "categorical",
+    "bernoulli",
+    "empirical_second_order_categorical",
+    "mixture",
+    "point_prediction",
 ]
 
 
@@ -34,15 +40,42 @@ class Distribution[T](Representation, ABC):
         """Draw samples from Distribution."""
 
 
+class MixtureDistribution[D: Distribution, T](Distribution[T], ABC):
+    """Base class for mixture distributions."""
+
+    type: Literal["mixture"] = "mixture"
+    _running_instancehook: ClassVar[ContextVar[object]] = ContextVar(
+        "MixtureDistribution._running_instancehook", default=NotImplemented
+    )
+    component_type: ClassVar[type[D]] = Distribution
+
+    @property
+    @abstractmethod
+    def components(self) -> ArrayLike[D]:
+        """Get the components of the mixture distribution."""
+
+    @property
+    @abstractmethod
+    def mixture_weights(self) -> ArrayLike:
+        """Get the mixture weights of the mixture distribution."""
+
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        if cls._running_instancehook.get() is instance:
+            return NotImplemented
+        try:
+            tok = cls._running_instancehook.set(instance)
+            if isinstance(instance, MixtureDistribution) and isinstance(instance.components, cls.component_type):
+                return True
+        finally:
+            cls._running_instancehook.reset(tok)
+        return NotImplemented
+
+
 class CategoricalDistribution[T](Distribution[T]):
     """Base class for categorical distributions."""
 
     type: Literal["categorical"] = "categorical"
-
-    @property
-    @abstractmethod
-    def unnormalized_probabilities(self) -> ArrayLike:
-        """Get the probabilities of the categorical distribution."""
 
     @property
     @abstractmethod
@@ -51,35 +84,68 @@ class CategoricalDistribution[T](Distribution[T]):
 
     @property
     @abstractmethod
+    def unnormalized_probabilities(self) -> ArrayLike:
+        """Get unnormalized probabilities of the categorical distribution."""
+
+    @property
+    @abstractmethod
     def probabilities(self) -> ArrayLike:
-        """Get the normalized probabilities of the categorical distribution."""
+        """Get the probabilities of the categorical distribution."""
+
+    @property
+    @abstractmethod
+    def logits(self) -> ArrayLike:
+        """Get logits of the categorical distribution."""
+
+    @property
+    @abstractmethod
+    def log_probabilities(self) -> ArrayLike:
+        """Get the log probabilities of the categorical distribution."""
 
 
-class DistributionSample[T: Distribution](Sample[T]):
+class BernoulliDistribution[T](CategoricalDistribution[T]):
+    """Base class for Bernoulli distributions.
+
+    Bernoulli distributions are represented by the probability of class 1 and
+    can be viewed as two-class categorical distributions.
+    """
+
+    type: Literal["bernoulli"] = "bernoulli"
+
+    @property
+    def num_classes(self) -> int:
+        """Get the fixed number of Bernoulli classes."""
+        return 2
+
+    @abstractmethod
+    def to_categorical(self) -> CategoricalDistribution:
+        """Convert to a two-class categorical distribution."""
+
+
+class DistributionSample[T: Distribution](RepresentationSample[T]):
     """Sample type for empirical second-order distributions."""
 
-    _running_instancehook: ClassVar[ContextVar[object]] = ContextVar(
-        "DistributionSample._running_instancehook", default=NotImplemented
-    )
     sample_space: ClassVar[type[Distribution]] = Distribution
 
     @classmethod
     def __instancehook__(cls, instance: object) -> bool:
-        if cls._running_instancehook.get() is instance:
-            return NotImplemented
-        try:
-            tok = cls._running_instancehook.set(instance)
-            if isinstance(instance, Sample) and isinstance(instance.samples, cls.sample_space):
-                return True
-        finally:
-            cls._running_instancehook.reset(tok)
-        return NotImplemented
+        return super().__instancehook__(instance)
 
 
 class CategoricalDistributionSample[T: CategoricalDistribution](DistributionSample[T]):
     """Sample type for empirical second-order categorical distributions."""
 
     sample_space: ClassVar[type[CategoricalDistribution]] = CategoricalDistribution
+
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        return super().__instancehook__(instance)
+
+
+class BernoulliDistributionSample[T: BernoulliDistribution](CategoricalDistributionSample[T]):
+    """Sample type for Bernoulli distributions."""
+
+    sample_space: ClassVar[type[BernoulliDistribution]] = BernoulliDistribution
 
     @classmethod
     def __instancehook__(cls, instance: object) -> bool:
@@ -104,6 +170,16 @@ class DirichletDistribution[T: CategoricalDistribution](SecondOrderDistribution[
     @abstractmethod
     def mean(self) -> T:
         """Get the mean of the Dirichlet distribution."""
+
+
+class DirichletMixtureDistribution[D: DirichletDistribution, T: CategoricalDistribution](MixtureDistribution[D, T]):
+    """Mixture distribution with Dirichlet components."""
+
+    component_type: ClassVar[type[DirichletDistribution]] = DirichletDistribution
+
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        return super().__instancehook__(instance)
 
 
 class GaussianDistribution[D](Distribution[D], ABC):
@@ -161,10 +237,48 @@ def create_categorical_distribution_from_logits[T](data: T) -> CategoricalDistri
     raise NotImplementedError(msg)
 
 
+@create_categorical_distribution_from_logits.register(CategoricalDistribution)
+def _(data: CategoricalDistribution) -> CategoricalDistribution:
+    """Passthrough for data already wrapped as a categorical distribution."""
+    return data
+
+
+@flexdispatch
+def create_bernoulli_distribution[T](data: T) -> BernoulliDistribution:
+    """Create a Bernoulli distribution from backend-specific probability data."""
+    msg = f"No Bernoulli distribution factory registered for data type {type(data)}"
+    raise NotImplementedError(msg)
+
+
+@create_bernoulli_distribution.register(BernoulliDistribution)
+def _(data: BernoulliDistribution) -> BernoulliDistribution:
+    """Create a Bernoulli distribution from an instance of BernoulliDistribution."""
+    return data
+
+
+@flexdispatch
+def create_bernoulli_distribution_from_logits[T](data: T) -> BernoulliDistribution:
+    """Create a Bernoulli distribution from backend-specific logit data."""
+    msg = f"No Bernoulli distribution factory from logits registered for data type {type(data)}"
+    raise NotImplementedError(msg)
+
+
 @flexdispatch
 def create_dirichlet_distribution_from_alphas[T](alphas: T) -> DirichletDistribution:
     """Create a Dirichlet distribution from backend-specific alpha data."""
     msg = f"No Dirichlet distribution factory registered for alphas type {type(alphas)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def create_dirichlet_mixture_distribution_from_alphas_and_weights[T](
+    alphas: T, weights: T
+) -> DirichletMixtureDistribution:
+    """Create a Dirichlet mixture distribution from backend-specific alpha and weight data."""
+    msg = (
+        f"No Dirichlet mixture distribution factory registered for alphas type {type(alphas)} "
+        f"and weights type {type(weights)}"
+    )
     raise NotImplementedError(msg)
 
 

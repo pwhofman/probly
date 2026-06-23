@@ -11,8 +11,8 @@ from probly.quantification.measure.distribution import (
     max_probability_complement_of_expected,
 )
 from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
+    ArrayProbabilityCategoricalDistribution,
 )
 
 
@@ -26,7 +26,7 @@ def _array_categorical_sample() -> ArrayCategoricalDistributionSample:
         dtype=float,
     )
     return ArrayCategoricalDistributionSample(
-        array=ArrayCategoricalDistribution(probabilities),
+        array=ArrayProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 
@@ -57,7 +57,7 @@ def test_array_zero_one_decomposition_known_values() -> None:
         dtype=float,
     )
     sample = ArrayCategoricalDistributionSample(
-        array=ArrayCategoricalDistribution(probabilities),
+        array=ArrayProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 

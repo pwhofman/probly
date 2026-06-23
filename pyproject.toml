@@ -14,7 +14,6 @@ dependencies = [
     "mpltern>=0.6.0",
     "numpy>=2.1.0",         # first cp313 wheels
     "tqdm>=4.25.0",
-    "joblib>=1.1.0",
 ]
 authors = [
     { name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de" },
@@ -24,7 +23,7 @@ authors = [
     { name = "Alireza Javanmardi" },
 ]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering",
@@ -38,7 +37,7 @@ classifiers = [
 
 [tool.setuptools.packages.find]
 where = ["./src"]
-include = ["probly*", "pytraverse*", "flextype*"]
+include = ["probly", "probly.*", "pytraverse*", "flextype*"]
 
 [tool.setuptools.dynamic]
 version = { attr = "probly.__version__" }
@@ -59,6 +58,10 @@ torch = [
     "torch>=2.6.0",         # first cp313 wheels
     "torchvision>=0.21.0"
 ]
+torch_geometric = [
+    { include-group = "torch" },
+    "torch-geometric>=2.6.0",
+]
 jax = [
     "jax>=0.8.1",
     "flax>=0.12.4"
@@ -73,7 +76,27 @@ laplace = [
     "laplace-torch>=0.2.0",
     "curvlinops-for-pytorch>=2.0,<3.0"  # laplace-torch 0.2.2.2 imports curvlinops._base._LinearOperator, removed in 3.x
 ]
-all_ml = [{ include-group = "torch" }, { include-group = "jax" }, { include-group = "sklearn" }, { include-group = "river" }, { include-group = "laplace" }]
+transformers = [
+    { include-group = "torch" },
+    "transformers>=4.33.2",  # first cp313 wheels
+    "sentence-transformers>=2.3.0",
+    "accelerate>=0.24.1",
+]
+torch-uncertainty = [
+    { include-group = "torch" },
+    "lightning>=2.6.0",
+    "torch-uncertainty>=0.11.0",
+]
+all_ml = [
+    { include-group = "torch" },
+    { include-group = "torch_geometric" },
+    { include-group = "jax" },
+    { include-group = "sklearn" },
+    { include-group = "river" },
+    { include-group = "laplace" },
+    { include-group = "transformers" },
+    { include-group = "torch-uncertainty" },
+]
 test = [
     "pytest>=8.3.5",       # for testing
     "pytest-cov>=6.0.0",   # for coverage
@@ -107,6 +130,9 @@ benchmark = [
     "torch<2.11.0",
     "torchvision<0.26.0",
     "pytorch-optimizer>=3.0",
+    "nflows>=0.14",
+    "gpytorch>=1.11",
+    "datasets>=3.0.0",
 ]
 dev = [
     { include-group = "test" },
@@ -240,6 +266,9 @@ exclude_also = [
     "def __repr__",
     "if __name__ == .__main__.:",
     "\\s*\\.\\.\\.\\s*",
+    "pragma: no cover",
+    "@overload",
+    "@(typing\\.)?overload",
 ]
 exclude_lines = ["if TYPE_CHECKING"]
 

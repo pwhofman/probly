@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Protocol, cast, overload, runtime_checkable
 
+import numpy as np
 import torch
 
 from probly.representation._protected_axis._common_functions import (
@@ -25,7 +26,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-type TorchProtectedValue = TorchLike[Any] | torch.Tensor
+type TorchProtectedValue = TorchLike[Any] | torch.Tensor | np.ndarray
 
 
 class TorchAxisProtectedCreator(Protocol):
@@ -49,7 +50,7 @@ class _SupportsProtectedInternals(Protocol):
     def protected_values(self, func: Callable | None = None) -> dict[str, TorchProtectedValue] | None:
         """Return protected field values."""
 
-    def with_protected_values(self, values: dict[str, TorchProtectedValue]) -> Any:  # noqa: ANN401
+    def with_protected_values(self, values: dict[str, TorchProtectedValue], func: Callable | None = None) -> Any:  # noqa: ANN401
         """Create a copy with updated protected values."""
 
 
@@ -105,7 +106,10 @@ def torch_axis_protected_internals(
             return None
 
     primary_name = next(iter(protected_axes))
-    create: TorchAxisProtectedCreator = obj.with_protected_values
+
+    def create(values: dict[str, TorchProtectedValue]) -> Any:  # noqa: ANN401
+        return obj.with_protected_values(values, func)
+
     owner_type = type(obj)
     return TorchAxisProtectedInternals(
         create=create,
@@ -132,6 +136,20 @@ def _validate_batch_sync(values: dict[str, TorchProtectedValue], protected_axes:
         elif current != expected:
             msg = "Operation produced inconsistent batch-shapes across protected fields."
             raise ValueError(msg)
+
+
+def _has_numpy_protected_value(internals: TorchAxisProtectedInternals) -> bool:
+    return any(isinstance(value, np.ndarray) for value in internals.values.values())
+
+
+def _apply_structural_op(
+    value: TorchProtectedValue,
+    torch_op: Callable[[TorchProtectedValue], object],
+    numpy_op: Callable[[np.ndarray], object],
+) -> TorchProtectedValue:
+    if isinstance(value, np.ndarray):
+        return cast("TorchProtectedValue", numpy_op(value))
+    return cast("TorchProtectedValue", torch_op(value))
 
 
 def _apply_unary(
@@ -191,6 +209,21 @@ def _normalize_batch_reduction_dims(dim: object, batch_ndim: int) -> int | tuple
 
     msg = "reduction dim must be None, an int, or a tuple/list of ints."
     raise TypeError(msg)
+
+
+def _expand_average_weights_for_protected_axes(
+    weights: object,
+    value: TorchProtectedValue,
+    axes_count: int,
+) -> object:
+    if not isinstance(weights, torch.Tensor) or axes_count == 0:
+        return weights
+
+    batch_ndim = value_ndim(value) - axes_count
+    if weights.ndim == batch_ndim:
+        return weights.reshape((*weights.shape, *((1,) * axes_count)))
+
+    return weights
 
 
 class _TorchFunction(Protocol):
@@ -323,6 +356,9 @@ def protected_clone_function(
     internals: TorchAxisProtectedInternals,
 ) -> Any:  # noqa: ANN401
     del args
+    if _has_numpy_protected_value(internals):
+        return NotImplemented
+
     memory_format = kwargs.get("memory_format", torch.preserve_format)
     return _apply_unary(internals, lambda _name, value, _axes: func(value, memory_format=memory_format))
 
@@ -335,6 +371,9 @@ def protected_batch_reduction_function(  # noqa: PLR0912
     kwargs: dict[str, Any],
     internals: TorchAxisProtectedInternals,
 ) -> Any:  # noqa: ANN401
+    if _has_numpy_protected_value(internals):
+        return NotImplemented
+
     dim = args[1] if len(args) > 1 else kwargs.get("dim", kwargs.get("axis"))
     out = kwargs.get("out")
     out_internals = torch_axis_protected_internals(out)
@@ -375,6 +414,13 @@ def protected_batch_reduction_function(  # noqa: PLR0912
                 field_kwargs["out"] = out_internals.values[name]
             else:
                 field_kwargs["out"] = out
+
+        if func is torch_average and "weights" in field_kwargs:
+            field_kwargs["weights"] = _expand_average_weights_for_protected_axes(
+                field_kwargs["weights"],
+                value,
+                axes_count,
+            )
 
         result = func(*tuple(field_args), **field_kwargs)
 
@@ -417,7 +463,11 @@ def protected_transpose_function(
         batch_ndim = value_ndim(value) - axes_count
         full_dim0 = normalize_axis(dim0, batch_ndim)
         full_dim1 = normalize_axis(dim1, batch_ndim)
-        return func(value, full_dim0, full_dim1)
+        return _apply_structural_op(
+            value,
+            lambda field_value: func(field_value, full_dim0, full_dim1),
+            lambda field_value: np.swapaxes(field_value, full_dim0, full_dim1),
+        )
 
     return _apply_unary(internals, op)
 
@@ -445,7 +495,11 @@ def protected_permute_function(
         batch_ndim = value_ndim(value) - axes_count
         mapped = normalize_axes(batch_dims, batch_ndim)
         full_dims = (*mapped, *range(batch_ndim, value_ndim(value)))
-        return func(value, full_dims)
+        return _apply_structural_op(
+            value,
+            lambda field_value: func(field_value, full_dims),
+            lambda field_value: np.transpose(field_value, axes=full_dims),
+        )
 
     return _apply_unary(internals, op)
 
@@ -465,6 +519,9 @@ def protected_adjoint_function(
         if batch_ndim < 2:
             msg = "adjoint requires at least 2 batch dimensions."
             raise ValueError(msg)
+
+        if isinstance(value, np.ndarray):
+            return np.swapaxes(value, batch_ndim - 2, batch_ndim - 1)
 
         result = torch.transpose(cast("Any", value), batch_ndim - 2, batch_ndim - 1)
         return torch.conj(result) if torch.is_complex(result) else result
@@ -494,7 +551,11 @@ def protected_reshape_function(
 
     def op(_name: str, value: TorchProtectedValue, axes_count: int) -> TorchProtectedValue:
         target_shape = (*batch_target_shape, *protected_shape(value_shape(value), axes_count))
-        return func(value, target_shape)
+        return _apply_structural_op(
+            value,
+            lambda field_value: func(field_value, target_shape),
+            lambda field_value: np.reshape(field_value, target_shape),
+        )
 
     return _apply_unary(internals, op)
 
@@ -514,7 +575,11 @@ def protected_unsqueeze_function(
     def op(_name: str, value: TorchProtectedValue, axes_count: int) -> TorchProtectedValue:
         batch_ndim = value_ndim(value) - axes_count
         full_dim = normalize_axis(dim, batch_ndim, allow_endpoint=True)
-        return func(value, full_dim)
+        return _apply_structural_op(
+            value,
+            lambda field_value: func(field_value, full_dim),
+            lambda field_value: np.expand_dims(field_value, axis=full_dim),
+        )
 
     return _apply_unary(internals, op)
 
@@ -531,9 +596,9 @@ def protected_squeeze_function(
 
     def op(_name: str, value: TorchProtectedValue, axes_count: int) -> TorchProtectedValue:
         batch_ndim = value_ndim(value) - axes_count
+        shape = value_shape(value)
 
         if dim is None:
-            shape = value_shape(value)
             squeeze_dims = tuple(i for i, size in enumerate(shape[:batch_ndim]) if size == 1)
         else:
             if isinstance(dim, int):
@@ -545,9 +610,14 @@ def protected_squeeze_function(
                 raise TypeError(msg)
             squeeze_dims = normalize_axes(dim_tuple, batch_ndim)
 
+        squeeze_dims = tuple(sorted(set(squeeze_dims)))
+        if isinstance(value, np.ndarray):
+            numpy_squeeze_dims = tuple(axis for axis in squeeze_dims if shape[axis] == 1)
+            return np.squeeze(value, axis=numpy_squeeze_dims) if numpy_squeeze_dims else value
+
         result = value
-        for axis in sorted(set(squeeze_dims), reverse=True):
-            result = func(cast("Any", result), dim=axis)
+        for axis in reversed(squeeze_dims):
+            result = func(result, dim=axis)
         return result
 
     return _apply_unary(internals, op)
@@ -590,7 +660,11 @@ def protected_movedim_function(
         mapped_destination = normalize_axes(destination_tuple, batch_ndim)
         source_arg: int | tuple[int, ...] = mapped_source[0] if source_was_int else mapped_source
         destination_arg: int | tuple[int, ...] = mapped_destination[0] if destination_was_int else mapped_destination
-        return func(value, source=source_arg, destination=destination_arg)
+        return _apply_structural_op(
+            value,
+            lambda field_value: func(field_value, source=source_arg, destination=destination_arg),
+            lambda field_value: np.moveaxis(field_value, source_arg, destination_arg),
+        )
 
     return _apply_unary(internals, op)
 
@@ -633,7 +707,14 @@ def protected_cat_function(
         mapped_dim = normalize_axis(dim, batch_ndim)
 
         out_value = out_internals.values[name] if out_internals is not None else None
-        result = func(field_values, dim=mapped_dim, out=out_value)
+        if isinstance(template.values[name], np.ndarray):
+            result = np.concatenate(
+                cast("Any", field_values),
+                axis=mapped_dim,
+                out=cast("Any", out_value),
+            )
+        else:
+            result = func(field_values, dim=mapped_dim, out=out_value)
         if out_value is None:
             results[name] = result
 
@@ -642,6 +723,61 @@ def protected_cat_function(
 
     _validate_batch_sync(results, template.protected_axes)
     return template.create(results)
+
+
+@torch_function.register(torch.gather)
+@torch_internals_override(torch_param_pos=0)
+def protected_gather_function(
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    internals: TorchAxisProtectedInternals,
+) -> Any:  # noqa: ANN401
+    if _has_numpy_protected_value(internals):
+        return NotImplemented
+
+    dim = args[1] if len(args) > 1 else kwargs.get("dim")
+    index = args[2] if len(args) > 2 else kwargs.get("index")
+    out = kwargs.get("out")
+    sparse_grad = kwargs.get("sparse_grad", False)
+
+    if not isinstance(dim, int) or not isinstance(index, torch.Tensor):
+        return NotImplemented
+    if index.ndim != internals.batch_ndim:
+        msg = "gather index must have the same ndim as the protected object's batch dimensions."
+        raise ValueError(msg)
+
+    out_internals = torch_axis_protected_internals(out)
+    if out_internals is not None and out_internals.protected_axes != internals.protected_axes:
+        msg = "out must use the same protected_axes layout as input values."
+        raise ValueError(msg)
+    if out is not None and out_internals is None and len(internals.protected_axes) != 1:
+        msg = "non-protected out is only supported for single-field protected objects."
+        raise TypeError(msg)
+
+    results: dict[str, TorchProtectedValue] = {}
+    for name, axes_count in internals.protected_axes.items():
+        value = internals.values[name]
+        batch_ndim = value_ndim(value) - axes_count
+        mapped_dim = normalize_axis(dim, batch_ndim)
+
+        field_index = index
+        for _ in range(axes_count):
+            field_index = field_index.unsqueeze(-1)
+        if axes_count > 0:
+            target_shape = (*index.shape, *protected_shape(value_shape(value), axes_count))
+            field_index = field_index.expand(target_shape)
+
+        out_value = out_internals.values[name] if out_internals is not None else out
+        result = func(value, mapped_dim, field_index, sparse_grad=sparse_grad, out=out_value)
+        if out_value is None:
+            results[name] = result
+
+    if out is not None:
+        return out
+
+    _validate_batch_sync(results, internals.protected_axes)
+    return internals.create(results)
 
 
 @torch_function.register(torch.stack)
@@ -682,7 +818,14 @@ def protected_stack_function(
         mapped_dim = normalize_axis(dim, batch_ndim, allow_endpoint=True)
 
         out_value = out_internals.values[name] if out_internals is not None else None
-        result = func(field_values, dim=mapped_dim, out=out_value)
+        if isinstance(template.values[name], np.ndarray):
+            result = np.stack(
+                cast("Any", field_values),
+                axis=mapped_dim,
+                out=cast("Any", out_value),
+            )
+        else:
+            result = func(field_values, dim=mapped_dim, out=out_value)
         if out_value is None:
             results[name] = result
 

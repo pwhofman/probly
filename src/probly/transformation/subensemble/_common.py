@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from flextype import flexdispatch
-from probly.transformation.ensemble import EnsemblePredictor
+from probly.transformation.ensemble import EnsemblePredictor, register_ensemble_members
 from probly.transformation.transformation import predictor_transformation
 
 if TYPE_CHECKING:
@@ -15,10 +15,6 @@ if TYPE_CHECKING:
 @runtime_checkable
 class SubensemblePredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
     """Protocol for subensemble predictors."""
-
-    @classmethod
-    def __instancehook__(cls, instance: object) -> bool:
-        return super().__instancehook__(instance)
 
 
 @flexdispatch
@@ -32,7 +28,7 @@ def subensemble_generator[**In, H, Out](
     raise NotImplementedError(msg)
 
 
-@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
+@predictor_transformation(permitted_predictor_types=None, post_transform=register_ensemble_members)
 @SubensemblePredictor.register_factory(autocast_builtins=True)
 def subensemble[**In, H, Out](
     base: Predictor[In, H],
@@ -53,14 +49,14 @@ def subensemble[**In, H, Out](
             `head` is duplicated `num_heads` times to form the subensemble heads.
 
     Args:
-        base: Predictor, The model to be used as backbone or to create the backbone and heads.
-        num_heads: int, The number of heads in the subensemble.
-        head: Predictor, Optional model to be used as head of the subensemble.
-        reset_params: bool, Whether to reset the parameters of each head.
-        head_layer: int, Optional the number of layers used to create the head if no head model is provided.
+        base: The model to be used as backbone or to create the backbone and heads.
+        num_heads: The number of heads in the subensemble.
+        head: Optional model to be used as head of the subensemble.
+        reset_params: Whether to reset the parameters of each head.
+        head_layer: The number of layers used to create the head if no head model is provided.
 
     Returns:
-        SubensemblePredictor, The subensemble predictor.
+        The subensemble predictor.
 
     Raises:
         ValueError: If `head_layer` or `num_heads` is not a positive integer.

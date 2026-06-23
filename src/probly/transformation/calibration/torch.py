@@ -10,7 +10,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from probly.predictor import LogitClassifier, predict_raw
+from probly.predictor import BinaryLogitClassifier, LogitClassifier, predict_raw
 
 from ._common import CalibrationMethodConfig, _CalibrationPredictorBase, calibration_generator
 
@@ -131,6 +131,7 @@ class TorchIdentityLogitModel(nn.Module):
 
 
 LogitClassifier.register(TorchIdentityLogitModel)
+BinaryLogitClassifier.register(TorchIdentityLogitModel)
 
 
 class _TorchCalibrationPredictorBase[**In](_CalibrationPredictorBase[In, torch.Tensor], nn.Module, ABC):
@@ -165,16 +166,16 @@ class TorchAffineLogitCalibrationPredictor[**In](_TorchCalibrationPredictorBase[
     @staticmethod
     def _initial_temperature_buffer(config: CalibrationMethodConfig) -> torch.Tensor:
         if config.vector_scale and config.num_classes is not None:
-            return torch.full((config.num_classes,), float("nan"), dtype=torch.float64)
-        return torch.tensor(float("nan"), dtype=torch.float64)
+            return torch.full((config.num_classes,), float("nan"), dtype=torch.float32)
+        return torch.tensor(float("nan"), dtype=torch.float32)
 
     @staticmethod
     def _initial_bias_buffer(config: CalibrationMethodConfig) -> torch.Tensor:
         if not config.use_bias:
-            return torch.tensor(float("nan"), dtype=torch.float64)
+            return torch.tensor(float("nan"), dtype=torch.float32)
         if config.vector_scale and config.num_classes is not None:
-            return torch.full((config.num_classes,), float("nan"), dtype=torch.float64)
-        return torch.tensor(float("nan"), dtype=torch.float64)
+            return torch.full((config.num_classes,), float("nan"), dtype=torch.float32)
+        return torch.tensor(float("nan"), dtype=torch.float32)
 
     @property
     def temperature(self) -> torch.Tensor | None:
@@ -307,8 +308,8 @@ class TorchIsotonicCalibrationPredictor[**In](_TorchCalibrationPredictorBase[In]
     def __init__(self, predictor: nn.Module, config: CalibrationMethodConfig) -> None:
         """Initialize fixed-layout buffers for isotonic knot serialization."""
         super().__init__(predictor, config)
-        self.register_buffer("_isotonic_x_knots", torch.full((_ISOTONIC_MAX_KNOTS,), float("nan"), dtype=torch.float64))
-        self.register_buffer("_isotonic_y_knots", torch.full((_ISOTONIC_MAX_KNOTS,), float("nan"), dtype=torch.float64))
+        self.register_buffer("_isotonic_x_knots", torch.full((_ISOTONIC_MAX_KNOTS,), float("nan"), dtype=torch.float32))
+        self.register_buffer("_isotonic_y_knots", torch.full((_ISOTONIC_MAX_KNOTS,), float("nan"), dtype=torch.float32))
         self.register_buffer("_isotonic_num_knots", torch.tensor(0, dtype=torch.int64))
         self.register_buffer("_is_calibrated", torch.tensor(False, dtype=torch.bool))
 
@@ -325,8 +326,8 @@ class TorchIsotonicCalibrationPredictor[**In](_TorchCalibrationPredictorBase[In]
         model = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip")
         model.fit(x_np, y_np)
 
-        x_knots = torch.as_tensor(model.X_thresholds_, dtype=torch.float64)
-        y_knots = torch.as_tensor(model.y_thresholds_, dtype=torch.float64)
+        x_knots = torch.as_tensor(model.X_thresholds_, dtype=torch.float32)
+        y_knots = torch.as_tensor(model.y_thresholds_, dtype=torch.float32)
         return x_knots, y_knots
 
     def _store_isotonic_knots(self, x_knots: torch.Tensor, y_knots: torch.Tensor) -> None:

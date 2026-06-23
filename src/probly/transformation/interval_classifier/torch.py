@@ -18,7 +18,7 @@ from probly.layers.torch import (
 )
 from probly.predictor import predict_raw
 
-from ._common import REPLACED, IntervalClassifierPredictor, interval_classifier_traverser
+from ._common import REPLACED, USE_BASE_WEIGHTS, IntervalClassifierPredictor, interval_classifier_traverser
 
 if TYPE_CHECKING:
     from pytraverse import State
@@ -74,6 +74,37 @@ def _bn_momentum(obj: nn.BatchNorm1d | nn.BatchNorm2d) -> float:
     return obj.momentum
 
 
+@torch.no_grad()
+def _copy_weight_into_center(new: IntConv2d | IntLinear, obj: nn.Conv2d | nn.Linear) -> None:
+    """Copy a base layer's weight (and optional bias) into the interval layer's center slots.
+
+    Works for both ``nn.Conv2d`` and ``nn.Linear`` because they share the same
+    ``weight``/``bias`` attribute names and shapes match the corresponding
+    ``IntConv2d``/``IntLinear`` ``center_weight``/``center_bias`` slots.
+
+    Also zeros the radius weight and bias so the interval starts degenerate
+    (lo == hi), reproducing the pretrained model's predictions exactly before
+    any training has modified the radius parameters.
+    """
+    new.center_weight.copy_(obj.weight)
+    new.radius_weight.zero_()
+    if obj.bias is not None and new.center_bias is not None:
+        new.center_bias.copy_(obj.bias)
+    if new.radius_bias is not None:
+        new.radius_bias.zero_()
+
+
+@torch.no_grad()
+def _copy_bn_into_center(new: IntBatchNorm1d | IntBatchNorm2d, obj: nn.BatchNorm1d | nn.BatchNorm2d) -> None:
+    """Copy a base BatchNorm's affine and running stats into the interval BN's center slots."""
+    if obj.affine and new.center_weight is not None and new.center_bias is not None:
+        new.center_weight.copy_(obj.weight)
+        new.center_bias.copy_(obj.bias)
+    if obj.track_running_stats and new.center_running_mean is not None and new.center_running_var is not None:
+        new.center_running_mean.copy_(obj.running_mean)
+        new.center_running_var.copy_(obj.running_var)
+
+
 @interval_classifier_traverser.register(nn.Conv2d)
 def _(obj: nn.Conv2d, state: State) -> tuple[nn.Module, State]:
     """Replace ``Conv2d`` with ``IntConv2d`` after the head is placed; blank before."""
@@ -88,6 +119,8 @@ def _(obj: nn.Conv2d, state: State) -> tuple[nn.Module, State]:
         padding=obj.padding,  # ty:ignore[invalid-argument-type]
         bias=obj.bias is not None,
     )
+    if state[USE_BASE_WEIGHTS]:
+        _copy_weight_into_center(new, obj)
     return new, state
 
 
@@ -103,6 +136,8 @@ def _(obj: nn.BatchNorm2d, state: State) -> tuple[nn.Module, State]:
         affine=obj.affine,
         track_running_stats=obj.track_running_stats,
     )
+    if state[USE_BASE_WEIGHTS]:
+        _copy_bn_into_center(new, obj)
     return new, state
 
 
@@ -118,6 +153,8 @@ def _(obj: nn.BatchNorm1d, state: State) -> tuple[nn.Module, State]:
         affine=obj.affine,
         track_running_stats=obj.track_running_stats,
     )
+    if state[USE_BASE_WEIGHTS]:
+        _copy_bn_into_center(new, obj)
     return new, state
 
 
@@ -125,10 +162,16 @@ def _(obj: nn.BatchNorm1d, state: State) -> tuple[nn.Module, State]:
 def _(obj: nn.Linear, state: State) -> tuple[nn.Module, State]:
     """Replace ``Linear``: insert interval head for the last one, ``IntLinear`` for earlier ones."""
     if state[REPLACED]:
-        return IntLinear(obj.in_features, obj.out_features, bias=obj.bias is not None), state
+        new_linear = IntLinear(obj.in_features, obj.out_features, bias=obj.bias is not None)
+        if state[USE_BASE_WEIGHTS]:
+            _copy_weight_into_center(new_linear, obj)
+        return new_linear, state
     state[REPLACED] = True
+    head_linear = IntLinear(obj.in_features, obj.out_features, bias=obj.bias is not None)
+    if state[USE_BASE_WEIGHTS]:
+        _copy_weight_into_center(head_linear, obj)
     new_head = nn.Sequential(
-        IntLinear(obj.in_features, obj.out_features, bias=obj.bias is not None),
+        head_linear,
         IntBatchNorm1d(obj.out_features),
         IntSoftmax(),
     )

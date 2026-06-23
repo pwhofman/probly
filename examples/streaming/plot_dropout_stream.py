@@ -23,7 +23,10 @@ from torch import nn
 
 from probly.method.dropout import dropout
 from probly.quantification import quantify
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.distribution.torch_categorical import (
+    TorchCategoricalDistribution,
+    TorchProbabilityCategoricalDistribution,
+)
 from probly.representer import representer
 
 torch.manual_seed(0)
@@ -45,7 +48,7 @@ class TinyNet(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> TorchCategoricalDistribution:
-        return TorchCategoricalDistribution(torch.softmax(self.net(x), dim=-1))
+        return TorchProbabilityCategoricalDistribution(torch.softmax(self.net(x), dim=-1))
 
 
 base = TinyNet()

@@ -8,8 +8,8 @@ from probly.quantification import SecondOrderEntropyDecomposition, decompose, me
 from probly.quantification.decomposition.decomposition import ConstantTotalDecomposition
 from probly.quantification.measure.distribution import entropy_of_expected_predictive_distribution
 from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
+    ArrayProbabilityCategoricalDistribution,
 )
 from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
 from probly.representation.sample import ArraySample
@@ -51,7 +51,7 @@ def _array_categorical_sample() -> ArrayCategoricalDistributionSample:
         dtype=float,
     )
     return ArrayCategoricalDistributionSample(
-        array=ArrayCategoricalDistribution(probabilities),
+        array=ArrayProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 

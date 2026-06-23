@@ -1,0 +1,17 @@
+# @package _global_
+
+# The KL divergence in the ELBO already acts as L2-style regularization toward
+# the prior, so the optimizer's weight_decay is double-counted regularization
+# and pulls weights tighter than intended. Set to 0 here.
+optimizer:
+  params:
+    weight_decay: 0
+
+# resnet18_cifar10 trains from scratch (pretrained=false), so the base layer's
+# Kaiming-initialized weights are not a meaningful posterior-mean init. Use the
+# default Bayesian init instead. The default prior_std list is left untouched
+# since wider priors are appropriate when training from scratch — random init
+# is not anchored to anything specific.
+method:
+  params:
+    use_base_weights: false

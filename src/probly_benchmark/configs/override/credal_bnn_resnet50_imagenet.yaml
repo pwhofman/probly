@@ -1,0 +1,18 @@
+# @package _global_
+
+# The KL divergence in the ELBO already acts as L2-style regularization toward
+# the prior, so the optimizer's weight_decay is double-counted regularization
+# and pulls weights tighter than intended. Set to 0 here.
+optimizer:
+  params:
+    weight_decay: 0
+
+# Smaller posterior std such that pretrained weights are not perturbed too much at start.
+# Prior std list has tight increments around the bayesian imagenet baseline (0.05) since
+# pretrained weights have small magnitudes; wider priors than ~3x baseline let posteriors
+# drift too far from the pretrained init. Mean stays at the default zeros — neural network
+# weights cluster around zero so a zero-mean prior is natural across all members.
+method:
+  params:
+    posterior_std: 0.001
+    prior_std: [0.01, 0.015, 0.02, 0.03, 0.04, 0.05, 0.07, 0.09, 0.12, 0.15]

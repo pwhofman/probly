@@ -4,4 +4,4 @@ label: "Evidential"
 train:
   loss: "mse"              # one of: "mse", "ce", "log"
   kl_weight: 1.0           # final KL weight after annealing
-  annealing_epochs: 10     # 0 disables annealing (fixed kl_weight from start)
+  annealing_epochs: 100     # 0 disables annealing (fixed kl_weight from start)

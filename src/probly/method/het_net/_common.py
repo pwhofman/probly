@@ -19,6 +19,8 @@ from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_tr
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from probly.representation.sample import SampleAxis
+
 
 class HetNetRepresentation[T: CategoricalDistribution](CategoricalDistributionSample[T]):
     """A sample of categorical distributions produced by a HetNets model.
@@ -47,7 +49,7 @@ IS_PARAMETER_EFFICIENT = GlobalVariable[bool]("IS_PARAMETER_EFFICIENT")
         ProbabilisticClassifier,
     ),
     preserve_predictor_type=False,
-)  # ty:ignore[invalid-argument-type]
+)
 @HetNetPredictor.register_factory
 def het_net[**In, Out: CategoricalDistribution](
     base: Predictor[In, Out],
@@ -55,7 +57,7 @@ def het_net[**In, Out: CategoricalDistribution](
     temperature: float = 1.0,
     is_parameter_efficient: bool = False,
 ) -> HetNetPredictor[In, Out]:
-    """Create a HetNets predictor from a base predictor base on :cite:`collier2021hetnets`.
+    """Create a HetNets predictor from a base predictor base on :cite:`collierCorrelatedInputDependent2021`.
 
     Args:
         base: The base model to be transformed.
@@ -91,7 +93,7 @@ def _[**In](
 
 
 def create_het_net_sample[Out: CategoricalDistribution](
-    predictions: Iterable[Out], sample_axis: int = -1
+    predictions: Iterable[Out], sample_axis: SampleAxis = "auto"
 ) -> HetNetRepresentation:
     """Create a HetNets sample representation from repeated predictions.
 

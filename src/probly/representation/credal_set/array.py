@@ -17,9 +17,12 @@ from probly.representation.credal_set._common import (
     ProbabilityIntervalsCredalSet,
     SingletonCredalSet,
     create_convex_credal_set,
+    create_distance_based_credal_set,
+    create_distance_based_credal_set_from_center_and_radius,
     create_probability_intervals,
 )
 from probly.representation.distribution import ArrayCategoricalDistribution
+from probly.representation.distribution.array_categorical import ArrayProbabilityCategoricalDistribution
 from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
@@ -31,7 +34,7 @@ if TYPE_CHECKING:
 def _ensure_array_categorical_distribution(value: object) -> ArrayCategoricalDistribution:
     if isinstance(value, ArrayCategoricalDistribution):
         return value
-    return ArrayCategoricalDistribution(np.asarray(value))
+    return ArrayProbabilityCategoricalDistribution(np.asarray(value))
 
 
 def _probability_interval_center(lower_bounds: np.ndarray, upper_bounds: np.ndarray) -> np.ndarray:
@@ -204,7 +207,7 @@ class ArrayDistanceBasedCredalSet(
         For L1/TV distance, the tightest element-wise lower bound is max(0, nominal - radius).
         """
         # Ensure radius is broadcastable to nominal (add last dim if needed)
-        nominal = self.nominal.unnormalized_probabilities
+        nominal = self.nominal.probabilities
         r = self.radius
         if isinstance(r, np.ndarray) and r.ndim == nominal.ndim - 1:
             r = np.expand_dims(r, axis=-1)
@@ -218,7 +221,7 @@ class ArrayDistanceBasedCredalSet(
         For L1/TV distance, the tightest element-wise upper bound is min(1, nominal + radius).
         """
         # Ensure radius is broadcastable to nominal (add last dim if needed)
-        nominal = self.nominal.unnormalized_probabilities
+        nominal = self.nominal.probabilities
         r = self.radius
         if isinstance(r, np.ndarray) and r.ndim == nominal.ndim - 1:
             r = np.expand_dims(r, axis=-1)
@@ -296,7 +299,7 @@ class ArrayProbabilityIntervalsCredalSet(
     def barycenter(self) -> ArrayCategoricalDistribution:
         """Compute the barycenter of the credal set as the center of the probability intervals."""
         center = _probability_interval_center(self.lower_bounds, self.upper_bounds)
-        return ArrayCategoricalDistribution(center)
+        return ArrayProbabilityCategoricalDistribution(center)
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
@@ -328,12 +331,12 @@ class ArraySingletonCredalSet(
     @override
     def lower(self) -> np.ndarray:
         """Return the lower probabilities of the credal set."""
-        return self.array.unnormalized_probabilities
+        return self.array.probabilities
 
     @override
     def upper(self) -> np.ndarray:
         """Return the upper probabilities of the credal set."""
-        return self.array.unnormalized_probabilities
+        return self.array.probabilities
 
     @override
     @property
@@ -343,3 +346,12 @@ class ArraySingletonCredalSet(
 
 create_probability_intervals.register(ArrayCategoricalDistribution, ArrayProbabilityIntervalsCredalSet.from_sample)
 create_convex_credal_set.register(ArraySample, ArrayConvexCredalSet.from_array_sample)
+create_distance_based_credal_set.register(ArraySample, ArrayDistanceBasedCredalSet.from_array_sample)
+
+
+@create_distance_based_credal_set_from_center_and_radius.register(ArrayCategoricalDistribution)
+def _create_distance_based_credal_set_from_center_and_radius(
+    center: ArrayCategoricalDistribution,
+    radius: np.ndarray,
+) -> ArrayDistanceBasedCredalSet:
+    return ArrayDistanceBasedCredalSet(nominal=center, radius=np.asarray(radius))

@@ -16,7 +16,7 @@ from probly.representation.torch_functions import torch_average
 from probly.representation.torch_like import TorchLike, TorchLikeImplementation, to_torch_like
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable, Iterable, Iterator
     from types import ModuleType
 
     import numpy.typing as npt
@@ -110,6 +110,11 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
     def __len__(self) -> int:
         """Return the len of the array."""
         return len(self.tensor)
+
+    def __iter__(self) -> Iterator[Any]:
+        """Iterate over axis 0 of the sample wrapper."""
+        for index in range(len(self)):
+            yield self[index]
 
     @property
     def sample_axis(self) -> int:

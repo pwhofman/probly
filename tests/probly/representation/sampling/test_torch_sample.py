@@ -9,10 +9,18 @@ pytest.importorskip("torch")
 import torch
 
 from probly.representation.array_like import to_numpy_array_like
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.distribution.torch_categorical import (
+    TorchCategoricalDistribution,
+    TorchProbabilityCategoricalDistribution,
+)
 from probly.representation.sample.array import ArraySample
 from probly.representation.sample.torch import TorchSample
 from probly.representation.torch_functions import torch_average
+
+
+def _torch():
+    """Return torch module or skip."""
+    return pytest.importorskip("torch")
 
 
 def assert_weights_equal(sample: TorchSample, expected: torch.Tensor) -> None:
@@ -26,6 +34,18 @@ class TestTorchSample:
 
     def test_sample_length(self, torch_tensor_sample_2d: TorchSample) -> None:
         assert len(torch_tensor_sample_2d) == len(torch_tensor_sample_2d.tensor)
+
+    def test_sample_iteration_follows_axis_zero(self) -> None:
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1)
+
+        items = list(sample)
+
+        assert len(items) == 3
+        assert all(isinstance(item, TorchSample) for item in items)
+        assert [item.sample_dim for item in items] == [0, 0, 0]
+        assert torch.equal(items[0].tensor, torch.tensor([0, 1, 2, 3]))
+        assert torch.equal(items[1].tensor, torch.tensor([4, 5, 6, 7]))
+        assert torch.equal(items[2].tensor, torch.tensor([8, 9, 10, 11]))
 
     def test_sample_ndim(self, torch_tensor_sample_2d: TorchSample) -> None:
         assert torch_tensor_sample_2d.ndim == 2
@@ -253,7 +273,7 @@ class TestTorchSample:
 
     def test_sample_mean_of_categorical_distribution_preserves_distribution_type(self) -> None:
         probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
-        sample = TorchSample(TorchCategoricalDistribution(probabilities), sample_dim=0)
+        sample = TorchSample(TorchProbabilityCategoricalDistribution(probabilities), sample_dim=0)
 
         result = sample.sample_mean()
 
@@ -265,7 +285,7 @@ class TestTorchSample:
     def test_weighted_sample_mean_of_categorical_distribution_uses_weights(self) -> None:
         probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
         weights = torch.tensor([0.25, 0.75], dtype=torch.float64)
-        sample = TorchSample(TorchCategoricalDistribution(probabilities), sample_dim=0, weights=weights)
+        sample = TorchSample(TorchProbabilityCategoricalDistribution(probabilities), sample_dim=0, weights=weights)
 
         result = sample.sample_mean()
 
@@ -496,3 +516,250 @@ class TestTorchSample:
 
         with pytest.raises(ValueError, match="stack"):
             torch.stack((left, right), dim=0)
+
+
+class TestTorchSampleEdgeCases:
+    """TorchSample validation, mT/mH, conversions."""
+
+    def test_invalid_sample_dim(self) -> None:
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        t = torch.zeros((2, 3))
+        with pytest.raises(ValueError, match="out of bounds"):
+            TorchSample(t, sample_dim=2)
+
+    def test_negative_sample_dim_normalised(self) -> None:
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        t = torch.zeros((2, 3))
+        s = TorchSample(t, sample_dim=-1)
+        assert s.sample_dim == 1
+
+    def test_negative_sample_dim_too_negative(self) -> None:
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        t = torch.zeros((2, 3))
+        with pytest.raises(ValueError, match="out of bounds"):
+            TorchSample(t, sample_dim=-3)
+
+    def test_weights_shape_mismatch(self) -> None:
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="weights must have shape"):
+            TorchSample(torch.zeros((2, 3)), sample_dim=0, weights=torch.zeros(5))
+
+    def test_mT_swaps_sample_dim_when_at_end(self) -> None:  # noqa: N802
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        t = torch.zeros((2, 3, 4))
+        s = TorchSample(t, sample_dim=2)
+        result = s.mT
+        assert result.sample_dim == 1
+
+    def test_mT_unaffected_when_other_dim(self) -> None:  # noqa: N802
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        t = torch.zeros((2, 3, 4))
+        s = TorchSample(t, sample_dim=0)
+        result = s.mT
+        assert result.sample_dim == 0
+
+    def test_mT_requires_at_least_two_dims(self) -> None:  # noqa: N802
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        s = TorchSample(torch.zeros(5), sample_dim=0)
+        with pytest.raises(ValueError, match="mT requires"):
+            _ = s.mT
+
+    def test_mH_swaps_sample_dim_when_at_end(self) -> None:  # noqa: N802
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        t = torch.zeros((2, 3, 4))
+        s = TorchSample(t, sample_dim=2)
+        result = s.mH
+        assert result.sample_dim == 1
+
+    def test_mH_requires_at_least_two_dims(self) -> None:  # noqa: N802
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        s = TorchSample(torch.zeros(5), sample_dim=0)
+        with pytest.raises(ValueError, match="mH requires"):
+            _ = s.mH
+
+    def test_size_with_dim(self) -> None:
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        t = torch.zeros((2, 3, 4))
+        s = TorchSample(t, sample_dim=0)
+        assert s.size(1) == 3
+        assert tuple(s.size()) == (2, 3, 4)
+
+    def test_samples_property_moves_axis(self) -> None:
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        t = torch.arange(24).reshape(2, 3, 4)
+        s = TorchSample(t, sample_dim=2)
+        out = s.samples
+        # samples puts the sample axis first
+        assert tuple(out.shape) == (4, 2, 3)
+
+    def test_to_with_no_change_returns_same_object(self) -> None:
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        t = torch.zeros((2, 3))
+        s = TorchSample(t, sample_dim=0)
+        # to() with the same dtype/device shouldn't materialise a new wrapper.
+        s2 = s.to(dtype=t.dtype, device=t.device)
+        assert s2 is s
+
+    def test_numpy_conversion(self) -> None:
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        s = TorchSample(torch.arange(6, dtype=torch.float32).reshape(2, 3), sample_dim=0)
+        arr = s.numpy()
+        assert isinstance(arr, np.ndarray)
+        assert arr.shape == (2, 3)
+
+    def test_detach_returns_new_torch_sample(self) -> None:
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        t = torch.zeros((3,), requires_grad=True)
+        s = TorchSample(t, sample_dim=0)
+        d = s.detach()
+        assert d is not s
+        assert not d.tensor.requires_grad
+
+    def test_from_iterable_auto_axis_for_array_input(self) -> None:
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        # Pass in a torch tensor directly with auto sample_axis.
+        t = torch.arange(12).reshape(3, 4)
+        s = TorchSample.from_iterable(t)
+        # auto -> -1
+        assert s.sample_dim == t.ndim - 1
+
+    def test_from_iterable_auto_axis_zero_dim_raises(self) -> None:
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="Cannot infer"):
+            TorchSample.from_iterable(torch.tensor(5))
+
+    def test_from_iterable_auto_axis_empty_iterable_raises(self) -> None:
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="Cannot infer"):
+            TorchSample.from_iterable([])
+
+    def test_from_iterable_both_dim_and_axis_raises(self) -> None:
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="Cannot specify both"):
+            TorchSample.from_iterable(torch.zeros((2, 3)), sample_dim=0, sample_axis=1)
+
+    def test_from_iterable_neither_dim_nor_axis_raises(self) -> None:
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="Either sample_dim or sample_axis"):
+            TorchSample.from_iterable(torch.zeros((2, 3)), sample_dim=None, sample_axis=None)
+
+    def test_to_array_like(self) -> None:
+        torch = _torch()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        s = TorchSample(torch.arange(6, dtype=torch.float32).reshape(2, 3), sample_dim=0)
+        arr_like = s.__array_like__()
+        # Should produce an ArraySample
+        from probly.representation.sample.array import ArraySample  # noqa: PLC0415
+
+        assert isinstance(arr_like, ArraySample)
+
+
+def _torch_modules():
+    """Return torch module or skip."""
+    pytest.importorskip("torch")
+    import torch as _torch  # noqa: PLC0415
+
+    return _torch
+
+
+class TestTorchSampleConcat:
+    """TorchSample.concat with both Torch and non-Torch samples."""
+
+    def test_concat_two_torch_samples(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        a = TorchSample(tensor=torch.tensor([[1.0, 2.0], [3.0, 4.0]]), sample_dim=0)
+        b = TorchSample(tensor=torch.tensor([[5.0, 6.0], [7.0, 8.0]]), sample_dim=0)
+        result = a.concat(b)
+        assert result.tensor.shape == (4, 2)
+
+    def test_concat_with_weights(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        a = TorchSample(
+            tensor=torch.tensor([[1.0, 2.0], [3.0, 4.0]]),
+            sample_dim=0,
+            weights=torch.tensor([0.5, 0.5]),
+        )
+        b = TorchSample(tensor=torch.tensor([[5.0, 6.0], [7.0, 8.0]]), sample_dim=0)
+        result = a.concat(b)
+        # b had no weights -> filled with 1.0.
+        torch.testing.assert_close(result.weights, torch.tensor([0.5, 0.5, 1.0, 1.0]))
+
+    def test_concat_with_other_weights(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        a = TorchSample(tensor=torch.tensor([[1.0, 2.0]]), sample_dim=0)
+        b = TorchSample(
+            tensor=torch.tensor([[3.0, 4.0]]),
+            sample_dim=0,
+            weights=torch.tensor([0.7]),
+        )
+        result = a.concat(b)
+        torch.testing.assert_close(result.weights, torch.tensor([1.0, 0.7]))
+
+    def test_move_sample_dim(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        s = TorchSample(tensor=torch.arange(24).reshape(2, 3, 4), sample_dim=0)
+        moved = s.move_sample_dim(2)
+        assert moved.sample_dim == 2
+        assert tuple(moved.tensor.shape) == (3, 4, 2)
+
+    def test_move_sample_axis_alias(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        s = TorchSample(tensor=torch.arange(24).reshape(2, 3, 4), sample_dim=0)
+        moved = s.move_sample_axis(2)
+        assert moved.sample_dim == 2
+
+    def test_setitem(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        s = TorchSample(tensor=torch.zeros(3, 2), sample_dim=0)
+        s[0] = torch.tensor([1.0, 2.0])
+        torch.testing.assert_close(s.tensor[0], torch.tensor([1.0, 2.0]))

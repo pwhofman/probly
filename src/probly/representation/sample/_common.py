@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Literal, Protocol, Self, TypedDict, Unpack
+from contextvars import ContextVar
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Protocol, Self
 
 from flextype import Flexdispatch, flexdispatch
 from probly.representation.representation import Representation
@@ -16,21 +17,15 @@ if TYPE_CHECKING:
 type SampleAxis = int | Literal["auto"]
 
 
-class SampleParams(TypedDict, total=False):
-    """Default parameters for sample creation."""
-
-    sample_axis: SampleAxis
-
-
 class SampleFactory[T, S: Sample](Protocol):
     """Protocol for the creation of samples."""
 
-    def __call__(self, samples: Iterable[T], **kwargs: Unpack[SampleParams]) -> S:
+    def __call__(self, samples: Iterable[T], /, *, sample_axis: SampleAxis = "auto") -> S:
         """Create a sample from the given predictions.
 
         Args:
             samples: The predictions to create the sample from.
-            kwargs: Parameters for sample creation.
+            sample_axis: The dimension along which samples are organized.
 
         Returns:
             The created sample.
@@ -43,14 +38,14 @@ class Sample[T](Representation, ABC):
     @classmethod
     @abstractmethod
     def from_iterable(
-        cls, samples: Iterable[T], weights: Iterable[float] | None = None, **kwargs: Unpack[SampleParams]
+        cls, samples: Iterable[T], weights: Iterable[float] | None = None, *, sample_axis: SampleAxis = "auto"
     ) -> Self:
         """Create an Sample from an iterable of samples.
 
         Args:
             samples: The predictions to create the sample from.
             weights: The (optional) weights for each sample.
-            kwargs: Parameters for sample creation.
+            sample_axis: The dimension along which samples are organized.
 
         Returns:
             The created ArraySample.
@@ -58,17 +53,17 @@ class Sample[T](Representation, ABC):
         ...
 
     @classmethod
-    def from_sample(cls, sample: Sample[T], **kwargs: Unpack[SampleParams]) -> Self:
+    def from_sample(cls, sample: Sample[T], *, sample_axis: SampleAxis = "auto") -> Self:
         """Create a new Sample from an existing Sample.
 
         Args:
             sample: The sample to create the new sample from.
-            kwargs: Parameters for sample creation.
+            sample_axis: The dimension along which samples are organized.
 
         Returns:
             The created Sample.
         """
-        return cls.from_iterable(list(sample.samples), **kwargs)
+        return cls.from_iterable(list(sample.samples), sample_axis=sample_axis)
 
     @property
     @abstractmethod
@@ -110,6 +105,27 @@ class Sample[T](Representation, ABC):
         raise NotImplementedError(msg)
 
 
+class RepresentationSample[T: Representation](Sample[T]):
+    """Sample type for samples over representation objects."""
+
+    _running_instancehook: ClassVar[ContextVar[object]] = ContextVar(
+        "RepresentationSample._running_instancehook", default=NotImplemented
+    )
+    sample_space: ClassVar[type[Representation]] = Representation
+
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        if cls._running_instancehook.get() is instance:
+            return NotImplemented
+        try:
+            tok = cls._running_instancehook.set(instance)
+            if isinstance(instance, Sample) and isinstance(instance.samples, cls.sample_space):
+                return True
+        finally:
+            cls._running_instancehook.reset(tok)
+        return NotImplemented
+
+
 class ListSample[T](list[T], Sample[T]):
     """A sample of predictions stored in a list."""
 
@@ -128,8 +144,8 @@ class ListSample[T](list[T], Sample[T]):
         cls,
         samples: Iterable[T],
         weights: Iterable[float] | None = None,
+        *,
         sample_axis: SampleAxis = "auto",
-        **__kwargs: Unpack[SampleParams],
     ) -> Self:
         """Create a ListSample from a sequence of samples.
 

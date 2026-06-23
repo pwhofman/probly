@@ -10,6 +10,7 @@ dataset: "cifar10"
 ood_dataset: "cifar100"
 base_model: "resnet18"
 seed: 1
+measure: "default"
 decomposition: "epistemic"
 metrics: "all"
 batch_size: 512

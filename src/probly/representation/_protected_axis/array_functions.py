@@ -48,7 +48,7 @@ class _SupportsProtectedInternals(Protocol):
     def protected_values(self, func: Callable | None = None) -> dict[str, ArrayProtectedValue] | None:
         """Return protected field values."""
 
-    def with_protected_values(self, values: dict[str, ArrayProtectedValue]) -> Any:  # noqa: ANN401
+    def with_protected_values(self, values: dict[str, ArrayProtectedValue], func: Callable | None = None) -> Any:  # noqa: ANN401
         """Create a copy with updated protected values."""
 
 
@@ -104,7 +104,10 @@ def array_axis_protected_internals(
             return None
 
     primary_name = next(iter(protected_axes))
-    create: ArrayAxisProtectedCreator = obj.with_protected_values
+
+    def create(values: dict[str, ArrayProtectedValue]) -> Any:  # noqa: ANN401
+        return obj.with_protected_values(values, func)
+
     owner_type = type(obj)
     return ArrayAxisProtectedInternals(
         create=create,

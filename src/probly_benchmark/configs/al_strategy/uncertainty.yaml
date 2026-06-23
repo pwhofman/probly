@@ -1,5 +1,6 @@
 name: "uncertainty"
-notion: EU
+notion: epistemic
 permitted_notions:
-    - EU
-    - TU
+    - aleatoric
+    - epistemic
+    - total

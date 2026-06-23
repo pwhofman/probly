@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, override
+from typing import Any, ClassVar, Literal, override
 
 import torch
 
@@ -14,9 +14,6 @@ from probly.representation.distribution._common import (
     create_gaussian_distribution,
 )
 from probly.representation.sample.torch import TorchSample
-
-if TYPE_CHECKING:
-    from collections.abc import Iterator
 
 
 @create_gaussian_distribution.register(torch.Tensor)
@@ -73,10 +70,6 @@ class TorchGaussianDistribution(TorchAxisProtected[Any], GaussianDistribution[to
         expanded_std = std.expand(num_samples, *std.shape)
         samples = torch.normal(mean=expanded_mean, std=expanded_std, generator=rng)
         return TorchSample(tensor=samples, sample_dim=0)
-
-    @override
-    def __iter__(self) -> Iterator[Any]:
-        return self.mean.__iter__()
 
     @override
     def __eq__(self, other: Any) -> torch.Tensor:  # ty: ignore[invalid-method-override]  # noqa: PYI032

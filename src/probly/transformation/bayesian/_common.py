@@ -41,7 +41,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
     )
 
 
-@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=True)  # ty: ignore[invalid-argument-type]
+@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=True)
 @BayesianPredictor.register_factory
 def bayesian[**In, Out](
     base: Predictor[In, Out],
@@ -54,10 +54,10 @@ def bayesian[**In, Out](
 
     Args:
         base: The base model to be used for the Bayesian neural network.
-        use_base_weights: bool, If True, the weights of the base model are used as the prior mean.
-        posterior_std: float, The initial posterior standard deviation.
-        prior_mean: float, The prior mean.
-        prior_std: float, The prior standard deviation.
+        use_base_weights: If True, the weights of the base model are used as the prior mean.
+        posterior_std: The initial posterior standard deviation.
+        prior_mean: The prior mean.
+        prior_std: The prior standard deviation.
 
     Returns:
         The Bayesian predictor.

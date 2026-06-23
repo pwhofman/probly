@@ -9,7 +9,7 @@ three standard diagnostic plots:
 - **Histogram** -- overlapping score distributions for in-distribution (ID) and
   OOD samples.
 - **ROC curve** -- receiver operating characteristic with AUROC and optional
-  FPR\@95 annotation.
+  FPR@95 annotation.
 - **Precision-Recall curve** -- with AUPR summary.
 
 All three accept an optional :class:`~probly.plot.PlotConfig` for consistent

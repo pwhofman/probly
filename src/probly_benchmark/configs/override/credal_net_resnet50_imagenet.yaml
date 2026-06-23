@@ -1,0 +1,6 @@
+# @package _global_
+
+# init from pre-trained weights
+method:
+  params:
+    use_base_weights: true

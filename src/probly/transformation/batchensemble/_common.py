@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Literal, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
-from probly.predictor import Predictor
+from probly.predictor import LogitClassifier, Predictor, predict
+from probly.representation.sample._common import Sample
+from probly.representer._representer import Representer, representer
 from probly.transformation.transformation import predictor_transformation
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, flexdispatch_traverser, traverse
@@ -21,6 +23,23 @@ if TYPE_CHECKING:
 class BatchEnsemblePredictor[**In, Out](Predictor[In, Out], Protocol):
     """Protocol marking a predictor whose linear/conv layers were swapped for BatchEnsemble layers."""
 
+
+@flexdispatch
+def _wrap_batchensemble_logits(sample: Sample) -> Sample:
+    """Wrap a per-member logit sample as a typed distribution sample (default: passthrough)."""
+    return sample
+
+
+class BatchEnsembleRepresenter[**In, Out](Representer[Any, In, Out, Sample]):
+    """Represent batchensemble outputs as a per-member distribution sample."""
+
+    @override
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> Sample:
+        """Forward through the predictor and wrap as a distribution sample."""
+        return _wrap_batchensemble_logits(predict(self.predictor, *args, **kwargs))
+
+
+representer.register(BatchEnsemblePredictor, BatchEnsembleRepresenter)
 
 type InitMethod = Literal["random_sign", "normal"]
 
@@ -62,10 +81,10 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
     )
 
 
-@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
+@predictor_transformation(permitted_predictor_types=[LogitClassifier], preserve_predictor_type=False)
 @BatchEnsemblePredictor.register_factory
-def batchensemble(
-    base: Predictor,
+def batchensemble[**In, Out](
+    base: Predictor[In, Out],
     num_members: int = NUM_MEMBERS.default,
     use_base_weights: bool = USE_BASE_WEIGHTS.default,
     init: InitMethod = INIT.default,
@@ -74,7 +93,7 @@ def batchensemble(
     s_mean: float = S_MEAN.default,
     s_std: float = S_STD.default,
     rngs: Rngs | int = RNGS.default,
-) -> BatchEnsemblePredictor:
+) -> BatchEnsemblePredictor[In, Out]:
     """Create a BatchEnsemble predictor from a base predictor based on :cite:`wenBatchEnsemble2020`.
 
     Replaces all linear and convolutional layers with their BatchEnsemble counterparts and tags
@@ -82,19 +101,19 @@ def batchensemble(
     Sample.
 
     Args:
-        base: Predictor, The model in which the layers will be replaced by BatchEnsemble layers.
-        num_members: int, The number of members in the BatchEnsemble.
-        use_base_weights: bool, Whether to use the weights of the base layer as initial weights.
+        base: The model in which the layers will be replaced by BatchEnsemble layers.
+        num_members: The number of members in the BatchEnsemble.
+        use_base_weights: Whether to use the weights of the base layer as initial weights.
         init: Initialization scheme for ``r`` and ``s`` - ``"normal"`` (Gaussian, imagenet
             baseline default) or ``"random_sign"`` ({-1, +1}, paper Appendix B).
-        r_mean: float, mean of the Gaussian initializer for ``r`` when ``init="normal"``.
-        r_std: float, standard deviation of the Gaussian initializer for ``r`` when ``init="normal"``.
-        s_mean: float, mean of the Gaussian initializer for ``s`` when ``init="normal"``.
-        s_std: float, standard deviation of the Gaussian initializer for ``s`` when ``init="normal"``.
-        rngs: nnx.Rngs | int, The rngs used for flax layer initialization.
+        r_mean: mean of the Gaussian initializer for ``r`` when ``init="normal"``.
+        r_std: standard deviation of the Gaussian initializer for ``r`` when ``init="normal"``.
+        s_mean: mean of the Gaussian initializer for ``s`` when ``init="normal"``.
+        s_std: standard deviation of the Gaussian initializer for ``s`` when ``init="normal"``.
+        rngs: The rngs used for flax layer initialization.
 
     Returns:
-        Predictor, The BatchEnsemble predictor.
+        The BatchEnsemble predictor.
 
     Raises:
         ValueError: If `num_members` is not a positive integer.
