@@ -10,6 +10,7 @@ import numpy as np
 from PIL import Image
 import torch
 import torchvision
+from torchvision.datasets.utils import download_and_extract_archive
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -317,3 +318,122 @@ class Treeversity6(DCICDataset):
             first_order: Whether to use first order data or class labels. Defaults to True.
         """
         super().__init__(Path(root) / "Treeversity#6", transform, first_order=first_order)
+
+
+class CIFAR10C(torchvision.datasets.VisionDataset):
+    """A Dataset class for the CIFAR-10-C corruption benchmark introduced in :cite:`hendrycksBenchmarkingNeural2019`.
+
+    One instance holds the 10,000 CIFAR-10 test images for a single ``corruption`` type at a single
+    ``severity`` level (1-5), with hard integer labels. The data can be found at
+    https://zenodo.org/records/2535967 and fetched with ``download=True`` (a single ~2.9 GB
+    ``CIFAR-10-C.tar`` that covers all corruption types).
+    """
+
+    base_folder = "CIFAR-10-C"
+    url = "https://zenodo.org/records/2535967/files/CIFAR-10-C.tar"
+    filename = "CIFAR-10-C.tar"
+    tar_md5 = "56bf5dcef84df0e2308c6dcbcbbd8499"
+    corruptions: tuple[str, ...] = (
+        "gaussian_noise",
+        "shot_noise",
+        "impulse_noise",
+        "defocus_blur",
+        "glass_blur",
+        "motion_blur",
+        "zoom_blur",
+        "snow",
+        "frost",
+        "fog",
+        "brightness",
+        "contrast",
+        "elastic_transform",
+        "pixelate",
+        "jpeg_compression",
+        "speckle_noise",
+        "gaussian_blur",
+        "spatter",
+        "saturate",
+    )
+    """The 19 corruption types shipped with CIFAR-10-C (15 main + 4 extra)."""
+
+    data: np.ndarray
+    """Array of shape (10000, 32, 32, 3), uint8, for the selected corruption and severity."""
+
+    targets: list[int]
+    """Hard integer class labels, one per image."""
+
+    def __init__(
+        self,
+        root: str | Path,
+        corruption: str,
+        severity: int,
+        transform: Callable[..., Any] | None = None,
+        target_transform: Callable[..., Any] | None = None,
+        *,
+        download: bool = False,
+    ) -> None:
+        """Initialize an instance of the CIFAR10C class.
+
+        Args:
+            root: Root directory containing (or to download into) the ``CIFAR-10-C`` folder.
+            corruption: Corruption type; must be one of ``CIFAR10C.corruptions``.
+            severity: Corruption severity in 1..5.
+            transform: Optional transform to apply to the image.
+            target_transform: Optional transform to apply to the integer label.
+            download: Whether to download the CIFAR-10-C tar from Zenodo if missing.
+
+        Raises:
+            ValueError: If ``corruption`` is unknown or ``severity`` is not in 1..5.
+            RuntimeError: If the data is missing and ``download`` is False.
+        """
+        super().__init__(str(root), transform=transform, target_transform=target_transform)
+        if corruption not in self.corruptions:
+            msg = f"Unknown corruption {corruption!r}. Valid options: {', '.join(self.corruptions)}."
+            raise ValueError(msg)
+        if not 1 <= severity <= 5:
+            msg = f"severity must be in 1..5, got {severity}."
+            raise ValueError(msg)
+        self.corruption = corruption
+        self.severity = severity
+
+        folder = Path(self.root) / self.base_folder
+        data_path = folder / f"{corruption}.npy"
+        labels_path = folder / "labels.npy"
+
+        if not (data_path.exists() and labels_path.exists()):
+            if not download:
+                msg = "Dataset not found. Use download=True to download it."
+                raise RuntimeError(msg)
+            download_and_extract_archive(self.url, str(self.root), filename=self.filename, md5=self.tar_md5)
+
+        all_data = np.load(data_path, mmap_mode="r")  # (50000, 32, 32, 3) uint8
+        all_labels = np.load(labels_path)  # (50000,)
+        n = len(all_data) // 5  # images per severity (10000 for the real dataset)
+        sl = slice((severity - 1) * n, severity * n)
+        self.data = np.ascontiguousarray(all_data[sl])  # materialize only this severity
+        self.targets = all_labels[sl].tolist()
+
+    def __len__(self) -> int:
+        """Return the number of images (10000 for the real dataset).
+
+        Returns:
+            The number of images in this corruption/severity slice.
+        """
+        return len(self.data)
+
+    def __getitem__(self, index: int) -> tuple[Any, int]:
+        """Get the (image, label) pair at the given index.
+
+        Args:
+            index: Index within the dataset.
+
+        Returns:
+            The ``(image, label)`` tuple, with ``transform``/``target_transform`` applied.
+        """
+        img = Image.fromarray(self.data[index])
+        target = int(self.targets[index])
+        if self.transform is not None:
+            img = self.transform(img)
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+        return img, target
