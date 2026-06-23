@@ -15,9 +15,10 @@ from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
 import numpy as np
+import pytest
 import torch
 
-from probly.datasets.torch import CIFAR10H, Benthic, ImageNetReaL, Plankton, Treeversity1, Treeversity6
+from probly.datasets.torch import CIFAR10C, CIFAR10H, Benthic, ImageNetReaL, Plankton, Treeversity1, Treeversity6
 
 
 def patch_cifar10_init(self: CIFAR10, root: str, train: bool, transform: Callable[..., Any], download: bool) -> None:  # noqa: ARG001, the init requires these arguments
@@ -81,3 +82,60 @@ def test_treeversity6(mock_dcic_init: MagicMock) -> None:
     _ = Treeversity6(root, first_order=False)
     expected = Path(root) / "Treeversity#6"
     mock_dcic_init.assert_called_once_with(expected, None, first_order=False)
+
+
+def _write_fake_cifar10c(folder: Path, corruption: str, n_per_severity: int = 2) -> None:
+    """Write tiny fake CIFAR-10-C fixtures: data row i encodes its global index in pixel [0,0,0]."""
+    folder.mkdir(parents=True, exist_ok=True)
+    total = 5 * n_per_severity
+    data = np.zeros((total, 32, 32, 3), dtype=np.uint8)
+    for i in range(total):
+        data[i, 0, 0, 0] = i  # encodes the global row index (total < 256)
+    labels = np.tile(np.arange(n_per_severity, dtype=np.int64), 5)  # identical across severities
+    np.save(folder / f"{corruption}.npy", data)
+    np.save(folder / "labels.npy", labels)
+
+
+def test_cifar10c_invalid_corruption(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="Unknown corruption"):
+        CIFAR10C(tmp_path, "not_a_corruption", severity=1)
+
+
+def test_cifar10c_invalid_severity(tmp_path: Path) -> None:
+    _write_fake_cifar10c(tmp_path / "CIFAR-10-C", "gaussian_noise")
+    with pytest.raises(ValueError, match="severity"):
+        CIFAR10C(tmp_path, "gaussian_noise", severity=6)
+
+
+def test_cifar10c_missing_files_raises(tmp_path: Path) -> None:
+    with pytest.raises(RuntimeError, match="download=True"):
+        CIFAR10C(tmp_path, "gaussian_noise", severity=1, download=False)
+
+
+def test_cifar10c_slicing_and_getitem(tmp_path: Path) -> None:
+    _write_fake_cifar10c(tmp_path / "CIFAR-10-C", "gaussian_noise", n_per_severity=2)
+    dataset = CIFAR10C(tmp_path, "gaussian_noise", severity=2)  # n=2 -> global rows [2:4]
+    assert len(dataset) == 2
+    img, target = dataset[0]
+    assert np.asarray(img)[0, 0, 0] == 2  # severity-2 slice starts at global row 2
+    assert target == 0
+    img1, target1 = dataset[1]
+    assert np.asarray(img1)[0, 0, 0] == 3
+    assert target1 == 1
+
+
+def test_cifar10c_transform_applied(tmp_path: Path) -> None:
+    _write_fake_cifar10c(tmp_path / "CIFAR-10-C", "fog")
+    dataset = CIFAR10C(tmp_path, "fog", severity=1, transform=lambda _im: "transformed")
+    img, _ = dataset[0]
+    assert img == "transformed"
+
+
+@patch("probly.datasets.torch.download_and_extract_archive")
+def test_cifar10c_download_invoked(mock_download: MagicMock, tmp_path: Path) -> None:
+    folder = tmp_path / "CIFAR-10-C"
+    # Simulate the download: when invoked, materialize the fixtures so loading succeeds.
+    mock_download.side_effect = lambda *_args, **_kwargs: _write_fake_cifar10c(folder, "snow")
+    dataset = CIFAR10C(tmp_path, "snow", severity=1, download=True)
+    mock_download.assert_called_once_with(CIFAR10C.url, str(tmp_path), filename=CIFAR10C.filename, md5=CIFAR10C.tar_md5)
+    assert len(dataset) == 2
