@@ -1989,6 +1989,96 @@ class GaussianMixtureHead(nn.Module):
         return self.log_pi + dist.log_prob(features.unsqueeze(1))
 
 
+class MahalanobisHead(nn.Module):
+    """Class-conditional Gaussian head with a tied covariance (Mahalanobis OOD).
+
+    Implements the Gaussian-discriminant-analysis confidence used by the
+    Mahalanobis out-of-distribution detector of :cite:`leeSimpleUnifiedFramework2018`.
+    One mean is estimated per class, while a single covariance (its inverse, the
+    precision matrix) is shared across all classes.  This shared covariance
+    is the empirical covariance of the per-class-centered features, i.e. the
+    pooled within-class scatter.
+
+    After fitting, ``forward`` returns the per-class confidence scores
+    ``-0.5 * (z - mu_c)^T P (z - mu_c)`` (higher = closer to a class centroid =
+    more in-distribution).  Downstream code typically takes ``max`` over classes
+    to obtain the per-sample Mahalanobis confidence.
+
+    Attributes:
+        means: Per-class mean vectors, shape ``(num_classes, feature_dim)``.
+        precision: Shared (tied) precision matrix, shape
+            ``(feature_dim, feature_dim)``.
+    """
+
+    means: torch.Tensor
+    precision: torch.Tensor
+
+    def __init__(self, num_classes: int, feature_dim: int) -> None:
+        """Initialize with zero means and an identity precision.
+
+        Args:
+            num_classes: Number of classes (one mean vector per class).
+            feature_dim: Dimensionality of the feature vectors.
+        """
+        super().__init__()
+        self.num_classes = num_classes
+        self.feature_dim = feature_dim
+        self.register_buffer("means", torch.zeros(num_classes, feature_dim))
+        self.register_buffer("precision", torch.eye(feature_dim))
+
+    def fit(self, features: torch.Tensor, labels: torch.Tensor) -> None:
+        """Estimate per-class means and the shared (tied) precision matrix.
+
+        Each class mean is the empirical mean of its features.  The shared
+        covariance is the empirical covariance of all per-class-centered
+        features (pooled within-class scatter).  The precision is its
+        Hermitian pseudo-inverse, which stays finite even when the pooled
+        covariance is rank-deficient, e.g. for dead post-ReLU feature dimensions.
+
+        Args:
+            features: Feature vectors of shape ``(N, feature_dim)``.
+            labels: Integer class labels of shape ``(N,)``.
+
+        Raises:
+            ValueError: If no sample matches any class index in
+                ``[0, num_classes)``, leaving the covariance undefined.
+        """
+        means = torch.zeros_like(self.means)
+        centered = []
+        for c in range(self.num_classes):
+            mask = labels == c
+            if not bool(mask.any()):
+                continue
+            z = features[mask]
+            mu = z.mean(0)
+            means[c] = mu
+            centered.append(z - mu)
+        if not centered:
+            msg = "Cannot fit MahalanobisHead: no labelled samples were provided."
+            raise ValueError(msg)
+        centered_all = torch.cat(centered, 0)
+        cov = (centered_all.T @ centered_all) / centered_all.shape[0]
+        precision = torch.linalg.pinv(cov, hermitian=True)
+        self.means.copy_(means)
+        self.precision.copy_(precision)
+
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        """Compute per-class Mahalanobis confidence scores for each sample.
+
+        Returns ``-0.5 * (z - mu_c)^T P (z - mu_c)`` for every class *c*.
+
+        Args:
+            features: Feature vectors of shape ``(N, feature_dim)``.
+
+        Returns:
+            Per-class confidence scores of shape ``(N, num_classes)``.
+        """
+        diff = features.unsqueeze(1) - self.means.unsqueeze(0)  # (N, C, D)
+        # Per-class quadratic form (z - mu_c)^T P (z - mu_c), shape (N, C).
+        mahalanobis = torch.einsum("ncd,de,nce->nc", diff, self.precision, diff)
+        return -0.5 * mahalanobis
+
+
 class SNCoeffParametrization(nn.Module):
     """Weight parametrization that clips the spectral norm to at most ``coeff``.
 
