@@ -218,6 +218,20 @@ class TestCombinerAndPreprocessing:
         assert rep.layer_scores.shape == (len(x), 1)
         assert torch.isfinite(rep.layer_scores).all()
 
+    def test_input_preprocessing_changes_scores(
+        self, torch_conv_linear_model: nn.Module, conv_train_data: tuple[Tensor, Tensor]
+    ) -> None:
+        """The FGSM perturbation actually moves the scores; eps>0 differs from eps=0 on identical inputs."""
+        x, y = conv_train_data
+        out = mahalanobis(torch_conv_linear_model, input_preprocessing_eps=0.01)
+        out.fit_mahalanobis_heads(x, y)
+        # Toggle eps on the same fitted predictor so encoder and heads are identical:
+        # any difference is attributable to the FGSM preprocessing alone.
+        perturbed = predict(out, x).layer_scores
+        out.input_preprocessing_eps = 0.0
+        plain = predict(out, x).layer_scores
+        assert not torch.allclose(perturbed, plain)
+
     def test_fit_combiner_with_preprocessing(
         self, torch_custom_model: nn.Module, linear_train_data: tuple[Tensor, Tensor]
     ) -> None:

@@ -30,12 +30,13 @@ def fitted_model(torch_custom_model: nn.Module) -> TorchMahalanobisPredictor:
     return model
 
 
-def test_decomposition_exposes_aleatoric_and_epistemic(fitted_model: TorchMahalanobisPredictor) -> None:
-    """The Mahalanobis decomposition provides both aleatoric and epistemic notions."""
+def test_decomposition_exposes_epistemic_only(fitted_model: TorchMahalanobisPredictor) -> None:
+    """The Mahalanobis decomposition exposes only the epistemic OOD score (no aleatoric slot)."""
     x = torch.randn(10, IN_FEATURES)
     decomposition = decompose(predict(fitted_model, x))
     assert decomposition[EpistemicUncertainty].shape == (10,)
-    assert decomposition[AleatoricUncertainty].shape == (10,)
+    with pytest.raises(KeyError):
+        _ = decomposition[AleatoricUncertainty]
 
 
 def test_epistemic_higher_for_far_inputs(fitted_model: TorchMahalanobisPredictor) -> None:

@@ -9,8 +9,7 @@ from flextype import flexdispatch
 from probly.decider import categorical_from_mean
 from probly.predictor import LogitClassifier, Predictor, RepresentationPredictor
 from probly.quantification._quantification import decompose
-from probly.quantification.decomposition.decomposition import AleatoricEpistemicDecomposition, CachingDecomposition
-from probly.quantification.measure.distribution import LogBase, entropy
+from probly.quantification.decomposition.decomposition import CachingDecomposition, EpistemicDecomposition
 from probly.representation.representation import Representation
 from probly.transformation.transformation import predictor_transformation
 
@@ -27,9 +26,9 @@ type FeatureNodes = Sequence[str] | None
 class MahalanobisRepresentation(Representation, Protocol):
     """Representation of a Mahalanobis OOD model output.
 
-    Holds the softmax probabilities (aleatoric) and the per-layer Mahalanobis
-    confidence scores together with the logistic-regression combination weights
-    used to turn them into a single epistemic/OOD score.
+    Holds the softmax probabilities (used for the class prediction) and the
+    per-layer Mahalanobis confidence scores together with the logistic-regression
+    combination weights used to turn them into a single epistemic/OOD score.
     """
 
     @property
@@ -124,22 +123,20 @@ def combine_layer_scores(layer_scores: ArrayLike, weight: ArrayLike, bias: Array
 
 @decompose.register(MahalanobisRepresentation)
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
-class MahalanobisDecomposition[T](CachingDecomposition, AleatoricEpistemicDecomposition[T, T]):
-    """Mahalanobis decomposition into softmax entropy and combined Mahalanobis OOD score."""
+class MahalanobisDecomposition[T](CachingDecomposition, EpistemicDecomposition[T]):
+    """Mahalanobis decomposition exposing the combined OOD score as epistemic uncertainty.
+
+    Following :cite:`leeSimpleUnifiedFramework2018`, which proposes only the
+    Mahalanobis OOD score (no aleatoric or total measure), this decomposition has
+    a single epistemic slot, and its canonical notion is epistemic uncertainty.
+    """
 
     representation: MahalanobisRepresentation
-    base: LogBase = None
-
-    @override
-    @property
-    def _aleatoric(self) -> T:
-        """The aleatoric uncertainty of the decomposition."""
-        return entropy(self.representation.softmax, base=self.base)
 
     @override
     @property
     def _epistemic(self) -> T:
-        """The epistemic uncertainty of the decomposition."""
+        """The epistemic uncertainty: the combined per-layer Mahalanobis OOD score."""
         return combine_layer_scores(  # ty:ignore[invalid-return-type]
             self.representation.layer_scores,
             self.representation.weight,
