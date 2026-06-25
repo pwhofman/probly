@@ -35,6 +35,7 @@ dropout_model = dropout(
     base_model,
     p=0.5,  # zeroing probability (kept active at inference)
     predictor_type="logit_classifier",
+    shared_mask=True,  # one mask per forward pass, shared across the batch
 )
 
 # %%
@@ -60,7 +61,7 @@ for epoch in range(300):
 # ----------------------
 
 dropout_model.eval()
-rep = representer(dropout_model, num_samples=400, shared_dropout_mask=True) # shared_dropout_mask=True to apply a single shared binary mask over the output instead of one per batch element
+rep = representer(dropout_model, num_samples=400)
 
 plot = plot_example_uncertainty(X, y, rep, title="Dropout Predictive Uncertainty", notion="total")
 plot.show()

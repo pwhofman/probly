@@ -20,21 +20,16 @@ type SamplingStrategy = Literal["sequential"]
 sampling_preparation_traverser = flexdispatch_traverser[object](name="sampling_preparation_traverser")
 
 CLEANUP_FUNCS = GlobalVariable[set[Callable[[], Any]]](name="CLEANUP_FUNCS")
-SHARED_DROPOUT_MASK = GlobalVariable[bool](
-    "SHARED_DROPOUT_MASK",
-    "Draw one shared dropout mask per forward pass instead of one per batch element.",
-)
 
 
 def get_sampling_predictor[**In, Out](
     predictor: Predictor[In, Out],
-    shared_dropout_mask: bool = False,
 ) -> tuple[Predictor[In, Out], Callable[[], None]]:
     """Get the predictor to be used for sampling."""
     sampling_predictor, state = traverse_with_state(
         predictor,
         nn_compose(sampling_preparation_traverser, function_traverser),
-        init={CLONE: False, CLEANUP_FUNCS: set(), FLATTEN_SEQUENTIAL: False, SHARED_DROPOUT_MASK: shared_dropout_mask},
+        init={CLONE: False, CLEANUP_FUNCS: set(), FLATTEN_SEQUENTIAL: False},
     )
 
     if sampling_predictor is not predictor:
@@ -57,12 +52,11 @@ def sampler_factory[**In, Out](
     predictor: Predictor[In, Out],
     num_samples: int = 1,
     strategy: SamplingStrategy = "sequential",
-    shared_dropout_mask: bool = False,
 ) -> Callable[In, list[Out]]:
     """Sample multiple predictions from the predictor."""
 
     def sampler(*args: In.args, **kwargs: In.kwargs) -> list[Out]:
-        sampling_predictor, cleanup = get_sampling_predictor(predictor, shared_dropout_mask=shared_dropout_mask)
+        sampling_predictor, cleanup = get_sampling_predictor(predictor)
         try:
             if strategy == "sequential":
                 return [predict(sampling_predictor, *args, **kwargs) for _ in range(num_samples)]
@@ -121,7 +115,6 @@ class Sampler[**In, Out, S: Sample](IterableSampler[In, Out, S]):
 
     sampling_strategy: SamplingStrategy
     num_samples: int
-    shared_dropout_mask: bool
 
     def __init__(
         self,
@@ -130,7 +123,6 @@ class Sampler[**In, Out, S: Sample](IterableSampler[In, Out, S]):
         sampling_strategy: SamplingStrategy = "sequential",
         sample_factory: SampleFactory[Out, S] = create_sample,  # ty:ignore[invalid-parameter-default]
         sample_axis: int = -1,
-        shared_dropout_mask: bool = False,
     ) -> None:
         """Initialize the sampler.
 
@@ -140,15 +132,10 @@ class Sampler[**In, Out, S: Sample](IterableSampler[In, Out, S]):
             sampling_strategy: How the samples should be computed.
             sample_factory: Factory to create the sample.
             sample_axis: The axis along which samples are organized.
-            shared_dropout_mask: If True, draw one dropout mask per forward pass
-                shared across the batch instead of one mask per batch element.
-                Produces spatially coherent uncertainty maps when the representer
-                evaluates a grid of inputs as a single batch.
         """
         super().__init__(predictor, sample_factory, sample_axis)
         self.num_samples = num_samples
         self.sampling_strategy = sampling_strategy
-        self.shared_dropout_mask = shared_dropout_mask
 
     @override
     def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Iterable[Out]:
@@ -157,5 +144,4 @@ class Sampler[**In, Out, S: Sample](IterableSampler[In, Out, S]):
             self.predictor,
             num_samples=self.num_samples,
             strategy=self.sampling_strategy,
-            shared_dropout_mask=self.shared_dropout_mask,
         )(*args, **kwargs)

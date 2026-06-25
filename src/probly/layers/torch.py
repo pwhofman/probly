@@ -701,6 +701,61 @@ class DropConnectLinear(nn.Module):
 # ======================================================================================================================
 
 
+class SharedMaskDropout(nn.Module):
+    """Dropout that draws a single mask per forward pass, shared across the batch.
+
+    Unlike :class:`torch.nn.Dropout`, which samples an independent mask for every element
+    of the batch, this layer draws one mask over the feature dimensions and broadcasts it
+    across the batch.  Every input in a batched forward pass is therefore routed through
+    the same thinned sub-network, mirroring the implicit batch behaviour of
+    :class:`DropConnectLinear` and supporting batch-coherent Monte Carlo Dropout
+    :cite:`galDropoutBayesian2016`.  The layer is stochastic in training mode and the
+    identity in evaluation mode.
+
+    Attributes:
+        p: float, probability of zeroing a feature.
+    """
+
+    def __init__(self, p: float = 0.5) -> None:
+        """Initialize a shared-mask dropout layer.
+
+        Args:
+            p: The probability of zeroing a feature. Must be in [0, 1].
+
+        Raises:
+            ValueError: If ``p`` is not between 0 and 1.
+        """
+        super().__init__()
+        if not 0.0 <= p <= 1.0:
+            msg = f"The probability p must be between 0 and 1, but got {p} instead."
+            raise ValueError(msg)
+        self.p = p
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply one dropout mask shared across the batch.
+
+        Args:
+            x: Input of shape ``(batch, *features)``.
+
+        Returns:
+            torch.Tensor, the masked input with the same shape as ``x``.
+        """
+        if not self.training or self.p == 0.0:
+            return x
+        if self.p == 1.0:
+            return torch.zeros_like(x)
+        keep = 1.0 - self.p
+        mask = torch.bernoulli(torch.full(x.shape[1:], keep, device=x.device, dtype=x.dtype))  # (*features,)
+        return x * mask / keep
+
+    def extra_repr(self) -> str:
+        """Expose the dropout probability."""
+        return f"p={self.p}"
+
+
+# ======================================================================================================================
+
+
 class NormalInverseGammaLinear(nn.Module):
     """Custom Linear layer for a normal-inverse-gamma-distribution based on :cite:`aminiDeepEvidential2020`.
 
