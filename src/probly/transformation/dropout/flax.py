@@ -13,9 +13,16 @@ if TYPE_CHECKING:
 
 
 def prepend_flax_dropout(
-    obj: Callable, p: float, rng_collection: str = "dropout", rngs: rnglib.Rngs | rnglib.RngStream | int = 1
+    obj: Callable,
+    p: float,
+    rng_collection: str = "dropout",
+    rngs: rnglib.Rngs | rnglib.RngStream | int = 1,
+    shared_mask: bool = False,
 ) -> Sequential:
     """Prepend a Dropout layer before the given layer based on :cite:`galDropoutBayesian2016`."""
+    if shared_mask:
+        msg = "shared_mask is only implemented for the torch backend."
+        raise NotImplementedError(msg)
     if isinstance(rngs, int):
         rngs = Rngs(rngs)
     return Sequential(Dropout(p, rng_collection=rng_collection, rngs=rngs), obj)
