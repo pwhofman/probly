@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, final, override
 
 from flextype import flexdispatch
+
 from probly.predictor import RepresentationPredictor, predict
 from probly.representation import Representation
 

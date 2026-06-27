@@ -5,10 +5,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Protocol, Self, overload, override, runtime_checkable
 
+from flextype import flexdispatch
 import torch
 from torch.overrides import handle_torch_function, has_torch_function_unary
 
-from flextype import flexdispatch
 from probly.representation.array_like import ArrayLike
 
 if TYPE_CHECKING:

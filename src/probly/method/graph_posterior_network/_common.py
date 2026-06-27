@@ -6,6 +6,7 @@ from math import log, pi
 from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
 from flextype import flexdispatch
+
 from probly.predictor import (
     DirichletMixtureDistributionPredictor,
     EvidentialPredictor,

@@ -38,7 +38,7 @@ classifiers = [
 
 [tool.setuptools.packages.find]
 where = ["./src"]
-include = ["probly", "probly.*", "pytraverse*", "flextype*"]
+include = ["probly", "probly.*", "pytraverse*"]
 
 [tool.setuptools.dynamic]
 version = { attr = "probly.__version__" }
@@ -243,7 +243,7 @@ max-complexity = 15
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]
-known-first-party = ["probly", "probly_benchmark", "pytraverse", "flextype"]
+known-first-party = ["probly", "probly_benchmark", "pytraverse"]
 known-third-party = ["wandb"]
 force-sort-within-sections = true
 combine-as-imports = true
