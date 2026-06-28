@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 import torch
 
 from probly.representation.distribution.torch_categorical import (
@@ -30,6 +32,10 @@ from ._common import (
     min_expected_total_variation,
     mutual_information,
     vacuity,
+)
+
+_TORCH_GENERATOR_UNUSED_MESSAGE = (
+    "generator is not used by the torch Dirichlet sampler. Seed with torch.manual_seed for reproducibility."
 )
 
 # Entropy
@@ -233,13 +239,15 @@ def torch_dirichlet_expected_max_probability_complement(
     distribution: TorchDirichletDistribution,
     *,
     num_samples: int = DEFAULT_NUM_SAMPLES,
-    generator: torch.Generator | None = None,  # noqa: ARG001
+    generator: torch.Generator | None = None,
 ) -> torch.Tensor:
     """Estimate ``1 - E[max_k p_k]`` for a Dirichlet by Monte-Carlo (no closed form).
 
     Torch's Dirichlet sampler uses the global RNG, so seed with ``torch.manual_seed`` for
-    reproducibility. ``generator`` is accepted for API parity but ignored.
+    reproducibility. A passed ``generator`` is ignored (with a warning).
     """
+    if generator is not None:
+        warnings.warn(_TORCH_GENERATOR_UNUSED_MESSAGE, UserWarning, stacklevel=2)
     sample = distribution.sample(num_samples)
     return torch_categorical_sample_expected_max_probability_complement(sample)
 
@@ -315,13 +323,15 @@ def torch_dirichlet_min_expected_total_variation(
     distribution: TorchDirichletDistribution,
     *,
     num_samples: int = DEFAULT_NUM_SAMPLES,
-    generator: torch.Generator | None = None,  # noqa: ARG001
+    generator: torch.Generator | None = None,
 ) -> torch.Tensor:
     """Estimate the distance-based epistemic uncertainty of a Dirichlet by Monte-Carlo.
 
     Torch's Dirichlet sampler uses the global RNG, so seed with ``torch.manual_seed`` for
-    reproducibility. ``generator`` is accepted for API parity but ignored.
+    reproducibility. A passed ``generator`` is ignored (with a warning).
     """
+    if generator is not None:
+        warnings.warn(_TORCH_GENERATOR_UNUSED_MESSAGE, UserWarning, stacklevel=2)
     sample = distribution.sample(num_samples)
     return torch_categorical_sample_min_expected_total_variation(sample)
 

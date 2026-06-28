@@ -40,8 +40,9 @@ class SecondOrderWassersteinDecomposition[T](AleatoricEpistemicTotalDecompositio
         distribution: The second-order distribution to decompose.
         num_samples: Monte-Carlo draws for the aleatoric and epistemic uncertainties of a parametric
             distribution such as a Dirichlet. Ignored for a sample.
-        generator: Optional ``numpy.random.Generator`` for reproducible draws. The torch backend
-            uses the global RNG (``torch.manual_seed``) instead.
+        generator: Optional ``numpy.random.Generator`` for reproducible draws (numpy backend only).
+            The torch backend seeds via ``torch.manual_seed``; a generator passed there is ignored
+            with a warning.
     """
 
     distribution: SecondOrderDistributionLike

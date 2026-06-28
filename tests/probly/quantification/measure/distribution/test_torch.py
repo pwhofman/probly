@@ -594,3 +594,17 @@ def test_torch_dirichlet_distance_measures_concentrated_limits() -> None:
     au_vertex = expected_max_probability_complement(near_vertex, num_samples=4000)
     assert eu_vertex.item() == pytest.approx(0.0, abs=2e-2)
     assert au_vertex.item() == pytest.approx(0.0, abs=2e-2)
+
+
+def test_torch_dirichlet_distance_measures_warn_on_generator_but_still_run() -> None:
+    """The torch Dirichlet sampler uses the global RNG, so a passed generator warns but is ignored."""
+    distribution = TorchDirichletDistribution(torch.tensor([2.0, 3.0, 5.0], dtype=torch.float64))
+    generator = torch.Generator().manual_seed(0)
+
+    with pytest.warns(UserWarning, match="generator is not used"):
+        eu = min_expected_total_variation(distribution, num_samples=100, generator=generator)
+    with pytest.warns(UserWarning, match="generator is not used"):
+        au = expected_max_probability_complement(distribution, num_samples=100, generator=generator)
+
+    assert torch.isfinite(eu).all()
+    assert torch.isfinite(au).all()
