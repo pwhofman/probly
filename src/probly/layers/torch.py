@@ -753,6 +753,125 @@ class SharedMaskDropout(nn.Module):
         return f"p={self.p}"
 
 
+class Masksembles2DLayer(nn.Module):
+    """Masksembles mask layer for 2D convolutional feature maps.
+
+    Stores N pre-generated binary channel masks. During training one mask is drawn
+    uniformly at random per sample; during inference all N masks are applied in
+    sequence, expanding the batch dimension by a factor of N.
+
+    Based on `Masksembles for Uncertainty Estimation <https://arxiv.org/abs/2012.08334>`_.
+
+    Attributes:
+        channels: Number of input channels.
+        n: Number of binary masks.
+        scale: Sparsity scale used during mask generation.
+        masks: Buffer of shape [n, channels] with binary (0/1) values.
+    """
+
+    masks: torch.Tensor
+
+    def __init__(self, masks: torch.Tensor, channels: int, n: int, scale: float) -> None:
+        """Initialize Masksembles2DLayer.
+
+        Args:
+            masks: Pre-generated binary channel masks of shape [n, channels].
+            channels: Number of input channels.
+            n: Number of binary masks.
+            scale: Sparsity scale; must be in (1, 6].
+
+        Raises:
+            ValueError: If scale is not in (1, 6].
+        """
+        super().__init__()
+        if not (1.0 < scale <= 6.0):
+            msg = f"scale must be in (1, 6], got {scale}."
+            raise ValueError(msg)
+        self.channels = channels
+        self.n = n
+        self.scale = scale
+        self.register_buffer("masks", masks)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        """Apply channel masking to a 4-D feature map.
+
+        Args:
+            inputs: Tensor of shape [B, C, H, W].
+
+        Returns:
+            Shape [B, C, H, W] during training (one mask per sample),
+            shape [B*N, C, H, W] during inference (all N masks applied).
+        """
+        masks = self.masks.to(dtype=inputs.dtype)
+        batch_size = inputs.shape[0]
+        if self.training:
+            idx = torch.randint(0, self.n, (batch_size,), device=inputs.device)
+            return inputs * masks[idx].view(batch_size, -1, 1, 1)
+        inputs_tiled = inputs.repeat_interleave(self.n, dim=0)
+        idx = torch.arange(batch_size * self.n, device=inputs.device) % self.n
+        return inputs_tiled * masks[idx].view(batch_size * self.n, -1, 1, 1)
+
+
+class MasksemblesLinearLayer(nn.Module):
+    """Masksembles mask layer for linear (dense) layers.
+
+    Stores N pre-generated binary feature masks. During training one mask is drawn
+    uniformly at random per sample; during inference all N masks are applied in
+    sequence, expanding the batch dimension by a factor of N.
+
+    Based on `Masksembles for Uncertainty Estimation <https://arxiv.org/abs/2012.08334>`_.
+
+    Attributes:
+        features: Number of input features.
+        n: Number of binary masks.
+        scale: Sparsity scale used during mask generation.
+        masks: Buffer of shape [n, features] with binary (0/1) values.
+    """
+
+    masks: torch.Tensor
+
+    def __init__(self, masks: torch.Tensor, features: int, n: int, scale: float) -> None:
+        """Initialize MasksemblesLinearLayer.
+
+        Args:
+            masks: Pre-generated binary feature masks of shape [n, features].
+            features: Number of input features.
+            n: Number of binary masks.
+            scale: Sparsity scale; must be in (1, 6].
+
+        Raises:
+            ValueError: If scale is not in (1, 6].
+        """
+        super().__init__()
+        if not (1.0 < scale <= 6.0):
+            msg = f"scale must be in (1, 6], got {scale}."
+            raise ValueError(msg)
+        self.features = features
+        self.n = n
+        self.scale = scale
+        self.register_buffer("masks", masks)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        """Apply feature masking to a 2-D tensor.
+
+        Args:
+            inputs: Tensor of shape [B, features].
+
+        Returns:
+            Shape [B, features] during training (one mask per sample),
+            shape [B*N, features] during inference (all N masks applied).
+        """
+        masks = self.masks.to(dtype=inputs.dtype)
+        batch_size = inputs.shape[0]
+        if self.training:
+            idx = torch.randint(0, self.n, (batch_size,), device=inputs.device)
+            return inputs * masks[idx]
+
+        inputs_tiled = inputs.repeat_interleave(self.n, dim=0)
+        idx = torch.arange(batch_size * self.n, device=inputs.device) % self.n
+        return inputs_tiled * masks[idx]
+
+
 # ======================================================================================================================
 
 
