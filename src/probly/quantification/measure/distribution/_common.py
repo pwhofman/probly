@@ -18,6 +18,12 @@ if TYPE_CHECKING:
 
 type LogBase = float | Literal["normalize"] | None
 
+DEFAULT_NUM_SAMPLES: int = 1000
+
+# Bisection steps for the simplex-constrained quantile solver behind ``min_expected_total_variation``
+# (the level is bracketed in [0, 1], so n steps give ~2**-n precision). Shared across backends.
+TOTAL_VARIATION_BISECTION_ITERATIONS: int = 60
+
 
 @measure.register(CategoricalDistribution)
 @flexdispatch
@@ -62,7 +68,11 @@ def max_probability_complement_of_expected(distribution: SecondOrderDistribution
 
 @flexdispatch
 def expected_max_probability_complement(distribution: SecondOrderDistributionLike) -> ArrayLike:
-    """Compute the expected value of one minus the max probability under a second-order distribution."""
+    """Compute the expected value of one minus the max probability under a second-order distribution.
+
+    Computed directly for a sample. For a parametric distribution such as a Dirichlet it is
+    estimated by Monte-Carlo, and that implementation also takes ``num_samples`` and a ``generator``.
+    """
     msg = f"Expected max probability complement is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)
 
@@ -71,6 +81,28 @@ def expected_max_probability_complement(distribution: SecondOrderDistributionLik
 def max_disagreement(distribution: SecondOrderDistributionLike) -> ArrayLike:
     """Compute the expected gap between each sample's max probability and its probability on the BMA argmax."""
     msg = f"Max disagreement is not supported for distributions of type {type(distribution)}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def min_expected_total_variation(distribution: SecondOrderDistributionLike) -> ArrayLike:
+    r"""Compute the distance-based epistemic uncertainty of a second-order distribution.
+
+    Defined by :cite:`saleSecondOrder2024` as the smallest expected total-variation distance from
+    ``Q`` to a point on the simplex:
+
+    .. math::
+
+        EU(Q) = \tfrac{1}{2} \min_{q \in \Delta} \mathbb{E}_{p \sim Q}[\lVert p - q \rVert_1],
+
+    bounded by ``(K - 1) / K`` for ``K`` classes. Computed directly for a sample. For a parametric
+    distribution such as a Dirichlet it is estimated by Monte-Carlo, and that implementation also
+    takes ``num_samples`` and a ``generator``.
+
+    Args:
+        distribution: A sample of categorical distributions or a Dirichlet distribution.
+    """
+    msg = f"Min expected total variation is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)
 
 
