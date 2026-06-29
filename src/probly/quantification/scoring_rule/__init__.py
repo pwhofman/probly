@@ -1,4 +1,4 @@
-"""Proper scoring rules for uncertainty quantification."""
+"""Scoring rules for uncertainty quantification."""
 
 from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
 
@@ -6,7 +6,7 @@ from . import array as array  # eager numpy registration
 from ._common import (
     BrierLoss,
     LogLoss,
-    ProperScoringRule,
+    ScoringRule,
     SphericalLoss,
     ZeroOneLoss,
     _brier_loss_vector,
@@ -27,7 +27,7 @@ def _(_: type) -> None:
 __all__ = [
     "BrierLoss",
     "LogLoss",
-    "ProperScoringRule",
+    "ScoringRule",
     "SphericalLoss",
     "ZeroOneLoss",
 ]

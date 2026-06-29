@@ -1,4 +1,4 @@
-"""Decomposition of second-order uncertainty for an arbitrary proper scoring rule."""
+"""Decomposition of second-order uncertainty for an arbitrary scoring rule."""
 
 from __future__ import annotations
 
@@ -13,25 +13,25 @@ from probly.quantification.measure.distribution._common import (
 
 if TYPE_CHECKING:
     from probly.quantification.measure.distribution._common import SecondOrderDistributionLike
-    from probly.quantification.scoring_rule import ProperScoringRule
+    from probly.quantification.scoring_rule import ScoringRule
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
 class SecondOrderScoringRuleDecomposition[T](AdditiveDecomposition[T, T, T]):
-    """Total/aleatoric/epistemic decomposition induced by a proper scoring rule.
+    """Total/aleatoric/epistemic decomposition induced by a scoring rule.
 
     For a second-order categorical distribution ``Q`` with Bayesian model average
     ``theta_bar = E[theta]`` and generalized entropy ``G(theta) = <theta, loss(theta)>``:
 
     - Total uncertainty: ``G(theta_bar)``.
     - Aleatoric uncertainty: ``E_{theta ~ Q}[G(theta)]``.
-    - Epistemic uncertainty: ``total - aleatoric`` (a non-negative Jensen gap).
+    - Epistemic uncertainty: ``total - aleatoric`` (a Jensen gap, non-negative when the rule is proper).
 
     The decomposition is additive: ``total == aleatoric + epistemic``.
     """
 
     distribution: SecondOrderDistributionLike
-    scoring_rule: ProperScoringRule
+    scoring_rule: ScoringRule
 
     @override
     @property

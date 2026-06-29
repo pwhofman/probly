@@ -56,7 +56,7 @@ from .notion import (
 from .scoring_rule import (
     BrierLoss,
     LogLoss,
-    ProperScoringRule,
+    ScoringRule,
     SphericalLoss,
     ZeroOneLoss,
 )
@@ -83,9 +83,9 @@ __all__ = [
     "Notion",
     "OrdinalEntropyDecomposition",
     "OrdinalVarianceDecomposition",
-    "ProperScoringRule",
     "QuantificationResult",
     "Quantifier",
+    "ScoringRule",
     "SecondOrderEntropyDecomposition",
     "SecondOrderScoringRuleDecomposition",
     "SecondOrderVarianceDecomposition",

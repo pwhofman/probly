@@ -38,7 +38,7 @@ from ._common import (
 )
 
 if TYPE_CHECKING:
-    from probly.quantification.scoring_rule import ProperScoringRule
+    from probly.quantification.scoring_rule import ScoringRule
 
 _TORCH_GENERATOR_UNUSED_MESSAGE = (
     "generator is not used by the torch Dirichlet sampler. Seed with torch.manual_seed for reproducibility."
@@ -273,12 +273,12 @@ def torch_categorical_sample_max_disagreement(
     return torch.mean(per_sample_max - per_sample_bma_prob, dim=axis)
 
 
-# Generalized-entropy (proper scoring rule) measures
+# Generalized-entropy (scoring rule) measures
 
 
 @generalized_entropy_of_expected.register(TorchCategoricalDistributionSample)
 def torch_categorical_sample_generalized_entropy_of_expected(
-    sample: TorchCategoricalDistributionSample, scoring_rule: ProperScoringRule
+    sample: TorchCategoricalDistributionSample, scoring_rule: ScoringRule
 ) -> torch.Tensor:
     """Compute G(theta_bar) = <theta_bar, loss(theta_bar)> for a categorical sample."""
     mean = sample.sample_mean().probabilities  # (..., K)
@@ -289,7 +289,7 @@ def torch_categorical_sample_generalized_entropy_of_expected(
 
 @expected_generalized_entropy.register(TorchCategoricalDistributionSample)
 def torch_categorical_sample_expected_generalized_entropy(
-    sample: TorchCategoricalDistributionSample, scoring_rule: ProperScoringRule
+    sample: TorchCategoricalDistributionSample, scoring_rule: ScoringRule
 ) -> torch.Tensor:
     """Compute E[G(theta)] = mean_m <theta_m, loss(theta_m)> for a categorical sample."""
     p = sample.tensor.probabilities  # (..., M, K)

@@ -1,4 +1,4 @@
-"""Proper-scoring-rule decompositions of uncertainty."""
+"""Scoring-rule decompositions of uncertainty."""
 
 from ._common import SecondOrderScoringRuleDecomposition
 

@@ -1,4 +1,4 @@
-"""NumPy implementations of proper scoring rule loss vectors."""
+"""NumPy implementations of scoring rule loss vectors."""
 
 from __future__ import annotations
 

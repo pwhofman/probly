@@ -1,4 +1,4 @@
-"""PyTorch implementations of proper scoring rule loss vectors."""
+"""PyTorch implementations of scoring rule loss vectors."""
 
 from __future__ import annotations
 

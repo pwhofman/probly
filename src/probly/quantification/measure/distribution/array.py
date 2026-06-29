@@ -38,7 +38,7 @@ from ._common import (
 )
 
 if TYPE_CHECKING:
-    from probly.quantification.scoring_rule import ProperScoringRule
+    from probly.quantification.scoring_rule import ScoringRule
 
 # Entropy
 
@@ -295,12 +295,12 @@ def array_categorical_sample_max_disagreement(
     return np.mean(per_sample_max - per_sample_bma_prob, axis=axis)
 
 
-# Generalized-entropy (proper scoring rule) measures
+# Generalized-entropy (scoring rule) measures
 
 
 @generalized_entropy_of_expected.register(ArrayCategoricalDistributionSample)
 def array_categorical_sample_generalized_entropy_of_expected(
-    sample: ArrayCategoricalDistributionSample, scoring_rule: ProperScoringRule
+    sample: ArrayCategoricalDistributionSample, scoring_rule: ScoringRule
 ) -> np.ndarray:
     """Compute G(theta_bar) = <theta_bar, loss(theta_bar)> for a categorical sample."""
     mean = sample.sample_mean().probabilities  # (..., K)
@@ -312,7 +312,7 @@ def array_categorical_sample_generalized_entropy_of_expected(
 
 @expected_generalized_entropy.register(ArrayCategoricalDistributionSample)
 def array_categorical_sample_expected_generalized_entropy(
-    sample: ArrayCategoricalDistributionSample, scoring_rule: ProperScoringRule
+    sample: ArrayCategoricalDistributionSample, scoring_rule: ScoringRule
 ) -> np.ndarray:
     """Compute E[G(theta)] = mean_m <theta_m, loss(theta_m)> for a categorical sample."""
     p = sample.array.probabilities  # (..., M, K)

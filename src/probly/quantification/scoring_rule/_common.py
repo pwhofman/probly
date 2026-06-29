@@ -1,4 +1,4 @@
-"""Proper scoring rules identified by their per-label loss vector."""
+"""Scoring rules identified by their per-label loss vector."""
 
 from __future__ import annotations
 
@@ -8,20 +8,22 @@ from dataclasses import dataclass
 from flextype import flexdispatch
 
 
-class ProperScoringRule(ABC):
-    """Proper scoring rule, defined by its per-label loss vector.
+class ScoringRule(ABC):
+    """Scoring rule, defined by its per-label loss vector.
 
     The single primitive is :meth:`loss`, mapping a predicted distribution
     ``theta_hat`` of shape ``(..., K)`` to the loss vector
-    ``[l(theta_hat, 1), ..., l(theta_hat, K)]``. The total, aleatoric, and epistemic
-    measures of :class:`SecondOrderScoringRuleDecomposition` are derived from it.
-    Built-in rules support NumPy and PyTorch; a custom rule only needs the
-    backend(s) it is used with.
+    ``[l(theta_hat, 1), ..., l(theta_hat, K)]``, from which
+    :class:`SecondOrderScoringRuleDecomposition` derives the total, aleatoric, and
+    epistemic measures. The decomposition runs for any rule but is a valid
+    uncertainty decomposition (epistemic uncertainty ``>= 0``) only for proper
+    rules; the built-ins are proper. Built-ins support NumPy and PyTorch; a custom
+    rule only needs the backend(s) it is used with.
 
     Example:
         A custom pseudo-spherical score of order 3, with ``G(theta) = 1 - ||theta||_3``::
 
-            class PseudoSphericalLoss(ProperScoringRule):
+            class PseudoSphericalLoss(ScoringRule):
                 def loss(self, probabilities):
                     norm = torch.sum(probabilities**3, dim=-1, keepdim=True) ** (1 / 3)
                     return 1.0 - probabilities**2 / norm**2
@@ -70,7 +72,7 @@ def _spherical_loss_vector[ArrayT](probabilities: ArrayT) -> ArrayT:
 
 
 @dataclass(frozen=True, slots=True)
-class LogLoss(ProperScoringRule):
+class LogLoss(ScoringRule):
     """Log loss ``l(theta_hat, y) = -log(theta_hat_y)``; yields the Shannon-entropy decomposition.
 
     The logarithmic score is unbounded, so :meth:`loss` is ``+inf`` where a
@@ -83,7 +85,7 @@ class LogLoss(ProperScoringRule):
 
 
 @dataclass(frozen=True, slots=True)
-class BrierLoss(ProperScoringRule):
+class BrierLoss(ScoringRule):
     """Brier loss ``l(theta_hat, y) = sum_k (theta_hat_k - [k == y])^2``; yields the Gini decomposition."""
 
     def loss[ArrayT](self, probabilities: ArrayT) -> ArrayT:
@@ -91,7 +93,7 @@ class BrierLoss(ProperScoringRule):
 
 
 @dataclass(frozen=True, slots=True)
-class ZeroOneLoss(ProperScoringRule):
+class ZeroOneLoss(ScoringRule):
     """Zero-one loss ``l(theta_hat, y) = 1 - [argmax_k theta_hat_k == y]``."""
 
     def loss[ArrayT](self, probabilities: ArrayT) -> ArrayT:
@@ -99,7 +101,7 @@ class ZeroOneLoss(ProperScoringRule):
 
 
 @dataclass(frozen=True, slots=True)
-class SphericalLoss(ProperScoringRule):
+class SphericalLoss(ScoringRule):
     """Spherical loss ``l(theta_hat, y) = 1 - theta_hat_y / ||theta_hat||_2``."""
 
     def loss[ArrayT](self, probabilities: ArrayT) -> ArrayT:
