@@ -12,6 +12,7 @@ from collections.abc import Callable
 from functools import singledispatch
 import types
 from typing import (
+    TYPE_CHECKING,
     Any,
     Concatenate,
     NotRequired,
@@ -24,7 +25,6 @@ from typing import (
 )
 
 import flextype
-from flextype.singledispatch import RegistrationFunction  # noqa: TC001
 
 from . import decorators as d
 from .core import (
@@ -34,6 +34,9 @@ from .core import (
     TraverserResult,
     identity_traverser,
 )
+
+if TYPE_CHECKING:
+    from flextype.singledispatch import RegistrationFunction
 
 
 class ExtensibleTraverser[T](Protocol):

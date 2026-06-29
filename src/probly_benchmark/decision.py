@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from flextype import flexdispatch
+
 from probly.decider import categorical_from_mean
 from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor

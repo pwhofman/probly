@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
+from flextype import flexdispatch
 import numpy as np
 
-from flextype import flexdispatch
 from probly.plot.credal._data import _get_probabilities, _to_numpy
 from probly.representation.credal_set.array import (
     ArrayConvexCredalSet,

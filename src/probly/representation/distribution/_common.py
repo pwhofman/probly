@@ -7,6 +7,7 @@ from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
 from flextype import flexdispatch
+
 from probly.representation.representation import Representation
 from probly.representation.sample._common import RepresentationSample, Sample
 

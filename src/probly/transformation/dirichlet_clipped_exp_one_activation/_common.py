@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from flextype import flexdispatch
+
 from probly.predictor import EvidentialPredictor, LogitClassifier, predict, predict_raw
 from probly.representation.distribution import DirichletDistribution, create_dirichlet_distribution_from_alphas
 from probly.transformation.transformation import predictor_transformation
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from flextype.isinstance import LazyType
+
     from probly.predictor import Predictor
 
 
