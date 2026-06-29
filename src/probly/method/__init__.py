@@ -32,6 +32,7 @@ from probly.method.het_net import het_net
 import probly.method.laplace  # noqa: F401  # registers LaplaceRepresenter lazily
 from probly.method.sngp import sngp
 from probly.method.subensemble import subensemble
+from probly.method.vbll import g_vbll, vbll
 
 __all__ = [
     "batchensemble",
@@ -56,9 +57,11 @@ __all__ = [
     "ensemble",
     "evidential_classification",
     "evidential_regression",
+    "g_vbll",
     "graph_posterior_network",
     "het_net",
     "lop_graph_posterior_network",
     "sngp",
     "subensemble",
+    "vbll",
 ]
