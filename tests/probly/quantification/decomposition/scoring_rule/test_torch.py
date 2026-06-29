@@ -56,9 +56,7 @@ def test_torch_log_loss_matches_entropy_with_zero_probabilities() -> None:
         ],
         dtype=torch.float64,
     )
-    sample = TorchCategoricalDistributionSample(
-        tensor=TorchProbabilityCategoricalDistribution(probs), sample_dim=0
-    )
+    sample = TorchCategoricalDistributionSample(tensor=TorchProbabilityCategoricalDistribution(probs), sample_dim=0)
     sr = SecondOrderScoringRuleDecomposition(sample, LogLoss())
     ent = SecondOrderEntropyDecomposition(sample)
     assert torch.all(torch.isfinite(sr.total))
