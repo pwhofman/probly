@@ -73,8 +73,9 @@ def _spherical_loss_vector[ArrayT](probabilities: ArrayT) -> ArrayT:
 class LogLoss(ProperScoringRule):
     """Log loss ``l(theta_hat, y) = -log(theta_hat_y)``; yields the Shannon-entropy decomposition.
 
-    Assumes strictly positive probabilities; exact zeros give non-finite losses
-    (use :class:`SecondOrderEntropyDecomposition`, which applies ``0 log 0 = 0``).
+    The logarithmic score is unbounded, so :meth:`loss` is ``+inf`` where a
+    probability is zero. The decomposition applies the ``0 log 0 = 0`` convention,
+    so its generalized entropy equals the (finite) Shannon entropy.
     """
 
     def loss[ArrayT](self, probabilities: ArrayT) -> ArrayT:

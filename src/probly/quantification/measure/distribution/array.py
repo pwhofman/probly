@@ -289,7 +289,10 @@ def array_categorical_sample_generalized_entropy_of_expected(
 ) -> np.ndarray:
     """Compute G(theta_bar) = <theta_bar, loss(theta_bar)> for a categorical sample."""
     mean = sample.sample_mean().probabilities  # (..., K)
-    return np.sum(mean * scoring_rule.loss(mean), axis=-1)
+    # 0 * inf = 0: a zero-probability outcome contributes nothing to the expected loss.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        weighted = mean * scoring_rule.loss(mean)
+    return np.where(mean > 0, weighted, 0.0).sum(axis=-1)
 
 
 @expected_generalized_entropy.register(ArrayCategoricalDistributionSample)
@@ -300,7 +303,10 @@ def array_categorical_sample_expected_generalized_entropy(
     p = sample.array.probabilities  # (..., M, K)
     axis = sample.sample_axis
     del sample  # Avoid keeping a reference to the sample for memory efficiency
-    per_sample = np.sum(p * scoring_rule.loss(p), axis=-1)  # (..., M)
+    # 0 * inf = 0: a zero-probability outcome contributes nothing to the expected loss.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        weighted = p * scoring_rule.loss(p)
+    per_sample = np.where(p > 0, weighted, 0.0).sum(axis=-1)  # (..., M)
     return np.mean(per_sample, axis=axis)
 
 

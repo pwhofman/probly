@@ -256,7 +256,9 @@ def torch_categorical_sample_generalized_entropy_of_expected(
 ) -> torch.Tensor:
     """Compute G(theta_bar) = <theta_bar, loss(theta_bar)> for a categorical sample."""
     mean = sample.sample_mean().probabilities  # (..., K)
-    return torch.sum(mean * scoring_rule.loss(mean), dim=-1)
+    # 0 * inf = 0: a zero-probability outcome contributes nothing to the expected loss.
+    weighted = mean * scoring_rule.loss(mean)
+    return torch.where(mean > 0, weighted, mean.new_zeros(())).sum(dim=-1)
 
 
 @expected_generalized_entropy.register(TorchCategoricalDistributionSample)
@@ -267,7 +269,9 @@ def torch_categorical_sample_expected_generalized_entropy(
     p = sample.tensor.probabilities  # (..., M, K)
     axis = sample.sample_axis
     del sample  # Avoid keeping a reference to the sample for memory efficiency
-    per_sample = torch.sum(p * scoring_rule.loss(p), dim=-1)  # (..., M)
+    # 0 * inf = 0: a zero-probability outcome contributes nothing to the expected loss.
+    weighted = p * scoring_rule.loss(p)
+    per_sample = torch.where(p > 0, weighted, p.new_zeros(())).sum(dim=-1)  # (..., M)
     return torch.mean(per_sample, dim=axis)
 
 

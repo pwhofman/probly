@@ -43,6 +43,28 @@ def test_log_loss_matches_entropy_decomposition() -> None:
     np.testing.assert_allclose(sr.epistemic, ent.epistemic, rtol=1e-10, atol=1e-12)
 
 
+def test_log_loss_matches_entropy_with_zero_probabilities() -> None:
+    # theta_bar stays positive, but individual members put exact zero mass on some classes;
+    # the 0 log 0 = 0 convention must keep the decomposition finite and equal to entropy.
+    probs = np.array(
+        [
+            [[1.00, 0.00, 0.00], [0.50, 0.50, 0.00]],
+            [[0.20, 0.50, 0.30], [0.10, 0.30, 0.60]],
+        ],
+        dtype=float,
+    )
+    sample = ArrayCategoricalDistributionSample(
+        array=ArrayProbabilityCategoricalDistribution(probs), sample_axis=0
+    )
+    sr = SecondOrderScoringRuleDecomposition(sample, LogLoss())
+    ent = SecondOrderEntropyDecomposition(sample)
+    assert np.all(np.isfinite(np.asarray(sr.total)))
+    assert np.all(np.isfinite(np.asarray(sr.aleatoric)))
+    np.testing.assert_allclose(sr.total, ent.total, rtol=1e-10, atol=1e-12)
+    np.testing.assert_allclose(sr.aleatoric, ent.aleatoric, rtol=1e-10, atol=1e-12)
+    np.testing.assert_allclose(sr.epistemic, ent.epistemic, rtol=1e-10, atol=1e-12)
+
+
 def test_zero_one_loss_matches_zero_one_decomposition() -> None:
     sr = SecondOrderScoringRuleDecomposition(_sample(), ZeroOneLoss())
     zo = SecondOrderZeroOneDecomposition(_sample())
