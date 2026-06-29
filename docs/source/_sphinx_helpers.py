@@ -143,11 +143,6 @@ def make_linkcode_resolve(repo_root: Path) -> Callable[[str, dict[str, str]], st
     Returns:
         A callable suitable for assignment to ``linkcode_resolve`` in ``conf.py``.
     """
-    # Source links must point at the repository the docs were built from, pinned
-    # at exactly that revision. In GitHub Actions, GITHUB_REPOSITORY/GITHUB_SHA
-    # identify the built repository and commit; locally fall back to main.
-    repository = os.environ.get("GITHUB_REPOSITORY", "pwhofman/probly")
-    revision = os.environ.get("GITHUB_SHA", "main")
 
     def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
         """Return a URL to the source for the given Python object for Sphinx linkcode.
@@ -174,6 +169,8 @@ def make_linkcode_resolve(repo_root: Path) -> Callable[[str, dict[str, str]], st
         except (ModuleNotFoundError, AttributeError, TypeError, OSError, ValueError):
             return None
 
-        return f"https://github.com/{repository}/blob/{revision}/{relpath}#L{lineno}"
+        base = "https://github.com/pwhofman/probly"
+        branch = "main"
+        return f"{base}/blob/{branch}/{relpath}#L{lineno}"
 
     return linkcode_resolve
