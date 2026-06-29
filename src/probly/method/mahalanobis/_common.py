@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
+
 from probly.decider import categorical_from_mean
 from probly.predictor import LogitClassifier, Predictor, RepresentationPredictor
 from probly.quantification._quantification import decompose

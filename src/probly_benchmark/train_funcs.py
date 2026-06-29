@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict, cast
 
+from flextype import flexdispatch
 from laplace.baselaplace import BaseLaplace
 import torch
 from torch import nn, optim
 from torch.amp import GradScaler, autocast
 import torch.nn.functional as F
 
-from flextype import flexdispatch
 from probly.layers.torch import HeteroscedasticLayer, SNGPLayer
 from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.bayesian import BayesianPredictor

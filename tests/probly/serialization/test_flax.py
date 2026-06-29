@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from flextype import registry_pickle
 import pytest
 
-from flextype import registry_pickle
 from probly.method.conformal import LACConformalSetPredictor, conformal_lac
 from probly.predictor import LogitClassifier
 

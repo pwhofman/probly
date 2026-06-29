@@ -9,6 +9,7 @@ from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_tr
 
 if TYPE_CHECKING:
     from flextype.isinstance import LazyType
+
     from probly.predictor import Predictor
     from pytraverse.composition import RegisteredLooseTraverser
 
