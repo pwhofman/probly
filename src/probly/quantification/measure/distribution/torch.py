@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 import warnings
 
 import torch
@@ -26,13 +27,18 @@ from ._common import (
     dempster_shafer_uncertainty,
     entropy,
     entropy_of_expected_predictive_distribution,
+    expected_generalized_entropy,
     expected_max_probability_complement,
+    generalized_entropy_of_expected,
     max_disagreement,
     max_probability_complement_of_expected,
     min_expected_total_variation,
     mutual_information,
     vacuity,
 )
+
+if TYPE_CHECKING:
+    from probly.quantification.scoring_rule import ScoringRule
 
 _TORCH_GENERATOR_UNUSED_MESSAGE = (
     "generator is not used by the torch Dirichlet sampler. Seed with torch.manual_seed for reproducibility."
@@ -265,6 +271,34 @@ def torch_categorical_sample_max_disagreement(
     per_sample_bma_prob = torch.take_along_dim(p, bma_argmax, dim=-1).squeeze(-1)
     per_sample_max = torch.max(p, dim=-1).values
     return torch.mean(per_sample_max - per_sample_bma_prob, dim=axis)
+
+
+# Generalized-entropy (scoring rule) measures
+
+
+@generalized_entropy_of_expected.register(TorchCategoricalDistributionSample)
+def torch_categorical_sample_generalized_entropy_of_expected(
+    sample: TorchCategoricalDistributionSample, scoring_rule: ScoringRule
+) -> torch.Tensor:
+    """Compute G(theta_bar) = <theta_bar, loss(theta_bar)> for a categorical sample."""
+    mean = sample.sample_mean().probabilities  # (..., K)
+    # 0 * inf = 0: a zero-probability outcome contributes nothing to the expected loss.
+    weighted = mean * scoring_rule.loss(mean)
+    return torch.where(mean > 0, weighted, mean.new_zeros(())).sum(dim=-1)
+
+
+@expected_generalized_entropy.register(TorchCategoricalDistributionSample)
+def torch_categorical_sample_expected_generalized_entropy(
+    sample: TorchCategoricalDistributionSample, scoring_rule: ScoringRule
+) -> torch.Tensor:
+    """Compute E[G(theta)] = mean_m <theta_m, loss(theta_m)> for a categorical sample."""
+    p = sample.tensor.probabilities  # (..., M, K)
+    axis = sample.sample_axis
+    del sample  # Avoid keeping a reference to the sample for memory efficiency
+    # 0 * inf = 0: a zero-probability outcome contributes nothing to the expected loss.
+    weighted = p * scoring_rule.loss(p)
+    per_sample = torch.where(p > 0, weighted, p.new_zeros(())).sum(dim=-1)  # (..., M)
+    return torch.mean(per_sample, dim=axis)
 
 
 # Distance-based epistemic uncertainty (Wasserstein)

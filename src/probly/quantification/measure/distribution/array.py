@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 from scipy import special
 from scipy.stats import entropy as scipy_entropy
@@ -25,13 +27,18 @@ from ._common import (
     dempster_shafer_uncertainty,
     entropy,
     entropy_of_expected_predictive_distribution,
+    expected_generalized_entropy,
     expected_max_probability_complement,
+    generalized_entropy_of_expected,
     max_disagreement,
     max_probability_complement_of_expected,
     min_expected_total_variation,
     mutual_information,
     vacuity,
 )
+
+if TYPE_CHECKING:
+    from probly.quantification.scoring_rule import ScoringRule
 
 # Entropy
 
@@ -286,6 +293,36 @@ def array_categorical_sample_max_disagreement(
     per_sample_bma_prob = np.take_along_axis(p, bma_argmax, axis=-1).squeeze(-1)
     per_sample_max = np.max(p, axis=-1)
     return np.mean(per_sample_max - per_sample_bma_prob, axis=axis)
+
+
+# Generalized-entropy (scoring rule) measures
+
+
+@generalized_entropy_of_expected.register(ArrayCategoricalDistributionSample)
+def array_categorical_sample_generalized_entropy_of_expected(
+    sample: ArrayCategoricalDistributionSample, scoring_rule: ScoringRule
+) -> np.ndarray:
+    """Compute G(theta_bar) = <theta_bar, loss(theta_bar)> for a categorical sample."""
+    mean = sample.sample_mean().probabilities  # (..., K)
+    # 0 * inf = 0: a zero-probability outcome contributes nothing to the expected loss.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        weighted = mean * scoring_rule.loss(mean)
+    return np.where(mean > 0, weighted, 0.0).sum(axis=-1)
+
+
+@expected_generalized_entropy.register(ArrayCategoricalDistributionSample)
+def array_categorical_sample_expected_generalized_entropy(
+    sample: ArrayCategoricalDistributionSample, scoring_rule: ScoringRule
+) -> np.ndarray:
+    """Compute E[G(theta)] = mean_m <theta_m, loss(theta_m)> for a categorical sample."""
+    p = sample.array.probabilities  # (..., M, K)
+    axis = sample.sample_axis
+    del sample  # Avoid keeping a reference to the sample for memory efficiency
+    # 0 * inf = 0: a zero-probability outcome contributes nothing to the expected loss.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        weighted = p * scoring_rule.loss(p)
+    per_sample = np.where(p > 0, weighted, 0.0).sum(axis=-1)  # (..., M)
+    return np.mean(per_sample, axis=axis)
 
 
 # Distance-based epistemic uncertainty (Wasserstein)
