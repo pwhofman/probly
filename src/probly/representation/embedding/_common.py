@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from typing import ClassVar
 
 from flextype import flexdispatch
-
 from probly.representation.representation import Representation
 from probly.representation.sample._common import RepresentationSample
 

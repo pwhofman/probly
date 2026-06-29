@@ -6,7 +6,6 @@ from abc import ABC
 from typing import TYPE_CHECKING, Any, Concatenate, Protocol, Self, cast, runtime_checkable
 
 from flextype import flexdispatch
-
 from probly.calibrator._common import Calibrator
 from probly.conformal_scores import (
     APSScore,

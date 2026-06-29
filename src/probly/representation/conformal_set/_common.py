@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Literal, Self
 
 from flextype import flexdispatch
-
 from probly.representation.representation import Representation
 
 if TYPE_CHECKING:

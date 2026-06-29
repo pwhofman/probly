@@ -17,7 +17,6 @@ import gc
 import pathlib
 import tempfile
 
-from flextype import flexdispatch
 import hydra
 from laplace.baselaplace import BaseLaplace
 from laplace.utils.feature_extractor import FeatureExtractor
@@ -30,6 +29,7 @@ from tqdm import tqdm
 import wandb
 import wandb.util
 
+from flextype import flexdispatch
 from probly.layers.torch import BatchEnsembleConv2d, BatchEnsembleLinear
 from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.bayesian import BayesianPredictor

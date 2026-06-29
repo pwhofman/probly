@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from typing import Concatenate, Literal, Protocol, Self, runtime_checkable
 
 from flextype import flexdispatch
-
 from probly.calibrator._common import Calibrator
 from probly.predictor import BinaryLogitClassifier, BinaryProbabilisticClassifier, LogitClassifier, Predictor
 from probly.transformation.transformation import predictor_transformation

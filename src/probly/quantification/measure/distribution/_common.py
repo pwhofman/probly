@@ -6,7 +6,6 @@ import math
 from typing import TYPE_CHECKING, Literal
 
 from flextype import flexdispatch
-
 from probly.quantification._quantification import measure
 from probly.representation.distribution import CategoricalDistribution, Distribution
 from probly.representation.sample import Sample

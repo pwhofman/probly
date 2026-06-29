@@ -7,7 +7,6 @@ import importlib
 from typing import TYPE_CHECKING, Any, override
 
 from flextype import flexdispatch
-
 from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
 from probly.predictor import IterablePredictor, predict
 from probly.representation.credal_set import create_convex_credal_set, create_probability_intervals

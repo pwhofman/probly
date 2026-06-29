@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from flextype import flexdispatch
 import numpy as np
 
+from flextype import flexdispatch
 from probly.representation.array_like import ArrayLike
 
 

@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
-
 from probly.predictor import LogitClassifier, predict
 from probly.representation.array_like import ArrayLike
 from probly.representation.credal_set import (

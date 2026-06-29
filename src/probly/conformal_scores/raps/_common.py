@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from flextype import flexdispatch
 import numpy as np
 
+from flextype import flexdispatch
 from probly.representation.distribution import ArrayCategoricalDistribution
 from probly.representation.sample.array import ArraySample
 

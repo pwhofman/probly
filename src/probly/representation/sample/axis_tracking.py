@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from types import EllipsisType, NotImplementedType
 from typing import TYPE_CHECKING, cast
 
-from flextype import flexdispatch
 import numpy as np
 
+from flextype import flexdispatch
 from probly.lazy_types import JAX_ARRAY, TORCH_TENSOR
 
 if TYPE_CHECKING:

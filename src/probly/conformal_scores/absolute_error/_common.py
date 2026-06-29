@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from flextype import flexdispatch
 import numpy as np
 import numpy.typing as npt
 
+from flextype import flexdispatch
 from probly.representation.array_like import ArrayLike
 
 

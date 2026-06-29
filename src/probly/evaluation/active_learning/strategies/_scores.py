@@ -8,7 +8,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from flextype import flexdispatch
-
 from probly.quantification.measure.distribution import entropy
 
 if TYPE_CHECKING:

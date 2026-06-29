@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from flextype import flexdispatch
 from flextype.registry_meta import ProtocolRegistry
+
+from flextype import flexdispatch
 
 
 @runtime_checkable

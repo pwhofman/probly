@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 import warnings
 
 from flextype import flexdispatch
-
 from probly.predictor import Predictor, RandomPredictor, predict, predict_raw
 from probly.quantification._quantification import decompose
 from probly.quantification.decomposition.decomposition import CachingDecomposition, EpistemicDecomposition

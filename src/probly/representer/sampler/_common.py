@@ -7,7 +7,6 @@ import contextlib
 from typing import Any, Literal, override
 
 from flextype import RegistrationError, copy_explicit_registry_classes
-
 from probly.predictor import IterablePredictor, Predictor, RandomPredictor, RandomRepresentationPredictor, predict
 from probly.representation.sample import Sample, SampleFactory, create_sample
 from probly.representer._representer import Representer, representer

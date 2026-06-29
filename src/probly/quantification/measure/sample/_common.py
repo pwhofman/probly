@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from flextype import flexdispatch
-
 from probly.quantification._quantification import measure_atomic
 from probly.representation.distribution._common import CategoricalDistributionSample
 from probly.representation.sample._common import Sample

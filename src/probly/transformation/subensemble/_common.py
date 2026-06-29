@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from flextype import flexdispatch
-
 from probly.transformation.ensemble import EnsemblePredictor, register_ensemble_members
 from probly.transformation.transformation import predictor_transformation
 

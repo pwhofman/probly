@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal
 
 from flextype import flexdispatch
-
 from probly.representation.distribution import Distribution
 
 if TYPE_CHECKING:

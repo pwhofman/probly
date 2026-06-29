@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from flextype import flexdispatch
 import numpy as np
+
+from flextype import flexdispatch
 
 if TYPE_CHECKING:
     from probly.representation.array_like import ArrayLike
