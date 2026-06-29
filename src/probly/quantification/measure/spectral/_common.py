@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from flextype import flexdispatch
+
 from probly.quantification._quantification import measure
 from probly.representation.embedding._common import Embedding, EmbeddingSample
 

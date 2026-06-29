@@ -7,6 +7,7 @@ from contextvars import ContextVar
 from typing import Any, ClassVar, Literal, Protocol, runtime_checkable
 
 from flextype import ProtocolRegistry, flexdispatch
+
 from probly.representation import Representation
 from probly.representation.credal_set import CredalSet, ProbabilityIntervalsCredalSet
 from probly.representation.distribution import (
