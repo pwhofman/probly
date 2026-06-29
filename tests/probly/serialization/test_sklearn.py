@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from flextype import registry_pickle
 import numpy as np
 import pytest
 
-from flextype import registry_pickle
 from probly.calibrator import calibrate
 from probly.method.calibration import isotonic_regression, sklearn_identity_logit_estimator
 from probly.method.conformal import conformal_lac

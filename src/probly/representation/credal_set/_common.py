@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Literal, Protocol, Self
 
 from flextype import flexdispatch
+
 from probly.representation.array_like import ArrayLike
 from probly.representation.distribution import CategoricalDistribution
 from probly.representation.representation import Representation

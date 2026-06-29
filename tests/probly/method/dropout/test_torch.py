@@ -11,9 +11,39 @@ torch = pytest.importorskip("torch")
 
 from torch import nn  # noqa: E402
 
+from probly.layers.torch import SharedMaskDropout  # noqa: E402
+
 
 class TestNetworkArchitectures:
     """Test class for different network architectures."""
+
+    def test_shared_mask_inserts_shared_dropout(self, torch_model_small_2d_2d: nn.Sequential) -> None:
+        """shared_mask=True inserts SharedMaskDropout layers instead of nn.Dropout."""
+        model = dropout(torch_model_small_2d_2d, p=0.5, shared_mask=True)
+
+        count_linear = count_layers(torch_model_small_2d_2d, nn.Linear)
+        assert count_layers(model, SharedMaskDropout) == count_linear - 1
+        assert count_layers(model, nn.Dropout) == 0
+
+    def test_shared_mask_is_activated_during_sampling(self, torch_model_small_2d_2d: nn.Sequential) -> None:
+        """The sampler activates SharedMaskDropout and shares the mask across the batch (layer<->sampler link)."""
+        from probly.predictor import predict  # noqa: PLC0415
+        from probly.representer.sampler._common import get_sampling_predictor  # noqa: PLC0415
+
+        torch.manual_seed(0)
+        model = dropout(torch_model_small_2d_2d, p=0.5, shared_mask=True)
+        model.eval()  # 'testing' mode: sampling must re-activate the dropout
+
+        sampling_model, cleanup = get_sampling_predictor(model)
+        try:
+            shared = next(m for m in sampling_model.modules() if isinstance(m, SharedMaskDropout))
+            assert shared.training  # the load-bearing link: the sampler forced the layer to train
+            x = torch.ones(8, 2)
+            out_a, out_b = predict(sampling_model, x), predict(sampling_model, x)
+            assert bool((out_a == out_a[:1]).all())  # shared mask: identical inputs -> identical rows
+            assert not torch.equal(out_a, out_b)  # genuinely stochastic across forward passes
+        finally:
+            cleanup()
 
     def test_linear_network_with_first_linear(self, torch_model_small_2d_2d: nn.Sequential) -> None:
         """Tests if a model incorporates a dropout layer correctly when a linear layer succeeds it.

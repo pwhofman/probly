@@ -4,20 +4,25 @@ from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
 
 from ._common import (
     DEFAULT_MEAN_FIELD_FACTOR,
+    DEFAULT_NUM_SAMPLES,
     LogBase,
     SecondOrderDistributionLike,
     conditional_entropy,
     dempster_shafer_uncertainty,
     entropy,
     entropy_of_expected_predictive_distribution,
+    expected_generalized_entropy,
     expected_max_probability_complement,
+    generalized_entropy_of_expected,
     max_disagreement,
     max_probability_complement_of_expected,
+    min_expected_total_variation,
     mutual_information,
     vacuity,
 )
 from .array import (
     array_categorical_entropy,
+    array_categorical_sample_min_expected_total_variation,
     array_dirichlet_entropy,
     array_dirichlet_max_probability_complement_of_expected,
     array_dirichlet_vacuity,
@@ -30,9 +35,12 @@ from .array import (
 @entropy_of_expected_predictive_distribution.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @conditional_entropy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @mutual_information.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@generalized_entropy_of_expected.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@expected_generalized_entropy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @max_probability_complement_of_expected.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @expected_max_probability_complement.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @max_disagreement.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@min_expected_total_variation.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @vacuity.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @dempster_shafer_uncertainty.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 def _(_: type) -> None:
@@ -41,9 +49,11 @@ def _(_: type) -> None:
 
 __all__ = [
     "DEFAULT_MEAN_FIELD_FACTOR",
+    "DEFAULT_NUM_SAMPLES",
     "LogBase",
     "SecondOrderDistributionLike",
     "array_categorical_entropy",
+    "array_categorical_sample_min_expected_total_variation",
     "array_dirichlet_entropy",
     "array_dirichlet_max_probability_complement_of_expected",
     "array_dirichlet_vacuity",
@@ -53,9 +63,12 @@ __all__ = [
     "dempster_shafer_uncertainty",
     "entropy",
     "entropy_of_expected_predictive_distribution",
+    "expected_generalized_entropy",
     "expected_max_probability_complement",
+    "generalized_entropy_of_expected",
     "max_disagreement",
     "max_probability_complement_of_expected",
+    "min_expected_total_variation",
     "mutual_information",
     "vacuity",
 ]

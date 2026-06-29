@@ -9,11 +9,12 @@ description = "Uncertainty Representation and Quantification for Machine Learnin
 license = "MIT"
 requires-python = ">=3.13.0,<3.15"
 dependencies = [
-    "scipy>=1.14.1",        # first cp313 wheels
+    "scipy>=1.14.1", # first cp313 wheels
     "matplotlib>=3.9.2",
     "mpltern>=0.6.0",
-    "numpy>=2.1.0",         # first cp313 wheels
+    "numpy>=2.1.0", # first cp313 wheels
     "tqdm>=4.25.0",
+    "flextype>=0.1.1",
 ]
 authors = [
     { name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de" },
@@ -37,7 +38,7 @@ classifiers = [
 
 [tool.setuptools.packages.find]
 where = ["./src"]
-include = ["probly", "probly.*", "pytraverse*", "flextype*"]
+include = ["probly", "probly.*", "pytraverse*"]
 
 [tool.setuptools.dynamic]
 version = { attr = "probly.__version__" }
@@ -243,7 +244,7 @@ max-complexity = 15
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]
-known-first-party = ["probly", "probly_benchmark", "pytraverse", "flextype"]
+known-first-party = ["probly", "probly_benchmark", "pytraverse"]
 known-third-party = ["wandb"]
 force-sort-within-sections = true
 combine-as-imports = true

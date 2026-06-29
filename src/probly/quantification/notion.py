@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Literal, Protocol, runtime_checkable
 
 from flextype import ProtocolRegistry
+
 from probly.utils.switchdispatch import switch
 
 type NotionName = Literal[

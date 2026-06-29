@@ -6,12 +6,13 @@ from typing import TYPE_CHECKING
 
 import torch.nn
 
-from probly.layers.torch import DropConnectLinear
+from probly.layers.torch import DropConnectLinear, SharedMaskDropout
 
 from ._common import CLEANUP_FUNCS, sampling_preparation_traverser
 
 if TYPE_CHECKING:
     from flextype.isinstance import LazyType
+
     from pytraverse import State
 
 
@@ -39,5 +40,6 @@ register_forced_train_mode(
     | torch.nn.Dropout3d
     | torch.nn.AlphaDropout
     | torch.nn.FeatureAlphaDropout
-    | DropConnectLinear,
+    | DropConnectLinear
+    | SharedMaskDropout,
 )
