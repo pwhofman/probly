@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from typing import Protocol, runtime_checkable
 
 from flextype import flexdispatch
+
 from probly.predictor import (
     CategoricalDistributionPredictor,
     DirichletDistributionPredictor,

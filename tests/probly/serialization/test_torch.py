@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import io
 
+from flextype import registry_pickle
 import pytest
 
-from flextype import registry_pickle
 from probly.calibrator import calibrate
 from probly.layers.torch import NormalInverseGammaLinear
 from probly.method.calibration import isotonic_regression, torch_identity_logit_model

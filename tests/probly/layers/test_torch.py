@@ -876,3 +876,52 @@ class TestKLDivergenceHelper:
         x = torch.tensor([0.05, 0.5, 1.0, 2.0])
         # softplus(_inverse_softplus(x)) == x for x > 0.
         torch.testing.assert_close(softplus(_inverse_softplus(x)), x, atol=1e-5, rtol=1e-5)
+
+
+class TestSharedMaskDropout:
+    """SharedMaskDropout draws one mask per forward pass, shared across the batch."""
+
+    def test_mask_is_shared_across_the_batch(self) -> None:
+        torch, _ = _torch_modules()
+        from probly.layers.torch import SharedMaskDropout  # noqa: PLC0415
+
+        torch.manual_seed(0)
+        out = SharedMaskDropout(p=0.5).train()(torch.ones(8, 16))  # (B=8, F=16)
+        assert bool((out == out[:1]).all())
+
+    def test_identity_in_eval(self) -> None:
+        torch, _ = _torch_modules()
+        from probly.layers.torch import SharedMaskDropout  # noqa: PLC0415
+
+        x = torch.randn(4, 8)
+        assert torch.equal(SharedMaskDropout(p=0.5).eval()(x), x)
+
+    def test_fresh_mask_per_forward(self) -> None:
+        torch, _ = _torch_modules()
+        from probly.layers.torch import SharedMaskDropout  # noqa: PLC0415
+
+        torch.manual_seed(0)
+        layer = SharedMaskDropout(p=0.5).train()
+        x = torch.ones(4, 16)
+        assert not torch.equal(layer(x), layer(x))
+
+    def test_p_zero_is_identity(self) -> None:
+        torch, _ = _torch_modules()
+        from probly.layers.torch import SharedMaskDropout  # noqa: PLC0415
+
+        x = torch.randn(4, 8)
+        assert torch.equal(SharedMaskDropout(p=0.0).train()(x), x)
+
+    def test_p_one_zeros_everything(self) -> None:
+        torch, _ = _torch_modules()
+        from probly.layers.torch import SharedMaskDropout  # noqa: PLC0415
+
+        out = SharedMaskDropout(p=1.0).train()(torch.ones(4, 8))
+        assert torch.equal(out, torch.zeros_like(out))
+
+    def test_invalid_p_raises(self) -> None:
+        _torch_modules()
+        from probly.layers.torch import SharedMaskDropout  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="between 0 and 1"):
+            SharedMaskDropout(p=1.5)

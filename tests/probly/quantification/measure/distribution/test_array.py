@@ -16,6 +16,7 @@ from probly.quantification.measure.distribution import (
     expected_max_probability_complement,
     max_disagreement,
     max_probability_complement_of_expected,
+    min_expected_total_variation,
     mutual_information,
     vacuity,
 )
@@ -481,3 +482,119 @@ def test_array_gaussian_dempster_shafer_zero_factor_disables_mean_field() -> Non
 
     expected = 3.0 / (3.0 + np.sum(np.exp(mean), axis=-1))
     np.testing.assert_allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_array_sample_min_expected_total_variation_known_value_binary() -> None:
+    """EU = 1/2 min_q E||p - q||_1 for the K=2 example where it differs from TU - AU.
+
+    Q puts equal mass on (0.9, 0.1) and (0.5, 0.5). The optimal q is (0.7, 0.3), so EU = 0.2,
+    while the zero-one epistemic term TU - AU is 0.0.
+    """
+    probabilities = np.array([[0.90, 0.10], [0.50, 0.50]], dtype=float)
+    sample = ArrayCategoricalDistributionSample(
+        array=ArrayProbabilityCategoricalDistribution(probabilities),
+        sample_axis=0,
+    )
+
+    np.testing.assert_allclose(min_expected_total_variation(sample), 0.2, rtol=1e-9, atol=1e-9)
+
+
+def test_array_sample_min_expected_total_variation_known_value_ternary_constrained() -> None:
+    """EU for a K=3 case where the simplex constraint binds (the per-class medians sum to 0.8)."""
+    probabilities = np.array(
+        [[0.70, 0.20, 0.10], [0.50, 0.40, 0.10], [0.10, 0.10, 0.80]],
+        dtype=float,
+    )
+    sample = ArrayCategoricalDistributionSample(
+        array=ArrayProbabilityCategoricalDistribution(probabilities),
+        sample_axis=0,
+    )
+
+    np.testing.assert_allclose(min_expected_total_variation(sample), 0.3, rtol=1e-9, atol=1e-9)
+
+
+def test_array_sample_min_expected_total_variation_is_zero_for_no_second_order_spread() -> None:
+    """A second-order Dirac (all samples identical) has no epistemic uncertainty."""
+    probabilities = np.tile(np.array([1 / 3, 1 / 3, 1 / 3], dtype=float), (5, 1))
+    sample = ArrayCategoricalDistributionSample(
+        array=ArrayProbabilityCategoricalDistribution(probabilities),
+        sample_axis=0,
+    )
+
+    np.testing.assert_allclose(min_expected_total_variation(sample), 0.0, atol=1e-9)
+
+
+def test_array_sample_min_expected_total_variation_is_maximal_for_uniform_diracs() -> None:
+    """EU attains its upper bound (K-1)/K for a uniform mixture of first-order Diracs."""
+    probabilities = np.eye(3, dtype=float)  # one-hot samples on each vertex
+    sample = ArrayCategoricalDistributionSample(
+        array=ArrayProbabilityCategoricalDistribution(probabilities),
+        sample_axis=0,
+    )
+
+    np.testing.assert_allclose(min_expected_total_variation(sample), 2.0 / 3.0, rtol=1e-9, atol=1e-9)
+
+
+def test_array_sample_min_expected_total_variation_differs_from_zero_one_epistemic() -> None:
+    """The OT epistemic measure is genuinely distinct from the additive zero-one EU (TU - AU)."""
+    probabilities = np.array([[0.90, 0.10], [0.50, 0.50]], dtype=float)
+    sample = ArrayCategoricalDistributionSample(
+        array=ArrayProbabilityCategoricalDistribution(probabilities),
+        sample_axis=0,
+    )
+
+    wasserstein_eu = min_expected_total_variation(sample)
+    zero_one_eu = max_disagreement(sample)
+
+    assert not np.allclose(wasserstein_eu, zero_one_eu)
+    np.testing.assert_allclose(zero_one_eu, 0.0, atol=1e-12)
+
+
+def test_array_dirichlet_min_expected_total_variation_delegates_to_sampling() -> None:
+    """The Dirichlet EU draws Monte-Carlo samples and reuses the sample estimator."""
+    alphas = np.array([[2.0, 3.0, 5.0], [1.0, 1.0, 1.0]], dtype=float)
+    distribution = ArrayDirichletDistribution(alphas)
+
+    measured = min_expected_total_variation(distribution, num_samples=500, generator=np.random.default_rng(0))
+    reference_sample = distribution.sample(500, rng=np.random.default_rng(0))
+    expected = min_expected_total_variation(reference_sample)
+
+    np.testing.assert_allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_array_dirichlet_expected_max_probability_complement_delegates_to_sampling() -> None:
+    """The Dirichlet aleatoric uncertainty draws Monte-Carlo samples and reuses the sample estimator."""
+    alphas = np.array([[2.0, 3.0, 5.0], [1.0, 1.0, 1.0]], dtype=float)
+    distribution = ArrayDirichletDistribution(alphas)
+
+    measured = expected_max_probability_complement(distribution, num_samples=500, generator=np.random.default_rng(0))
+    reference_sample = distribution.sample(500, rng=np.random.default_rng(0))
+    expected = expected_max_probability_complement(reference_sample)
+
+    np.testing.assert_allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_array_dirichlet_distance_measures_concentrated_limits() -> None:
+    """A near-uniform Dirichlet has EU ~ 0 and AU ~ (K-1)/K. A near-vertex one has both near 0."""
+    near_uniform = ArrayDirichletDistribution(np.array([1000.0, 1000.0, 1000.0], dtype=float))
+    eu_uniform = min_expected_total_variation(near_uniform, num_samples=4000, generator=np.random.default_rng(0))
+    au_uniform = expected_max_probability_complement(near_uniform, num_samples=4000, generator=np.random.default_rng(1))
+    assert eu_uniform == pytest.approx(0.0, abs=2e-2)
+    assert au_uniform == pytest.approx(2.0 / 3.0, abs=2e-2)
+
+    near_vertex = ArrayDirichletDistribution(np.array([1000.0, 1.0, 1.0], dtype=float))
+    eu_vertex = min_expected_total_variation(near_vertex, num_samples=4000, generator=np.random.default_rng(2))
+    au_vertex = expected_max_probability_complement(near_vertex, num_samples=4000, generator=np.random.default_rng(3))
+    assert eu_vertex == pytest.approx(0.0, abs=2e-2)
+    assert au_vertex == pytest.approx(0.0, abs=2e-2)
+
+
+def test_array_dirichlet_min_expected_total_variation_in_range() -> None:
+    rng = np.random.default_rng(seed=0)
+    alphas = rng.uniform(low=0.5, high=20.0, size=(8, 4))
+    distribution = ArrayDirichletDistribution(alphas)
+
+    measured = min_expected_total_variation(distribution, num_samples=1000, generator=np.random.default_rng(0))
+
+    assert np.all(measured >= 0.0)
+    assert np.all(measured <= 3.0 / 4.0 + 1e-9)

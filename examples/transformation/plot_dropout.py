@@ -35,6 +35,7 @@ dropout_model = dropout(
     base_model,
     p=0.5,  # zeroing probability (kept active at inference)
     predictor_type="logit_classifier",
+    shared_mask=True,  # one mask per forward pass, shared across the batch
 )
 
 # %%

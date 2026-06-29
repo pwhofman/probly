@@ -17,6 +17,7 @@ from probly.quantification.measure.distribution import (
     expected_max_probability_complement,
     max_disagreement,
     max_probability_complement_of_expected,
+    min_expected_total_variation,
     mutual_information,
     vacuity,
 )
@@ -459,3 +460,151 @@ def test_torch_gaussian_dempster_shafer_zero_factor_disables_mean_field() -> Non
 
     expected = 3.0 / (3.0 + torch.sum(torch.exp(mean), dim=-1))
     assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_sample_min_expected_total_variation_known_value_binary() -> None:
+    """EU = 0.2 for the K=2 example where it differs from the zero-one EU (TU - AU = 0)."""
+    probabilities = torch.tensor([[0.90, 0.10], [0.50, 0.50]], dtype=torch.float64)
+    sample = TorchCategoricalDistributionSample(
+        tensor=TorchProbabilityCategoricalDistribution(probabilities),
+        sample_dim=0,
+    )
+
+    assert min_expected_total_variation(sample).item() == pytest.approx(0.2, abs=1e-9)
+
+
+def test_torch_sample_min_expected_total_variation_known_value_ternary_constrained() -> None:
+    """EU = 0.3 for a K=3 case where the simplex constraint binds."""
+    probabilities = torch.tensor(
+        [[0.70, 0.20, 0.10], [0.50, 0.40, 0.10], [0.10, 0.10, 0.80]],
+        dtype=torch.float64,
+    )
+    sample = TorchCategoricalDistributionSample(
+        tensor=TorchProbabilityCategoricalDistribution(probabilities),
+        sample_dim=0,
+    )
+
+    assert min_expected_total_variation(sample).item() == pytest.approx(0.3, abs=1e-9)
+
+
+def test_torch_sample_min_expected_total_variation_is_zero_for_no_second_order_spread() -> None:
+    """A second-order Dirac (all samples identical) has no epistemic uncertainty."""
+    probabilities = torch.tensor([1 / 3, 1 / 3, 1 / 3], dtype=torch.float64).repeat(5, 1)
+    sample = TorchCategoricalDistributionSample(
+        tensor=TorchProbabilityCategoricalDistribution(probabilities),
+        sample_dim=0,
+    )
+
+    assert min_expected_total_variation(sample).item() == pytest.approx(0.0, abs=1e-9)
+
+
+def test_torch_sample_min_expected_total_variation_is_maximal_for_uniform_diracs() -> None:
+    """EU attains the upper bound (K-1)/K for a uniform mixture of first-order Diracs."""
+    probabilities = torch.eye(3, dtype=torch.float64)
+    sample = TorchCategoricalDistributionSample(
+        tensor=TorchProbabilityCategoricalDistribution(probabilities),
+        sample_dim=0,
+    )
+
+    assert min_expected_total_variation(sample).item() == pytest.approx(2.0 / 3.0, abs=1e-9)
+
+
+@pytest.mark.parametrize("sample_dim", [0, 1])
+def test_torch_sample_min_expected_total_variation_matches_numpy(sample_dim: int) -> None:
+    """The torch implementation matches the numpy implementation on random batched data."""
+    import numpy as np  # noqa: PLC0415
+
+    from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
+        ArrayCategoricalDistributionSample,
+        ArrayProbabilityCategoricalDistribution,
+    )
+
+    rng = np.random.default_rng(seed=0)
+    logits = rng.normal(size=(4, 6, 3))
+    base_probabilities = np.exp(logits) / np.sum(np.exp(logits), axis=-1, keepdims=True)
+    probabilities = np.moveaxis(base_probabilities, 1, sample_dim)
+
+    torch_sample = TorchCategoricalDistributionSample(
+        tensor=TorchProbabilityCategoricalDistribution(torch.as_tensor(probabilities, dtype=torch.float64)),
+        sample_dim=sample_dim,
+    )
+    array_sample = ArrayCategoricalDistributionSample(
+        array=ArrayProbabilityCategoricalDistribution(probabilities),
+        sample_axis=sample_dim,
+    )
+
+    measured = min_expected_total_variation(torch_sample).numpy()
+    expected = min_expected_total_variation(array_sample)
+
+    np.testing.assert_allclose(measured, expected, rtol=1e-9, atol=1e-9)
+
+
+def test_torch_sample_min_expected_total_variation_differs_from_zero_one_epistemic() -> None:
+    """The OT epistemic measure is genuinely distinct from the additive zero-one EU."""
+    probabilities = torch.tensor([[0.90, 0.10], [0.50, 0.50]], dtype=torch.float64)
+    sample = TorchCategoricalDistributionSample(
+        tensor=TorchProbabilityCategoricalDistribution(probabilities),
+        sample_dim=0,
+    )
+
+    wasserstein_eu = min_expected_total_variation(sample)
+    zero_one_eu = max_disagreement(sample)
+
+    assert not torch.allclose(wasserstein_eu, zero_one_eu)
+    assert zero_one_eu.item() == pytest.approx(0.0, abs=1e-12)
+
+
+def test_torch_dirichlet_min_expected_total_variation_delegates_to_sampling() -> None:
+    """The Dirichlet EU draws Monte-Carlo samples and reuses the sample estimator."""
+    alphas = torch.tensor([[2.0, 3.0, 5.0], [1.0, 1.0, 1.0]], dtype=torch.float64)
+    distribution = TorchDirichletDistribution(alphas)
+
+    torch.manual_seed(0)
+    measured = min_expected_total_variation(distribution, num_samples=500)
+    torch.manual_seed(0)
+    expected = min_expected_total_variation(distribution.sample(500))
+
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_dirichlet_expected_max_probability_complement_delegates_to_sampling() -> None:
+    """The Dirichlet aleatoric uncertainty draws Monte-Carlo samples and reuses the sample estimator."""
+    alphas = torch.tensor([[2.0, 3.0, 5.0], [1.0, 1.0, 1.0]], dtype=torch.float64)
+    distribution = TorchDirichletDistribution(alphas)
+
+    torch.manual_seed(0)
+    measured = expected_max_probability_complement(distribution, num_samples=500)
+    torch.manual_seed(0)
+    expected = expected_max_probability_complement(distribution.sample(500))
+
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_dirichlet_distance_measures_concentrated_limits() -> None:
+    """A near-uniform Dirichlet has EU ~ 0 and AU ~ (K-1)/K. A near-vertex one has both near 0."""
+    torch.manual_seed(0)
+    near_uniform = TorchDirichletDistribution(torch.tensor([1000.0, 1000.0, 1000.0], dtype=torch.float64))
+    eu_uniform = min_expected_total_variation(near_uniform, num_samples=4000)
+    au_uniform = expected_max_probability_complement(near_uniform, num_samples=4000)
+    assert eu_uniform.item() == pytest.approx(0.0, abs=2e-2)
+    assert au_uniform.item() == pytest.approx(2.0 / 3.0, abs=2e-2)
+
+    near_vertex = TorchDirichletDistribution(torch.tensor([1000.0, 1.0, 1.0], dtype=torch.float64))
+    eu_vertex = min_expected_total_variation(near_vertex, num_samples=4000)
+    au_vertex = expected_max_probability_complement(near_vertex, num_samples=4000)
+    assert eu_vertex.item() == pytest.approx(0.0, abs=2e-2)
+    assert au_vertex.item() == pytest.approx(0.0, abs=2e-2)
+
+
+def test_torch_dirichlet_distance_measures_warn_on_generator_but_still_run() -> None:
+    """The torch Dirichlet sampler uses the global RNG, so a passed generator warns but is ignored."""
+    distribution = TorchDirichletDistribution(torch.tensor([2.0, 3.0, 5.0], dtype=torch.float64))
+    generator = torch.Generator().manual_seed(0)
+
+    with pytest.warns(UserWarning, match="generator is not used"):
+        eu = min_expected_total_variation(distribution, num_samples=100, generator=generator)
+    with pytest.warns(UserWarning, match="generator is not used"):
+        au = expected_max_probability_complement(distribution, num_samples=100, generator=generator)
+
+    assert torch.isfinite(eu).all()
+    assert torch.isfinite(au).all()
