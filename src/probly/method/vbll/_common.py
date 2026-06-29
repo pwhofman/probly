@@ -6,17 +6,14 @@ from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
 from probly.predictor import (
-    LogitDistributionPredictor,
     Predictor,
     RandomPredictor,
     predict,
     predict_raw,
 )
 from probly.representation.distribution import (
-    CategoricalDistribution,
     CategoricalDistributionSample,
     GaussianDistribution,
-    create_categorical_distribution_from_logits,
     create_gaussian_distribution,
 )
 from probly.representer import Representer, representer
@@ -40,8 +37,6 @@ WISHART_SCALE = GlobalVariable[float]("WISHART_SCALE", "The scale of the Wishart
 DOF = GlobalVariable[float]("DOF", "The degrees of freedom of the Wishart prior on the noise precision.")
 VARIANT = GlobalVariable[str]("VARIANT", "The discriminative VBLL last-layer variant.")
 NOISE_PRIOR_SCALE = GlobalVariable[float]("NOISE_PRIOR_SCALE", "The scale of the prior on the heteroscedastic noise.")
-
-g_vbll_traverser = flexdispatch_traverser[object](name="g_vbll_traverser")
 
 
 @runtime_checkable
@@ -199,72 +194,3 @@ def _[**In](
     """Predict the closed-form predictive Gaussian for a VBLL predictor."""
     mean, variance = predict_raw(predictor, *args, **kwargs)
     return create_gaussian_distribution(mean, variance)
-
-
-@runtime_checkable
-class GVBLLPredictor[**In, Out: CategoricalDistribution](LogitDistributionPredictor[In, Out], Protocol):
-    """A generative variational Bayesian last layer (G-VBLL) classifier.
-
-    Unlike the discriminative :class:`VBLLPredictor`, G-VBLL models a per-class
-    Gaussian density in feature space.  Its :func:`predict` returns a
-    deterministic :class:`CategoricalDistribution` whose logits are the
-    class-conditional log-densities; the softmax is distance-aware and reverts to
-    the uniform distribution far from every class.
-    """
-
-
-@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
-@GVBLLPredictor.register_factory
-def g_vbll[**In, Out: CategoricalDistribution](
-    base: Predictor[In, Out],
-    prior_scale: float = 1.0,
-    noise_init: float = 1.0,
-    wishart_scale: float = 1.0,
-    dof: float = 1.0,
-) -> GVBLLPredictor[In, Out]:
-    """Wrap a model with a Generative Variational Bayesian Last Layer (G-VBLL).
-
-    Replaces the model's last ``nn.Linear`` with a :class:`GVBLLLayer` that models
-    a per-class Gaussian density in feature space based on
-    :cite:`harrisonVariationalBayesian2024`.  A trailing softmax (if any) is
-    removed, since the layer outputs class-conditional log-densities (logits).
-
-    The returned predictor's :func:`predict` yields a deterministic
-    :class:`CategoricalDistribution`.  Because each class density decays
-    quadratically away from its mean, the predictive is distance-aware -- a useful
-    property for out-of-distribution detection.  The layer is fit with the
-    generative ELBO exposed by :meth:`probly.layers.torch.GVBLLLayer.train_loss`.
-
-    Args:
-        base: The model to wrap.
-        prior_scale: Scale of the isotropic Gaussian prior on the class means.
-            Defaults to ``1.0``.
-        noise_init: Initial shared feature-noise standard deviation. Defaults to ``1.0``.
-        wishart_scale: Scale of the Wishart prior on the noise precision. Defaults to ``1.0``.
-        dof: Degrees of freedom of the Wishart prior on the noise precision. Defaults to ``1.0``.
-
-    Returns:
-        A ``GVBLLPredictor`` whose ``predict(...)`` returns a
-        ``CategoricalDistribution`` over the classes.
-    """
-    return traverse(
-        base,
-        nn_compose(g_vbll_traverser),
-        init={
-            CLONE: True,
-            TRAVERSE_REVERSED: True,
-            LAST_LAYER: True,
-            PRIOR_SCALE: prior_scale,
-            NOISE_INIT: noise_init,
-            WISHART_SCALE: wishart_scale,
-            DOF: dof,
-        },
-    )
-
-
-@predict.register(GVBLLPredictor)
-def _[**In](
-    predictor: GVBLLPredictor[In, CategoricalDistribution], *args: In.args, **kwargs: In.kwargs
-) -> CategoricalDistribution:
-    """Predict the deterministic categorical distribution for a G-VBLL predictor."""
-    return create_categorical_distribution_from_logits(predict_raw(predictor, *args, **kwargs))

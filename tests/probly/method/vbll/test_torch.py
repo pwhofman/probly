@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method.vbll import g_vbll, vbll
+from probly.method.vbll import vbll
 from probly.predictor import predict
-from probly.quantification import decompose, quantify
+from probly.quantification import decompose
 from probly.quantification.decomposition.entropy import SecondOrderEntropyDecomposition
-from probly.representation.distribution import CategoricalDistribution, GaussianDistribution
+from probly.representation.distribution import GaussianDistribution
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistributionSample
 from probly.representer import representer
 
@@ -144,55 +144,3 @@ def test_vbll_layer_train_loss(parameterization: str) -> None:
     assert torch.isfinite(loss)
     assert loss.requires_grad
     loss.backward()
-
-
-# --- Generative VBLL (G-VBLL) ---------------------------------------------------
-
-
-def test_g_vbll_predict_returns_categorical() -> None:
-    predictor = g_vbll(_regression_model(out_features=3))
-
-    distribution = predict(predictor, torch.ones(4, 10))
-
-    assert isinstance(distribution, CategoricalDistribution)
-    assert distribution.num_classes == 3
-    assert distribution.probabilities.shape == (4, 3)
-
-
-def test_g_vbll_replaces_last_linear_and_drops_softmax() -> None:
-    model = nn.Sequential(nn.Linear(10, 32), nn.ReLU(), nn.Linear(32, 3), nn.Softmax(dim=-1))
-
-    predictor = g_vbll(model)
-    modules = list(predictor)
-
-    from probly.layers.torch import GVBLLLayer  # noqa: PLC0415
-
-    assert isinstance(modules[2], GVBLLLayer)
-    assert isinstance(modules[3], nn.Identity)
-    assert isinstance(modules[0], nn.Linear)
-
-
-def test_g_vbll_representer_quantifies_to_entropy() -> None:
-    predictor = g_vbll(_regression_model(out_features=3))
-
-    representation = representer(predictor).represent(torch.ones(4, 10))
-    uncertainty = quantify(representation)
-
-    assert torch.all(uncertainty.total >= 0)
-
-
-def test_g_vbll_layer_train_loss_and_kl_are_finite() -> None:
-    from probly.layers.torch import GVBLLLayer  # noqa: PLC0415
-
-    layer = GVBLLLayer(8, 3)
-    features = torch.randn(16, 8)
-    targets = torch.randint(0, 3, (16,))
-
-    loss = layer.train_loss(features, targets, regularization_weight=1.0 / 16)
-    kl = layer.kl_divergence
-
-    assert loss.ndim == 0
-    assert torch.isfinite(loss)
-    assert loss.requires_grad
-    assert kl.ndim == 0
-    assert torch.isfinite(kl)
