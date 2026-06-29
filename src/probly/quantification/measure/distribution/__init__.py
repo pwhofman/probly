@@ -10,7 +10,9 @@ from ._common import (
     dempster_shafer_uncertainty,
     entropy,
     entropy_of_expected_predictive_distribution,
+    expected_generalized_entropy,
     expected_max_probability_complement,
+    generalized_entropy_of_expected,
     max_disagreement,
     max_probability_complement_of_expected,
     mutual_information,
@@ -30,6 +32,8 @@ from .array import (
 @entropy_of_expected_predictive_distribution.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @conditional_entropy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @mutual_information.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@generalized_entropy_of_expected.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@expected_generalized_entropy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @max_probability_complement_of_expected.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @expected_max_probability_complement.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @max_disagreement.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
@@ -53,7 +57,9 @@ __all__ = [
     "dempster_shafer_uncertainty",
     "entropy",
     "entropy_of_expected_predictive_distribution",
+    "expected_generalized_entropy",
     "expected_max_probability_complement",
+    "generalized_entropy_of_expected",
     "max_disagreement",
     "max_probability_complement_of_expected",
     "mutual_information",

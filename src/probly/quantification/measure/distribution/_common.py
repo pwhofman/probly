@@ -13,6 +13,7 @@ from probly.representation.sample import Sample
 DEFAULT_MEAN_FIELD_FACTOR: float = math.pi / 8.0
 
 if TYPE_CHECKING:
+    from probly.quantification.scoring_rule import ProperScoringRule
     from probly.representation.array_like import ArrayLike
     from probly.representation.distribution import SecondOrderDistribution
 
@@ -50,6 +51,24 @@ def conditional_entropy(distribution: SecondOrderDistributionLike, base: LogBase
 def mutual_information(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
     """Compute the mutual information of a distribution."""
     msg = f"Mutual information is not supported for distributions of type {type(distribution)}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def generalized_entropy_of_expected(
+    distribution: SecondOrderDistributionLike, scoring_rule: ProperScoringRule
+) -> ArrayLike:
+    """Compute the generalized entropy ``G(theta_bar)`` of the BMA under a proper scoring rule."""
+    msg = f"Generalized entropy of expected is not supported for distributions of type {type(distribution)}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def expected_generalized_entropy(
+    distribution: SecondOrderDistributionLike, scoring_rule: ProperScoringRule
+) -> ArrayLike:
+    """Compute the expected generalized entropy ``E[G(theta)]`` under a proper scoring rule."""
+    msg = f"Expected generalized entropy is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)
 
 
