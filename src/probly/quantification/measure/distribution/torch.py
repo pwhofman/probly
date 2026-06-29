@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 import torch
 
 from probly.representation.distribution.torch_categorical import (
@@ -17,6 +19,8 @@ from probly.utils.torch import torch_entropy
 
 from ._common import (
     DEFAULT_MEAN_FIELD_FACTOR,
+    DEFAULT_NUM_SAMPLES,
+    TOTAL_VARIATION_BISECTION_ITERATIONS,
     LogBase,
     conditional_entropy,
     dempster_shafer_uncertainty,
@@ -25,8 +29,13 @@ from ._common import (
     expected_max_probability_complement,
     max_disagreement,
     max_probability_complement_of_expected,
+    min_expected_total_variation,
     mutual_information,
     vacuity,
+)
+
+_TORCH_GENERATOR_UNUSED_MESSAGE = (
+    "generator is not used by the torch Dirichlet sampler. Seed with torch.manual_seed for reproducibility."
 )
 
 # Entropy
@@ -225,6 +234,24 @@ def torch_categorical_sample_expected_max_probability_complement(
     return torch.mean(per_sample_complement, dim=axis)
 
 
+@expected_max_probability_complement.register(TorchDirichletDistribution)
+def torch_dirichlet_expected_max_probability_complement(
+    distribution: TorchDirichletDistribution,
+    *,
+    num_samples: int = DEFAULT_NUM_SAMPLES,
+    generator: torch.Generator | None = None,
+) -> torch.Tensor:
+    """Estimate ``1 - E[max_k p_k]`` for a Dirichlet by Monte-Carlo (no closed form).
+
+    Torch's Dirichlet sampler uses the global RNG, so seed with ``torch.manual_seed`` for
+    reproducibility. A passed ``generator`` is ignored (with a warning).
+    """
+    if generator is not None:
+        warnings.warn(_TORCH_GENERATOR_UNUSED_MESSAGE, UserWarning, stacklevel=2)
+    sample = distribution.sample(num_samples)
+    return torch_categorical_sample_expected_max_probability_complement(sample)
+
+
 @max_disagreement.register(TorchCategoricalDistributionSample)
 def torch_categorical_sample_max_disagreement(
     sample: TorchCategoricalDistributionSample,
@@ -238,6 +265,75 @@ def torch_categorical_sample_max_disagreement(
     per_sample_bma_prob = torch.take_along_dim(p, bma_argmax, dim=-1).squeeze(-1)
     per_sample_max = torch.max(p, dim=-1).values
     return torch.mean(per_sample_max - per_sample_bma_prob, dim=axis)
+
+
+# Distance-based epistemic uncertainty (Wasserstein)
+
+
+def _min_expected_total_variation_from_samples(probabilities: torch.Tensor, sample_axis: int) -> torch.Tensor:
+    """Solve ``1/2 min_q E_s ||p_s - q||_1`` over the simplex for a sample of distributions.
+
+    Each ``q_k`` is the ``(1/2 - lambda)`` quantile of the marginal draws, where ``lambda`` is the
+    single multiplier that makes ``q`` sum to one. The simplex sum is monotone in the quantile
+    level, so ``lambda`` is found by bisection.
+    """
+    probabilities = torch.movedim(probabilities, sample_axis, -2)  # (..., num_samples, num_classes)
+    num_samples = probabilities.shape[-2]
+    num_classes = probabilities.shape[-1]
+    batch_shape = probabilities.shape[:-2]
+    sorted_probabilities, _ = torch.sort(probabilities, dim=-2)
+
+    def quantile_at(level: torch.Tensor) -> torch.Tensor:
+        position = level * (num_samples - 1)  # (...)
+        lower = torch.floor(position).long()
+        upper = torch.clamp(lower + 1, max=num_samples - 1)
+        fraction = (position - lower).unsqueeze(-1)  # (..., 1)
+        lower_index = lower[..., None, None].expand(*batch_shape, 1, num_classes)
+        upper_index = upper[..., None, None].expand(*batch_shape, 1, num_classes)
+        value_lower = torch.gather(sorted_probabilities, -2, lower_index).squeeze(-2)  # (..., num_classes)
+        value_upper = torch.gather(sorted_probabilities, -2, upper_index).squeeze(-2)
+        return value_lower + fraction * (value_upper - value_lower)
+
+    # sum_k q_k(level) increases with the quantile level, so bisect for sum == 1.
+    low = torch.zeros(batch_shape, dtype=probabilities.dtype, device=probabilities.device)
+    high = torch.ones(batch_shape, dtype=probabilities.dtype, device=probabilities.device)
+    for _ in range(TOTAL_VARIATION_BISECTION_ITERATIONS):
+        mid = 0.5 * (low + high)
+        below_target = quantile_at(mid).sum(dim=-1) < 1.0
+        low = torch.where(below_target, mid, low)
+        high = torch.where(below_target, high, mid)
+    optimal_q = quantile_at(0.5 * (low + high))  # (..., num_classes)
+    distances = torch.abs(probabilities - optimal_q.unsqueeze(-2))  # (..., num_samples, num_classes)
+    return 0.5 * torch.mean(distances, dim=-2).sum(dim=-1)
+
+
+@min_expected_total_variation.register(TorchCategoricalDistributionSample)
+def torch_categorical_sample_min_expected_total_variation(
+    sample: TorchCategoricalDistributionSample,
+) -> torch.Tensor:
+    """Compute the distance-based epistemic uncertainty of a categorical sample."""
+    probabilities = sample.tensor.probabilities
+    sample_axis = sample.sample_axis
+    del sample  # Avoid keeping a reference to the sample for memory efficiency
+    return _min_expected_total_variation_from_samples(probabilities, sample_axis)
+
+
+@min_expected_total_variation.register(TorchDirichletDistribution)
+def torch_dirichlet_min_expected_total_variation(
+    distribution: TorchDirichletDistribution,
+    *,
+    num_samples: int = DEFAULT_NUM_SAMPLES,
+    generator: torch.Generator | None = None,
+) -> torch.Tensor:
+    """Estimate the distance-based epistemic uncertainty of a Dirichlet by Monte-Carlo.
+
+    Torch's Dirichlet sampler uses the global RNG, so seed with ``torch.manual_seed`` for
+    reproducibility. A passed ``generator`` is ignored (with a warning).
+    """
+    if generator is not None:
+        warnings.warn(_TORCH_GENERATOR_UNUSED_MESSAGE, UserWarning, stacklevel=2)
+    sample = distribution.sample(num_samples)
+    return torch_categorical_sample_min_expected_total_variation(sample)
 
 
 # Vacuity

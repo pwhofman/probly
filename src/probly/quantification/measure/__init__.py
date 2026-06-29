@@ -9,6 +9,7 @@ from .distribution import (
     expected_max_probability_complement,
     max_disagreement,
     max_probability_complement_of_expected,
+    min_expected_total_variation,
     mutual_information,
     vacuity,
 )
@@ -25,6 +26,7 @@ __all__ = [
     "max_disagreement",
     "max_probability_complement_of_expected",
     "mean_squared_distance_to_scaled_one_hot",
+    "min_expected_total_variation",
     "mutual_information",
     "sample_variance",
     "spectral_entropy",

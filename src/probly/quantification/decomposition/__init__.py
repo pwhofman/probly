@@ -24,6 +24,7 @@ from .variance import (
     CategoricalVarianceDecomposition,
     SecondOrderVarianceDecomposition,
 )
+from .wasserstein import SecondOrderWassersteinDecomposition
 from .zero_one import SecondOrderZeroOneDecomposition
 
 
@@ -53,6 +54,7 @@ __all__ = [
     "OrdinalVarianceDecomposition",
     "SecondOrderEntropyDecomposition",
     "SecondOrderVarianceDecomposition",
+    "SecondOrderWassersteinDecomposition",
     "SecondOrderZeroOneDecomposition",
     "SpectralDecomposition",
     "TotalDecomposition",
