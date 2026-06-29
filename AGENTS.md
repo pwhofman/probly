@@ -4,13 +4,18 @@
 - Always run pre-commit checks with `uv run prek run --all-files` before committing to ensure that your code adheres to the project's style and quality standards.
 - When adding public-facing features add docstrings in Google-Style format and American english.
 ## Useful Commands:
-### Build Docs (only use this command verbatim from the project root)
+### Build Docs (only use these commands verbatim from the project root)
+Incremental build (only changed examples and pages re-run):
 ```bash
-rm -rf docs/source/api && uv run sphinx-build -b html docs/source docs/build/html
+uv run sphinx-build -j auto -b html docs/source docs/build/html
 ```
-Running docs building with errors on warning (to see if CI passes):
+Full build (re-run all examples):
 ```bash
-rm -rf docs/source/api && uv run sphinx-build -b html docs/source docs/build/html -W
+rm -rf docs/source/api docs/source/auto_examples docs/source/gen_modules docs/build && FORCE_CLEAN=1 uv run sphinx-build -j auto -b html docs/source docs/build/html
+```
+Full build with errors on warning (to see if CI passes):
+```bash
+rm -rf docs/source/api docs/source/auto_examples docs/source/gen_modules docs/build && FORCE_CLEAN=1 uv run sphinx-build -j auto -b html docs/source docs/build/html -W
 ```
 ### Run Pre-commit (takes only 1s)
 ```bash

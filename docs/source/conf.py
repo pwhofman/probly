@@ -6,13 +6,19 @@ import os
 from pathlib import Path
 import sys
 from typing import TYPE_CHECKING
+import warnings
 
 _here = Path(__file__).resolve().parent
 sys.path.insert(0, str(_here))  # make _sphinx_helpers importable
 sys.path.insert(0, str(_here.parent / "src"))
 sys.path.insert(0, str(_here.parent.parent))  # make examples.utils importable
 
-from _sphinx_helpers import make_linkcode_resolve  # noqa: E402
+from _sphinx_helpers import (  # noqa: E402
+    add_member_source_dependencies,
+    ignore_installed_template_mtimes,
+    make_linkcode_resolve,
+    scrub_external_dependencies,
+)
 
 import probly  # noqa: E402
 
@@ -112,11 +118,25 @@ sphinx_gallery_conf = {
     "notebook_extensions": set(),
     # By default only examples whose source changed (MD5 mismatch) re-execute;
     # set FORCE_CLEAN=1 to force re-running all examples.
-    "run_stale_examples": os.environ.get("FORCE_CLEAN"),
+    "run_stale_examples": os.environ.get("FORCE_CLEAN") == "1",
     # Don't kill the whole build if one example errors
     "abort_on_example_error": False,
+    # Execute examples in isolated worker processes (joblib/loky), one per
+    # available CPU; set SPHINX_GALLERY_PARALLEL to override (1 disables,
+    # sphinx-gallery treats it as off).
+    "parallel": int(os.environ.get("SPHINX_GALLERY_PARALLEL", os.process_cpu_count() or 1)),
     "default_thumb_file": str(REPO_ROOT / "docs" / "source" / "_static" / "logo" / "logo_light.png"),
 }
+
+# loky recycles a worker by design when its memory use grows more than
+# ~300MB beyond its post-first-job baseline (heavy torch examples trigger
+# this); the lost job is re-run in a fresh worker, but the executor still
+# warns in the main process. Harmless for the gallery build, so silence it.
+warnings.filterwarnings(
+    "ignore",
+    message="A worker stopped while some jobs were given to the executor",
+    category=UserWarning,
+)
 
 # -- Intersphinx -----------------------------------------------------------------------------------
 intersphinx_mapping = {
@@ -164,80 +184,15 @@ _SKIP_XREF_NAMES = frozenset(
 )
 
 
-# Previous build's backreferences_all.json, captured before sphinx-gallery
-# overwrites it.  Used to carry over entries for skipped examples and to detect
-# which API pages need re-reading.  Entry shape per symbol:
-# [fname, example_src_dir, gallery_target_dir, intro, title].
-_BACKREFS_SNAPSHOT: dict = {}
-
-
-def _snapshot_backreferences(app: Sphinx) -> None:
-    """Snapshot backreferences_all.json before sphinx-gallery overwrites it.
-
-    Runs at priority 499, just before sphinx-gallery's builder-inited at 500.
-    """
-    from sphinx_gallery.utils import _read_json  # noqa: PLC0415
-
-    gallery_conf = app.config.sphinx_gallery_conf
-    backreferences_dir = gallery_conf.get("backreferences_dir")
-    if not backreferences_dir:
-        return
-    json_path = Path(gallery_conf["src_dir"]) / backreferences_dir / "backreferences_all.json"
-    _BACKREFS_SNAPSHOT.clear()
-    if json_path.exists():
-        _BACKREFS_SNAPSHOT.update(_read_json(json_path))
-
-
-def _rebuild_stale_backreferences(app: Sphinx) -> None:
-    """Rebuild backreferences_all.json so every example is covered, run or not.
-
-    sphinx-gallery writes backreferences_all.json with only the examples that
-    executed this build; MD5-skipped (stale) examples are dropped, so the
-    minigallery directives on API pages silently lose them.  Running after
-    sphinx-gallery (priority 501 > 500), this rebuilds the file as: fresh
-    entries from this build, plus the previous build's entries for exactly the
-    examples sphinx-gallery reports in ``stale_examples``.  Deleted or renamed
-    examples are neither fresh nor stale, so they drop out naturally.  Finally,
-    API RST files of symbols whose entries changed since the last build are
-    touched so Sphinx re-reads those pages and re-renders their minigalleries;
-    an unchanged build touches nothing.
-    """
-    from sphinx_gallery.utils import _read_json, _write_json  # noqa: PLC0415
-
-    gallery_conf = app.config.sphinx_gallery_conf
-    backreferences_dir = gallery_conf.get("backreferences_dir")
-    if not backreferences_dir:
-        return
-    src_dir = gallery_conf["src_dir"]
-    json_path = Path(src_dir) / backreferences_dir / "backreferences_all.json"
-    if not json_path.exists():
-        return
-
-    fresh: dict = _read_json(json_path)
-    stale_files = {str(Path(p)) for p in gallery_conf.get("stale_examples", [])}
-
-    rebuilt: dict = {symbol: list(entries) for symbol, entries in fresh.items()}
-    for symbol, old_entries in _BACKREFS_SNAPSHOT.items():
-        fresh_ids = {(e[0], e[2]) for e in rebuilt.get(symbol, [])}  # (fname, target_dir)
-        carried = [e for e in old_entries if str(Path(e[2]) / e[0]) in stale_files and (e[0], e[2]) not in fresh_ids]
-        if carried:
-            rebuilt.setdefault(symbol, []).extend(carried)
-
-    if rebuilt != fresh:
-        _write_json(Path(src_dir) / backreferences_dir / "backreferences_all", rebuilt)
-
-    # Touch only the API pages whose minigallery data changed since last build.
-    api_dir = Path(src_dir) / "api"
-    for symbol in set(rebuilt) | set(_BACKREFS_SNAPSHOT):
-        if rebuilt.get(symbol) != _BACKREFS_SNAPSHOT.get(symbol):
-            rst = api_dir / f"{symbol}.rst"
-            if rst.exists():
-                rst.touch()
-
-
-def setup(_app: Sphinx) -> None:
-    """Patch the Python domain resolver to skip ambiguous short names."""
+def setup(app: Sphinx) -> None:
+    """Patch the Python domain resolver and register incremental-build hooks."""
     from sphinx.domains.python import PythonDomain  # noqa: PLC0415
+
+    # Incremental-build accuracy hooks; see _sphinx_helpers.py docstrings.
+    app.connect("env-updated", scrub_external_dependencies)
+    app.connect("env-updated", add_member_source_dependencies)
+    if os.environ.get("FORCE_CLEAN") != "1":
+        app.connect("builder-inited", ignore_installed_template_mtimes)
 
     _orig_resolve = PythonDomain.resolve_xref
 
@@ -256,8 +211,6 @@ def setup(_app: Sphinx) -> None:
         return _orig_resolve(self, env, fromdocname, builder, xref_type, target, node, contnode)
 
     PythonDomain.resolve_xref = _patched_resolve
-    _app.connect("builder-inited", _snapshot_backreferences, priority=499)
-    _app.connect("builder-inited", _rebuild_stale_backreferences, priority=501)
 
 
 linkcode_resolve = make_linkcode_resolve(REPO_ROOT)
