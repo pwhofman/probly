@@ -66,3 +66,26 @@ def test_g_vbll_layer_train_loss_and_kl_are_finite() -> None:
     assert loss.requires_grad
     assert kl.ndim == 0
     assert torch.isfinite(kl)
+
+
+def test_g_vbll_keeps_non_trailing_softmax() -> None:
+    # A softmax that is not the final layer must be left in place; only a trailing one is dropped.
+    model = nn.Sequential(nn.Linear(10, 8), nn.Softmax(dim=-1), nn.Linear(8, 3))
+
+    predictor = g_vbll(model)
+    modules = list(predictor)
+
+    from probly.layers.torch import GVBLLLayer  # noqa: PLC0415
+
+    assert isinstance(modules[2], GVBLLLayer)
+    assert isinstance(modules[1], nn.Softmax)
+    assert isinstance(modules[0], nn.Linear)
+
+
+def test_g_vbll_layer_rejects_invalid_arguments() -> None:
+    from probly.layers.torch import GVBLLLayer  # noqa: PLC0415
+
+    with pytest.raises(ValueError, match="prior_scale"):
+        GVBLLLayer(8, 3, prior_scale=0.0)
+    with pytest.raises(ValueError, match="noise_init"):
+        GVBLLLayer(8, 3, noise_init=-1.0)

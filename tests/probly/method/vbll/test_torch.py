@@ -144,3 +144,51 @@ def test_vbll_layer_train_loss(parameterization: str) -> None:
     assert torch.isfinite(loss)
     assert loss.requires_grad
     loss.backward()
+
+
+def test_vbll_keeps_non_trailing_softmax() -> None:
+    # A softmax that is not the final layer must be left in place; only a trailing one is dropped.
+    model = nn.Sequential(nn.Linear(10, 8), nn.Softmax(dim=-1), nn.Linear(8, 3))
+
+    predictor = vbll(model)
+    modules = list(predictor)
+
+    from probly.layers.torch import VBLLLayer  # noqa: PLC0415
+
+    assert isinstance(modules[2], VBLLLayer)
+    assert isinstance(modules[1], nn.Softmax)
+    assert isinstance(modules[0], nn.Linear)
+
+
+def test_compute_vbll_categorical_sample_rejects_unsupported_type() -> None:
+    from probly.method.vbll._common import compute_vbll_categorical_sample  # noqa: PLC0415
+
+    with pytest.raises(NotImplementedError, match="compute_vbll_categorical_sample"):
+        compute_vbll_categorical_sample(object())
+
+
+def test_vbll_layer_rejects_invalid_arguments() -> None:
+    from probly.layers.torch import VBLLLayer  # noqa: PLC0415
+
+    with pytest.raises(ValueError, match="parameterization"):
+        VBLLLayer(8, 3, parameterization="banana")
+    with pytest.raises(ValueError, match="prior_scale"):
+        VBLLLayer(8, 3, prior_scale=0.0)
+    with pytest.raises(ValueError, match="noise_init"):
+        VBLLLayer(8, 3, noise_init=-1.0)
+
+
+def test_t_vbll_layer_rejects_invalid_arguments() -> None:
+    from probly.layers.torch import TVBLLLayer  # noqa: PLC0415
+
+    with pytest.raises(ValueError, match="diagonal"):
+        TVBLLLayer(8, 3, parameterization="lowrank")
+    with pytest.raises(ValueError, match="dof"):
+        TVBLLLayer(8, 3, dof=1.0)
+
+
+def test_het_vbll_layer_rejects_invalid_parameterization() -> None:
+    from probly.layers.torch import HetVBLLLayer  # noqa: PLC0415
+
+    with pytest.raises(ValueError, match="diagonal"):
+        HetVBLLLayer(8, 3, parameterization="lowrank")
