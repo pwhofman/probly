@@ -756,9 +756,14 @@ class SharedMaskDropout(nn.Module):
 class Masksembles2DLayer(nn.Module):
     """Masksembles mask layer for 2D convolutional feature maps.
 
-    Stores N pre-generated binary channel masks. During training one mask is drawn
-    uniformly at random per sample; during inference all N masks are applied in
-    sequence, expanding the batch dimension by a factor of N.
+    Stores N pre-generated binary channel masks. In training mode, one mask is drawn
+    uniformly at random for each sample in the batch and applied independently, matching
+    standard dropout-style training. In eval mode, the layer does not draw any masks itself;
+    it expects the input batch to already be tiled by a factor of ``n`` (e.g. via
+    :func:`probly.transformation.masksembles.torch.predict_masksembles`, which tiles the
+    input before calling the model). Each contiguous block of the original batch size is then
+    assigned a different one of the ``n`` masks, reproducing "run the model once per mask" from
+    the paper in a single forward pass. Input and output shapes are identical in both modes.
 
     Based on `Masksembles for Uncertainty Estimation <https://arxiv.org/abs/2012.08334>`_.
 
@@ -793,31 +798,44 @@ class Masksembles2DLayer(nn.Module):
         self.register_buffer("masks", masks)
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        """Apply channel masking to a 4-D feature map.
+        """Apply Masksembles channel masking.
 
         Args:
-            inputs: Tensor of shape [B, C, H, W].
+            inputs: Input of shape ``(batch, channels, H, W)``. In eval mode, ``batch`` is
+                expected to already be tiled by ``n`` (i.e. ``batch = n * original_batch``),
+                with contiguous blocks of ``original_batch`` rows belonging to one mask each.
 
         Returns:
-            Shape [B, C, H, W] during training (one mask per sample),
-            shape [B*N, C, H, W] during inference (all N masks applied).
+            torch.Tensor, the masked input with the same shape as ``inputs``. In training
+            mode each sample is masked independently with a randomly drawn mask; in eval
+            mode block ``i`` of the tiled batch is masked with mask ``i``.
         """
-        masks = self.masks.to(dtype=inputs.dtype)
-        batch_size = inputs.shape[0]
+        # make sure masks match dtype/device (usually already true because of buffer, but safe)
+        masks = self.masks.to(dtype=inputs.dtype, device=inputs.device)
+
+        batch = inputs.shape[0]
         if self.training:
-            idx = torch.randint(0, self.n, (batch_size,), device=inputs.device)
-            return inputs * masks[idx].view(batch_size, -1, 1, 1)
-        inputs_tiled = inputs.repeat_interleave(self.n, dim=0)
-        idx = torch.arange(batch_size * self.n, device=inputs.device) % self.n
-        return inputs_tiled * masks[idx].view(batch_size * self.n, -1, 1, 1)
+            idx = torch.randint(0, self.n, (batch,), device=inputs.device)
+            return inputs * masks[idx].view(batch, -1, 1, 1)
+        # safer split even if batch % n != 0
+        chunks = torch.chunk(inputs.unsqueeze(1), self.n, dim=0)  # returns nearly equal chunks
+        x = torch.cat(chunks, dim=1).permute(1, 0, 2, 3, 4)  # [n, ?, C, H, W]
+        x = x * masks.unsqueeze(1).unsqueeze(-1).unsqueeze(-1)  # broadcast masks
+        x = torch.cat(torch.split(x, 1, dim=0), dim=1)
+        return x.squeeze(0)
 
 
 class MasksemblesLinearLayer(nn.Module):
     """Masksembles mask layer for linear (dense) layers.
 
-    Stores N pre-generated binary feature masks. During training one mask is drawn
-    uniformly at random per sample; during inference all N masks are applied in
-    sequence, expanding the batch dimension by a factor of N.
+    Stores N pre-generated binary feature masks. In training mode, one mask is drawn
+    uniformly at random for each sample in the batch and applied independently, matching
+    standard dropout-style training. In eval mode, the layer does not draw any masks itself;
+    it expects the input batch to already be tiled by a factor of ``n`` (e.g. via
+    :func:`probly.transformation.masksembles.torch.predict_masksembles`, which tiles the
+    input before calling the model). Each contiguous block of the original batch size is then
+    assigned a different one of the ``n`` masks, reproducing "run the model once per mask" from
+    the paper in a single forward pass. Input and output shapes are identical in both modes.
 
     Based on `Masksembles for Uncertainty Estimation <https://arxiv.org/abs/2012.08334>`_.
 
@@ -852,24 +870,29 @@ class MasksemblesLinearLayer(nn.Module):
         self.register_buffer("masks", masks)
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        """Apply feature masking to a 2-D tensor.
+        """Apply Masksembles feature masking.
 
         Args:
-            inputs: Tensor of shape [B, features].
+            inputs: Input of shape ``(batch, features)``. In eval mode, ``batch`` is
+                expected to already be tiled by ``n`` (i.e. ``batch = n * original_batch``),
+                with contiguous blocks of ``original_batch`` rows belonging to one mask each.
 
         Returns:
-            Shape [B, features] during training (one mask per sample),
-            shape [B*N, features] during inference (all N masks applied).
+            torch.Tensor, the masked input with the same shape as ``inputs``. In training
+            mode each sample is masked independently with a randomly drawn mask; in eval
+            mode block ``i`` of the tiled batch is masked with mask ``i``.
         """
-        masks = self.masks.to(dtype=inputs.dtype)
-        batch_size = inputs.shape[0]
-        if self.training:
-            idx = torch.randint(0, self.n, (batch_size,), device=inputs.device)
-            return inputs * masks[idx]
+        masks = self.masks.to(dtype=inputs.dtype, device=inputs.device)
 
-        inputs_tiled = inputs.repeat_interleave(self.n, dim=0)
-        idx = torch.arange(batch_size * self.n, device=inputs.device) % self.n
-        return inputs_tiled * masks[idx]
+        batch = inputs.shape[0]
+        if self.training:
+            idx = torch.randint(0, self.n, (batch,), device=inputs.device)
+            return inputs * masks[idx]
+        chunks = torch.chunk(inputs.unsqueeze(1), self.n, dim=0)
+        x = torch.cat(chunks, dim=1).permute(1, 0, 2)  # [n, ?, C]
+        x = x * masks.unsqueeze(1)
+        x = torch.cat(torch.split(x, 1, dim=0), dim=1)
+        return x.squeeze(0)
 
 
 # ======================================================================================================================
