@@ -4,11 +4,63 @@ from __future__ import annotations
 
 from typing import Any
 
+import torch
 from torch import nn
 
 from probly.layers.torch import Masksembles2DLayer, MasksemblesLinearLayer
+from probly.predictor import predict
+from probly.representation.distribution._common import create_categorical_distribution_from_logits
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistributionSample
+from probly.representation.sample.torch import TorchSample
 
-from ._common import generation_wrapper, register
+from ._common import MasksemblesPredictor, _attach_num_members, _wrap_masksembles_logits, generation_wrapper, register
+
+
+def tile_inputs(x: torch.Tensor, n_masks: int) -> torch.Tensor:
+    """Tile the leading batch dim by ``n_masks``, preserving ``channels_last`` for 4D inputs."""
+    out = torch.tile(x, (n_masks,) + (1,) * (x.dim() - 1))
+    if x.dim() == 4 and x.is_contiguous(memory_format=torch.channels_last):
+        out = out.contiguous(memory_format=torch.channels_last)
+    return out
+
+
+@_attach_num_members.register(nn.Module)
+def _(model: nn.Module, n_masks: int) -> None:
+    """Register ``n_masks`` as a persistent buffer so it survives ``state_dict``."""
+    model.register_buffer("n_masks", torch.tensor(n_masks, dtype=torch.long))
+
+
+@predict.register(MasksemblesPredictor)
+def predict_masksembles(
+    predictor: MasksemblesPredictor,
+    x: torch.Tensor,
+) -> TorchSample[torch.Tensor]:
+    """Run a Masksembles predictor and return a :class:`TorchSample` over masks.
+
+    Tiles the user's ``[B, ...]`` input by ``n_masks``, runs the model once on the
+    tiled ``[N*B, ...]`` tensor in eval mode (each contiguous block of ``B`` rows gets
+    one of the ``N`` masks applied, per :class:`Masksembles2DLayer`/:class:`MasksemblesLinearLayer`),
+    and reshapes the output to ``[N, B, ...]`` with ``sample_dim=0``.
+    """
+    n_masks = int(predictor.n_masks)
+    b = x.shape[0]
+    predictor.eval()
+    raw = predictor(tile_inputs(x, n_masks))
+    out = raw.view(n_masks, b, *raw.shape[1:])
+    return TorchSample(tensor=out, sample_dim=0)
+
+
+@_wrap_masksembles_logits.register(TorchSample)
+def _torch_wrap_batchensemble_logits(sample: TorchSample[Any]) -> TorchCategoricalDistributionSample:
+    """Wrap per-member logits as a categorical sample (assumes a logit-classifier base)."""
+    tensor = sample.tensor
+    sample_dim = sample.sample_dim
+    if tensor.ndim >= 3 and sample_dim == 0:
+        tensor = tensor.transpose(0, 1)
+        sample_dim = 1
+
+    distribution = create_categorical_distribution_from_logits(tensor)
+    return TorchCategoricalDistributionSample(tensor=distribution, sample_dim=sample_dim)  # ty: ignore[invalid-argument-type]
 
 
 def append_torch_masksembles_conv(
