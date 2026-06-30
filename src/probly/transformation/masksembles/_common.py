@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 
 import torch
 
-from probly.predictor import RandomPredictor
+from flextype import flexdispatch
+from probly.predictor import LogitClassifier, RandomPredictor, predict
+from probly.representation.sample._common import Sample
+from probly.representer._representer import Representer, representer
 from probly.transformation.transformation import predictor_transformation
 from probly.traverse_nn import is_first_layer, nn_compose
-from pytraverse import CLONE, GlobalVariable, flexdispatch_traverser, traverse
+from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser, traverse
 
 if TYPE_CHECKING:
     from flextype.isinstance import LazyType
@@ -20,6 +23,37 @@ if TYPE_CHECKING:
 @runtime_checkable
 class MasksemblesPredictor[**In, Out](RandomPredictor[In, Out], Protocol):
     """A predictor that applies Masksembles uncertainty estimation."""
+
+
+@flexdispatch
+def _attach_num_members(model: object, n_masks: int) -> None:
+    """Attach the ensemble size to the traversed model so it survives serialization."""
+    msg = f"No n_masks attacher registered for type {type(model)}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def _wrap_masksembles_logits(sample: Sample) -> Sample:
+    """Wrap a per-member logit sample as a typed distribution sample (default: passthrough)."""
+    return sample
+
+
+class MasksemblesRepresenter[**In, Out](Representer[Any, In, Out, Sample]):
+    """Represent Masksembles predictions as a per-mask sample.
+
+    Each entry along the sample dimension corresponds to one of the ``n_masks``
+    binary masks applied to the model, matching the paper's inference scheme of
+    "run the model multiple times, once per mask" (done here in a single tiled
+    forward pass, see :func:`probly.transformation.masksembles.torch.predict_masksembles`).
+    """
+
+    @override
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> Sample:
+        """Forward through the predictor and return the per-mask sample."""
+        return _wrap_masksembles_logits(predict(self.predictor, *args, **kwargs))
+
+
+representer.register(MasksemblesPredictor, MasksemblesRepresenter)
 
 
 N_MASKS = GlobalVariable[int]("N_MASKS", "Number of masks for Masksembles.")
@@ -47,6 +81,14 @@ def generate_masks(m: int, n: int, scale: float) -> torch.Tensor:
 
 
 def generation_wrapper(c: int, n: int, scale: float) -> torch.Tensor:
+    if c < 10:
+        msg = (
+            "Masksembles cannot be used where the number of channels/features is less "
+            f"than 10. Current value is (channels={c}). Increase the number of features "
+            "in this layer or remove Masksembles from this part of the architecture."
+        )
+        raise ValueError(msg)
+
     m = int(int(c) / (scale * (1 - (1 - 1 / scale) ** n)))
     max_iter = 1000
 
@@ -82,7 +124,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
     )
 
 
-@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=True)
+@predictor_transformation(permitted_predictor_types=[LogitClassifier], preserve_predictor_type=False)
 @MasksemblesPredictor.register_factory
 def masksembles[T: Predictor](
     base: T,
@@ -110,12 +152,15 @@ def masksembles[T: Predictor](
         msg = f"scale must be > 0, got {scale}"
         raise ValueError(msg)
 
-    return traverse(
+    transformed = traverse(
         base,
         nn_compose(masksembles_traverser),
         init={
+            TRAVERSE_REVERSED: True,
             N_MASKS: n_masks,
             SCALE: scale,
             CLONE: True,
         },
     )
+    _attach_num_members(transformed, n_masks)
+    return transformed
