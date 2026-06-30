@@ -8,7 +8,7 @@ import torch
 
 from probly.quantification import quantify
 from probly.representer import representer
-from probly.transformation.masksembles import masksembles
+from probly.transformation import masksembles
 from probly_benchmark.models import SimpleCNN
 
 logging.basicConfig(level=logging.INFO)
