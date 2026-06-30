@@ -762,10 +762,8 @@ class Masksembles2DLayer(nn.Module):
     it expects the input batch to already be tiled by a factor of ``n`` (e.g. via
     :func:`probly.transformation.masksembles.torch.predict_masksembles`, which tiles the
     input before calling the model). Each contiguous block of the original batch size is then
-    assigned a different one of the ``n`` masks, reproducing "run the model once per mask" from
-    the paper in a single forward pass. Input and output shapes are identical in both modes.
-
-    Based on `Masksembles for Uncertainty Estimation <https://arxiv.org/abs/2012.08334>`_.
+    assigned a different one of the ``n`` masks, enabling running the model once per mask, based on
+    :cite:`durasovMasksembles2021`.
 
     Attributes:
         channels: Number of input channels.
@@ -810,16 +808,14 @@ class Masksembles2DLayer(nn.Module):
             mode each sample is masked independently with a randomly drawn mask; in eval
             mode block ``i`` of the tiled batch is masked with mask ``i``.
         """
-        # make sure masks match dtype/device (usually already true because of buffer, but safe)
         masks = self.masks.to(dtype=inputs.dtype, device=inputs.device)
 
         batch = inputs.shape[0]
         if self.training:
             idx = torch.randint(0, self.n, (batch,), device=inputs.device)
             return inputs * masks[idx].view(batch, -1, 1, 1)
-        # safer split even if batch % n != 0
-        chunks = torch.chunk(inputs.unsqueeze(1), self.n, dim=0)  # returns nearly equal chunks
-        x = torch.cat(chunks, dim=1).permute(1, 0, 2, 3, 4)  # [n, ?, C, H, W]
+        chunks = torch.chunk(inputs.unsqueeze(1), self.n, dim=0)
+        x = torch.cat(chunks, dim=1).permute(1, 0, 2, 3, 4)  # [n, B, C, H, W]
         x = x * masks.unsqueeze(1).unsqueeze(-1).unsqueeze(-1)  # broadcast masks
         x = torch.cat(torch.split(x, 1, dim=0), dim=1)
         return x.squeeze(0)
@@ -834,10 +830,8 @@ class MasksemblesLinearLayer(nn.Module):
     it expects the input batch to already be tiled by a factor of ``n`` (e.g. via
     :func:`probly.transformation.masksembles.torch.predict_masksembles`, which tiles the
     input before calling the model). Each contiguous block of the original batch size is then
-    assigned a different one of the ``n`` masks, reproducing "run the model once per mask" from
-    the paper in a single forward pass. Input and output shapes are identical in both modes.
-
-    Based on `Masksembles for Uncertainty Estimation <https://arxiv.org/abs/2012.08334>`_.
+    assigned a different one of the ``n`` masks, enabling running the model once per mask, based on
+    :cite:`durasovMasksembles2021`.
 
     Attributes:
         features: Number of input features.

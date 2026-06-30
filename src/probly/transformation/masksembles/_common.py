@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 
-import torch
-
 from flextype import flexdispatch
 from probly.predictor import LogitClassifier, RandomPredictor, predict
 from probly.representation.sample._common import Sample
@@ -22,14 +20,7 @@ if TYPE_CHECKING:
 
 @runtime_checkable
 class MasksemblesPredictor[**In, Out](RandomPredictor[In, Out], Protocol):
-    """A predictor that applies Masksembles uncertainty estimation."""
-
-
-@flexdispatch
-def _attach_num_members(model: object, n_masks: int) -> None:
-    """Attach the ensemble size to the traversed model so it survives serialization."""
-    msg = f"No n_masks attacher registered for type {type(model)}."
-    raise NotImplementedError(msg)
+    """Protocol marking a predictor where binary masks were appended after hidden layers."""
 
 
 @flexdispatch
@@ -39,13 +30,7 @@ def _wrap_masksembles_logits(sample: Sample) -> Sample:
 
 
 class MasksemblesRepresenter[**In, Out](Representer[Any, In, Out, Sample]):
-    """Represent Masksembles predictions as a per-mask sample.
-
-    Each entry along the sample dimension corresponds to one of the ``n_masks``
-    binary masks applied to the model, matching the paper's inference scheme of
-    "run the model multiple times, once per mask" (done here in a single tiled
-    forward pass, see :func:`probly.transformation.masksembles.torch.predict_masksembles`).
-    """
+    """Represent Masksembles predictions as a per-mask sample."""
 
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> Sample:
@@ -62,53 +47,11 @@ SCALE = GlobalVariable[float]("SCALE", "Scale parameter controlling mask overlap
 masksembles_traverser = flexdispatch_traverser[object](name="masksembles_traverser")
 
 
-def generate_masks_(m: int, n: int, scale: float) -> torch.Tensor:
-    total_positions = int(m * scale)
-    masks = torch.zeros(n, total_positions)
-    for _ in range(n):
-        idx = torch.randperm(total_positions)[:m]
-        masks[_, idx] = 1
-    masks = masks[:, ~(masks == 0).all(dim=0)]
-    return masks
-
-
-def generate_masks(m: int, n: int, scale: float) -> torch.Tensor:
-    masks = generate_masks_(m, n, scale)
-    expected_size = int(m * scale * (1 - (1 - 1 / scale) ** n))
-    while masks.shape[1] != expected_size:
-        masks = generate_masks_(m, n, scale)
-    return masks
-
-
-def generation_wrapper(c: int, n: int, scale: float) -> torch.Tensor:
-    if c < 10:
-        msg = (
-            "Masksembles cannot be used where the number of channels/features is less "
-            f"than 10. Current value is (channels={c}). Increase the number of features "
-            "in this layer or remove Masksembles from this part of the architecture."
-        )
-        raise ValueError(msg)
-
-    m = int(int(c) / (scale * (1 - (1 - 1 / scale) ** n)))
-    max_iter = 1000
-
-    lo = max([scale * 0.8, 1.0])
-    hi = scale * 1.2
-
-    for _ in range(max_iter):
-        mid = (lo + hi) / 2
-        masks = generate_masks(m, n, mid)
-        if masks.shape[-1] == c:
-            break
-        if masks.shape[-1] > c:
-            hi = mid
-        else:
-            lo = mid
-
-    if masks.shape[-1] != c:
-        msg = "generation_wrapper was unable to generate fitting masks"
-        raise ValueError(msg)
-    return masks
+@flexdispatch
+def _attach_n_masks(model: object, n_masks: int) -> None:
+    """Attach the number of masks to the traversed model so it survives serialization."""
+    msg = f"No n_masks attacher registered for type {type(model)}."
+    raise NotImplementedError(msg)
 
 
 def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
@@ -131,19 +74,23 @@ def masksembles[T: Predictor](
     n_masks: int = 4,
     scale: float = 2.0,
 ) -> T:
-    """Create a Masksembles predictor from a base predictor.
+    """Create a Masksembles predictor from a base predictor based on :cite:`durasovMasksembles2021`.
 
-    Based on [Masksembles for Uncertainty Estimation](https://arxiv.org/abs/2012.08334)
+    Appends a binary mask layer after each hidden linear or convolutional layer (the last
+    layer is skipped). The result is tagged with ``n_masks`` so :func:`predict` can tile
+    inputs and aggregate per-mask outputs as a :class:`~probly.representation.sample._common.Sample`.
 
     Args:
         base: The base model to apply Masksembles to.
-        n_masks: Number of binary masks to generate. Higher = more ensemble-like.
-        scale: Scale parameter controlling mask overlap. Higher = less correlation.
-        rng_collection: Optional rng collection name for flax layer initialization.
-        rngs: Optional rngs for flax layer initialization.
+        n_masks: Number of binary masks to generate. Must be >= 1.
+        scale: Controls mask overlap; higher values produce less correlated masks at the
+            cost of capacity per masked sub-network. Must be in ``(1, 6]``.
 
     Returns:
         The Masksembles predictor wrapping the base model.
+
+    Raises:
+        ValueError: If ``n_masks`` < 1 or ``scale`` <= 0.
     """
     if n_masks < 1:
         msg = f"n_masks must be >= 1, got {n_masks}"
@@ -162,5 +109,5 @@ def masksembles[T: Predictor](
             CLONE: True,
         },
     )
-    _attach_num_members(transformed, n_masks)
+    _attach_n_masks(transformed, n_masks)
     return transformed
