@@ -196,6 +196,42 @@ class MiniResNet(nn.Module):
         return self.fc(x)
 
 
+class SimpleCNN(nn.Module):
+    """Simple CNN for 28x28 single-channel input (e.g. MNIST).
+
+    All conv and linear layers have at least 16 channels/features, making this
+    model compatible with Masksembles (which requires >= 10 features per layer).
+
+    Architecture: Conv(16) -> ReLU -> Pool -> Conv(32) -> ReLU -> Pool -> Linear(128) -> Linear(n).
+    """
+
+    def __init__(self, n_classes: int = 10) -> None:
+        """Initialize SimpleCNN.
+
+        Args:
+            n_classes: Number of output classes.
+        """
+        super().__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(1, 16, kernel_size=3, padding=1),  # (1,28,28) -> (16,28,28)
+            nn.ReLU(),
+            nn.MaxPool2d(2),  # -> (16,14,14)
+            nn.Conv2d(16, 32, kernel_size=3, padding=1),  # -> (32,14,14)
+            nn.ReLU(),
+            nn.MaxPool2d(2),  # -> (32,7,7)
+        )
+        self.classifier = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(32 * 7 * 7, 128),
+            nn.ReLU(),
+            nn.Linear(128, n_classes),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass."""
+        return self.classifier(self.features(x))
+
+
 class TabularMLP(nn.Module):
     """Two-layer MLP for tabular data.
 
