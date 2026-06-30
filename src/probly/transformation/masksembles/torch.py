@@ -13,7 +13,7 @@ from probly.representation.distribution._common import create_categorical_distri
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistributionSample
 from probly.representation.sample.torch import TorchSample
 
-from ._common import MasksemblesPredictor, _attach_num_members, _wrap_masksembles_logits, generation_wrapper, register
+from ._common import MasksemblesPredictor, _attach_n_masks, _wrap_masksembles_logits, register
 
 
 def tile_inputs(x: torch.Tensor, n_masks: int) -> torch.Tensor:
@@ -24,10 +24,75 @@ def tile_inputs(x: torch.Tensor, n_masks: int) -> torch.Tensor:
     return out
 
 
-@_attach_num_members.register(nn.Module)
+@_attach_n_masks.register(nn.Module)
 def _(model: nn.Module, n_masks: int) -> None:
     """Register ``n_masks`` as a persistent buffer so it survives ``state_dict``."""
     model.register_buffer("n_masks", torch.tensor(n_masks, dtype=torch.long))
+
+
+def generate_masks_(m: int, n: int, scale: float) -> torch.Tensor:
+    """Sample one candidate mask set; shape may vary — retry in :func:`generate_masks` until fixed."""
+    total_positions = int(m * scale)
+    masks = torch.zeros(n, total_positions)
+    for _ in range(n):
+        idx = torch.randperm(total_positions)[:m]
+        masks[_, idx] = 1
+    masks = masks[:, ~(masks == 0).all(dim=0)]
+    return masks
+
+
+def generate_masks(m: int, n: int, scale: float) -> torch.Tensor:
+    """Generate masks with exactly ``expected_size`` columns per :cite:`durasovMasksembles2021`."""
+    masks = generate_masks_(m, n, scale)
+    expected_size = int(m * scale * (1 - (1 - 1 / scale) ** n))
+    while masks.shape[1] != expected_size:
+        masks = generate_masks_(m, n, scale)
+    return masks
+
+
+def generation_wrapper(c: int, n: int, scale: float) -> torch.Tensor:
+    """Bisect over scale to produce masks with exactly ``c`` active columns.
+
+    Args:
+        c: Target number of active features/channels per mask. Must be >= 10.
+        n: Number of masks.
+        scale: Initial scale hint; the bisection adjusts it to hit exactly ``c`` columns.
+
+    Returns:
+        Binary mask tensor of shape ``[n, c]``.
+
+    Raises:
+        ValueError: If ``c < 10`` (too few features for meaningful mask generation) or
+            if bisection fails to converge within 1000 iterations.
+    """
+    if c < 10:
+        msg = (
+            "Masksembles cannot be used where the number of channels/features is less "
+            f"than 10. Current value is (channels={c}). Increase the number of features "
+            "in this layer or remove Masksembles from this part of the architecture."
+        )
+        raise ValueError(msg)
+
+    m = int(int(c) / (scale * (1 - (1 - 1 / scale) ** n)))
+    max_iter = 1000
+
+    lo = max([scale * 0.8, 1.0])
+    hi = scale * 1.2
+
+    for _ in range(max_iter):
+        mid = (lo + hi) / 2
+        masks = generate_masks(m, n, mid)
+        if masks.shape[-1] == c:
+            break
+        if masks.shape[-1] > c:
+            hi = mid
+        else:
+            lo = mid
+
+    if masks.shape[-1] != c:
+        msg = "generation_wrapper was unable to generate fitting masks"
+        raise ValueError(msg)
+    return masks
 
 
 @predict.register(MasksemblesPredictor)
