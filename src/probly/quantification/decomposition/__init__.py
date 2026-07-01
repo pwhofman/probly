@@ -20,6 +20,7 @@ from .ordinal import (
     OrdinalEntropyDecomposition,
     OrdinalVarianceDecomposition,
 )
+from .scoring_rule import SecondOrderScoringRuleDecomposition
 from .variance import (
     CategoricalVarianceDecomposition,
     SecondOrderVarianceDecomposition,
@@ -53,6 +54,7 @@ __all__ = [
     "OrdinalEntropyDecomposition",
     "OrdinalVarianceDecomposition",
     "SecondOrderEntropyDecomposition",
+    "SecondOrderScoringRuleDecomposition",
     "SecondOrderVarianceDecomposition",
     "SecondOrderWassersteinDecomposition",
     "SecondOrderZeroOneDecomposition",
