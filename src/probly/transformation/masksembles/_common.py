@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
+
 from probly.predictor import LogitClassifier, RandomPredictor, predict
 from probly.representation.sample._common import Sample
 from probly.representer._representer import Representer, representer
@@ -14,6 +15,7 @@ from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_tr
 
 if TYPE_CHECKING:
     from flextype.isinstance import LazyType
+
     from probly.predictor import Predictor
     from pytraverse.composition import RegisteredLooseTraverser
 
