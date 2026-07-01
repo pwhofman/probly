@@ -6,6 +6,7 @@ from abc import ABC
 from typing import TYPE_CHECKING, Any, Protocol, Self, cast, runtime_checkable
 
 from flextype import flexdispatch
+
 from probly.conformal_scores.dirichlet_relative_likelihood._common import dirichlet_rl_score
 from probly.conformal_scores.inner_product._common import inner_product_score
 from probly.conformal_scores.kullback_leibler._common import kl_divergence_score

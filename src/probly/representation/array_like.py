@@ -7,9 +7,8 @@ from collections.abc import Callable, Iterator, Sequence
 from types import EllipsisType, ModuleType
 from typing import TYPE_CHECKING, Any, Literal, Protocol, Self, SupportsIndex, override, runtime_checkable
 
-import numpy as np
-
 from flextype import flexdispatch
+import numpy as np
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike as NpArrayLike, DTypeLike, NDArray
