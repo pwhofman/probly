@@ -19,6 +19,7 @@ from torch import nn
 from probly.layers.torch import VBLLLayer
 from probly.method.vbll import vbll
 from probly.representer import representer
+from probly.train.vbll.torch import vbll_loss
 
 from examples.utils.model import SequentialModel
 from examples.utils.plotting import plot_example_uncertainty
@@ -51,9 +52,9 @@ vbll_model = vbll(SequentialModel(), parameterization="dense")
 #
 # VBLL is trained by maximizing the deterministic ELBO of
 # :cite:`harrisonVariationalBayesian2024`: the closed-form double-Jensen softmax
-# bound plus the weight-posterior KL term, exposed by ``VBLLLayer.train_loss``.  As
-# with the other VBLL layers, the loss needs the features feeding the layer, which
-# we capture with a forward pre-hook.
+# bound plus the weight-posterior KL term, computed by ``vbll_loss``.  As with the
+# other VBLL layers, the loss needs the features feeding the layer, which we capture
+# with a forward pre-hook.
 
 vbll_layer = next(m for m in vbll_model.modules() if isinstance(m, VBLLLayer))
 
@@ -68,7 +69,7 @@ def train_vbll(model: nn.Module, X: torch.Tensor, y: torch.Tensor, epochs: int =
     for _epoch in range(epochs):
         opt.zero_grad()
         model(X)  # populates captured_features via the pre-hook
-        loss = vbll_layer.train_loss(captured_features["features"], y, kl_weight)
+        loss = vbll_loss(vbll_layer, captured_features["features"], y, kl_weight)
         loss.backward()
         opt.step()
 

@@ -18,6 +18,7 @@ from probly.layers.torch import GVBLLLayer
 from probly.method.g_vbll import g_vbll
 from probly.quantification import quantify
 from probly.representer import representer
+from probly.train.vbll.torch import g_vbll_loss
 from probly_benchmark.data import load_mnist
 
 from examples.utils.model import MLPClassifier
@@ -49,7 +50,7 @@ g_vbll_model = g_vbll(base_model)
 # Training
 # --------
 #
-# ``GVBLLLayer.train_loss`` is the generative ELBO -- the Jensen bound on the
+# ``g_vbll_loss`` is the generative ELBO -- the Jensen bound on the
 # class-conditional log-likelihood plus the class-mean KL and noise Wishart terms.
 # It needs the features feeding the layer, which we capture with a forward pre-hook.
 
@@ -68,7 +69,7 @@ for _epoch in range(5):
         X_flat = X_batch.view(-1, 28 * 28)
         opt.zero_grad()
         logits = g_vbll_model(X_flat)
-        loss = vbll_layer.train_loss(captured_features["features"], y_batch, kl_weight)
+        loss = g_vbll_loss(vbll_layer, captured_features["features"], y_batch, kl_weight)
         loss.backward()
         opt.step()
         correct += (logits.detach().argmax(-1) == y_batch).sum().item()

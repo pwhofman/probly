@@ -17,6 +17,7 @@ from probly.layers.torch import HetVBLLLayer
 from probly.method.vbll import vbll
 from probly.quantification import quantify
 from probly.representer import representer
+from probly.train.vbll.torch import het_vbll_loss
 from probly_benchmark.data import load_mnist
 
 from examples.utils.model import MLPClassifier
@@ -48,8 +49,8 @@ vbll_model = vbll(base_model, variant="heteroscedastic", parameterization="dense
 # Training
 # --------
 #
-# ``HetVBLLLayer.train_loss`` is the reduced Knowles-Minka softmax bound.  It needs
-# the features feeding the layer, which we capture with a forward pre-hook.
+# ``het_vbll_loss`` is the reduced Knowles-Minka softmax bound.  It needs the
+# features feeding the layer, which we capture with a forward pre-hook.
 
 vbll_layer = next(m for m in vbll_model.modules() if isinstance(m, HetVBLLLayer))
 
@@ -66,7 +67,7 @@ for _epoch in range(5):
         X_flat = X_batch.view(-1, 28 * 28)
         opt.zero_grad()
         mean, _var = vbll_model(X_flat)
-        loss = vbll_layer.train_loss(captured_features["features"], y_batch, kl_weight)
+        loss = het_vbll_loss(vbll_layer, captured_features["features"], y_batch, kl_weight)
         loss.backward()
         opt.step()
         correct += (mean.detach().argmax(-1) == y_batch).sum().item()

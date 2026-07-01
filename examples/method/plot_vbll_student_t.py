@@ -20,6 +20,7 @@ from torch import nn
 from probly.layers.torch import TVBLLLayer
 from probly.method.vbll import vbll
 from probly.representer import representer
+from probly.train.vbll.torch import t_vbll_loss
 
 from examples.utils.model import SequentialModel
 from examples.utils.plotting import plot_example_uncertainty
@@ -52,7 +53,7 @@ vbll_model = vbll(SequentialModel(), variant="student_t", parameterization="dens
 # --------
 #
 # The Student-t variant is trained with the reduced Knowles-Minka softmax bound
-# from :cite:`harrisonVariationalBayesian2024`, exposed by ``TVBLLLayer.train_loss``.
+# from :cite:`harrisonVariationalBayesian2024`, computed by ``t_vbll_loss``.
 # As with the other VBLL layers, the loss needs the features feeding the layer,
 # which we capture with a forward pre-hook.
 
@@ -69,7 +70,7 @@ def train_student_t_vbll(model: nn.Module, X: torch.Tensor, y: torch.Tensor, epo
     for _epoch in range(epochs):
         opt.zero_grad()
         model(X)  # populates captured_features via the pre-hook
-        loss = vbll_layer.train_loss(captured_features["features"], y, kl_weight)
+        loss = t_vbll_loss(vbll_layer, captured_features["features"], y, kl_weight)
         loss.backward()
         opt.step()
 
