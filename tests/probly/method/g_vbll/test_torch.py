@@ -53,12 +53,13 @@ def test_g_vbll_representer_quantifies_to_entropy() -> None:
 
 def test_g_vbll_layer_train_loss_and_kl_are_finite() -> None:
     from probly.layers.torch import GVBLLLayer  # noqa: PLC0415
+    from probly.train.vbll.torch import g_vbll_loss  # noqa: PLC0415
 
     layer = GVBLLLayer(8, 3)
     features = torch.randn(16, 8)
     targets = torch.randint(0, 3, (16,))
 
-    loss = layer.train_loss(features, targets, regularization_weight=1.0 / 16)
+    loss = g_vbll_loss(layer, features, targets, regularization_weight=1.0 / 16)
     kl = layer.kl_divergence
 
     assert loss.ndim == 0

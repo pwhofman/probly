@@ -60,14 +60,15 @@ def test_vbll_rejects_unknown_variant() -> None:
 @pytest.mark.parametrize("parameterization", ["diagonal", "dense"])
 def test_vbll_t_and_het_layer_train_loss(parameterization: str) -> None:
     from probly.layers.torch import HetVBLLLayer, TVBLLLayer  # noqa: PLC0415
+    from probly.train.vbll.torch import het_vbll_loss, t_vbll_loss  # noqa: PLC0415
 
     features = torch.randn(16, 8)
     targets = torch.randint(0, 3, (16,))
-    for layer in (
-        TVBLLLayer(8, 3, parameterization=parameterization),
-        HetVBLLLayer(8, 3, parameterization=parameterization),
+    for layer, loss_fn in (
+        (TVBLLLayer(8, 3, parameterization=parameterization), t_vbll_loss),
+        (HetVBLLLayer(8, 3, parameterization=parameterization), het_vbll_loss),
     ):
-        loss = layer.train_loss(features, targets, regularization_weight=1.0 / 16)
+        loss = loss_fn(layer, features, targets, regularization_weight=1.0 / 16)
         assert loss.ndim == 0
         assert torch.isfinite(loss)
         assert loss.requires_grad
@@ -133,12 +134,13 @@ def test_vbll_layer_kl_divergence_is_finite_scalar(parameterization: str) -> Non
 @pytest.mark.parametrize("parameterization", PARAMETERIZATIONS)
 def test_vbll_layer_train_loss(parameterization: str) -> None:
     from probly.layers.torch import VBLLLayer  # noqa: PLC0415
+    from probly.train.vbll.torch import vbll_loss  # noqa: PLC0415
 
     layer = VBLLLayer(8, 3, parameterization=parameterization)
     features = torch.randn(16, 8)
     targets = torch.randint(0, 3, (16,))
 
-    loss = layer.train_loss(features, targets, regularization_weight=1.0 / 16)
+    loss = vbll_loss(layer, features, targets, regularization_weight=1.0 / 16)
 
     assert loss.ndim == 0
     assert torch.isfinite(loss)

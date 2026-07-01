@@ -60,7 +60,7 @@ def g_vbll[**In, Out: CategoricalDistribution](
     :class:`CategoricalDistribution`.  Because each class density decays
     quadratically away from its mean, the predictive is distance-aware -- a useful
     property for out-of-distribution detection.  The layer is fit with the
-    generative ELBO exposed by :meth:`probly.layers.torch.GVBLLLayer.train_loss`.
+    generative ELBO exposed by :func:`probly.train.vbll.torch.g_vbll_loss`.
 
     Args:
         base: The model to wrap.
