@@ -16,6 +16,7 @@ from probly.method.credal_relative_likelihood import credal_relative_likelihood
 from probly.method.credal_wrapper import credal_wrapper
 from probly.method.dare import dare
 from probly.method.ddu import ddu
+from probly.method.dirichlet_calibration import dirichlet_calibration
 from probly.method.dropconnect import dropconnect
 from probly.method.dropout import dropout
 from probly.method.duq import duq
@@ -50,6 +51,7 @@ __all__ = [
     "cuq_graph_neural_network",
     "dare",
     "ddu",
+    "dirichlet_calibration",
     "dropconnect",
     "dropout",
     "duq",
