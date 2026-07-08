@@ -35,6 +35,10 @@ jobs:
     uses: ./.github/workflows/_docs-build.yml
     with:
       strict: true
+      # Same base-url as deploys so all cached builds share one .buildinfo
+      # config hash; otherwise CI and deploy builds would force each other
+      # to rewrite every page's HTML on alternation.
+      base-url: https://pwhofman.github.io/probly/stable/
       docs-cache: >-
         ${{ (github.event_name == 'workflow_dispatch' && inputs.docs-cache) ||
             (github.event_name == 'pull_request' && !contains(join(github.event.pull_request.labels.*.name, ','), 'run-docs')) }}
