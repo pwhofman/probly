@@ -169,13 +169,13 @@ def make_linkcode_resolve(repo_root: Path) -> Callable[[str, dict[str, str]], st
         except (ModuleNotFoundError, AttributeError, TypeError, OSError, ValueError):
             return None
 
-        # Deliberately pinned to the canonical repo's main (PR #513 review):
-        # with cached incremental builds each page keeps the URL it was built
-        # with, so per-run GITHUB_REPOSITORY/GITHUB_SHA values would bake a
-        # mix of revisions into the published docs. Anchors stay close to
-        # main because pages re-render when their defining file changes.
+        # Repo deliberately pinned to the canonical repo (PR #513 review).
+        # The ref is "main" for dev/PR builds (cached pages keep the URL they
+        # were built with, and dependency tracking re-renders pages whose
+        # source changed, so anchors track main closely). Release builds set
+        # DOCS_SOURCE_REF to the tag, pinning links to that exact revision.
         base = "https://github.com/pwhofman/probly"
-        branch = "main"
-        return f"{base}/blob/{branch}/{relpath}#L{lineno}"
+        ref = os.environ.get("DOCS_SOURCE_REF") or "main"
+        return f"{base}/blob/{ref}/{relpath}#L{lineno}"
 
     return linkcode_resolve

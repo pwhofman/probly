@@ -18,6 +18,8 @@ Full build with errors on warning (to see if CI passes):
 ```bash
 rm -rf docs/source/api docs/source/auto_examples docs/source/gen_modules docs/build && FORCE_CLEAN=1 uv run sphinx-build -j auto -b html docs/source docs/build/html -W
 ```
+### Docs Versioning
+The deployed site has two versions: `/stable/` (built from the newest release tag by `release-docs.yml`, stored as a `probly-docs-html.tar.gz` asset on that release) and `/latest/` (built from main on every push by `deploy-docs.yml`). Local builds always produce the "latest" flavor; set `DOCS_SOURCE_REF=<tag>` to preview the release flavor.
 ### Run Pre-commit (takes only 1s)
 ```bash
 uv run prek run --all-files

@@ -13,6 +13,18 @@ on:
         description: "Restore the docs build cache; only changed examples and API pages are rebuilt"
         type: boolean
         default: false
+      ref:
+        description: "Git ref to check out and build (empty = the triggering ref)"
+        type: string
+        default: ""
+      source-ref:
+        description: "Value for DOCS_SOURCE_REF (tag for release builds; empty = dev flavor linking to main)"
+        type: string
+        default: ""
+      base-url:
+        description: "Value for DOCS_BASE_URL (canonical base URL; empty = no canonical links)"
+        type: string
+        default: ""
 
 permissions:
     contents: read
@@ -24,6 +36,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
             persist-credentials: false
+            ref: ${{ inputs.ref }}
       - name: Set up Python and uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v7.0.0
         with:
@@ -68,6 +81,9 @@ jobs:
         # Skipping unchanged examples is conf.py's default; do not set
         # FORCE_CLEAN here so the cached environment sees the same config
         # as any other build.
+        env:
+          DOCS_SOURCE_REF: ${{ inputs.source-ref }}
+          DOCS_BASE_URL: ${{ inputs.base-url }}
         run: uv run sphinx-build ${{ inputs.strict && '-W' || '' }} -j auto -b html docs/source docs/build/html
       - name: Save docs build cache
         if: always()
