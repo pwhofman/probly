@@ -6,13 +6,19 @@ import os
 from pathlib import Path
 import sys
 from typing import TYPE_CHECKING
+import warnings
 
 _here = Path(__file__).resolve().parent
 sys.path.insert(0, str(_here))  # make _sphinx_helpers importable
 sys.path.insert(0, str(_here.parent / "src"))
 sys.path.insert(0, str(_here.parent.parent))  # make examples.utils importable
 
-from _sphinx_helpers import make_linkcode_resolve  # noqa: E402
+from _sphinx_helpers import (  # noqa: E402
+    add_member_source_dependencies,
+    ignore_installed_template_mtimes,
+    make_linkcode_resolve,
+    scrub_external_dependencies,
+)
 
 import probly  # noqa: E402
 
@@ -112,11 +118,25 @@ sphinx_gallery_conf = {
     "notebook_extensions": set(),
     # By default only examples whose source changed (MD5 mismatch) re-execute;
     # set FORCE_CLEAN=1 to force re-running all examples.
-    "run_stale_examples": os.environ.get("FORCE_CLEAN"),
+    "run_stale_examples": os.environ.get("FORCE_CLEAN") == "1",
     # Don't kill the whole build if one example errors
     "abort_on_example_error": False,
+    # Execute examples in isolated worker processes (joblib/loky), one per
+    # available CPU; set SPHINX_GALLERY_PARALLEL to override (1 disables,
+    # sphinx-gallery treats it as off).
+    "parallel": int(os.environ.get("SPHINX_GALLERY_PARALLEL", os.process_cpu_count() or 1)),
     "default_thumb_file": str(REPO_ROOT / "docs" / "source" / "_static" / "logo" / "logo_light.png"),
 }
+
+# loky recycles a worker by design when its memory use grows more than
+# ~300MB beyond its post-first-job baseline (heavy torch examples trigger
+# this); the lost job is re-run in a fresh worker, but the executor still
+# warns in the main process. Harmless for the gallery build, so silence it.
+warnings.filterwarnings(
+    "ignore",
+    message="A worker stopped while some jobs were given to the executor",
+    category=UserWarning,
+)
 
 # -- Intersphinx -----------------------------------------------------------------------------------
 intersphinx_mapping = {
@@ -235,9 +255,19 @@ def _rebuild_stale_backreferences(app: Sphinx) -> None:
                 rst.touch()
 
 
-def setup(_app: Sphinx) -> None:
-    """Patch the Python domain resolver to skip ambiguous short names."""
+def setup(app: Sphinx) -> None:
+    """Patch the Python domain resolver and register incremental-build hooks."""
     from sphinx.domains.python import PythonDomain  # noqa: PLC0415
+
+    # Incremental-build accuracy hooks; see _sphinx_helpers.py docstrings.
+    app.connect("env-updated", scrub_external_dependencies)
+    app.connect("env-updated", add_member_source_dependencies)
+    if os.environ.get("FORCE_CLEAN") != "1":
+        app.connect("builder-inited", ignore_installed_template_mtimes)
+    # Keep minigalleries complete when examples are MD5-skipped; 499/501
+    # bracket sphinx-gallery's gallery generation at 500.
+    app.connect("builder-inited", _snapshot_backreferences, priority=499)
+    app.connect("builder-inited", _rebuild_stale_backreferences, priority=501)
 
     _orig_resolve = PythonDomain.resolve_xref
 
@@ -256,8 +286,6 @@ def setup(_app: Sphinx) -> None:
         return _orig_resolve(self, env, fromdocname, builder, xref_type, target, node, contnode)
 
     PythonDomain.resolve_xref = _patched_resolve
-    _app.connect("builder-inited", _snapshot_backreferences, priority=499)
-    _app.connect("builder-inited", _rebuild_stale_backreferences, priority=501)
 
 
 linkcode_resolve = make_linkcode_resolve(REPO_ROOT)
