@@ -70,9 +70,21 @@ jobs:
       - name: Normalize file mtimes for incremental build
         # Gives unchanged files an old mtime so Sphinx keeps their cached
         # output; runs unconditionally so cold builds produce the manifest.
-        run: uv run python docs/source/_normalize_source_mtimes.py
+        # Both helper scripts postdate old release tags, so skip them when
+        # release-docs.yml rebuilds a historical tag.
+        run: |
+          if [ -f docs/source/_normalize_source_mtimes.py ]; then
+            uv run python docs/source/_normalize_source_mtimes.py
+          else
+            echo "_normalize_source_mtimes.py not in this checkout (old tag); skipping"
+          fi
       - name: Prune stale API pages
-        run: uv run python docs/source/_prune_stale_api.py
+        run: |
+          if [ -f docs/source/_prune_stale_api.py ]; then
+            uv run python docs/source/_prune_stale_api.py
+          else
+            echo "_prune_stale_api.py not in this checkout (old tag); skipping"
+          fi
       - name: Pre-download example datasets
         # examples share ~/.cache/mnist; download once so parallel gallery
         # workers don't race on torchvision's download/extraction
