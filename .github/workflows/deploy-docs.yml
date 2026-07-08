@@ -98,7 +98,7 @@ jobs:
           cat > site/versions.json <<JSON
           [
             {"name": "$STABLE_TAG (stable)", "version": "stable", "url": "https://pwhofman.github.io/probly/stable/"},
-            {"name": "latest (dev)", "version": "latest", "url": "https://pwhofman.github.io/probly/latest/"}
+            {"name": "latest (main)", "version": "latest", "url": "https://pwhofman.github.io/probly/latest/"}
           ]
           JSON
       - name: Upload Pages artifact
