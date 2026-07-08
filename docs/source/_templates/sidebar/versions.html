@@ -1,0 +1,45 @@
+<div class="sidebar-versions">
+  <label class="sidebar-versions-label" for="probly-version-select">Version</label>
+  <select id="probly-version-select" data-current="{{ docs_flavor }}">
+    <option value="{{ pages_root }}/stable/"{% if docs_flavor == "stable" %} selected{% endif %}>stable</option>
+    <option value="{{ pages_root }}/latest/"{% if docs_flavor == "latest" %} selected{% endif %}>latest (dev)</option>
+  </select>
+</div>
+<script>
+(function () {
+  var select = document.getElementById("probly-version-select");
+  var current = select.dataset.current;
+  // Deployed-only enhancement: label entries from versions.json (e.g. the
+  // stable tag number). Local builds keep the static options above.
+  fetch("{{ pages_root }}/versions.json")
+    .then(function (response) {
+      if (!response.ok) { throw new Error(response.status); }
+      return response.json();
+    })
+    .then(function (versions) {
+      select.innerHTML = "";
+      versions.forEach(function (entry) {
+        var option = document.createElement("option");
+        option.value = entry.url;
+        option.textContent = entry.name;
+        option.selected = entry.version === current;
+        select.appendChild(option);
+      });
+    })
+    .catch(function () { /* keep static options */ });
+  select.addEventListener("change", function () {
+    // Stay on the same page in the target version when it exists there,
+    // otherwise land on that version's front page.
+    var marker = "/" + current + "/";
+    var path = window.location.pathname;
+    var index = path.indexOf(marker);
+    var rest = index >= 0 ? path.slice(index + marker.length) : "";
+    var target = select.value + rest;
+    fetch(target, { method: "HEAD" })
+      .then(function (response) {
+        window.location.href = response.ok ? target + window.location.hash : select.value;
+      })
+      .catch(function () { window.location.href = target; });
+  });
+})();
+</script>

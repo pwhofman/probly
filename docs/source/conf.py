@@ -35,10 +35,27 @@ if TYPE_CHECKING:
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent  # .../probly
 print(f"REPO_ROOT: {REPO_ROOT}")  # noqa: T201
 
+# -- Docs versioning ---------------------------------------------------------
+# DOCS_SOURCE_REF is set (to the tag) only by release builds; dev/PR/deploy
+# builds of main leave it unset. DOCS_BASE_URL is set only in CI deploys.
+_DOCS_SOURCE_REF = os.environ.get("DOCS_SOURCE_REF", "")
+_DOCS_FLAVOR = "stable" if _DOCS_SOURCE_REF else "latest"
+_PAGES_ROOT = "https://pwhofman.github.io/probly"
+
+# Canonical URLs: stable pages are canonical for themselves; latest pages
+# declare the stable copy canonical so search engines index one version.
+if os.environ.get("DOCS_BASE_URL"):
+    html_baseurl = os.environ["DOCS_BASE_URL"]
+
+html_context = {
+    "docs_flavor": _DOCS_FLAVOR,
+    "pages_root": _PAGES_ROOT,
+}
+
 # -- Project information -----------------------------------------------------
 project = "probly"
 author = "probly team"
-copyright = "2025, probly team"  # noqa: A001
+copyright = "2026, probly team"  # noqa: A001
 
 release = probly.__version__
 version = probly.__version__
@@ -303,10 +320,17 @@ html_theme_options = {
     "dark_logo": "logo/logo_dark.png",
 }
 
+if _DOCS_FLAVOR == "latest":
+    html_theme_options["announcement"] = (
+        "You are viewing the development documentation (<code>main</code>). "
+        f'<a href="{_PAGES_ROOT}/stable/">Switch to the stable release docs</a>.'
+    )
+
 html_sidebars = {
     "**": [
         "sidebar/scroll-start.html",
         "sidebar/brand.html",
+        "sidebar/versions.html",
         "sidebar/search.html",
         "sidebar/navigation.html",
         "sidebar/ethical-ads.html",

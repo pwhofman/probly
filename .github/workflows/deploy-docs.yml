@@ -1,7 +1,13 @@
-# Deploy docs to GitHub Pages
+# Deploy docs to GitHub Pages: /latest/ from main, /stable/ from the newest
+# release's docs asset, root redirecting to /stable/.
 name: Deploy Docs
 on:
   workflow_dispatch:
+    inputs:
+      docs-cache:
+        description: "Restore the docs build cache (incremental). Leave off for a full uncached rebuild of /latest/."
+        type: boolean
+        default: false
   push:
     branches: [main]
   schedule:
@@ -18,29 +24,87 @@ jobs:
         contents: read
     with:
       # restore the cache for push and scheduled deploys (incremental);
-      # manual dispatch forces a full rebuild
-      docs-cache: ${{ github.event_name != 'workflow_dispatch' }}
+      # manual dispatch defaults to a full rebuild but release-triggered
+      # dispatches opt back into the cache
+      docs-cache: ${{ github.event_name != 'workflow_dispatch' || inputs.docs-cache }}
+      base-url: https://pwhofman.github.io/probly/stable/
   deploy:
     runs-on: ubuntu-latest
     needs: build
     permissions:
+        contents: read   # download the stable release asset
         pages: write
         id-token: write
     environment:
         name: github-pages
         url: ${{ steps.deploy.outputs.page_url }}
+    env:
+        GH_TOKEN: ${{ github.token }}
     steps:
-
-      - name: Download docs artifact
+      - name: Download latest docs artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
         with:
           name: sphinx-docs
-          path: docs/build/html
+          path: site/latest
+      - name: Fetch stable docs from the newest release
+        # Hard-fails if the newest release has no docs asset; see the
+        # rollout runbook (run Release Docs for that tag, then re-deploy).
+        run: |
+          gh release download --repo "$GITHUB_REPOSITORY" --pattern probly-docs-html.tar.gz --output stable-docs.tar.gz
+          mkdir -p site/stable
+          tar -xzf stable-docs.tar.gz -C site/stable
+          tag="$(gh release view --json tagName --jq .tagName --repo "$GITHUB_REPOSITORY")"
+          echo "STABLE_TAG=$tag" >> "$GITHUB_ENV"
+      - name: Write root redirect, 404 fallback, and versions.json
+        run: |
+          cat > site/index.html <<'HTML'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0; url=stable/">
+            <link rel="canonical" href="https://pwhofman.github.io/probly/stable/">
+            <title>probly documentation</title>
+          </head>
+          <body><p>Redirecting to the <a href="stable/">stable documentation</a>.</p></body>
+          </html>
+          HTML
+          cat > site/404.html <<'HTML'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <title>probly documentation - page not found</title>
+            <script>
+              // Pre-versioning deep links lack the /stable/ or /latest/
+              // prefix; forward them into /stable/ once.
+              var base = "/probly/";
+              var p = window.location.pathname;
+              if (p.indexOf(base) === 0 &&
+                  p.indexOf(base + "stable/") !== 0 &&
+                  p.indexOf(base + "latest/") !== 0) {
+                window.location.replace(
+                  base + "stable/" + p.slice(base.length) +
+                  window.location.search + window.location.hash);
+              }
+            </script>
+          </head>
+          <body>
+            <p>Page not found. Try the <a href="/probly/stable/">stable documentation</a>
+            or the <a href="/probly/latest/">development documentation</a>.</p>
+          </body>
+          </html>
+          HTML
+          cat > site/versions.json <<JSON
+          [
+            {"name": "$STABLE_TAG (stable)", "version": "stable", "url": "https://pwhofman.github.io/probly/stable/"},
+            {"name": "latest (dev)", "version": "latest", "url": "https://pwhofman.github.io/probly/latest/"}
+          ]
+          JSON
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
         with:
-            path: 'docs/build/html'
-
+            path: 'site'
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
