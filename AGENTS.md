@@ -9,6 +9,7 @@ Incremental build (only changed examples and pages re-run):
 ```bash
 uv run sphinx-build -j auto -b html docs/source docs/build/html
 ```
+If an incremental build warns about API pages for objects that no longer exist (e.g. after switching branches), run `uv run python docs/source/_prune_stale_api.py` and rebuild.
 Full build (re-run all examples):
 ```bash
 rm -rf docs/source/api docs/source/auto_examples docs/source/gen_modules docs/build && FORCE_CLEAN=1 uv run sphinx-build -j auto -b html docs/source docs/build/html

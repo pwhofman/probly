@@ -184,6 +184,77 @@ _SKIP_XREF_NAMES = frozenset(
 )
 
 
+# Previous build's backreferences_all.json, captured before sphinx-gallery
+# overwrites it.  Used to carry over entries for skipped examples and to detect
+# which API pages need re-reading.  Entry shape per symbol:
+# [fname, example_src_dir, gallery_target_dir, intro, title].
+_BACKREFS_SNAPSHOT: dict = {}
+
+
+def _snapshot_backreferences(app: Sphinx) -> None:
+    """Snapshot backreferences_all.json before sphinx-gallery overwrites it.
+
+    Runs at priority 499, just before sphinx-gallery's builder-inited at 500.
+    """
+    from sphinx_gallery.utils import _read_json  # noqa: PLC0415
+
+    gallery_conf = app.config.sphinx_gallery_conf
+    backreferences_dir = gallery_conf.get("backreferences_dir")
+    if not backreferences_dir:
+        return
+    json_path = Path(gallery_conf["src_dir"]) / backreferences_dir / "backreferences_all.json"
+    _BACKREFS_SNAPSHOT.clear()
+    if json_path.exists():
+        _BACKREFS_SNAPSHOT.update(_read_json(json_path))
+
+
+def _rebuild_stale_backreferences(app: Sphinx) -> None:
+    """Rebuild backreferences_all.json so every example is covered, run or not.
+
+    sphinx-gallery writes backreferences_all.json with only the examples that
+    executed this build; MD5-skipped (stale) examples are dropped, so the
+    minigallery directives on API pages silently lose them.  Running after
+    sphinx-gallery (priority 501 > 500), this rebuilds the file as: fresh
+    entries from this build, plus the previous build's entries for exactly the
+    examples sphinx-gallery reports in ``stale_examples``.  Deleted or renamed
+    examples are neither fresh nor stale, so they drop out naturally.  Finally,
+    API RST files of symbols whose entries changed since the last build are
+    touched so Sphinx re-reads those pages and re-renders their minigalleries;
+    an unchanged build touches nothing.
+    """
+    from sphinx_gallery.utils import _read_json, _write_json  # noqa: PLC0415
+
+    gallery_conf = app.config.sphinx_gallery_conf
+    backreferences_dir = gallery_conf.get("backreferences_dir")
+    if not backreferences_dir:
+        return
+    src_dir = gallery_conf["src_dir"]
+    json_path = Path(src_dir) / backreferences_dir / "backreferences_all.json"
+    if not json_path.exists():
+        return
+
+    fresh: dict = _read_json(json_path)
+    stale_files = {str(Path(p)) for p in gallery_conf.get("stale_examples", [])}
+
+    rebuilt: dict = {symbol: list(entries) for symbol, entries in fresh.items()}
+    for symbol, old_entries in _BACKREFS_SNAPSHOT.items():
+        fresh_ids = {(e[0], e[2]) for e in rebuilt.get(symbol, [])}  # (fname, target_dir)
+        carried = [e for e in old_entries if str(Path(e[2]) / e[0]) in stale_files and (e[0], e[2]) not in fresh_ids]
+        if carried:
+            rebuilt.setdefault(symbol, []).extend(carried)
+
+    if rebuilt != fresh:
+        _write_json(Path(src_dir) / backreferences_dir / "backreferences_all", rebuilt)
+
+    # Touch only the API pages whose minigallery data changed since last build.
+    api_dir = Path(src_dir) / "api"
+    for symbol in set(rebuilt) | set(_BACKREFS_SNAPSHOT):
+        if rebuilt.get(symbol) != _BACKREFS_SNAPSHOT.get(symbol):
+            rst = api_dir / f"{symbol}.rst"
+            if rst.exists():
+                rst.touch()
+
+
 def setup(app: Sphinx) -> None:
     """Patch the Python domain resolver and register incremental-build hooks."""
     from sphinx.domains.python import PythonDomain  # noqa: PLC0415
@@ -193,6 +264,10 @@ def setup(app: Sphinx) -> None:
     app.connect("env-updated", add_member_source_dependencies)
     if os.environ.get("FORCE_CLEAN") != "1":
         app.connect("builder-inited", ignore_installed_template_mtimes)
+    # Keep minigalleries complete when examples are MD5-skipped; 499/501
+    # bracket sphinx-gallery's gallery generation at 500.
+    app.connect("builder-inited", _snapshot_backreferences, priority=499)
+    app.connect("builder-inited", _rebuild_stale_backreferences, priority=501)
 
     _orig_resolve = PythonDomain.resolve_xref
 

@@ -169,6 +169,11 @@ def make_linkcode_resolve(repo_root: Path) -> Callable[[str, dict[str, str]], st
         except (ModuleNotFoundError, AttributeError, TypeError, OSError, ValueError):
             return None
 
+        # Deliberately pinned to the canonical repo's main (PR #513 review):
+        # with cached incremental builds each page keeps the URL it was built
+        # with, so per-run GITHUB_REPOSITORY/GITHUB_SHA values would bake a
+        # mix of revisions into the published docs. Anchors stay close to
+        # main because pages re-render when their defining file changes.
         base = "https://github.com/pwhofman/probly"
         branch = "main"
         return f"{base}/blob/{branch}/{relpath}#L{lineno}"
