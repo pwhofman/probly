@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import numpy as np
-
 from flextype import flexdispatch
+import numpy as np
 
 
 @flexdispatch

@@ -11,8 +11,8 @@ from pytraverse import CLONE, GlobalVariable, flexdispatch_traverser, traverse
 
 if TYPE_CHECKING:
     from flax.nnx.rnglib import Rngs, RngStream
-
     from flextype.isinstance import LazyType
+
     from probly.predictor import Predictor
     from pytraverse.composition import RegisteredLooseTraverser
 
@@ -47,7 +47,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
 def dropconnect[T: Predictor](
     base: T, p: float = 0.25, rng_collection: str = "dropconnect", rngs: Rngs | RngStream | int = 1
 ) -> T:
-    """Create a DropConnect predictor from a base predictor based on :cite:`mobinyDropConnectEffective2019`.
+    """Create a DropConnect predictor from a base predictor based on :cite:`mobinyDropConnectEffective2021`.
 
     Args:
         base: The base model to be used for dropout.

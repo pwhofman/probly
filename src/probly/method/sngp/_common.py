@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 import warnings
 
 from flextype import flexdispatch
+
 from probly.predictor import Predictor, RandomPredictor, predict, predict_raw
 from probly.quantification._quantification import decompose
 from probly.quantification.decomposition.decomposition import CachingDecomposition, EpistemicDecomposition
@@ -103,11 +104,6 @@ class SNGPRepresenter[**In, Out](Representer[Any, In, Out, CategoricalDistributi
         sampled_logits = distribution.sample(self.num_samples)  # ty:ignore[unresolved-attribute]
 
         return compute_categorical_sample_from_logits(sampled_logits)
-
-
-def register(cls: type, traverser: flexdispatch_traverser) -> None:
-    """Register a class to be transformed by SNGP."""
-    traverser.register(cls=cls, traverser=sngp_traverser, vars={CLONE: True})
 
 
 @predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
@@ -254,14 +250,14 @@ class SNGPDecomposition[T](CachingDecomposition, EpistemicDecomposition[T]):
     """Decomposition based on SNGP's Dempster-Shafer epistemic uncertainty.
 
     Implements the single uncertainty quantity used by SNGP
-    :cite:`liuSNGPSpectralNormalizedNeural2020` for OOD detection (Sec. 5.2 +
+    :cite:`liuSimplePrincipled2020` for OOD detection (Sec. 5.2 +
     Appendix C, Eq. 15). For an SNGP-style Gaussian distribution
     ``N(h, sigma^2)`` over K-class logits:
 
     - Epistemic uncertainty: ``K / (K + sum_k exp(h_adj_k))`` where
       ``h_adj_k = h_k / sqrt(1 + mean_field_factor * sigma_k^2)``. This is the
       Dempster-Shafer / vacuity metric (originally introduced by
-      :cite:`sensoyEvidentialDeepLearning2018`), applied to a soft-evidential
+      :cite:`sensoyEvidentialDeep2018`), applied to a soft-evidential
       Dirichlet with ``alpha = 1 + exp(h_adj)``. The mean-field correction
       shrinks the logits toward zero when the GP variance is large (OOD),
       driving the score toward 1.

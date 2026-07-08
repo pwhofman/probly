@@ -10,6 +10,7 @@ from ._common import CLEANUP_FUNCS, sampling_preparation_traverser
 
 if TYPE_CHECKING:
     from flextype.isinstance import LazyType
+
     from pytraverse import State
 
 

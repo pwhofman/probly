@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
+
 from probly.predictor import LogitClassifier, predict
 from probly.representation.array_like import ArrayLike
 from probly.representation.credal_set import (
@@ -22,7 +23,7 @@ if TYPE_CHECKING:
 
 @runtime_checkable
 class EfficientCredalPredictor[**In, Out: CategoricalDistribution](LogitClassifier[In, Out], Protocol):
-    """Logit classifier wrapped with calibrated lower/upper bounds, based on :cite:`hofmanefficient`.
+    """Logit classifier wrapped with calibrated lower/upper bounds, based on :cite:`hofmanEfficientCredal2026`.
 
     Wraps a base :class:`LogitClassifier` together with externally-calibrated
     per-class lower and upper bound offsets. ``predict`` returns the base's
@@ -50,7 +51,7 @@ def efficient_credal_prediction_generator[**In, Out: CategoricalDistribution](
 def efficient_credal_prediction[**In, Out: CategoricalDistribution](
     base: Predictor,
 ) -> EfficientCredalPredictor[In, Out]:
-    """Create an efficient credal predictor from a base predictor based on :cite:`hofmanefficient`.
+    """Create an efficient credal predictor from a base predictor based on :cite:`hofmanEfficientCredal2026`.
 
     Args:
         base: The base ``LogitClassifier`` to wrap.
@@ -91,7 +92,7 @@ def compute_efficient_credal_prediction_bounds[T: ArrayLike](
 def compute_efficient_credal_bounds[T: ArrayLike](logits: T, lower: T, upper: T) -> T:
     """Compute packed ``(B, 2C)`` interval probability bounds via 2K logit perturbations.
 
-    Implements the inference step of :cite:`hofmanefficient`: for each class
+    Implements the inference step of :cite:`hofmanEfficientCredal2026`: for each class
     ``k``, the kth logit is perturbed by ``lower[k]`` (signed non-positive)
     and ``upper[k]`` (signed non-negative) independently of the others, and
     each perturbed logit vector is softmaxed. The packed result has the

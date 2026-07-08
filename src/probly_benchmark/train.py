@@ -17,6 +17,7 @@ import gc
 import pathlib
 import tempfile
 
+from flextype import flexdispatch
 import hydra
 from laplace.baselaplace import BaseLaplace
 from laplace.utils.feature_extractor import FeatureExtractor
@@ -29,7 +30,6 @@ from tqdm import tqdm
 import wandb
 import wandb.util
 
-from flextype import flexdispatch
 from probly.layers.torch import BatchEnsembleConv2d, BatchEnsembleLinear
 from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.bayesian import BayesianPredictor
@@ -621,7 +621,7 @@ def _(
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
 ) -> None:
-    """Train a BatchEnsemble predictor with the recipe of :cite:`wen2020batchensemble`.
+    """Train a BatchEnsemble predictor with the recipe of :cite:`wenBatchEnsemble2020`.
 
     The shared kernel uses the recipe's full lr and weight decay; ``r``, ``s``, and per-member
     biases use ``fast_weight_lr_multiplier * base_lr``; ``r`` and ``s`` have weight decay disabled.
@@ -982,7 +982,7 @@ def _(
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
 ) -> None:
-    """Train a DUQ predictor :cite:`vanamersfoortDUQ2020`.
+    """Train a DUQ predictor :cite:`vanAmersfoortUncertaintyEstimation2020`.
 
     Disables AMP because the gradient penalty requires a stable second-order
     autograd graph that ``torch.amp.autocast`` does not support across all
@@ -1135,7 +1135,7 @@ def _fit_deup_error_head(
 ) -> None:
     """Train the DEUP error head on out-of-sample log10-scaled CE targets.
 
-    Phase-2 training of DEUP :cite:`lahlou2021deup`.
+    Phase-2 training of DEUP :cite:`lahlouDirectEpistemic2023`.
     The ``encoder`` and ``classification_head`` are frozen.
 
     Steps:
@@ -1193,7 +1193,7 @@ def _(
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
 ) -> None:
-    """Train a DEUP predictor :cite:`lahlou2021deup`.
+    """Train a DEUP predictor :cite:`lahlouDirectEpistemic2023`.
 
     Phase 1 trains ``encoder`` and ``classification_head`` end-to-end with
     standard cross-entropy, identical to a plain classifier.  The

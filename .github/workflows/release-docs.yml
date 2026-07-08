@@ -1,0 +1,51 @@
+# Build the docs at a release tag, attach the HTML as a release asset
+# (the durable store for the /stable/ tree), then dispatch a Pages deploy.
+name: Release Docs
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to (re)build docs for, e.g. v0.9.0"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # Full uncached build at the tag so the output is exactly reproducible
+    # from that revision and tag-flavored pages never enter the main cache
+    # lineage.
+    uses: ./.github/workflows/_docs-build.yml
+    with:
+      strict: false
+      docs-cache: false
+      ref: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
+      source-ref: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
+      base-url: https://pwhofman.github.io/probly/stable/
+  publish-asset:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write  # upload the release asset
+      actions: write   # dispatch the Pages deploy
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: Download built docs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
+        with:
+          name: sphinx-docs
+          path: html
+      - name: Upload docs tarball to the release
+        run: |
+          tar -czf probly-docs-html.tar.gz -C html .
+          gh release upload "$TAG" probly-docs-html.tar.gz --clobber --repo "$GITHUB_REPOSITORY"
+      - name: Dispatch Pages deploy
+        # docs-cache=true: the deploy rebuilds /latest/ from main incrementally
+        # and picks up the fresh stable asset.
+        run: gh workflow run deploy-docs.yml --field docs-cache=true --repo "$GITHUB_REPOSITORY"

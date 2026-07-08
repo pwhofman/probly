@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from flextype import flexdispatch
 import numpy as np
 
-from flextype import flexdispatch
+from probly.plot.credal._data import _get_probabilities, _to_numpy
 from probly.representation.credal_set.array import (
-    ArrayCategoricalCredalSet,
     ArrayConvexCredalSet,
     ArrayDiscreteCredalSet,
     ArrayDistanceBasedCredalSet,
@@ -20,8 +20,15 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
     from probly.plot.config import PlotConfig
+    from probly.representation.credal_set.array import ArrayCategoricalCredalSet
+    from probly.representation.credal_set.torch import (
+        TorchCategoricalCredalSet,
+        TorchConvexCredalSet,
+        TorchDistanceBasedCredalSet,
+        TorchProbabilityIntervalsCredalSet,
+    )
 
-_NUM_BINARY_CLASSES = 2
+
 _BINARY_Y_HEIGHT = 0.05
 _BINARY_Y_PAD = 0.02
 
@@ -80,7 +87,7 @@ def _draw_binary_interval(
 
 @flexdispatch
 def _draw_credal_set_binary(
-    data: ArrayCategoricalCredalSet,
+    data: TorchCategoricalCredalSet | ArrayCategoricalCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
@@ -107,8 +114,7 @@ def _draw_singleton_binary(
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    data = data.reshape(-1)
-    arr = data.array.unnormalized_probabilities
+    arr = _get_probabilities(data)
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -118,14 +124,13 @@ def _draw_singleton_binary(
 
 @_draw_credal_set_binary.register(ArrayProbabilityIntervalsCredalSet)
 def _draw_intervals_binary(
-    data: ArrayProbabilityIntervalsCredalSet,
+    data: ArrayProbabilityIntervalsCredalSet | TorchProbabilityIntervalsCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    data = data.reshape(-1)
-    lower_all = data.lower_bounds
-    upper_all = data.upper_bounds
+    lower_all = _to_numpy(data.lower_bounds)
+    upper_all = _to_numpy(data.upper_bounds)
     n_sets = lower_all.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -134,20 +139,24 @@ def _draw_intervals_binary(
         if np.isclose(low, high):
             ax.scatter(low, 0, color=color, s=config.marker_size, zorder=3, label=label)
         else:
+            # If the interval is very small visually, draw a marker so it's not invisible.
+            if high - low < 0.02:
+                pt = (low + high) / 2.0
+                ax.scatter(pt, 0, color=color, s=config.marker_size, zorder=3, label=label)
+                label = None
             _draw_binary_interval(ax, low, high, color, config, label=label)
 
 
 @_draw_credal_set_binary.register(ArrayDistanceBasedCredalSet)
 def _draw_distance_based_binary(
-    data: ArrayDistanceBasedCredalSet,
+    data: ArrayDistanceBasedCredalSet | TorchDistanceBasedCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    data = data.reshape(-1)
-    lower_all = data.lower()
-    upper_all = data.upper()
-    nominal_all = data.nominal.unnormalized_probabilities
+    lower_all = _to_numpy(data.lower())
+    upper_all = _to_numpy(data.upper())
+    nominal_all = _get_probabilities(data)
     n_sets = lower_all.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -158,12 +167,12 @@ def _draw_distance_based_binary(
 
 @_draw_credal_set_binary.register(ArrayDiscreteCredalSet | ArrayConvexCredalSet)
 def _draw_vertex_set_binary(
-    data: ArrayConvexCredalSet | ArrayDiscreteCredalSet,
+    data: ArrayDiscreteCredalSet | ArrayConvexCredalSet | TorchConvexCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    arr = data.reshape(-1).array.unnormalized_probabilities
+    arr = _get_probabilities(data)
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)

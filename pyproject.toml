@@ -9,12 +9,12 @@ description = "Uncertainty Representation and Quantification for Machine Learnin
 license = "MIT"
 requires-python = ">=3.13.0,<3.15"
 dependencies = [
-    "scipy>=1.14.1",        # first cp313 wheels
+    "scipy>=1.14.1", # first cp313 wheels
     "matplotlib>=3.9.2",
     "mpltern>=0.6.0",
-    "numpy>=2.1.0",         # first cp313 wheels
+    "numpy>=2.1.0", # first cp313 wheels
     "tqdm>=4.25.0",
-    "joblib>=1.1.0",
+    "flextype>=0.1.1",
 ]
 authors = [
     { name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de" },
@@ -24,7 +24,7 @@ authors = [
     { name = "Alireza Javanmardi" },
 ]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering",
@@ -38,7 +38,7 @@ classifiers = [
 
 [tool.setuptools.packages.find]
 where = ["./src"]
-include = ["probly*", "pytraverse*", "flextype*"]
+include = ["probly", "probly.*", "pytraverse*"]
 
 [tool.setuptools.dynamic]
 version = { attr = "probly.__version__" }
@@ -119,6 +119,7 @@ lint = [
 docs = [
     "sphinx>=9.0.0",
     "sphinx-gallery",               # for the example gallery
+    "joblib",                       # for parallel example execution in sphinx-gallery
     "furo",                         # theme
     "sphinx-copybutton",            # adds copy buttons to code blocks
     "sphinxcontrib-bibtex>=2.0.0",  # for bibliography support
@@ -243,7 +244,7 @@ max-complexity = 15
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]
-known-first-party = ["probly", "probly_benchmark", "pytraverse", "flextype"]
+known-first-party = ["probly", "probly_benchmark", "pytraverse"]
 known-third-party = ["wandb"]
 force-sort-within-sections = true
 combine-as-imports = true
@@ -267,6 +268,9 @@ exclude_also = [
     "def __repr__",
     "if __name__ == .__main__.:",
     "\\s*\\.\\.\\.\\s*",
+    "pragma: no cover",
+    "@overload",
+    "@(typing\\.)?overload",
 ]
 exclude_lines = ["if TYPE_CHECKING"]
 

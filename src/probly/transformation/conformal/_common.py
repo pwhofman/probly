@@ -6,6 +6,7 @@ from abc import ABC
 from typing import TYPE_CHECKING, Any, Concatenate, Protocol, Self, cast, runtime_checkable
 
 from flextype import flexdispatch
+
 from probly.calibrator._common import Calibrator
 from probly.conformal_scores import (
     APSScore,
@@ -47,7 +48,7 @@ class ConformalSetPredictor[**In, T, Out: ConformalSet](
     Calibrator[Concatenate[float, Out, In], T],
     Protocol,
 ):
-    """Predictor wrapper returning conformal sets."""
+    """Predictor wrapper returning conformal sets based on :cite:`angelopoulosGentleIntroduction2021`."""
 
     predictor: Predictor[In, Any]
     non_conformity_score: NonConformityScore[Any, Any] | None

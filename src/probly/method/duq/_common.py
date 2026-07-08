@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
+
 from probly.decider import categorical_from_mean
 from probly.predictor import LogitClassifier, Predictor, RepresentationPredictor
 from probly.quantification._quantification import decompose
@@ -65,7 +66,19 @@ def duq[**In, Out: DUQRepresentation](
     length_scale: float = 0.1,
     gamma: float = 0.999,
 ) -> DUQPredictor[In, Out]:
-    r"""Replace the final classifier head with an RBF centroid head."""
+    """Replace the final classifier head with an RBF centroid head.
+
+    Based on :cite:`vanAmersfoortUncertaintyEstimation2020`.
+
+    Args:
+        base: The base logit classifier whose final linear head is replaced.
+        centroid_size: Dimensionality of the per-class RBF centroids. Default is 256.
+        length_scale: RBF kernel length scale. Default is 0.1.
+        gamma: Exponential moving-average discount factor for updating the centroids. Default is 0.999.
+
+    Returns:
+        The DUQ predictor.
+    """
     return duq_generator(base, centroid_size, length_scale, gamma)
 
 

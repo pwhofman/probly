@@ -6,6 +6,7 @@ import math
 from typing import TYPE_CHECKING, Literal
 
 from flextype import flexdispatch
+
 from probly.quantification._quantification import measure
 from probly.representation.distribution import CategoricalDistribution, Distribution
 from probly.representation.sample import Sample
@@ -13,10 +14,17 @@ from probly.representation.sample import Sample
 DEFAULT_MEAN_FIELD_FACTOR: float = math.pi / 8.0
 
 if TYPE_CHECKING:
+    from probly.quantification.scoring_rule import ScoringRule
     from probly.representation.array_like import ArrayLike
     from probly.representation.distribution import SecondOrderDistribution
 
 type LogBase = float | Literal["normalize"] | None
+
+DEFAULT_NUM_SAMPLES: int = 1000
+
+# Bisection steps for the simplex-constrained quantile solver behind ``min_expected_total_variation``
+# (the level is bracketed in [0, 1], so n steps give ~2**-n precision). Shared across backends.
+TOTAL_VARIATION_BISECTION_ITERATIONS: int = 60
 
 
 @measure.register(CategoricalDistribution)
@@ -54,6 +62,20 @@ def mutual_information(distribution: SecondOrderDistributionLike, base: LogBase 
 
 
 @flexdispatch
+def generalized_entropy_of_expected(distribution: SecondOrderDistributionLike, scoring_rule: ScoringRule) -> ArrayLike:
+    """Compute the generalized entropy ``G(theta_bar)`` of the BMA under a scoring rule."""
+    msg = f"Generalized entropy of expected is not supported for distributions of type {type(distribution)}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def expected_generalized_entropy(distribution: SecondOrderDistributionLike, scoring_rule: ScoringRule) -> ArrayLike:
+    """Compute the expected generalized entropy ``E[G(theta)]`` under a scoring rule."""
+    msg = f"Expected generalized entropy is not supported for distributions of type {type(distribution)}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
 def max_probability_complement_of_expected(distribution: SecondOrderDistributionLike) -> ArrayLike:
     """Compute one minus the max probability of the expected value of a second-order distribution."""
     msg = f"Max probability complement of expected is not supported for distributions of type {type(distribution)}."
@@ -62,7 +84,11 @@ def max_probability_complement_of_expected(distribution: SecondOrderDistribution
 
 @flexdispatch
 def expected_max_probability_complement(distribution: SecondOrderDistributionLike) -> ArrayLike:
-    """Compute the expected value of one minus the max probability under a second-order distribution."""
+    """Compute the expected value of one minus the max probability under a second-order distribution.
+
+    Computed directly for a sample. For a parametric distribution such as a Dirichlet it is
+    estimated by Monte-Carlo, and that implementation also takes ``num_samples`` and a ``generator``.
+    """
     msg = f"Expected max probability complement is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)
 
@@ -75,13 +101,35 @@ def max_disagreement(distribution: SecondOrderDistributionLike) -> ArrayLike:
 
 
 @flexdispatch
+def min_expected_total_variation(distribution: SecondOrderDistributionLike) -> ArrayLike:
+    r"""Compute the distance-based epistemic uncertainty of a second-order distribution.
+
+    Defined by :cite:`saleSecondOrder2024` as the smallest expected total-variation distance from
+    ``Q`` to a point on the simplex:
+
+    .. math::
+
+        EU(Q) = \tfrac{1}{2} \min_{q \in \Delta} \mathbb{E}_{p \sim Q}[\lVert p - q \rVert_1],
+
+    bounded by ``(K - 1) / K`` for ``K`` classes. Computed directly for a sample. For a parametric
+    distribution such as a Dirichlet it is estimated by Monte-Carlo, and that implementation also
+    takes ``num_samples`` and a ``generator``.
+
+    Args:
+        distribution: A sample of categorical distributions or a Dirichlet distribution.
+    """
+    msg = f"Min expected total variation is not supported for distributions of type {type(distribution)}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
 def vacuity(distribution: SecondOrderDistributionLike) -> ArrayLike:
     """Compute the vacuity of a second-order distribution.
 
     For a Dirichlet distribution Dir(alpha) with K classes and alpha_0 = sum_c alpha_c,
     the vacuity is defined as K / alpha_0 and lies in (0, 1]. It corresponds to the
     "I do not know" mass in Dempster-Shafer / subjective-logic theory introduced by
-    :cite:`sensoyEvidentialDeepLearning2018`, and is equivalent (up to the constant K)
+    :cite:`sensoyEvidentialDeep2018`, and is equivalent (up to the constant K)
     to the inverse of the predicted evidence in Natural Posterior Networks
     :cite:`charpentierNaturalPosteriorNetwork2022`.
     """
@@ -97,8 +145,8 @@ def dempster_shafer_uncertainty(
 
     For a Gaussian distribution N(h, sigma^2) over K-class logits, this is the
     Dempster-Shafer / vacuity metric used by SNGP
-    :cite:`liuSNGPSpectralNormalizedNeural2020` (Eq. 15) and originally introduced
-    by :cite:`sensoyEvidentialDeepLearning2018`:
+    :cite:`liuSimplePrincipled2020` (Eq. 15) and originally introduced
+    by :cite:`sensoyEvidentialDeep2018`:
 
     .. math::
 

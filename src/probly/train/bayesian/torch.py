@@ -13,7 +13,7 @@ import torch.nn.functional as F
 
 from probly.layers.torch import BayesConv2d, BayesLinear  # noqa: TC001, required by traverser
 from probly.traverse_nn import nn_compose
-from pytraverse import GlobalVariable, State, TraverserResult, singledispatch_traverser, traverse_with_state
+from pytraverse import CLONE, GlobalVariable, State, TraverserResult, singledispatch_traverser, traverse_with_state
 
 KL_DIVERGENCE = GlobalVariable[torch.Tensor]("KL_DIVERGENCE", default=0.0)  # ty: ignore[invalid-argument-type]
 
@@ -33,7 +33,7 @@ def collect_kl_divergence(model: Predictor) -> torch.Tensor:
     _, state = traverse_with_state(
         model,
         nn_compose(kl_divergence_traverser),
-        init={KL_DIVERGENCE: 0.0},
+        init={CLONE: False, KL_DIVERGENCE: 0.0},
     )
     return state[KL_DIVERGENCE]
 

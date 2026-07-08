@@ -6,6 +6,7 @@ import math
 from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
 from flextype import flexdispatch
+
 from probly.predictor import EvidentialPredictor, predict, predict_raw
 from probly.representation.distribution import DirichletDistribution, create_dirichlet_distribution_from_alphas
 from probly.transformation.transformation import predictor_transformation
@@ -87,7 +88,30 @@ def natural_posterior_network[**In, Out: DirichletDistribution](
     certainty_budget: CertaintyBudget = "normal",
     alpha_prior: float = 1.0,
 ) -> NaturalPosteriorNetworkPredictor[In, Out]:
-    """Create a Natural Posterior Network predictor based on :cite:`charpentierNaturalPosteriorNetwork2022`."""
+    """Create a Natural Posterior Network predictor based on :cite:`charpentierNaturalPosteriorNetwork2022`.
+
+    Computes a Bayesian posterior update over a Dirichlet distribution per
+    sample. The encoder is projected to a low-dim latent ``z``; a single
+    shared normalizing flow yields ``log p(z)``; a small linear classifier
+    on the latent yields class log-probabilities ``log chi(x)``. The
+    Dirichlet parameters are returned as
+    ``alpha = alpha_prior + n(x) * chi(x)``, where ``n(x)`` is the
+    budget-scaled, clamped exponential of ``log p(z)``.
+
+    Args:
+        encoder: The base encoder predictor mapping inputs to a latent embedding of shape ``(B, encoder_dim)``.
+        latent_dim: Dimension ``H`` of the latent space produced by the encoder.
+        num_classes: Number of output classes ``K``.
+        num_flows: Number of radial flow layers in the shared normalizing flow.
+        certainty_budget: Named scheme for scaling ``log p(z)`` before
+            exponentiation. One of ``"constant"``, ``"exp-half"``, ``"exp"``, or
+            ``"normal"``. Defaults to ``"normal"``.
+        alpha_prior: Per-class Dirichlet prior concentration, uniform across classes. Defaults to ``1.0``.
+
+    Returns:
+        A :class:`NaturalPosteriorNetworkPredictor` wrapping the encoder with a
+        normalizing-flow density head and a Dirichlet evidence layer.
+    """
     return natural_posterior_network_generator(
         encoder, latent_dim, num_classes, num_flows, certainty_budget, alpha_prior
     )

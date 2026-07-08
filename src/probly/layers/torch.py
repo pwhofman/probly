@@ -649,7 +649,9 @@ def _inverse_softplus(x: torch.Tensor) -> torch.Tensor:
 
 
 class DropConnectLinear(nn.Module):
-    """Custom Linear layer with DropConnect applied to weights during training based on :cite:`mobiny2021dropconnect`.
+    """Custom Linear layer with DropConnect applied to weights during training.
+
+    Based on :cite:`mobinyDropConnectEffective2021`.
 
     Attributes:
         in_features: int, number of input features.
@@ -694,6 +696,61 @@ class DropConnectLinear(nn.Module):
     def extra_repr(self) -> str:
         """Expose description of in- and out-features of this layer."""
         return f"in_features={self.in_features}, out_features={self.out_features}, bias={self.bias is not None}"
+
+
+# ======================================================================================================================
+
+
+class SharedMaskDropout(nn.Module):
+    """Dropout that draws a single mask per forward pass, shared across the batch.
+
+    Unlike :class:`torch.nn.Dropout`, which samples an independent mask for every element
+    of the batch, this layer draws one mask over the feature dimensions and broadcasts it
+    across the batch.  Every input in a batched forward pass is therefore routed through
+    the same thinned sub-network, mirroring the implicit batch behaviour of
+    :class:`DropConnectLinear` and supporting batch-coherent Monte Carlo Dropout
+    :cite:`galDropoutBayesian2016`.  The layer is stochastic in training mode and the
+    identity in evaluation mode.
+
+    Attributes:
+        p: float, probability of zeroing a feature.
+    """
+
+    def __init__(self, p: float = 0.5) -> None:
+        """Initialize a shared-mask dropout layer.
+
+        Args:
+            p: The probability of zeroing a feature. Must be in [0, 1].
+
+        Raises:
+            ValueError: If ``p`` is not between 0 and 1.
+        """
+        super().__init__()
+        if not 0.0 <= p <= 1.0:
+            msg = f"The probability p must be between 0 and 1, but got {p} instead."
+            raise ValueError(msg)
+        self.p = p
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply one dropout mask shared across the batch.
+
+        Args:
+            x: Input of shape ``(batch, *features)``.
+
+        Returns:
+            torch.Tensor, the masked input with the same shape as ``x``.
+        """
+        if not self.training or self.p == 0.0:
+            return x
+        if self.p == 1.0:
+            return torch.zeros_like(x)
+        keep = 1.0 - self.p
+        mask = torch.bernoulli(torch.full(x.shape[1:], keep, device=x.device, dtype=x.dtype))  # (*features,)
+        return x * mask / keep
+
+    def extra_repr(self) -> str:
+        """Expose the dropout probability."""
+        return f"p={self.p}"
 
 
 # ======================================================================================================================
@@ -1110,7 +1167,7 @@ def unpack_interval(x: torch.Tensor, channel_dim: int = 1) -> tuple[torch.Tensor
 
 
 class IntConv2d(nn.Module):
-    """Interval-arithmetic 2D convolution based on :cite:`wang2024credalnet`.
+    """Interval-arithmetic 2D convolution based on :cite:`wangCredalDeepEnsembles2024`.
 
     Has paired center and radius kernels (and biases); the radius weight and
     bias are clamped to non-negative values inside ``forward``. Inputs and
@@ -1204,7 +1261,7 @@ class IntConv2d(nn.Module):
 
 
 class IntLinear(nn.Module):
-    """Interval-arithmetic linear layer based on :cite:`wang2024credalnet`.
+    """Interval-arithmetic linear layer based on :cite:`wangCredalDeepEnsembles2024`.
 
     1D analogue of :class:`IntConv2d`. Inputs and outputs are packed
     ``(..., 2 * features)`` (lower half then upper); the same non-negativity
@@ -1273,7 +1330,7 @@ class IntLinear(nn.Module):
 
 
 class IntBatchNorm2d(nn.Module):
-    """Interval-valued batch normalization for 2D feature maps based on :cite:`wang2024credalnet`.
+    """Interval-valued batch normalization for 2D feature maps based on :cite:`wangCredalDeepEnsembles2024`.
 
     Inputs and outputs are packed ``(B, 2C, H, W)``. Splits into
     ``center = (lo + hi)/2`` and ``radius = (hi - lo)/2``, normalizes each
@@ -1367,7 +1424,7 @@ class IntBatchNorm2d(nn.Module):
 
 
 class IntBatchNorm1d(nn.Module):
-    """Interval-valued batch normalization for 1D features based on :cite:`wang2024credalnet`.
+    """Interval-valued batch normalization for 1D features based on :cite:`wangCredalDeepEnsembles2024`.
 
     1D analogue of :class:`IntBatchNorm2d`, used after :class:`IntLinear` on
     flattened features. Inputs and outputs are packed ``(B, 2 * num_features)``.
@@ -1458,7 +1515,7 @@ class IntBatchNorm1d(nn.Module):
 
 
 class IntSoftmax(nn.Module):
-    """Interval SoftMax head based on :cite:`wang2024credalnet`.
+    """Interval SoftMax head based on :cite:`wangCredalDeepEnsembles2024`.
 
     Applies Eq. 7 of the paper in ``(lo, hi)`` parameterization, then the
     Section 3.3 reachability clip so the output is always a valid (reachable)
@@ -1499,7 +1556,9 @@ class IntSoftmax(nn.Module):
 
 
 class HeteroscedasticLayer(nn.Module):
-    """A unified PyTorch implementation of the Heteroscedastic layer based on :cite:`collier2021hetnets`.
+    """A unified PyTorch implementation of the Heteroscedastic layer.
+
+    Based on :cite:`collierCorrelatedInputDependent2021`.
 
     Attributes:
         in_features: int, number of input features.
@@ -1620,7 +1679,7 @@ class _SpectralNormParametrization(nn.Module):
     provide a well-conditioned initial estimate of the dominant singular
     vectors.
 
-    Behaviorally matches :cite:`liu2020SNGP` Eq. 10:
+    Behaviorally matches :cite:`liuSimplePrincipled2020` Eq. 10:
     ``W = c * W / sigma`` if ``sigma > c`` else ``W``, with ``sigma`` estimated
     by power iteration on the unfolded weight matrix.
 
@@ -1690,7 +1749,7 @@ class _SpectralNormParametrization(nn.Module):
 
 
 class SNGPLayer(nn.Module):
-    """Spectral-normalized Neural Gaussian Process (SNGP) layer based on :cite:`liu2020SNGP`.
+    """Spectral-normalized Neural Gaussian Process (SNGP) layer based on :cite:`liuSimplePrincipled2020`.
 
     Replaces the model's final linear classifier with a random-Fourier-feature
     Gaussian process whose posterior covariance is estimated by Laplace
@@ -1985,6 +2044,96 @@ class GaussianMixtureHead(nn.Module):
         return self.log_pi + dist.log_prob(features.unsqueeze(1))
 
 
+class MahalanobisHead(nn.Module):
+    """Class-conditional Gaussian head with a tied covariance (Mahalanobis OOD).
+
+    Implements the Gaussian-discriminant-analysis confidence used by the
+    Mahalanobis out-of-distribution detector of :cite:`leeSimpleUnifiedFramework2018`.
+    One mean is estimated per class, while a single covariance (its inverse, the
+    precision matrix) is shared across all classes.  This shared covariance
+    is the empirical covariance of the per-class-centered features, i.e. the
+    pooled within-class scatter.
+
+    After fitting, ``forward`` returns the per-class confidence scores
+    ``-0.5 * (z - mu_c)^T P (z - mu_c)`` (higher = closer to a class centroid =
+    more in-distribution).  Downstream code typically takes ``max`` over classes
+    to obtain the per-sample Mahalanobis confidence.
+
+    Attributes:
+        means: Per-class mean vectors, shape ``(num_classes, feature_dim)``.
+        precision: Shared (tied) precision matrix, shape
+            ``(feature_dim, feature_dim)``.
+    """
+
+    means: torch.Tensor
+    precision: torch.Tensor
+
+    def __init__(self, num_classes: int, feature_dim: int) -> None:
+        """Initialize with zero means and an identity precision.
+
+        Args:
+            num_classes: Number of classes (one mean vector per class).
+            feature_dim: Dimensionality of the feature vectors.
+        """
+        super().__init__()
+        self.num_classes = num_classes
+        self.feature_dim = feature_dim
+        self.register_buffer("means", torch.zeros(num_classes, feature_dim))
+        self.register_buffer("precision", torch.eye(feature_dim))
+
+    def fit(self, features: torch.Tensor, labels: torch.Tensor) -> None:
+        """Estimate per-class means and the shared (tied) precision matrix.
+
+        Each class mean is the empirical mean of its features.  The shared
+        covariance is the empirical covariance of all per-class-centered
+        features (pooled within-class scatter).  The precision is its
+        Hermitian pseudo-inverse, which stays finite even when the pooled
+        covariance is rank-deficient, e.g. for dead post-ReLU feature dimensions.
+
+        Args:
+            features: Feature vectors of shape ``(N, feature_dim)``.
+            labels: Integer class labels of shape ``(N,)``.
+
+        Raises:
+            ValueError: If no sample matches any class index in
+                ``[0, num_classes)``, leaving the covariance undefined.
+        """
+        means = torch.zeros_like(self.means)
+        centered = []
+        for c in range(self.num_classes):
+            mask = labels == c
+            if not bool(mask.any()):
+                continue
+            z = features[mask]
+            mu = z.mean(0)
+            means[c] = mu
+            centered.append(z - mu)
+        if not centered:
+            msg = "Cannot fit MahalanobisHead: no labelled samples were provided."
+            raise ValueError(msg)
+        centered_all = torch.cat(centered, 0)
+        cov = (centered_all.T @ centered_all) / centered_all.shape[0]
+        precision = torch.linalg.pinv(cov, hermitian=True)
+        self.means.copy_(means)
+        self.precision.copy_(precision)
+
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        """Compute per-class Mahalanobis confidence scores for each sample.
+
+        Returns ``-0.5 * (z - mu_c)^T P (z - mu_c)`` for every class *c*.
+
+        Args:
+            features: Feature vectors of shape ``(N, feature_dim)``.
+
+        Returns:
+            Per-class confidence scores of shape ``(N, num_classes)``.
+        """
+        diff = features.unsqueeze(1) - self.means.unsqueeze(0)  # (N, C, D)
+        # Per-class quadratic form (z - mu_c)^T P (z - mu_c), shape (N, C).
+        mahalanobis = torch.einsum("ncd,de,nce->nc", diff, self.precision, diff)
+        return -0.5 * mahalanobis
+
+
 class SNCoeffParametrization(nn.Module):
     """Weight parametrization that clips the spectral norm to at most ``coeff``.
 
@@ -1994,7 +2143,7 @@ class SNCoeffParametrization(nn.Module):
     via :meth:`right_inverse`.
 
     Used by DDU (:cite:`mukhotiDeepDeterministicUncertainty2023`) and DEUP
-    (:cite:`lahlou2021deup`) to enforce Lipschitz
+    (:cite:`lahlouDirectEpistemic2023`) to enforce Lipschitz
     continuity on the encoder.
     """
 

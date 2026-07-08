@@ -9,6 +9,7 @@ from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_tr
 
 if TYPE_CHECKING:
     from flextype.isinstance import LazyType
+
     from probly.predictor import Predictor
     from pytraverse.composition import RegisteredLooseTraverser
 
@@ -32,9 +33,9 @@ def normal_inverse_gamma_head[T: Predictor](base: T) -> T:
     """Replace the final linear layer with a Normal-Inverse-Gamma head.
 
     Args:
-        base: Predictor, The base model to be transformed.
+        base: The base model to be transformed.
 
     Returns:
-        Predictor, The transformed predictor.
+        The transformed predictor.
     """
     return traverse(base, nn_compose(normal_inverse_gamma_head_traverser), init={TRAVERSE_REVERSED: True, CLONE: True})

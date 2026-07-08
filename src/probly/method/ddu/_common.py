@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
+
 from probly.decider import categorical_from_mean
 from probly.predictor import LogitClassifier, Predictor, RepresentationPredictor
 from probly.quantification._quantification import decompose
@@ -73,6 +74,8 @@ def ddu[**In, Out: DDURepresentation](
     sn_coeff: float = 3.0,
 ) -> DDUPredictor[In, Out]:
     """Apply spectral normalization and add a Gaussian-mixture density head.
+
+    Based on :cite:`mukhotiDeepDeterministicUncertainty2023`.
 
     Args:
         base: Base classification model to be transformed.

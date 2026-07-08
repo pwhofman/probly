@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol, cast, override, runtime_checkable
 
 from flextype import flexdispatch
+
 from probly.decider import categorical_from_mean
 from probly.predictor import LogitClassifier, Predictor, RepresentationPredictor
 from probly.quantification._quantification import decompose
@@ -30,7 +31,7 @@ class DEUPRepresentation(Representation, Protocol):
     cross-entropy error score from the DEUP error head.
 
     Following the paper's classification setup
-    (:cite:`lahlou2021deup`, Sec. 4.3.1), the
+    (:cite:`lahlouDirectEpistemic2023`, Sec. 4.3.1), the
     aleatoric component is taken to be zero -- estimating
     :math:`H[P(Y|x)]` of the *ground-truth* conditional would require
     label replicates which are unavailable for standard image
@@ -103,7 +104,7 @@ def deup[**In, Out: DEUPRepresentation](
     stationarizing_features: Sequence[str | dict[str, Any]] | None = None,
     sn_coeff: float | None = None,
 ) -> DEUPPredictor[In, Out]:
-    r"""Transform a model for Direct Epistemic Uncertainty Prediction :cite:`lahlou2021deup`.
+    r"""Transform a model for Direct Epistemic Uncertainty Prediction :cite:`lahlouDirectEpistemic2023`.
 
     Strips the final classification head from ``base`` to obtain a feature
     encoder, then attaches two heads:
@@ -124,7 +125,7 @@ def deup[**In, Out: DEUPRepresentation](
        frozen main model.
 
     **Uncertainty decomposition** at inference (classification setup
-    of :cite:`lahlou2021deup`):
+    of :cite:`lahlouDirectEpistemic2023`):
 
     - total = ``error_score`` (output of ``error_head``),
     - aleatoric = 0 (ground-truth label entropy, unavailable without replicates),
@@ -144,7 +145,7 @@ def deup[**In, Out: DEUPRepresentation](
         hidden_size: Width of each hidden layer in the error head.
         n_hidden_layers: Number of hidden layers in the error head (minimum 1).
         stationarizing_features: Sequence of stationarizing feature
-            specifications (see :cite:`lahlou2021deup`).  Each entry is
+            specifications (see :cite:`lahlouDirectEpistemic2023`).  Each entry is
             either a registry name (e.g. ``"log_maf_density"``,
             ``"log_due_variance"``) or a mapping ``{"name": ..., **kwargs}``.
             The error head receives **only** these features — encoder features
@@ -166,7 +167,7 @@ class DEUPDecomposition[T](AdditiveDecomposition[T, T, T]):
     r"""DEUP additive uncertainty decomposition.
 
     Follows the classification setup of
-    :cite:`lahlou2021deup`, where
+    :cite:`lahlouDirectEpistemic2023`, where
     aleatoric uncertainty :math:`H[P(Y|x)]` of the ground-truth
     conditional is taken to be zero in the absence of label replicates:
 

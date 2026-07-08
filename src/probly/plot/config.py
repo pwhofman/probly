@@ -13,7 +13,11 @@ def _apply_rc_defaults() -> None:
     """Set global matplotlib rcParams for the Fira Sans font family."""
     rc = mpl.rcParams
     rc["font.family"] = "sans-serif"
-    rc["font.sans-serif"] = [_FONT_FAMILY]
+    # Prefer Fira Sans but keep matplotlib's built-in sans-serif fallbacks
+    # (DejaVu Sans always ships with matplotlib) so environments without Fira
+    # Sans installed -- CI runners, most contributor machines -- fall back
+    # silently instead of emitting a findfont warning per build/worker.
+    rc["font.sans-serif"] = [_FONT_FAMILY, *rc["font.sans-serif"]]
 
     rc["xtick.labelsize"] = 10
     rc["ytick.labelsize"] = 10

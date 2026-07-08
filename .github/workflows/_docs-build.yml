@@ -9,6 +9,22 @@ on:
         description: "Treat warnings as errors (-W flag)"
         type: boolean
         default: false
+      docs-cache:
+        description: "Restore the docs build cache; only changed examples and API pages are rebuilt"
+        type: boolean
+        default: false
+      ref:
+        description: "Git ref to check out and build (empty = the triggering ref)"
+        type: string
+        default: ""
+      source-ref:
+        description: "Value for DOCS_SOURCE_REF (tag for release builds; empty = dev flavor linking to main)"
+        type: string
+        default: ""
+      base-url:
+        description: "Value for DOCS_BASE_URL (canonical base URL; empty = no canonical links)"
+        type: string
+        default: ""
 
 permissions:
     contents: read
@@ -20,6 +36,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
             persist-credentials: false
+            ref: ${{ inputs.ref }}
       - name: Set up Python and uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v7.0.0
         with:
@@ -27,8 +44,69 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: uv sync
+      - name: Restore docs build cache
+        if: inputs.docs-cache
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: |
+            docs/source/auto_examples
+            docs/source/gen_modules
+            docs/source/api
+            docs/build
+          key: sphinx-docs-${{ hashFiles('uv.lock') }}-${{ github.run_id }}
+          restore-keys: |
+            sphinx-docs-${{ hashFiles('uv.lock') }}-
+      - name: Remove cached output of deleted examples
+        # orphaned gallery pages are in no toctree and fail -W builds
+        if: inputs.docs-cache
+        run: |
+          [ -d docs/source/auto_examples ] || exit 0
+          find docs/source/auto_examples -name 'plot_*.rst' | while read -r rst; do
+            rel="${rst#docs/source/auto_examples/}"
+            if [ ! -f "examples/${rel%.rst}.py" ]; then
+              rm -f "${rst%.rst}".*
+            fi
+          done
+      - name: Normalize file mtimes for incremental build
+        # Gives unchanged files an old mtime so Sphinx keeps their cached
+        # output; runs unconditionally so cold builds produce the manifest.
+        # Both helper scripts postdate old release tags, so skip them when
+        # release-docs.yml rebuilds a historical tag.
+        run: |
+          if [ -f docs/source/_normalize_source_mtimes.py ]; then
+            uv run python docs/source/_normalize_source_mtimes.py
+          else
+            echo "_normalize_source_mtimes.py not in this checkout (old tag); skipping"
+          fi
+      - name: Prune stale API pages
+        run: |
+          if [ -f docs/source/_prune_stale_api.py ]; then
+            uv run python docs/source/_prune_stale_api.py
+          else
+            echo "_prune_stale_api.py not in this checkout (old tag); skipping"
+          fi
+      - name: Pre-download example datasets
+        # examples share ~/.cache/mnist; download once so parallel gallery
+        # workers don't race on torchvision's download/extraction
+        run: uv run python -c "from probly_benchmark.data import load_mnist; load_mnist()"
       - name: Build Sphinx documentation
-        run: uv run sphinx-build ${{ inputs.strict && '-W' || '' }} -b html docs/source docs/build/html
+        # Skipping unchanged examples is conf.py's default; do not set
+        # FORCE_CLEAN here so the cached environment sees the same config
+        # as any other build.
+        env:
+          DOCS_SOURCE_REF: ${{ inputs.source-ref }}
+          DOCS_BASE_URL: ${{ inputs.base-url }}
+        run: uv run sphinx-build ${{ inputs.strict && '-W' || '' }} -j auto -b html docs/source docs/build/html
+      - name: Save docs build cache
+        if: always()
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: |
+            docs/source/auto_examples
+            docs/source/gen_modules
+            docs/source/api
+            docs/build
+          key: sphinx-docs-${{ hashFiles('uv.lock') }}-${{ github.run_id }}
       - name: Upload docs artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:

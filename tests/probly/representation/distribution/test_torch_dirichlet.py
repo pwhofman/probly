@@ -72,3 +72,93 @@ def test_torch_dirichlet_torch_operations_preserve_protected_class_axis() -> Non
     assert meaned.shape == (3,)
     assert meaned.alphas.shape == (3, 4)
     assert torch.allclose(meaned.alphas, torch.mean(alphas, dim=0))
+
+
+def _torch_modules():
+    pytest.importorskip("torch")
+    import torch as _torch  # noqa: PLC0415
+
+    return _torch
+
+
+class TestTorchDirichletDistribution:
+    """Validation and properties for the torch Dirichlet distribution."""
+
+    def test_alphas_must_be_positive(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="strictly positive"):
+            TorchDirichletDistribution(alphas=torch.tensor([0.0, 1.0, 2.0]))
+
+    def test_alphas_must_be_at_least_two_classes(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="at least 2 classes"):
+            TorchDirichletDistribution(alphas=torch.tensor([1.0]))
+
+    def test_alphas_zero_dim_raises(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="at least one dimension"):
+            TorchDirichletDistribution(alphas=torch.tensor(1.0))
+
+    def test_alphas_must_be_tensor(self) -> None:
+        from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: PLC0415
+
+        with pytest.raises(TypeError, match="torch tensor"):
+            TorchDirichletDistribution(alphas=[1.0, 1.0])  # type: ignore[arg-type]
+
+    def test_from_tensor_classmethod(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: PLC0415
+
+        d = TorchDirichletDistribution.from_tensor([1.0, 2.0, 3.0])
+        assert d.alphas.shape == (3,)
+        # dtype-aware variant.
+        d2 = TorchDirichletDistribution.from_tensor([1.0, 2.0, 3.0], dtype=torch.float64)
+        assert d2.alphas.dtype == torch.float64
+
+    def test_eq_with_dirichlet(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: PLC0415
+
+        a = TorchDirichletDistribution(alphas=torch.tensor([1.0, 2.0]))
+        b = TorchDirichletDistribution(alphas=torch.tensor([1.0, 2.0]))
+        assert bool((a == b).all())
+
+    def test_eq_with_tensor(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: PLC0415
+
+        a = TorchDirichletDistribution(alphas=torch.tensor([1.0, 2.0]))
+        eq = a == torch.tensor([1.0, 2.0])
+        assert bool(eq.all())
+
+    def test_hash(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: PLC0415
+
+        a = TorchDirichletDistribution(alphas=torch.tensor([1.0, 2.0]))
+        assert isinstance(hash(a), int)
+
+    def test_sample_shape(self) -> None:
+        torch = _torch_modules()
+        from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: PLC0415
+
+        d = TorchDirichletDistribution(alphas=torch.tensor([1.0, 1.0, 1.0]))
+        s = d.sample(num_samples=5)
+        assert s.tensor.tensor.shape == (5, 3)
+        assert s.sample_dim == 0
+
+    def test_numpy_conversion(self) -> None:
+        torch = _torch_modules()
+        import numpy as np  # noqa: PLC0415
+
+        from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: PLC0415
+
+        d = TorchDirichletDistribution(alphas=torch.tensor([1.0, 2.0]))
+        arr = d.numpy()
+        np.testing.assert_allclose(arr, [1.0, 2.0])

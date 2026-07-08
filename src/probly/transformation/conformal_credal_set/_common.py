@@ -6,6 +6,7 @@ from abc import ABC
 from typing import TYPE_CHECKING, Any, Protocol, Self, cast, runtime_checkable
 
 from flextype import flexdispatch
+
 from probly.conformal_scores.dirichlet_relative_likelihood._common import dirichlet_rl_score
 from probly.conformal_scores.inner_product._common import inner_product_score
 from probly.conformal_scores.kullback_leibler._common import kl_divergence_score
@@ -198,6 +199,10 @@ def conformal_credal_set_generator[**In, T, Out: CredalSet](
 def conformal_total_variation[**In, Out: DistanceBasedCredalSet](
     base: Predictor[In, Out],
 ) -> TVConformalCredalSetPredictor[In, Out]:
+    """Create a credal predictor with TV-ball conformal sets.
+
+    Based on :cite:`saleSecondOrder2024` and :cite:`angelopoulosGentleIntroduction2021`.
+    """
     return conformal_credal_set_generator(base, tv_score)
 
 
@@ -206,6 +211,10 @@ def conformal_total_variation[**In, Out: DistanceBasedCredalSet](
 def conformal_wasserstein_distance[**In, Out: DistanceBasedCredalSet](
     base: Predictor[In, Out],
 ) -> WassersteinConformalCredalSetPredictor[In, Out]:
+    """Create a credal predictor with Wasserstein-ball conformal sets.
+
+    Based on :cite:`saleSecondOrder2024` and :cite:`angelopoulosGentleIntroduction2021`.
+    """
     return conformal_credal_set_generator(base, wasserstein_distance_score)
 
 
@@ -214,6 +223,10 @@ def conformal_wasserstein_distance[**In, Out: DistanceBasedCredalSet](
 def conformal_inner_product[**In, Out: DistanceBasedCredalSet](
     base: Predictor[In, Out],
 ) -> InnerProductConformalCredalSetPredictor[In, Out]:
+    """Create a credal predictor with inner-product-ball conformal sets.
+
+    Based on :cite:`saleSecondOrder2024` and :cite:`angelopoulosGentleIntroduction2021`.
+    """
     return conformal_credal_set_generator(base, inner_product_score)
 
 
@@ -222,6 +235,10 @@ def conformal_inner_product[**In, Out: DistanceBasedCredalSet](
 def conformal_kullback_leibler[**In, Out: DistanceBasedCredalSet](
     base: Predictor[In, Out],
 ) -> KullbackLeiblerConformalCredalSetPredictor[In, Out]:
+    """Create a credal predictor with KL-ball conformal sets.
+
+    Based on :cite:`saleSecondOrder2024` and :cite:`angelopoulosGentleIntroduction2021`.
+    """
     return conformal_credal_set_generator(base, kl_divergence_score)
 
 
@@ -230,6 +247,10 @@ def conformal_kullback_leibler[**In, Out: DistanceBasedCredalSet](
 def conformal_dirichlet_relative_likelihood[**In, Out: DirichletLevelSetCredalSet](
     base: Predictor[In, Out],
 ) -> DirichletConformalCredalSetPredictor[In, Out]:
+    """Create a credal predictor with Dirichlet level-set conformal sets.
+
+    Based on :cite:`saleSecondOrder2024` and :cite:`angelopoulosGentleIntroduction2021`.
+    """
     return conformal_credal_set_generator(base, dirichlet_rl_score)
 
 

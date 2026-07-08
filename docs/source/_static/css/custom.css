@@ -1,0 +1,25 @@
+/* Version switcher dropdown (sidebar/versions.html), themed via furo's
+   CSS variables so it follows light and dark mode. */
+.sidebar-versions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 var(--sidebar-item-spacing-horizontal);
+  margin: var(--sidebar-item-spacing-vertical) 0 0 0;
+}
+
+.sidebar-versions-label {
+  color: var(--color-sidebar-caption-text);
+  font-size: var(--font-size--small);
+}
+
+#probly-version-select {
+  flex: 1;
+  min-width: 0;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--color-sidebar-search-border);
+  border-radius: 0.25rem;
+  background: var(--color-sidebar-search-background);
+  color: var(--color-sidebar-search-text);
+  font-size: var(--font-size--small);
+}

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 from scipy import special
 from scipy.stats import entropy as scipy_entropy
@@ -18,17 +20,25 @@ from probly.representation.distribution.array_gaussian import (
 
 from ._common import (
     DEFAULT_MEAN_FIELD_FACTOR,
+    DEFAULT_NUM_SAMPLES,
+    TOTAL_VARIATION_BISECTION_ITERATIONS,
     LogBase,
     conditional_entropy,
     dempster_shafer_uncertainty,
     entropy,
     entropy_of_expected_predictive_distribution,
+    expected_generalized_entropy,
     expected_max_probability_complement,
+    generalized_entropy_of_expected,
     max_disagreement,
     max_probability_complement_of_expected,
+    min_expected_total_variation,
     mutual_information,
     vacuity,
 )
+
+if TYPE_CHECKING:
+    from probly.quantification.scoring_rule import ScoringRule
 
 # Entropy
 
@@ -258,6 +268,18 @@ def array_categorical_sample_expected_max_probability_complement(
     return np.mean(per_sample_complement, axis=axis)
 
 
+@expected_max_probability_complement.register(ArrayDirichletDistribution)
+def array_dirichlet_expected_max_probability_complement(
+    distribution: ArrayDirichletDistribution,
+    *,
+    num_samples: int = DEFAULT_NUM_SAMPLES,
+    generator: np.random.Generator | None = None,
+) -> np.ndarray:
+    """Estimate ``1 - E[max_k p_k]`` for a Dirichlet by Monte-Carlo (no closed form)."""
+    sample = distribution.sample(num_samples, rng=generator)
+    return array_categorical_sample_expected_max_probability_complement(sample)
+
+
 @max_disagreement.register(ArrayCategoricalDistributionSample)
 def array_categorical_sample_max_disagreement(
     sample: ArrayCategoricalDistributionSample,
@@ -271,6 +293,99 @@ def array_categorical_sample_max_disagreement(
     per_sample_bma_prob = np.take_along_axis(p, bma_argmax, axis=-1).squeeze(-1)
     per_sample_max = np.max(p, axis=-1)
     return np.mean(per_sample_max - per_sample_bma_prob, axis=axis)
+
+
+# Generalized-entropy (scoring rule) measures
+
+
+@generalized_entropy_of_expected.register(ArrayCategoricalDistributionSample)
+def array_categorical_sample_generalized_entropy_of_expected(
+    sample: ArrayCategoricalDistributionSample, scoring_rule: ScoringRule
+) -> np.ndarray:
+    """Compute G(theta_bar) = <theta_bar, loss(theta_bar)> for a categorical sample."""
+    mean = sample.sample_mean().probabilities  # (..., K)
+    # 0 * inf = 0: a zero-probability outcome contributes nothing to the expected loss.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        weighted = mean * scoring_rule.loss(mean)
+    return np.where(mean > 0, weighted, 0.0).sum(axis=-1)
+
+
+@expected_generalized_entropy.register(ArrayCategoricalDistributionSample)
+def array_categorical_sample_expected_generalized_entropy(
+    sample: ArrayCategoricalDistributionSample, scoring_rule: ScoringRule
+) -> np.ndarray:
+    """Compute E[G(theta)] = mean_m <theta_m, loss(theta_m)> for a categorical sample."""
+    p = sample.array.probabilities  # (..., M, K)
+    axis = sample.sample_axis
+    del sample  # Avoid keeping a reference to the sample for memory efficiency
+    # 0 * inf = 0: a zero-probability outcome contributes nothing to the expected loss.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        weighted = p * scoring_rule.loss(p)
+    per_sample = np.where(p > 0, weighted, 0.0).sum(axis=-1)  # (..., M)
+    return np.mean(per_sample, axis=axis)
+
+
+# Distance-based epistemic uncertainty (Wasserstein)
+
+
+def _min_expected_total_variation_from_samples(probabilities: np.ndarray, sample_axis: int) -> np.ndarray:
+    """Solve ``1/2 min_q E_s ||p_s - q||_1`` over the simplex for a sample of distributions.
+
+    Each ``q_k`` is the ``(1/2 - lambda)`` quantile of the marginal draws, where ``lambda`` is the
+    single multiplier that makes ``q`` sum to one. The simplex sum is monotone in the quantile
+    level, so ``lambda`` is found by bisection.
+    """
+    probabilities = np.moveaxis(probabilities, sample_axis, -2)  # (..., num_samples, num_classes)
+    num_samples = probabilities.shape[-2]
+    num_classes = probabilities.shape[-1]
+    batch_shape = probabilities.shape[:-2]
+    sorted_probabilities = np.sort(probabilities, axis=-2)
+
+    def quantile_at(level: np.ndarray) -> np.ndarray:
+        position = level * (num_samples - 1)  # (...)
+        lower = np.floor(position).astype(np.intp)
+        upper = np.minimum(lower + 1, num_samples - 1)
+        fraction = (position - lower)[..., None]  # (..., 1)
+        lower_index = np.broadcast_to(lower[..., None, None], (*batch_shape, 1, num_classes))
+        upper_index = np.broadcast_to(upper[..., None, None], (*batch_shape, 1, num_classes))
+        value_lower = np.take_along_axis(sorted_probabilities, lower_index, axis=-2)[..., 0, :]  # (..., num_classes)
+        value_upper = np.take_along_axis(sorted_probabilities, upper_index, axis=-2)[..., 0, :]
+        return value_lower + fraction * (value_upper - value_lower)
+
+    # sum_k q_k(level) increases with the quantile level, so bisect for sum == 1.
+    low = np.zeros(batch_shape)
+    high = np.ones(batch_shape)
+    for _ in range(TOTAL_VARIATION_BISECTION_ITERATIONS):
+        mid = 0.5 * (low + high)
+        below_target = quantile_at(mid).sum(axis=-1) < 1.0
+        low = np.where(below_target, mid, low)
+        high = np.where(below_target, high, mid)
+    optimal_q = quantile_at(0.5 * (low + high))  # (..., num_classes)
+    distances = np.abs(probabilities - optimal_q[..., None, :])  # (..., num_samples, num_classes)
+    return 0.5 * np.mean(distances, axis=-2).sum(axis=-1)
+
+
+@min_expected_total_variation.register(ArrayCategoricalDistributionSample)
+def array_categorical_sample_min_expected_total_variation(
+    sample: ArrayCategoricalDistributionSample,
+) -> np.ndarray:
+    """Compute the distance-based epistemic uncertainty of a categorical sample."""
+    probabilities = sample.array.probabilities
+    sample_axis = sample.sample_axis
+    del sample  # Avoid keeping a reference to the sample for memory efficiency
+    return _min_expected_total_variation_from_samples(probabilities, sample_axis)
+
+
+@min_expected_total_variation.register(ArrayDirichletDistribution)
+def array_dirichlet_min_expected_total_variation(
+    distribution: ArrayDirichletDistribution,
+    *,
+    num_samples: int = DEFAULT_NUM_SAMPLES,
+    generator: np.random.Generator | None = None,
+) -> np.ndarray:
+    """Estimate the distance-based epistemic uncertainty of a Dirichlet by Monte-Carlo."""
+    sample = distribution.sample(num_samples, rng=generator)
+    return array_categorical_sample_min_expected_total_variation(sample)
 
 
 # Vacuity

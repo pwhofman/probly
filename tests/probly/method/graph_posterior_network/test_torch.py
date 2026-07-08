@@ -210,3 +210,254 @@ def test_cuq_graph_neural_network_registers_cuq_predictor_protocol() -> None:
 
     assert isinstance(model, CUQGraphNeuralNetworkPredictor)
     assert not isinstance(model, GraphPosteriorNetworkPredictor)
+
+
+def test_random_walk_norm_with_explicit_edge_weight() -> None:
+    """``random_walk_norm`` casts an explicit ``edge_weight`` to ``dtype`` (line 47)."""
+    from probly.method.graph_posterior_network.torch import random_walk_norm  # noqa: PLC0415
+
+    edge_index = torch.tensor([[0, 1, 1, 2], [1, 0, 2, 1]], dtype=torch.long)
+    edge_weight = torch.tensor([1.0, 2.0, 3.0, 4.0], dtype=torch.float64)
+
+    new_edge_index, normalized = random_walk_norm(
+        edge_index, edge_weight, num_nodes=3, add_self_loops=False, dtype=torch.float32
+    )
+
+    assert normalized.dtype == torch.float32
+    # Without self-loops the indices remain unchanged.
+    assert torch.equal(new_edge_index, edge_index)
+
+
+def test_validate_data_rejects_non_data() -> None:
+    """``_validate_data`` raises TypeError when ``data`` is not a PyG ``Data``."""
+    model = graph_posterior_network(_encoder(), 3, 3, encoder_dim=5, num_flows=2, propagation_steps=2)
+
+    with pytest.raises(TypeError, match="torch_geometric.data.Data"):  # noqa: RUF043
+        model("not a data object")
+
+
+def test_encode_returns_hidden_and_latent() -> None:
+    """``encode`` exposes both hidden and latent representations (lines 119-123)."""
+    data = _tiny_graph()
+    model = graph_posterior_network(_encoder(), 3, 3, encoder_dim=5, num_flows=2, propagation_steps=2)
+
+    hidden, latent = model.encode(data)
+
+    assert hidden.shape == (data.num_nodes, 5)
+    assert latent.shape == (data.num_nodes, 3)
+
+
+def test_class_probabilities_uses_class_counts_when_provided() -> None:
+    """``class_probabilities`` returns the configured prior when ``class_counts`` is set (line 136)."""
+    data = _tiny_graph()
+    model = graph_posterior_network(
+        _encoder(),
+        3,
+        3,
+        encoder_dim=5,
+        num_flows=2,
+        propagation_steps=2,
+        class_counts=[1.0, 1.0, 2.0],
+    )
+
+    probs = model.class_probabilities(data)
+
+    assert torch.allclose(probs, torch.tensor([0.25, 0.25, 0.5]))
+
+
+def test_class_probabilities_requires_train_mask_when_no_class_counts() -> None:
+    """``class_probabilities`` raises when neither ``class_counts`` nor labels are available (lines 139-140)."""
+    model = graph_posterior_network(_encoder(), 3, 3, encoder_dim=5, num_flows=2, propagation_steps=2)
+    data = Data(x=torch.zeros(3, 4), edge_index=torch.zeros((2, 0), dtype=torch.long))
+
+    with pytest.raises(ValueError, match="data.y and data.train_mask"):  # noqa: RUF043
+        model.class_probabilities(data)
+
+
+def test_feature_evidence_returns_dict() -> None:
+    """``feature_evidence`` exposes hidden, latent and beta_ft (lines 163-165)."""
+    data = _tiny_graph()
+    model = graph_posterior_network(_encoder(), 3, 3, encoder_dim=5, num_flows=2, propagation_steps=2)
+
+    evidence = model.feature_evidence(data)
+
+    assert set(evidence) == {"hidden", "latent", "beta_ft"}
+    assert evidence["hidden"].shape == (data.num_nodes, 5)
+    assert evidence["latent"].shape == (data.num_nodes, 3)
+    assert evidence["beta_ft"].shape == (data.num_nodes, 3)
+    assert torch.isfinite(evidence["beta_ft"]).all()
+
+
+def test_lop_disabled_cache_recomputes_each_call() -> None:
+    """When caching is disabled the cache early-returns ``None`` (line 268)."""
+    data = _tiny_graph()
+    model = lop_graph_posterior_network(
+        _encoder(),
+        3,
+        3,
+        encoder_dim=5,
+        num_flows=2,
+        propagation_steps=2,
+        cache_propagation_weights=False,
+    )
+
+    _, first_weights = model(data)
+    _, second_weights = model(data)
+
+    assert second_weights is not first_weights
+    assert torch.allclose(first_weights, second_weights)
+
+
+def test_lop_zero_size_cache_recomputes_each_call() -> None:
+    """A zero-size cache hits the early-return guards in store and lookup (lines 268, 288)."""
+    data = _tiny_graph()
+    model = lop_graph_posterior_network(
+        _encoder(),
+        3,
+        3,
+        encoder_dim=5,
+        num_flows=2,
+        propagation_steps=2,
+        propagation_weight_cache_size=0,
+    )
+
+    _, first_weights = model(data)
+    _, second_weights = model(data)
+
+    assert second_weights is not first_weights
+
+
+def test_lop_cache_invalidates_on_dtype_change() -> None:
+    """Cached entries are dropped when the dtype query changes (lines 281-282)."""
+    data = _tiny_graph()
+    model = lop_graph_posterior_network(_encoder(), 3, 3, encoder_dim=5, num_flows=2, propagation_steps=2)
+
+    # First call caches under data.x dtype (float32).
+    _, _ = model(data)
+    assert isinstance(data.edge_index, torch.Tensor)
+    assert data.num_nodes is not None
+    cached = model._cached_propagation_weights(data.edge_index, data.num_nodes, torch.float64)  # noqa: SLF001
+    # Mismatched dtype must invalidate the cache (returns None).
+    assert cached is None
+
+
+def test_lop_cache_evicts_lru_when_full() -> None:
+    """Caching extra ``edge_index`` tensors evicts the oldest entry (line 303)."""
+    data_a = _tiny_graph()
+    data_b = _tiny_graph()
+    model = lop_graph_posterior_network(
+        _encoder(),
+        3,
+        3,
+        encoder_dim=5,
+        num_flows=2,
+        propagation_steps=2,
+        propagation_weight_cache_size=1,
+    )
+
+    _, _ = model(data_a)
+    _, _ = model(data_b)
+    # ``data_b``'s edge_index is the only one cached now; ``data_a``'s entry got evicted.
+    assert len(model._propagation_weight_cache) == 1  # noqa: SLF001
+
+
+def test_lop_propagation_weight_dtype_falls_back_to_input() -> None:
+    """On CPU the dtype helper returns the input tensor's dtype (line 308 covered, line 307 CUDA-only)."""
+    model = lop_graph_posterior_network(_encoder(), 3, 3, encoder_dim=5, num_flows=2, propagation_steps=2)
+
+    beta_ft = torch.zeros(2, 3, dtype=torch.float64)
+    assert model._propagation_weight_dtype(beta_ft) == torch.float64  # noqa: SLF001
+
+
+def test_lop_forward_requires_num_nodes() -> None:
+    """``forward`` raises when ``data.num_nodes`` is unset (lines 363-364)."""
+    # Pass an explicit class_counts so class_probabilities does not need ``train_mask``.
+    model = lop_graph_posterior_network(
+        _encoder(),
+        3,
+        3,
+        encoder_dim=5,
+        num_flows=2,
+        propagation_steps=2,
+        class_counts=[1, 1, 1],
+    )
+
+    class _DataWithoutNumNodes(Data):
+        @property
+        def num_nodes(self) -> None:
+            return None
+
+    bad_data = _DataWithoutNumNodes(
+        x=torch.zeros(3, 4),
+        edge_index=torch.tensor([[0, 1], [1, 0]], dtype=torch.long),
+    )
+
+    with pytest.raises(ValueError, match="num_nodes"):
+        model(bad_data)
+
+
+def test_lop_predict_representation_returns_mixture() -> None:
+    """``predict_representation`` wraps the LOP outputs in a mixture distribution (lines 373-374)."""
+    from probly.representation.distribution.torch_mixture import TorchMixtureDistribution  # noqa: PLC0415
+
+    data = _tiny_graph()
+    model = lop_graph_posterior_network(_encoder(), 3, 3, encoder_dim=5, num_flows=2, propagation_steps=2)
+
+    dist = model.predict_representation(data)
+
+    assert isinstance(dist, TorchMixtureDistribution)
+    # The mixture stores its components and per-node mixture weights.
+    assert dist.components is not None
+    assert dist.mixture_weights is not None
+
+
+def test_cuq_with_gcn_convolution() -> None:
+    """The GCN branch of ``CUQGraphNeuralNetwork`` exercises lines 431-432 and 439-440."""
+    data = _tiny_graph()
+    model = cuq_graph_neural_network(
+        _encoder(),
+        3,
+        3,
+        encoder_dim=5,
+        num_flows=2,
+        propagation_steps=2,
+        convolution_name="gcn",
+    )
+
+    alpha = model(data)
+
+    assert alpha.shape == (data.num_nodes, 3)
+    assert (alpha > 0).all()
+
+
+def test_cuq_unsupported_convolution_raises() -> None:
+    """Unknown convolution names raise ValueError (lines 434-435)."""
+    with pytest.raises(ValueError, match="Unsupported CUQ-GNN convolution"):
+        cuq_graph_neural_network(
+            _encoder(),
+            3,
+            3,
+            encoder_dim=5,
+            num_flows=2,
+            propagation_steps=2,
+            convolution_name="unknown",  # ty: ignore[invalid-argument-type]
+        )
+
+
+def test_cuq_predict_representation_returns_dirichlet() -> None:
+    """``predict_representation`` wraps the alpha output in a Dirichlet (lines 445-446)."""
+    data = _tiny_graph()
+    model = cuq_graph_neural_network(
+        _encoder(),
+        3,
+        3,
+        encoder_dim=5,
+        num_flows=2,
+        propagation_steps=2,
+        convolution_name="appnp",
+    )
+
+    dist = model.predict_representation(data)
+
+    assert isinstance(dist, TorchDirichletDistribution)
+    assert dist.alphas.shape == (data.num_nodes, 3)

@@ -58,7 +58,7 @@ def _(obj: nn.Linear, state: State) -> tuple[nn.Module, State]:
 
 
 class RBFCentroidHead(nn.Module):
-    r"""RBF centroid head for DUQ :cite:`vanAmersfoortDUQ2020`.
+    r"""RBF centroid head for DUQ :cite:`vanAmersfoortUncertaintyEstimation2020`.
 
     Maintains a learnable per-class projection
     :math:`W \in \mathbb{R}^{n \times C \times d}` and EMA-tracked class

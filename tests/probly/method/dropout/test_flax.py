@@ -11,6 +11,12 @@ flax = pytest.importorskip("flax")
 from flax import nnx  # noqa: E402
 
 
+def test_shared_mask_not_implemented_for_flax(flax_model_small_2d_2d: nnx.Module) -> None:
+    """shared_mask=True is only supported on the torch backend and raises for flax."""
+    with pytest.raises(NotImplementedError, match="torch backend"):
+        dropout(flax_model_small_2d_2d, p=0.5, shared_mask=True)
+
+
 class TestNetworkArchitectures:
     """Test class for different network architectures."""
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from flextype import flexdispatch
+
 from probly.predictor import EvidentialPredictor, predict, predict_raw
 from probly.representation.distribution import DirichletDistribution, create_dirichlet_distribution_from_alphas
 from probly.transformation.transformation import predictor_transformation
@@ -36,7 +37,18 @@ def posterior_network[**In, Out: DirichletDistribution](
     class_counts: list | None = None,
     num_flows: int = 6,
 ) -> PosteriorNetworkPredictor[In, Out]:
-    """Create a Posterior Network predictor from an encoder based on :cite:`charpentierPosteriorNetwork2020`."""
+    """Create a Posterior Network predictor from an encoder based on :cite:`charpentierPosteriorNetwork2020`.
+
+    Args:
+        encoder: The backbone predictor mapping inputs to a latent embedding.
+        latent_dim: Dimensionality of the encoder's output embedding.
+        num_classes: Number of target classes.
+        class_counts: Per-class sample counts for the prior Dirichlet concentration. Default is None.
+        num_flows: Number of affine coupling steps in the normalizing flow. Default is 6.
+
+    Returns:
+        The posterior network predictor outputting a DirichletDistribution.
+    """
     return posterior_network_generator(
         encoder,
         latent_dim,

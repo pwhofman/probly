@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from flextype import flexdispatch
+
 from probly.representation.credal_set._common import CategoricalCredalSet
 from probly.representation.distribution import (
     CategoricalDistribution,

@@ -6,12 +6,13 @@ from typing import TYPE_CHECKING
 
 import torch.nn
 
-from probly.layers.torch import DropConnectLinear
+from probly.layers.torch import DropConnectLinear, SharedMaskDropout
 
 from ._common import CLEANUP_FUNCS, sampling_preparation_traverser
 
 if TYPE_CHECKING:
     from flextype.isinstance import LazyType
+
     from pytraverse import State
 
 
@@ -26,8 +27,8 @@ def _enforce_train_mode(obj: torch.nn.Module, state: State) -> tuple[torch.nn.Mo
 def register_forced_train_mode(cls: LazyType) -> None:
     """Register a class to be forced into train mode during sampling.
 
-    This enables Monte Carlo sampling techniques like MC Dropout :cite:`galDropoutBayesian2016` or DropConnect :cite:
-    `mobinyDropConnectEffective2019`.
+    This enables Monte Carlo sampling techniques like MC Dropout :cite:`galDropoutBayesian2016`
+    or DropConnect :cite:`mobinyDropConnectEffective2021`.
     """
     sampling_preparation_traverser.register(cls, _enforce_train_mode)
 
@@ -39,5 +40,6 @@ register_forced_train_mode(
     | torch.nn.Dropout3d
     | torch.nn.AlphaDropout
     | torch.nn.FeatureAlphaDropout
-    | DropConnectLinear,
+    | DropConnectLinear
+    | SharedMaskDropout,
 )
