@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method.vbll import vbll
+from probly.method.vbll import find_vbll_layer, vbll
 from probly.predictor import predict
 from probly.quantification import decompose
 from probly.quantification.decomposition.entropy import SecondOrderEntropyDecomposition
@@ -160,6 +160,24 @@ def test_vbll_keeps_non_trailing_softmax() -> None:
     assert isinstance(modules[2], VBLLLayer)
     assert isinstance(modules[1], nn.Softmax)
     assert isinstance(modules[0], nn.Linear)
+
+
+@pytest.mark.parametrize("variant", VARIANTS)
+def test_find_vbll_layer_returns_the_swapped_layer(variant: str) -> None:
+    from probly.layers.torch import HetVBLLLayer, TVBLLLayer, VBLLLayer  # noqa: PLC0415
+
+    predictor = vbll(_regression_model(out_features=3), variant=variant)
+
+    layer = find_vbll_layer(predictor)
+
+    expected = {"discriminative": VBLLLayer, "student_t": TVBLLLayer, "heteroscedastic": HetVBLLLayer}[variant]
+    assert isinstance(layer, expected)
+    assert layer is list(predictor)[2]
+
+
+def test_find_vbll_layer_raises_without_vbll_layer() -> None:
+    with pytest.raises(ValueError, match="No layer"):
+        find_vbll_layer(_regression_model())
 
 
 def test_compute_vbll_categorical_sample_rejects_unsupported_type() -> None:

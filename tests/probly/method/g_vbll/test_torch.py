@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method.g_vbll import g_vbll
+from probly.method.g_vbll import find_g_vbll_layer, g_vbll
 from probly.predictor import predict
 from probly.quantification import quantify
 from probly.representation.distribution import CategoricalDistribution
@@ -49,6 +49,17 @@ def test_g_vbll_representer_quantifies_to_entropy() -> None:
     uncertainty = quantify(representation)
 
     assert torch.all(uncertainty.total >= 0)
+
+
+def test_find_g_vbll_layer_returns_the_swapped_layer() -> None:
+    from probly.layers.torch import GVBLLLayer  # noqa: PLC0415
+
+    predictor = g_vbll(_regression_model(out_features=3))
+
+    layer = find_g_vbll_layer(predictor)
+
+    assert isinstance(layer, GVBLLLayer)
+    assert layer is list(predictor)[2]
 
 
 def test_g_vbll_layer_train_loss_and_kl_are_finite() -> None:
