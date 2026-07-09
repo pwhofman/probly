@@ -18,10 +18,9 @@ from sklearn.datasets import make_moons
 import torch
 from torch import nn
 
-from probly.layers.torch import GVBLLLayer
-from probly.method.g_vbll import g_vbll
+from probly.method.g_vbll import find_g_vbll_layer, g_vbll
 from probly.representer import representer
-from probly.train.vbll.torch import g_vbll_loss
+from probly.train.vbll import vbll_loss
 
 from examples.utils.model import ResFFN
 from examples.utils.plotting import plot_example_uncertainty
@@ -53,11 +52,11 @@ g_vbll_model = g_vbll(ResFFN())
 # --------
 #
 # G-VBLL is fit by maximizing the generative ELBO of
-# :cite:`harrisonVariationalBayesian2024`, computed by ``g_vbll_loss``.  As with the
-# other VBLL layers, the loss needs the features feeding the layer, which we capture
-# with a forward pre-hook.
+# :cite:`harrisonVariationalBayesian2024`; ``vbll_loss`` dispatches to it based on
+# the layer type.  As with the other VBLL layers, the loss needs the features
+# feeding the layer, which we capture with a forward pre-hook.
 
-vbll_layer = next(m for m in g_vbll_model.modules() if isinstance(m, GVBLLLayer))
+vbll_layer = find_g_vbll_layer(g_vbll_model)
 
 captured_features: dict[str, torch.Tensor] = {}
 vbll_layer.register_forward_pre_hook(lambda _module, inputs: captured_features.update(features=inputs[0]))
@@ -70,7 +69,7 @@ def train_g_vbll(model: nn.Module, X: torch.Tensor, y: torch.Tensor, epochs: int
     for _epoch in range(epochs):
         opt.zero_grad()
         model(X)  # populates captured_features via the pre-hook
-        loss = g_vbll_loss(vbll_layer, captured_features["features"], y, kl_weight)
+        loss = vbll_loss(vbll_layer, captured_features["features"], y, kl_weight)
         loss.backward()
         opt.step()
 

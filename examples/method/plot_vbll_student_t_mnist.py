@@ -13,11 +13,10 @@ from __future__ import annotations
 import numpy as np
 import torch
 
-from probly.layers.torch import TVBLLLayer
-from probly.method.vbll import vbll
+from probly.method.vbll import find_vbll_layer, vbll
 from probly.quantification import quantify
 from probly.representer import representer
-from probly.train.vbll.torch import t_vbll_loss
+from probly.train.vbll import vbll_loss
 from probly_benchmark.data import load_mnist
 
 from examples.utils.model import MLPClassifier
@@ -49,10 +48,11 @@ vbll_model = vbll(base_model, variant="student_t", parameterization="dense")
 # Training
 # --------
 #
-# ``t_vbll_loss`` is the reduced Knowles-Minka softmax bound.  It needs the
-# features feeding the layer, which we capture with a forward pre-hook.
+# For the Student-t layer, ``vbll_loss`` dispatches to the reduced Knowles-Minka
+# softmax bound.  It needs the features feeding the layer, which we capture with
+# a forward pre-hook.
 
-vbll_layer = next(m for m in vbll_model.modules() if isinstance(m, TVBLLLayer))
+vbll_layer = find_vbll_layer(vbll_model)
 
 captured_features: dict[str, torch.Tensor] = {}
 vbll_layer.register_forward_pre_hook(lambda _module, inputs: captured_features.update(features=inputs[0]))
@@ -67,7 +67,7 @@ for _epoch in range(5):
         X_flat = X_batch.view(-1, 28 * 28)
         opt.zero_grad()
         mean, _var = vbll_model(X_flat)
-        loss = t_vbll_loss(vbll_layer, captured_features["features"], y_batch, kl_weight)
+        loss = vbll_loss(vbll_layer, captured_features["features"], y_batch, kl_weight)
         loss.backward()
         opt.step()
         correct += (mean.detach().argmax(-1) == y_batch).sum().item()

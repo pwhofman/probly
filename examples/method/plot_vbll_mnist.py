@@ -13,11 +13,10 @@ from __future__ import annotations
 import numpy as np
 import torch
 
-from probly.layers.torch import VBLLLayer
-from probly.method.vbll import vbll
+from probly.method.vbll import find_vbll_layer, vbll
 from probly.quantification import quantify
 from probly.representer import representer
-from probly.train.vbll.torch import vbll_loss
+from probly.train.vbll import vbll_loss
 from probly_benchmark.data import load_mnist
 
 from examples.utils.model import MLPClassifier
@@ -52,7 +51,7 @@ vbll_model = vbll(base_model, parameterization="dense")
 # KL term.  It needs the features feeding the layer, which we capture with a
 # forward pre-hook.
 
-vbll_layer = next(m for m in vbll_model.modules() if isinstance(m, VBLLLayer))
+vbll_layer = find_vbll_layer(vbll_model)
 
 captured_features: dict[str, torch.Tensor] = {}
 vbll_layer.register_forward_pre_hook(lambda _module, inputs: captured_features.update(features=inputs[0]))

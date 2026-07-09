@@ -16,10 +16,9 @@ from sklearn.datasets import make_moons
 import torch
 from torch import nn
 
-from probly.layers.torch import VBLLLayer
-from probly.method.vbll import vbll
+from probly.method.vbll import find_vbll_layer, vbll
 from probly.representer import representer
-from probly.train.vbll.torch import vbll_loss
+from probly.train.vbll import vbll_loss
 
 from examples.utils.model import SequentialModel
 from examples.utils.plotting import plot_example_uncertainty
@@ -56,7 +55,7 @@ vbll_model = vbll(SequentialModel(), parameterization="dense")
 # other VBLL layers, the loss needs the features feeding the layer, which we capture
 # with a forward pre-hook.
 
-vbll_layer = next(m for m in vbll_model.modules() if isinstance(m, VBLLLayer))
+vbll_layer = find_vbll_layer(vbll_model)
 
 captured_features: dict[str, torch.Tensor] = {}
 vbll_layer.register_forward_pre_hook(lambda _module, inputs: captured_features.update(features=inputs[0]))

@@ -18,10 +18,9 @@ from sklearn.datasets import make_moons
 import torch
 from torch import nn
 
-from probly.layers.torch import HetVBLLLayer
-from probly.method.vbll import vbll
+from probly.method.vbll import find_vbll_layer, vbll
 from probly.representer import representer
-from probly.train.vbll.torch import het_vbll_loss
+from probly.train.vbll import vbll_loss
 
 from examples.utils.model import SequentialModel
 from examples.utils.plotting import plot_example_uncertainty
@@ -68,11 +67,11 @@ vbll_model = vbll(SequentialModel(), variant="heteroscedastic", parameterization
 # --------
 #
 # The heteroscedastic variant is trained with the reduced Knowles-Minka softmax
-# bound from :cite:`harrisonVariationalBayesian2024`, computed by
-# ``het_vbll_loss``.  As with the other VBLL layers, the loss needs the features
-# feeding the layer, which we capture with a forward pre-hook.
+# bound from :cite:`harrisonVariationalBayesian2024`; ``vbll_loss`` dispatches to
+# it based on the layer type.  As with the other VBLL layers, the loss needs the
+# features feeding the layer, which we capture with a forward pre-hook.
 
-vbll_layer = next(m for m in vbll_model.modules() if isinstance(m, HetVBLLLayer))
+vbll_layer = find_vbll_layer(vbll_model)
 
 captured_features: dict[str, torch.Tensor] = {}
 vbll_layer.register_forward_pre_hook(lambda _module, inputs: captured_features.update(features=inputs[0]))
@@ -85,7 +84,7 @@ def train_het_vbll(model: nn.Module, X: torch.Tensor, y: torch.Tensor, epochs: i
     for _epoch in range(epochs):
         opt.zero_grad()
         model(X)  # populates captured_features via the pre-hook
-        loss = het_vbll_loss(vbll_layer, captured_features["features"], y, kl_weight)
+        loss = vbll_loss(vbll_layer, captured_features["features"], y, kl_weight)
         loss.backward()
         opt.step()
 
