@@ -23,6 +23,16 @@ from probly.layers.torch import (
     _vbll_logit_variance,
 )
 
+from ._common import vbll_loss
+
+__all__ = [
+    "disc_vbll_loss",
+    "g_vbll_loss",
+    "het_vbll_loss",
+    "t_vbll_loss",
+    "vbll_loss",
+]
+
 
 def _gaussian_weight_kl(
     mean: torch.Tensor,
@@ -63,7 +73,8 @@ def _gaussian_weight_kl(
     return 0.5 * (combined_mean_sq + trace_term + log_det_term)
 
 
-def vbll_loss(
+@vbll_loss.register(VBLLLayer)
+def disc_vbll_loss(
     layer: VBLLLayer,
     features: torch.Tensor,
     targets: torch.Tensor,
@@ -95,6 +106,7 @@ def vbll_loss(
     return -expected_log_likelihood + regularization_weight * layer.kl_divergence
 
 
+@vbll_loss.register(GVBLLLayer)
 def g_vbll_loss(
     layer: GVBLLLayer,
     features: torch.Tensor,
@@ -135,6 +147,7 @@ def g_vbll_loss(
     return -total_elbo
 
 
+@vbll_loss.register(TVBLLLayer)
 def t_vbll_loss(
     layer: TVBLLLayer,
     features: torch.Tensor,
@@ -184,6 +197,7 @@ def t_vbll_loss(
     return -total_elbo
 
 
+@vbll_loss.register(HetVBLLLayer)
 def het_vbll_loss(
     layer: HetVBLLLayer,
     features: torch.Tensor,
