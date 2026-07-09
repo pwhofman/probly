@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from probly.lazy_types import TORCH_MODULE
-from probly.traverse_nn import nn_compose
 import pytraverse as t
 from pytraverse.generic import CLONE as GENERIC_CLONE
+
+from ._common import compose as nn_compose
 
 LAST_OUTPUT_DIM = t.GlobalVariable[int]("LAST_OUTPUT_DIM", default=-1)
 """Global variable tracking the output dim of the most recently visited layer during traversal."""
@@ -59,3 +62,63 @@ def get_output_dim(model: object) -> int:
         )
         raise ValueError(msg)
     return dim
+
+
+LAYER_TYPES = t.GlobalVariable[tuple[type, ...]]("LAYER_TYPES", "The layer types to collect during traversal.")
+FOUND_LAYERS = t.GlobalVariable[list[Any]]("FOUND_LAYERS", "The matching layers collected during traversal.")
+
+
+@t.traverser
+def layer_finder(obj: object, state: t.State[Any]) -> t.TraverserResult[object]:
+    """Collect visited objects that are instances of :data:`LAYER_TYPES` into :data:`FOUND_LAYERS`."""
+    if isinstance(obj, state[LAYER_TYPES]):
+        state[FOUND_LAYERS].append(obj)
+    return obj, state
+
+
+def find_layers(model: object, layer_types: type | tuple[type, ...]) -> list[Any]:
+    """Return all layers of the given type(s) contained in a model.
+
+    Walks ``model`` using the neural-network traverser and collects every visited
+    layer that is an instance of ``layer_types``, in forward DFS order. The check
+    is a plain ``isinstance``, so no per-backend handlers are needed; any backend
+    supported by :data:`~probly.traverse_nn.nn_traverser` (currently torch and
+    flax NNX) works out of the box. The walk does not mutate or deep-copy the model.
+
+    Args:
+        model: The model to search.
+        layer_types: A layer type or tuple of layer types to match.
+
+    Returns:
+        All matching layers in traversal order; empty if none match.
+    """
+    found: list[Any] = []
+    t.traverse(
+        model,
+        nn_compose(layer_finder),
+        init={GENERIC_CLONE: False, LAYER_TYPES: layer_types, FOUND_LAYERS: found},
+    )
+    return found
+
+
+def find_layer(model: object, layer_types: type | tuple[type, ...]) -> Any:  # noqa: ANN401, the layer type depends on the requested types
+    """Return the first layer of the given type(s) contained in a model.
+
+    Convenience wrapper around :func:`find_layers` for the common case of a model
+    holding a single layer of interest (e.g. a swapped-in last layer).
+
+    Args:
+        model: The model to search.
+        layer_types: A layer type or tuple of layer types to match.
+
+    Returns:
+        The first matching layer in forward DFS order.
+
+    Raises:
+        ValueError: If the model contains no layer of the given type(s).
+    """
+    layers = find_layers(model, layer_types)
+    if not layers:
+        msg = f"No layer of type(s) {layer_types!r} found in {type(model).__name__}."
+        raise ValueError(msg)
+    return layers[0]

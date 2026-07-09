@@ -2,7 +2,7 @@
 
 Provides the backend-agnostic :func:`vbll_loss` generic that dispatches to the
 variant-specific negative ELBO based on the layer type. Use
-:func:`probly.traverse_nn.find_layer` to retrieve the VBLL layer from a
+:func:`probly.method.vbll.find_vbll_layer` to retrieve the VBLL layer from a
 transformed predictor.
 """
 
@@ -20,7 +20,7 @@ def vbll_loss[T](layer: object, features: T, targets: T, regularization_weight: 
     (e.g. the double-Jensen bound for a
     :class:`~probly.layers.torch.VBLLLayer` or the generative Jensen bound for
     a :class:`~probly.layers.torch.GVBLLLayer`). Use
-    :func:`probly.traverse_nn.find_layer` to retrieve the layer from a
+    :func:`probly.method.vbll.find_vbll_layer` to retrieve the layer from a
     transformed predictor.
 
     Args:

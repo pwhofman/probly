@@ -6,6 +6,7 @@ from probly.lazy_types import TORCH_MODULE
 
 from ._common import (
     GVBLLPredictor,
+    find_g_vbll_layer,
     g_vbll,
     g_vbll_traverser,
 )
@@ -19,5 +20,6 @@ def _(_: type) -> None:
 
 __all__ = [
     "GVBLLPredictor",
+    "find_g_vbll_layer",
     "g_vbll",
 ]

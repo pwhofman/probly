@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from probly.predictor import (
     LogitDistributionPredictor,
@@ -15,7 +15,7 @@ from probly.representation.distribution import (
     create_categorical_distribution_from_logits,
 )
 from probly.transformation.transformation import predictor_transformation
-from probly.traverse_nn import nn_compose
+from probly.traverse_nn import find_layer, nn_compose
 from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser, traverse
 
 g_vbll_traverser = flexdispatch_traverser[object](name="g_vbll_traverser")
@@ -37,6 +37,28 @@ class GVBLLPredictor[**In, Out: CategoricalDistribution](LogitDistributionPredic
     class-conditional log-densities; the softmax is distance-aware and reverts to
     the uniform distribution far from every class.
     """
+
+
+def find_g_vbll_layer(model: object) -> Any:  # noqa: ANN401, avoids importing the torch layer type eagerly
+    """Return the generative variational Bayesian last layer of a transformed predictor.
+
+    Convenience wrapper around :func:`probly.traverse_nn.find_layer` that matches
+    the :class:`~probly.layers.torch.GVBLLLayer`, e.g. to pass the layer to
+    :func:`probly.train.vbll.vbll_loss` or to attach hooks to it. For
+    discriminative VBLL models use :func:`probly.method.vbll.find_vbll_layer`.
+
+    Args:
+        model: The model to search, typically the result of :func:`g_vbll`.
+
+    Returns:
+        The first G-VBLL layer in forward DFS order.
+
+    Raises:
+        ValueError: If the model contains no G-VBLL layer.
+    """
+    from probly.layers.torch import GVBLLLayer  # noqa: PLC0415
+
+    return find_layer(model, GVBLLLayer)
 
 
 @predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)

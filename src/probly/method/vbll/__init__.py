@@ -8,6 +8,7 @@ from ._common import (
     VBLLPredictor,
     VBLLRepresenter,
     compute_vbll_categorical_sample,
+    find_vbll_layer,
     vbll,
     vbll_traverser,
 )
@@ -27,5 +28,6 @@ def _(_: type) -> None:
 __all__ = [
     "VBLLPredictor",
     "VBLLRepresenter",
+    "find_vbll_layer",
     "vbll",
 ]

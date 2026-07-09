@@ -19,7 +19,7 @@ from probly.representation.distribution import (
 )
 from probly.representer import Representer, representer
 from probly.transformation.transformation import predictor_transformation
-from probly.traverse_nn import nn_compose
+from probly.traverse_nn import find_layer, nn_compose
 from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser, traverse
 
 if TYPE_CHECKING:
@@ -49,6 +49,29 @@ class VBLLPredictor[**In, Out: GaussianDistribution](RandomPredictor[In, Out], P
     classification). For classification, sample-based class probabilities are
     obtained through the registered :class:`VBLLRepresenter`.
     """
+
+
+def find_vbll_layer(model: object) -> Any:  # noqa: ANN401, the concrete layer type depends on the variant
+    """Return the variational Bayesian last layer of a transformed predictor.
+
+    Convenience wrapper around :func:`probly.traverse_nn.find_layer` that matches
+    any discriminative VBLL layer variant (standard, Student-t, or
+    heteroscedastic), e.g. to pass the layer to :func:`probly.train.vbll.vbll_loss`
+    or to attach hooks to it. For generative VBLL models use
+    :func:`probly.method.g_vbll.find_g_vbll_layer`.
+
+    Args:
+        model: The model to search, typically the result of :func:`vbll`.
+
+    Returns:
+        The first VBLL layer in forward DFS order.
+
+    Raises:
+        ValueError: If the model contains no VBLL layer.
+    """
+    from probly.layers.torch import HetVBLLLayer, TVBLLLayer, VBLLLayer  # noqa: PLC0415
+
+    return find_layer(model, (VBLLLayer, TVBLLLayer, HetVBLLLayer))
 
 
 @flexdispatch
