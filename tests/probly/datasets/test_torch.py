@@ -268,9 +268,9 @@ def _write_fake_medmnistc(folder: Path, corruption: str, n_per_severity: int = 2
     np.savez(str(folder / f"{corruption}.npz"), test_images=images, test_labels=labels)
 
 
-def test_medmnistc_invalid_flag(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="Unknown flag"):
-        MedMNISTC(tmp_path, "not_a_flag", "pixelate", severity=1)
+def test_medmnistc_invalid_dataset(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="Unknown MedMNIST dataset"):
+        MedMNISTC(tmp_path, "not_a_dataset", "pixelate", severity=1)
 
 
 def test_medmnistc_invalid_corruption(tmp_path: Path) -> None:
@@ -338,8 +338,11 @@ def test_medmnistc_download_invoked(mock_download: MagicMock, tmp_path: Path) ->
 
 
 def test_medmnistc_covers_all_datasets() -> None:
-    # All twelve MedMNIST-C datasets are registered; only tissuemnist is registry-only (not on Zenodo).
-    assert len(MedMNISTC.corruptions) == 12
+    # Eleven single-label MedMNIST2D datasets are supported; ChestMNIST is intentionally excluded
+    # because it is multi-label while this loader returns hard integer labels.
+    assert len(MedMNISTC.corruptions) == 11
+    assert "chestmnist" not in MedMNISTC.corruptions
+    # Every supported flag is downloadable except tissuemnist, which is registry-only (not on Zenodo).
     assert set(MedMNISTC.md5s) == set(MedMNISTC.corruptions) - {"tissuemnist"}
     assert "tissuemnist" in MedMNISTC.corruptions
 

@@ -553,29 +553,58 @@ class CIFAR10C(torchvision.datasets.VisionDataset):
 class MedMNISTC(torchvision.datasets.VisionDataset):
     """A Dataset class for the MedMNIST-C corruption benchmark introduced in :cite:`disalvoMedMNISTC2024`.
 
-    One instance holds one MedMNIST test set for a single ``flag`` (dataset, e.g. ``"dermamnist"``),
+    One instance holds one MedMNIST test set for a single dataset (``dataset``, e.g. ``"dermamnist"``),
     ``corruption`` type, and ``severity`` level (1-5), with hard integer labels. The release ships one
-    ``.npz`` per ``(flag, corruption)`` at 224x224 (https://zenodo.org/records/11471504), stacking all
+    ``.npz`` per ``(dataset, corruption)`` at 224x224 (https://zenodo.org/records/11471504), stacking all
     five severities in ``test_images`` as ``(5*N, H, W[, C])`` uint8 with the same severity-major layout
     as CIFAR-10-C, and can be fetched with ``download=True``. Loading is resolution-agnostic, so pass a
-    ``transform`` (e.g. ``Resize``) to reach a different resolution.
+    ``transform`` (e.g. ``Resize``) to reach a different resolution. ChestMNIST is excluded because it is
+    the only multi-label MedMNIST2D task, whereas this loader returns hard integer labels.
     """
 
     base_folder = "medmnist_c"
-    zenodo: ClassVar[dict[str, tuple[str, str]]] = {
-        "dermamnist": ("https://zenodo.org/records/11471504/files/dermamnist.zip", "19c88c74c104655d5f668e158e56451d"),
-        "organsmnist": (
-            "https://zenodo.org/records/11471504/files/organsmnist.zip",
-            "1dbf4d814725adc307ba9ffe5edf061a",
-        ),
-        "breastmnist": (
-            "https://zenodo.org/records/11471504/files/breastmnist.zip",
-            "c755e51825c074706524ea6b2c77a10b",
-        ),
+    md5s: ClassVar[dict[str, str]] = {
+        "pathmnist": "bf62498906ec0383c3ec5ff12ac70c00",
+        "bloodmnist": "daba10a010064a9e38f0d09b498bcf18",
+        "dermamnist": "19c88c74c104655d5f668e158e56451d",
+        "retinamnist": "80a2fa4c9b7fa2176606be825dfdef6e",
+        "octmnist": "40389bc54256edecd09ee4bd028c7e6a",
+        "breastmnist": "c755e51825c074706524ea6b2c77a10b",
+        "pneumoniamnist": "c499a47a64a000b579b23920bf80a95a",
+        "organamnist": "ff4ad0f53934ddf6a2330065d581990c",
+        "organcmnist": "2a649c94473ab9126130af8205d6c89b",
+        "organsmnist": "1dbf4d814725adc307ba9ffe5edf061a",
     }
-    """Per-flag ``(zip url, md5)`` for the released Zenodo archives."""
+    """Per-dataset md5 of the released archive at https://zenodo.org/records/11471504 (10 of the 11
+    supported datasets; TissueMNIST-C is registry-only and must be generated locally)."""
 
     corruptions: ClassVar[dict[str, tuple[str, ...]]] = {
+        "pathmnist": (
+            "pixelate",
+            "jpeg_compression",
+            "defocus_blur",
+            "motion_blur",
+            "brightness_up",
+            "brightness_down",
+            "contrast_up",
+            "contrast_down",
+            "saturate",
+            "stain_deposit",
+            "bubble",
+        ),
+        "bloodmnist": (
+            "pixelate",
+            "jpeg_compression",
+            "defocus_blur",
+            "motion_blur",
+            "brightness_up",
+            "brightness_down",
+            "contrast_up",
+            "contrast_down",
+            "saturate",
+            "stain_deposit",
+            "bubble",
+        ),
         "dermamnist": (
             "pixelate",
             "jpeg_compression",
@@ -593,6 +622,88 @@ class MedMNISTC(torchvision.datasets.VisionDataset):
             "black_corner",
             "characters",
         ),
+        "retinamnist": (
+            "pixelate",
+            "jpeg_compression",
+            "gaussian_noise",
+            "speckle_noise",
+            "defocus_blur",
+            "motion_blur",
+            "brightness_down",
+            "contrast_down",
+        ),
+        "tissuemnist": (
+            "pixelate",
+            "jpeg_compression",
+            "impulse_noise",
+            "gaussian_blur",
+            "brightness_up",
+            "brightness_down",
+            "contrast_up",
+            "contrast_down",
+        ),
+        "octmnist": (
+            "pixelate",
+            "jpeg_compression",
+            "speckle_noise",
+            "defocus_blur",
+            "motion_blur",
+            "contrast_down",
+        ),
+        "breastmnist": (
+            "pixelate",
+            "jpeg_compression",
+            "speckle_noise",
+            "motion_blur",
+            "brightness_up",
+            "brightness_down",
+            "contrast_down",
+        ),
+        "pneumoniamnist": (
+            "pixelate",
+            "jpeg_compression",
+            "gaussian_noise",
+            "speckle_noise",
+            "impulse_noise",
+            "shot_noise",
+            "gaussian_blur",
+            "brightness_up",
+            "brightness_down",
+            "contrast_up",
+            "contrast_down",
+            "gamma_corr_up",
+            "gamma_corr_down",
+        ),
+        "organamnist": (
+            "pixelate",
+            "jpeg_compression",
+            "gaussian_noise",
+            "speckle_noise",
+            "impulse_noise",
+            "shot_noise",
+            "gaussian_blur",
+            "brightness_up",
+            "brightness_down",
+            "contrast_up",
+            "contrast_down",
+            "gamma_corr_up",
+            "gamma_corr_down",
+        ),
+        "organcmnist": (
+            "pixelate",
+            "jpeg_compression",
+            "gaussian_noise",
+            "speckle_noise",
+            "impulse_noise",
+            "shot_noise",
+            "gaussian_blur",
+            "brightness_up",
+            "brightness_down",
+            "contrast_up",
+            "contrast_down",
+            "gamma_corr_up",
+            "gamma_corr_down",
+        ),
         "organsmnist": (
             "pixelate",
             "jpeg_compression",
@@ -608,20 +719,11 @@ class MedMNISTC(torchvision.datasets.VisionDataset):
             "gamma_corr_up",
             "gamma_corr_down",
         ),
-        "breastmnist": (
-            "pixelate",
-            "jpeg_compression",
-            "speckle_noise",
-            "motion_blur",
-            "brightness_up",
-            "brightness_down",
-            "contrast_down",
-        ),
     }
-    """Per-flag corruption types shipped with each MedMNIST-C dataset."""
+    """Per-dataset corruption types shipped with MedMNIST-C (arXiv:2406.17536, Table 1)."""
 
     data: np.ndarray
-    """Array of shape (N, H, W) or (N, H, W, C), uint8, for the selected flag/corruption/severity."""
+    """Array of shape (N, H, W) or (N, H, W, C), uint8, for the selected dataset/corruption/severity."""
 
     targets: list[int]
     """Hard integer class labels, one per image."""
@@ -629,7 +731,7 @@ class MedMNISTC(torchvision.datasets.VisionDataset):
     def __init__(
         self,
         root: str | Path,
-        flag: str,
+        dataset: str,
         corruption: str,
         severity: int,
         transform: Callable[..., Any] | None = None,
@@ -641,40 +743,46 @@ class MedMNISTC(torchvision.datasets.VisionDataset):
 
         Args:
             root: Root directory containing (or to download into) the ``medmnist_c`` folder.
-            flag: MedMNIST dataset flag; must be one of ``MedMNISTC.corruptions``.
-            corruption: Corruption type; must be one of ``MedMNISTC.corruptions[flag]``.
+            dataset: Which MedMNIST dataset to load (its MedMNIST "flag"); must be one of ``MedMNISTC.corruptions``.
+            corruption: Corruption type; must be one of ``MedMNISTC.corruptions[dataset]``.
             severity: Corruption severity in 1..5.
             transform: Optional transform to apply to the image.
             target_transform: Optional transform to apply to the integer label.
-            download: Whether to download the flag's archive from Zenodo if missing.
+            download: Whether to download the dataset's archive from Zenodo if missing. Not every dataset
+                is published on Zenodo (e.g. ``"tissuemnist"`` must be generated locally).
 
         Raises:
-            ValueError: If ``flag`` or ``corruption`` is unknown or ``severity`` is not in 1..5.
-            RuntimeError: If the data is missing and ``download`` is False.
+            ValueError: If ``dataset`` or ``corruption`` is unknown or ``severity`` is not in 1..5.
+            RuntimeError: If the data is missing and ``download`` is False, or if ``download`` is
+                requested for a dataset that is not available on Zenodo.
         """
         super().__init__(str(root), transform=transform, target_transform=target_transform)
-        if flag not in self.corruptions:
-            msg = f"Unknown flag {flag!r}. Valid options: {', '.join(self.corruptions)}."
+        if dataset not in self.corruptions:
+            msg = f"Unknown MedMNIST dataset {dataset!r}. Valid options: {', '.join(self.corruptions)}."
             raise ValueError(msg)
-        if corruption not in self.corruptions[flag]:
-            msg = f"Unknown corruption {corruption!r} for {flag!r}. Valid options: {', '.join(self.corruptions[flag])}."
+        if corruption not in self.corruptions[dataset]:
+            valid = ", ".join(self.corruptions[dataset])
+            msg = f"Unknown corruption {corruption!r} for {dataset!r}. Valid options: {valid}."
             raise ValueError(msg)
         if not 1 <= severity <= 5:
             msg = f"severity must be in 1..5, got {severity}."
             raise ValueError(msg)
-        self.flag = flag
+        self.dataset = dataset
         self.corruption = corruption
         self.severity = severity
 
         folder = Path(self.root) / self.base_folder
-        npz_path = folder / flag / f"{corruption}.npz"
+        npz_path = folder / dataset / f"{corruption}.npz"
 
         if not npz_path.exists():
             if not download:
                 msg = "Dataset not found. Use download=True to download it."
                 raise RuntimeError(msg)
-            url, md5 = self.zenodo[flag]
-            download_and_extract_archive(url, str(folder), filename=f"{flag}.zip", md5=md5)
+            if dataset not in self.md5s:
+                msg = f"{dataset!r} is not downloadable from Zenodo; generate it locally under {npz_path.parent}."
+                raise RuntimeError(msg)
+            url = f"https://zenodo.org/records/11471504/files/{dataset}.zip"
+            download_and_extract_archive(url, str(folder), filename=f"{dataset}.zip", md5=self.md5s[dataset])
 
         with np.load(npz_path) as npz:
             images = npz["test_images"]  # (5N, H, W) or (5N, H, W, C) uint8
@@ -685,10 +793,10 @@ class MedMNISTC(torchvision.datasets.VisionDataset):
         self.targets = labels[sl].squeeze(axis=-1).tolist()
 
     def __len__(self) -> int:
-        """Return the number of images in this flag/corruption/severity slice.
+        """Return the number of images in this dataset/corruption/severity slice.
 
         Returns:
-            The number of images in this flag/corruption/severity slice.
+            The number of images in this dataset/corruption/severity slice.
         """
         return len(self.data)
 
