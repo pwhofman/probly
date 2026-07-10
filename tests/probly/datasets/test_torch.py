@@ -26,6 +26,7 @@ from probly.datasets.torch import (
     Benthic,
     DCICDataset,
     ImageNetReaL,
+    MedMNISTC,
     MiceBone,
     Pig,
     Plankton,
@@ -245,3 +246,107 @@ def test_cifar10c_download_invoked(mock_download: MagicMock, tmp_path: Path) -> 
     dataset = CIFAR10C(tmp_path, "snow", severity=1, download=True)
     mock_download.assert_called_once_with(CIFAR10C.url, str(tmp_path), filename=CIFAR10C.filename, md5=CIFAR10C.tar_md5)
     assert len(dataset) == 2
+
+
+def _write_fake_medmnistc(folder: Path, corruption: str, n_per_severity: int = 2, *, channels: int | None = 3) -> None:
+    """Write tiny fake MedMNIST-C fixtures: image row i encodes its global index in pixel [0, 0].
+
+    Args:
+        folder: Directory to write ``{corruption}.npz`` into; created if missing.
+        corruption: Corruption name, used as the npz filename.
+        n_per_severity: Images per severity; the npz stacks ``5 * n_per_severity`` rows.
+        channels: Channel count for an ``(5N, H, W, C)`` stack, or ``None`` for a grayscale
+            ``(5N, H, W)`` stack (as shipped for the organ and breast flags).
+    """
+    folder.mkdir(parents=True, exist_ok=True)
+    total = 5 * n_per_severity
+    shape = (total, 8, 8) if channels is None else (total, 8, 8, channels)
+    images = np.zeros(shape, dtype=np.uint8)
+    for i in range(total):
+        images[i, 0, 0] = i  # encodes the global row index (total < 256); broadcasts over channels
+    labels = np.tile(np.arange(n_per_severity, dtype=np.int64), 5).reshape(-1, 1)  # (5N, 1)
+    np.savez(str(folder / f"{corruption}.npz"), test_images=images, test_labels=labels)
+
+
+def test_medmnistc_invalid_flag(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="Unknown flag"):
+        MedMNISTC(tmp_path, "not_a_flag", "pixelate", severity=1)
+
+
+def test_medmnistc_invalid_corruption(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="Unknown corruption"):
+        MedMNISTC(tmp_path, "dermamnist", "not_a_corruption", severity=1)
+
+
+def test_medmnistc_invalid_severity(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="severity"):
+        MedMNISTC(tmp_path, "dermamnist", "pixelate", severity=6)
+
+
+def test_medmnistc_missing_files_raises(tmp_path: Path) -> None:
+    with pytest.raises(RuntimeError, match="download=True"):
+        MedMNISTC(tmp_path, "dermamnist", "pixelate", severity=1, download=False)
+
+
+def test_medmnistc_slicing_and_getitem(tmp_path: Path) -> None:
+    _write_fake_medmnistc(tmp_path / "medmnist_c" / "dermamnist", "pixelate", n_per_severity=2)
+    dataset = MedMNISTC(tmp_path, "dermamnist", "pixelate", severity=2)  # n=2 -> global rows [2:4]
+    assert len(dataset) == 2
+    img, target = dataset[0]
+    assert np.asarray(img)[0, 0, 0] == 2  # severity-2 slice starts at global row 2
+    assert target == 0
+    img1, target1 = dataset[1]
+    assert np.asarray(img1)[0, 0, 0] == 3
+    assert target1 == 1
+
+
+def test_medmnistc_grayscale_getitem(tmp_path: Path) -> None:
+    _write_fake_medmnistc(tmp_path / "medmnist_c" / "breastmnist", "pixelate", channels=None)
+    dataset = MedMNISTC(tmp_path, "breastmnist", "pixelate", severity=1)
+    img, _ = dataset[0]
+    assert img.mode == "L"  # a grayscale (5N, H, W) stack loads as mode-L images
+    assert np.asarray(img)[0, 0] == 0  # severity-1 slice starts at global row 0
+
+
+def test_medmnistc_transform_applied(tmp_path: Path) -> None:
+    _write_fake_medmnistc(tmp_path / "medmnist_c" / "dermamnist", "gaussian_noise")
+    dataset = MedMNISTC(
+        tmp_path,
+        "dermamnist",
+        "gaussian_noise",
+        severity=1,
+        transform=lambda _im: "transformed",
+        target_transform=lambda target: target + 100,
+    )
+    img, target = dataset[0]
+    assert img == "transformed"
+    assert target == 100  # target_transform applied to the integer label 0
+
+
+@patch("probly.datasets.torch.download_and_extract_archive")
+def test_medmnistc_download_invoked(mock_download: MagicMock, tmp_path: Path) -> None:
+    flag, corruption = "breastmnist", "pixelate"
+    folder = tmp_path / "medmnist_c" / flag
+    # Simulate the download: when invoked, materialize the fixtures so loading succeeds.
+    mock_download.side_effect = lambda *_args, **_kwargs: _write_fake_medmnistc(folder, corruption, channels=None)
+    dataset = MedMNISTC(tmp_path, flag, corruption, severity=1, download=True)
+    expected_url = f"https://zenodo.org/records/11471504/files/{flag}.zip"
+    mock_download.assert_called_once_with(
+        expected_url, str(tmp_path / "medmnist_c"), filename=f"{flag}.zip", md5=MedMNISTC.md5s[flag]
+    )
+    assert len(dataset) == 2
+
+
+def test_medmnistc_covers_all_datasets() -> None:
+    # All twelve MedMNIST-C datasets are registered; only tissuemnist is registry-only (not on Zenodo).
+    assert len(MedMNISTC.corruptions) == 12
+    assert set(MedMNISTC.md5s) == set(MedMNISTC.corruptions) - {"tissuemnist"}
+    assert "tissuemnist" in MedMNISTC.corruptions
+
+
+@patch("probly.datasets.torch.download_and_extract_archive")
+def test_medmnistc_registry_only_download_raises(mock_download: MagicMock, tmp_path: Path) -> None:
+    # tissuemnist is a valid flag but is not on Zenodo, so download must fail clearly (not KeyError).
+    with pytest.raises(RuntimeError, match="not downloadable"):
+        MedMNISTC(tmp_path, "tissuemnist", "pixelate", severity=1, download=True)
+    mock_download.assert_not_called()
