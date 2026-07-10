@@ -10,6 +10,7 @@ from probly.lazy_types import SKLEARN_CALIBRATED_CLASSIFIER_CV, SKLEARN_MODULE, 
 from ._common import (
     CalibrationPredictor,
     calibration_generator,
+    dirichlet_calibration,
     isotonic_regression,
     platt_scaling,
     temperature_scaling,
@@ -54,6 +55,7 @@ def sklearn_identity_logit_estimator() -> SklearnIdentityLogitEstimator:
 
 __all__ = [
     "CalibrationPredictor",
+    "dirichlet_calibration",
     "isotonic_regression",
     "platt_scaling",
     "sklearn_identity_logit_estimator",
