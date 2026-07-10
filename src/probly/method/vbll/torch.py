@@ -57,6 +57,8 @@ def _build_vbll_layer(obj: nn.Linear, state: State) -> nn.Module:
         prior_scale=state[PRIOR_SCALE],
         noise_init=state[NOISE_INIT],
         cov_rank=state[COV_RANK],
+        wishart_scale=state[WISHART_SCALE],
+        dof=state[DOF],
     )
 
 

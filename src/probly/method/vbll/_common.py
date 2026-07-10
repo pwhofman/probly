@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
@@ -133,7 +134,7 @@ def vbll[**In, Out: GaussianDistribution](
     variant: str = "discriminative",
     parameterization: str = "dense",
     prior_scale: float = 1.0,
-    noise_init: float = 1.0,
+    noise_init: float = math.exp(-1.0),
     cov_rank: int = 3,
     wishart_scale: float = 1.0,
     dof: float = 2.0,
@@ -171,14 +172,16 @@ def vbll[**In, Out: GaussianDistribution](
             ``"lowrank"``; the other variants support ``"diagonal"`` and ``"dense"``.
             Defaults to ``"dense"``.
         prior_scale: Scale of the isotropic prior covariance. Defaults to ``1.0``.
-        noise_init: Initial per-output noise standard deviation (``"discriminative"``
-            variant only). Defaults to ``1.0``.
+        noise_init: Median of the random initial per-output noise standard
+            deviation (``"discriminative"`` variant only). Defaults to
+            ``exp(-1)``, matching the reference initialization.
         cov_rank: Rank of the low-rank covariance factor (only used when
             ``parameterization="lowrank"``). Defaults to ``3``.
-        wishart_scale: Scale of the Gamma prior on the noise precision
-            (``"student_t"`` variant only). Defaults to ``1.0``.
-        dof: Degrees of freedom of the Gamma prior on the noise precision
-            (``"student_t"`` variant only, must be > 1). Defaults to ``2.0``.
+        wishart_scale: Scale of the Wishart/Gamma prior on the noise precision
+            (``"discriminative"`` and ``"student_t"`` variants). Defaults to ``1.0``.
+        dof: Degrees of freedom of the Wishart/Gamma prior on the noise precision
+            (``"discriminative"`` and ``"student_t"`` variants; must be > 1 for
+            ``"student_t"``). Defaults to ``2.0``.
         noise_prior_scale: Scale of the prior on the input-dependent noise weights
             (``"heteroscedastic"`` variant only). Defaults to ``0.01``.
 

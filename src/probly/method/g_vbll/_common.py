@@ -88,7 +88,8 @@ def g_vbll[**In, Out: CategoricalDistribution](
         base: The model to wrap.
         prior_scale: Scale of the isotropic Gaussian prior on the class means.
             Defaults to ``1.0``.
-        noise_init: Initial shared feature-noise standard deviation. Defaults to ``1.0``.
+        noise_init: Median of the random initial shared feature-noise standard
+            deviation. The default of ``1.0`` matches the reference initialization.
         wishart_scale: Scale of the Wishart prior on the noise precision. Defaults to ``1.0``.
         dof: Degrees of freedom of the Wishart prior on the noise precision. Defaults to ``1.0``.
 

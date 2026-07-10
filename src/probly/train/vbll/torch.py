@@ -12,7 +12,6 @@ import math
 from typing import cast
 
 import torch
-from torch.nn import functional as F
 
 from probly.layers.torch import (
     GVBLLLayer,
@@ -20,7 +19,6 @@ from probly.layers.torch import (
     TVBLLLayer,
     VBLLLayer,
     VBLLParameterization,
-    _vbll_logit_variance,
 )
 
 from ._common import vbll_loss
@@ -73,6 +71,50 @@ def _gaussian_weight_kl(
     return 0.5 * (combined_mean_sq + trace_term + log_det_term)
 
 
+def _noise_wishart_term(layer: VBLLLayer | GVBLLLayer) -> torch.Tensor:
+    """Wishart prior regularizer on the layer's learnable noise precision.
+
+    Args:
+        layer: A VBLL layer with ``noise_logdiag``, ``dof`` and ``wishart_scale``.
+
+    Returns:
+        A scalar tensor with the Wishart log-prior term of the ELBO.
+    """
+    noise_log_var = 2.0 * layer.noise_logdiag
+    return layer.dof * (-noise_log_var.sum()) - 0.5 * layer.wishart_scale * torch.exp(-noise_log_var).sum()
+
+
+def _reduced_kn_bound(
+    mean: torch.Tensor,
+    cov: torch.Tensor,
+    targets: torch.Tensor,
+    alpha: torch.Tensor,
+    expected_cov: torch.Tensor,
+    expected_prec: torch.Tensor,
+) -> torch.Tensor:
+    """Reduced Knowles-Minka lower bound on the expected softmax log-likelihood.
+
+    Shared by the Student-t and heteroscedastic objectives; the two differ only
+    in how the expected noise covariance and precision are obtained.
+
+    Args:
+        mean: Logit means, shape ``(batch, num_classes)``.
+        cov: Weight-posterior logit variance plus one, shape ``(batch, num_classes)``.
+        targets: Integer class labels, shape ``(batch,)``.
+        alpha: Learnable coefficient of the bound.
+        expected_cov: Expected noise covariance, broadcastable to ``cov``.
+        expected_prec: Expected noise precision, broadcastable to ``cov``.
+
+    Returns:
+        The per-sample bound, shape ``(batch,)``.
+    """
+    index = torch.arange(mean.shape[0])
+    linear_term = mean[index, targets]
+    lse_term = torch.logsumexp(mean + alpha * cov, dim=-1)
+    cov_term = cov * (expected_cov / 4.0 + expected_prec * alpha**2 - alpha)
+    return linear_term - lse_term - 0.5 * cov_term.sum(dim=-1)
+
+
 @vbll_loss.register(VBLLLayer)
 def disc_vbll_loss(
     layer: VBLLLayer,
@@ -85,15 +127,17 @@ def disc_vbll_loss(
     Implements the discriminative classification objective of
     :cite:`harrisonVariationalBayesian2024`: the closed-form double-Jensen lower
     bound on the expected log-likelihood, regularized by the weight-posterior
-    :attr:`~probly.layers.torch.VBLLLayer.kl_divergence`. Both ingredients of the
-    bound - the logit mean and the logit variance ``phi^T S_k phi + sigma_k^2`` -
-    are exactly the ``(mean, var)`` returned by the layer's forward pass.
+    :attr:`~probly.layers.torch.VBLLLayer.kl_divergence` and a Wishart term on
+    the learnable noise precision. Both ingredients of the bound - the logit
+    mean and the logit variance ``phi^T S_k phi + sigma_k^2`` - are exactly the
+    ``(mean, var)`` returned by the layer's forward pass.
 
     Args:
         layer: The variational Bayesian last layer to fit.
         features: Backbone features feeding the layer, shape ``(batch, in_features)``.
         targets: Integer class labels, shape ``(batch,)``.
-        regularization_weight: Weight on the KL term (typically ``1 / dataset_size``).
+        regularization_weight: Weight on the regularization terms (typically
+            ``1 / dataset_size``).
 
     Returns:
         A scalar tensor with the negative ELBO to minimize.
@@ -103,7 +147,9 @@ def disc_vbll_loss(
     true_logit = mean[index, targets]
     log_normalizer = torch.logsumexp(mean + 0.5 * var, dim=-1)
     expected_log_likelihood = (true_logit - log_normalizer).mean()
-    return -expected_log_likelihood + regularization_weight * layer.kl_divergence
+
+    total_elbo = expected_log_likelihood + regularization_weight * (_noise_wishart_term(layer) - layer.kl_divergence)
+    return -total_elbo
 
 
 @vbll_loss.register(GVBLLLayer)
@@ -141,9 +187,7 @@ def g_vbll_loss(
     lse_term = torch.logsumexp(layer(features), dim=-1)
     jensen_bound = linear_term - 0.5 * trace_term - lse_term
 
-    wishart_term = layer.dof * (-noise_log_var.sum()) - 0.5 * layer.wishart_scale * torch.exp(-noise_log_var).sum()
-
-    total_elbo = jensen_bound.mean() + regularization_weight * (wishart_term - layer.kl_divergence)
+    total_elbo = jensen_bound.mean() + regularization_weight * (_noise_wishart_term(layer) - layer.kl_divergence)
     return -total_elbo
 
 
@@ -169,28 +213,21 @@ def t_vbll_loss(
     Returns:
         A scalar tensor with the negative ELBO to minimize.
     """
-    offdiag = getattr(layer, "W_offdiag", None)
-    mean = F.linear(features, layer.W_mean)
-    weight_variance = _vbll_logit_variance(features, layer.W_logdiag, offdiag, layer.parameterization)
+    mean, weight_variance = layer.logit_moments(features)
     cov = weight_variance + 1.0
-    index = torch.arange(features.shape[0])
-    linear_term = mean[index, targets]
-    lse_term = torch.logsumexp(mean + layer.alpha * cov, dim=-1)
 
     expected_cov = torch.exp(layer.noise_log_rate - layer.noise_log_dof + 1.0)
     expected_prec = torch.exp(layer.noise_log_dof - layer.noise_log_rate)
-    cov_term = cov * (expected_cov / 4.0 + expected_prec * layer.alpha**2 - layer.alpha)
-    bound = linear_term - lse_term - 0.5 * cov_term.sum(dim=-1)
+    bound = _reduced_kn_bound(mean, cov, targets, layer.alpha, expected_cov, expected_prec)
 
-    noise = torch.distributions.Gamma(torch.exp(layer.noise_log_dof), torch.exp(layer.noise_log_rate))
-    prior = torch.distributions.Gamma(
-        torch.full_like(layer.noise_log_dof, layer.prior_dof),
-        torch.full_like(layer.noise_log_rate, layer.prior_rate),
-    )
-    gamma_kl = torch.distributions.kl_divergence(noise, prior).sum(dim=-1)
-    cov_factor = torch.exp(layer.noise_log_dof - layer.noise_log_rate)
+    gamma_kl = torch.distributions.kl_divergence(layer.noise, layer.noise_prior).sum(dim=-1)
     weight_kl = _gaussian_weight_kl(
-        layer.W_mean, layer.W_logdiag, offdiag, layer.parameterization, layer.prior_scale, cov_factor
+        layer.W_mean,
+        layer.W_logdiag,
+        layer.offdiag(),
+        layer.parameterization,
+        layer.prior_scale,
+        expected_prec,
     )
 
     total_elbo = bound.mean() - regularization_weight * (gamma_kl + weight_kl)
@@ -219,27 +256,28 @@ def het_vbll_loss(
     Returns:
         A scalar tensor with the negative ELBO to minimize.
     """
-    w_offdiag = getattr(layer, "W_offdiag", None)
-    m_offdiag = getattr(layer, "M_offdiag", None)
-    mean = F.linear(features, layer.W_mean)
-    weight_variance = _vbll_logit_variance(features, layer.W_logdiag, w_offdiag, layer.parameterization)
+    mean, weight_variance = layer.logit_moments(features)
     cov = weight_variance + 1.0
-    index = torch.arange(features.shape[0])
-    linear_term = mean[index, targets]
-    lse_term = torch.logsumexp(mean + layer.alpha * cov, dim=-1)
 
-    log_noise_mean = F.linear(features, layer.M_mean)
-    log_noise_var = _vbll_logit_variance(features, layer.M_logdiag, m_offdiag, layer.parameterization)
+    log_noise_mean, log_noise_var = layer.log_noise_moments(features)
     expected_cov = torch.exp(log_noise_mean + 0.5 * log_noise_var)
     expected_prec = torch.exp(-log_noise_mean + 0.5 * log_noise_var)
-    cov_term = cov * (expected_cov / 4.0 + expected_prec * layer.alpha**2 - layer.alpha)
-    bound = linear_term - lse_term - 0.5 * cov_term.sum(dim=-1)
+    bound = _reduced_kn_bound(mean, cov, targets, layer.alpha, expected_cov, expected_prec)
 
     weight_kl = _gaussian_weight_kl(
-        layer.W_mean, layer.W_logdiag, w_offdiag, layer.parameterization, layer.prior_scale, expected_prec
+        layer.W_mean,
+        layer.W_logdiag,
+        layer.w_offdiag(),
+        layer.parameterization,
+        layer.prior_scale,
+        expected_prec,
     ).mean()
     noise_kl = _gaussian_weight_kl(
-        layer.M_mean, layer.M_logdiag, m_offdiag, layer.parameterization, layer.noise_prior_scale
+        layer.M_mean,
+        layer.M_logdiag,
+        layer.m_offdiag(),
+        layer.parameterization,
+        layer.noise_prior_scale,
     )
 
     total_elbo = bound.mean() - regularization_weight * (weight_kl + noise_kl)

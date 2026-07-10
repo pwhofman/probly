@@ -2254,14 +2254,17 @@ class VBLLLayer(nn.Module):
     - ``"diagonal"``: ``S_k = diag(exp(2 * W_logdiag_k))``;
     - ``"dense"``: ``S_k = L_k L_k^T`` with ``L_k`` lower triangular
       (diagonal ``exp(W_logdiag_k)``, strict lower part ``W_offdiag_k``);
-    - ``"lowrank"``: ``S_k = F_k F_k^T + diag(exp(2 * W_logdiag_k))`` with
-      ``F_k`` of shape ``(in_features, cov_rank)``.
+    - ``"lowrank"``: ``S_k = F_k F_k^T + diag(exp(W_logdiag_k))`` with
+      ``F_k`` of shape ``(in_features, cov_rank)`` (matching the reference, the
+      low-rank diagonal enters as a variance ``exp(W_logdiag_k)``, not as the
+      squared log-std used by the diagonal and dense cases).
 
     This layer implements the (sample-free) forward predictive; the discriminative
     ELBO needed to fit it is provided by
-    :func:`probly.train.vbll.torch.vbll_loss`. The variational parameters are
-    prior-initialized, so meaningful uncertainty only emerges once the layer has
-    been trained.
+    :func:`probly.train.vbll.torch.vbll_loss`. The variational parameters follow
+    the reference initialization (kaiming-normal mean, tight posterior
+    covariance), so meaningful uncertainty only emerges once the layer has been
+    trained.
 
     Attributes:
         in_features: Number of input features.
@@ -2274,6 +2277,7 @@ class VBLLLayer(nn.Module):
             ``(num_outputs, in_features)``.
         noise_logdiag: Log of the per-output noise standard deviation, shape
             ``(num_outputs,)``.
+        wishart_scale: Scale of the Wishart prior on the noise precision.
     """
 
     def __init__(
@@ -2282,8 +2286,10 @@ class VBLLLayer(nn.Module):
         num_outputs: int,
         parameterization: VBLLParameterization = "dense",
         prior_scale: float = 1.0,
-        noise_init: float = 1.0,
+        noise_init: float = math.exp(-1.0),
         cov_rank: int = 3,
+        wishart_scale: float = 1.0,
+        dof: float = 1.0,
     ) -> None:
         """Initialize the variational Bayesian last layer.
 
@@ -2292,11 +2298,17 @@ class VBLLLayer(nn.Module):
             num_outputs: Number of outputs (regression targets or classes).
             parameterization: Posterior covariance parametrization, one of
                 ``"diagonal"``, ``"dense"`` or ``"lowrank"``.
-            prior_scale: Scale of the isotropic prior covariance. Stored for the
-                training objective; it does not affect the forward predictive.
-            noise_init: Initial per-output noise standard deviation.
+            prior_scale: Scale of the isotropic prior covariance, rescaled by
+                ``2 / in_features`` (kaiming width scaling, matching the reference
+                implementation). Stored for the training objective; it does not
+                affect the forward predictive.
+            noise_init: Median of the random initial per-output noise standard
+                deviation. Defaults to ``exp(-1)``, matching the reference
+                initialization ``randn - 1`` of the log standard deviation.
             cov_rank: Rank of the low-rank covariance factor (only used when
                 ``parameterization="lowrank"``).
+            wishart_scale: Scale of the Wishart prior on the noise precision.
+            dof: Degrees of freedom of the Wishart prior on the noise precision.
         """
         super().__init__()
         if parameterization not in ("diagonal", "dense", "lowrank"):
@@ -2316,27 +2328,24 @@ class VBLLLayer(nn.Module):
         self.num_outputs = num_outputs
         self.parameterization = parameterization
         self.cov_rank = cov_rank
+        self.wishart_scale = wishart_scale
+        # Effective degrees of freedom of the Wishart prior.
+        self.dof = (dof + num_outputs + 1.0) / 2.0
 
-        self.W_mean = nn.Parameter(torch.empty((num_outputs, in_features)))
-        # Initialize the Cholesky diagonal so that the prior-like posterior
-        # standard deviation per weight is roughly 1 / sqrt(in_features).
-        log_scale = -0.5 * math.log(in_features) if in_features > 0 else 0.0
-        self.W_logdiag = nn.Parameter(torch.full((num_outputs, in_features), log_scale))
+        self.W_mean = nn.Parameter(torch.randn(num_outputs, in_features) * math.sqrt(2.0 / in_features))
+        # The discriminative reference uses -log(in_features) here (not -0.5 * log
+        # like the t/het variants) to make the logit variance output-dim invariant.
+        self.W_logdiag = nn.Parameter(1e-3 * torch.randn(num_outputs, in_features) - math.log(in_features))
 
         if parameterization == "dense":
-            self.W_offdiag = nn.Parameter(torch.randn((num_outputs, in_features, in_features)) / in_features)
+            self.W_offdiag = nn.Parameter(1e-3 * torch.randn((num_outputs, in_features, in_features)) / in_features)
         elif parameterization == "lowrank":
-            self.W_lowrank = nn.Parameter(torch.randn((num_outputs, in_features, cov_rank)) / in_features)
+            self.W_lowrank = nn.Parameter(1e-3 * torch.randn((num_outputs, in_features, cov_rank)) / in_features)
 
-        self.noise_logdiag = nn.Parameter(torch.full((num_outputs,), math.log(noise_init)))
+        self.noise_logdiag = nn.Parameter(torch.randn(num_outputs) + math.log(noise_init))
 
-        self.register_buffer("prior_scale", torch.tensor(prior_scale))
-
-        self.reset_parameters()
-
-    def reset_parameters(self) -> None:
-        """Initialize the posterior mean with the default ``nn.Linear`` scheme."""
-        init.kaiming_uniform_(self.W_mean, a=math.sqrt(5))
+        # Kaiming width scaling of the prior covariance.
+        self.register_buffer("prior_scale", torch.tensor(prior_scale * 2.0 / in_features if in_features > 0 else 1.0))
 
     def _cholesky(self) -> torch.Tensor:
         """Build the lower-triangular Cholesky factors ``L_k`` for the dense case.
@@ -2368,9 +2377,12 @@ class VBLLLayer(nn.Module):
             chol = self._cholesky()
             projected = torch.einsum("kij,...i->...kj", chol, x)
             var_from_posterior = projected.square().sum(dim=-1)
-        else:  # lowrank: v_k = || F_k^T x ||^2 + sum_i x_i^2 * exp(2 * logdiag_{k,i})
+        else:  # lowrank: v_k = || F_k^T x ||^2 + sum_i x_i^2 * exp(logdiag_{k,i})
+            # The reference LowRankNormal uses the diagonal as a variance (exp(logdiag)),
+            # unlike the diagonal/dense cases where logdiag is a log standard deviation.
             projected = torch.einsum("kir,...i->...kr", self.W_lowrank, x)
-            var_from_posterior = projected.square().sum(dim=-1) + F.linear(x.square(), diag_var)
+            lowrank_diag_var = torch.exp(self.W_logdiag)
+            var_from_posterior = projected.square().sum(dim=-1) + F.linear(x.square(), lowrank_diag_var)
 
         noise_var = torch.exp(2.0 * self.noise_logdiag)
         var = var_from_posterior + noise_var
@@ -2399,21 +2411,19 @@ class VBLLLayer(nn.Module):
             chol = self._cholesky()
             trace = chol.square().sum()
             log_det = (2.0 * self.W_logdiag).sum()
-        else:  # lowrank: S_k = F_k F_k^T + diag(exp(2 * logdiag_k))
-            diag = torch.exp(2.0 * self.W_logdiag)
+        else:  # lowrank: S_k = F_k F_k^T + diag(exp(logdiag_k)), reference variance diagonal
+            diag = torch.exp(self.W_logdiag)
             trace = diag.sum() + self.W_lowrank.square().sum()
             # Matrix determinant lemma: log|S_k| = log|D_k| + log|I + F_k^T D_k^-1 F_k|.
             scaled = self.W_lowrank / diag[..., None]
             capacitance = torch.einsum("kir,kis->krs", self.W_lowrank, scaled)
             eye = torch.eye(self.cov_rank, dtype=capacitance.dtype, device=capacitance.device)
-            log_det = (2.0 * self.W_logdiag).sum() + torch.logdet(eye + capacitance).sum()
+            log_det = self.W_logdiag.sum() + torch.logdet(eye + capacitance).sum()
 
-        return 0.5 * (
-            (trace + mean_sq) / prior_scale
-            - num_outputs * in_features
-            + num_outputs * in_features * torch.log(prior_scale)
-            - log_det
-        )
+        # The parameter-independent -num_outputs * in_features constant is dropped to
+        # match the reference implementation (and the other VBLL KL terms); it does not
+        # affect gradients.
+        return 0.5 * ((trace + mean_sq) / prior_scale + num_outputs * in_features * torch.log(prior_scale) - log_det)
 
 
 class GVBLLLayer(nn.Module):
@@ -2466,7 +2476,9 @@ class GVBLLLayer(nn.Module):
             in_features: Number of input (feature) dimensions.
             num_classes: Number of classes.
             prior_scale: Scale of the isotropic Gaussian prior on the class means.
-            noise_init: Initial shared feature-noise standard deviation.
+            noise_init: Median of the random initial shared feature-noise
+                standard deviation. The default of ``1.0`` matches the reference
+                initialization ``randn`` of the log standard deviation.
             wishart_scale: Scale of the Wishart prior on the noise precision.
             dof: Degrees of freedom of the Wishart prior on the noise precision.
         """
@@ -2486,7 +2498,7 @@ class GVBLLLayer(nn.Module):
 
         self.mu_mean = nn.Parameter(0.1 * torch.randn(num_classes, in_features))
         self.mu_logdiag = nn.Parameter(torch.randn(num_classes, in_features))
-        self.noise_logdiag = nn.Parameter(torch.full((in_features,), math.log(noise_init)))
+        self.noise_logdiag = nn.Parameter(torch.randn(in_features) + math.log(noise_init))
 
         self.register_buffer("prior_scale", torch.tensor(prior_scale))
 
@@ -2629,8 +2641,51 @@ class TVBLLLayer(nn.Module):
 
         self.alpha = nn.Parameter(0.1 * torch.ones(1))
 
-    def _offdiag(self) -> torch.Tensor | None:
+    def offdiag(self) -> torch.Tensor | None:
+        """Strict-lower Cholesky entries of the weight covariance.
+
+        Returns:
+            The ``W_offdiag`` parameter for the dense parametrization, or
+            ``None`` for the diagonal one.
+        """
         return getattr(self, "W_offdiag", None)
+
+    def logit_moments(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Logit mean and weight-posterior variance, before noise scaling.
+
+        Args:
+            x: Input features of shape ``(..., in_features)``.
+
+        Returns:
+            A tuple ``(mean, weight_variance)`` of shape ``(..., num_classes)``
+            with the logit mean ``W_mean . x`` and the variance ``x^T S_k x``
+            contributed by the weight posterior.
+        """
+        mean = F.linear(x, self.W_mean)
+        weight_variance = _vbll_logit_variance(x, self.W_logdiag, self.offdiag(), self.parameterization)
+        return mean, weight_variance
+
+    @property
+    def noise(self) -> torch.distributions.Gamma:
+        """Gamma variational posterior over the per-class noise precision.
+
+        Returns:
+            A :class:`torch.distributions.Gamma` with concentration
+            ``exp(noise_log_dof)`` and rate ``exp(noise_log_rate)``.
+        """
+        return torch.distributions.Gamma(torch.exp(self.noise_log_dof), torch.exp(self.noise_log_rate))
+
+    @property
+    def noise_prior(self) -> torch.distributions.Gamma:
+        """Gamma prior over the per-class noise precision.
+
+        Returns:
+            A :class:`torch.distributions.Gamma` with concentration ``prior_dof``
+            and rate ``prior_rate``, expanded to one entry per class.
+        """
+        dof = torch.full_like(self.noise_log_dof, self.prior_dof)
+        rate = torch.full_like(self.noise_log_rate, self.prior_rate)
+        return torch.distributions.Gamma(dof, rate)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute the closed-form predictive logit Gaussian.
@@ -2641,9 +2696,9 @@ class TVBLLLayer(nn.Module):
         Returns:
             A tuple ``(mean, var)`` of shape ``(..., num_classes)``.
         """
-        mean = F.linear(x, self.W_mean)
-        weight_variance = _vbll_logit_variance(x, self.W_logdiag, self._offdiag(), self.parameterization)
-        expected_noise_var = torch.exp(self.noise_log_rate) / torch.clamp(torch.exp(self.noise_log_dof) - 1.0, min=1e-6)
+        mean, weight_variance = self.logit_moments(x)
+        noise = self.noise
+        expected_noise_var = noise.rate / torch.clamp(noise.concentration - 1.0, min=1e-6)
         var = (weight_variance + 1.0) * expected_noise_var
         return mean, var
 
@@ -2711,15 +2766,59 @@ class HetVBLLLayer(nn.Module):
         )
         if parameterization == "dense":
             self.W_offdiag = nn.Parameter(1e-3 * torch.randn(num_classes, in_features, in_features) / in_features)
+            # The reference adds a + 0.5 * log(noise_prior_scale) offset here, but that lands on
+            # the strict-lower Cholesky entries (a copy-paste from the M_logdiag init) and blows
+            # up the dense noise covariance to inf; we deliberately omit it and keep M_offdiag small.
             self.M_offdiag = nn.Parameter(1e-3 * torch.randn(num_classes, in_features, in_features) / in_features)
 
         self.alpha = nn.Parameter(0.1 * torch.ones(1))
 
-    def _w_offdiag(self) -> torch.Tensor | None:
+    def w_offdiag(self) -> torch.Tensor | None:
+        """Strict-lower Cholesky entries of the logit-weight covariance.
+
+        Returns:
+            The ``W_offdiag`` parameter for the dense parametrization, or
+            ``None`` for the diagonal one.
+        """
         return getattr(self, "W_offdiag", None)
 
-    def _m_offdiag(self) -> torch.Tensor | None:
+    def m_offdiag(self) -> torch.Tensor | None:
+        """Strict-lower Cholesky entries of the log-noise-weight covariance.
+
+        Returns:
+            The ``M_offdiag`` parameter for the dense parametrization, or
+            ``None`` for the diagonal one.
+        """
         return getattr(self, "M_offdiag", None)
+
+    def logit_moments(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Logit mean and weight-posterior variance, before noise scaling.
+
+        Args:
+            x: Input features of shape ``(..., in_features)``.
+
+        Returns:
+            A tuple ``(mean, weight_variance)`` of shape ``(..., num_classes)``
+            with the logit mean ``W_mean . x`` and the variance ``x^T S_k x``
+            contributed by the weight posterior.
+        """
+        mean = F.linear(x, self.W_mean)
+        weight_variance = _vbll_logit_variance(x, self.W_logdiag, self.w_offdiag(), self.parameterization)
+        return mean, weight_variance
+
+    def log_noise_moments(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Mean and variance of the per-class log-noise under the ``M`` posterior.
+
+        Args:
+            x: Input features of shape ``(..., in_features)``.
+
+        Returns:
+            A tuple ``(log_noise_mean, log_noise_var)`` of shape
+            ``(..., num_classes)``.
+        """
+        log_noise_mean = F.linear(x, self.M_mean)
+        log_noise_var = _vbll_logit_variance(x, self.M_logdiag, self.m_offdiag(), self.parameterization)
+        return log_noise_mean, log_noise_var
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute the closed-form predictive logit Gaussian with input-dependent noise.
@@ -2730,10 +2829,8 @@ class HetVBLLLayer(nn.Module):
         Returns:
             A tuple ``(mean, var)`` of shape ``(..., num_classes)``.
         """
-        mean = F.linear(x, self.W_mean)
-        weight_variance = _vbll_logit_variance(x, self.W_logdiag, self._w_offdiag(), self.parameterization)
-        log_noise_mean = F.linear(x, self.M_mean)
-        log_noise_var = _vbll_logit_variance(x, self.M_logdiag, self._m_offdiag(), self.parameterization)
+        mean, weight_variance = self.logit_moments(x)
+        log_noise_mean, log_noise_var = self.log_noise_moments(x)
         expected_noise_var = torch.exp(log_noise_mean + 0.5 * log_noise_var)
         var = (weight_variance + 1.0) * expected_noise_var
         return mean, var
