@@ -8,7 +8,12 @@ from typing import TYPE_CHECKING, Any, cast
 import torch
 
 from probly.calibrator import calibrate
-from probly.method.calibration import temperature_scaling, torch_identity_logit_model, vector_scaling
+from probly.method.calibration import (
+    dirichlet_calibration,
+    temperature_scaling,
+    torch_identity_logit_model,
+    vector_scaling,
+)
 from probly.predictor import predict_raw
 from probly_benchmark import metadata
 
@@ -54,6 +59,20 @@ def _vector_scaling(model: torch.nn.Module, num_classes: int, **_: Any) -> torch
     return cast("torch.nn.Module", vector_scaling(model, num_classes=num_classes))
 
 
+def _dirichlet_calibration(
+    model: torch.nn.Module,
+    num_classes: int,
+    reg_lambda: float = 1e-3,
+    reg_mu: float | None = None,
+    **_: Any,  # noqa: ANN401
+) -> torch.nn.Module:
+    """Wrap a torch model with Dirichlet calibration."""
+    return cast(
+        "torch.nn.Module",
+        dirichlet_calibration(model, num_classes=num_classes, reg_lambda=reg_lambda, reg_mu=reg_mu),
+    )
+
+
 def _temperature_metrics(calibrator: torch.nn.Module) -> dict[str, float]:
     """Extract scalar temperature scaling metrics from a fitted calibrator."""
     temperature = getattr(calibrator, "temperature", None)
@@ -81,6 +100,18 @@ def _vector_scaling_metrics(calibrator: torch.nn.Module) -> dict[str, float]:
     return metrics
 
 
+def _dirichlet_calibration_metrics(calibrator: torch.nn.Module) -> dict[str, float]:
+    """Extract compact Dirichlet calibration metrics from a fitted calibrator."""
+    metrics: dict[str, float] = {}
+    weight = getattr(calibrator, "weight", None)
+    if isinstance(weight, torch.Tensor) and weight.ndim == 2:
+        metrics.update(_tensor_summary("weight_diagonal", weight.diagonal()))
+        off_diagonal = weight[~torch.eye(weight.shape[0], dtype=torch.bool)]
+        metrics.update(_tensor_summary("weight_off_diagonal", off_diagonal))
+    metrics.update(_tensor_summary("bias", getattr(calibrator, "bias", None)))
+    return metrics
+
+
 CALIBRATION_METHODS = {
     "temperature_scaling": CalibrationSpec(
         transform=_temperature_scaling,
@@ -93,6 +124,13 @@ CALIBRATION_METHODS = {
         supported_methods=frozenset({"base"}),
         state_keys=frozenset({"_temperature", "_bias", "_is_calibrated"}),
         metric_extractors=(_vector_scaling_metrics,),
+        requires_num_classes=True,
+    ),
+    "dirichlet_calibration": CalibrationSpec(
+        transform=_dirichlet_calibration,
+        supported_methods=frozenset({"base"}),
+        state_keys=frozenset({"_dirichlet_weight", "_dirichlet_bias", "_is_calibrated"}),
+        metric_extractors=(_dirichlet_calibration_metrics,),
         requires_num_classes=True,
     ),
 }
