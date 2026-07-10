@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
+
+if TYPE_CHECKING:
+    import torch as torch_types
 
 
 def _torch_modules():
@@ -558,3 +563,160 @@ class TestTorchIsotonicErrors:
             wrapper._buffers["_is_calibrated"].fill_(True)  # noqa: SLF001
         out = predict_raw(wrapper, torch.tensor([0.5, -1.0, 2.0]))
         torch.testing.assert_close(out, torch.full_like(out, 0.4))
+
+
+class TestTorchDirichletCalibration:
+    NUM_CLASSES = 3
+    NUM_SAMPLES = 512
+    SHARPENING = 3.0
+
+    @classmethod
+    def _overconfident_logits(cls, num_classes: int | None = None) -> tuple[torch_types.Tensor, torch_types.Tensor]:
+        """Create synthetic overconfident logits and labels for calibration tests."""
+        torch = _torch_modules()
+        num_classes = cls.NUM_CLASSES if num_classes is None else num_classes
+        torch.manual_seed(0)
+        labels = torch.randint(0, num_classes, (cls.NUM_SAMPLES,))
+        base = torch.randn(cls.NUM_SAMPLES, num_classes)
+        # Push probability mass toward the true class, then sharpen to overconfidence.
+        base[torch.arange(cls.NUM_SAMPLES), labels] += 1.5
+        return base * cls.SHARPENING, labels
+
+    @staticmethod
+    def _nll(logits: torch_types.Tensor, labels: torch_types.Tensor) -> float:
+        _torch_modules()
+        import torch.nn.functional as F  # noqa: PLC0415
+
+        return float(F.cross_entropy(logits, labels.long()).item())
+
+    def test_forward_shape_and_calibrate_returns_logits(self) -> None:
+        """Calibrated output keeps the class axis and a finite range."""
+        torch = _torch_modules()
+        from probly.method.calibration import dirichlet_calibration, torch_identity_logit_model  # noqa: PLC0415
+        from probly.predictor import predict_raw  # noqa: PLC0415
+
+        logits, labels = self._overconfident_logits()
+        model = dirichlet_calibration(torch_identity_logit_model(), num_classes=self.NUM_CLASSES)
+        model.calibrate(labels, logits)
+        out = predict_raw(model, logits)
+        assert out.shape == logits.shape
+        assert torch.isfinite(out).all()
+
+    def test_calibration_reduces_nll(self) -> None:
+        """Fitting Dirichlet calibration lowers NLL on overconfident logits."""
+        _torch_modules()
+        from probly.method.calibration import dirichlet_calibration, torch_identity_logit_model  # noqa: PLC0415
+        from probly.predictor import predict_raw  # noqa: PLC0415
+
+        logits, labels = self._overconfident_logits()
+        model = dirichlet_calibration(torch_identity_logit_model(), num_classes=self.NUM_CLASSES)
+        model.calibrate(labels, logits)
+        calibrated = predict_raw(model, logits)
+        assert self._nll(calibrated, labels) < self._nll(logits, labels)
+
+    def test_strong_off_diagonal_regularisation_shrinks_off_diagonal(self) -> None:
+        """A large reg_lambda drives the off-diagonal weights toward zero."""
+        torch = _torch_modules()
+        from probly.method.calibration import dirichlet_calibration, torch_identity_logit_model  # noqa: PLC0415
+
+        logits, labels = self._overconfident_logits()
+        weak = dirichlet_calibration(torch_identity_logit_model(), num_classes=self.NUM_CLASSES, reg_lambda=0.0)
+        strong = dirichlet_calibration(torch_identity_logit_model(), num_classes=self.NUM_CLASSES, reg_lambda=1e3)
+        weak.calibrate(labels, logits)
+        strong.calibrate(labels, logits)
+
+        eye = torch.eye(self.NUM_CLASSES, dtype=torch.bool)
+        weak_off = weak.weight[~eye].abs().mean()
+        strong_off = strong.weight[~eye].abs().mean()
+        assert strong_off < weak_off
+
+    def test_generic_calibrate_matches_fit_alias(self) -> None:
+        """The generic calibrate() and the sklearn-style fit() alias agree."""
+        torch = _torch_modules()
+        from probly.calibrator import calibrate  # noqa: PLC0415
+        from probly.method.calibration import dirichlet_calibration, torch_identity_logit_model  # noqa: PLC0415
+
+        logits, labels = self._overconfident_logits()
+        via_calibrate = dirichlet_calibration(torch_identity_logit_model(), num_classes=self.NUM_CLASSES)
+        calibrate(via_calibrate, labels, logits)
+
+        via_fit = dirichlet_calibration(torch_identity_logit_model(), num_classes=self.NUM_CLASSES)
+        via_fit.fit(logits, labels)
+
+        assert torch.allclose(via_calibrate.weight, via_fit.weight, atol=1e-5)
+        assert torch.allclose(via_calibrate.bias, via_fit.bias, atol=1e-5)
+
+    def test_reg_mu_defaults_to_reg_lambda(self) -> None:
+        """When reg_mu is None it inherits reg_lambda."""
+        _torch_modules()
+        from probly.method.calibration import dirichlet_calibration, torch_identity_logit_model  # noqa: PLC0415
+
+        model = dirichlet_calibration(torch_identity_logit_model(), num_classes=self.NUM_CLASSES, reg_lambda=0.25)
+        assert model.reg_mu == pytest.approx(0.25)
+
+    @pytest.mark.parametrize("num_classes", [None, 1, 0])
+    def test_invalid_num_classes_raises(self, num_classes: int | None) -> None:
+        """num_classes must be greater than one."""
+        _torch_modules()
+        from probly.method.calibration import dirichlet_calibration, torch_identity_logit_model  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="num_classes"):
+            dirichlet_calibration(torch_identity_logit_model(), num_classes=num_classes)
+
+    def test_predict_before_calibrate_raises(self) -> None:
+        """Prediction before calibration is rejected."""
+        _torch_modules()
+        from probly.method.calibration import dirichlet_calibration, torch_identity_logit_model  # noqa: PLC0415
+        from probly.predictor import predict_raw  # noqa: PLC0415
+
+        logits, _ = self._overconfident_logits()
+        model = dirichlet_calibration(torch_identity_logit_model(), num_classes=self.NUM_CLASSES)
+        with pytest.raises(ValueError, match="not calibrated"):
+            predict_raw(model, logits)
+
+    def test_state_dict_round_trip_reproduces_predictions(self) -> None:
+        """A reloaded calibrator reproduces the fitted predictions."""
+        torch = _torch_modules()
+        from probly.method.calibration import dirichlet_calibration, torch_identity_logit_model  # noqa: PLC0415
+        from probly.predictor import predict_raw  # noqa: PLC0415
+
+        logits, labels = self._overconfident_logits()
+        model = dirichlet_calibration(torch_identity_logit_model(), num_classes=self.NUM_CLASSES)
+        model.calibrate(labels, logits)
+        expected = predict_raw(model, logits)
+
+        restored = dirichlet_calibration(torch_identity_logit_model(), num_classes=self.NUM_CLASSES)
+        restored.load_state_dict(model.state_dict())
+        assert torch.allclose(predict_raw(restored, logits), expected, atol=1e-6)
+
+    def test_exposed_from_method_calibration_namespace(self) -> None:
+        """dirichlet_calibration is re-exported through probly.method.calibration."""
+        from probly.method.calibration import dirichlet_calibration as from_method  # noqa: PLC0415
+        from probly.transformation.calibration import dirichlet_calibration as from_transformation  # noqa: PLC0415
+
+        assert from_method is from_transformation
+
+    def test_mismatched_class_axis_raises(self) -> None:
+        """Logits whose class axis disagrees with num_classes are rejected."""
+        _torch_modules()
+        from probly.method.calibration import dirichlet_calibration, torch_identity_logit_model  # noqa: PLC0415
+
+        logits, labels = self._overconfident_logits()
+        model = dirichlet_calibration(torch_identity_logit_model(), num_classes=self.NUM_CLASSES + 1)
+        with pytest.raises(ValueError, match="class axis"):
+            model.calibrate(labels, logits)
+
+    def test_forward_preserves_leading_batch_dimensions(self) -> None:
+        """Prediction broadcasts the calibration map over arbitrary leading dimensions."""
+        torch = _torch_modules()
+        from probly.method.calibration import dirichlet_calibration, torch_identity_logit_model  # noqa: PLC0415
+        from probly.predictor import predict_raw  # noqa: PLC0415
+
+        logits, labels = self._overconfident_logits()
+        model = dirichlet_calibration(torch_identity_logit_model(), num_classes=self.NUM_CLASSES)
+        model.calibrate(labels, logits)
+
+        batched = logits.reshape(4, -1, self.NUM_CLASSES)
+        out = predict_raw(model, batched)
+        assert out.shape == batched.shape
+        assert torch.allclose(out.reshape(-1, self.NUM_CLASSES), predict_raw(model, logits), atol=1e-6)
