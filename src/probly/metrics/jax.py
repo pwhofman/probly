@@ -8,10 +8,38 @@ import jax.numpy as jnp
 from ._common import (
     auc,
     average_precision_score,
+    classwise_ece,
     precision_recall_curve,
     roc_auc_score,
     roc_curve,
 )
+
+
+@classwise_ece.register(jax.Array)
+def classwise_ece_jax(y_true: jax.Array, y_prob: jax.Array, *, num_bins: int = 15) -> jax.Array:
+    """Compute the classwise expected calibration error for JAX arrays."""
+    probs = y_prob.astype(jnp.float32)
+    if probs.ndim != 2:
+        msg = f"classwise_ece expects probabilities of shape (n, k), got shape {probs.shape}."
+        raise ValueError(msg)
+    labels = y_true.reshape(-1)
+    n, k = probs.shape
+    if labels.shape[0] != n:
+        msg = f"classwise_ece labels must match probabilities batch size. Got {labels.shape[0]} labels for {n} rows."
+        raise ValueError(msg)
+
+    one_hot = (labels[:, None] == jnp.arange(k)[None, :]).astype(jnp.float32)
+    bin_idx = jnp.minimum((probs * num_bins).astype(jnp.int32), num_bins - 1)
+
+    total = jnp.float32(0.0)
+    for b in range(num_bins):
+        mask = (bin_idx == b).astype(jnp.float32)
+        count = mask.sum(axis=0)
+        safe_count = jnp.where(count > 0, count, 1.0)
+        mean_prob = (probs * mask).sum(axis=0) / safe_count
+        freq = (one_hot * mask).sum(axis=0) / safe_count
+        total = total + (count / n * jnp.abs(freq - mean_prob)).sum()
+    return total / k
 
 
 @auc.register(jax.Array)

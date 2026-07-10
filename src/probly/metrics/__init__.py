@@ -11,6 +11,7 @@ from ._common import (
     auc,
     average_interval_width,
     average_precision_score,
+    classwise_ece,
     convex_hull_coverage,
     coverage,
     efficiency,
@@ -23,6 +24,7 @@ from ._common import (
 @auc.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @average_interval_width.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @average_precision_score.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@classwise_ece.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @convex_hull_coverage.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @coverage.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @efficiency.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
@@ -35,6 +37,7 @@ def _(_: type) -> None:
 
 @auc.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @average_precision_score.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@classwise_ece.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @precision_recall_curve.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @roc_auc_score.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @roc_curve.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
@@ -46,6 +49,7 @@ __all__ = [
     "auc",
     "average_interval_width",
     "average_precision_score",
+    "classwise_ece",
     "convex_hull_coverage",
     "coverage",
     "efficiency",
