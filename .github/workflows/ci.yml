@@ -3,6 +3,7 @@ name: Pull Request Checks
 
 on:
     pull_request:
+        types: [opened, synchronize, reopened, ready_for_review]
     push:
         branches: [main]
     workflow_dispatch:
@@ -16,13 +17,15 @@ jobs:
     # ----------------------------------------------------------------------------------------------
     check_code_quality:
         name: Code Quality Checks
+        # Skip draft PRs; runs on ready-for-review, push, and dispatch.
+        if: github.event.pull_request.draft == false
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+            -   uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
                 with:
                     persist-credentials: false
             -   name: Set up Python and uv
-                uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v7.0.0
+                uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # v8.2.0
                 with:
                     python-version: "3.13"
                     enable-cache: true
@@ -33,13 +36,15 @@ jobs:
     # ----------------------------------------------------------------------------------------------
     install_and_import:
         name: Install and Import Check
+        # Skip draft PRs; runs on ready-for-review, push, and dispatch.
+        if: github.event.pull_request.draft == false
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+            -   uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
                 with:
                     persist-credentials: false
             -   name: Set up Python and uv
-                uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v7.0.0
+                uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # v8.2.0
                 with:
                     python-version: "3.13"
                     enable-cache: true
@@ -54,6 +59,8 @@ jobs:
     # ----------------------------------------------------------------------------------------------
     run_unit_tests:
         name: Tests (${{ matrix.os }}, ${{ matrix.dependency-group }})
+        # Skip draft PRs; runs on ready-for-review, push, and dispatch.
+        if: github.event.pull_request.draft == false
         strategy:
             fail-fast: false
             matrix:
@@ -76,7 +83,7 @@ jobs:
                       dependency-group: jax
         runs-on: ${{ matrix.os }}
         steps:
-            -   uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+            -   uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
                 with:
                     persist-credentials: false
             -   name: Run tests
@@ -98,7 +105,7 @@ jobs:
         runs-on: ubuntu-latest
         if: ${{ github.repository == 'pwhofman/probly' }}
         steps:
-            -   uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+            -   uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
                 with:
                     persist-credentials: false
             -   name: Download all coverage artifacts

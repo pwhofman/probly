@@ -119,6 +119,7 @@ lint = [
 docs = [
     "sphinx>=9.0.0",
     "sphinx-gallery",               # for the example gallery
+    "joblib",                       # for parallel example execution in sphinx-gallery
     "furo",                         # theme
     "sphinx-copybutton",            # adds copy buttons to code blocks
     "sphinxcontrib-bibtex>=2.0.0",  # for bibliography support

@@ -4,14 +4,22 @@
 - Always run pre-commit checks with `uv run prek run --all-files` before committing to ensure that your code adheres to the project's style and quality standards.
 - When adding public-facing features add docstrings in Google-Style format and American english.
 ## Useful Commands:
-### Build Docs (only use this command verbatim from the project root)
+### Build Docs (only use these commands verbatim from the project root)
+Incremental build (only changed examples and pages re-run):
 ```bash
-rm -rf docs/source/api && uv run sphinx-build -b html docs/source docs/build/html
+uv run sphinx-build -j auto -b html docs/source docs/build/html
 ```
-Running docs building with errors on warning (to see if CI passes):
+If an incremental build warns about API pages for objects that no longer exist (e.g. after switching branches), run `uv run python docs/source/_prune_stale_api.py` and rebuild.
+Full build (re-run all examples):
 ```bash
-rm -rf docs/source/api && uv run sphinx-build -b html docs/source docs/build/html -W
+rm -rf docs/source/api docs/source/auto_examples docs/source/gen_modules docs/build && FORCE_CLEAN=1 uv run sphinx-build -j auto -b html docs/source docs/build/html
 ```
+Full build with errors on warning (to see if CI passes):
+```bash
+rm -rf docs/source/api docs/source/auto_examples docs/source/gen_modules docs/build && FORCE_CLEAN=1 uv run sphinx-build -j auto -b html docs/source docs/build/html -W
+```
+### Docs Versioning
+The deployed site has two versions: `/stable/` (built from the newest release tag by `release-docs.yml`, stored as a `probly-docs-html.tar.gz` asset on that release) and `/latest/` (built from main on every push by `deploy-docs.yml`). Local builds always produce the "latest" flavor; set `DOCS_SOURCE_REF=<tag>` to preview the release flavor.
 ### Run Pre-commit (takes only 1s)
 ```bash
 uv run prek run --all-files
