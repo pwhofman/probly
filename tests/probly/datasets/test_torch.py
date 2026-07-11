@@ -41,13 +41,36 @@ def patch_cifar10_init(self: CIFAR10, root: str, train: bool, transform: Callabl
     self.root = root
 
 
-@patch("probly.datasets.torch.np.load")
+def _write_fake_cifar10h_counts(root: Path, counts: np.ndarray) -> None:
+    """Write fake CIFAR-10H human-annotation counts where CIFAR10H expects them."""
+    path = root / CIFAR10H.cifar10h_folder / CIFAR10H.cifar10h_filename
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(str(path), counts)
+
+
 @patch("probly.datasets.torch.torchvision.datasets.CIFAR10.__init__", new=patch_cifar10_init)
-def test_cifar10h(mock_np_load: MagicMock, tmp_path: Path) -> None:
-    counts = np.ones((5, 10))
-    mock_np_load.return_value = counts
+def test_cifar10h(tmp_path: Path) -> None:
+    _write_fake_cifar10h_counts(tmp_path, np.ones((5, 10)))
     dataset = CIFAR10H(root=str(tmp_path))
-    dataset.data = [np.zeros((3, 32, 32))] * 2
+    assert torch.allclose(torch.sum(dataset.targets, dim=1), torch.ones(5))
+
+
+@patch("probly.datasets.torch.torchvision.datasets.CIFAR10.__init__", new=patch_cifar10_init)
+def test_cifar10h_missing_raises(tmp_path: Path) -> None:
+    with pytest.raises(RuntimeError, match="download=True"):
+        CIFAR10H(root=str(tmp_path))
+
+
+@patch("probly.datasets.torch.download_url")
+@patch("probly.datasets.torch.torchvision.datasets.CIFAR10.__init__", new=patch_cifar10_init)
+def test_cifar10h_download_invoked(mock_download: MagicMock, tmp_path: Path) -> None:
+    data_dir = tmp_path / CIFAR10H.cifar10h_folder
+    # Simulate the download: when invoked, materialize the counts so loading succeeds.
+    mock_download.side_effect = lambda *_args, **_kwargs: _write_fake_cifar10h_counts(tmp_path, np.ones((5, 10)))
+    dataset = CIFAR10H(root=str(tmp_path), download=True)
+    mock_download.assert_called_once_with(
+        CIFAR10H.cifar10h_url, str(data_dir), filename=CIFAR10H.cifar10h_filename, md5=CIFAR10H.cifar10h_md5
+    )
     assert torch.allclose(torch.sum(dataset.targets, dim=1), torch.ones(5))
 
 

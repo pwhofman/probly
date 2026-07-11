@@ -10,7 +10,7 @@ import numpy as np
 from PIL import Image
 import torch
 import torchvision
-from torchvision.datasets.utils import download_and_extract_archive
+from torchvision.datasets.utils import download_and_extract_archive, download_url
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -23,8 +23,13 @@ class CIFAR10H(torchvision.datasets.CIFAR10):
     The dataset can be found at https://github.com/jcpeterson/cifar-10h.
     """
 
+    cifar10h_folder = "cifar-10h"
+    cifar10h_url = "https://raw.githubusercontent.com/jcpeterson/cifar-10h/master/data/cifar10h-counts.npy"
+    cifar10h_filename = "cifar10h-counts.npy"
+    cifar10h_md5 = "f1284b6fba48a67d3db69bbafb5685ad"
+
     counts: torch.Tensor
-    """Tensor containing counts."""
+    """Tensor of size (n_instances, n_classes) with raw human annotation counts."""
 
     targets: torch.Tensor
     """Tensor of size (n_instances, n_classes), first-order distribution."""
@@ -37,12 +42,24 @@ class CIFAR10H(torchvision.datasets.CIFAR10):
         Args:
             root: Root directory of the dataset.
             transform: Optional transform to apply to the data.
-            download: Whether to download the CIFAR10 dataset or not.
+            download: Whether to download the CIFAR10 images and the CIFAR-10H human annotations if missing.
+
+        Raises:
+            RuntimeError: If the CIFAR-10H annotations are missing and ``download`` is False.
         """
         super().__init__(root, train=False, transform=transform, download=download)
-        first_order_path = Path(self.root) / "cifar-10h-master" / "data" / "cifar10h-counts.npy"
-        self.counts = np.load(first_order_path)
-        self.counts = torch.tensor(self.counts, dtype=torch.float32)
+        counts_path = Path(self.root) / self.cifar10h_folder / self.cifar10h_filename
+        if not counts_path.exists():
+            if not download:
+                msg = "Dataset not found. Use download=True to download it."
+                raise RuntimeError(msg)
+            # Fetch only the single (content-stable) counts file, so the pinned md5 lets a corrupt
+            # or partial download self-heal on the next call.
+            download_url(
+                self.cifar10h_url, str(counts_path.parent), filename=self.cifar10h_filename, md5=self.cifar10h_md5
+            )
+        counts = np.load(counts_path)
+        self.counts = torch.tensor(counts, dtype=torch.float32)
         self.targets = self.counts / self.counts.sum(dim=1, keepdim=True)
 
 
