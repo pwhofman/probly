@@ -137,6 +137,10 @@ Browse the full [API reference](https://pwhofman.github.io/probly/stable/api.htm
 
 Does your language model *know* when it doesn't know? `probly` brings uncertainty quantification to text generation: sample multiple answers, cluster them by meaning with an NLI model, and decompose the resulting **semantic entropy** ([Kuhn et al., 2023](https://arxiv.org/abs/2302.09664)) into its aleatoric and epistemic parts.
 
+<div align="center">
+  <img src="docs/source/_static/readme/llm_uncertainty_demo.svg" alt="Animated demo: a factual question collapses to one meaning with zero uncertainty, while a trick question scatters into seven meanings with high uncertainty, flagging a likely hallucination" width="100%" />
+</div>
+
 ```python
 from probly.quantification import decompose
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistributionSample
@@ -160,11 +164,6 @@ uq = decompose(dense)
 
 for question, tu, au, eu in zip(questions, uq.total, uq.aleatoric, uq.epistemic):
     print(f"{question:<45} TU={tu:.3f}  AU={au:.3f}  EU={eu:.3f}")
-```
-
-```text
-What is the capital of France?                TU=0.000  AU=0.000  EU=0.000
-Who was the first person to walk on Mars?     TU=1.561  AU=1.386  EU=0.175
 ```
 
 The factual question collapses into a single semantic cluster — the model is certain. The trick question scatters across many clusters: high uncertainty, flagging a likely hallucination. See [`examples/llm/semantic_entropy.py`](examples/llm/semantic_entropy.py) for the full pipeline and [`examples/llm/spectral_uncertainty.py`](examples/llm/spectral_uncertainty.py) for an embedding-based alternative.
