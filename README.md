@@ -66,68 +66,94 @@ Swap `dropout` for `ensemble`, `bayesian`, `laplace`, or any other method below 
 - 🎯 **Model-agnostic** — the same workflow for a linear model, a CNN, a GNN, or an LLM.
 - 🔁 **Ante-hoc and post-hoc** — make your existing model uncertainty-aware, or build uncertainty-native models from scratch.
 
-### 👯 Ensembles & sampling
+### 🧠 Second-order distributions
+
+Turn a point predictor into a *distribution over distributions* — by sampling, ensembling, distance to the training data, or an evidential head.
 
 | Method | Reference | PyTorch | Flax | scikit-learn | River |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| Deep ensembles (`ensemble`) | [Lakshminarayanan et al., 2017](https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html) | ✅ | ✅ | ✅ | ✅ |
-| Sub-ensembles (`subensemble`) | [Valdenegro-Toro, 2019](https://arxiv.org/abs/1910.08168) | ✅ | ✅ | | |
-| BatchEnsemble (`batchensemble`) | [Wen et al., 2020](https://openreview.net/forum?id=Sklf1yrYDr) | ✅ | ✅ | | |
 | MC dropout (`dropout`) | [Gal & Ghahramani, 2016](http://proceedings.mlr.press/v48/gal16.html) | ✅ | ✅ | | |
 | MC dropconnect (`dropconnect`) | [Mobiny et al., 2021](https://doi.org/10.1038/s41598-021-84854-x) | ✅ | ✅ | | |
-| Class-bias ensembles (`class_bias_ensemble`) | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | ✅ | | | |
-
-### 🧠 Bayesian & variational
-
-| Method | Reference | PyTorch | Flax | scikit-learn | River |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| Variational Bayesian networks (`bayesian`) | [Blundell et al., 2015](http://proceedings.mlr.press/v37/blundell15.html) | ✅ | | | |
+| Mean-field Bayesian networks (`bayesian`) | [Blundell et al., 2015](http://proceedings.mlr.press/v37/blundell15.html) | ✅ | | | |
 | Laplace approximation (`laplace`) | [Daxberger et al., 2021](https://arxiv.org/abs/2106.14806) | ✅ | | | |
-| Spectral-normalized GP heads (`sngp`) | [Liu et al., 2020](https://proceedings.neurips.cc/paper/2020/hash/543e83748234f7cbab21aa0ade66565f-Abstract.html) | ✅ | | | |
-
-### 📏 Conformal prediction & calibration
-
-| Method | Reference | PyTorch | Flax | scikit-learn | River |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| Split conformal prediction (`conformal_absolute_error`) | [Angelopoulos & Bates, 2021](https://arxiv.org/abs/2107.07511) | ✅ | ✅ | ✅ | |
-| Conformal credal sets (`conformal_inner_product`, …) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | ✅ | | | |
-| Temperature & Platt scaling (`calibration`) | [Guo et al., 2017](http://proceedings.mlr.press/v70/guo17a.html) | ✅ | | ✅ | |
-
-### 📜 Evidential & Dirichlet
-
-| Method | Reference | PyTorch | Flax | scikit-learn | River |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| Evidential classification (`evidential_classification`) | [Sensoy et al., 2018](https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html) | ✅ | | | |
-| Evidential regression (`evidential_regression`) | [Amini et al., 2020](https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html) | ✅ | | | |
-| Prior networks (`prior_network`) | [Malinin & Gales, 2018](https://proceedings.neurips.cc/paper/2018/hash/3ea2db50e62ceefceaf70a9d9a56a6f4-Abstract.html) | ✅ | | | |
-| Posterior networks (`posterior_network`) | [Charpentier et al., 2020](https://proceedings.neurips.cc/paper/2020/hash/0eac690d7059a8de4b48e90f14510391-Abstract.html) | ✅ | | | |
-| Natural posterior networks (`natural_posterior_network`) | [Charpentier et al., 2022](https://openreview.net/forum?id=tV3N0DWMxCg) | ✅ | | | |
-| Graph posterior networks (`graph_posterior_network`, …) | [Stadler et al., 2021](https://arxiv.org/abs/2110.14012) | ✅ | | | |
-| Dirichlet activations & NIG heads (`dirichlet_*`, `normal_inverse_gamma_head`) | [Malinin et al., 2020](https://arxiv.org/abs/2006.11590) | ✅ | | | |
-
-### 🔮 Deterministic & distance-based
-
-| Method | Reference | PyTorch | Flax | scikit-learn | River |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| Deep deterministic uncertainty (`ddu`) | [Mukhoti et al., 2023](https://doi.org/10.1109/CVPR52729.2023.02336) | ✅ | | | |
+| Deep ensembles (`ensemble`) | [Lakshminarayanan et al., 2017](https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html) | ✅ | ✅ | ✅ | ✅ |
+| BatchEnsemble (`batchensemble`) | [Wen et al., 2020](https://openreview.net/forum?id=Sklf1yrYDr) | ✅ | ✅ | | |
+| Sub-ensembles (`subensemble`) | [Valdenegro-Toro, 2019](https://arxiv.org/abs/1910.08168) | ✅ | ✅ | | |
+| Deep anti-regularized ensembles (`dare`)¹ | [de Mathelin et al., 2023](https://doi.org/10.48550/arXiv.2304.04042) | ✅ | | | |
 | Deterministic uncertainty quantification (`duq`) | [van Amersfoort et al., 2020](http://proceedings.mlr.press/v119/van-amersfoort20a.html) | ✅ | | | |
+| Deep deterministic uncertainty (`ddu`) | [Mukhoti et al., 2023](https://doi.org/10.1109/CVPR52729.2023.02336) | ✅ | | | |
 | Mahalanobis distance (`mahalanobis`) | [Lee et al., 2018](https://proceedings.neurips.cc/paper/2018/hash/abdeb6f575ac5c6676b747bca8d09cc2-Abstract.html) | ✅ | | | |
 | Direct epistemic uncertainty prediction (`deup`) | [Lahlou et al., 2023](https://openreview.net/forum?id=eGLdVRvvfQ) | ✅ | | | |
+| Spectral-normalized GP heads (`sngp`) | [Liu et al., 2020](https://proceedings.neurips.cc/paper/2020/hash/543e83748234f7cbab21aa0ade66565f-Abstract.html) | ✅ | | | |
+| Evidential classification (`evidential_classification`) | [Sensoy et al., 2018](https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html) | ✅ | | | |
+| Posterior networks (`posterior_network`) | [Charpentier et al., 2020](https://proceedings.neurips.cc/paper/2020/hash/0eac690d7059a8de4b48e90f14510391-Abstract.html) | ✅ | | | |
+| Natural posterior networks (`natural_posterior_network`) | [Charpentier et al., 2022](https://openreview.net/forum?id=tV3N0DWMxCg) | ✅ | | | |
+| Graph posterior networks (`graph_posterior_network`, `cuq_graph_neural_network`, `lop_graph_posterior_network`) | [Stadler et al., 2021](https://arxiv.org/abs/2110.14012) | ✅ | | | |
+| Prior networks (`prior_network`) | [Malinin & Gales, 2018](https://proceedings.neurips.cc/paper/2018/hash/3ea2db50e62ceefceaf70a9d9a56a6f4-Abstract.html) | ✅ | | | |
+| Evidential regression (`evidential_regression`) | [Amini et al., 2020](https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html) | ✅ | | | |
 | Heteroscedastic networks (`het_net`) | [Collier et al., 2021](https://openaccess.thecvf.com/content/CVPR2021/html/Collier_Correlated_Input-Dependent_Label_Noise_in_Large-Scale_Image_Classification_CVPR_2021_paper.html) | ✅ | | | |
+| Dirichlet activations & NIG heads (`dirichlet_*`, `normal_inverse_gamma_head`) | [Malinin et al., 2020](https://arxiv.org/abs/2006.11590) | ✅ | | | |
 
-### ☁️ Credal & imprecise probabilities
+¹ Built on the `ensemble` transformation and usable wherever it is.
+
+### ☁️ Credal sets
+
+Represent uncertainty as a *set* of plausible distributions instead of a single second-order one.
 
 | Method | Reference | PyTorch | Flax | scikit-learn | River |
 | :--- | :--- | :---: | :---: | :---: | :---: |
 | Credal wrapper (`credal_wrapper`)¹ | [Wang et al., 2025](https://openreview.net/forum?id=cv2iMNWCsh) | ✅ | | | |
-| Credal Bayesian deep learning (`credal_bnn`)¹ | [Caprio et al., 2024](https://openreview.net/forum?id=4NHF9AC5ui) | ✅ | | | |
 | Credal ensembling (`credal_ensembling`)¹ | [Nguyen et al., 2025](https://doi.org/10.1007/s10994-024-06703-y) | ✅ | | | |
+| Credal Bayesian deep learning (`credal_bnn`)¹ | [Caprio et al., 2024](https://openreview.net/forum?id=4NHF9AC5ui) | ✅ | | | |
 | Credal nets (`credal_net`)¹ | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | ✅ | | | |
 | Relative-likelihood credal prediction (`credal_relative_likelihood`)¹ | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | ✅ | | | |
-| Density-ratio credal regions (`dare`)¹ | [de Mathelin et al., 2023](https://doi.org/10.48550/arXiv.2304.04042) | ✅ | | | |
+| Class-bias ensembles (`class_bias_ensemble`)³ | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | ✅ | | | |
 | Efficient credal prediction (`efficient_credal_prediction`)² | [Hofman et al., 2026](https://doi.org/10.48550/arXiv.2603.08495) | ✅ | | | |
+| Conformal credal set — inner product (`conformal_inner_product`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | ✅ | | | |
+| Conformal credal set — Kullback-Leibler (`conformal_kullback_leibler`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | ✅ | | | |
+| Conformal credal set — total variation (`conformal_total_variation`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | ✅ | | | |
+| Conformal credal set — Wasserstein (`conformal_wasserstein_distance`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | ✅ | | | |
+| Conformal credal set — Dirichlet relative likelihood (`conformal_dirichlet_relative_likelihood`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | ✅ | | | |
 
-¹ Built on the `ensemble` transformation and usable wherever it is. ² Also has a pure NumPy implementation.
+¹ Built on the `ensemble` transformation and usable wherever it is. ² Also has a pure NumPy implementation. ³ The ensembling that `credal_relative_likelihood` builds on.
+
+### 📏 Conformal prediction
+
+Distribution-free prediction sets and intervals with finite-sample coverage guarantees — pick the nonconformity score that matches your task.
+
+| Method | Reference | PyTorch | Flax | scikit-learn | River |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| LAC (`conformal_lac`) | [Sadinle et al., 2019](https://arxiv.org/abs/1609.00451) | ✅ | ✅ | ✅ | |
+| APS (`conformal_aps`) | [Romano et al., 2020](https://arxiv.org/abs/2006.02544) | ✅ | ✅ | ✅ | |
+| SAPS (`conformal_saps`) | [Huang et al., 2024](https://arxiv.org/abs/2310.06430) | ✅ | ✅ | ✅ | |
+| RAPS (`conformal_raps`) | [Angelopoulos et al., 2021](https://arxiv.org/abs/2009.14193) | ✅ | ✅ | ✅ | |
+| Absolute-error CP (`conformal_absolute_error`) | [Angelopoulos & Bates, 2021](https://arxiv.org/abs/2107.07511) | ✅ | ✅ | ✅ | |
+| CQR (`conformal_cqr`) | [Romano et al., 2019](https://arxiv.org/abs/1905.03222) | ✅ | ✅ | ✅ | |
+| CQR-r (`conformal_cqr_r`) | [Sesia & Candès, 2020](https://arxiv.org/abs/1909.05433) | ✅ | ✅ | ✅ | |
+| UACQR (`conformal_uacqr`) | [Rossellini et al., 2024](https://arxiv.org/abs/2306.08693) | ✅ | ✅ | ✅ | |
+
+### 🌡️ Calibration
+
+Post-hoc fixes for over-confident probabilities, fitted on a held-out split.
+
+| Method | Reference | PyTorch | Flax | scikit-learn | River |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| Temperature scaling (`temperature_scaling`) | [Guo et al., 2017](http://proceedings.mlr.press/v70/guo17a.html) | ✅ | | ✅ | |
+| Platt scaling (`platt_scaling`) | [Platt, 1999](https://www.semanticscholar.org/paper/Probabilistic-Outputs-for-Support-vector-Machines-Platt/42e5ed832d4310ce4378c44d05570439df28a393) | ✅ | | ✅ | |
+| Vector scaling (`vector_scaling`) | [Guo et al., 2017](http://proceedings.mlr.press/v70/guo17a.html) | ✅ | | ✅ | |
+| Isotonic regression (`isotonic_regression`) | [Zadrozny & Elkan, 2002](https://doi.org/10.1145/775047.775151) | ✅ | | ✅ | |
+
+Calibration-aware training losses ship too — label smoothing, [label relaxation](https://doi.org/10.1609/aaai.v35i10.17041), and [focal loss](https://doi.org/10.1109/ICCV.2017.324) in `probly.train.calibration.torch`.
+
+### 📐 Uncertainty quantification
+
+Every method above produces a **representation**; `quantify` turns it into a number and `decompose` splits that number into its **aleatoric** and **epistemic** parts wherever the theory allows. The measures you can pick from, by the representation they consume:
+
+- **Distributions** — `entropy`, `mutual_information`, `conditional_entropy`, `sample_variance`, `vacuity`, `dempster_shafer_uncertainty`
+- **Credal sets** — `upper_entropy`, `lower_entropy`, `generalized_hartley`, `min_expected_total_variation`
+- **Conformal sets** — `conformal_set_size`
+- **Embeddings and text** — `spectral_entropy`, semantic entropy
+- **Scoring rules** — `BrierLoss`, `LogLoss`, `SphericalLoss`, `ZeroOneLoss`
 
 🤖 **LLM uncertainty**, too: semantic entropy and spectral uncertainty for Hugging Face text generation models — [see below](#-uncertainty-for-llms).
 
