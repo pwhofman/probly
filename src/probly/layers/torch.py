@@ -753,7 +753,7 @@ class SharedMaskDropout(nn.Module):
         return f"p={self.p}"
 
 
-class Masksembles2DLayer(nn.Module):
+class Masksembles2D(nn.Module):
     """Masksembles mask layer for 2D convolutional feature maps.
 
     Stores N pre-generated binary channel masks. In training mode, one mask is drawn
@@ -781,15 +781,9 @@ class Masksembles2DLayer(nn.Module):
             masks: Pre-generated binary channel masks of shape [n, channels].
             channels: Number of input channels.
             n: Number of binary masks.
-            scale: Sparsity scale; must be in (1, 6].
-
-        Raises:
-            ValueError: If scale is not in (1, 6].
+            scale: Sparsity scale.
         """
         super().__init__()
-        if not (1.0 < scale <= 6.0):
-            msg = f"scale must be in (1, 6], got {scale}."
-            raise ValueError(msg)
         self.channels = channels
         self.n = n
         self.scale = scale
@@ -821,7 +815,7 @@ class Masksembles2DLayer(nn.Module):
         return x.squeeze(0)
 
 
-class MasksemblesLinearLayer(nn.Module):
+class MasksemblesLinear(nn.Module):
     """Masksembles mask layer for linear (dense) layers.
 
     Stores N pre-generated binary feature masks. In training mode, one mask is drawn
@@ -849,15 +843,9 @@ class MasksemblesLinearLayer(nn.Module):
             masks: Pre-generated binary feature masks of shape [n, features].
             features: Number of input features.
             n: Number of binary masks.
-            scale: Sparsity scale; must be in (1, 6].
-
-        Raises:
-            ValueError: If scale is not in (1, 6].
+            scale: Sparsity scale.
         """
         super().__init__()
-        if not (1.0 < scale <= 6.0):
-            msg = f"scale must be in (1, 6], got {scale}."
-            raise ValueError(msg)
         self.features = features
         self.n = n
         self.scale = scale

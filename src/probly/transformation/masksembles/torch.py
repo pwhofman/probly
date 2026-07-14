@@ -7,7 +7,7 @@ from typing import Any
 import torch
 from torch import nn
 
-from probly.layers.torch import Masksembles2DLayer, MasksemblesLinearLayer
+from probly.layers.torch import Masksembles2D, MasksemblesLinear
 from probly.predictor import predict
 from probly.representation.distribution._common import create_categorical_distribution_from_logits
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistributionSample
@@ -55,8 +55,9 @@ def generation_wrapper(c: int, n: int, scale: float) -> torch.Tensor:
 
     Args:
         c: Target number of active features/channels per mask. Must be >= 10.
-        n: Number of masks.
+        n: Number of masks. Must be positive.
         scale: Initial scale hint; the bisection adjusts it to hit exactly ``c`` columns.
+            Must be less than six and positive.
 
     Returns:
         Binary mask tensor of shape ``[n, c]``.
@@ -64,13 +65,23 @@ def generation_wrapper(c: int, n: int, scale: float) -> torch.Tensor:
     Raises:
         ValueError: If ``c < 10`` (too few features for meaningful mask generation) or
             if bisection fails to converge within 1000 iterations.
+        ValueError: If ``scale > 6.0``.
+        ValueError: If ``n <= 0``.
     """
     if c < 10:
         msg = (
             "Masksembles cannot be used where the number of channels/features is less "
-            f"than 10. Current value is (channels={c}). Increase the number of features "
-            "in this layer or remove Masksembles from this part of the architecture."
+            f"than 10. Current value is (channels={c})."
         )
+        raise ValueError(msg)
+    if scale > 6.0 or scale <= 0.0:
+        msg = (
+            "Masksembles approach couldn't be used in such setups where number "
+            f"scale parameter must be less than 6.0 and positive. Current value is (scale={scale})."
+        )
+        raise ValueError(msg)
+    if n <= 0:
+        msg = f"Masksembles cannot be used when number of masks is negative. Current value is (n_masks={n})."
         raise ValueError(msg)
 
     m = int(int(c) / (scale * (1 - (1 - 1 / scale) ** n)))
@@ -109,9 +120,11 @@ def predict_masksembles(
     """
     n_masks = int(predictor.n_masks)
     b = x.shape[0]
+    was_training = predictor.training
     predictor.eval()
     raw = predictor(tile_inputs(x, n_masks))
     out = raw.view(n_masks, b, *raw.shape[1:])
+    predictor.train(was_training)
     return TorchSample(tensor=out, sample_dim=0)
 
 
@@ -138,7 +151,7 @@ def append_torch_masksembles_conv(
     """Append a Masksembles2DLayer after a Conv2d layer."""
     if isinstance(obj, nn.Conv2d):
         channels = obj.out_channels
-        mask_layer = Masksembles2DLayer(
+        mask_layer = Masksembles2D(
             masks=generation_wrapper(channels, n_masks, scale),
             channels=channels,
             n=n_masks,
@@ -159,7 +172,7 @@ def append_torch_masksembles_linear(
     """Append a MasksemblesLinearLayer after a Linear layer."""
     if isinstance(obj, nn.Linear):
         features = obj.out_features
-        mask_layer = MasksemblesLinearLayer(
+        mask_layer = MasksemblesLinear(
             masks=generation_wrapper(features, n_masks, scale),
             features=features,
             n=n_masks,

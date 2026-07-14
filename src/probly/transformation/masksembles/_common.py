@@ -84,23 +84,13 @@ def masksembles[T: Predictor](
 
     Args:
         base: The base model to apply Masksembles to.
-        n_masks: Number of binary masks to generate. Must be >= 1.
+        n_masks: Number of binary masks to generate.
         scale: Controls mask overlap; higher values produce less correlated masks at the
-            cost of capacity per masked sub-network. Must be in ``(1, 6]``.
+            cost of capacity per masked sub-network.
 
     Returns:
         The Masksembles predictor wrapping the base model.
-
-    Raises:
-        ValueError: If ``n_masks`` < 1 or ``scale`` <= 0.
     """
-    if n_masks < 1:
-        msg = f"n_masks must be >= 1, got {n_masks}"
-        raise ValueError(msg)
-    if scale <= 0:
-        msg = f"scale must be > 0, got {scale}"
-        raise ValueError(msg)
-
     transformed = traverse(
         base,
         nn_compose(masksembles_traverser),
