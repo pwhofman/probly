@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 torch = pytest.importorskip("torch")
 
 from torch import nn  # noqa: E402
 
-from probly.layers.torch import Masksembles2DLayer, MasksemblesLinearLayer  # noqa: E402
+from probly.layers.torch import Masksembles2D, MasksemblesLinear  # noqa: E402
 from probly.predictor import predict  # noqa: E402
 from probly.quantification import quantify  # noqa: E402
 from probly.quantification.notion import AleatoricUncertainty, EpistemicUncertainty, TotalUncertainty  # noqa: E402
@@ -57,9 +59,22 @@ class TestGenerationWrapper:
     """Tests for the mask generation utility."""
 
     def test_raises_when_features_below_minimum(self) -> None:
-
         with pytest.raises(ValueError, match="less than 10"):
             generation_wrapper(c=9, n=4, scale=2.0)
+
+    def test_raises_when_scale_over_maximum(self) -> None:
+        match_msg = "scale parameter must be less than 6.0"
+        with pytest.raises(ValueError, match=re.escape(match_msg)):
+            generation_wrapper(c=10, n=4, scale=7.0)
+
+    def test_raises_when_scale_negative(self) -> None:
+        match_msg = "scale parameter must be less than 6.0 and positive"
+        with pytest.raises(ValueError, match=re.escape(match_msg)):
+            generation_wrapper(c=10, n=4, scale=-1.0)
+
+    def test_raises_when_n_negative(self) -> None:
+        with pytest.raises(ValueError, match="when number of masks is negative"):
+            generation_wrapper(c=10, n=-1, scale=2.0)
 
     def test_output_shape(self) -> None:
 
@@ -130,18 +145,14 @@ class TestMasksemblesForward:
     """Tests for MasksemblesLinearLayer and Masksembles2DLayer forward."""
 
     def test_linear_layer_train_mode_preserves_shape(self) -> None:
-        layer = MasksemblesLinearLayer(
-            masks=generation_wrapper(16, N_MASKS, SCALE), features=16, n=N_MASKS, scale=SCALE
-        )
+        layer = MasksemblesLinear(masks=generation_wrapper(16, N_MASKS, SCALE), features=16, n=N_MASKS, scale=SCALE)
         layer.train()
         x = torch.randn(8, 16)
         out = layer(x)
         assert out.shape == x.shape
 
     def test_linear_layer_eval_mode_preserves_shape(self) -> None:
-        layer = MasksemblesLinearLayer(
-            masks=generation_wrapper(16, N_MASKS, SCALE), features=16, n=N_MASKS, scale=SCALE
-        )
+        layer = MasksemblesLinear(masks=generation_wrapper(16, N_MASKS, SCALE), features=16, n=N_MASKS, scale=SCALE)
         layer.eval()
         x = torch.randn(N_MASKS * 8, 16)  # pre-tiled by n_masks
         out = layer(x)
@@ -165,6 +176,22 @@ class TestMasksemblesForward:
         assert sample.tensor.shape == (N_MASKS, 3, 10)
         assert sample.sample_dim == 0
 
+    def test_predict_return_to_train_mode(self, linear_model) -> None:
+        model = masksembles(linear_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        x = torch.randn(5, 20)
+        model.train()
+        with torch.no_grad():
+            predict(model, x)
+        assert model.training is True
+
+    def test_predict_return_to_eval_mode(self, linear_model) -> None:
+        model = masksembles(linear_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        x = torch.randn(5, 20)
+        model.eval()
+        with torch.no_grad():
+            predict(model, x)
+        assert model.training is False
+
 
 class TestMasksemblesLayerInsertion:
     """Tests that masksembles() inserts mask layers at the right positions."""
@@ -172,21 +199,21 @@ class TestMasksemblesLayerInsertion:
     def test_linear_layers_are_appended(self, linear_model) -> None:
         model = masksembles(linear_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
         n_linear_original = count_layers(linear_model, nn.Linear)
-        n_masked = count_layers(model, MasksemblesLinearLayer)
+        n_masked = count_layers(model, MasksemblesLinear)
         assert n_masked == n_linear_original - 1
-        assert count_layers(model, MasksemblesLinearLayer) > 0
+        assert count_layers(model, MasksemblesLinear) > 0
 
     def test_last_linear_is_not_masked(self, linear_model) -> None:
         model = masksembles(linear_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
         n_linear_original = count_layers(linear_model, nn.Linear)
-        n_masked = count_layers(model, MasksemblesLinearLayer)
+        n_masked = count_layers(model, MasksemblesLinear)
         assert n_masked == n_linear_original - 1
 
     def test_conv_layers_are_appended(self, conv_model) -> None:
         model = masksembles(conv_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
         n_conv_original = count_layers(model, nn.Conv2d)
-        n_masked = count_layers(model, Masksembles2DLayer)
-        assert count_layers(model, Masksembles2DLayer) > 0
+        n_masked = count_layers(model, Masksembles2D)
+        assert count_layers(model, Masksembles2D) > 0
         assert n_conv_original == n_masked
 
     def test_n_masks_buffer_is_attached(self, linear_model) -> None:
