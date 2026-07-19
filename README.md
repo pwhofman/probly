@@ -8,14 +8,11 @@
 
 [![PyPI version](https://badge.fury.io/py/probly.svg)](https://badge.fury.io/py/probly)
 [![PyPI status](https://img.shields.io/pypi/status/probly.svg?color=blue)](https://pypi.org/project/probly)
-[![Python versions](https://img.shields.io/pypi/pyversions/probly)](https://pypi.org/project/probly)
 [![PePy](https://static.pepy.tech/badge/probly?style=flat-square)](https://pepy.tech/project/probly)
-[![CI](https://github.com/pwhofman/probly/actions/workflows/ci.yml/badge.svg)](https://github.com/pwhofman/probly/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/pwhofman/probly/branch/main/graph/badge.svg)](https://codecov.io/gh/pwhofman/probly)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://pwhofman.github.io/probly)
 [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](.github/CONTRIBUTING.md)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
-[![Last commit](https://img.shields.io/github/last-commit/pwhofman/probly)](https://github.com/pwhofman/probly/commits/main)
 </div>
 
 <div align="center">
