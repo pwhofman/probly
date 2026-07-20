@@ -7,6 +7,9 @@ from flextype import flexdispatch
 # Number of decimal places used when rounding lower/upper bounds in credal-set coverage and efficiency.
 CREDAL_ROUND_DECIMALS: int = 3
 
+# Warning message for undefined ROC AUC, matching sklearn's wording.
+SINGLE_CLASS_ROC_AUC_MSG = "Only one class is present in y_true. ROC AUC score is not defined in that case."
+
 
 @flexdispatch
 def auc(x: object, y: object) -> object:
@@ -66,7 +69,7 @@ def roc_auc_score(y_true: object, y_score: object) -> object:
         y_score: Predicted scores.
 
     Returns:
-        AUROC value.
+        AUROC value; NaN (with a warning) where ``y_true`` contains only one class.
     """
     msg = f"No roc_auc_score implementation registered for type {type(y_true)}"
     raise NotImplementedError(msg)

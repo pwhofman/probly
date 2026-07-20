@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import warnings
+
 import jax
 import jax.numpy as jnp
 
 from ._common import (
+    SINGLE_CLASS_ROC_AUC_MSG,
     auc,
     average_precision_score,
     precision_recall_curve,
@@ -27,19 +30,31 @@ def average_precision_score_jax(y_true: jax.Array, y_score: jax.Array) -> jax.Ar
     return -jnp.sum(jnp.diff(recall, axis=-1) * precision[..., :-1], axis=-1)  # ty:ignore[invalid-argument-type, not-subscriptable]
 
 
+def _tie_run_end_indices(y_score_sorted: jax.Array) -> jax.Array:
+    """Map each position of a descending-sorted score array to the last index of its block of tied scores."""
+    n = y_score_sorted.shape[-1]
+    is_end = jnp.concatenate(
+        [y_score_sorted[..., 1:] != y_score_sorted[..., :-1], jnp.ones((*y_score_sorted.shape[:-1], 1), dtype=bool)],
+        axis=-1,
+    )
+    rev_masked = jnp.where(jnp.flip(is_end, axis=-1), jnp.arange(n), 0)
+    rev_last = jax.lax.cummax(rev_masked, axis=rev_masked.ndim - 1)
+    return n - 1 - jnp.flip(rev_last, axis=-1)
+
+
 @precision_recall_curve.register(jax.Array)
 def precision_recall_curve_jax(y_true: jax.Array, y_score: jax.Array) -> tuple[jax.Array, jax.Array, jax.Array]:
     """Compute precision-recall curve along the last axis."""
     y_true = y_true.astype(jnp.float32)
     y_score = y_score.astype(jnp.float32)
-    n = y_score.shape[-1]
 
     desc_idx = jnp.flip(jnp.argsort(y_score, axis=-1, stable=True), axis=-1)
     y_score_sorted = jnp.take_along_axis(y_score, desc_idx, axis=-1)
     y_true_sorted = jnp.take_along_axis(y_true, desc_idx, axis=-1)
 
-    tps = jnp.cumsum(y_true_sorted, axis=-1)
-    predicted_pos = jnp.arange(1, n + 1, dtype=jnp.float32)
+    run_end = _tie_run_end_indices(y_score_sorted)
+    tps = jnp.take_along_axis(jnp.cumsum(y_true_sorted, axis=-1), run_end, axis=-1)
+    predicted_pos = (run_end + 1).astype(jnp.float32)
     total_pos = tps[..., -1:]
 
     precision = tps / predicted_pos
@@ -58,14 +73,14 @@ def roc_curve_jax(y_true: jax.Array, y_score: jax.Array) -> tuple[jax.Array, jax
     """Compute ROC curve along the last axis."""
     y_true = y_true.astype(jnp.float32)
     y_score = y_score.astype(jnp.float32)
-    n = y_score.shape[-1]
 
     desc_idx = jnp.flip(jnp.argsort(y_score, axis=-1, stable=True), axis=-1)
     y_score_sorted = jnp.take_along_axis(y_score, desc_idx, axis=-1)
     y_true_sorted = jnp.take_along_axis(y_true, desc_idx, axis=-1)
 
-    tps = jnp.cumsum(y_true_sorted, axis=-1)
-    fps = jnp.arange(1, n + 1, dtype=jnp.float32) - tps
+    run_end = _tie_run_end_indices(y_score_sorted)
+    tps = jnp.take_along_axis(jnp.cumsum(y_true_sorted, axis=-1), run_end, axis=-1)
+    fps = (run_end + 1).astype(jnp.float32) - tps
 
     total_pos = tps[..., -1:]
     total_neg = fps[..., -1:]
@@ -85,4 +100,9 @@ def roc_curve_jax(y_true: jax.Array, y_score: jax.Array) -> tuple[jax.Array, jax
 def roc_auc_score_jax(y_true: jax.Array, y_score: jax.Array) -> jax.Array:
     """Compute area under the ROC curve for JAX arrays."""
     fpr, tpr, _ = roc_curve(y_true, y_score)
-    return auc(fpr, tpr)  # ty:ignore[invalid-return-type]
+    # The final curve point reaches (1, 1) only when both classes are present;
+    # a row missing a class has an undefined AUC (sklearn semantics: NaN).
+    defined = (tpr[..., -1] > 0) & (fpr[..., -1] > 0)  # ty:ignore[not-subscriptable]
+    if not bool(jnp.all(defined)):
+        warnings.warn(SINGLE_CLASS_ROC_AUC_MSG, UserWarning, stacklevel=2)
+    return jnp.where(defined, auc(fpr, tpr), jnp.nan)  # ty:ignore[invalid-argument-type]

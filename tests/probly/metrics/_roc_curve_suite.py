@@ -117,6 +117,13 @@ class RocCurveSuite:
         assert tpr.shape == (2, n + 1)
         assert thresholds.shape == (2, n + 1)
 
+    def test_tied_scores_yield_achievable_points_only(self, array_fn):
+        """With all scores tied, the curve is the diagonal from (0,0) to (1,1)."""
+        y_true = array_fn([0, 1, 0, 1], dtype=float)
+        y_score = array_fn([0.7, 0.7, 0.7, 0.7], dtype=float)
+        fpr, tpr, _ = roc_curve(y_true, y_score)
+        np.testing.assert_allclose(np.asarray(fpr), np.asarray(tpr))
+
     def test_all_negatives(self, array_fn):
         """All-negative labels produce tpr=0 everywhere."""
         y_true = array_fn([0, 0, 0, 0], dtype=float)

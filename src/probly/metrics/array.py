@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from typing import TYPE_CHECKING
+import warnings
 
 import numpy as np
 from scipy.optimize import linprog
@@ -19,6 +20,7 @@ from probly.representation.credal_set.array import (
 
 from ._common import (
     CREDAL_ROUND_DECIMALS,
+    SINGLE_CLASS_ROC_AUC_MSG,
     auc,
     average_interval_width,
     average_precision_score,
@@ -47,19 +49,30 @@ def average_precision_score_numpy(y_true: np.ndarray, y_score: np.ndarray) -> np
     return -np.sum(np.diff(recall, axis=-1) * precision[..., :-1], axis=-1)  # ty:ignore[no-matching-overload, not-subscriptable]
 
 
+def _tie_run_end_indices(y_score_sorted: np.ndarray) -> np.ndarray:
+    """Map each position of a descending-sorted score array to the last index of its block of tied scores."""
+    n = y_score_sorted.shape[-1]
+    is_end = np.concatenate(
+        [y_score_sorted[..., 1:] != y_score_sorted[..., :-1], np.ones((*y_score_sorted.shape[:-1], 1), dtype=bool)],
+        axis=-1,
+    )
+    rev_last = np.maximum.accumulate(np.where(np.flip(is_end, axis=-1), np.arange(n), 0), axis=-1)
+    return n - 1 - np.flip(rev_last, axis=-1)
+
+
 @precision_recall_curve.register(np.ndarray)
 def precision_recall_curve_numpy(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Compute precision-recall curve along the last axis."""
     y_true = np.asarray(y_true, dtype=float)
     y_score = np.asarray(y_score, dtype=float)
-    n = y_score.shape[-1]
 
     desc_idx = np.flip(np.argsort(y_score, axis=-1, kind="mergesort"), axis=-1)
     y_score_sorted = np.take_along_axis(y_score, desc_idx, axis=-1)
     y_true_sorted = np.take_along_axis(y_true, desc_idx, axis=-1)
 
-    tps = np.cumsum(y_true_sorted, axis=-1)
-    predicted_pos = np.arange(1, n + 1, dtype=float)
+    run_end = _tie_run_end_indices(y_score_sorted)
+    tps = np.take_along_axis(np.cumsum(y_true_sorted, axis=-1), run_end, axis=-1)
+    predicted_pos = (run_end + 1).astype(float)
     total_pos = tps[..., -1:]
 
     precision = tps / predicted_pos
@@ -77,7 +90,13 @@ def precision_recall_curve_numpy(y_true: np.ndarray, y_score: np.ndarray) -> tup
 def roc_auc_score_numpy(y_true: np.ndarray, y_score: np.ndarray) -> np.ndarray:
     """Compute area under the ROC curve for NumPy arrays."""
     fpr, tpr, _ = roc_curve(y_true, y_score)
-    return auc(fpr, tpr)  # ty:ignore[invalid-return-type]
+    # The final curve point reaches (1, 1) only when both classes are present;
+    # a row missing a class has an undefined AUC (sklearn semantics: NaN).
+    defined = (np.asarray(tpr)[..., -1] > 0) & (np.asarray(fpr)[..., -1] > 0)
+    if not np.all(defined):
+        warnings.warn(SINGLE_CLASS_ROC_AUC_MSG, UserWarning, stacklevel=2)
+    # Index with () to unwrap the 0-d array so unbatched calls keep returning a scalar.
+    return np.where(defined, auc(fpr, tpr), np.nan)[()]  # ty:ignore[no-matching-overload]
 
 
 @roc_curve.register(np.ndarray)
@@ -85,14 +104,14 @@ def roc_curve_numpy(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarray
     """Compute ROC curve along the last axis."""
     y_true = np.asarray(y_true, dtype=float)
     y_score = np.asarray(y_score, dtype=float)
-    n = y_score.shape[-1]
 
     desc_idx = np.flip(np.argsort(y_score, axis=-1, kind="mergesort"), axis=-1)
     y_score_sorted = np.take_along_axis(y_score, desc_idx, axis=-1)
     y_true_sorted = np.take_along_axis(y_true, desc_idx, axis=-1)
 
-    tps = np.cumsum(y_true_sorted, axis=-1)
-    fps = np.arange(1, n + 1, dtype=float) - tps
+    run_end = _tie_run_end_indices(y_score_sorted)
+    tps = np.take_along_axis(np.cumsum(y_true_sorted, axis=-1), run_end, axis=-1)
+    fps = (run_end + 1).astype(float) - tps
 
     total_pos = tps[..., -1:]
     total_neg = fps[..., -1:]

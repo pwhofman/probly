@@ -12,6 +12,7 @@ Note:
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+import warnings
 
 import torch
 
@@ -26,7 +27,7 @@ from probly.metrics import (
     roc_auc_score,
     roc_curve,
 )
-from probly.metrics._common import CREDAL_ROUND_DECIMALS
+from probly.metrics._common import CREDAL_ROUND_DECIMALS, SINGLE_CLASS_ROC_AUC_MSG
 from probly.metrics.array import _convex_hull_lp_coverage
 from probly.representation.conformal_set.torch import TorchIntervalConformalSet, TorchOneHotConformalSet
 from probly.representation.credal_set.torch import (
@@ -53,6 +54,21 @@ def average_precision_score_torch(y_true: torch.Tensor, y_score: torch.Tensor) -
     return -torch.sum(torch.diff(recall, dim=-1) * precision[..., :-1], dim=-1)  # ty:ignore[invalid-argument-type, not-subscriptable]
 
 
+def _tie_run_end_indices(y_score_sorted: torch.Tensor) -> torch.Tensor:
+    """Map each position of a descending-sorted score tensor to the last index of its block of tied scores."""
+    n = y_score_sorted.shape[-1]
+    is_end = torch.cat(
+        [
+            y_score_sorted[..., 1:] != y_score_sorted[..., :-1],
+            torch.ones((*y_score_sorted.shape[:-1], 1), dtype=torch.bool, device=y_score_sorted.device),
+        ],
+        dim=-1,
+    )
+    idx = torch.arange(n, device=y_score_sorted.device)
+    rev_last = torch.cummax(torch.where(is_end.flip(-1), idx, 0), dim=-1).values
+    return n - 1 - rev_last.flip(-1)
+
+
 @precision_recall_curve.register(torch.Tensor)
 def precision_recall_curve_torch(
     y_true: torch.Tensor, y_score: torch.Tensor
@@ -60,14 +76,14 @@ def precision_recall_curve_torch(
     """Compute precision-recall curve along the last axis."""
     y_true = y_true.float()
     y_score = y_score.float()
-    n = y_score.shape[-1]
 
     desc_idx = torch.argsort(y_score, dim=-1, stable=True, descending=True)
     y_score_sorted = torch.take_along_dim(y_score, desc_idx, dim=-1)
     y_true_sorted = torch.take_along_dim(y_true, desc_idx, dim=-1)
 
-    tps = torch.cumsum(y_true_sorted, dim=-1)
-    predicted_pos = torch.arange(1, n + 1, device=y_true.device, dtype=y_true.dtype)
+    run_end = _tie_run_end_indices(y_score_sorted)
+    tps = torch.take_along_dim(torch.cumsum(y_true_sorted, dim=-1), run_end, dim=-1)
+    predicted_pos = (run_end + 1).to(y_true.dtype)
     total_pos = tps[..., -1:]
 
     precision = tps / predicted_pos
@@ -87,7 +103,12 @@ def precision_recall_curve_torch(
 def roc_auc_score_torch(y_true: torch.Tensor, y_score: torch.Tensor) -> torch.Tensor:
     """Compute area under the ROC curve for PyTorch tensors."""
     fpr, tpr, _ = roc_curve(y_true, y_score)
-    return auc(fpr, tpr)  # ty:ignore[invalid-return-type]
+    # The final curve point reaches (1, 1) only when both classes are present;
+    # a row missing a class has an undefined AUC (sklearn semantics: NaN).
+    defined = (tpr[..., -1] > 0) & (fpr[..., -1] > 0)  # ty:ignore[not-subscriptable]
+    if not bool(defined.all()):
+        warnings.warn(SINGLE_CLASS_ROC_AUC_MSG, UserWarning, stacklevel=2)
+    return torch.where(defined, auc(fpr, tpr), torch.nan)  # ty:ignore[no-matching-overload]
 
 
 @roc_curve.register(torch.Tensor)
@@ -95,14 +116,14 @@ def roc_curve_torch(y_true: torch.Tensor, y_score: torch.Tensor) -> tuple[torch.
     """Compute ROC curve along the last axis."""
     y_true = y_true.float()
     y_score = y_score.float()
-    n = y_score.shape[-1]
 
     desc_idx = torch.argsort(y_score, dim=-1, stable=True, descending=True)
     y_score_sorted = torch.take_along_dim(y_score, desc_idx, dim=-1)
     y_true_sorted = torch.take_along_dim(y_true, desc_idx, dim=-1)
 
-    tps = torch.cumsum(y_true_sorted, dim=-1)
-    fps = torch.arange(1, n + 1, device=y_true.device, dtype=y_true.dtype) - tps
+    run_end = _tie_run_end_indices(y_score_sorted)
+    tps = torch.take_along_dim(torch.cumsum(y_true_sorted, dim=-1), run_end, dim=-1)
+    fps = (run_end + 1).to(y_true.dtype) - tps
 
     total_pos = tps[..., -1:]
     total_neg = fps[..., -1:]

@@ -25,6 +25,13 @@ class APScoreSuite:
         result = float(average_precision_score(y_true, y_score))
         assert result < 0.5
 
+    def test_uninformative_scores_give_positive_rate(self, array_fn):
+        """Constant (all-tied) scores give an AP equal to the positive rate."""
+        y_true = array_fn([0, 1, 0, 1], dtype=float)
+        y_score = array_fn([0.5, 0.5, 0.5, 0.5], dtype=float)
+        result = average_precision_score(y_true, y_score)
+        np.testing.assert_allclose(np.asarray(result), 0.5)
+
     def test_returns_backend_type(self, array_fn, array_type):
         """Result is an instance of the input backend's scalar type."""
         y_true = array_fn([0, 0, 1, 1, 0, 1, 0, 1, 1, 0], dtype=float)

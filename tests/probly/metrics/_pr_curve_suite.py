@@ -85,6 +85,14 @@ class PRCurveSuite:
         best_precision_at_full_recall = precision[full_recall_mask].max()
         assert best_precision_at_full_recall == pytest.approx(1.0)
 
+    def test_tied_scores_yield_achievable_points_only(self, array_fn):
+        """With all scores tied, every non-sentinel point is (recall=1, precision=positive rate)."""
+        y_true = array_fn([0, 1, 0, 1], dtype=float)
+        y_score = array_fn([0.7, 0.7, 0.7, 0.7], dtype=float)
+        precision, recall, _ = precision_recall_curve(y_true, y_score)
+        np.testing.assert_allclose(np.asarray(precision)[..., :-1], 0.5)
+        np.testing.assert_allclose(np.asarray(recall)[..., :-1], 1.0)
+
     def test_all_negatives(self, array_fn):
         """All-negative labels produce recall=0 everywhere."""
         y_true = array_fn([0, 0, 0, 0], dtype=float)

@@ -48,6 +48,38 @@ class RocAucScoreSuite:
         result = roc_auc_score(y_true, y_score)
         assert float(result) == pytest.approx(0.5, abs=0.05)
 
+    def test_uninformative_scores_give_half(self, array_fn):
+        """Constant (all-tied) scores give an AUC of exactly 0.5."""
+        y_true = array_fn([0, 1, 0, 1, 0, 1], dtype=float)
+        y_score = array_fn([0.5, 0.5, 0.5, 0.5, 0.5, 0.5], dtype=float)
+        result = roc_auc_score(y_true, y_score)
+        np.testing.assert_allclose(np.asarray(result), 0.5)
+
+    def test_partial_ties_hand_computed(self, array_fn):
+        """A tie block spanning both classes adds a diagonal segment; hand-computed AUC is 0.875."""
+        y_true = array_fn([0, 1, 0, 1], dtype=float)
+        y_score = array_fn([0.5, 0.5, 0.2, 0.8], dtype=float)
+        result = roc_auc_score(y_true, y_score)
+        np.testing.assert_allclose(np.asarray(result), 0.875)
+
+    @pytest.mark.parametrize("label", [0.0, 1.0], ids=["all-negative", "all-positive"])
+    def test_single_class_returns_nan(self, label, array_fn):
+        """AUC is undefined for single-class y_true; matches sklearn by warning and returning NaN."""
+        y_true = array_fn([label, label, label], dtype=float)
+        y_score = array_fn([0.2, 0.5, 0.9], dtype=float)
+        with pytest.warns(UserWarning, match="Only one class"):
+            result = roc_auc_score(y_true, y_score)
+        assert np.isnan(np.asarray(result))
+
+    def test_single_class_batched_nan_per_row(self, array_fn):
+        """Batched input: degenerate rows are NaN, well-defined rows keep their value."""
+        y_true = array_fn([[0, 0, 0, 0], [0, 0, 1, 1]], dtype=float)
+        y_score = array_fn([[0.1, 0.2, 0.8, 0.9], [0.1, 0.2, 0.8, 0.9]], dtype=float)
+        with pytest.warns(UserWarning, match="Only one class"):
+            result = np.asarray(roc_auc_score(y_true, y_score))
+        assert np.isnan(result[0])
+        assert result[1] == pytest.approx(1.0)
+
     def test_bounded(self, array_fn):
         """ROC AUC is always in [0, 1]."""
         y_true = array_fn([0, 0, 1, 1, 0, 1, 0, 1, 1, 0], dtype=float)
