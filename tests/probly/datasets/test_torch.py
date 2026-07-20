@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 import json
 from pathlib import Path
+import shutil
 from unittest.mock import MagicMock, mock_open, patch
 
 import numpy as np
@@ -31,6 +32,7 @@ from probly.datasets.torch import (
     Pig,
     Plankton,
     Synthetic,
+    TinyImageNet,
     Treeversity1,
     Treeversity6,
     Turkey,
@@ -268,6 +270,115 @@ def test_cifar10c_download_invoked(mock_download: MagicMock, tmp_path: Path) -> 
     mock_download.side_effect = lambda *_args, **_kwargs: _write_fake_cifar10c(folder, "snow")
     dataset = CIFAR10C(tmp_path, "snow", severity=1, download=True)
     mock_download.assert_called_once_with(CIFAR10C.url, str(tmp_path), filename=CIFAR10C.filename, md5=CIFAR10C.tar_md5)
+    assert len(dataset) == 2
+
+
+def _write_fake_tinyimagenet(folder: Path, *, grayscale_val: bool = False) -> None:
+    """Write a tiny fake tiny-imagenet-200 tree with two classes, listed unsorted in wnids.txt.
+
+    Args:
+        folder: The ``tiny-imagenet-200`` directory to create.
+        grayscale_val: Whether to write the first validation image as a grayscale JPEG, mirroring
+            the mode-``L`` sources present in the real dataset.
+    """
+    wnids = ("n02124075", "n01443537")  # deliberately unsorted, as in the real wnids.txt
+    (folder / "val" / "images").mkdir(parents=True, exist_ok=True)
+    (folder / "wnids.txt").write_text("\n".join(wnids) + "\n")
+    annotations = []
+    for i, wnid in enumerate(wnids):
+        images = folder / "train" / wnid / "images"
+        images.mkdir(parents=True, exist_ok=True)
+        Image.new("RGB", (64, 64)).save(images / f"{wnid}_0.JPEG")
+        name = f"val_{i}.JPEG"
+        Image.new("L" if grayscale_val and i == 0 else "RGB", (64, 64)).save(folder / "val" / "images" / name)
+        annotations.append(f"{name}\t{wnid}\t0\t0\t63\t63")
+    (folder / "val" / "val_annotations.txt").write_text("\n".join(annotations) + "\n")
+
+
+def test_tinyimagenet_invalid_split(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="Unknown split"):
+        TinyImageNet(tmp_path, "test")  # unlabeled in the release, so intentionally unsupported
+
+
+def test_tinyimagenet_missing_files_raises(tmp_path: Path) -> None:
+    with pytest.raises(RuntimeError, match="download=True"):
+        TinyImageNet(tmp_path, "train", download=False)
+
+
+def test_tinyimagenet_class_order_is_sorted(tmp_path: Path) -> None:
+    _write_fake_tinyimagenet(tmp_path / "tiny-imagenet-200")
+    dataset = TinyImageNet(tmp_path, "train")
+    # wnids.txt lists n02124075 first, but class indices follow sorted order, as ImageFolder assigns.
+    assert dataset.classes == ["n01443537", "n02124075"]
+    assert dataset.class_to_idx == {"n01443537": 0, "n02124075": 1}
+    assert [path.parent.parent.name for path, _ in dataset.samples] == dataset.classes
+    assert dataset.targets == [0, 1]
+
+
+def test_tinyimagenet_partial_extraction_raises(tmp_path: Path) -> None:
+    folder = tmp_path / "tiny-imagenet-200"
+    _write_fake_tinyimagenet(folder)
+    # An interrupted extraction can leave wnids.txt behind while class directories are missing;
+    # globbing would otherwise yield a silently smaller training set.
+    shutil.rmtree(folder / "train" / "n01443537")
+    with pytest.raises(RuntimeError, match="Incomplete dataset: 1 of 2 train class directories"):
+        TinyImageNet(tmp_path, "train")
+
+
+def test_tinyimagenet_missing_val_images_raises(tmp_path: Path) -> None:
+    folder = tmp_path / "tiny-imagenet-200"
+    _write_fake_tinyimagenet(folder)
+    shutil.rmtree(folder / "val" / "images")
+    with pytest.raises(RuntimeError, match="Incomplete dataset"):
+        TinyImageNet(tmp_path, "val")
+
+
+def test_tinyimagenet_train_getitem(tmp_path: Path) -> None:
+    _write_fake_tinyimagenet(tmp_path / "tiny-imagenet-200")
+    dataset = TinyImageNet(tmp_path, "train")
+    assert len(dataset) == 2
+    img, target = dataset[0]
+    assert img.size == (64, 64)
+    assert target == 0
+
+
+def test_tinyimagenet_val_targets_follow_annotations(tmp_path: Path) -> None:
+    _write_fake_tinyimagenet(tmp_path / "tiny-imagenet-200")
+    dataset = TinyImageNet(tmp_path, "val")
+    assert len(dataset) == 2
+    # val_0 is annotated n02124075 (sorted index 1) and val_1 is n01443537 (sorted index 0).
+    assert dataset.targets == [1, 0]
+
+
+def test_tinyimagenet_grayscale_converted_to_rgb(tmp_path: Path) -> None:
+    _write_fake_tinyimagenet(tmp_path / "tiny-imagenet-200", grayscale_val=True)
+    dataset = TinyImageNet(tmp_path, "val")
+    img, _ = dataset[0]
+    assert img.mode == "RGB"  # a mode-L source is widened so it collates with the RGB images
+
+
+def test_tinyimagenet_transform_applied(tmp_path: Path) -> None:
+    _write_fake_tinyimagenet(tmp_path / "tiny-imagenet-200")
+    dataset = TinyImageNet(
+        tmp_path,
+        "train",
+        transform=lambda _im: "transformed",
+        target_transform=lambda target: target + 100,
+    )
+    img, target = dataset[0]
+    assert img == "transformed"
+    assert target == 100  # target_transform applied to the integer label 0
+
+
+@patch("probly.datasets.torch.download_and_extract_archive")
+def test_tinyimagenet_download_invoked(mock_download: MagicMock, tmp_path: Path) -> None:
+    folder = tmp_path / "tiny-imagenet-200"
+    # Simulate the download: when invoked, materialize the fixtures so loading succeeds.
+    mock_download.side_effect = lambda *_args, **_kwargs: _write_fake_tinyimagenet(folder)
+    dataset = TinyImageNet(tmp_path, "train", download=True)
+    mock_download.assert_called_once_with(
+        TinyImageNet.url, str(tmp_path), filename=TinyImageNet.filename, md5=TinyImageNet.zip_md5
+    )
     assert len(dataset) == 2
 
 

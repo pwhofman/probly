@@ -567,6 +567,167 @@ class CIFAR10C(torchvision.datasets.VisionDataset):
         return img, target
 
 
+class TinyImageNet(torchvision.datasets.VisionDataset):
+    """A Dataset class for the Tiny ImageNet dataset introduced in :cite:`leTinyImageNet2015`.
+
+    Tiny ImageNet is a 200-class subset of ImageNet downsampled to 64x64, holding 500 training and
+    50 validation images per class, with hard integer labels. The data can be found at
+    https://cs231n.stanford.edu/tiny-imagenet-200.zip and fetched with ``download=True`` (a single
+    ~237 MB zip). Class indices follow the *sorted* WordNet ids, matching
+    :class:`torchvision.datasets.ImageFolder` and :class:`torchvision.datasets.ImageNet`; note that
+    the shipped ``wnids.txt`` is unsorted, so this order deliberately differs from that file's line
+    order. The shipped ``test`` split is excluded because its labels were never released.
+    """
+
+    base_folder = "tiny-imagenet-200"
+    url = "https://cs231n.stanford.edu/tiny-imagenet-200.zip"
+    filename = "tiny-imagenet-200.zip"
+    zip_md5 = "90528d7ca1a48142e341f4ef8d21d0de"
+    splits: tuple[str, ...] = ("train", "val")
+    """The two labeled splits; the shipped ``test`` split has no public labels."""
+
+    classes: list[str]
+    """The 200 WordNet ids, sorted, so that ``classes[i]`` is the wnid of class index ``i``."""
+
+    class_to_idx: dict[str, int]
+    """Mapping from WordNet id to class index."""
+
+    samples: list[tuple[Path, int]]
+    """The ``(image path, class index)`` pairs of the selected split, ordered by path."""
+
+    targets: list[int]
+    """Hard integer class labels, one per image."""
+
+    def __init__(
+        self,
+        root: str | Path,
+        split: str = "train",
+        transform: Callable[..., Any] | None = None,
+        target_transform: Callable[..., Any] | None = None,
+        *,
+        download: bool = False,
+    ) -> None:
+        """Initialize an instance of the TinyImageNet class.
+
+        Args:
+            root: Root directory containing (or to download into) the ``tiny-imagenet-200`` folder.
+            split: Which split to load; must be one of ``TinyImageNet.splits``.
+            transform: Optional transform to apply to the image.
+            target_transform: Optional transform to apply to the integer label.
+            download: Whether to download the Tiny ImageNet zip from Stanford if missing.
+
+        Raises:
+            ValueError: If ``split`` is unknown.
+            RuntimeError: If the data is missing and ``download`` is False.
+        """
+        super().__init__(str(root), transform=transform, target_transform=target_transform)
+        if split not in self.splits:
+            msg = (
+                f"Unknown split {split!r}. Valid options: {', '.join(self.splits)}. The shipped "
+                "'test' split is unsupported because its labels were never released."
+            )
+            raise ValueError(msg)
+        self.split = split
+
+        folder = Path(self.root) / self.base_folder
+        wnids_path = folder / "wnids.txt"
+
+        if not wnids_path.exists():
+            if not download:
+                msg = "Dataset not found. Use download=True to download it."
+                raise RuntimeError(msg)
+            download_and_extract_archive(self.url, str(self.root), filename=self.filename, md5=self.zip_md5)
+
+        # Sorted rather than in wnids.txt line order, which is unsorted: this keeps class indices
+        # identical to what ImageFolder would assign to the same train/ tree.
+        self.classes = sorted(wnids_path.read_text().split())
+        self.class_to_idx = {wnid: idx for idx, wnid in enumerate(self.classes)}
+        self._check_integrity(folder)
+        self.samples = self._make_samples(folder)
+        self.targets = [target for _, target in self.samples]
+
+    def _check_integrity(self, folder: Path) -> None:
+        """Verify the selected split was extracted completely.
+
+        ``wnids.txt`` alone is a weak sentinel: an interrupted extraction can leave it in place while
+        class directories are still missing. That matters most for ``train``, whose length comes from
+        globbing those directories and would otherwise silently shrink. ``val`` cannot shrink that way
+        because its length comes from ``val_annotations.txt``, so it only needs a structural check.
+
+        Args:
+            folder: The extracted ``tiny-imagenet-200`` directory.
+
+        Raises:
+            RuntimeError: If an expected class directory or split file is missing.
+        """
+        if self.split == "train":
+            missing = [wnid for wnid in self.classes if not (folder / "train" / wnid / "images").is_dir()]
+            if missing:
+                msg = (
+                    f"Incomplete dataset: {len(missing)} of {len(self.classes)} train class directories "
+                    f"are missing (e.g. {missing[0]!r}). Delete {folder} and re-run with download=True."
+                )
+                raise RuntimeError(msg)
+        else:
+            for path in (folder / "val" / "val_annotations.txt", folder / "val" / "images"):
+                if not path.exists():
+                    msg = f"Incomplete dataset: {path} is missing. Delete {folder} and re-run with download=True."
+                    raise RuntimeError(msg)
+
+    def _make_samples(self, folder: Path) -> list[tuple[Path, int]]:
+        """Collect the ``(image path, class index)`` pairs of the selected split.
+
+        Args:
+            folder: The extracted ``tiny-imagenet-200`` directory.
+
+        Returns:
+            The split's samples, sorted by path so the order does not depend on the filesystem.
+        """
+        if self.split == "train":
+            samples = [
+                (path, self.class_to_idx[wnid])
+                for wnid in self.classes
+                for path in (folder / "train" / wnid / "images").glob("*.JPEG")
+            ]
+        else:
+            # val/ is one flat image folder; val_annotations.txt maps each file to its wnid.
+            annotations = (folder / "val" / "val_annotations.txt").read_text().splitlines()
+            samples = []
+            for line in annotations:
+                name, wnid = line.split("\t")[:2]
+                samples.append((folder / "val" / "images" / name, self.class_to_idx[wnid]))
+        return sorted(samples)
+
+    def __len__(self) -> int:
+        """Return the number of images in the selected split.
+
+        Returns:
+            The number of images in the selected split.
+        """
+        return len(self.samples)
+
+    def __getitem__(self, index: int) -> tuple[Any, int]:
+        """Get the (image, label) pair at the given index.
+
+        Args:
+            index: Index within the dataset.
+
+        Returns:
+            The ``(image, label)`` tuple, with ``transform``/``target_transform`` applied. Images are
+            converted to RGB, so grayscale sources are widened to three channels.
+        """
+        path, target = self.samples[index]
+        # 1,821 of the 100,000 train and 168 of the 10,000 val JPEGs are grayscale; without this
+        # they would collate into a batch as one-channel tensors alongside three-channel ones.
+        with Image.open(path) as image_file:
+            img = image_file.convert("RGB")
+        if self.transform is not None:
+            img = self.transform(img)
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+        return img, target
+
+
 class MedMNISTC(torchvision.datasets.VisionDataset):
     """A Dataset class for the MedMNIST-C corruption benchmark introduced in :cite:`disalvoMedMNISTC2024`.
 
