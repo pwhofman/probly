@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
+from laplace.baselaplace import BaseLaplace
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
@@ -16,8 +17,17 @@ from probly.quantification import quantify
 from probly.representer import representer
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.decision import decide
-from probly_benchmark.train import train_model
+from probly_benchmark.train import _move_to_device, train_model
 from probly_benchmark.uncertainty import select_uncertainty
+
+
+def _eval_mode(model: nn.Module | BaseLaplace) -> None:
+    """Set model to eval mode, handling Laplace which wraps an inner model."""
+    if isinstance(model, BaseLaplace):
+        model.model.eval()
+    else:
+        model.eval()
+
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
@@ -231,14 +241,18 @@ class BaseEstimator:
             in_features=self.in_features,
         )
         model = build_model(self.method_name, dict(self.method_params), ctx)
-        model.to(self.device)
-        train_model(model, train_loader, None, self.cfg, self.device, _NoOpRun(), dict(self.train_kwargs))
+        _move_to_device(model, self.device)
+        tk = dict(self.train_kwargs)
+        tk.setdefault("num_classes", self.num_classes)
+        tk.setdefault("base_model_name", self.base_model_name)
+        tk.setdefault("in_features", self.in_features)
+        train_model(model, train_loader, None, self.cfg, self.device, _NoOpRun(), tk)
         return model
 
     @torch.no_grad()
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return class probabilities via probly's predict dispatch."""
-        self.model.eval()
+        _eval_mode(self.model)
         amp_enabled = self.cfg.get("amp", False)
         parts = []
         for i in range(0, len(x), self.cfg.batch_size):
@@ -256,7 +270,7 @@ class BaseEstimator:
     @torch.no_grad()
     def embed(self, x: torch.Tensor) -> torch.Tensor:
         """Return penultimate-layer features for BADGE."""
-        self.model.eval()
+        _eval_mode(self.model)
         base = self.model
         if isinstance(base, CalibrationPredictor):
             base = base.predictor
@@ -326,7 +340,7 @@ class UncertaintyEstimator(BaseEstimator):
     @torch.no_grad()
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return class probabilities via the ``decide`` dispatch."""
-        self.model.eval()
+        _eval_mode(self.model)
         amp_enabled = self.cfg.get("amp", False)
         parts = []
         for i in range(0, len(x), self.cfg.batch_size):
@@ -339,7 +353,7 @@ class UncertaintyEstimator(BaseEstimator):
     @torch.no_grad()
     def uncertainty_scores(self, x: torch.Tensor) -> torch.Tensor:
         """Return per-sample uncertainty via representer -> quantify -> select_uncertainty."""
-        self.model.eval()
+        _eval_mode(self.model)
         rep = representer(self.model, **self.rep_kwargs)
         amp_enabled = self.cfg.get("amp", False)
         parts: list[torch.Tensor] = []
