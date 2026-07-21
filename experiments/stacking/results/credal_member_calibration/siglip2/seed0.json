@@ -1,0 +1,36 @@
+{
+  "experiment": "credal_member_calibration",
+  "calibration": "per_member_temperature_vs_none",
+  "dataset": "cifar10h",
+  "encoder": "siglip2",
+  "seed": 0,
+  "splits": {
+    "train": 50000,
+    "calib": 2500,
+    "test": 7500
+  },
+  "hyperparams": {
+    "num_members": 10,
+    "epochs": 200,
+    "lr": 0.01,
+    "decision_rule": "non_dominated"
+  },
+  "metrics": {
+    "test_acc_pooled_argmax": 0.96506667137146,
+    "no_calibration": {
+      "coverage": 0.9828000068664551,
+      "avg_set_size": 1.0687999725341797,
+      "singleton_rate": 0.9476000070571899
+    },
+    "per_member_calibration": {
+      "coverage": 0.9829333424568176,
+      "avg_set_size": 1.0690666437149048,
+      "singleton_rate": 0.9467999935150146
+    },
+    "delta_with_minus_no": {
+      "coverage": 0.00013333559036254883,
+      "avg_set_size": 0.00026667118072509766,
+      "singleton_rate": -0.000800013542175293
+    }
+  }
+}

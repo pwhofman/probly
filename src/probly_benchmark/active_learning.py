@@ -81,6 +81,9 @@ def _build_estimator(
     al_train_overrides = al_block.pop("train", None) or {}
     if al_train_overrides:
         train_kwargs = {**train_kwargs, **al_train_overrides}
+    # Loading pre-trained weights from wandb is not supported in the AL loop
+    # (each iteration retrains from scratch).
+    train_kwargs.pop("load_from", None)
     rep_kwargs: dict[str, Any] = al_block
 
     needs_conformal = cfg.conformal.name != "none"
