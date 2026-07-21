@@ -31,6 +31,14 @@ It ships 40+ methods — from Bayesian nets and deep ensembles to evidential, cr
 conformal prediction — behind one consistent API.
 
 <div align="center">
+  <picture>
+    <source srcset="docs/source/_static/readme/backends_dark.png" media="(prefers-color-scheme: dark)">
+    <source srcset="docs/source/_static/readme/backends_light.png" media="(prefers-color-scheme: light)">
+    <img src="docs/source/_static/readme/backends_light.png" alt="Supported backends: PyTorch, Flax/JAX, scikit-learn, River, and Hugging Face" width="88%" />
+  </picture>
+</div>
+
+<div align="center">
   <img src="docs/source/_static/readme/from_paper/paper_workflow.png" alt="The four-stage probly workflow: transform a model to make it uncertainty-aware, represent its predictive uncertainty, quantify and decompose that uncertainty into total, epistemic and aleatoric parts, decide based on it, and evaluate the result in a downstream task" width="100%" />
   <br />
   <em>One composable four-stage workflow — <strong>transform</strong>, <strong>represent</strong>, <strong>quantify</strong>/<strong>decide</strong>, <strong>evaluate</strong>.</em>
