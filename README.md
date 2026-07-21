@@ -80,7 +80,7 @@ Swap `dropout` for `ensemble`, `bayesian`, `laplace`, or any other method below 
 
 Every method below is a **one-line transformation** that works the same for a linear model, a CNN, a GNN, or an LLM. Apply one ante-hoc or post-hoc — wrap an existing model to make it uncertainty-aware, or build an uncertainty-native one from scratch.
 
-### 🧠 Second-order distributions
+#### 🧠 Second-order distributions
 
 Turn a point predictor into a *distribution over distributions* — by sampling, ensembling, distance to the training data, or an evidential head.
 
@@ -115,7 +115,7 @@ Turn a point predictor into a *distribution over distributions* — by sampling,
 
 </details>
 
-### ☁️ Credal sets
+#### ☁️ Credal sets
 
 Represent uncertainty as a *set* of plausible distributions instead of a single second-order one.
 
@@ -141,7 +141,7 @@ Represent uncertainty as a *set* of plausible distributions instead of a single 
 
 </details>
 
-### 📏 Conformal prediction
+#### 📏 Conformal prediction
 
 Distribution-free prediction sets and intervals with finite-sample coverage guarantees — pick the nonconformity score that matches your task.
 
@@ -161,7 +161,7 @@ Distribution-free prediction sets and intervals with finite-sample coverage guar
 
 </details>
 
-### 🌡️ Calibration
+#### 🌡️ Calibration
 
 Post-hoc fixes for over-confident probabilities, fitted on a held-out split.
 
@@ -179,7 +179,7 @@ Post-hoc fixes for over-confident probabilities, fitted on a held-out split.
 
 Calibration-aware training losses ship too — label smoothing, [label relaxation](https://doi.org/10.1609/aaai.v35i10.17041), and [focal loss](https://doi.org/10.1109/ICCV.2017.324) in `probly.train.calibration.torch`.
 
-### 📐 Uncertainty quantification
+#### 📐 Uncertainty quantification
 
 Every method above produces a **representation**; `quantify` turns it into a number and `decompose` splits that number into its **aleatoric** and **epistemic** parts wherever the theory allows. The measures you can pick from, by the representation they consume:
 
