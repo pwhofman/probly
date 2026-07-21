@@ -19,6 +19,7 @@ from probly.metrics import (
     auc,
     average_interval_width,
     average_precision_score,
+    classwise_ece,
     convex_hull_coverage,
     coverage,
     efficiency,
@@ -81,6 +82,33 @@ def precision_recall_curve_torch(
     recall = torch.cat([recall.flip(-1), zeros], dim=-1)
 
     return precision, recall, y_score_sorted
+
+
+@classwise_ece.register(torch.Tensor)
+def classwise_ece_torch(y_true: torch.Tensor, y_prob: torch.Tensor, *, num_bins: int = 15) -> torch.Tensor:
+    """Compute the classwise expected calibration error for PyTorch tensors."""
+    probs = y_prob.float()
+    if probs.ndim != 2:
+        msg = f"classwise_ece expects probabilities of shape (n, k), got shape {tuple(probs.shape)}."
+        raise ValueError(msg)
+    labels = y_true.reshape(-1)
+    n, k = probs.shape
+    if labels.shape[0] != n:
+        msg = f"classwise_ece labels must match probabilities batch size. Got {labels.shape[0]} labels for {n} rows."
+        raise ValueError(msg)
+
+    one_hot = (labels[:, None] == torch.arange(k, device=probs.device)[None, :]).float()
+    bin_idx = torch.clamp((probs * num_bins).long(), max=num_bins - 1)
+
+    total = probs.new_zeros(())
+    for b in range(num_bins):
+        mask = (bin_idx == b).float()
+        count = mask.sum(dim=0)
+        safe_count = torch.where(count > 0, count, torch.ones_like(count))
+        mean_prob = (probs * mask).sum(dim=0) / safe_count
+        freq = (one_hot * mask).sum(dim=0) / safe_count
+        total = total + (count / n * (freq - mean_prob).abs()).sum()
+    return total / k
 
 
 @roc_auc_score.register(torch.Tensor)

@@ -7,6 +7,7 @@ import pytest
 
 from ._ap_score_suite import APScoreSuite
 from ._auc_suite import AUCSuite
+from ._classwise_ece_suite import ClasswiseECESuite
 from ._pr_curve_suite import PRCurveSuite
 from ._reference_suite import ReferenceSuite
 from ._roc_auc_score_suite import RocAucScoreSuite
@@ -40,6 +41,10 @@ class TestRocAucScore(RocAucScoreSuite):
 
 
 class TestAPScore(APScoreSuite):
+    pass
+
+
+class TestClasswiseECE(ClasswiseECESuite):
     pass
 
 

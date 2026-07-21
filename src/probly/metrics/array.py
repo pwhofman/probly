@@ -22,6 +22,7 @@ from ._common import (
     auc,
     average_interval_width,
     average_precision_score,
+    classwise_ece,
     convex_hull_coverage,
     coverage,
     efficiency,
@@ -71,6 +72,33 @@ def precision_recall_curve_numpy(y_true: np.ndarray, y_score: np.ndarray) -> tup
     recall = np.concatenate([np.flip(recall, axis=-1), zeros], axis=-1)
 
     return precision, recall, y_score_sorted
+
+
+@classwise_ece.register(np.ndarray)
+def classwise_ece_numpy(y_true: np.ndarray, y_prob: np.ndarray, *, num_bins: int = 15) -> np.floating:
+    """Compute the classwise expected calibration error for NumPy arrays."""
+    probs = np.asarray(y_prob, dtype=float)
+    if probs.ndim != 2:
+        msg = f"classwise_ece expects probabilities of shape (n, k), got shape {probs.shape}."
+        raise ValueError(msg)
+    labels = np.asarray(y_true).reshape(-1)
+    n, k = probs.shape
+    if labels.shape[0] != n:
+        msg = f"classwise_ece labels must match probabilities batch size. Got {labels.shape[0]} labels for {n} rows."
+        raise ValueError(msg)
+
+    one_hot = (labels[:, None] == np.arange(k)[None, :]).astype(float)
+    bin_idx = np.minimum((probs * num_bins).astype(int), num_bins - 1)
+
+    total = np.float64(0.0)
+    for b in range(num_bins):
+        mask = (bin_idx == b).astype(float)
+        count = mask.sum(axis=0)
+        safe_count = np.where(count > 0, count, 1.0)
+        mean_prob = (probs * mask).sum(axis=0) / safe_count
+        freq = (one_hot * mask).sum(axis=0) / safe_count
+        total += (count / n * np.abs(freq - mean_prob)).sum()
+    return total / k
 
 
 @roc_auc_score.register(np.ndarray)
