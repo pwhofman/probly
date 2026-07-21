@@ -811,8 +811,11 @@ def train_model_bayesian(
 ) -> None:
     """Train a BayesianPredictor with ELBO loss.
 
-    The KL penalty is set to 1/N (N = dataset size) following
-    Blundell et al., "Weight Uncertainty in Neural Networks", ICML 2015.
+    The KL penalty is set to kl_scale/N (N = dataset size). ``kl_scale=1`` is the
+    exact ELBO of Blundell et al., "Weight Uncertainty in Neural Networks", ICML
+    2015; ``kl_scale<1`` tempers the posterior (Wenzel et al., ICML 2020) and
+    compensates for the larger effective dataset size under data augmentation
+    (Osawa et al., NeurIPS 2019).
 
     Args:
         model: The Bayesian predictor to train.
@@ -827,7 +830,7 @@ def train_model_bayesian(
     """
     dataset = getattr(train_loader, "dataset", None)
     dataset_size = len(dataset) if dataset is not None else len(train_loader) * cfg.batch_size
-    kl_penalty = 1.0 / dataset_size
+    kl_penalty = train_kwargs.get("kl_scale", 1.0) / dataset_size
     _training_loop(
         model,
         train_loader,

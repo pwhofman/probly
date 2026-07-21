@@ -927,6 +927,7 @@ def _(
     amp_enabled: bool = False,
     n_bins: int = 10,
     samples: int = 1,
+    **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> dict[str, float]:
     """Evaluate a Bayesian predictor on test set.
 

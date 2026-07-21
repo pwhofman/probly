@@ -13,3 +13,4 @@ optimizer:
 method:
   params:
     use_base_weights: false
+    posterior_std: 0.01
