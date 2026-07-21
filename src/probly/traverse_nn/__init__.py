@@ -4,6 +4,7 @@ from probly.lazy_types import FLAX_MODULE, TORCH_MODULE
 
 from ._common import LAYER_COUNT, compose as nn_compose, is_first_layer, layer_count_traverser, nn_traverser
 from .reset_traverser import reset_traverser
+from .utils import find_layer, find_layers
 
 
 ## Torch
@@ -20,6 +21,8 @@ def _(_: type) -> None:
 
 __all__ = [
     "LAYER_COUNT",
+    "find_layer",
+    "find_layers",
     "is_first_layer",
     "layer_count_traverser",
     "nn_compose",
