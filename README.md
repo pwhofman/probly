@@ -7,12 +7,16 @@
 </picture>
 
 [![PyPI version](https://badge.fury.io/py/probly.svg)](https://badge.fury.io/py/probly)
+[![Python Versions](https://img.shields.io/pypi/pyversions/probly.svg)](https://pypi.org/project/probly)
 [![PyPI status](https://img.shields.io/pypi/status/probly.svg?color=blue)](https://pypi.org/project/probly)
 [![PePy](https://static.pepy.tech/badge/probly?style=flat-square)](https://pepy.tech/project/probly)
+[![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
+
+[![Tests](https://github.com/pwhofman/probly/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/pwhofman/probly/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/pwhofman/probly/branch/main/graph/badge.svg)](https://codecov.io/gh/pwhofman/probly)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://pwhofman.github.io/probly)
 [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](.github/CONTRIBUTING.md)
-[![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
+[![Last Commit](https://img.shields.io/github/last-commit/pwhofman/probly)](https://github.com/pwhofman/probly/commits/main)
 </div>
 
 <div align="center">
@@ -25,6 +29,12 @@ Hugging Face model uncertainty-aware in a single line, then **represent**, **qua
 and **decompose** its predictive uncertainty into **aleatoric** and **epistemic** parts.
 It ships 40+ methods — from Bayesian nets and deep ensembles to evidential, credal, and
 conformal prediction — behind one consistent API.
+
+<div align="center">
+  <img src="docs/source/_static/readme/from_paper/paper_workflow.png" alt="The four-stage probly workflow: transform a model to make it uncertainty-aware, represent its predictive uncertainty, quantify and decompose that uncertainty into total, epistemic and aleatoric parts, decide based on it, and evaluate the result in a downstream task" width="100%" />
+  <br />
+  <em>One composable four-stage workflow — <strong>transform</strong>, <strong>represent</strong>, <strong>quantify</strong>/<strong>decide</strong>, <strong>evaluate</strong>.</em>
+</div>
 
 ## 🛠️ Install
 `probly` is intended to work with **Python 3.13 and above**. Installation can be done via `pip`
@@ -74,11 +84,25 @@ Output:
 {'auroc': 0.94}
 ```
 
-Swap `dropout` for `ensemble`, `bayesian`, `laplace`, or any other method below — the rest of the pipeline stays the same.
+Swap `dropout` for `ensemble`, `bayesian`, `laplace`, or any other method below — the rest of the pipeline stays the same. That is what makes a systematic comparison cheap: the same pipeline, run across 20+ methods on ImageNet.
+
+<div align="center">
+  <img src="docs/source/_static/readme/from_paper/paper_benchmark.png" alt="Two bar charts benchmarking 20+ uncertainty methods on ImageNet with a ResNet50: area under the accuracy-rejection curve for selective prediction on the left, and out-of-distribution detection AUROC on the right, each with the single-model baseline marked as a dashed line" width="100%" />
+  <br />
+  <em>Selective prediction and out-of-distribution detection on ImageNet, mean over three runs.<br />See the <a href="https://pwhofman.github.io/probly">docs</a> for the full benchmark.</em>
+</div>
 
 ## 🎲 Methods at a glance
 
 Every method below is a **one-line transformation** that works the same for a linear model, a CNN, a GNN, or an LLM. Apply one ante-hoc or post-hoc — wrap an existing model to make it uncertainty-aware, or build an uncertainty-native one from scratch.
+
+What differs between them is *how* they represent uncertainty — `probly` covers the whole spectrum, from a single outcome to a set of probability distributions:
+
+<div align="center">
+  <img src="docs/source/_static/readme/from_paper/paper_representations.png" alt="Uncertainty representations arranged from zeroth to second order, shown for classification on a probability simplex over dog, fox and cat, and for regression in the mean-standard-deviation plane: single outcome, set of outcomes, probability distribution, samples of a distribution over distributions, a distribution over distributions, and a set of distributions" width="100%" />
+  <br />
+  <em>From a point prediction to a set of probability distributions — every representation below is one of these.</em>
+</div>
 
 #### 🧠 Second-order distributions
 
@@ -198,7 +222,11 @@ Browse the full [API reference](https://pwhofman.github.io/probly/stable/api.htm
 Does your language model *know* when it doesn't know? `probly` brings uncertainty quantification to text generation: sample multiple answers, cluster them by meaning with an NLI model, and decompose the resulting **semantic entropy** ([Kuhn et al., 2023](https://arxiv.org/abs/2302.09664)) into its aleatoric and epistemic parts.
 
 <div align="center">
-  <img src="docs/source/_static/readme/llm_uncertainty_demo.svg" alt="Animated demo: a factual question collapses to one meaning with zero uncertainty, while a trick question scatters into seven meanings with high uncertainty, flagging a likely hallucination" width="100%" />
+  <picture>
+    <source srcset="docs/source/_static/readme/llm_uncertainty_demo_dark.svg" media="(prefers-color-scheme: dark)">
+    <source srcset="docs/source/_static/readme/llm_uncertainty_demo_light.svg" media="(prefers-color-scheme: light)">
+    <img src="docs/source/_static/readme/llm_uncertainty_demo_light.svg" alt="Animated demo: a factual question collapses to one meaning with zero uncertainty, while a trick question scatters into seven meanings with high uncertainty, flagging a likely hallucination" width="100%" />
+  </picture>
 </div>
 
 ```python
