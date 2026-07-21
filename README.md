@@ -39,7 +39,11 @@ conformal prediction — behind one consistent API.
 </div>
 
 <div align="center">
-  <img src="docs/source/_static/readme/from_paper/paper_workflow.png" alt="The four-stage probly workflow: transform a model to make it uncertainty-aware, represent its predictive uncertainty, quantify and decompose that uncertainty into total, epistemic and aleatoric parts, decide based on it, and evaluate the result in a downstream task" width="100%" />
+  <picture>
+    <source srcset="docs/source/_static/readme/from_paper/paper_workflow_dark.png" media="(prefers-color-scheme: dark)">
+    <source srcset="docs/source/_static/readme/from_paper/paper_workflow_light.png" media="(prefers-color-scheme: light)">
+    <img src="docs/source/_static/readme/from_paper/paper_workflow_light.png" alt="The four-stage probly workflow: transform a model to make it uncertainty-aware, represent its predictive uncertainty, quantify and decompose that uncertainty into total, epistemic and aleatoric parts, decide based on it, and evaluate the result in a downstream task" width="100%" />
+  </picture>
   <br />
   <em>One composable four-stage workflow — <strong>transform</strong>, <strong>represent</strong>, <strong>quantify</strong>/<strong>decide</strong>, <strong>evaluate</strong>.</em>
 </div>
@@ -95,7 +99,11 @@ Output:
 Swap `dropout` for `ensemble`, `bayesian`, `laplace`, or any other method below — the rest of the pipeline stays the same. That is what makes a systematic comparison cheap: the same pipeline, run across 20+ methods on ImageNet.
 
 <div align="center">
-  <img src="docs/source/_static/readme/from_paper/paper_benchmark.png" alt="Two bar charts benchmarking 20+ uncertainty methods on ImageNet with a ResNet50: area under the accuracy-rejection curve for selective prediction on the left, and out-of-distribution detection AUROC on the right, each with the single-model baseline marked as a dashed line" width="100%" />
+  <picture>
+    <source srcset="docs/source/_static/readme/from_paper/paper_benchmark_dark.png" media="(prefers-color-scheme: dark)">
+    <source srcset="docs/source/_static/readme/from_paper/paper_benchmark_light.png" media="(prefers-color-scheme: light)">
+    <img src="docs/source/_static/readme/from_paper/paper_benchmark_light.png" alt="Two bar charts benchmarking 20+ uncertainty methods on ImageNet with a ResNet50: area under the accuracy-rejection curve for selective prediction on the left, and out-of-distribution detection AUROC on the right, each with the single-model baseline marked as a dashed line" width="100%" />
+  </picture>
   <br />
   <em>Selective prediction and out-of-distribution detection on ImageNet, mean over three runs.<br />See the <a href="https://pwhofman.github.io/probly">docs</a> for the full benchmark.</em>
 </div>
@@ -107,7 +115,11 @@ Every method below is a **one-line transformation** that works the same for a li
 What differs between them is *how* they represent uncertainty — `probly` covers the whole spectrum, from a single outcome to a set of probability distributions:
 
 <div align="center">
-  <img src="docs/source/_static/readme/from_paper/paper_representations.png" alt="Uncertainty representations arranged from zeroth to second order, shown for classification on a probability simplex over dog, fox and cat, and for regression in the mean-standard-deviation plane: single outcome, set of outcomes, probability distribution, samples of a distribution over distributions, a distribution over distributions, and a set of distributions" width="100%" />
+  <picture>
+    <source srcset="docs/source/_static/readme/from_paper/paper_representations_dark.png" media="(prefers-color-scheme: dark)">
+    <source srcset="docs/source/_static/readme/from_paper/paper_representations_light.png" media="(prefers-color-scheme: light)">
+    <img src="docs/source/_static/readme/from_paper/paper_representations_light.png" alt="Uncertainty representations arranged from zeroth to second order, shown for classification on a probability simplex over dog, fox and cat, and for regression in the mean-standard-deviation plane: single outcome, set of outcomes, probability distribution, samples of a distribution over distributions, a distribution over distributions, and a set of distributions" width="100%" />
+  </picture>
   <br />
   <em>From a point prediction to a set of probability distributions — every representation below is one of these.</em>
 </div>
