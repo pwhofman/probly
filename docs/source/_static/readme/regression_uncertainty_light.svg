@@ -22,7 +22,7 @@
  </defs>
  <g id="figure_1">
   <g id="patch_1">
-   <rect x="0.6" y="0.6" width="639.6217" height="247.0222" rx="12" style="fill: url(#cardbg); stroke: #cccccc; stroke-width: 1.2"/>
+   <rect x="0.6" y="0.6" width="639.6217" height="247.0222" style="fill: url(#cardbg)"/>
   </g>
   <g id="axes_1">
    <g id="patch_2">

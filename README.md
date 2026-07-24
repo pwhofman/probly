@@ -1,9 +1,9 @@
 # probly: Uncertainty Representation and Quantification for Machine Learning
 <div align="center">
 <picture>
-  <source srcset="docs/source/_static/logo/logo_dark.png" media="(prefers-color-scheme: dark)">
-  <source srcset="docs/source/_static/logo/logo_light.png" media="(prefers-color-scheme: light)">
-  <img src="docs/source/_static/logo/logo_light.png" alt="probly logo" width="300" />
+  <source srcset="docs/source/_static/readme/ecosystem_dark.png" media="(prefers-color-scheme: dark)">
+  <source srcset="docs/source/_static/readme/ecosystem_light.png" media="(prefers-color-scheme: light)">
+  <img src="docs/source/_static/readme/ecosystem_light.png" alt="probly at the center of a ring of the libraries it works with: PyTorch, Flax/JAX, scikit-learn, River, Hugging Face and NumPy as native backends, plus Lightning, torch-uncertainty, PyTorch Geometric and laplace-torch as integrations" width="68%" />
 </picture>
 
 [![PyPI version](https://badge.fury.io/py/probly.svg)](https://badge.fury.io/py/probly)
@@ -27,26 +27,9 @@
 quantification** in machine learning. Make any PyTorch, Flax/JAX, scikit-learn, River, or
 Hugging Face model uncertainty-aware in a single line, then **represent**, **quantify**,
 and **decompose** its predictive uncertainty into **aleatoric** and **epistemic** parts.
-It ships 40+ methods — from Bayesian nets and deep ensembles to evidential, credal, and
-conformal prediction — behind one consistent API.
+It ships 40+ methods, from Bayesian nets and deep ensembles to evidential, credal, and
+conformal prediction, all behind the same API.
 
-<div align="center">
-  <picture>
-    <source srcset="docs/source/_static/readme/backends_dark.png" media="(prefers-color-scheme: dark)">
-    <source srcset="docs/source/_static/readme/backends_light.png" media="(prefers-color-scheme: light)">
-    <img src="docs/source/_static/readme/backends_light.png" alt="Supported backends: PyTorch, Flax/JAX, scikit-learn, River, and Hugging Face" width="88%" />
-  </picture>
-</div>
-
-<div align="center">
-  <picture>
-    <source srcset="docs/source/_static/readme/from_paper/paper_workflow_dark.png" media="(prefers-color-scheme: dark)">
-    <source srcset="docs/source/_static/readme/from_paper/paper_workflow_light.png" media="(prefers-color-scheme: light)">
-    <img src="docs/source/_static/readme/from_paper/paper_workflow_light.png" alt="The four-stage probly workflow: transform a model to make it uncertainty-aware, represent its predictive uncertainty, quantify and decompose that uncertainty into total, epistemic and aleatoric parts, decide based on it, and evaluate the result in a downstream task" width="100%" />
-  </picture>
-  <br />
-  <em>One composable four-stage workflow — <strong>transform</strong>, <strong>represent</strong>, <strong>quantify</strong>/<strong>decide</strong>, <strong>evaluate</strong>.</em>
-</div>
 
 ## 🛠️ Install
 `probly` is intended to work with **Python 3.13 and above**. Installation can be done via `pip`
@@ -96,23 +79,65 @@ Output:
 {'auroc': 0.94}
 ```
 
-Swap `dropout` for `ensemble`, `bayesian`, `laplace`, or any other method below — the rest of the pipeline stays the same. That is what makes a systematic comparison cheap: the same pipeline, run across 20+ methods on ImageNet.
+Swap `dropout` for `ensemble`, `bayesian`, `laplace`, or any other method below, and the rest of the pipeline stays as it is. Comparing methods is then a matter of changing one line, which is how the ImageNet numbers below were produced: one pipeline, 20+ methods.
 
 <div align="center">
   <picture>
     <source srcset="docs/source/_static/readme/from_paper/paper_benchmark_dark.png" media="(prefers-color-scheme: dark)">
     <source srcset="docs/source/_static/readme/from_paper/paper_benchmark_light.png" media="(prefers-color-scheme: light)">
-    <img src="docs/source/_static/readme/from_paper/paper_benchmark_light.png" alt="Two bar charts benchmarking 20+ uncertainty methods on ImageNet with a ResNet50: area under the accuracy-rejection curve for selective prediction on the left, and out-of-distribution detection AUROC on the right, each with the single-model baseline marked as a dashed line" width="100%" />
+    <img src="docs/source/_static/readme/from_paper/paper_benchmark_light.png" alt="Bar charts of out-of-distribution detection AUROC for 20+ uncertainty methods on ImageNet with a ResNet50, far-OoD on the left and near-OoD on the right" width="100%" />
   </picture>
   <br />
-  <em>Selective prediction and out-of-distribution detection on ImageNet, mean over three runs.<br />See the <a href="https://pwhofman.github.io/probly">docs</a> for the full benchmark.</em>
+  <em>Out-of-distribution detection on ImageNet, far and near, mean over three runs.</em>
 </div>
+
+<div align="center">
+  <picture>
+    <source srcset="docs/source/_static/readme/from_paper/paper_ood_histogram_dark.png" media="(prefers-color-scheme: dark)">
+    <source srcset="docs/source/_static/readme/from_paper/paper_ood_histogram_light.png" media="(prefers-color-scheme: light)">
+    <img src="docs/source/_static/readme/from_paper/paper_ood_histogram_light.png" alt="Histogram of the uncertainty scores a credal Bayesian neural network assigns to in-distribution ImageNet images and to out-of-distribution iNaturalist images, with the ImageNet scores piling up near zero" width="55%" />
+  </picture>
+  <br />
+  <em>The same result up close: a credal BNN scores in-distribution ImageNet near zero and out-of-distribution iNaturalist much higher.<br />See the <a href="https://pwhofman.github.io/probly">docs</a> for the full benchmark.</em>
+</div>
+
+## 🤔 What "uncertainty" means here
+
+A classifier that puts 0.51 on "dog" can be unsure for two very different reasons, and it
+matters which one you are looking at.
+
+**Aleatoric uncertainty** is noise in the data. The image is blurry, the two classes really
+do overlap, the sensor is imprecise. Collecting more data does not make this go away,
+because the ambiguity is in the problem itself.
+
+**Epistemic uncertainty** is missing knowledge. The model has not seen anything like this
+input, so it is extrapolating. More data, or a better model, would shrink it.
+
+The split is what makes uncertainty useful in practice. High epistemic uncertainty is a
+reason to abstain, to send the case to a human, or to label that region next. High aleatoric
+uncertainty tells you the opposite: gathering more data there is wasted effort. A single
+confidence score cannot tell you which situation you are in, so `probly` keeps the two apart
+and organizes the work into four stages.
+
+<div align="center">
+  <picture>
+    <source srcset="docs/source/_static/readme/from_paper/paper_workflow_dark.png" media="(prefers-color-scheme: dark)">
+    <source srcset="docs/source/_static/readme/from_paper/paper_workflow_light.png" media="(prefers-color-scheme: light)">
+    <img src="docs/source/_static/readme/from_paper/paper_workflow_light.png" alt="The four-stage probly workflow: transform a model to make it uncertainty-aware, represent its predictive uncertainty, quantify and decompose it into total, epistemic and aleatoric parts, decide based on it, and evaluate the result in a downstream task" width="100%" />
+  </picture>
+  <br />
+  <em><strong>transform</strong> a model so it carries uncertainty, <strong>represent</strong> what it predicts, <strong>quantify</strong> and <strong>decide</strong>, then <strong>evaluate</strong> on a task.</em>
+</div>
+
+Each stage is one import, and the stages compose freely. The
+[user guide](https://pwhofman.github.io/probly/stable/user_guide.html) walks through them in
+order.
 
 ## 🎲 Methods at a glance
 
-Every method below is a **one-line transformation** that works the same for a linear model, a CNN, a GNN, or an LLM. Apply one ante-hoc or post-hoc — wrap an existing model to make it uncertainty-aware, or build an uncertainty-native one from scratch.
+Every method below is a **one-line transformation** that works the same for a linear model, a CNN, a GNN, or an LLM. Apply one ante-hoc or post-hoc: wrap an existing model to make it uncertainty-aware, or build an uncertainty-native one from scratch.
 
-What differs between them is *how* they represent uncertainty — `probly` covers the whole spectrum, from a single outcome to a set of probability distributions:
+What differs between them is how they represent uncertainty. `probly` covers the range from a single outcome to a set of probability distributions:
 
 <div align="center">
   <picture>
@@ -121,12 +146,12 @@ What differs between them is *how* they represent uncertainty — `probly` cover
     <img src="docs/source/_static/readme/from_paper/paper_representations_light.png" alt="Uncertainty representations arranged from zeroth to second order, shown for classification on a probability simplex over dog, fox and cat, and for regression in the mean-standard-deviation plane: single outcome, set of outcomes, probability distribution, samples of a distribution over distributions, a distribution over distributions, and a set of distributions" width="100%" />
   </picture>
   <br />
-  <em>From a point prediction to a set of probability distributions — every representation below is one of these.</em>
+  <em>From a point prediction to a set of probability distributions. Every representation below is one of these.</em>
 </div>
 
 #### 🧠 Second-order distributions
 
-Turn a point predictor into a *distribution over distributions* — by sampling, ensembling, distance to the training data, or an evidential head.
+Turn a point predictor into a distribution over distributions, by sampling, ensembling, distance to the training data, or an evidential head.
 
 <details>
 <summary><strong>Show all 21 methods</strong></summary>
@@ -175,11 +200,11 @@ Represent uncertainty as a *set* of plausible distributions instead of a single 
 | Relative-likelihood credal prediction (`credal_relative_likelihood`)¹ | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | torch |
 | Class-bias ensembles (`class_bias_ensemble`)³ | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | torch |
 | Efficient credal prediction (`efficient_credal_prediction`)² | [Hofman et al., 2026](https://doi.org/10.48550/arXiv.2603.08495) | torch |
-| Conformal credal set — inner product (`conformal_inner_product`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
-| Conformal credal set — Kullback-Leibler (`conformal_kullback_leibler`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
-| Conformal credal set — total variation (`conformal_total_variation`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
-| Conformal credal set — Wasserstein (`conformal_wasserstein_distance`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
-| Conformal credal set — Dirichlet relative likelihood (`conformal_dirichlet_relative_likelihood`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
+| Conformal credal set, inner product (`conformal_inner_product`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
+| Conformal credal set, Kullback-Leibler (`conformal_kullback_leibler`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
+| Conformal credal set, total variation (`conformal_total_variation`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
+| Conformal credal set, Wasserstein (`conformal_wasserstein_distance`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
+| Conformal credal set, Dirichlet relative likelihood (`conformal_dirichlet_relative_likelihood`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
 
 ¹ Built on the `ensemble` transformation and usable wherever it is. ² Also has a pure NumPy implementation. ³ The ensembling that `credal_relative_likelihood` builds on.
 
@@ -187,7 +212,7 @@ Represent uncertainty as a *set* of plausible distributions instead of a single 
 
 #### 📏 Conformal prediction
 
-Distribution-free prediction sets and intervals with finite-sample coverage guarantees — pick the nonconformity score that matches your task.
+Distribution-free prediction sets and intervals with finite-sample coverage guarantees. Pick the nonconformity score that matches your task.
 
 <details>
 <summary><strong>Show all 8 methods</strong></summary>
@@ -221,25 +246,25 @@ Post-hoc fixes for over-confident probabilities, fitted on a held-out split.
 
 </details>
 
-Calibration-aware training losses ship too — label smoothing, [label relaxation](https://doi.org/10.1609/aaai.v35i10.17041), and [focal loss](https://doi.org/10.1109/ICCV.2017.324) in `probly.train.calibration.torch`.
+Calibration-aware training losses ship too: label smoothing, [label relaxation](https://doi.org/10.1609/aaai.v35i10.17041), and [focal loss](https://doi.org/10.1109/ICCV.2017.324) in `probly.train.calibration.torch`.
 
 #### 📐 Uncertainty quantification
 
 Every method above produces a **representation**; `quantify` turns it into a number and `decompose` splits that number into its **aleatoric** and **epistemic** parts wherever the theory allows. The measures you can pick from, by the representation they consume:
 
-- **Distributions** — `entropy`, `mutual_information`, `conditional_entropy`, `sample_variance`, `vacuity`, `dempster_shafer_uncertainty`
-- **Credal sets** — `upper_entropy`, `lower_entropy`, `generalized_hartley`, `min_expected_total_variation`
-- **Conformal sets** — `conformal_set_size`
-- **Embeddings and text** — `spectral_entropy`, semantic entropy
-- **Scoring rules** — `BrierLoss`, `LogLoss`, `SphericalLoss`, `ZeroOneLoss`
+- **Distributions**: `entropy`, `mutual_information`, `conditional_entropy`, `sample_variance`, `vacuity`, `dempster_shafer_uncertainty`
+- **Credal sets**: `upper_entropy`, `lower_entropy`, `generalized_hartley`, `min_expected_total_variation`
+- **Conformal sets**: `conformal_set_size`
+- **Embeddings and text**: `spectral_entropy`, `semantic_entropy`
+- **Scoring rules**: `BrierLoss`, `LogLoss`, `SphericalLoss`, `ZeroOneLoss`
 
-🤖 **LLM uncertainty**, too: semantic entropy and spectral uncertainty for Hugging Face text generation models — [see below](#-uncertainty-for-llms).
+🤖 **LLM uncertainty**, too: semantic entropy and spectral uncertainty for Hugging Face text generation models. [See below](#-uncertainty-for-llms).
 
 Browse the full [API reference](https://pwhofman.github.io/probly/stable/api.html) and the [examples gallery](https://pwhofman.github.io/probly/stable/examples.html) for the complete picture.
 
 ## 🤖 Uncertainty for LLMs
 
-Does your language model *know* when it doesn't know? `probly` brings uncertainty quantification to text generation: sample multiple answers, cluster them by meaning with an NLI model, and decompose the resulting **semantic entropy** ([Kuhn et al., 2023](https://arxiv.org/abs/2302.09664)) into its aleatoric and epistemic parts.
+The same machinery applies to text generation. Sample several answers to a question, cluster them by meaning with an NLI model, and decompose the resulting **semantic entropy** ([Kuhn et al., 2023](https://arxiv.org/abs/2302.09664)) into its aleatoric and epistemic parts. A model that answers the same thing in five different phrasings is confident; one that answers five different things is not.
 
 <div align="center">
   <picture>
@@ -274,11 +299,11 @@ for question, tu, au, eu in zip(questions, uq.total, uq.aleatoric, uq.epistemic)
     print(f"{question:<45} TU={tu:.3f}  AU={au:.3f}  EU={eu:.3f}")
 ```
 
-The factual question collapses into a single semantic cluster — the model is certain. The trick question scatters across many clusters: high uncertainty, flagging a likely hallucination. See [`examples/llm/semantic_entropy.py`](examples/llm/semantic_entropy.py) for the full pipeline and [`examples/llm/spectral_uncertainty.py`](examples/llm/spectral_uncertainty.py) for an embedding-based alternative.
+The factual question collapses into a single semantic cluster, so the entropy is near zero. The trick question scatters across many clusters, which flags a likely hallucination. See [`examples/llm/semantic_entropy.py`](examples/llm/semantic_entropy.py) for the full pipeline and [`examples/llm/spectral_uncertainty.py`](examples/llm/spectral_uncertainty.py) for an embedding-based alternative.
 
 ## 📈 Uncertainty for regression
 
-Where has your regressor actually *seen* data, and where is it just guessing? Wrap any model in a **deep ensemble** ([Lakshminarayanan et al., 2017](https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html)) and `probly` turns the members' disagreement into a predictive band that stays tight near the training data and fans out wherever the model extrapolates.
+For regression, epistemic uncertainty shows up as a band around the prediction. Wrap any model in a **deep ensemble** ([Lakshminarayanan et al., 2017](https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html)) and `probly` turns the disagreement between members into that band: tight near the training data, wide wherever the model extrapolates.
 
 <div align="center">
   <picture>
@@ -296,14 +321,14 @@ from probly.method import ensemble
 from probly.representer import representer
 from probly.quantification.decomposition.variance import SecondOrderVarianceDecomposition
 
-# 1D data with a gap in the middle — the model never sees x near 0
+# 1D data with a gap in the middle, so the model never sees x near 0
 X = np.concatenate([np.random.uniform(-4.5, -1, 40), np.random.uniform(1, 4.5, 40)])
 X = torch.from_numpy(X).float().reshape(-1, 1)
 y = torch.sin(1.5 * X) + 0.12 * torch.randn_like(X)
 
 net = nn.Sequential(nn.Linear(1, 64), nn.Tanh(), nn.Linear(64, 64), nn.Tanh(), nn.Linear(64, 1))
 
-# transform: build a deep ensemble, re-initialising each member for diversity
+# transform: build a deep ensemble, reinitializing each member for diversity
 ens = ensemble(net, num_members=10, reset_params=True)
 
 for member in ens:  # train each member as usual
@@ -320,11 +345,11 @@ out = representer(ens).predict(grid)
 unc = SecondOrderVarianceDecomposition(out)
 
 mean = out.tensor.mean(dim=out.sample_axis)  # ensemble mean
-std = unc.epistemic.sqrt()                   # wide where members disagree — i.e. away from data
+std = unc.epistemic.sqrt()                   # wide where members disagree, i.e. away from data
 # plot mean ± 2 * std to reproduce the band above
 ```
 
-Tight bands where the model has seen data, wide bands in the gap and past the edges: the ensemble *knows where it is guessing*. `SecondOrderVarianceDecomposition` also exposes `.total` and `.aleatoric`, so you can separate model disagreement (epistemic) from irreducible noise (aleatoric) — see [`examples/quantification/plot_ensemble_regression.py`](examples/quantification/plot_ensemble_regression.py) for the full walkthrough.
+The band is tight where the model has seen data and wide in the gap and past the edges, which is exactly where an ensemble should be unsure. `SecondOrderVarianceDecomposition` also exposes `.total` and `.aleatoric`, so you can separate disagreement between members (epistemic) from irreducible noise (aleatoric). See [`examples/quantification/plot_ensemble_regression.py`](examples/quantification/plot_ensemble_regression.py) for the full walkthrough.
 
 ## 📖 Documentation with tutorials
 
