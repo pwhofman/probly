@@ -10,7 +10,7 @@ import warnings
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, Subset, random_split
+from torch.utils.data import DataLoader, Dataset, Subset, random_split
 import torchvision
 from torchvision import datasets, transforms
 import torchvision.transforms.v2 as T
@@ -37,13 +37,19 @@ class DataLoaders(NamedTuple):
     test: DataLoader
 
 
+# Shared by every cifar10 transform below and by TRANSFORMS_AL_TRAIN, whose
+# crop padding must equal the normalized value of black to stay equivalent to
+# the standard augment-then-normalize pipeline.
+CIFAR10_MEAN = (0.4914, 0.4822, 0.4465)
+CIFAR10_STD = (0.2023, 0.1994, 0.2010)
+
 TRANSFORMS_TEST = {
     "cifar10": T.Compose(
         [
             T.Resize((32, 32), antialias=True),
             T.ToImage(),
             T.ToDtype(torch.float32, scale=True),
-            T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            T.Normalize(CIFAR10_MEAN, CIFAR10_STD),
         ]
     ),
     "cifar10h": T.Compose(
@@ -51,7 +57,7 @@ TRANSFORMS_TEST = {
             T.Resize((32, 32), antialias=True),
             T.ToImage(),
             T.ToDtype(torch.float32, scale=True),
-            T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            T.Normalize(CIFAR10_MEAN, CIFAR10_STD),
         ]
     ),
     "imagenet": T.Compose(
@@ -313,7 +319,7 @@ def get_data_train(
                     T.RandomHorizontalFlip(),
                     T.ToImage(),
                     T.ToDtype(torch.float32, scale=True),
-                    T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+                    T.Normalize(CIFAR10_MEAN, CIFAR10_STD),
                 ]
             )
             train = torchvision.datasets.CIFAR10(root=DATA_PATH, train=True, download=True, transform=transforms_train)
@@ -841,6 +847,49 @@ def load_mnist(batch_size: int = 128) -> tuple[DataLoader, DataLoader]:
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
 
     return train_loader, test_loader
+
+
+# Train-time augmentation for AL refits. The AL pool is held as already-normalized
+# tensors (get_data_al applies TRANSFORMS_TEST), so the ToImage/ToDtype/Normalize
+# tail of the standard train transform cannot be reused here -- re-applying it
+# would normalize twice. Only the geometric ops are kept, which is exactly
+# equivalent: crop and flip commute with per-pixel normalization, and the crop
+# padding fills with the normalized value of black instead of raw zero.
+TRANSFORMS_AL_TRAIN = {
+    "cifar10": T.Compose(
+        [
+            T.RandomCrop(32, padding=4, fill=[(0.0 - m) / s for m, s in zip(CIFAR10_MEAN, CIFAR10_STD, strict=True)]),
+            T.RandomHorizontalFlip(),
+        ]
+    ),
+}
+
+
+class TransformTensorDataset(Dataset):
+    """Tensor-backed dataset applying a per-sample transform to ``x`` on access.
+
+    Used for train-time augmentation in the AL loop, where the pool is held as
+    pre-normalized tensors rather than image files.
+
+    Args:
+        x: Feature tensor of shape ``(n, C, H, W)``.
+        y: Label tensor of shape ``(n,)``.
+        transform: Callable applied to each ``x[i]`` on access.
+    """
+
+    def __init__(self, x: torch.Tensor, y: torch.Tensor, transform: T.Compose) -> None:
+        """Store the tensors and the per-sample transform."""
+        self.x = x
+        self.y = y
+        self.transform = transform
+
+    def __len__(self) -> int:
+        """Return the number of samples."""
+        return len(self.x)
+
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
+        """Return the transformed features and label at ``index``."""
+        return self.transform(self.x[index]), self.y[index]
 
 
 def get_data_al(

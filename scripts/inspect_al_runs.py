@@ -9,7 +9,7 @@ Pulls runs from one or more ``<entity>/<project>`` sources (defaults:
 - ``learning_curves_<dataset>.png``  mean +/- std accuracy vs labeled_size
 - ``nauc_<dataset>.png``             per-method NAUC bars (uncertainty vs margin/random)
 - ``nauc_<dataset>_zoom.png``        same, with the y-axis cropped near the bars
-- ``wandb_cache_runs.pkl``           flat per-run DataFrame (consumed by run_openml6.py)
+- ``wandb_cache_runs.pkl``           flat per-run DataFrame (consumed by run_al_sweep.py)
 - ``wandb_cache_history.pkl``        per-iteration history rows for finished runs
 
 Calibration / supervised-loss / conformal overrides are folded into a synthetic
@@ -58,7 +58,10 @@ import numpy as np
 import pandas as pd
 import wandb
 
-DEFAULT_SOURCES: tuple[str, ...] = ("speyewear/jakubpaplham-al", "probly/max-test")
+# probly/rebuttal-runs holds the CIFAR-10 rebuttal campaign (launched by
+# src/probly_benchmark/runner.sh). Create it on the wandb website (or log one
+# run) before a --refresh, otherwise the fetch errors on the missing project.
+DEFAULT_SOURCES: tuple[str, ...] = ("speyewear/jakubpaplham-al", "probly/max-test", "probly/rebuttal-runs")
 DEFAULT_OUT = "scripts/al_analysis_out"
 HISTORY_KEYS = ("iteration", "labeled_size", "test_accuracy")
 PROGRESS_EVERY = 25

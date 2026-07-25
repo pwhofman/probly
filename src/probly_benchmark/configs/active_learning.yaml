@@ -25,6 +25,10 @@ test_max_size: 20000
 subsample_seed_offset: 0
 
 # Training (per AL iteration)
+# ``train_augmentation`` applies the dataset's AL train transform
+# (``data.TRANSFORMS_AL_TRAIN``) to the labeled pool during each refit. Only
+# image datasets have one registered; tabular datasets must leave it off.
+train_augmentation: false
 epochs: 50
 batch_size: 128
 optimizer:

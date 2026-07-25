@@ -7,24 +7,34 @@ from typing import TYPE_CHECKING, Any, cast
 from laplace.baselaplace import BaseLaplace
 import torch
 from torch import nn
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, Dataset, TensorDataset
 
 from probly.calibrator import calibrate
 from probly.method.calibration import CalibrationPredictor, temperature_scaling, vector_scaling
 from probly.method.conformal import ConformalSetPredictor, conformal_aps, conformal_lac, conformal_raps
+from probly.method.ensemble import EnsemblePredictor
 from probly.predictor import predict
 from probly.quantification import quantify
 from probly.representer import representer
 from probly_benchmark.builders import BuildContext, build_model
+from probly_benchmark.data import TRANSFORMS_AL_TRAIN, TransformTensorDataset
 from probly_benchmark.decision import decide
 from probly_benchmark.train import _move_to_device, train_model
 from probly_benchmark.uncertainty import select_uncertainty
 
 
-def _eval_mode(model: nn.Module | BaseLaplace) -> None:
-    """Set model to eval mode, handling Laplace which wraps an inner model."""
+def _eval_mode(model: nn.Module | EnsemblePredictor | BaseLaplace) -> None:
+    """Set model to eval mode, handling Laplace and ensemble containers.
+
+    Mirrors ``_move_to_device``: ensemble predictors backed by a plain-list
+    container (e.g. credal_relative_likelihood) have no ``eval()``, so members
+    are switched individually.
+    """
     if isinstance(model, BaseLaplace):
         model.model.eval()
+    elif isinstance(model, EnsemblePredictor):
+        for member in model:
+            member.eval()
     else:
         model.eval()
 
@@ -225,9 +235,24 @@ class BaseEstimator:
         return conformal_model
 
     def fit_model(self, x: torch.Tensor, y: torch.Tensor) -> nn.Module:
-        """Fit the model with ``x`` and ``y``."""
+        """Fit the model with ``x`` and ``y``.
+
+        Raises:
+            ValueError: If ``cfg.train_augmentation`` is true but no AL train
+                transform is registered for the dataset.
+        """
+        train_ds: Dataset = TensorDataset(x.float(), y.long())
+        if self.cfg.get("train_augmentation", False):
+            transform = TRANSFORMS_AL_TRAIN.get(self.cfg.dataset.name)
+            if transform is None:
+                msg = (
+                    f"train_augmentation=true but no AL train transform is registered "
+                    f"for dataset {self.cfg.dataset.name!r} in TRANSFORMS_AL_TRAIN."
+                )
+                raise ValueError(msg)
+            train_ds = TransformTensorDataset(x.float(), y.long(), transform)
         train_loader = DataLoader(
-            TensorDataset(x.float(), y.long()),
+            train_ds,
             batch_size=self.cfg.batch_size,
             shuffle=True,
             pin_memory=self.device.type == "cuda",
