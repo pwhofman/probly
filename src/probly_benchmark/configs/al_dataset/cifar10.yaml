@@ -6,10 +6,11 @@ dataset:
 # Random crop + horizontal flip matches the supervised recipe and the standard
 # AL-on-CIFAR-10 protocol (Yoo and Kweon, CVPR 2019; Beck et al., arXiv:2106.15324).
 train_augmentation: true
-# 100 epochs per refit (the supervised recipe and Yoo and Kweon use 200) to halve
-# compute; the shortening applies equally to every method, so the comparison is
-# unaffected -- only absolute accuracies sit slightly below the literature curves.
-epochs: 100
+# 50 epochs per refit for compute (tabular AL configs use 100; the supervised
+# recipe and Yoo and Kweon use 200). The shortening applies equally to every
+# method, so the comparison stays internally fair -- absolute accuracies sit
+# below the literature curves and early-round uncertainty is somewhat noisier.
+epochs: 50
 batch_size: 128
 optimizer:
   name: "sgd"
