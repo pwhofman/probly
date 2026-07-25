@@ -20,7 +20,7 @@
 </div>
 
 <div align="center">
-<em>Turn any model into one that knows what it doesn't know.</em>
+<em>Turn any model into one that knows what it doesn’t know.</em>
 </div>
 
 `probly` is a **library-agnostic** toolkit for **uncertainty representation and
@@ -103,7 +103,7 @@ Swap `dropout` for `ensemble`, `bayesian`, `laplace`, or any other method listed
 
 ## 🤔 What "uncertainty" means here
 
-In a two-class scenario between "dog" and "cat," assigning 0.51 probability to "dog" only marginally prefers "dog" to "cat", barely counting as a confident decision.
+In a two-class scenario between "dog" and "cat," assigning 0.51 probability to "dog" only marginally prefers "dog" to "cat," barely counting as a confident decision.
 In such a case, the classifier can be unsure for two very different reasons;
 distinguishing between them changes what to do next.
 
@@ -159,6 +159,8 @@ These methods transform a point predictor into a model that outputs a distributi
 <details>
 <summary><strong>Show all 21 methods</strong></summary>
 
+<a id="second-order-table"></a>
+
 | Method | Reference | Backends |
 | :--- | :--- | :--- |
 | MC dropout (`dropout`) | [Gal & Ghahramani, 2016](http://proceedings.mlr.press/v48/gal16.html) | torch · flax |
@@ -168,7 +170,7 @@ These methods transform a point predictor into a model that outputs a distributi
 | Deep ensembles (`ensemble`) | [Lakshminarayanan et al., 2017](https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html) | torch · flax · sklearn · river |
 | BatchEnsemble (`batchensemble`) | [Wen et al., 2020](https://openreview.net/forum?id=Sklf1yrYDr) | torch · flax |
 | Sub-ensembles (`subensemble`) | [Valdenegro-Toro, 2019](https://arxiv.org/abs/1910.08168) | torch · flax |
-| Deep anti-regularized ensembles (`dare`)¹ | [de Mathelin et al., 2023](https://doi.org/10.48550/arXiv.2304.04042) | torch |
+| Deep anti-regularized ensembles (`dare`)[¹](#fn-so-1) | [de Mathelin et al., 2023](https://doi.org/10.48550/arXiv.2304.04042) | torch |
 | Deterministic uncertainty quantification (`duq`) | [van Amersfoort et al., 2020](http://proceedings.mlr.press/v119/van-amersfoort20a.html) | torch |
 | Deep deterministic uncertainty (`ddu`) | [Mukhoti et al., 2023](https://doi.org/10.1109/CVPR52729.2023.02336) | torch |
 | Mahalanobis distance (`mahalanobis`) | [Lee et al., 2018](https://proceedings.neurips.cc/paper/2018/hash/abdeb6f575ac5c6676b747bca8d09cc2-Abstract.html) | torch |
@@ -183,35 +185,37 @@ These methods transform a point predictor into a model that outputs a distributi
 | Heteroscedastic networks (`het_net`) | [Collier et al., 2021](https://openaccess.thecvf.com/content/CVPR2021/html/Collier_Correlated_Input-Dependent_Label_Noise_in_Large-Scale_Image_Classification_CVPR_2021_paper.html) | torch |
 | Dirichlet activations & NIG heads (`dirichlet_*`, `normal_inverse_gamma_head`) | [Malinin et al., 2020](https://arxiv.org/abs/2006.11590) | torch |
 
-¹ Built on the `ensemble` transformation and is applicable in the same context as ensemble.
+<a id="fn-so-1"></a>¹ Built on the `ensemble` transformation and is applicable in the same context as `ensemble`. [↩](#second-order-table)
 
 </details>
 
 #### ☁️ Credal sets
 
-Instead of committing to a single second-order distribution, credal methods represent uncertainty as a set of plausible probability distributions. Expressing results as lower/upper probability bounds rather than point probabilities allows the capture of ignorance when a model does not have a conclusive answer.
+Instead of committing to a single second-order distribution, credal methods represent uncertainty as a set of plausible probability distributions. Expressing results as lower/upper probability bounds rather than point probabilities allows capturing ignorance when a model does not have a conclusive answer.
 
 <details>
 <summary><strong>Show all 12 methods</strong></summary>
 
+<a id="credal-table"></a>
+
 | Method                                                                                          | Reference | Backends |
 |:------------------------------------------------------------------------------------------------| :--- | :--- |
-| Credal wrapper (`credal_wrapper`)¹                                                              | [Wang et al., 2025](https://openreview.net/forum?id=cv2iMNWCsh) | torch |
-| Credal ensembling (`credal_ensembling`)¹                                                        | [Nguyen et al., 2025](https://doi.org/10.1007/s10994-024-06703-y) | torch |
-| Credal Bayesian deep learning (`credal_bnn`)¹                                                   | [Caprio et al., 2024](https://openreview.net/forum?id=4NHF9AC5ui) | torch |
-| Credal nets (`credal_net`)¹                                                                     | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
-| Relative-likelihood credal prediction (`credal_relative_likelihood`)¹                           | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | torch |
-| Class-bias ensembles (`class_bias_ensemble`)²                                                   | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | torch |
-| Efficient credal prediction (`efficient_credal_prediction`)³                                    | [Hofman et al., 2026](https://doi.org/10.48550/arXiv.2603.08495) | torch |
+| Credal wrapper (`credal_wrapper`)[¹](#fn-credal-1)                                              | [Wang et al., 2025](https://openreview.net/forum?id=cv2iMNWCsh) | torch |
+| Credal ensembling (`credal_ensembling`)[¹](#fn-credal-1)                                        | [Nguyen et al., 2025](https://doi.org/10.1007/s10994-024-06703-y) | torch |
+| Credal Bayesian deep learning (`credal_bnn`)[¹](#fn-credal-1)                                   | [Caprio et al., 2024](https://openreview.net/forum?id=4NHF9AC5ui) | torch |
+| Credal nets (`credal_net`)[¹](#fn-credal-1)                                                     | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
+| Relative-likelihood credal prediction (`credal_relative_likelihood`)[¹](#fn-credal-1)           | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | torch |
+| Class-bias ensembles (`class_bias_ensemble`)[²](#fn-credal-2)                                   | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | torch |
+| Efficient credal prediction (`efficient_credal_prediction`)[³](#fn-credal-3)                    | [Hofman et al., 2026](https://doi.org/10.48550/arXiv.2603.08495) | torch |
 | Conformal credal set, inner product (`conformal_inner_product`)                                 | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
 | Conformal credal set, Kullback-Leibler (`conformal_kullback_leibler`)                           | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
 | Conformal credal set, total variation (`conformal_total_variation`)                             | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
 | Conformal credal set, Wasserstein (`conformal_wasserstein_distance`)                            | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
 | Conformal credal set, Dirichlet relative likelihood (`conformal_dirichlet_relative_likelihood`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
 
-¹ Built on the `ensemble` transformation and is applicable in the same context as ensemble.
-² The ensembling basis for `credal_relative_likelihood`.
-³ Also has a pure NumPy implementation.
+<a id="fn-credal-1"></a>¹ Built on the `ensemble` transformation and is applicable in the same context as `ensemble`. [↩](#credal-table)<br>
+<a id="fn-credal-2"></a>² The ensembling basis for `credal_relative_likelihood`. [↩](#credal-table)<br>
+<a id="fn-credal-3"></a>³ Also has a pure NumPy implementation. [↩](#credal-table)
 
 </details>
 
