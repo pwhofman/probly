@@ -26,9 +26,9 @@
 `probly` is a **library-agnostic** toolkit for **uncertainty representation and
 quantification** in machine learning. Make any PyTorch, Flax/JAX, scikit-learn, River, or
 Hugging Face model uncertainty-aware in a single line, then **represent**, **quantify**,
-and **decompose** its predictive uncertainty into **aleatoric** and **epistemic** parts.
-It ships 40+ methods, from Bayesian nets and deep ensembles to evidential, credal, and
-conformal prediction, all behind the same API.
+and **decompose** its predictive uncertainty into **aleatoric** and **epistemic** components.
+It ships 40+ methods ranging from Bayesian nets and deep ensembles to evidential, credal, and
+conformal prediction, all accessible via the same unified API.
 
 
 ## 🛠️ Install
@@ -79,7 +79,7 @@ Output:
 {'auroc': 0.94}
 ```
 
-Swap `dropout` for `ensemble`, `bayesian`, `laplace`, or any other method below, and the rest of the pipeline stays as it is. Comparing methods is then a matter of changing one line, which is how the ImageNet numbers below were produced: one pipeline, 20+ methods.
+Swap `dropout` for `ensemble`, `bayesian`, `laplace`, or any other method listed [below](#-methods-at-a-glance) while the rest of the pipeline stays the same. Comparing methods is then a matter of changing one line, which allows results such as the ImageNet numbers portrayed in the figures below: one pipeline, 20+ methods.
 
 <div align="center">
   <picture>
@@ -103,21 +103,24 @@ Swap `dropout` for `ensemble`, `bayesian`, `laplace`, or any other method below,
 
 ## 🤔 What "uncertainty" means here
 
-A classifier that puts 0.51 on "dog" can be unsure for two very different reasons, and it
-matters which one you are looking at.
+In a two-class scenario between "dog" and "cat," assigning 0.51 probability to "dog" only marginally prefers "dog" to "cat", barely counting as a confident decision.
+In such a case, the classifier can be unsure for two very different reasons;
+distinguishing between them changes what to do next.
 
-**Aleatoric uncertainty** is noise in the data. The image is blurry, the two classes really
-do overlap, the sensor is imprecise. Collecting more data does not make this go away,
-because the ambiguity is in the problem itself.
+**Aleatoric uncertainty** is noise in the data inherent to the data-generating process;
+be it because of blurry images, classes genuinely overlapping, or an imprecise sensor.
+More data won’t reduce the aleatoric uncertainty, as the ambiguity lies in the problem itself,
+not in the model’s ignorance of it.
 
-**Epistemic uncertainty** is missing knowledge. The model has not seen anything like this
-input, so it is extrapolating. More data, or a better model, would shrink it.
+**Epistemic uncertainty** reflects missing knowledge. The model hasn’t encountered similar inputs
+during training, so it’s operating outside its experience. Unlike aleatoric uncertainty,
+this can be reduced with more data or a better model.
 
-The split is what makes uncertainty useful in practice. High epistemic uncertainty is a
-reason to abstain, to send the case to a human, or to label that region next. High aleatoric
-uncertainty tells you the opposite: gathering more data there is wasted effort. A single
-confidence score cannot tell you which situation you are in, so `probly` keeps the two apart
-and organizes the work into four stages.
+This distinction is especially useful in practice. High epistemic uncertainty signals where you can
+take action either by gathering more data, expanding the model capacity, or sending the case to a human.
+In contrast, high aleatoric uncertainty reflects irreducible noise in the problem itself;
+collecting more samples won’t help. A single confidence score cannot distinguish between these situations, which is why
+`probly` addresses this in its four-stage process.
 
 <div align="center">
   <picture>
@@ -126,7 +129,7 @@ and organizes the work into four stages.
     <img src="docs/source/_static/readme/from_paper/paper_workflow_light.png" alt="The four-stage probly workflow: transform a model to make it uncertainty-aware, represent its predictive uncertainty, quantify and decompose it into total, epistemic and aleatoric parts, decide based on it, and evaluate the result in a downstream task" width="100%" />
   </picture>
   <br />
-  <em><strong>transform</strong> a model so it carries uncertainty, <strong>represent</strong> what it predicts, <strong>quantify</strong> and <strong>decide</strong>, then <strong>evaluate</strong> on a task.</em>
+  <em><strong>transform</strong> a model to carry uncertainty, <strong>represent</strong> its predictions, <strong>quantify</strong> and <strong>decide</strong>, then <strong>evaluate</strong> on a task.</em>
 </div>
 
 Each stage is one import, and the stages compose freely. The
@@ -135,9 +138,9 @@ order.
 
 ## 🎲 Methods at a glance
 
-Every method below is a **one-line transformation** that works the same for a linear model, a CNN, a GNN, or an LLM. Apply one ante-hoc or post-hoc: wrap an existing model to make it uncertainty-aware, or build an uncertainty-native one from scratch.
+Every method below integrates with a **single line of code** regardless of the type of model: Linear, CNN, GNN, or LLM. You can apply them **post-hoc** by wrapping an existing model to make it uncertainty-aware, or **ante-hoc** by building an uncertainty-native model from scratch.
 
-What differs between them is how they represent uncertainty. `probly` covers the range from a single outcome to a set of probability distributions:
+What differs between each method is how it represents uncertainty. `probly` covers the range from simple point predictions to full distributional representations. The methods below are organized by representation type, falling within this range.
 
 <div align="center">
   <picture>
@@ -146,12 +149,12 @@ What differs between them is how they represent uncertainty. `probly` covers the
     <img src="docs/source/_static/readme/from_paper/paper_representations_light.png" alt="Uncertainty representations arranged from zeroth to second order, shown for classification on a probability simplex over dog, fox and cat, and for regression in the mean-standard-deviation plane: single outcome, set of outcomes, probability distribution, samples of a distribution over distributions, a distribution over distributions, and a set of distributions" width="100%" />
   </picture>
   <br />
-  <em>From a point prediction to a set of probability distributions. Every representation below is one of these.</em>
+  <em>Range of uncertainty representations: single outcome to set of probability distributions. All methods implemented in probly fall along this range.</em>
 </div>
 
 #### 🧠 Second-order distributions
 
-Turn a point predictor into a distribution over distributions, by sampling, ensembling, distance to the training data, or an evidential head.
+These methods transform a point predictor into a model that outputs a distribution over possible distributions. Instead of returning a single prediction, they learn a higher-order probabilistic model where predictions are expressed as probability distributions. This can be achieved by stochastic sampling, ensembling, estimating feature-space distance to training data, or by parameterizing it with an evidential output head.
 
 <details>
 <summary><strong>Show all 21 methods</strong></summary>
@@ -180,39 +183,41 @@ Turn a point predictor into a distribution over distributions, by sampling, ense
 | Heteroscedastic networks (`het_net`) | [Collier et al., 2021](https://openaccess.thecvf.com/content/CVPR2021/html/Collier_Correlated_Input-Dependent_Label_Noise_in_Large-Scale_Image_Classification_CVPR_2021_paper.html) | torch |
 | Dirichlet activations & NIG heads (`dirichlet_*`, `normal_inverse_gamma_head`) | [Malinin et al., 2020](https://arxiv.org/abs/2006.11590) | torch |
 
-¹ Built on the `ensemble` transformation and usable wherever it is.
+¹ Built on the `ensemble` transformation and is applicable in the same context as ensemble.
 
 </details>
 
 #### ☁️ Credal sets
 
-Represent uncertainty as a *set* of plausible distributions instead of a single second-order one.
+Instead of committing to a single second-order distribution, credal methods represent uncertainty as a set of plausible probability distributions. Expressing results as lower/upper probability bounds rather than point probabilities allows the capture of ignorance when a model does not have a conclusive answer.
 
 <details>
 <summary><strong>Show all 12 methods</strong></summary>
 
-| Method | Reference | Backends |
-| :--- | :--- | :--- |
-| Credal wrapper (`credal_wrapper`)¹ | [Wang et al., 2025](https://openreview.net/forum?id=cv2iMNWCsh) | torch |
-| Credal ensembling (`credal_ensembling`)¹ | [Nguyen et al., 2025](https://doi.org/10.1007/s10994-024-06703-y) | torch |
-| Credal Bayesian deep learning (`credal_bnn`)¹ | [Caprio et al., 2024](https://openreview.net/forum?id=4NHF9AC5ui) | torch |
-| Credal nets (`credal_net`)¹ | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
-| Relative-likelihood credal prediction (`credal_relative_likelihood`)¹ | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | torch |
-| Class-bias ensembles (`class_bias_ensemble`)³ | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | torch |
-| Efficient credal prediction (`efficient_credal_prediction`)² | [Hofman et al., 2026](https://doi.org/10.48550/arXiv.2603.08495) | torch |
-| Conformal credal set, inner product (`conformal_inner_product`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
-| Conformal credal set, Kullback-Leibler (`conformal_kullback_leibler`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
-| Conformal credal set, total variation (`conformal_total_variation`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
-| Conformal credal set, Wasserstein (`conformal_wasserstein_distance`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
+| Method                                                                                          | Reference | Backends |
+|:------------------------------------------------------------------------------------------------| :--- | :--- |
+| Credal wrapper (`credal_wrapper`)¹                                                              | [Wang et al., 2025](https://openreview.net/forum?id=cv2iMNWCsh) | torch |
+| Credal ensembling (`credal_ensembling`)¹                                                        | [Nguyen et al., 2025](https://doi.org/10.1007/s10994-024-06703-y) | torch |
+| Credal Bayesian deep learning (`credal_bnn`)¹                                                   | [Caprio et al., 2024](https://openreview.net/forum?id=4NHF9AC5ui) | torch |
+| Credal nets (`credal_net`)¹                                                                     | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
+| Relative-likelihood credal prediction (`credal_relative_likelihood`)¹                           | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | torch |
+| Class-bias ensembles (`class_bias_ensemble`)²                                                   | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | torch |
+| Efficient credal prediction (`efficient_credal_prediction`)³                                    | [Hofman et al., 2026](https://doi.org/10.48550/arXiv.2603.08495) | torch |
+| Conformal credal set, inner product (`conformal_inner_product`)                                 | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
+| Conformal credal set, Kullback-Leibler (`conformal_kullback_leibler`)                           | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
+| Conformal credal set, total variation (`conformal_total_variation`)                             | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
+| Conformal credal set, Wasserstein (`conformal_wasserstein_distance`)                            | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
 | Conformal credal set, Dirichlet relative likelihood (`conformal_dirichlet_relative_likelihood`) | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
 
-¹ Built on the `ensemble` transformation and usable wherever it is. ² Also has a pure NumPy implementation. ³ The ensembling that `credal_relative_likelihood` builds on.
+¹ Built on the `ensemble` transformation and is applicable in the same context as ensemble.
+² The ensembling basis for `credal_relative_likelihood`.
+³ Also has a pure NumPy implementation.
 
 </details>
 
 #### 📏 Conformal prediction
 
-Distribution-free prediction sets and intervals with finite-sample coverage guarantees. Pick the nonconformity score that matches your task.
+Distribution-free prediction sets/intervals that provide finite-sample coverage guarantees. Those sets/intervals are guaranteed to contain the true value.
 
 <details>
 <summary><strong>Show all 8 methods</strong></summary>
@@ -232,7 +237,7 @@ Distribution-free prediction sets and intervals with finite-sample coverage guar
 
 #### 🌡️ Calibration
 
-Post-hoc fixes for over-confident probabilities, fitted on a held-out split.
+Post-hoc methods that ensure that a model’s predicted probabilities match the statistical likelihood, fixing over-confident probabilities. The methods are fitted on a held-out split, a separate validation dataset.
 
 <details>
 <summary><strong>Show all 4 methods</strong></summary>
@@ -250,7 +255,7 @@ Calibration-aware training losses ship too: label smoothing, [label relaxation](
 
 #### 📐 Uncertainty quantification
 
-Every method above produces a **representation**; `quantify` turns it into a number and `decompose` splits that number into its **aleatoric** and **epistemic** parts wherever the theory allows. The measures you can pick from, by the representation they consume:
+The preceding methods produce a **representation**. To interpret these, `quantify` converts them to numbers, and `decompose` splits the value into its **aleatoric** and **epistemic** parts, wherever possible. The measures below are organized by the type of representation they process.
 
 - **Distributions**: `entropy`, `mutual_information`, `conditional_entropy`, `sample_variance`, `vacuity`, `dempster_shafer_uncertainty`
 - **Credal sets**: `upper_entropy`, `lower_entropy`, `generalized_hartley`, `min_expected_total_variation`
