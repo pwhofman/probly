@@ -267,8 +267,6 @@ The preceding methods produce a **representation**. To interpret these, `quantif
 - **Embeddings and text**: `spectral_entropy`, `semantic_entropy`
 - **Scoring rules**: `BrierLoss`, `LogLoss`, `SphericalLoss`, `ZeroOneLoss`
 
-🤖 **LLM uncertainty**, too: semantic entropy and spectral uncertainty for Hugging Face text generation models. [See below](#-uncertainty-for-llms).
-
 Browse the full [API reference](https://pwhofman.github.io/probly/stable/api.html) and the [examples gallery](https://pwhofman.github.io/probly/stable/examples.html) for the complete picture.
 
 ## 🤖 Uncertainty for LLMs
