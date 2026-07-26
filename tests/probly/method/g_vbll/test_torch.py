@@ -51,6 +51,13 @@ def test_g_vbll_representer_quantifies_to_entropy() -> None:
     assert torch.all(uncertainty.total >= 0)
 
 
+def test_g_vbll_warns_without_linear_layer() -> None:
+    model = nn.Sequential(nn.ReLU(), nn.Flatten())
+
+    with pytest.warns(UserWarning, match="no linear layer"):
+        g_vbll(model)
+
+
 def test_find_g_vbll_layer_returns_the_swapped_layer() -> None:
     from probly.layers.torch import GVBLLLayer  # noqa: PLC0415
 

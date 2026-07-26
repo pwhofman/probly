@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any, Protocol, runtime_checkable
+import warnings
 
 from probly.predictor import (
     LogitDistributionPredictor,
@@ -16,7 +17,7 @@ from probly.representation.distribution import (
 )
 from probly.transformation.transformation import predictor_transformation
 from probly.traverse_nn import find_layer, nn_compose
-from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser, traverse
+from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser, traverse_with_state
 
 g_vbll_traverser = flexdispatch_traverser[object](name="g_vbll_traverser")
 
@@ -97,7 +98,7 @@ def g_vbll[**In, Out: CategoricalDistribution](
         A ``GVBLLPredictor`` whose ``predict(...)`` returns a
         ``CategoricalDistribution`` over the classes.
     """
-    return traverse(
+    transformed, state = traverse_with_state(
         base,
         nn_compose(g_vbll_traverser),
         init={
@@ -110,6 +111,13 @@ def g_vbll[**In, Out: CategoricalDistribution](
             DOF: dof,
         },
     )
+    if state[LAST_LAYER]:
+        warnings.warn(
+            "g_vbll() found no linear layer to replace; the model is returned without a G-VBLL layer.",
+            UserWarning,
+            stacklevel=2,
+        )
+    return transformed
 
 
 @predict.register(GVBLLPredictor)

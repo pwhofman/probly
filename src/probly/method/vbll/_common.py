@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
+import warnings
 
 from flextype import flexdispatch
 
@@ -21,7 +22,7 @@ from probly.representation.distribution import (
 from probly.representer import Representer, representer
 from probly.transformation.transformation import predictor_transformation
 from probly.traverse_nn import find_layer, nn_compose
-from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser, traverse
+from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser, traverse_with_state
 
 if TYPE_CHECKING:
     from probly.representation.sample import Sample
@@ -45,10 +46,13 @@ NOISE_PRIOR_SCALE = GlobalVariable[float]("NOISE_PRIOR_SCALE", "The scale of the
 class VBLLPredictor[**In, Out: GaussianDistribution](RandomPredictor[In, Out], Protocol):
     """A predictor with a variational Bayesian last layer.
 
-    Its :func:`predict` returns the closed-form :class:`GaussianDistribution`
-    over the network outputs (the regression predictive) or logits (for
-    classification). For classification, sample-based class probabilities are
-    obtained through the registered :class:`VBLLRepresenter`.
+    Its :func:`predict` returns the :class:`GaussianDistribution` over the
+    network outputs (the regression predictive) or logits (for classification):
+    closed-form for the ``"discriminative"`` variant, with a sampled noise
+    variance for the ``"student_t"`` and ``"heteroscedastic"`` variants
+    (matching the reference implementation). For classification, sample-based
+    class probabilities are obtained through the registered
+    :class:`VBLLRepresenter`.
     """
 
 
@@ -100,7 +104,7 @@ class VBLLRepresenter[**In, Out](Representer[Any, In, Out, CategoricalDistributi
     def __init__(
         self,
         predictor: Predictor[In, Out],
-        num_samples: int = 10,
+        num_samples: int = 20,
         *args: In.args,
         **kwargs: In.kwargs,
     ) -> None:
@@ -109,6 +113,7 @@ class VBLLRepresenter[**In, Out](Representer[Any, In, Out, CategoricalDistributi
         Args:
             predictor: The VBLL predictor to sample from.
             num_samples: Number of logit samples drawn from the predictive Gaussian.
+                Defaults to ``20``, matching the reference implementation.
             *args: Additional positional arguments forwarded to the base class.
             **kwargs: Additional keyword arguments forwarded to the base class.
         """
@@ -137,7 +142,7 @@ def vbll[**In, Out: GaussianDistribution](
     noise_init: float = math.exp(-1.0),
     cov_rank: int = 3,
     wishart_scale: float = 1.0,
-    dof: float = 2.0,
+    dof: float | None = None,
     noise_prior_scale: float = 0.01,
 ) -> VBLLPredictor[In, Out]:
     """Wrap a model with a Variational Bayesian Last Layer (VBLL).
@@ -151,11 +156,13 @@ def vbll[**In, Out: GaussianDistribution](
     over logits and sharing the same predict/representer pipeline:
 
     - ``"discriminative"``: the standard VBLL classifier (:class:`VBLLLayer`),
-      also usable for regression.
+      also usable for regression; its logit Gaussian is fully closed-form.
     - ``"student_t"``: additionally infers the noise variance via a Gamma
-      posterior, giving a Student-t marginal (:class:`TVBLLLayer`).
+      posterior, giving a Student-t marginal (:class:`TVBLLLayer`); the logit
+      Gaussian uses one sampled noise variance per input.
     - ``"heteroscedastic"``: input-dependent noise via a second weight posterior
-      (:class:`HetVBLLLayer`).
+      (:class:`HetVBLLLayer`); the logit Gaussian uses one sampled noise
+      variance per input.
 
     The returned predictor's :func:`predict` yields the closed-form
     :class:`GaussianDistribution` (the regression predictive, or the logit
@@ -181,7 +188,8 @@ def vbll[**In, Out: GaussianDistribution](
             (``"discriminative"`` and ``"student_t"`` variants). Defaults to ``1.0``.
         dof: Degrees of freedom of the Wishart/Gamma prior on the noise precision
             (``"discriminative"`` and ``"student_t"`` variants; must be > 1 for
-            ``"student_t"``). Defaults to ``2.0``.
+            ``"student_t"``). Defaults to the reference values: ``1.0`` for
+            ``"discriminative"`` and ``2.0`` for ``"student_t"``.
         noise_prior_scale: Scale of the prior on the input-dependent noise weights
             (``"heteroscedastic"`` variant only). Defaults to ``0.01``.
 
@@ -195,7 +203,9 @@ def vbll[**In, Out: GaussianDistribution](
     if parameterization not in ("diagonal", "dense", "lowrank"):
         msg = f"parameterization must be one of 'diagonal', 'dense' or 'lowrank', but got {parameterization!r} instead."
         raise ValueError(msg)
-    return traverse(
+    if dof is None:
+        dof = 2.0 if variant == "student_t" else 1.0
+    transformed, state = traverse_with_state(
         base,
         nn_compose(vbll_traverser),
         init={
@@ -212,6 +222,13 @@ def vbll[**In, Out: GaussianDistribution](
             NOISE_PRIOR_SCALE: noise_prior_scale,
         },
     )
+    if state[LAST_LAYER]:
+        warnings.warn(
+            "vbll() found no linear layer to replace; the model is returned without a VBLL layer.",
+            UserWarning,
+            stacklevel=2,
+        )
+    return transformed
 
 
 @predict.register(VBLLPredictor)
