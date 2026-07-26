@@ -2345,7 +2345,7 @@ class VBLLLayer(nn.Module):
         self.noise_logdiag = nn.Parameter(torch.randn(num_outputs) + math.log(noise_init))
 
         # Kaiming width scaling of the prior covariance.
-        self.register_buffer("prior_scale", torch.tensor(prior_scale * 2.0 / in_features if in_features > 0 else 1.0))
+        self.prior_scale = prior_scale * 2.0 / in_features if in_features > 0 else 1.0
 
     def _cholesky(self) -> torch.Tensor:
         """Build the lower-triangular Cholesky factors ``L_k`` for the dense case.
@@ -2399,7 +2399,7 @@ class VBLLLayer(nn.Module):
         Returns:
             A scalar tensor with the summed KL divergence.
         """
-        prior_scale = cast("torch.Tensor", self.prior_scale)
+        prior_scale = self.prior_scale
         in_features = self.in_features
         num_outputs = self.num_outputs
 
@@ -2423,7 +2423,7 @@ class VBLLLayer(nn.Module):
         # The parameter-independent -num_outputs * in_features constant is dropped to
         # match the reference implementation (and the other VBLL KL terms); it does not
         # affect gradients.
-        return 0.5 * ((trace + mean_sq) / prior_scale + num_outputs * in_features * torch.log(prior_scale) - log_det)
+        return 0.5 * ((trace + mean_sq) / prior_scale + num_outputs * in_features * math.log(prior_scale) - log_det)
 
 
 class GVBLLLayer(nn.Module):
@@ -2500,7 +2500,7 @@ class GVBLLLayer(nn.Module):
         self.mu_logdiag = nn.Parameter(torch.randn(num_classes, in_features))
         self.noise_logdiag = nn.Parameter(torch.randn(in_features) + math.log(noise_init))
 
-        self.register_buffer("prior_scale", torch.tensor(prior_scale))
+        self.prior_scale = prior_scale
 
     def _marginal_log_var(self) -> torch.Tensor:
         """Log of the marginal per-class feature variance ``S_k + Sigma``.
@@ -2535,10 +2535,10 @@ class GVBLLLayer(nn.Module):
         Returns:
             A scalar tensor with the summed KL divergence.
         """
-        prior_scale = cast("torch.Tensor", self.prior_scale)
+        prior_scale = self.prior_scale
         mse_term = self.mu_mean.square().sum() / prior_scale
         trace_term = (torch.exp(2.0 * self.mu_logdiag).sum(dim=-1) / prior_scale).sum()
-        log_det_term = (self.in_features * torch.log(prior_scale) - 2.0 * self.mu_logdiag.sum(dim=-1)).sum()
+        log_det_term = (self.in_features * math.log(prior_scale) - 2.0 * self.mu_logdiag.sum(dim=-1)).sum()
         return 0.5 * (mse_term + trace_term + log_det_term)
 
 
@@ -2576,11 +2576,12 @@ class TVBLLLayer(nn.Module):
     noise precision (yielding a Student-t marginal over logits).
 
     Like :class:`VBLLLayer`, ``forward`` returns the parameters ``(mean, var)`` of
-    a Gaussian over logits, using the expected noise variance
-    ``E[sigma_k^2] = rate_k / (dof_k - 1)`` in closed form::
+    a Gaussian over logits, but with a per-input noise variance sampled from the
+    variational posterior (matching the reference implementation), so the marginal
+    over forward passes is Student-t::
 
         mean_k = W_mean_k . phi(x)
-        var_k  = (phi(x)^T S_k phi(x) + 1) * E[sigma_k^2]
+        var_k  = (phi(x)^T S_k phi(x) + 1) * sigma_k^2,  1 / sigma_k^2 ~ q(Lambda_k)
 
     Only the ``diagonal`` and ``dense`` covariance parametrizations are supported,
     matching the reference implementation.
@@ -2688,7 +2689,11 @@ class TVBLLLayer(nn.Module):
         return torch.distributions.Gamma(dof, rate)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Compute the closed-form predictive logit Gaussian.
+        """Compute the predictive logit Gaussian with a sampled noise variance.
+
+        Matching the reference implementation, one noise precision is drawn from
+        the Gamma posterior per input (and shared by all logit samples derived
+        from the returned Gaussian).
 
         Args:
             x: Input features of shape ``(..., in_features)``.
@@ -2697,9 +2702,8 @@ class TVBLLLayer(nn.Module):
             A tuple ``(mean, var)`` of shape ``(..., num_classes)``.
         """
         mean, weight_variance = self.logit_moments(x)
-        noise = self.noise
-        expected_noise_var = noise.rate / torch.clamp(noise.concentration - 1.0, min=1e-6)
-        var = (weight_variance + 1.0) * expected_noise_var
+        noise_var = 1.0 / self.noise.rsample(x.shape[:-1])
+        var = (weight_variance + 1.0) * noise_var
         return mean, var
 
 
@@ -2712,10 +2716,13 @@ class HetVBLLLayer(nn.Module):
     variance ``sigma_k^2(x) = exp(M_k . phi(x))`` varies across the input space.
 
     Like :class:`VBLLLayer`, ``forward`` returns the parameters ``(mean, var)`` of
-    a Gaussian over logits, using the closed-form lognormal mean of the noise::
+    a Gaussian over logits, but with a per-input lognormal noise draw (matching
+    the reference implementation)::
 
         mean_k = W_mean_k . phi(x)
-        var_k  = (phi(x)^T S_k phi(x) + 1) * exp(M_mean_k . phi(x) + 0.5 * phi(x)^T S^M_k phi(x))
+        var_k  = (phi(x)^T S_k phi(x) + 1) * sigma_k^2(x)
+
+    where ``log sigma_k^2(x) ~ N(M_mean_k . phi(x), phi(x)^T S^M_k phi(x))``.
 
     Only the ``diagonal`` and ``dense`` covariance parametrizations are supported,
     matching the reference implementation.
@@ -2821,7 +2828,11 @@ class HetVBLLLayer(nn.Module):
         return log_noise_mean, log_noise_var
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Compute the closed-form predictive logit Gaussian with input-dependent noise.
+        """Compute the predictive logit Gaussian with a sampled input-dependent noise.
+
+        Matching the reference implementation, one log-noise value is drawn from
+        the ``M`` posterior per input (and shared by all logit samples derived
+        from the returned Gaussian).
 
         Args:
             x: Input features of shape ``(..., in_features)``.
@@ -2831,6 +2842,6 @@ class HetVBLLLayer(nn.Module):
         """
         mean, weight_variance = self.logit_moments(x)
         log_noise_mean, log_noise_var = self.log_noise_moments(x)
-        expected_noise_var = torch.exp(log_noise_mean + 0.5 * log_noise_var)
-        var = (weight_variance + 1.0) * expected_noise_var
+        log_noise = log_noise_mean + torch.sqrt(log_noise_var) * torch.randn_like(log_noise_mean)
+        var = (weight_variance + 1.0) * torch.exp(log_noise)
         return mean, var

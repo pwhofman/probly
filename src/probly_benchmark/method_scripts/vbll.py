@@ -1,4 +1,4 @@
-"""SNGP benchmark code."""
+"""VBLL benchmark code."""
 
 from __future__ import annotations
 

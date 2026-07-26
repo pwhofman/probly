@@ -212,3 +212,33 @@ def test_het_vbll_layer_rejects_invalid_parameterization() -> None:
 
     with pytest.raises(ValueError, match="diagonal"):
         HetVBLLLayer(8, 3, parameterization="lowrank")
+
+
+def test_vbll_warns_without_linear_layer() -> None:
+    model = nn.Sequential(nn.ReLU(), nn.Flatten())
+
+    with pytest.warns(UserWarning, match="no linear layer"):
+        vbll(model)
+
+
+def test_vbll_dof_defaults_match_reference() -> None:
+    # Reference defaults: dof=1 for DiscClassification, dof=2 for tDiscClassification.
+    disc_layer = find_vbll_layer(vbll(_regression_model(out_features=3)))
+    assert disc_layer.dof == pytest.approx((1.0 + 3 + 1.0) / 2.0)
+
+    t_layer = find_vbll_layer(vbll(_regression_model(out_features=3), variant="student_t"))
+    assert t_layer.prior_dof == pytest.approx(2.0)
+
+
+def test_t_and_het_vbll_forward_sample_the_noise() -> None:
+    # Matching the reference, the predictive noise variance is sampled per forward call.
+    from probly.layers.torch import HetVBLLLayer, TVBLLLayer  # noqa: PLC0415
+
+    torch.manual_seed(0)
+    x = torch.randn(4, 8)
+    for layer in (TVBLLLayer(8, 3), HetVBLLLayer(8, 3)):
+        mean1, var1 = layer(x)
+        mean2, var2 = layer(x)
+        assert torch.allclose(mean1, mean2)
+        assert not torch.allclose(var1, var2)
+        assert torch.all(var1 > 0)
