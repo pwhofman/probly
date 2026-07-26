@@ -45,6 +45,7 @@ from probly.method.efficient_credal_prediction import (
 )
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.subensemble import SubensemblePredictor
+from probly.method.vbll import VBLLPredictor, find_vbll_layer
 from probly.traverse_nn.utils import get_output_dim
 from probly_benchmark import conformal, data, metadata, models, utils
 from probly_benchmark.builders import BuildContext, build_model
@@ -70,6 +71,7 @@ torch.set_float32_matmul_precision("high")
 
 OPTIMIZERS = {
     "adam": optim.Adam,
+    "adamw": optim.AdamW,
     "sgd": optim.SGD,
     "lamb": Lamb,
 }
@@ -847,6 +849,50 @@ def train_model_bayesian(
         train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
         val_fn=validate,
         log_prefix=log_prefix,
+    )
+
+
+@train_model.register(VBLLPredictor)
+def train_model_vbll(
+    model: nn.Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Train a VBLL predictor with the negative ELBO of Harrison et al. (ICLR 2024).
+
+    The KL/regularization weight is set to reg_scale/N (N = dataset size);
+    ``reg_scale=1`` matches the reference implementation. ``torch.compile`` is
+    skipped because the training step captures the VBLL layer's input features
+    with a forward pre-hook, which must fire on every batch.
+    """
+    dataset = getattr(train_loader, "dataset", None)
+    dataset_size = len(dataset) if dataset is not None else len(train_loader) * cfg.batch_size
+    regularization_weight = train_kwargs.get("reg_scale", 1.0) / dataset_size
+    model._probly_skip_compile = True  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+    # The variational last layer trains without weight decay, as in the reference
+    # implementation: its regularization comes from the ELBO's KL term, and decay
+    # on the Cholesky parameters distorts the posterior.
+    layer = find_vbll_layer(model)
+    vbll_param_ids = {id(p) for p in layer.parameters()}
+    param_groups = [
+        {"params": [p for p in model.parameters() if id(p) not in vbll_param_ids]},
+        {"params": list(layer.parameters()), "weight_decay": 0.0},
+    ]
+    _training_loop(
+        model,
+        train_loader,
+        val_loader,
+        cfg,
+        device,
+        run,
+        {**train_kwargs, "regularization_weight": regularization_weight},
+        train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
+        val_fn=validate,
+        param_groups=param_groups,
     )
 
 

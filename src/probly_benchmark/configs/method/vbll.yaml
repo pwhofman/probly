@@ -1,0 +1,29 @@
+# @package _global_
+# Unlike other method files (@package method), this one is @package _global_ so it
+# can set the top-level grad_clip_norm for every entry point that trains VBLL:
+# momentum SGD works (arXiv:2404.11599, App. B.4) but needs gradient clipping --
+# without it the ELBO goes NaN within the first epoch under SGD lr=0.1 (verified).
+# CLI overrides (grad_clip_norm=...) still take precedence.
+grad_clip_norm: 1.0
+
+method:
+    name: "vbll"
+    label: "VBLL"
+    params:
+        # Standard discriminative VBLL classifier with a dense covariance posterior.
+        # Remaining priors keep the reference defaults (Harrison et al., ICLR 2024,
+        # https://arxiv.org/abs/2404.11599), to which the implementation is aligned.
+        variant: "discriminative"
+        parameterization: "dense"
+    train:
+        # KL/regularization weight is reg_scale / dataset_size; 1.0 is the exact
+        # objective of the paper and reference implementation.
+        reg_scale: 1.0
+    # The variational layer itself is excluded from weight decay by
+    # train_model_vbll, as in the reference implementation.
+    selective_prediction:
+        num_samples: 100
+    ood_detection:
+        num_samples: 100
+    active_learning:
+        num_samples: 100

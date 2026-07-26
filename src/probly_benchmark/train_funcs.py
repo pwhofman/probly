@@ -32,6 +32,7 @@ from probly.method.natural_posterior_network import NaturalPosteriorNetworkPredi
 from probly.method.posterior_network import PosteriorNetworkPredictor
 from probly.method.sngp import SNGPPredictor
 from probly.method.subensemble import SubensemblePredictor
+from probly.method.vbll import VBLLPredictor, find_vbll_layer
 from probly.predictor import predict_raw
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
 from probly.train.calibration.torch import ExpectedCalibrationError, LabelRelaxationLoss, LabelSmoothingLoss
@@ -44,6 +45,7 @@ from probly.train.evidential.torch import (
     evidential_mse_loss,
     postnet_loss,
 )
+from probly.train.vbll import vbll_loss
 from probly.transformation.batchensemble.torch import tile_inputs as tile_be_inputs
 from probly.utils.torch import intersection_probability
 from probly_benchmark.base import BasePredictor
@@ -129,6 +131,52 @@ def _(
         loss.backward()
         if grad_clip_norm is not None:
             nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        optimizer.step()
+    return loss.item()
+
+
+@train_epoch.register(VBLLPredictor)
+def train_epoch_vbll(
+    model: Predictor,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    **kwargs: Any,  # noqa: ANN401
+) -> torch.Tensor | float:
+    """Train a VBLL predictor for one step with the negative ELBO of Harrison et al.
+
+    The layer's input features are captured with a forward pre-hook (the usage
+    documented by ``probly.train.vbll``). ``regularization_weight`` must be in
+    ``kwargs``; it is injected by ``train_model_vbll`` as ``reg_scale / dataset_size``.
+    The loss itself runs outside autocast: its Cholesky/logdet terms are
+    fp16-fragile, while the backbone forward keeps the AMP speedup.
+    """
+    regularization_weight = kwargs["regularization_weight"]
+    layer = find_vbll_layer(model)
+    captured: dict[str, torch.Tensor] = {}
+    handle = layer.register_forward_pre_hook(lambda _module, inp: captured.update(features=inp[0]))
+    optimizer.zero_grad()
+    try:
+        with autocast(inputs.device.type, enabled=amp_enabled):
+            model(inputs)  # ty: ignore[call-non-callable]  # populates captured["features"]
+        with autocast(inputs.device.type, enabled=False):
+            loss = vbll_loss(layer, captured["features"].float(), targets, regularization_weight)
+    finally:
+        handle.remove()
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
         optimizer.step()
     return loss.item()
 
@@ -659,6 +707,32 @@ def _(
         "loss": val_loss / len(val_loader),
         "acc": val_acc / num_instances,
         "kl": kl_value,  # ty: ignore[invalid-key]
+    }
+
+
+@validate.register(VBLLPredictor)
+@torch.no_grad()
+def _(
+    model: Predictor,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> ValidationMetrics:
+    """Validate a VBLL predictor on its predictive-mean logits."""
+    model.eval()  # ty: ignore[unresolved-attribute]
+    val_loss, val_acc = 0.0, 0.0
+    num_instances = 0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            mean, _variance = model(inputs)  # ty: ignore[call-non-callable]
+            val_loss += F.cross_entropy(mean, targets).item()
+            val_acc += _accuracy(mean, targets) * inputs.shape[0]
+            num_instances += inputs.shape[0]
+    return {
+        "loss": val_loss / len(val_loader),
+        "acc": val_acc / num_instances,
     }
 
 
