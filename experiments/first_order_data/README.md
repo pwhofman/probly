@@ -15,7 +15,7 @@ By default, downloaded datasets are stored in `~/datasets/dcic`, shared with the
 | ------------- | ----: | ------: | -----------: | ---------------------------: | ------------------------------------------------------------------- | :--------: |
 | Benthic       |  4867 |       8 |        0.340 |                         1.64 | images from the seafloor and consists of underwater flora and fauna |  112x112   |
 | CIFAR-10H     | 10000 |      10 |        0.154 |                         1.95 | reannotated variant of the original CIFAR-10 test set               |   32x32    |
-| MiceBone      |  7240 |       4 |        0.319 |                         1.56 | Second-Harmonic-Generation images of collagen fibers                |  224x224   |
+| MiceBone      |  7240 |       3 |        0.319 |                         1.56 | Second-Harmonic-Generation images of collagen fibers                |  224x224   |
 | Pig           | 10237 |       4 |        0.735 |                         2.57 | tail images form european farms                                     |   96x96    |
 | Plankton      | 12280 |      10 |        0.163 |                         1.50 | underwater plankton images                                          |   96x96    |
 | QualityMRI    |   310 |       2 |        0.556 |                         2.00 | MRI images                                                          |  224x224   |

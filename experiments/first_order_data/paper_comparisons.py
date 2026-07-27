@@ -75,6 +75,11 @@ ECE_N_SEEDS = 10
 ECE_N_BINS = 15
 CH_EPSILON = 0.0005  # matches CREDAL_ROUND_DECIMALS=3 tolerance
 
+# Which credal method's ensemble mean feeds the LAC/APS/RAPS/SAPS conformal
+# prediction table (make_table_3). CreEns is a plain deep ensemble, the most
+# natural point-probability source for conformal prediction.
+CP_TABLE_METHOD = "credal_ensembling"
+
 OUTPUT_DIR = Path(__file__).parent / "first_order_results_probly"
 
 METHOD_DISPLAY: dict[str, str] = {
@@ -139,8 +144,9 @@ def load_ensemble_probs(
         }
     )
     model, _, _ = load_model_for_evaluation(cfg, device)
-    model.eval()
-    members = list(model) if isinstance(model, torch.nn.ModuleList) else [model]
+    # credal_relative_likelihood builds its ensemble as a plain list of members
+    # rather than an nn.ModuleList; each member is eval()'d individually below.
+    members = list(model) if isinstance(model, torch.nn.ModuleList | list) else [model]
     logits_list: list[torch.Tensor] = []
     for m in members:
         m.eval()
@@ -252,6 +258,7 @@ def compute_calibration_metrics(
     """
     mean_probs = ensemble_probs.mean(axis=1)  # (N, K)
     per_l1 = np.abs(mean_probs - true_probs).sum(axis=-1)  # L1, not TV
+    per_tv = 0.5 * per_l1  # TV(target, ensemble) = 0.5 * L1
 
     ece_vals = []
     num_classes = true_probs.shape[1]
@@ -264,6 +271,9 @@ def compute_calibration_metrics(
         "l1_mean": float(per_l1.mean()),
         "l1_std": float(per_l1.std()),
         "per_l1": per_l1.tolist(),
+        "tv_mean": float(per_tv.mean()),
+        "tv_std": float(per_tv.std()),
+        "per_tv": per_tv.tolist(),
         "ece_mean": float(np.mean(ece_vals)),
         "ece_std": float(np.std(ece_vals)),
         "ece_per_seed": ece_vals,
@@ -482,6 +492,7 @@ def save_results(all_results: dict[tuple[str, str], dict[str, Any]], output_dir:
         arrays[f"{key}__per_interval"] = np.array(cov["per_interval"])
         arrays[f"{key}__per_eff"] = np.array(cov["per_eff"])
         arrays[f"{key}__per_l1"] = np.array(cal["per_l1"])
+        arrays[f"{key}__per_tv"] = np.array(cal["per_tv"])
         for cp_name, cp_res in res["cp"].items():
             for metric, vals in cp_res.items():
                 arrays[f"{key}__{cp_name}__{metric}"] = np.array(vals["per_seed"])
@@ -519,145 +530,156 @@ def bold_mask(values_list: list[np.ndarray], higher_better: bool = True) -> list
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def _fmt(val: float, bold: bool, decimals: int = 3) -> str:
-    s = f"{val:.{decimals}f}"
-    return rf"\textbf{{{s}}}" if bold else s
-
-
-def _fmt_ms(mean: float, std: float, bold: bool, decimals: int = 3) -> str:
-    m, s = f"{mean:.{decimals}f}", f"{std:.{decimals}f}"
+def _fmt_val(val: float, bold: bool, decimals: int = 3) -> str:
+    r"""Format a single scalar as a LaTeX math cell, e.g. ``$0.877$`` or ``$\mathbf{0.877}$``."""
+    body = f"{val:.{decimals}f}"
     if bold:
-        return rf"\textbf{{{m}}} $\pm$ \textbf{{{s}}}"
-    return rf"{m} $\pm$ {s}"
+        body = rf"\mathbf{{{body}}}"
+    return f"${body}$"
+
+
+def _fmt_pm(mean: float, std: float, bold: bool, decimals: int = 3, *, strip_zero: bool = False) -> str:
+    r"""Format a mean +/- std pair as ``$mean_{\pm std}$``, optionally bolded and without a leading zero."""
+    m = f"{mean:.{decimals}f}"
+    s = f"{std:.{decimals}f}"
+    if strip_zero:
+        m = m.removeprefix("0")
+        s = s.removeprefix("0")
+    body = f"{m}_{{\\pm {s}}}"
+    if bold:
+        body = rf"\mathbf{{{body}}}"
+    return f"${body}$"
 
 
 def make_table_1(all_results: dict[tuple[str, str], dict[str, Any]]) -> str:
-    """Table: CH Coverage (eps), Interval Coverage, Efficiency."""
+    """Credal-set coverage & efficiency table: CH Cov / Int. Cov. / Efficiency, grouped by dataset."""
     datasets = sorted({d for _, d in all_results})
     methods = sorted({m for m, _ in all_results})
     metrics = [
-        ("ch_coverage", "per_ch", True, rf"CH Cov ($\varepsilon$={CH_EPSILON})"),
-        ("interval_coverage", "per_interval", True, "Int. Cov."),
-        ("efficiency", "per_eff", True, r"Efficiency$\uparrow$"),
+        ("ch_coverage", "per_ch", True),
+        ("interval_coverage", "per_interval", True),
+        ("efficiency", "per_eff", True),
     ]
-    col_hdr = " & ".join(h for _, _, _, h in metrics)
-    lines = [
-        r"\begin{table}[ht]",
-        r"\centering",
-        r"\caption{Credal set coverage and efficiency.}",
-        r"\label{tab:credal_coverage}",
-        r"\begin{tabular}{ll" + "c" * len(metrics) + r"}",
+
+    header = [
+        r"\begin{tabular}{@{}l@{\hspace{2pt}}cccc@{}}",
         r"\toprule",
-        f"Dataset & Method & {col_hdr} \\\\",
-        r"\midrule",
+        r"\multicolumn{2}{@{}l}{\textbf{Method}}",
+        r"&\makecell[c]{\textbf{ConvexHull}\\[-1pt]\textbf{Coverage ($\uparrow$)}}",
+        r"&\makecell[c]{\textbf{Interval}\\[-1pt]\textbf{Coverage ($\uparrow$)}}",
+        r"&\textbf{Efficiency} \textbf{($\uparrow$)}\\",
+        r"\hdashline\noalign{\vskip0.45em}",
     ]
-    for d_idx, dataset in enumerate(datasets):
+
+    dataset_blocks: list[str] = []
+    ds_with_data = [d for d in datasets if any((m, d) in all_results for m in methods)]
+    for d_idx, dataset in enumerate(ds_with_data):
         ds_methods = [m for m in methods if (m, dataset) in all_results]
-        if not ds_methods:
-            continue
         bold_per: dict[str, list[bool]] = {}
-        for key, per_key, higher, _ in metrics:
+        for key, per_key, higher in metrics:
             arrs = [np.array(all_results[(m, dataset)]["credal_coverage"][per_key]) for m in ds_methods]
             bold_per[key] = bold_mask(arrs, higher_better=higher)
+        dataset_blocks += [
+            r"\rowcolor[gray]{0.92}[0pt][0pt]",
+            rf"\multicolumn{{5}}{{@{{}}l@{{}}}}{{\textbf{{{dataset}}}}}\\",
+            r"\addlinespace[0.15em]",
+        ]
         for i, method in enumerate(ds_methods):
-            prefix = rf"\multirow{{{len(ds_methods)}}}{{*}}{{{dataset}}}" if i == 0 else ""
             mname = METHOD_DISPLAY.get(method, method)
-            cells = " & ".join(
-                _fmt(all_results[(method, dataset)]["credal_coverage"][key], bold_per[key][i])
-                for key, _, _, _ in metrics
+            cells = "&".join(
+                _fmt_val(all_results[(method, dataset)]["credal_coverage"][key], bold_per[key][i])
+                for key, _, _ in metrics
             )
-            lines.append(f"  {prefix} & {mname} & {cells} \\\\")
-        if d_idx < len(datasets) - 1:
-            lines.append(r"\midrule")
-    lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}"]
-    return "\n".join(lines)
+            dataset_blocks.append(f"{mname}&&{cells}\\\\")
+        if d_idx < len(ds_with_data) - 1:
+            dataset_blocks.append(r"\addlinespace[0.4em]")
+
+    footer = [r"\bottomrule", r"\end{tabular}"]
+    return "\n".join(header + dataset_blocks + footer)
 
 
-def make_table_2(all_results: dict[tuple[str, str], dict[str, Any]]) -> str:
-    """Table: L1 calibration error and ECE (zero-order)."""
+def make_table_tv(all_results: dict[tuple[str, str], dict[str, Any]]) -> str:
+    """TV-distance comparison table: dataset rows x credal-method columns."""
     datasets = sorted({d for _, d in all_results})
     methods = sorted({m for m, _ in all_results})
+    col_hdr = " & ".join(rf"\textbf{{{METHOD_DISPLAY.get(m, m)}}} ($\downarrow$)" for m in methods)
+
     lines = [
-        r"\begin{table}[ht]",
-        r"\centering",
-        r"\caption{Calibration error: L1 (ensemble mean vs.\ true dist.) and ECE (zero-order labels).}",
-        r"\label{tab:calibration}",
-        r"\begin{tabular}{llcc}",
+        r"\begin{tabular}{@{}l" + "c" * len(methods) + r"@{}}",
         r"\toprule",
-        r"Dataset & Method & L1 (mean $\pm$ std) & ECE (mean $\pm$ std) \\",
+        rf"\textbf{{Dataset}} & {col_hdr} \\",
+        r"\hdashline\noalign{\vskip 0.45em}",
         r"\midrule",
     ]
-    for d_idx, dataset in enumerate(datasets):
+    for dataset in datasets:
         ds_methods = [m for m in methods if (m, dataset) in all_results]
-        if not ds_methods:
-            continue
-        l1_arrs = [np.array(all_results[(m, dataset)]["calibration"]["per_l1"]) for m in ds_methods]
-        ece_arrs = [np.array(all_results[(m, dataset)]["calibration"]["ece_per_seed"]) for m in ds_methods]
-        bm_l1 = bold_mask(l1_arrs, higher_better=False)
-        bm_ece = bold_mask(ece_arrs, higher_better=False)
-        for i, method in enumerate(ds_methods):
-            prefix = rf"\multirow{{{len(ds_methods)}}}{{*}}{{{dataset}}}" if i == 0 else ""
-            mname = METHOD_DISPLAY.get(method, method)
-            cal = all_results[(method, dataset)]["calibration"]
-            c1 = _fmt_ms(cal["l1_mean"], cal["l1_std"], bm_l1[i])
-            c2 = _fmt_ms(cal["ece_mean"], cal["ece_std"], bm_ece[i])
-            lines.append(f"  {prefix} & {mname} & {c1} & {c2} \\\\")
-        if d_idx < len(datasets) - 1:
-            lines.append(r"\midrule")
-    lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}"]
+        arrs = [np.array(all_results[(m, dataset)]["calibration"]["per_tv"]) for m in ds_methods]
+        bm = bold_mask(arrs, higher_better=False)
+        cells = " & ".join(
+            _fmt_pm(
+                all_results[(m, dataset)]["calibration"]["tv_mean"],
+                all_results[(m, dataset)]["calibration"]["tv_std"],
+                bm[i],
+                strip_zero=True,
+            )
+            for i, m in enumerate(ds_methods)
+        )
+        lines.append(f"{dataset} & {cells} \\\\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
     return "\n".join(lines)
 
 
-_CP_METRIC_ORDER = ["cond_satisfaction", "avg_set_size", "marginal_coverage"]
-_CP_METRIC_NAMES = {
-    "cond_satisfaction": r"Cond.\ Sat.",
-    "avg_set_size": r"Set Size$\downarrow$",
-    "marginal_coverage": r"Marg.\ Cov.",
-}
-_CP_HIGHER_BETTER = {"cond_satisfaction": True, "avg_set_size": False, "marginal_coverage": True}
+_CP_METRIC_ORDER = [
+    ("cond_satisfaction", r"Cond.\ Sat.", True),
+    ("avg_set_size", "Set Size", False),
+    ("marginal_coverage", r"Marg.\ Cov.", True),
+]
+
+_CP_HEADER = (
+    r"\multicolumn{2}{@{}l}{\textbf{Metric}} & \textbf{LAC} \cite{sadinle2019least}"
+    r"& \textbf{APS} \cite{romanoAPS2020}& \textbf{RAPS} \cite{angelopoulosRAPS2021} "
+    r"& \textbf{SAPS} \cite{huang2024conformal} \\"
+)
 
 
-def make_table_3(all_results: dict[tuple[str, str], dict[str, Any]]) -> str:
-    """Table: CP results grouped by credal method; marginal coverage NOT bolded."""
-    datasets = sorted({d for _, d in all_results})
-    methods = sorted({m for m, _ in all_results})
+def make_table_3(all_results: dict[tuple[str, str], dict[str, Any]], cp_method: str = CP_TABLE_METHOD) -> str:
+    """CP table: Cond. Sat. / Set Size / Marg. Cov. for LAC/APS/RAPS/SAPS, using cp_method's ensemble mean."""
+    datasets = [d for d in sorted({d for _, d in all_results}) if (cp_method, d) in all_results]
     cp_names = list(CP_METHODS.keys())
-    col_hdr = " & ".join(cp_names)
-    n_cp = len(cp_names)
-    lines = [
-        r"\begin{table}[ht]",
-        r"\centering",
-        rf"\caption{{Conformal prediction ($\alpha={ALPHA}$, {CP_N_SEEDS} seeds).}}",
-        r"\label{tab:cp}",
-        r"\begin{tabular}{ll" + "c" * n_cp + r"}",
+
+    header = [
+        r"\begin{tabular}{@{}l@{\hspace{2pt}}c c c c c@{}}",
         r"\toprule",
-        f"Dataset & Metric & {col_hdr} \\\\",
-        r"\midrule",
+        _CP_HEADER,
+        r"\hdashline\noalign{\vskip 0.45em}",
     ]
-    for m_idx, method in enumerate(methods):
-        mname = METHOD_DISPLAY.get(method, method)
-        if m_idx > 0:
-            lines.append(r"\midrule")
-        lines.append(rf"\multicolumn{{{2 + n_cp}}}{{l}}{{\textit{{{mname}}}}} \\")
-        ds_with_data = [d for d in datasets if (method, d) in all_results]
-        for d_idx, dataset in enumerate(ds_with_data):
-            cp_res = all_results[(method, dataset)]["cp"]
-            for met_idx, cp_metric in enumerate(_CP_METRIC_ORDER):
-                higher = _CP_HIGHER_BETTER[cp_metric]
+
+    dataset_blocks: list[str] = []
+    for d_idx, dataset in enumerate(datasets):
+        cp_res = all_results[(cp_method, dataset)]["cp"]
+        dataset_blocks += [
+            r"\rowcolor[gray]{0.92}[0pt][0pt]",
+            rf"\multicolumn{{6}}{{@{{}}l@{{}}}}{{\textbf{{{dataset}}}}} \\",
+            r"\addlinespace[0.15em]",
+        ]
+        for cp_metric, label, higher in _CP_METRIC_ORDER:
+            # never bold marginal coverage
+            if cp_metric == "marginal_coverage":
+                bm = [False] * len(cp_names)
+            else:
                 seed_arrs = [np.array(cp_res[cn][cp_metric]["per_seed"]) for cn in cp_names]
-                # never bold marginal coverage
-                bm = [False] * n_cp if cp_metric == "marginal_coverage" else bold_mask(seed_arrs, higher_better=higher)
-                prefix = rf"\multirow{{{len(_CP_METRIC_ORDER)}}}{{*}}{{{dataset}}}" if met_idx == 0 else ""
-                met_label = _CP_METRIC_NAMES[cp_metric]
-                cells = " & ".join(
-                    _fmt_ms(cp_res[cn][cp_metric]["mean"], cp_res[cn][cp_metric]["std"], bm[j])
-                    for j, cn in enumerate(cp_names)
-                )
-                lines.append(f"  {prefix} & {met_label} & {cells} \\\\")
-            if d_idx < len(ds_with_data) - 1:
-                lines.append(r"\cmidrule{1-" + str(2 + n_cp) + r"}")
-    lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}"]
-    return "\n".join(lines)
+                bm = bold_mask(seed_arrs, higher_better=higher)
+            arrow = r"$\uparrow$" if higher else r"$\downarrow$"
+            cells = " & ".join(
+                _fmt_pm(cp_res[cn][cp_metric]["mean"], cp_res[cn][cp_metric]["std"], bm[j])
+                for j, cn in enumerate(cp_names)
+            )
+            dataset_blocks.append(rf"{label} & {arrow}   & {cells} \\")
+        if d_idx < len(datasets) - 1:
+            dataset_blocks.append(r"\addlinespace[0.4em]")
+
+    footer = [r"\bottomrule", r"\vspace{-0.4cm}", r"\end{tabular}"]
+    return "\n".join(header + dataset_blocks + footer)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -725,13 +747,17 @@ def main() -> None:
 
     print("\nGenerating LaTeX tables ...")
     t1 = make_table_1(all_results)
-    t2 = make_table_2(all_results)
+    t2 = make_table_tv(all_results)
     t3 = make_table_3(all_results)
     tables_tex = f"{t1}\n\n{t2}\n\n{t3}"
     (OUTPUT_DIR / "tables.tex").write_text(tables_tex)
     print(f"Tables saved to {OUTPUT_DIR}/tables.tex")
 
-    for title, table in [("TABLE 1: Credal Coverage", t1), ("TABLE 2: Calibration", t2), ("TABLE 3: CP", t3)]:
+    for title, table in [
+        ("TABLE 1: Credal Coverage & Efficiency", t1),
+        ("TABLE 2: TV Distance", t2),
+        ("TABLE 3: Conformal Prediction", t3),
+    ]:
         print(f"\n{'=' * 60}\n{title}\n{'=' * 60}")
         print(table)
 
