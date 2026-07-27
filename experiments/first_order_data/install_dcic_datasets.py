@@ -7,7 +7,7 @@ import tempfile
 from urllib import request
 import zipfile
 
-BASE_URL = "https://zenodo.org/records/7180818/files"
+BASE_URL = "https://zenodo.org/records/8115942/files"
 ARCHIVES = {
     "Benthic": "Benthic.zip",
     "CIFAR10H": "CIFAR10H.zip",
