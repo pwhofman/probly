@@ -288,6 +288,9 @@ wandb/
 outputs/
 src/probly_benchmark/multirun
 
+# Local training launch scripts
+src/probly_benchmark/run_dcic_training.sh
+
 # Server scripts
 server_scripts/
 
@@ -298,6 +301,7 @@ artifacts/
 experiments/uv.lock
 experiments/**/model_cache/
 experiments/**/*.pdf
+experiments/first_order_data/first_order_results_probly/
 
 # Local data / model caches
 data/

@@ -7,9 +7,7 @@ cd experiments/first_order_data
 uv sync
 ```
 
-By default, downloaded datasets are stored in [data/image](data/image), relative to this directory.
-
-Training and evaluation pipelines for this data are being added; see [install_dcic_datasets.py](install_dcic_datasets.py) to get the raw datasets in the meantime.
+By default, downloaded datasets are stored in `~/datasets/dcic`, shared with the `probly_benchmark` training pipeline (see below). Pass `--dest` to [install_dcic_datasets.py](install_dcic_datasets.py) to use a different location.
 
 ## Image dataset overview (DCIC Datasets)
 
@@ -28,7 +26,7 @@ Training and evaluation pipelines for this data are being added; see [install_dc
 
 `avg. non-zero target classes` is the mean number of classes with non-zero target probability per image.
 
-Image datasets should be stored under [data/image](data/image). Used datasets can be downloaded here: https://zenodo.org/records/8115942 or directly with the [install_dcic_datasets.py](install_dcic_datasets.py) helper.
+Image datasets should be stored under `~/datasets/dcic`. Used datasets can be downloaded here: https://zenodo.org/records/8115942 or directly with the [install_dcic_datasets.py](install_dcic_datasets.py) helper.
 
 <details>
 <summary><strong>Detailed dataset descriptions</strong></summary>
@@ -117,3 +115,36 @@ Turkey consists of images of turkeys and their injuries. The task is to classify
 [tiho_mods_00007665]: https://doi.org/10.1007/978-3-031-20074-8_21
 
 </details>
+
+## Credal-set predictor training & evaluation
+
+Training uses the main `probly_benchmark` package, not this folder — run these commands from the **repo root** (`uv run ...`), not from `experiments/first_order_data`.
+
+- Training entrypoint: [`src/probly_benchmark/train.py`](../../src/probly_benchmark/train.py), driven by Hydra `method`/`recipe` configs.
+- Recipe configs exist for all 10 DCIC datasets: `src/probly_benchmark/configs/recipe/resnet50_<dataset>.yaml` (e.g. `resnet50_micebone`).
+- For the paper, 3 credal-set methods and 3 datasets were selected: `credal_ensembling` (CreEns), `credal_relative_likelihood` (CreRL), `credal_wrapper` (CreWra), on **micebone**, **qualitymri**, and **synthetic**.
+
+```bash
+# from the repo root
+uv run python src/probly_benchmark/train.py method=credal_ensembling recipe=resnet50_micebone
+```
+
+Training logs to Weights & Biases (`wandb.entity`/`wandb.project` in `configs/train.yaml`); each run's `run_id` is needed for evaluation below.
+
+### Evaluation
+
+[`paper_comparisons.py`](paper_comparisons.py) evaluates trained runs and produces LaTeX tables. It lives in this folder but depends on `probly_benchmark`, so it must also be run from the **repo root**. Fill in the `WANDB_RUN_IDS` dict at the top of the file (`(method, dataset) -> wandb run_id`) with the runs you want to compare, then:
+
+```bash
+# from the repo root
+uv run python experiments/first_order_data/paper_comparisons.py
+```
+
+Outputs (under `experiments/first_order_data/first_order_results_probly/`, gitignored):
+
+- `results.json` + `results_arrays.npz`: raw scalar and per-instance metrics
+- `plots/`: per-(dataset, method) L1-calibration histograms and a CP set-size-vs-coverage-violation scatter grid
+- `tables.tex` (also printed to stdout): three tables —
+  1. credal-set coverage/efficiency (CH Cov / Int. Cov. / Efficiency)
+  2. calibration (L1 / ECE)
+  3. conformal prediction with LAC/APS/RAPS/SAPS (Cond. Sat. / Set Size / Marg. Cov.)
