@@ -525,6 +525,19 @@ def bold_mask(values_list: list[np.ndarray], higher_better: bool = True) -> list
     return mask
 
 
+def bold_max_only(values: list[float], higher_better: bool = True) -> list[bool]:
+    """Bold only the strict best value(s); no significance test.
+
+    Used for Table 1's credal-coverage metrics (ch_coverage/interval_coverage),
+    which are rare-event binary indicators per instance (often ~1-2% positive
+    rate) -- a paired t-test is underpowered for those regardless of sample
+    size and over-bolds non-best values, unlike the continuous per-seed/
+    per-instance metrics bold_mask is used for elsewhere.
+    """
+    best = max(values) if higher_better else min(values)
+    return [v == best for v in values]
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # LATEX TABLE GENERATION
 # ─────────────────────────────────────────────────────────────────────────────
@@ -556,9 +569,9 @@ def make_table_1(all_results: dict[tuple[str, str], dict[str, Any]]) -> str:
     datasets = sorted({d for _, d in all_results})
     methods = sorted({m for m, _ in all_results})
     metrics = [
-        ("ch_coverage", "per_ch", True),
-        ("interval_coverage", "per_interval", True),
-        ("efficiency", "per_eff", True),
+        ("ch_coverage", True),
+        ("interval_coverage", True),
+        ("efficiency", True),
     ]
 
     header = [
@@ -576,9 +589,9 @@ def make_table_1(all_results: dict[tuple[str, str], dict[str, Any]]) -> str:
     for d_idx, dataset in enumerate(ds_with_data):
         ds_methods = [m for m in methods if (m, dataset) in all_results]
         bold_per: dict[str, list[bool]] = {}
-        for key, per_key, higher in metrics:
-            arrs = [np.array(all_results[(m, dataset)]["credal_coverage"][per_key]) for m in ds_methods]
-            bold_per[key] = bold_mask(arrs, higher_better=higher)
+        for key, higher in metrics:
+            vals = [all_results[(m, dataset)]["credal_coverage"][key] for m in ds_methods]
+            bold_per[key] = bold_max_only(vals, higher_better=higher)
         dataset_blocks += [
             r"\rowcolor[gray]{0.92}[0pt][0pt]",
             rf"\multicolumn{{5}}{{@{{}}l@{{}}}}{{\textbf{{{dataset}}}}}\\",
@@ -588,7 +601,7 @@ def make_table_1(all_results: dict[tuple[str, str], dict[str, Any]]) -> str:
             mname = METHOD_DISPLAY.get(method, method)
             cells = "&".join(
                 _fmt_val(all_results[(method, dataset)]["credal_coverage"][key], bold_per[key][i])
-                for key, _, _ in metrics
+                for key, _ in metrics
             )
             dataset_blocks.append(f"{mname}&&{cells}\\\\")
         if d_idx < len(ds_with_data) - 1:
