@@ -4,6 +4,7 @@ Usage (run from the repo root, not this directory -- needs the probly_benchmark
 package and its dependencies):
     1. Fill in WANDB_RUN_IDS below.
     2. uv run python experiments/first_order_data/paper_comparisons.py
+       Optionally pass --wandb-entity and --wandb-project.
     3. Results -> OUTPUT_DIR/results.json  +  results_arrays.npz
     4. Plots   -> OUTPUT_DIR/plots/
     5. Tables  -> OUTPUT_DIR/tables.tex (also stdout)
@@ -11,6 +12,7 @@ package and its dependencies):
 
 from __future__ import annotations
 
+import argparse
 from collections import defaultdict
 import itertools
 import json
@@ -128,6 +130,8 @@ def load_ensemble_probs(
     run_id: str,
     test_loader: DataLoader,  # type: ignore[type-arg]
     device: torch.device,
+    wandb_entity: str,
+    wandb_project: str,
 ) -> np.ndarray:
     """Return ensemble softmax probs; shape (N, M, K)."""
     cfg = OmegaConf.create(
@@ -140,7 +144,7 @@ def load_ensemble_probs(
             "val_split": VAL_SPLIT,
             "cal_split": 0.0,
             "method": {"name": method_name},
-            "wandb": {"run_id": run_id, "entity": WANDB_ENTITY, "project": WANDB_PROJECT},
+            "wandb": {"run_id": run_id, "entity": wandb_entity, "project": wandb_project},
         }
     )
     model, _, _ = load_model_for_evaluation(cfg, device)
@@ -700,7 +704,14 @@ def make_table_3(all_results: dict[tuple[str, str], dict[str, Any]], cp_method: 
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def _evaluate_one(method: str, dataset: str, run_id: str, device: torch.device) -> dict[str, Any]:
+def _evaluate_one(
+    method: str,
+    dataset: str,
+    run_id: str,
+    device: torch.device,
+    wandb_entity: str,
+    wandb_project: str,
+) -> dict[str, Any]:
     """Run all evaluations for one (method, dataset) W&B run."""
     print(f"\n{'=' * 60}")
     print(f"Method: {method}  |  Dataset: {dataset}  |  Run: {run_id}")
@@ -709,7 +720,15 @@ def _evaluate_one(method: str, dataset: str, run_id: str, device: torch.device) 
     test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=False)
     true_probs = get_true_probs(test_ds)
     print(f"  True probs: {true_probs.shape}")
-    ensemble_probs = load_ensemble_probs(method, dataset, run_id, test_loader, device)
+    ensemble_probs = load_ensemble_probs(
+        method,
+        dataset,
+        run_id,
+        test_loader,
+        device,
+        wandb_entity,
+        wandb_project,
+    )
     print(f"  Ensemble: {ensemble_probs.shape}")
 
     print("\n[1] Credal coverage ...")
@@ -735,8 +754,16 @@ def _evaluate_one(method: str, dataset: str, run_id: str, device: torch.device) 
     return {"credal_coverage": cov, "calibration": cal, "cp": cp}
 
 
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--wandb-entity", default=WANDB_ENTITY)
+    parser.add_argument("--wandb-project", default=WANDB_PROJECT)
+    return parser.parse_args()
+
+
 def main() -> None:
     """Entry point."""
+    args = _parse_args()
     if not WANDB_RUN_IDS:
         print("WANDB_RUN_IDS is empty. Fill in the configuration section and re-run.")
         return
@@ -745,7 +772,14 @@ def main() -> None:
     print(f"Device: {device}")
 
     all_results: dict[tuple[str, str], dict[str, Any]] = {
-        (method, dataset): _evaluate_one(method, dataset, run_id, device)
+        (method, dataset): _evaluate_one(
+            method,
+            dataset,
+            run_id,
+            device,
+            args.wandb_entity,
+            args.wandb_project,
+        )
         for (method, dataset), run_id in WANDB_RUN_IDS.items()
     }
 
