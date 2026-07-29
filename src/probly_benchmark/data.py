@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import copy
 import itertools
+import json
+import random
 import ssl
 from typing import TYPE_CHECKING, Any, NamedTuple, cast
 import warnings
 
 import numpy as np
+from PIL import Image
 import torch
 from torch.utils.data import DataLoader, Subset, random_split
 import torchvision
@@ -283,6 +286,235 @@ def _get_imagenet_sharded(
     return DataLoaders(train_loader, val_loader, cal_loader, test_loader)
 
 
+# Root directory where install_dcic_datasets.py (experiments/first_order_data/)
+# places the DCIC datasets, shared with the training pipeline here.
+DCIC_IMAGE_PATH = DATA_PATH / "dcic"
+
+# Map lowercase dataset name -> folder name on disk (matches the downloader)
+_DCIC_FOLDER_NAME: dict[str, str] = {
+    "benthic": "Benthic",
+    "cifar10h": "CIFAR10H",
+    "micebone": "MiceBone",
+    "pig": "Pig",
+    "plankton": "Plankton",
+    "qualitymri": "QualityMRI",
+    "synthetic": "Synthetic",
+    "treeversity#1": "Treeversity#1",
+    "treeversity#6": "Treeversity#6",
+    "turkey": "Turkey",
+}
+
+DCIC_DATASETS: frozenset[str] = frozenset(_DCIC_FOLDER_NAME.keys())
+
+
+class _DcicZeroOrderDataset(torch.utils.data.Dataset):
+    """Map-style dataset over selected DCIC folds treated as zero-order data.
+
+    Each image has N annotator labels stored in ``annotations.json``. At
+    construction time one hard label ``y ~ Categorical(empirical p(y|X))`` is
+    drawn for every image.
+
+    Note:
+        :meth:`resample_labels` is intended to be called at the start of each
+        training epoch to get fresh draws, but nothing currently calls it, so
+        in practice only the single draw made at construction time is used
+        for the whole run. Existing results (e.g. CreEns/CreRL/CreWra numbers)
+        were produced with this fixed-draw behavior; wire up per-epoch
+        resampling deliberately if you want to change that.
+
+    Args:
+        dataset_root: Path to the dataset folder that contains ``fold1/`` ...
+            ``fold5/`` subdirectories and ``annotations.json``.
+        folds: Which fold numbers to include, e.g. ``[2, 3, 4, 5]``.
+        transform: Transform applied to every PIL image on ``__getitem__``.
+        seed: RNG seed for label sampling. ``None`` -> non-deterministic.
+    """
+
+    def __init__(
+        self,
+        dataset_root: Path,
+        folds: list[int],
+        transform: T.Compose,
+        seed: int | None = None,
+    ) -> None:
+        super().__init__()
+        self._transform = transform
+        self._rng = random.Random(seed)  # noqa: S311 -- label sampling, not a security context
+
+        ann_path = dataset_root / "annotations.json"
+        with ann_path.open() as f:
+            raw = json.load(f)
+
+        # annotations.json is a JSON list of annotator objects, each with a "name"
+        # and an "annotations" list of {"image_path": ..., "class_label": ...}
+        # records. image_path includes the dataset-name prefix (e.g.
+        # "MiceBone/fold2/img.png") and class_label is a string (e.g. "g", "ug",
+        # "nr"), not an integer. We group all per-annotator records by image_path
+        # and map string labels to contiguous integers via a sorted vocabulary.
+
+        # Collect {relative_path_within_fold_dir: [str_label, ...]}
+        # Strip the leading "<DatasetName>/" prefix so paths become "fold1/img.png".
+        dataset_prefix = dataset_root.name + "/"
+        raw_annotations: dict[str, list[str]] = {}
+        for annotator in raw:
+            for record in annotator["annotations"]:
+                img_path: str = record["image_path"].replace("\\", "/")
+                img_path = img_path.removeprefix(dataset_prefix)
+                label_str: str = record["class_label"]
+                raw_annotations.setdefault(img_path, []).append(label_str)
+
+        # Build a sorted string->int vocabulary from all observed labels
+        all_labels = sorted({lbl for lbls in raw_annotations.values() for lbl in lbls})
+        label_to_int: dict[str, int] = {lbl: i for i, lbl in enumerate(all_labels)}
+        self.num_classes: int = len(all_labels)
+        self.classes: list[str] = all_labels
+
+        # Filter to the requested folds and resolve absolute paths
+        fold_prefixes = {f"fold{k}/" for k in folds}
+        self._image_paths: list[Path] = []
+        self._annotation_lists: list[list[int]] = []
+
+        for rel_path, str_labels in raw_annotations.items():
+            if not any(rel_path.startswith(pfx) for pfx in fold_prefixes):
+                continue
+            abs_path = dataset_root / rel_path
+            if abs_path.exists():
+                self._image_paths.append(abs_path)
+                self._annotation_lists.append([label_to_int[lbl] for lbl in str_labels])
+
+        if not self._image_paths:
+            msg = (
+                f"No images found in {dataset_root} for folds {folds}. Check that the dataset was downloaded correctly."
+            )
+            raise RuntimeError(msg)
+
+        self._labels: list[int] = self._sample_labels()
+
+    def _sample_labels(self) -> list[int]:
+        """Sample one hard label per image from the empirical annotation distribution."""
+        return [self._rng.choice(lbls) for lbls in self._annotation_lists]
+
+    def resample_labels(self) -> None:
+        """Re-draw y ~ p(y|X) for every image.
+
+        Not currently called anywhere in the training loop; see the class
+        docstring note.
+        """
+        self._labels = self._sample_labels()
+
+    def __len__(self) -> int:
+        return len(self._image_paths)
+
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, int]:
+        img = Image.open(self._image_paths[index]).convert("RGB")
+        return self._transform(img), self._labels[index]
+
+
+class _DcicSubsetWithTransform(torch.utils.data.Dataset):
+    """Apply an override transform to a ``Subset`` of ``_DcicZeroOrderDataset``.
+
+    Used to give val/cal splits the evaluation transform while keeping the
+    underlying dataset's label assignments.
+    """
+
+    def __init__(self, subset: Subset, transform: T.Compose) -> None:
+        self._subset = subset
+        self._transform = transform
+        self._base: _DcicZeroOrderDataset = subset.dataset  # ty: ignore[invalid-assignment]
+
+    def __len__(self) -> int:
+        return len(self._subset)
+
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, int]:
+        real_idx = self._subset.indices[index]
+        img = Image.open(self._base._image_paths[real_idx]).convert("RGB")  # noqa: SLF001
+        label = self._base._labels[real_idx]  # noqa: SLF001
+        return self._transform(img), label
+
+
+def _get_dcic_zero_order(
+    name: str,
+    seed: int,
+    val_split: float = 0.0,
+    cal_split: float = 0.0,
+    **kwargs: Any,  # noqa: ANN401
+) -> DataLoaders:
+    """Build zero-order DataLoaders for a DCIC first-order dataset.
+
+    Fold assignment:
+        * **Test**  = fold 1 (fixed holdout, never used during training).
+        * **Train** = folds 2-5, minus optional val/cal splits.
+
+    Labels are sampled as ``y ~ p(y|X)`` from the empirical annotation
+    distribution, giving a standard zero-order (single hard label per image)
+    view of the first-order data.
+
+    Args:
+        name: Lowercase dataset name, e.g. ``"micebone"``.
+        seed: RNG seed for label sampling and train/val/cal splitting.
+        val_split: Fraction of the folds-2-5 pool to use for validation.
+        cal_split: Fraction of the folds-2-5 pool to use for calibration.
+        **kwargs: Forwarded to :class:`~torch.utils.data.DataLoader`.
+
+    Returns:
+        A :class:`DataLoaders` NamedTuple. ``validation`` and ``calibration``
+        are ``None`` when their respective splits are 0.
+
+    Raises:
+        FileNotFoundError: If the dataset folder is missing.
+    """
+    folder = _DCIC_FOLDER_NAME[name]
+    root = DCIC_IMAGE_PATH / folder
+    if not root.exists():
+        msg = (
+            f"DCIC dataset folder not found: {root}\n"
+            "Run the downloader script first, e.g.:\n"
+            "  uv run --directory experiments/first_order_data python install_dcic_datasets.py"
+        )
+        raise FileNotFoundError(msg)
+
+    transform_train = T.Compose(
+        [
+            T.RandomHorizontalFlip(),
+            T.RandomResizedCrop(224, antialias=True),
+            T.ToImage(),
+            T.ToDtype(torch.float32, scale=True),
+            T.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        ]
+    )
+    transform_eval = TRANSFORMS_TEST["imagenet"]
+
+    # Test set: fold 1 only
+    test_ds = _DcicZeroOrderDataset(root, folds=[1], transform=transform_eval, seed=seed)
+
+    # Train pool: folds 2-5
+    trainpool_ds = _DcicZeroOrderDataset(root, folds=[2, 3, 4, 5], transform=transform_train, seed=seed)
+
+    eval_kwargs: dict[str, Any] = {**kwargs, "shuffle": False, "persistent_workers": False}
+    cal_kwargs: dict[str, Any] = {**kwargs, "shuffle": True, "persistent_workers": False}
+
+    val_loader = None
+    cal_loader = None
+
+    if val_split > 0 or cal_split > 0:
+        rng = torch.Generator().manual_seed(seed)
+        n_total = len(trainpool_ds)
+        val_len = int(n_total * val_split)
+        cal_len = int(n_total * cal_split)
+        train_len = n_total - val_len - cal_len
+        train_sub, val_sub, cal_sub = random_split(trainpool_ds, [train_len, val_len, cal_len], generator=rng)
+        if val_split > 0:
+            val_loader = DataLoader(_DcicSubsetWithTransform(val_sub, transform_eval), **eval_kwargs)
+        if cal_split > 0:
+            cal_loader = DataLoader(_DcicSubsetWithTransform(cal_sub, transform_eval), **cal_kwargs)
+        train_loader = DataLoader(train_sub, **kwargs)
+    else:
+        train_loader = DataLoader(trainpool_ds, **kwargs)
+
+    test_loader = DataLoader(test_ds, **eval_kwargs)
+    return DataLoaders(train_loader, val_loader, cal_loader, test_loader)
+
+
 def get_data_train(
     name: str,
     seed: int,
@@ -363,6 +595,8 @@ def get_data_train(
             )
             train_loader = DataLoader(train, **kwargs)
             return DataLoaders(train_loader, None, None, None)  # ty: ignore
+        case name if name in DCIC_DATASETS:
+            return _get_dcic_zero_order(name, seed, val_split, cal_split, **kwargs)
         case _:
             msg = f"Dataset {name} not recognized"
             raise ValueError(msg)

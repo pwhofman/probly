@@ -446,6 +446,24 @@ def _move_laplace_hessian_to_device(model: BaseLaplace, device: torch.device) ->
         m.mean = m.mean.to(device)
 
 
+def _split_combined_member_state_dict(state: dict[str, Any], num_members: int) -> list[dict[str, Any]]:
+    """Split one flat multi-member state dict into per-member state dicts.
+
+    Before a train.py refactor, list-returning multi-member methods (e.g.
+    credal_relative_likelihood, which builds members as a plain list rather
+    than an nn.ModuleList) were saved as a single combined state dict with an
+    ``"{member_index}."`` key prefix per member -- the same convention
+    ``nn.ModuleList.state_dict()`` uses. Newer checkpoints instead save a list
+    of per-member state dicts directly (see ``_get_state_dict`` in train.py).
+    This recovers the old format so those older artifacts keep loading.
+    """
+    members: list[dict[str, Any]] = [{} for _ in range(num_members)]
+    for key, value in state.items():
+        prefix, _, rest = key.partition(".")
+        members[int(prefix)][rest] = value
+    return members
+
+
 def _build_uncalibrated_model_from_checkpoint(
     checkpoint: dict[str, Any],
     device: torch.device,
@@ -472,7 +490,10 @@ def _build_uncalibrated_model_from_checkpoint(
     build_method = target_method if target_method is not None else cfg["method"]["name"]
     model = build_model(build_method, method_params, ctx)
     if isinstance(model, list):
-        for m, state in zip(model, checkpoint["model_state_dict"], strict=True):
+        member_states = checkpoint["model_state_dict"]
+        if not isinstance(member_states, list):
+            member_states = _split_combined_member_state_dict(member_states, len(model))
+        for m, state in zip(model, member_states, strict=True):
             m = cast("nn.Module", m)
             m.load_state_dict(state)
             _to_device(m)
