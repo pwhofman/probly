@@ -22,6 +22,19 @@ DATASETS = {
     "fashion_mnist": DatasetMeta(num_classes=10, input_dim=(28, 28, 1), base_model="lenet"),
     "imagenet": _IMAGENET_META,
     "imagenet_torch": _IMAGENET_META,
+    # DCIC first-order datasets (Schmarje et al., NeurIPS 2022). Zero-order view:
+    # y ~ p(y|X) sampled from annotations. num_classes verified against the
+    # downloaded annotations.json vocabularies, not just the benchmark paper.
+    "benthic": DatasetMeta(num_classes=8, input_dim=(112, 112, 3)),
+    "cifar10h": DatasetMeta(num_classes=10, input_dim=(32, 32, 3)),
+    "micebone": DatasetMeta(num_classes=3, input_dim=(224, 224, 3)),
+    "pig": DatasetMeta(num_classes=4, input_dim=(96, 96, 3)),
+    "plankton": DatasetMeta(num_classes=10, input_dim=(96, 96, 3)),
+    "qualitymri": DatasetMeta(num_classes=2, input_dim=(224, 224, 3)),
+    "synthetic": DatasetMeta(num_classes=6, input_dim=(224, 224, 3)),
+    "treeversity#1": DatasetMeta(num_classes=6, input_dim=(224, 224, 3)),
+    "treeversity#6": DatasetMeta(num_classes=6, input_dim=(224, 224, 3)),
+    "turkey": DatasetMeta(num_classes=3, input_dim=(192, 192, 3)),
 }
 
 # Active learning datasets keyed by Hydra config name (al_dataset/*.yaml).
