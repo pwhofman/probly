@@ -26,7 +26,7 @@ The recommended workflow for contributing to probly is:
 
 ### Setting up the development environment
 Once you have cloned the fork, you can set up your development environment.
-You will need a Python 3.10+ environment. We recommend using [uv](https://docs.astral.sh/uv/) as a package manager.
+You will need a Python 3.12+ environment. We recommend using [uv](https://docs.astral.sh/uv/) as a package manager.
 To set up the development environment, run the following command:
 ```sh
 uv sync --dev
