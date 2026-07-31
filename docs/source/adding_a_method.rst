@@ -352,6 +352,11 @@ Keep the example small and fast; heavier variants (e.g. on MNIST) go in a separa
 ``plot_mymethod_mnist.py`` file, following the existing examples in
 ``examples/method/``.
 
+The gallery seeds ``random``, ``numpy`` and ``torch`` before every example, so an
+example that trains a model gets the same result on every build and cannot fail the
+docs build only some of the time. Call ``torch.manual_seed`` yourself only when the
+example needs a specific seed; it then takes precedence.
+
 Step 8: Quality checks
 ======================
 

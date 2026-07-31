@@ -44,6 +44,22 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: uv sync --locked
+      - name: Hash the docs runtime environment
+        id: docs-env
+        # Cache key for the built gallery. Only packages the examples and the
+        # gallery itself import can change the output, so hash those groups
+        # rather than uv.lock: hashing the whole lock re-runs all 81 examples
+        # (~20 minutes) whenever a lint or test tool is bumped. Old release
+        # tags may not have these groups, hence the fallback.
+        run: |
+          if env_txt="$(uv export --frozen --no-header --no-hashes --no-annotate \
+                --no-default-groups --group docs --group all_ml --group benchmark 2>/dev/null)"; then
+            hash="$(printf '%s' "$env_txt" | sha256sum | cut -d' ' -f1)"
+          else
+            echo "uv export of the docs groups failed (old tag?); falling back to the uv.lock hash"
+            hash="$(sha256sum uv.lock | cut -d' ' -f1)"
+          fi
+          echo "hash=$hash" >> "$GITHUB_OUTPUT"
       - name: Restore docs build cache
         if: inputs.docs-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
@@ -53,9 +69,9 @@ jobs:
             docs/source/gen_modules
             docs/source/api
             docs/build
-          key: sphinx-docs-${{ hashFiles('uv.lock') }}-${{ github.run_id }}
+          key: sphinx-docs-${{ steps.docs-env.outputs.hash }}-${{ github.run_id }}
           restore-keys: |
-            sphinx-docs-${{ hashFiles('uv.lock') }}-
+            sphinx-docs-${{ steps.docs-env.outputs.hash }}-
       - name: Remove cached output of deleted examples
         # orphaned gallery pages are in no toctree and fail -W builds
         if: inputs.docs-cache
@@ -106,7 +122,7 @@ jobs:
             docs/source/gen_modules
             docs/source/api
             docs/build
-          key: sphinx-docs-${{ hashFiles('uv.lock') }}-${{ github.run_id }}
+          key: sphinx-docs-${{ steps.docs-env.outputs.hash }}-${{ github.run_id }}
       - name: Upload docs artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:

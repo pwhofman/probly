@@ -142,6 +142,9 @@ sphinx_gallery_conf = {
     # available CPU; set SPHINX_GALLERY_PARALLEL to override (1 disables,
     # sphinx-gallery treats it as off).
     "parallel": int(os.environ.get("SPHINX_GALLERY_PARALLEL", os.process_cpu_count() or 1)),
+    # Seed the RNGs before every example so a build is reproducible; given by
+    # name because the gallery config is pickled to the parallel workers.
+    "reset_modules": ("matplotlib", "seaborn", "_sphinx_helpers.seed_gallery_rngs"),
     "default_thumb_file": str(REPO_ROOT / "docs" / "source" / "_static" / "logo" / "logo_light.png"),
 }
 
