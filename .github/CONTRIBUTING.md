@@ -32,6 +32,8 @@ To set up the development environment, run the following command:
 uv sync --dev
 ```
 This will install all the required dependencies in your Python environment.
+probly itself supports Python 3.12+, but the `dev` and `docs` dependency groups require
+Python 3.13+, which is what `.python-version` pins the development environment to.
 
 ## Guidelines 🚓
 Here are some guidelines to follow when contributing to probly.
