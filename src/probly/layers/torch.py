@@ -758,34 +758,35 @@ class Masksembles2D(nn.Module):
 
     Stores N pre-generated binary channel masks. In training mode, one mask is drawn
     uniformly at random for each sample in the batch and applied independently, matching
-    standard dropout-style training. In eval mode, the layer does not draw any masks itself;
-    it expects the input batch to already be tiled by a factor of ``n`` (e.g. via
+    standard dropout-style training as prescribed by :cite:`durasovMasksembles2021` (the
+    reference implementation instead applies the block-wise eval behavior during training
+    as well). In eval mode, the layer does not draw any masks itself; it expects the input
+    batch to already be tiled by a factor of ``num_masks`` (e.g. via
     :func:`probly.transformation.masksembles.torch.predict_masksembles`, which tiles the
     input before calling the model). Each contiguous block of the original batch size is then
-    assigned a different one of the ``n`` masks, enabling running the model once per mask, based on
-    :cite:`durasovMasksembles2021`.
+    assigned a different one of the ``num_masks`` masks, enabling running the model once per mask.
 
     Attributes:
         channels: Number of input channels.
-        n: Number of binary masks.
+        num_masks: Number of binary masks.
         scale: Sparsity scale used during mask generation.
-        masks: Buffer of shape [n, channels] with binary (0/1) values.
+        masks: Buffer of shape [num_masks, channels] with binary (0/1) values.
     """
 
     masks: torch.Tensor
 
-    def __init__(self, masks: torch.Tensor, channels: int, n: int, scale: float) -> None:
-        """Initialize Masksembles2DLayer.
+    def __init__(self, masks: torch.Tensor, channels: int, num_masks: int, scale: float) -> None:
+        """Initialize Masksembles2D.
 
         Args:
-            masks: Pre-generated binary channel masks of shape [n, channels].
+            masks: Pre-generated binary channel masks of shape [num_masks, channels].
             channels: Number of input channels.
-            n: Number of binary masks.
+            num_masks: Number of binary masks.
             scale: Sparsity scale.
         """
         super().__init__()
         self.channels = channels
-        self.n = n
+        self.num_masks = num_masks
         self.scale = scale
         self.register_buffer("masks", masks)
 
@@ -794,21 +795,32 @@ class Masksembles2D(nn.Module):
 
         Args:
             inputs: Input of shape ``(batch, channels, H, W)``. In eval mode, ``batch`` is
-                expected to already be tiled by ``n`` (i.e. ``batch = n * original_batch``),
-                with contiguous blocks of ``original_batch`` rows belonging to one mask each.
+                expected to already be tiled by ``num_masks`` (i.e. ``batch = num_masks *
+                original_batch``), with contiguous blocks of ``original_batch`` rows
+                belonging to one mask each.
 
         Returns:
             torch.Tensor, the masked input with the same shape as ``inputs``. In training
             mode each sample is masked independently with a randomly drawn mask; in eval
             mode block ``i`` of the tiled batch is masked with mask ``i``.
+
+        Raises:
+            ValueError: If, in eval mode, the batch size is not divisible by ``num_masks``.
         """
         masks = self.masks.to(dtype=inputs.dtype, device=inputs.device)
 
         batch = inputs.shape[0]
         if self.training:
-            idx = torch.randint(0, self.n, (batch,), device=inputs.device)
+            idx = torch.randint(0, self.num_masks, (batch,), device=inputs.device)
             return inputs * masks[idx].view(batch, -1, 1, 1)
-        chunks = torch.chunk(inputs.unsqueeze(1), self.n, dim=0)
+        if batch % self.num_masks != 0:
+            msg = (
+                f"In eval mode, Masksembles2D expects a batch pre-tiled by num_masks={self.num_masks} "
+                f"(batch size divisible by num_masks), got batch size {batch}. Use "
+                "probly.predictor.predict, which tiles the input automatically."
+            )
+            raise ValueError(msg)
+        chunks = torch.chunk(inputs.unsqueeze(1), self.num_masks, dim=0)
         x = torch.cat(chunks, dim=1).permute(1, 0, 2, 3, 4)  # [n, B, C, H, W]
         x = x * masks.unsqueeze(1).unsqueeze(-1).unsqueeze(-1)  # broadcast masks
         x = torch.cat(torch.split(x, 1, dim=0), dim=1)
@@ -820,34 +832,35 @@ class MasksemblesLinear(nn.Module):
 
     Stores N pre-generated binary feature masks. In training mode, one mask is drawn
     uniformly at random for each sample in the batch and applied independently, matching
-    standard dropout-style training. In eval mode, the layer does not draw any masks itself;
-    it expects the input batch to already be tiled by a factor of ``n`` (e.g. via
+    standard dropout-style training as prescribed by :cite:`durasovMasksembles2021` (the
+    reference implementation instead applies the block-wise eval behavior during training
+    as well). In eval mode, the layer does not draw any masks itself; it expects the input
+    batch to already be tiled by a factor of ``num_masks`` (e.g. via
     :func:`probly.transformation.masksembles.torch.predict_masksembles`, which tiles the
     input before calling the model). Each contiguous block of the original batch size is then
-    assigned a different one of the ``n`` masks, enabling running the model once per mask, based on
-    :cite:`durasovMasksembles2021`.
+    assigned a different one of the ``num_masks`` masks, enabling running the model once per mask.
 
     Attributes:
         features: Number of input features.
-        n: Number of binary masks.
+        num_masks: Number of binary masks.
         scale: Sparsity scale used during mask generation.
-        masks: Buffer of shape [n, features] with binary (0/1) values.
+        masks: Buffer of shape [num_masks, features] with binary (0/1) values.
     """
 
     masks: torch.Tensor
 
-    def __init__(self, masks: torch.Tensor, features: int, n: int, scale: float) -> None:
-        """Initialize MasksemblesLinearLayer.
+    def __init__(self, masks: torch.Tensor, features: int, num_masks: int, scale: float) -> None:
+        """Initialize MasksemblesLinear.
 
         Args:
-            masks: Pre-generated binary feature masks of shape [n, features].
+            masks: Pre-generated binary feature masks of shape [num_masks, features].
             features: Number of input features.
-            n: Number of binary masks.
+            num_masks: Number of binary masks.
             scale: Sparsity scale.
         """
         super().__init__()
         self.features = features
-        self.n = n
+        self.num_masks = num_masks
         self.scale = scale
         self.register_buffer("masks", masks)
 
@@ -856,21 +869,32 @@ class MasksemblesLinear(nn.Module):
 
         Args:
             inputs: Input of shape ``(batch, features)``. In eval mode, ``batch`` is
-                expected to already be tiled by ``n`` (i.e. ``batch = n * original_batch``),
-                with contiguous blocks of ``original_batch`` rows belonging to one mask each.
+                expected to already be tiled by ``num_masks`` (i.e. ``batch = num_masks *
+                original_batch``), with contiguous blocks of ``original_batch`` rows
+                belonging to one mask each.
 
         Returns:
             torch.Tensor, the masked input with the same shape as ``inputs``. In training
             mode each sample is masked independently with a randomly drawn mask; in eval
             mode block ``i`` of the tiled batch is masked with mask ``i``.
+
+        Raises:
+            ValueError: If, in eval mode, the batch size is not divisible by ``num_masks``.
         """
         masks = self.masks.to(dtype=inputs.dtype, device=inputs.device)
 
         batch = inputs.shape[0]
         if self.training:
-            idx = torch.randint(0, self.n, (batch,), device=inputs.device)
+            idx = torch.randint(0, self.num_masks, (batch,), device=inputs.device)
             return inputs * masks[idx]
-        chunks = torch.chunk(inputs.unsqueeze(1), self.n, dim=0)
+        if batch % self.num_masks != 0:
+            msg = (
+                f"In eval mode, MasksemblesLinear expects a batch pre-tiled by num_masks={self.num_masks} "
+                f"(batch size divisible by num_masks), got batch size {batch}. Use "
+                "probly.predictor.predict, which tiles the input automatically."
+            )
+            raise ValueError(msg)
+        chunks = torch.chunk(inputs.unsqueeze(1), self.num_masks, dim=0)
         x = torch.cat(chunks, dim=1).permute(1, 0, 2)  # [n, ?, C]
         x = x * masks.unsqueeze(1)
         x = torch.cat(torch.split(x, 1, dim=0), dim=1)

@@ -30,7 +30,7 @@ y_tensor = torch.from_numpy(y).long()
 # Model
 # -----
 #
-# ``n_masks`` binary masks are generated and inserted after each hidden layer.
+# ``num_masks`` binary masks are generated and inserted after each hidden layer.
 # A larger ``scale`` reduces overlap between masks (less correlation, more ensemble-like)
 # at the cost of capacity per masked sub-network.
 
@@ -38,8 +38,8 @@ base_model = MLPClassifier()
 
 masksembles_model = masksembles(
     base_model,
-    n_masks= 4, # The higher, the more similar to MC Dropout
-    scale = 2.0, # The higher, the more similar to Ensemble
+    num_masks=4,  # The higher, the more similar to MC Dropout
+    scale=2.0,  # The higher, the more similar to Ensemble
     predictor_type="logit_classifier",
 )
 
@@ -66,7 +66,7 @@ for epoch in range(300):
 # ----------------------
 #
 # In eval mode ``representer`` calls ``predict_masksembles``, which tiles the input
-# by ``n_masks`` and runs a single forward pass.  Each mask slice yields one prediction;
+# by ``num_masks`` and runs a single forward pass.  Each mask slice yields one prediction;
 # ``quantify`` aggregates them into a total uncertainty estimate per grid point.
 
 masksembles_model.eval()

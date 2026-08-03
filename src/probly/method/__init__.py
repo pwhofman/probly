@@ -32,6 +32,7 @@ from probly.method.graph_posterior_network import (
 from probly.method.het_net import het_net
 import probly.method.laplace  # noqa: F401  # registers LaplaceRepresenter lazily
 from probly.method.mahalanobis import mahalanobis
+from probly.method.masksembles import masksembles
 from probly.method.sngp import sngp
 from probly.method.subensemble import subensemble
 from probly.method.vbll import vbll
@@ -64,6 +65,7 @@ __all__ = [
     "het_net",
     "lop_graph_posterior_network",
     "mahalanobis",
+    "masksembles",
     "sngp",
     "subensemble",
     "vbll",

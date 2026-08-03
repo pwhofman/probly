@@ -13,30 +13,30 @@ from probly.representation.distribution._common import create_categorical_distri
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistributionSample
 from probly.representation.sample.torch import TorchSample
 
-from ._common import MasksemblesPredictor, _attach_n_masks, _wrap_masksembles_logits, register
+from ._common import MasksemblesPredictor, _attach_num_masks, _wrap_masksembles_logits, register
 
 
-def tile_inputs(x: torch.Tensor, n_masks: int) -> torch.Tensor:
-    """Tile the leading batch dim by ``n_masks``, preserving ``channels_last`` for 4D inputs."""
-    out = torch.tile(x, (n_masks,) + (1,) * (x.dim() - 1))
+def tile_inputs(x: torch.Tensor, num_masks: int) -> torch.Tensor:
+    """Tile the leading batch dim by ``num_masks``, preserving ``channels_last`` for 4D inputs."""
+    out = torch.tile(x, (num_masks,) + (1,) * (x.dim() - 1))
     if x.dim() == 4 and x.is_contiguous(memory_format=torch.channels_last):
         out = out.contiguous(memory_format=torch.channels_last)
     return out
 
 
-@_attach_n_masks.register(nn.Module)
-def _(model: nn.Module, n_masks: int) -> None:
-    """Register ``n_masks`` as a persistent buffer so it survives ``state_dict``."""
-    model.register_buffer("n_masks", torch.tensor(n_masks, dtype=torch.long))
+@_attach_num_masks.register(nn.Module)
+def _(model: nn.Module, num_masks: int) -> None:
+    """Register ``num_masks`` as a persistent buffer so it survives ``state_dict``."""
+    model.register_buffer("num_masks", torch.tensor(num_masks, dtype=torch.long))
 
 
 def generate_masks_(m: int, n: int, scale: float) -> torch.Tensor:
     """Sample one candidate mask set; shape may vary — retry in :func:`generate_masks` until fixed."""
     total_positions = int(m * scale)
     masks = torch.zeros(n, total_positions)
-    for _ in range(n):
+    for i in range(n):
         idx = torch.randperm(total_positions)[:m]
-        masks[_, idx] = 1
+        masks[i, idx] = 1
     masks = masks[:, ~(masks == 0).all(dim=0)]
     return masks
 
@@ -65,7 +65,7 @@ def generation_wrapper(c: int, n: int, scale: float) -> torch.Tensor:
     Raises:
         ValueError: If ``c < 10`` (too few features for meaningful mask generation) or
             if bisection fails to converge within 1000 iterations.
-        ValueError: If ``scale > 6.0``.
+        ValueError: If ``scale`` is not in ``(0, 6]``.
         ValueError: If ``n <= 0``.
     """
     if c < 10:
@@ -75,13 +75,10 @@ def generation_wrapper(c: int, n: int, scale: float) -> torch.Tensor:
         )
         raise ValueError(msg)
     if scale > 6.0 or scale <= 0.0:
-        msg = (
-            "Masksembles approach couldn't be used in such setups where number "
-            f"scale parameter must be less than 6.0 and positive. Current value is (scale={scale})."
-        )
+        msg = f"Masksembles requires 0 < scale <= 6.0. Current value is (scale={scale})."
         raise ValueError(msg)
     if n <= 0:
-        msg = f"Masksembles cannot be used when number of masks is negative. Current value is (n_masks={n})."
+        msg = f"Masksembles requires a positive number of masks. Current value is (num_masks={n})."
         raise ValueError(msg)
 
     m = int(int(c) / (scale * (1 - (1 - 1 / scale) ** n)))
@@ -101,7 +98,10 @@ def generation_wrapper(c: int, n: int, scale: float) -> torch.Tensor:
             lo = mid
 
     if masks.shape[-1] != c:
-        msg = "generation_wrapper was unable to generate fitting masks"
+        msg = (
+            "generation_wrapper was unable to generate masks with the requested number of "
+            f"features (c={c}, n={n}, scale={scale}). Try changing the scale parameter."
+        )
         raise ValueError(msg)
     return masks
 
@@ -113,23 +113,26 @@ def predict_masksembles(
 ) -> TorchSample[torch.Tensor]:
     """Run a Masksembles predictor and return a :class:`TorchSample` over masks.
 
-    Tiles the user's ``[B, ...]`` input by ``n_masks``, runs the model once on the
+    Tiles the user's ``[B, ...]`` input by ``num_masks``, runs the model once on the
     tiled ``[N*B, ...]`` tensor in eval mode (each contiguous block of ``B`` rows gets
-    one of the ``N`` masks applied, per :class:`Masksembles2DLayer`/:class:`MasksemblesLinearLayer`),
-    and reshapes the output to ``[N, B, ...]`` with ``sample_dim=0``.
+    one of the ``N`` masks applied, per :class:`~probly.layers.torch.Masksembles2D` /
+    :class:`~probly.layers.torch.MasksemblesLinear`), and reshapes the output to
+    ``[N, B, ...]`` with ``sample_dim=0``.
     """
-    n_masks = int(predictor.n_masks)
+    num_masks = int(predictor.num_masks)
     b = x.shape[0]
     was_training = predictor.training
     predictor.eval()
-    raw = predictor(tile_inputs(x, n_masks))
-    out = raw.view(n_masks, b, *raw.shape[1:])
-    predictor.train(was_training)
+    try:
+        raw = predictor(tile_inputs(x, num_masks))
+    finally:
+        predictor.train(was_training)
+    out = raw.view(num_masks, b, *raw.shape[1:])
     return TorchSample(tensor=out, sample_dim=0)
 
 
 @_wrap_masksembles_logits.register(TorchSample)
-def _torch_wrap_batchensemble_logits(sample: TorchSample[Any]) -> TorchCategoricalDistributionSample:
+def _torch_wrap_masksembles_logits(sample: TorchSample[Any]) -> TorchCategoricalDistributionSample:
     """Wrap per-member logits as a categorical sample (assumes a logit-classifier base)."""
     tensor = sample.tensor
     sample_dim = sample.sample_dim
@@ -143,18 +146,18 @@ def _torch_wrap_batchensemble_logits(sample: TorchSample[Any]) -> TorchCategoric
 
 def append_torch_masksembles_conv(
     obj: nn.Module,
-    n_masks: int,
+    num_masks: int,
     scale: float,
     rng_collection: Any = None,  # noqa: ANN401, ARG001
     rngs: Any = None,  # noqa: ANN401, ARG001
 ) -> nn.Module:
-    """Append a Masksembles2DLayer after a Conv2d layer."""
+    """Append a :class:`~probly.layers.torch.Masksembles2D` layer after a Conv2d layer."""
     if isinstance(obj, nn.Conv2d):
         channels = obj.out_channels
         mask_layer = Masksembles2D(
-            masks=generation_wrapper(channels, n_masks, scale),
+            masks=generation_wrapper(channels, num_masks, scale),
             channels=channels,
-            n=n_masks,
+            num_masks=num_masks,
             scale=scale,
         )
         return nn.Sequential(obj, mask_layer)
@@ -164,18 +167,18 @@ def append_torch_masksembles_conv(
 
 def append_torch_masksembles_linear(
     obj: nn.Module,
-    n_masks: int,
+    num_masks: int,
     scale: float,
     rng_collection: Any = None,  # noqa: ANN401, ARG001
     rngs: Any = None,  # noqa: ANN401, ARG001
 ) -> nn.Module:
-    """Append a MasksemblesLinearLayer after a Linear layer."""
+    """Append a :class:`~probly.layers.torch.MasksemblesLinear` layer after a Linear layer."""
     if isinstance(obj, nn.Linear):
         features = obj.out_features
         mask_layer = MasksemblesLinear(
-            masks=generation_wrapper(features, n_masks, scale),
+            masks=generation_wrapper(features, num_masks, scale),
             features=features,
-            n=n_masks,
+            num_masks=num_masks,
             scale=scale,
         )
         return nn.Sequential(obj, mask_layer)

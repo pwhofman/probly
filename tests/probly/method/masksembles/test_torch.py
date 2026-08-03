@@ -51,7 +51,7 @@ def conv_model() -> nn.Module:
     )
 
 
-N_MASKS = 4
+NUM_MASKS = 4
 SCALE = 2.0
 
 
@@ -63,17 +63,17 @@ class TestGenerationWrapper:
             generation_wrapper(c=9, n=4, scale=2.0)
 
     def test_raises_when_scale_over_maximum(self) -> None:
-        match_msg = "scale parameter must be less than 6.0"
+        match_msg = "requires 0 < scale <= 6.0"
         with pytest.raises(ValueError, match=re.escape(match_msg)):
             generation_wrapper(c=10, n=4, scale=7.0)
 
     def test_raises_when_scale_negative(self) -> None:
-        match_msg = "scale parameter must be less than 6.0 and positive"
+        match_msg = "requires 0 < scale <= 6.0"
         with pytest.raises(ValueError, match=re.escape(match_msg)):
             generation_wrapper(c=10, n=4, scale=-1.0)
 
     def test_raises_when_n_negative(self) -> None:
-        with pytest.raises(ValueError, match="when number of masks is negative"):
+        with pytest.raises(ValueError, match="requires a positive number of masks"):
             generation_wrapper(c=10, n=-1, scale=2.0)
 
     def test_output_shape(self) -> None:
@@ -97,12 +97,12 @@ class TestTileInputs:
 
     def test_tile_inputs_batch_shape(self) -> None:
         x = torch.randn(4, 20)
-        out = tile_inputs(x, N_MASKS)
-        assert out.shape == (N_MASKS * 4, 20)
+        out = tile_inputs(x, NUM_MASKS)
+        assert out.shape == (NUM_MASKS * 4, 20)
 
     def test_tile_inputs_preserves_channels_last(self) -> None:
         x = torch.randn(4, 3, 8, 8).contiguous(memory_format=torch.channels_last)
-        out = tile_inputs(x, N_MASKS)
+        out = tile_inputs(x, NUM_MASKS)
         assert out.is_contiguous(memory_format=torch.channels_last)
 
 
@@ -110,12 +110,12 @@ class TestMasksemblesRepresenter:
     """Tests for MasksemblesRepresenter dispatch and output types."""
 
     def test_representer_dispatches_to_masksembles_representer(self, linear_model) -> None:
-        model = masksembles(linear_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        model = masksembles(linear_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier")
         rep = representer(model)
         assert isinstance(rep, MasksemblesRepresenter)
 
     def test_represent_returns_categorical_distribution_sample(self, linear_model) -> None:
-        model = masksembles(linear_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        model = masksembles(linear_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier")
         rep = representer(model)
         with torch.no_grad():
             out = rep.represent(torch.randn(5, 20))
@@ -123,16 +123,16 @@ class TestMasksemblesRepresenter:
         assert isinstance(out.tensor, TorchLogitCategoricalDistribution)
 
     def test_represent_output_shape(self, linear_model) -> None:
-        # Output tensor: [B, n_masks, num_classes]; sample_dim=1 (mask axis).
-        model = masksembles(linear_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        # Output tensor: [B, num_masks, num_classes]; sample_dim=1 (mask axis).
+        model = masksembles(linear_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier")
         rep = representer(model)
         with torch.no_grad():
             out = rep.represent(torch.randn(5, 20))
-        assert out.tensor.tensor.shape == (5, N_MASKS, 10)
+        assert out.tensor.tensor.shape == (5, NUM_MASKS, 10)
         assert out.sample_dim == 1
 
     def test_quantify_yields_per_sample_scalar_uncertainty(self, linear_model) -> None:
-        model = masksembles(linear_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        model = masksembles(linear_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier")
         rep = representer(model)
         with torch.no_grad():
             out = rep.represent(torch.randn(7, 20))
@@ -145,39 +145,89 @@ class TestMasksemblesForward:
     """Tests for MasksemblesLinearLayer and Masksembles2DLayer forward."""
 
     def test_linear_layer_train_mode_preserves_shape(self) -> None:
-        layer = MasksemblesLinear(masks=generation_wrapper(16, N_MASKS, SCALE), features=16, n=N_MASKS, scale=SCALE)
+        layer = MasksemblesLinear(
+            masks=generation_wrapper(16, NUM_MASKS, SCALE), features=16, num_masks=NUM_MASKS, scale=SCALE
+        )
         layer.train()
         x = torch.randn(8, 16)
         out = layer(x)
         assert out.shape == x.shape
 
     def test_linear_layer_eval_mode_preserves_shape(self) -> None:
-        layer = MasksemblesLinear(masks=generation_wrapper(16, N_MASKS, SCALE), features=16, n=N_MASKS, scale=SCALE)
+        layer = MasksemblesLinear(
+            masks=generation_wrapper(16, NUM_MASKS, SCALE), features=16, num_masks=NUM_MASKS, scale=SCALE
+        )
         layer.eval()
-        x = torch.randn(N_MASKS * 8, 16)  # pre-tiled by n_masks
+        x = torch.randn(NUM_MASKS * 8, 16)  # pre-tiled by num_masks
         out = layer(x)
         assert out.shape == x.shape
 
+    def test_linear_layer_eval_mode_requires_tiled_batch(self) -> None:
+        layer = MasksemblesLinear(
+            masks=generation_wrapper(16, NUM_MASKS, SCALE), features=16, num_masks=NUM_MASKS, scale=SCALE
+        )
+        layer.eval()
+        with pytest.raises(ValueError, match="batch size divisible by num_masks"):
+            layer(torch.randn(6, 16))  # 6 % 4 != 0
+
+    def test_conv_layer_eval_mode_requires_tiled_batch(self) -> None:
+        layer = Masksembles2D(
+            masks=generation_wrapper(16, NUM_MASKS, SCALE), channels=16, num_masks=NUM_MASKS, scale=SCALE
+        )
+        layer.eval()
+        with pytest.raises(ValueError, match="batch size divisible by num_masks"):
+            layer(torch.randn(6, 16, 8, 8))  # 6 % 4 != 0
+
+    def test_linear_layer_train_mode_applies_one_mask_per_sample(self) -> None:
+        layer = MasksemblesLinear(
+            masks=generation_wrapper(16, NUM_MASKS, SCALE), features=16, num_masks=NUM_MASKS, scale=SCALE
+        )
+        layer.train()
+        out = layer(torch.ones(64, 16))
+        # With an all-ones input, each output row must equal one of the stored masks.
+        matches = (out.unsqueeze(1) == layer.masks.unsqueeze(0)).all(dim=-1)  # (64, n)
+        assert bool(matches.any(dim=1).all())
+        # With 64 samples and 4 masks, more than one distinct mask is drawn.
+        assert out.unique(dim=0).shape[0] > 1
+
+    def test_predict_masksembles_matches_per_mask_forward(self, linear_model) -> None:
+        model = masksembles(linear_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        assert isinstance(model, nn.Sequential)
+        x = torch.randn(5, 20)
+        with torch.no_grad():
+            sample = predict(model, x)
+
+        def forward_with_mask(i: int) -> torch.Tensor:
+            out = x
+            for layer in model:
+                for sub in layer if isinstance(layer, nn.Sequential) else [layer]:
+                    out = out * sub.masks[i] if isinstance(sub, MasksemblesLinear) else sub(out)
+            return out
+
+        with torch.no_grad():
+            expected = torch.stack([forward_with_mask(i) for i in range(NUM_MASKS)])
+        torch.testing.assert_close(sample.tensor, expected)
+
     def test_predict_masksembles_output_shape(self, linear_model) -> None:
-        model = masksembles(linear_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        model = masksembles(linear_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier")
         x = torch.randn(5, 20)
         with torch.no_grad():
             sample = predict(model, x)
         assert isinstance(sample, TorchSample)
-        assert sample.tensor.shape == (N_MASKS, 5, 10)
+        assert sample.tensor.shape == (NUM_MASKS, 5, 10)
         assert sample.sample_dim == 0
 
     def test_predict_masksembles_conv_output_shape(self, conv_model) -> None:
-        model = masksembles(conv_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        model = masksembles(conv_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier")
         x = torch.randn(3, 3, 8, 8)
         with torch.no_grad():
             sample = predict(model, x)
         assert isinstance(sample, TorchSample)
-        assert sample.tensor.shape == (N_MASKS, 3, 10)
+        assert sample.tensor.shape == (NUM_MASKS, 3, 10)
         assert sample.sample_dim == 0
 
     def test_predict_return_to_train_mode(self, linear_model) -> None:
-        model = masksembles(linear_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        model = masksembles(linear_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier")
         x = torch.randn(5, 20)
         model.train()
         with torch.no_grad():
@@ -185,44 +235,55 @@ class TestMasksemblesForward:
         assert model.training is True
 
     def test_predict_return_to_eval_mode(self, linear_model) -> None:
-        model = masksembles(linear_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        model = masksembles(linear_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier")
         x = torch.randn(5, 20)
         model.eval()
         with torch.no_grad():
             predict(model, x)
         assert model.training is False
 
+    def test_predict_restores_mode_on_error(self, linear_model) -> None:
+        model = masksembles(linear_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        model.train()
+        with pytest.raises(RuntimeError), torch.no_grad():
+            predict(model, torch.randn(5, 3))  # wrong feature dimension
+        assert model.training is True
+
 
 class TestMasksemblesLayerInsertion:
     """Tests that masksembles() inserts mask layers at the right positions."""
 
     def test_linear_layers_are_appended(self, linear_model) -> None:
-        model = masksembles(linear_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        model = masksembles(linear_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        assert isinstance(model, nn.Sequential)
         n_linear_original = count_layers(linear_model, nn.Linear)
         n_masked = count_layers(model, MasksemblesLinear)
         assert n_masked == n_linear_original - 1
         assert count_layers(model, MasksemblesLinear) > 0
 
     def test_last_linear_is_not_masked(self, linear_model) -> None:
-        model = masksembles(linear_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
-        n_linear_original = count_layers(linear_model, nn.Linear)
-        n_masked = count_layers(model, MasksemblesLinear)
-        assert n_masked == n_linear_original - 1
+        model = masksembles(linear_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        assert isinstance(model, nn.Sequential)
+        # The transformed model is flattened; the final module must be the untouched
+        # output Linear with no mask layer appended after it.
+        assert isinstance(list(model)[-1], nn.Linear)
 
     def test_conv_layers_are_appended(self, conv_model) -> None:
-        model = masksembles(conv_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
-        n_conv_original = count_layers(model, nn.Conv2d)
+        model = masksembles(conv_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        assert isinstance(model, nn.Sequential)
+        n_conv_original = count_layers(conv_model, nn.Conv2d)
         n_masked = count_layers(model, Masksembles2D)
         assert count_layers(model, Masksembles2D) > 0
         assert n_conv_original == n_masked
 
-    def test_n_masks_buffer_is_attached(self, linear_model) -> None:
-        model = masksembles(linear_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
-        assert hasattr(model, "n_masks")
-        assert int(model.n_masks) == N_MASKS
+    def test_num_masks_buffer_is_attached(self, linear_model) -> None:
+        model = masksembles(linear_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        assert isinstance(model, nn.Sequential)
+        assert hasattr(model, "num_masks")
+        assert model.num_masks == NUM_MASKS
 
     def test_result_is_masksembles_predictor(self, linear_model) -> None:
-        model = masksembles(linear_model, n_masks=N_MASKS, scale=SCALE, predictor_type="logit_classifier")
+        model = masksembles(linear_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier")
         assert isinstance(model, MasksemblesPredictor)
 
 
@@ -231,17 +292,17 @@ class TestWrapMasksemblesLogits:
 
     def test_transposes_sample_dim_from_0_to_1(self) -> None:
         # predict_masksembles returns sample_dim=0, shape [N, B, C].
-        raw = TorchSample(tensor=torch.randn(N_MASKS, 5, 10), sample_dim=0)
+        raw = TorchSample(tensor=torch.randn(NUM_MASKS, 5, 10), sample_dim=0)
         out = _wrap_masksembles_logits(raw)
         # After the transpose: shape [B, N, C], sample_dim=1.
         assert isinstance(out, TorchCategoricalDistributionSample)
         assert out.sample_dim == 1
-        assert out.tensor.tensor.shape == (5, N_MASKS, 10)
+        assert out.tensor.tensor.shape == (5, NUM_MASKS, 10)
 
     def test_no_transpose_when_sample_dim_is_not_0(self) -> None:
         # If sample_dim is already 1, no transpose should occur.
-        raw = TorchSample(tensor=torch.randn(5, N_MASKS, 10), sample_dim=1)
+        raw = TorchSample(tensor=torch.randn(5, NUM_MASKS, 10), sample_dim=1)
         out = _wrap_masksembles_logits(raw)
         assert isinstance(out, TorchCategoricalDistributionSample)
         assert out.sample_dim == 1
-        assert out.tensor.tensor.shape == (5, N_MASKS, 10)
+        assert out.tensor.tensor.shape == (5, NUM_MASKS, 10)

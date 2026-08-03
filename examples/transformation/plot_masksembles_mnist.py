@@ -36,16 +36,16 @@ images_test = (X_test.view(-1, 28, 28) * 255).byte()
 # Model
 # -----
 #
-# ``n_masks`` binary masks are generated and inserted after each linear layer.
+# ``num_masks`` binary masks are generated and inserted after each linear layer.
 # A larger ``scale`` reduces overlap (and thus correlation) between masks at
 # the cost of capacity per masked sub-network.
 
 base_model = MLPClassifier(in_features=28 * 28, hidden_features=256, out_features=10)
-n_masks = 4
+num_masks = 4
 masksembles_model = masksembles(
     base_model,
-    n_masks=n_masks, # The higher, the more similar to MC Dropout
-    scale=2.0, # The higher, the more similar to Ensemble
+    num_masks=num_masks,  # The higher, the more similar to MC Dropout
+    scale=2.0,  # The higher, the more similar to Ensemble
     predictor_type="logit_classifier",
 )
 
@@ -59,7 +59,6 @@ print(masksembles_model)
 # batch is masked independently with a uniformly random mask (dropout-style);
 # no manual batch tiling is needed.
 
-masksembles_model.train()
 opt = torch.optim.Adam(masksembles_model.parameters(), lr=1e-4)
 
 epochs = 5
@@ -79,18 +78,19 @@ for epoch in range(epochs):
         train_loss += loss.item() * X_flat.size(0)
         train_correct += (out.argmax(1) == y_batch).sum().item()
 
-    # Validation
-    masksembles_model.eval()
+    # Validation: ``predict`` tiles each batch by ``num_masks`` and returns one
+    # prediction per mask; averaging the per-mask probabilities gives the
+    # ensemble prediction. (A direct eval-mode forward would instead expect a
+    # batch that is already tiled by ``num_masks``.)
     val_loss, val_correct = 0, 0
     with torch.no_grad():
         for x_batch, y_batch in test_loader:
             X_flat = x_batch.view(-1, 28 * 28)
-            out = masksembles_model(X_flat)
-            loss = nn.functional.cross_entropy(out, y_batch)
+            mean_probs = predict(masksembles_model, X_flat).tensor.softmax(-1).mean(0)
+            loss = nn.functional.nll_loss(mean_probs.log(), y_batch)
             val_loss += loss.item() * X_flat.size(0)
-            val_correct += (out.argmax(1) == y_batch).sum().item()
+            val_correct += (mean_probs.argmax(1) == y_batch).sum().item()
 
-    masksembles_model.train()
     print(
         f"Epoch {epoch+1}/{epochs} "
         f"- Train loss: {train_loss/len(train_loader.dataset):.4f}, "
@@ -121,15 +121,15 @@ if uncertainty.ndim > 1:
 # Predictions
 # -----------
 #
-# ``predict`` tiles the input by ``n_masks`` internally and returns a
-# ``TorchSample`` of shape ``[n_masks, N, num_classes]`` — one slice per mask.
+# ``predict`` tiles the input by ``num_masks`` internally and returns a
+# ``TorchSample`` of shape ``[num_masks, N, num_classes]`` — one slice per mask.
 # Softmax converts logits to probabilities; averaging over masks gives the
 # mean predictive distribution used for the final class prediction.
 
 with torch.no_grad():
-    sample = predict(masksembles_model, X_test)              # TorchSample [n_masks, N, 10]
+    sample = predict(masksembles_model, X_test)              # TorchSample [num_masks, N, 10]
 
-member_probs = sample.tensor.softmax(-1).numpy()             # [n_masks, N, 10]
+member_probs = sample.tensor.softmax(-1).numpy()             # [num_masks, N, 10]
 mean_probs = member_probs.mean(axis=0)                       # [N, 10]
 
 accuracy = (mean_probs.argmax(-1) == y_test.numpy()).mean() * 100
