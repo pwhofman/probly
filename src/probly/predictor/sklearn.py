@@ -18,6 +18,7 @@ from ._common import (
     CategoricalDistributionPredictor,
     GaussianDistributionPredictor,
     LogitDistributionPredictor,
+    RepresentationPredictor,
     predict_raw,
 )
 
@@ -91,8 +92,13 @@ def _sklearn_binary_logit_prediction[**In](predictor: BaseEstimator, *args: In.a
 
 
 @predict_raw.register(BaseEstimator)
-def predict_sklearn[**In](predictor: BaseEstimator, /, *args: In.args, **kwargs: In.kwargs) -> Any:  # noqa: ANN401
+def predict_sklearn[**In](predictor: BaseEstimator, /, *args: In.args, **kwargs: In.kwargs) -> Any:  # noqa: ANN401, PLR0911
     """Predict for sklearn estimators."""
+    # Representation predictors take priority over their distribution/label surfaces,
+    # matching the branch order of the generic predict_raw fallback in _common.py.
+    if isinstance(predictor, RepresentationPredictor) and hasattr(predictor, "predict_representation"):
+        return predictor.predict_representation(*args, **kwargs)  # ty:ignore[call-non-callable]
+
     if isinstance(predictor, BernoulliLogitDistributionPredictor):
         return _sklearn_binary_logit_prediction(predictor, *args, **kwargs)
 
