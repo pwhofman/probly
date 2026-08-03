@@ -19,6 +19,9 @@ if TYPE_CHECKING:
 
 REPO_ROOT_HELPERS = Path(__file__).resolve().parents[2]
 
+# Seed applied to every gallery example; see seed_gallery_rngs.
+GALLERY_SEED = 0
+
 
 def _resolve_dotted(qualified_name: str) -> object | None:
     """Resolve a dotted name to a module or a module attribute, or None."""
@@ -85,8 +88,9 @@ def scrub_external_dependencies(app: Sphinx, env: BuildEnvironment) -> None:
     """Drop recorded page dependencies on installed packages.
 
     CI recreates the venv each run with fresh mtimes, which would re-read
-    every page depending on a site-packages file. Safe to drop: package
-    upgrades change ``uv.lock``, which forces a cold build via the cache key.
+    every page depending on a site-packages file. Safe to drop: upgrading a
+    package the docs import changes the docs build cache key, which forces a
+    cold build.
 
     Args:
         app: The Sphinx application (unused).
@@ -100,6 +104,33 @@ def scrub_external_dependencies(app: Sphinx, env: BuildEnvironment) -> None:
             if "site-packages" in full.parts or not full.is_relative_to(REPO_ROOT_HELPERS):
                 external.add(dep)
         deps.difference_update(external)
+
+
+def seed_gallery_rngs(gallery_conf: dict, fname: str | None) -> None:  # noqa: ARG001
+    """Seed the global random number generators before each gallery example.
+
+    Registered in ``sphinx_gallery_conf["reset_modules"]``, so it runs in the
+    worker process that executes the example. Most examples that train a model
+    never seed anything, which makes the gallery a lottery: an unlucky
+    initialization can send an optimizer to NaN and fail the whole build (the
+    heteroscedastic VBLL objective is the known offender). Examples that seed
+    themselves are unaffected, since their own call runs after this one.
+
+    Args:
+        gallery_conf: The sphinx-gallery configuration (unused).
+        fname: The example about to run, or None between directories (unused).
+    """
+    import random  # noqa: PLC0415
+
+    import numpy as np  # noqa: PLC0415
+
+    random.seed(GALLERY_SEED)
+    np.random.seed(GALLERY_SEED)  # noqa: NPY002, seeds the legacy global RNG the examples use
+    try:
+        import torch  # noqa: PLC0415
+    except ImportError:  # docs can be built without the torch dependency group
+        return
+    torch.manual_seed(GALLERY_SEED)
 
 
 def ignore_installed_template_mtimes(app: Sphinx) -> None:

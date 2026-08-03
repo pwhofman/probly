@@ -208,10 +208,12 @@ def _natural_posterior_network_builder(
     ``class_counts`` -- the per-class evidence is produced by the trainable
     classifier head, not from training-set frequencies.
     """
+    extra = {"in_features": ctx.in_features} if ctx.in_features is not None else {}
     encoder = models.get_base_model(
         f"{ctx.base_model_name}_encoder",
         ctx.num_classes,
         ctx.pretrained,
+        **extra,
     )
     return method_fn(
         encoder,
@@ -250,10 +252,12 @@ def _subensemble_builder(
     pass before fitting the heads, training the (still-frozen) encoder weights
     via a temporary ``Sequential(encoder, warmup_head)`` model.
     """
+    extra = {"in_features": ctx.in_features} if ctx.in_features is not None else {}
     encoder = models.get_base_model(
         f"{ctx.base_model_name}_encoder",
         ctx.num_classes,
         ctx.pretrained,
+        **extra,
     )
     feature_dim = get_output_dim(encoder)
     method_params = dict(params)
@@ -277,7 +281,8 @@ def _laplace_builder(
     ``Laplace(...)`` is laplace-torch's factory function (not a class) and does not accept ``predictor_type``;
     we drop it and forward the remaining yaml params as keyword arguments.
     """
-    base = models.get_base_model(ctx.base_model_name, ctx.num_classes, ctx.pretrained)
+    extra = {"in_features": ctx.in_features} if ctx.in_features is not None else {}
+    base = models.get_base_model(ctx.base_model_name, ctx.num_classes, ctx.pretrained, **extra)
     return method_fn(base, **_filter_params(method_fn, params))
 
 
