@@ -176,8 +176,21 @@ class SklearnMahalanobisPredictor(
         self.predictor = predictor
         self.feature_nodes = feature_nodes
         self.input_preprocessing_eps = input_preprocessing_eps
+        self._rebuild()
 
-        if input_preprocessing_eps > 0:
+    def _rebuild(self) -> None:
+        """Validate the public parameters and derive the Mahalanobis state from them.
+
+        Called from ``__init__`` and after ``set_params`` so the derived state
+        (class mapping, feature sources, unfitted heads and default combiner)
+        never goes stale relative to the public parameters.
+
+        Raises:
+            ValueError: If ``input_preprocessing_eps`` is positive, if the base
+                estimator exposes no ``classes_``, or if ``feature_nodes`` names a
+                layer the estimator does not expose.
+        """
+        if self.input_preprocessing_eps > 0:
             msg = (
                 "The FGSM-style input preprocessing of the Mahalanobis detector needs gradients with respect to the "
                 "input, which sklearn estimators do not provide. Use input_preprocessing_eps=0, or apply the "
@@ -185,20 +198,20 @@ class SklearnMahalanobisPredictor(
             )
             raise ValueError(msg)
 
-        classes = getattr(predictor, "classes_", None)
+        classes = getattr(self.predictor, "classes_", None)
         if classes is None:
             msg = (
-                f"The estimator of type {type(predictor).__name__} is not fitted. The sklearn Mahalanobis backend "
-                "inspects the fitted estimator to expose its features and classes, so call fit() on the base "
-                "estimator before applying mahalanobis()."
+                f"The estimator of type {type(self.predictor).__name__} exposes no classes_ attribute, so it is "
+                "either not fitted or not a classifier. The sklearn Mahalanobis backend inspects the fitted "
+                "classifier to expose its features and classes, so fit a classifier before applying mahalanobis()."
             )
             raise ValueError(msg)
 
         self._classes = np.asarray(classes)
         self._num_classes = len(self._classes)
-        self._feature_nodes = list(feature_nodes) if feature_nodes is not None else []
+        self._feature_nodes = list(self.feature_nodes) if self.feature_nodes is not None else []
 
-        encoder, head, intermediate = _resolve_feature_sources(predictor, self._feature_nodes)
+        encoder, head, intermediate = _resolve_feature_sources(self.predictor, self._feature_nodes)
         self.encoder = encoder
         self.classification_head = head
         # Intermediate nodes come first and the penultimate features last, matching the torch backend.
@@ -208,6 +221,19 @@ class SklearnMahalanobisPredictor(
         # Default combiner: negated sum of per-layer confidences (high score => out-of-distribution).
         self.combiner_weight = -np.ones(len(self._feature_sources))
         self.combiner_bias = np.zeros(())
+
+    def set_params(self, **params: object) -> SklearnMahalanobisPredictor:
+        """Set constructor parameters and rebuild the derived Mahalanobis state.
+
+        sklearn's default ``set_params`` only assigns attributes, which would
+        leave the feature sources and class mapping stale (and skip validation).
+        Rebuilding drops fitted heads and resets the combiner, so the predictor
+        must be refitted after a parameter change.
+        """
+        super().set_params(**params)
+        if params:
+            self._rebuild()
+        return self
 
     def __sklearn_clone__(self) -> SklearnMahalanobisPredictor:
         """Clone the wrapper while keeping the same fitted base estimator.
@@ -255,15 +281,22 @@ class SklearnMahalanobisPredictor(
     def _encode_labels(self, labels: object) -> np.ndarray:
         """Map labels onto the class indices ``[0, num_classes)`` used by the Mahalanobis heads.
 
-        Labels the base estimator never saw are mapped to ``num_classes``, i.e. out
-        of range, so that fitting fails with a clear error rather than silently
-        dropping them.
+        Raises:
+            ValueError: If any label was never seen by the base estimator, rather
+                than silently dropping those samples.
         """
         label_array = np.asarray(labels)
         positions = np.searchsorted(self._classes, label_array)
         clipped = np.clip(positions, 0, self._num_classes - 1)
         known = self._classes[clipped] == label_array
-        return np.where(known, clipped, self._num_classes)
+        if not bool(np.all(known)):
+            unknown = np.unique(label_array[~known])
+            msg = (
+                f"Labels {unknown.tolist()} were never seen by the base estimator; its known classes are "
+                f"{self._classes.tolist()}. Mahalanobis heads can only be fitted on known classes."
+            )
+            raise ValueError(msg)
+        return clipped
 
     def fit_mahalanobis_heads(
         self,
@@ -289,7 +322,8 @@ class SklearnMahalanobisPredictor(
 
         heads = [ArrayMahalanobisHead(self._num_classes, feat.shape[-1]) for feat in feats]
         for head, feat in zip(heads, feats, strict=True):
-            head.fit(feat, encoded, covariance_estimator=clone(estimator))
+            # safe=False deep-copies duck-typed covariance estimators that are not sklearn estimators.
+            head.fit(feat, encoded, covariance_estimator=clone(estimator, safe=False))
         self.mahalanobis_heads = heads
 
     def fit_combiner(
@@ -311,8 +345,10 @@ class SklearnMahalanobisPredictor(
             id_features: In-distribution inputs fed to the encoder.
             ood_features: Out-of-distribution inputs fed to the encoder.
             cv: Number of cross-validation folds. Defaults to at most 5, capped by
-                the smaller of the two sample counts. With fewer than two samples
-                per side an uncross-validated ``LogisticRegression`` is used.
+                the smaller of the two sample counts; with fewer than two samples
+                per side the default falls back to an uncross-validated
+                ``LogisticRegression``. An explicitly given ``cv`` is always used,
+                leaving any infeasibility for sklearn to report.
             **combiner_kwargs: Extra keyword arguments forwarded to the logistic
                 regression.
         """
@@ -323,7 +359,7 @@ class SklearnMahalanobisPredictor(
 
         smallest_split = min(len(id_scores), len(ood_scores))
         combiner: LogisticRegression | LogisticRegressionCV
-        if smallest_split < 2:
+        if cv is None and smallest_split < 2:
             combiner = LogisticRegression(**combiner_kwargs)
         else:
             folds = cv if cv is not None else max(2, min(5, smallest_split))
@@ -357,19 +393,3 @@ class SklearnMahalanobisPredictor(
             msg = f"Wrapped predictor {type(self.predictor)} has no predict method."
             raise AttributeError(msg)
         return predict_method(*args, **kwargs)
-
-
-@predict_raw.register(SklearnMahalanobisPredictor)
-def predict_raw_sklearn_mahalanobis(
-    predictor: SklearnMahalanobisPredictor,
-    /,
-    *args: object,
-    **kwargs: object,
-) -> ArrayMahalanobisRepresentation:
-    """Return the Mahalanobis representation for the wrapper.
-
-    Without this registration the wrapper would inherit the generic
-    ``BaseEstimator`` handler in :mod:`probly.predictor.sklearn`, which returns
-    class labels and never reaches ``predict_representation``.
-    """
-    return predictor.predict_representation(*args, **kwargs)

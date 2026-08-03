@@ -15,7 +15,7 @@ pytest.importorskip("sklearn")
 from flextype import registry_pickle
 from sklearn.base import clone
 from sklearn.datasets import make_moons
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -92,8 +92,15 @@ class TestTransformation:
 
     def test_unfitted_estimator_raises(self) -> None:
         """The backend inspects the fitted estimator, so an unfitted base is rejected."""
-        with pytest.raises(ValueError, match="is not fitted"):
-            mahalanobis(MLPClassifier(), predictor_type="logit_classifier")
+        with pytest.raises(ValueError, match="not fitted or not a classifier"):
+            mahalanobis(MLPClassifier())
+
+    def test_fitted_regressor_raises(self, train_data: tuple[np.ndarray, np.ndarray]) -> None:
+        """A fitted regressor exposes no classes_ and is rejected, not reported as unfitted."""
+        x, y = train_data
+        regressor = LinearRegression().fit(x, y.astype(float))
+        with pytest.raises(ValueError, match="not fitted or not a classifier"):
+            mahalanobis(regressor)
 
     def test_input_preprocessing_raises(self, mlp: MLPClassifier) -> None:
         """FGSM preprocessing needs input gradients, which sklearn cannot provide."""
@@ -210,11 +217,21 @@ class TestFitAndPredict:
         assert np.any(out.mahalanobis_heads[0].means != 0)
 
     def test_unknown_labels_raise(self, mlp: MLPClassifier, train_data: tuple[np.ndarray, np.ndarray]) -> None:
-        """Labels the base estimator never saw leave the covariance undefined."""
+        """Labels the base estimator never saw are rejected."""
         x, _ = train_data
         out = mahalanobis(mlp)
-        with pytest.raises(ValueError, match="no labelled samples"):
+        with pytest.raises(ValueError, match="never seen"):
             out.fit_mahalanobis_heads(x, np.full(len(x), NUM_CLASSES))
+
+    def test_partially_unknown_labels_raise(
+        self, mlp: MLPClassifier, train_data: tuple[np.ndarray, np.ndarray]
+    ) -> None:
+        """A single unknown label raises instead of being silently dropped."""
+        x, y = train_data
+        labels = y.copy()
+        labels[0] = NUM_CLASSES
+        with pytest.raises(ValueError, match=rf"Labels \[{NUM_CLASSES}\] were never seen"):
+            mahalanobis(mlp).fit_mahalanobis_heads(x, labels)
 
     def test_predict_before_fit_raises(self, mlp: MLPClassifier, train_data: tuple[np.ndarray, np.ndarray]) -> None:
         """Predicting before the heads are fitted reports what is missing."""
@@ -229,6 +246,23 @@ class TestFitAndPredict:
         direct = mahalanobis(mlp)
         direct.fit_mahalanobis_heads(x, y)
         np.testing.assert_allclose(predict(via_alias, x).layer_scores, predict(direct, x).layer_scores)
+
+    def test_duck_typed_covariance_estimator(
+        self, mlp: MLPClassifier, train_data: tuple[np.ndarray, np.ndarray]
+    ) -> None:
+        """A protocol-satisfying non-sklearn covariance estimator is accepted."""
+
+        class DuckCovariance:
+            precision_: np.ndarray
+
+            def fit(self, features: np.ndarray, /) -> DuckCovariance:
+                self.precision_ = np.eye(features.shape[1])
+                return self
+
+        x, y = train_data
+        out = mahalanobis(mlp)
+        out.fit_mahalanobis_heads(x, y, covariance_estimator=DuckCovariance())
+        np.testing.assert_allclose(out.mahalanobis_heads[0].precision, np.eye(HIDDEN_SIZES[-1]))
 
 
 # ---------------------------------------------------------------------------
@@ -270,6 +304,19 @@ class TestCombiner:
         assert out.combiner_weight.shape == (1,)
         assert np.isfinite(out.combiner_bias)
 
+    def test_fit_combiner_honours_explicit_cv(
+        self, mlp: MLPClassifier, train_data: tuple[np.ndarray, np.ndarray], ood_data: np.ndarray
+    ) -> None:
+        """An explicitly given cv reaches the cross-validated combiner instead of the fallback."""
+        x, y = train_data
+        out = mahalanobis(mlp)
+        out.fit_mahalanobis_heads(x, y)
+        # Only the cross-validation split warns about the 1-member class; the
+        # uncross-validated fallback would fit silently.
+        with pytest.warns(UserWarning, match="least populated class"):
+            out.fit_combiner(x, ood_data[:1], cv=2)
+        assert np.isfinite(out.combiner_weight).all()
+
 
 # ---------------------------------------------------------------------------
 # sklearn estimator contracts
@@ -295,6 +342,23 @@ class TestEstimatorContracts:
         cloned = clone(out)
         assert cloned.predictor is mlp
         assert cloned.mahalanobis_heads == []
+
+    def test_set_params_rebuilds_derived_state(
+        self, mlp: MLPClassifier, train_data: tuple[np.ndarray, np.ndarray]
+    ) -> None:
+        """set_params re-derives the feature sources and drops the fitted heads."""
+        x, y = train_data
+        out = mahalanobis(mlp)
+        out.fit_mahalanobis_heads(x, y)
+        out.set_params(feature_nodes=["hidden_0"])
+        assert out.combiner_weight.shape == (2,)
+        assert out.mahalanobis_heads == []
+
+    def test_set_params_revalidates(self, mlp: MLPClassifier) -> None:
+        """set_params runs the same validation as the constructor."""
+        out = mahalanobis(mlp)
+        with pytest.raises(ValueError, match="input preprocessing"):
+            out.set_params(input_preprocessing_eps=0.1)
 
     def test_registry_pickle_roundtrip_reproduces_predictions(
         self, mlp: MLPClassifier, train_data: tuple[np.ndarray, np.ndarray]
