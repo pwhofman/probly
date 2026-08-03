@@ -18,7 +18,7 @@ from probly.decider import categorical_from_mean
 from probly.predictor import predict
 from probly.quantification import quantify
 
-from ._metrics import area_under_risk_coverage, auroc, to_numpy
+from ._metrics import area_under_risk_coverage, auroc, expected_calibration_error, to_numpy
 from ._report import DiagnosticReport, DiagnosticResult, Verdict
 
 if TYPE_CHECKING:
@@ -29,6 +29,7 @@ _ADDITIVITY_RTOL = 1e-3
 _AURC_PASS_RATIO = 0.95
 _BASELINE_WARN_RATIO = 1.05
 _BASELINE_FAIL_RATIO = 1.25
+_AURC_ABS_TOL = 1e-4
 _OOD_PASS_AUROC = 0.6
 _OOD_FAIL_AUROC = 0.4
 
@@ -92,21 +93,19 @@ def _check_ood(uncertainty_id: np.ndarray, uncertainty_ood: np.ndarray) -> Diagn
 
 
 def _check_against_baseline(
-    baseline: Predictor,
-    inputs: Any,  # noqa: ANN401
+    baseline_probabilities: np.ndarray,
     targets: np.ndarray,
     method_aurc: float,
 ) -> DiagnosticResult:
     name = "baseline_selective_prediction"
-    probabilities = _as_probabilities(predict(baseline, inputs))
+    probabilities = baseline_probabilities
     errors = (probabilities.argmax(axis=-1) != targets).astype(float)
     if errors.mean() == 0.0:
         return _skip(name, "baseline makes no errors on the test data")
     baseline_aurc = area_under_risk_coverage(1.0 - probabilities.max(axis=-1), errors)
-    ratio = method_aurc / max(baseline_aurc, 1e-12)
-    if ratio <= _BASELINE_WARN_RATIO:
+    if method_aurc <= baseline_aurc * _BASELINE_WARN_RATIO + _AURC_ABS_TOL:
         verdict = Verdict.PASS
-    elif ratio <= _BASELINE_FAIL_RATIO:
+    elif method_aurc <= baseline_aurc * _BASELINE_FAIL_RATIO + _AURC_ABS_TOL:
         verdict = Verdict.WARN
     else:
         verdict = Verdict.FAIL
@@ -135,7 +134,14 @@ def diagnose(
         The diagnostic report.
     """
     results: list[DiagnosticResult] = []
-    downstream = ["decomposition_additivity", "selective_prediction", "ood_separation", "baseline_selective_prediction"]
+    downstream = [
+        "accuracy",
+        "ece",
+        "decomposition_additivity",
+        "selective_prediction",
+        "ood_separation",
+        "baseline_selective_prediction",
+    ]
 
     try:
         representation = method.represent(inputs)
@@ -149,16 +155,41 @@ def diagnose(
         return DiagnosticReport(tuple(results))
     results.append(DiagnosticResult(name="pipeline", verdict=Verdict.PASS, detail="represent and quantify succeeded"))
 
-    results.append(_check_decomposition(decomposition))
-
     targets = to_numpy(targets)
+    baseline_probabilities = None if baseline is None else _as_probabilities(predict(baseline, inputs))
+
     method_aurc = None
     try:
         probabilities = to_numpy(categorical_from_mean(representation).probabilities)
     except NotImplementedError:
+        results += [_skip(name, "no categorical decision available") for name in ("accuracy", "ece")]
+        results.append(_check_decomposition(decomposition))
         results.append(_skip("selective_prediction", "no categorical decision available"))
     else:
         errors = (probabilities.argmax(axis=-1) != targets).astype(float)
+        baseline_accuracy = baseline_ece = None
+        if baseline_probabilities is not None:
+            baseline_accuracy = float((baseline_probabilities.argmax(axis=-1) == targets).mean())
+            baseline_ece = expected_calibration_error(baseline_probabilities, targets)
+        results.append(
+            DiagnosticResult(
+                name="accuracy",
+                verdict=Verdict.INFO,
+                value=1.0 - float(errors.mean()),
+                reference=baseline_accuracy,
+                detail="accuracy of the mean prediction (reference: baseline)",
+            )
+        )
+        results.append(
+            DiagnosticResult(
+                name="ece",
+                verdict=Verdict.INFO,
+                value=expected_calibration_error(probabilities, targets),
+                reference=baseline_ece,
+                detail="expected calibration error of the mean prediction (reference: baseline)",
+            )
+        )
+        results.append(_check_decomposition(decomposition))
         selective = _check_selective_prediction(uncertainty, errors)
         method_aurc = selective.value
         results.append(selective)
@@ -172,11 +203,11 @@ def diagnose(
         except Exception as error:  # noqa: BLE001
             results.append(_skip("ood_separation", f"{type(error).__name__}: {error}"))
 
-    if baseline is None:
+    if baseline_probabilities is None:
         results.append(_skip("baseline_selective_prediction", "no baseline given"))
     elif method_aurc is None:
         results.append(_skip("baseline_selective_prediction", "method AURC unavailable"))
     else:
-        results.append(_check_against_baseline(baseline, inputs, targets, method_aurc))
+        results.append(_check_against_baseline(baseline_probabilities, targets, method_aurc))
 
     return DiagnosticReport(tuple(results))

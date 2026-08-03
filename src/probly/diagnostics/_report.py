@@ -13,6 +13,7 @@ class Verdict(Enum):
     WARN = "warn"
     FAIL = "fail"
     SKIP = "skip"
+    INFO = "info"
 
 
 @dataclass(frozen=True)

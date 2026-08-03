@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 from typing import Any
 
 import numpy as np
@@ -19,6 +20,19 @@ def area_under_risk_coverage(uncertainty: np.ndarray, errors: np.ndarray) -> flo
     order = np.argsort(uncertainty, kind="stable")
     risks = np.cumsum(errors[order]) / np.arange(1, len(errors) + 1)
     return float(risks.mean())
+
+
+def expected_calibration_error(probabilities: np.ndarray, targets: np.ndarray, num_bins: int = 15) -> float:
+    """Expected calibration error of the maximum-probability prediction."""
+    confidences = probabilities.max(axis=-1)
+    correct = (probabilities.argmax(axis=-1) == targets).astype(float)
+    edges = np.linspace(0.0, 1.0, num_bins + 1)
+    ece = 0.0
+    for low, high in itertools.pairwise(edges):
+        mask = (confidences > low) & (confidences <= high)
+        if mask.any():
+            ece += mask.mean() * abs(confidences[mask].mean() - correct[mask].mean())
+    return float(ece)
 
 
 def _average_ranks(values: np.ndarray) -> np.ndarray:

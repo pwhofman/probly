@@ -39,12 +39,19 @@ def test_report_structure(setup: dict) -> None:
     names = [result.name for result in report.results]
     assert names == [
         "pipeline",
+        "accuracy",
+        "ece",
         "decomposition_additivity",
         "selective_prediction",
         "ood_separation",
         "baseline_selective_prediction",
     ]
     assert report["pipeline"].verdict is Verdict.PASS
+    assert report["accuracy"].verdict is Verdict.INFO
+    assert 0.0 <= report["accuracy"].value <= 1.0
+    assert report["accuracy"].reference is not None
+    assert report["ece"].verdict is Verdict.INFO
+    assert 0.0 <= report["ece"].value <= 1.0
     assert report["decomposition_additivity"].verdict is not Verdict.SKIP
     assert report["ood_separation"].value is not None
     assert str(report)
@@ -55,6 +62,7 @@ def test_skips_without_optional_inputs(setup: dict) -> None:
         report = diagnose(setup["rep"], setup["x"], setup["y"])
     assert report["ood_separation"].verdict is Verdict.SKIP
     assert report["baseline_selective_prediction"].verdict is Verdict.SKIP
+    assert report["accuracy"].reference is None
 
 
 def test_pipeline_failure_is_reported() -> None:
