@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61.0", "wheel", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -42,8 +42,12 @@ classifiers = [
 where = ["./src"]
 include = ["probly", "probly.*", "pytraverse*"]
 
+# The version is derived from the latest git tag instead of being written by
+# hand, so cutting a release only means tagging it. See issue #573.
+[tool.setuptools_scm]
+version_file = "src/probly/_version.py"
+
 [tool.setuptools.dynamic]
-version = { attr = "probly.__version__" }
 readme = { file = [
     "README.md",
     "CHANGELOG.md",

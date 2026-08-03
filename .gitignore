@@ -309,6 +309,9 @@ data/
 # Scratch scripts (one-off tests, quick experiments)
 scratch/
 
+# Written by setuptools-scm at build/install time
+src/probly/_version.py
+
 # Paper (synced via Overleaf git)
 paper/
 paper_artifacts/

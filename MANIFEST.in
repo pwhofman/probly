@@ -1,1 +1,14 @@
 graft stubs
+
+# setuptools-scm adds every git-tracked file to the sdist; keep only what the
+# package build needs (src/, stubs/, and the root metadata files).
+prune tests
+prune docs
+prune examples
+prune experiments
+prune scripts
+prune .github
+prune .claude
+prune .opencode
+exclude .editorconfig .gitignore .pre-commit-config.yaml .python-version
+exclude AGENTS.md CLAUDE.md uv.lock
