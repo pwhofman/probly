@@ -1,10 +1,9 @@
+# pyright: reportInvalidTypeForm=false
 """Protocols and base classes for JAX-like array objects.
 
-This module mirrors :mod:`probly.representation.torch_like`. The one structural difference is
-that JAX has no counterpart to ``torch.overrides``: ``jax.numpy`` functions cannot be intercepted
-by custom objects. The override machinery therefore lives in
-:mod:`probly.representation.jax_functions`, and the concrete methods below are written in terms of
-its wrappers so that subclasses only have to implement ``__jax_function__``.
+The concrete methods below are written in terms of the wrappers in
+:mod:`probly.representation.jax_functions`, so subclasses only have to implement
+``__jax_function__``.
 """
 
 from __future__ import annotations
@@ -62,13 +61,8 @@ class JaxLike[DT](ArrayLike[DT], Protocol):
     """Protocol for array-like objects that implement JAX-specific APIs.
 
     Every member declared here also exists on a real ``jax.Array``, otherwise
-    ``isinstance(jnp.ones(3), JaxLike)`` would silently be False.
-
-    Deliberate deviation from ``TorchLike``: ``__jax_function__`` is *not* part of this protocol.
-    ``torch.Tensor`` really does implement ``__torch_function__``, but ``jax.Array`` has no
-    ``__jax_function__``, so requiring it would exclude plain JAX arrays. The hook is declared on
-    :class:`JaxLikeImplementation` instead. For the same reason ``mH``, ``numpy`` and ``detach``
-    are dropped: JAX arrays are immutable and carry no autograd tape.
+    ``isinstance(jnp.ones(3), JaxLike)`` would silently be False. That rules out
+    ``__jax_function__``, which is declared on :class:`JaxLikeImplementation` instead.
     """
 
     @property
@@ -125,19 +119,15 @@ class JaxLikeImplementation[DT](ArrayLike[DT], ABC):
     """ABC implementation for array-like objects that behave like JAX arrays.
 
     Subclasses only have to implement ``__jax_function__`` plus the few members that cannot be
-    expressed generically. Every concrete method below is written in terms of the wrappers in
-    :mod:`probly.representation.jax_functions`, so it routes back into ``__jax_function__``.
+    expressed generically. Every concrete method below routes through the wrappers in
+    :mod:`probly.representation.jax_functions` and thus back into ``__jax_function__``.
 
-    Concrete (non-abstract) subclasses are additionally registered as JAX pytree nodes, which is
-    what makes ``jax.jit``, ``jax.vmap``, ``jax.grad`` and ``jax.tree`` work on them. Pytree
-    registration is *not* a substitute for the override machinery: ``jnp.sum(obj)`` still raises
-    for a registered pytree, which is why both mechanisms exist.
+    Concrete (non-abstract) subclasses are additionally registered as JAX pytree nodes, which makes
+    ``jax.jit``, ``jax.vmap``, ``jax.grad`` and ``jax.tree`` work on them. This does not replace the
+    override machinery: ``jnp.sum(obj)`` still raises for a registered pytree.
 
-    ``at`` is deliberately absent here. It is the JAX stand-in for ``__setitem__``, and an indexed
-    update has no single meaning across fields with different batch semantics (a weighted sample
-    indexes its weights differently from its values; a protected-axis object must pad the index
-    with its trailing axes). ``TorchLikeImplementation`` leaves ``__setitem__`` to its subclasses
-    for exactly the same reason, so subclasses define ``at``.
+    ``at``, the JAX stand-in for ``__setitem__``, is left to subclasses: an indexed update has no
+    single meaning across fields with different batch semantics.
     """
 
     def __init_subclass__(cls, **kwargs: object) -> None:
@@ -252,9 +242,8 @@ class JaxLikeImplementation[DT](ArrayLike[DT], ABC):
     def stop_gradient(self) -> Self:
         """Return a copy detached from the autodiff graph.
 
-        This is the JAX equivalent of ``torch.Tensor.detach``: JAX arrays carry no autograd tape,
-        so gradient flow is cut with ``jax.lax.stop_gradient`` instead. Subclasses holding NumPy
-        sidecar fields should override this to leave those fields untouched.
+        Subclasses holding NumPy sidecar fields should override this to leave those fields
+        untouched.
 
         Returns:
             A copy through which gradients do not propagate.

@@ -1,3 +1,4 @@
+# pyright: reportInvalidTypeForm=false
 """Numpy-based sample representation."""
 
 from __future__ import annotations

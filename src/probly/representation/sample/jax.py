@@ -1,3 +1,4 @@
+# pyright: reportInvalidTypeForm=false
 """JAX sample implementation."""
 
 from __future__ import annotations
@@ -199,7 +200,7 @@ class JaxArraySample(JaxLikeImplementation[jax.Array], Sample[jax.Array]):
         self,
         dtype: DTypeLike | None,
         copy: bool = False,
-        device: Device | Sharding | None = None,  # pyright: ignore[reportInvalidTypeForm]
+        device: Device | Sharding | None = None,
     ) -> Self:
         """Cast the underlying array to a new data type.
 
@@ -364,7 +365,7 @@ class JaxArraySample(JaxLikeImplementation[jax.Array], Sample[jax.Array]):
     @override
     def to_device(
         self,
-        device: Device | Sharding,  # pyright: ignore[reportInvalidTypeForm]
+        device: Device | Sharding,
         /,
         *,
         stream: int | Any | None = None,
@@ -422,7 +423,7 @@ class JaxArraySample(JaxLikeImplementation[jax.Array], Sample[jax.Array]):
         dtype: DTypeLike | None = None,
         /,
         *,
-        device: Device | Sharding | None = None,  # pyright: ignore[reportInvalidTypeForm]
+        device: Device | Sharding | None = None,
         copy: bool = False,
     ) -> JaxLikeImplementation[Any]:
         """Convert to a JaxLike.

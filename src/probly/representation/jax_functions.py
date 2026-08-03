@@ -1,23 +1,15 @@
+# pyright: reportInvalidTypeForm=false
 """Override machinery and ``jax.numpy`` mirroring wrappers.
 
-Torch offers ``torch.overrides`` and NumPy offers ``__array_function__``, so a custom array-like
-object can intercept ``torch.reshape(obj, ...)`` or ``np.reshape(obj, ...)``. JAX offers neither:
-``jnp.reshape(custom_obj, ...)`` cannot be intercepted at all. ``__jax_array__`` is no longer
-honored during abstractification, and registering a class as a pytree only makes ``jax.jit``,
-``jax.vmap`` and ``jax.tree`` work, never ``jnp.sum(custom_obj)``.
+``jnp.reshape(custom_obj, ...)`` cannot be intercepted by a custom array-like object: JAX has no
+override protocol, ``__jax_array__`` is no longer honored, and pytree registration only covers
+``jax.jit``, ``jax.vmap`` and ``jax.tree``. This module supplies the missing piece: a
+``__jax_function__`` hook with :func:`has_jax_function` and :func:`handle_jax_function`, plus thin
+wrappers over the ``jax.numpy`` functions probly needs. Call ``jax_reshape(x, ...)`` instead of
+``jnp.reshape(x, ...)`` so custom objects get a say.
 
-This module therefore owns the override protocol that torch gets for free. It defines a
-``__jax_function__`` hook together with :func:`has_jax_function` and :func:`handle_jax_function`
-(same contract as ``torch.overrides``), plus thin wrappers that mirror the ``jax.numpy`` functions
-probly needs. Call sites inside probly use ``jax_reshape(x, ...)`` where torch code would write
-``torch.reshape(x, ...)``; everything downstream then behaves like the torch implementations.
-
-The only behavior callers see differently from the torch backend: ``jnp.reshape(custom_obj, ...)``
-raises, while :func:`jax_reshape` works. That is a JAX limitation, not a design choice.
-
-The override machinery duck-types on ``__jax_function__`` being defined on the argument's *type*,
-so this module never imports :mod:`probly.representation.jax_like` and the import graph stays
-one-way.
+Dispatch duck-types on ``__jax_function__`` being defined on the argument's *type*, so this module
+never imports :mod:`probly.representation.jax_like` and the import graph stays one-way.
 """
 
 from __future__ import annotations
@@ -44,8 +36,7 @@ def _overloaded_args(relevant_args: Iterable[object]) -> list[object]:
         if arg is None or not hasattr(arg_type, "__jax_function__") or arg_type in overloaded_types:
             continue
 
-        # Subclasses get a chance to handle the call before their base classes, mirroring
-        # the ordering rules of ``torch.overrides`` and ``__array_function__``.
+        # Subclasses get a chance to handle the call before their base classes.
         index = len(overloaded_types)
         for position, other in enumerate(overloaded_types):
             if issubclass(arg_type, other):
@@ -286,8 +277,6 @@ def jax_take_along_axis(
 ) -> jax.Array:
     """Take values along an axis, mirroring ``jax.numpy.take_along_axis``.
 
-    This is the JAX analogue of ``torch.gather``.
-
     Args:
         arr: The array to take values from.
         indices: The indices to take.
@@ -490,9 +479,6 @@ def jax_average(
     keepdims: bool = False,
 ) -> jax.Array | tuple[jax.Array, jax.Array]:
     """Compute a possibly weighted average, mirroring ``jax.numpy.average``.
-
-    Unlike ``torch``, ``jax.numpy`` already provides a weighted average, so this wrapper only adds
-    the override check.
 
     Args:
         a: The array to reduce.
