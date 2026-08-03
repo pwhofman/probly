@@ -178,8 +178,7 @@ class JaxArraySample(JaxLikeImplementation[jax.Array], Sample[jax.Array]):
         return self.array.size
 
     @property
-    @override
-    def at(self) -> Any:
+    def at(self) -> Any:  # noqa: ANN401
         """The indexed update helper of the underlying array."""
         return self.array.at
 

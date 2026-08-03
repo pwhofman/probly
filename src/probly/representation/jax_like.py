@@ -25,6 +25,7 @@ from probly.representation.array_like import ArrayLike
 from probly.representation.jax_functions import (
     handle_jax_function,
     has_jax_function,
+    jax_astype,
     jax_conj,
     jax_copy,
     jax_matrix_transpose,
@@ -131,6 +132,12 @@ class JaxLikeImplementation[DT](ArrayLike[DT], ABC):
     what makes ``jax.jit``, ``jax.vmap``, ``jax.grad`` and ``jax.tree`` work on them. Pytree
     registration is *not* a substitute for the override machinery: ``jnp.sum(obj)`` still raises
     for a registered pytree, which is why both mechanisms exist.
+
+    ``at`` is deliberately absent here. It is the JAX stand-in for ``__setitem__``, and an indexed
+    update has no single meaning across fields with different batch semantics (a weighted sample
+    indexes its weights differently from its values; a protected-axis object must pad the index
+    with its trailing axes). ``TorchLikeImplementation`` leaves ``__setitem__`` to its subclasses
+    for exactly the same reason, so subclasses define ``at``.
     """
 
     def __init_subclass__(cls, **kwargs: object) -> None:
@@ -225,28 +232,83 @@ class JaxLikeImplementation[DT](ArrayLike[DT], ABC):
             The result of the call, or ``NotImplemented`` if it is not supported.
         """
 
-    @property
-    @abstractmethod
-    def at(self) -> Any:  # noqa: ANN401
-        """Indexed update helper, see ``jax.Array.at``."""
+    def _map_array_fields(self, op: Callable[[Any], Any]) -> Self:
+        """Apply an elementwise operation to every array-valued field.
 
-    @abstractmethod
+        The fields are the pytree children produced by :meth:`tree_flatten`, so a subclass that
+        customises flattening automatically customises this too. ``None`` children are passed
+        through untouched.
+
+        Args:
+            op: The operation to apply to each array-valued field.
+
+        Returns:
+            A copy with the operation applied to every array-valued field.
+        """
+        children, aux_data = self.tree_flatten()
+        mapped = tuple(child if child is None else op(child) for child in children)
+        return type(self).tree_unflatten(aux_data, mapped)
+
+    def stop_gradient(self) -> Self:
+        """Return a copy detached from the autodiff graph.
+
+        This is the JAX equivalent of ``torch.Tensor.detach``: JAX arrays carry no autograd tape,
+        so gradient flow is cut with ``jax.lax.stop_gradient`` instead. Subclasses holding NumPy
+        sidecar fields should override this to leave those fields untouched.
+
+        Returns:
+            A copy through which gradients do not propagate.
+        """
+        return self._map_array_fields(jax.lax.stop_gradient)
+
     def block_until_ready(self) -> Self:
-        """Block until the asynchronous computation of the array has finished."""
+        """Block until the asynchronous computation of every array-valued field has finished.
 
-    @abstractmethod
+        Returns:
+            The object itself.
+        """
+        children, _ = self.tree_flatten()
+        for child in children:
+            if child is not None and hasattr(child, "block_until_ready"):
+                child.block_until_ready()
+        return self
+
     def astype(
         self,
         dtype: DTypeLike | None,
         copy: bool = False,
         device: jax.Device | Sharding | None = None,
     ) -> Self:
-        """Return a copy of the array cast to the given data type."""
+        """Return a copy of the array cast to the given data type.
+
+        Args:
+            dtype: The target data type.
+            copy: Whether to always return a copy.
+            device: The device the result should live on.
+
+        Returns:
+            A copy with every array-valued field cast to the given data type.
+        """
+        return self._map_array_fields(lambda child: jax_astype(child, dtype, copy=copy, device=device))
 
     @override
-    @abstractmethod
     def to_device(self, device: Any, /, *, stream: int | Any | None = None) -> Self:
-        """Move the array to the given device."""
+        """Move the array to the given device.
+
+        Args:
+            device: The target device.
+            stream: Unsupported by JAX, must be None.
+
+        Returns:
+            A copy with every array-valued field on the given device.
+
+        Raises:
+            NotImplementedError: If ``stream`` is not None.
+        """
+        if stream is not None:
+            msg = "The stream argument is not supported by JAX."
+            raise NotImplementedError(msg)
+        return self._map_array_fields(lambda child: jax.device_put(child, device))
 
     @property
     def T(self) -> Self:  # noqa: N802

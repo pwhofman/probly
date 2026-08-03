@@ -56,19 +56,6 @@ class _Wrapper(JaxLikeImplementation[jax.Array]):
         return cls(result) if isinstance(result, jax.Array) else result
 
     @property
-    def at(self):
-        return self.array.at
-
-    def block_until_ready(self):
-        return type(self)(self.array.block_until_ready())
-
-    def astype(self, dtype, copy=False, device=None):
-        return type(self)(self.array.astype(dtype, copy=copy, device=device))
-
-    def to_device(self, device, /, *, stream=None):
-        return type(self)(self.array.to_device(device, stream=stream))
-
-    @property
     def dtype(self):
         return self.array.dtype
 
@@ -346,6 +333,40 @@ class TestImplementationDefaults:
 
     def test_array_conversion_with_dtype(self) -> None:
         assert np.asarray(self._wrapper(), dtype=np.int32).dtype == np.int32
+
+    def test_astype(self) -> None:
+        cast_wrapper = self._wrapper().astype(jnp.int32)
+        assert isinstance(cast_wrapper, _Wrapper)
+        assert cast_wrapper.array.dtype == jnp.int32
+
+    def test_block_until_ready_returns_self(self) -> None:
+        wrapper = self._wrapper()
+        assert wrapper.block_until_ready() is wrapper
+
+    def test_to_device(self) -> None:
+        moved = self._wrapper().to_device(jax.devices()[0])
+        assert isinstance(moved, _Wrapper)
+        np.testing.assert_allclose(np.asarray(moved), np.arange(6.0).reshape(2, 3))
+
+    def test_to_device_rejects_stream(self) -> None:
+        with pytest.raises(NotImplementedError, match="stream"):
+            self._wrapper().to_device(jax.devices()[0], stream=0)
+
+    def test_stop_gradient_returns_same_values(self) -> None:
+        detached = self._wrapper().stop_gradient()
+        assert isinstance(detached, _Wrapper)
+        np.testing.assert_allclose(np.asarray(detached), np.arange(6.0).reshape(2, 3))
+
+    def test_stop_gradient_cuts_the_gradient(self) -> None:
+        def loss(wrapper: _Wrapper) -> jax.Array:
+            return jnp.sum(wrapper.stop_gradient().array) + jnp.sum(wrapper.array)
+
+        gradient = jax.grad(loss)(self._wrapper())
+        np.testing.assert_allclose(np.asarray(gradient.array), np.ones((2, 3)))
+
+    def test_at_is_left_to_subclasses(self) -> None:
+        """Mirrors ``TorchLikeImplementation`` leaving ``__setitem__`` to its subclasses."""
+        assert not hasattr(JaxLikeImplementation, "at")
 
 
 class TestPytreeRegistration:
