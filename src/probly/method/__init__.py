@@ -35,6 +35,7 @@ from probly.method.mahalanobis import mahalanobis
 from probly.method.masksembles import masksembles
 from probly.method.sngp import sngp
 from probly.method.subensemble import subensemble
+from probly.method.swag import swag
 from probly.method.vbll import vbll
 
 __all__ = [
@@ -68,5 +69,6 @@ __all__ = [
     "masksembles",
     "sngp",
     "subensemble",
+    "swag",
     "vbll",
 ]
