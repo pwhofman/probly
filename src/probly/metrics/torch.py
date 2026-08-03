@@ -96,6 +96,9 @@ def classwise_ece_torch(y_true: torch.Tensor, y_prob: torch.Tensor, *, num_bins:
     if labels.shape[0] != n:
         msg = f"classwise_ece labels must match probabilities batch size. Got {labels.shape[0]} labels for {n} rows."
         raise ValueError(msg)
+    if num_bins < 1:
+        msg = f"classwise_ece expects num_bins >= 1, got {num_bins}."
+        raise ValueError(msg)
 
     one_hot = (labels[:, None] == torch.arange(k, device=probs.device)[None, :]).float()
     bin_idx = torch.clamp((probs * num_bins).long(), max=num_bins - 1)

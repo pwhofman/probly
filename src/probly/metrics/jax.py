@@ -27,6 +27,9 @@ def classwise_ece_jax(y_true: jax.Array, y_prob: jax.Array, *, num_bins: int = 1
     if labels.shape[0] != n:
         msg = f"classwise_ece labels must match probabilities batch size. Got {labels.shape[0]} labels for {n} rows."
         raise ValueError(msg)
+    if num_bins < 1:
+        msg = f"classwise_ece expects num_bins >= 1, got {num_bins}."
+        raise ValueError(msg)
 
     one_hot = (labels[:, None] == jnp.arange(k)[None, :]).astype(jnp.float32)
     bin_idx = jnp.minimum((probs * num_bins).astype(jnp.int32), num_bins - 1)

@@ -86,6 +86,9 @@ def classwise_ece_numpy(y_true: np.ndarray, y_prob: np.ndarray, *, num_bins: int
     if labels.shape[0] != n:
         msg = f"classwise_ece labels must match probabilities batch size. Got {labels.shape[0]} labels for {n} rows."
         raise ValueError(msg)
+    if num_bins < 1:
+        msg = f"classwise_ece expects num_bins >= 1, got {num_bins}."
+        raise ValueError(msg)
 
     one_hot = (labels[:, None] == np.arange(k)[None, :]).astype(float)
     bin_idx = np.minimum((probs * num_bins).astype(int), num_bins - 1)

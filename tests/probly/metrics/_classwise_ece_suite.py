@@ -53,3 +53,11 @@ class ClasswiseECESuite:
         y_prob = array_fn([[0.5, 0.5], [0.5, 0.5]])
         with pytest.raises(ValueError, match="batch size"):
             classwise_ece(y_true, y_prob)
+
+    @pytest.mark.parametrize("num_bins", [0, -1])
+    def test_rejects_non_positive_num_bins(self, array_fn, num_bins):
+        """num_bins must be at least one."""
+        y_true = array_fn([0, 1])
+        y_prob = array_fn([[0.5, 0.5], [0.5, 0.5]])
+        with pytest.raises(ValueError, match="num_bins"):
+            classwise_ece(y_true, y_prob, num_bins=num_bins)

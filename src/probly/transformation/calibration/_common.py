@@ -115,7 +115,8 @@ def dirichlet_calibration[**In, Out](
     a multinomial logistic regression on the log-probabilities of the base
     classifier, ``q = softmax(W @ ln(p) + b)`` with a full ``num_classes x
     num_classes`` weight matrix ``W`` and bias ``b``.  This generalises temperature
-    and vector scaling and recalibrates probabilities directly rather than logits.
+    scaling (and beta calibration for two classes) and recalibrates probabilities
+    rather than logits, which distinguishes it from matrix and vector scaling.
 
     The returned predictor still needs its parameters fitted on a held-out
     calibration split via :func:`probly.calibrator.calibrate` (or the wrapper's
@@ -129,8 +130,8 @@ def dirichlet_calibration[**In, Out](
             the off-diagonal entries of ``W``.  ``0`` disables it, recovering the
             unregularised full-matrix fit.
         reg_mu: Strength of the Intercept Regularisation, an L2 penalty on the bias
-            ``b``.  Defaults to ``reg_lambda`` when ``None`` (the paper's ODIR
-            convention of tying the two strengths together).
+            ``b``.  Defaults to ``reg_lambda`` when ``None``, following the reference
+            implementation; the paper tunes the two strengths separately.
 
     Returns:
         The Dirichlet calibration predictor, awaiting calibration.

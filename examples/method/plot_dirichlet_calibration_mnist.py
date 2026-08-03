@@ -168,9 +168,11 @@ plt.show()
 # Dirichlet calibration computes ``q = softmax(W @ ln(p) + b)``, so entry
 # ``W[i, j]`` controls how much the log-probability of class ``j`` contributes
 # to the calibrated score of class ``i``. This makes the matrix easy to relate
-# to the simpler scaling methods: a single shared value on the diagonal would
-# reduce to temperature scaling, and a free diagonal with zero off-diagonal
-# entries to vector scaling. The off-diagonal entries are what set Dirichlet
+# to the simpler scaling methods: a single shared value on the diagonal (with
+# zero bias) recovers temperature scaling, and a free diagonal with zero
+# off-diagonal entries gives a per-class scaling akin to vector scaling,
+# except that it acts on log-probabilities instead of logits.
+# The off-diagonal entries are what set Dirichlet
 # calibration apart, they can correct miscalibration between specific pairs
 # of classes, for example when the model systematically confuses 4s with 9s.
 # ODIR shrinks these entries toward zero so the extra capacity does not
