@@ -12,12 +12,71 @@ from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
 from probly.representer.sampler._common import CLEANUP_FUNCS, sampling_preparation_traverser
 
-from ._common import collect_swag, swag_generator
+from ._common import collect_swag, swag_generator, swag_snapshot_generator
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from pytraverse import State
 
 VAR_CLAMP = 1e-30
+
+
+@torch.no_grad()
+def update_swag_stats(
+    weights: torch.Tensor,
+    mean: torch.Tensor,
+    sq_mean: torch.Tensor,
+    deviations: torch.Tensor,
+    num_collected: int,
+) -> None:
+    """Update SWAG statistics in place with a new weight snapshot.
+
+    ``deviations`` is used as a ring buffer: the new deviation (relative to the
+    updated running mean) overwrites the oldest row, so row order is not
+    chronological. Sampling is unaffected because the low-rank noise is
+    isotropic over rows.
+
+    Args:
+        weights: Flat weight snapshot of shape ``(d,)``.
+        mean: Running first moment of shape ``(d,)``, updated in place.
+        sq_mean: Running second moment of shape ``(d,)``, updated in place.
+        deviations: Deviation ring buffer of shape ``(max_rank, d)``, updated in place.
+        num_collected: Number of snapshots collected before this one.
+    """
+    mean.lerp_(weights, 1.0 / (num_collected + 1))
+    sq_mean.lerp_(weights.square(), 1.0 / (num_collected + 1))
+    if deviations.shape[0] > 0:
+        deviations[num_collected % deviations.shape[0]].copy_(weights - mean)
+
+
+@torch.no_grad()
+def sample_swag_vector(
+    mean: torch.Tensor,
+    sq_mean: torch.Tensor,
+    deviations: torch.Tensor,
+    num_collected: int,
+    scale: float,
+) -> torch.Tensor:
+    """Sample a flat weight vector from the SWAG posterior defined by the given statistics.
+
+    Args:
+        mean: Running first moment of shape ``(d,)``.
+        sq_mean: Running second moment of shape ``(d,)``.
+        deviations: Deviation matrix of shape ``(max_rank, d)``.
+        num_collected: Number of collected snapshots.
+        scale: Scaling factor for the sampled perturbation.
+
+    Returns:
+        A sampled weight vector of shape ``(d,)``.
+    """
+    variance = torch.clamp(sq_mean - mean.square(), min=VAR_CLAMP)
+    perturbation = variance.sqrt() * torch.randn_like(variance)
+    rank = min(num_collected, deviations.shape[0])
+    if rank > 1:
+        z = torch.randn(rank, dtype=deviations.dtype, device=deviations.device)
+        perturbation = perturbation + (z @ deviations[:rank]) / math.sqrt(rank - 1)
+    return mean + math.sqrt(scale) * perturbation
 
 
 @swag_generator.register(nn.Module)
@@ -26,14 +85,17 @@ class TorchSWAGPredictor(nn.Module):
 
     Wraps a copy of the base model and tracks a Gaussian posterior over its
     flattened weight vector: the running mean (the SWA solution), the running
-    second moment, and a low-rank deviation matrix holding the last
+    second moment, and a low-rank deviation ring buffer holding the last
     ``max_rank`` snapshot deviations from the running mean.
 
     Train the wrapper exactly like the base model (its parameters are the
     wrapped model's parameters) and call :func:`~probly.method.swag.collect_swag`
     periodically to record snapshots. During sampling-based prediction the
-    wrapper draws a fresh weight vector from the posterior for every forward
-    pass and restores the original weights afterwards.
+    forward pass runs the wrapped model with a freshly sampled weight vector
+    via ``torch.func.functional_call``, leaving the model's own parameters
+    untouched. The statistics themselves live in :func:`update_swag_stats` and
+    :func:`sample_swag_vector`, which can also be used directly on user-held
+    tensors.
 
     Note that models containing batch normalization require their activation
     statistics to be recomputed after loading sampled weights (e.g. with
@@ -51,7 +113,7 @@ class TorchSWAGPredictor(nn.Module):
 
         Args:
             model: The base model; it is copied, so the original is not mutated.
-            max_rank: Maximum number of columns of the low-rank deviation matrix.
+            max_rank: Maximum number of rows of the low-rank deviation matrix.
             scale: Default scaling factor for sampled weight perturbations.
         """
         super().__init__()
@@ -66,23 +128,36 @@ class TorchSWAGPredictor(nn.Module):
         self.register_buffer("num_collected", torch.zeros((), dtype=torch.long))
 
     @torch.no_grad()
-    def collect(self) -> None:
-        """Update the SWAG statistics with the current weights of the wrapped model."""
-        weights = parameters_to_vector(self.model.parameters())
-        num_collected = int(self.num_collected)
-        self.mean.copy_((self.mean * num_collected + weights) / (num_collected + 1))
-        self.sq_mean.copy_((self.sq_mean * num_collected + weights.square()) / (num_collected + 1))
-        if self.max_rank > 0:
-            deviation = weights - self.mean
-            if num_collected >= self.max_rank:
-                self.deviations.copy_(torch.roll(self.deviations, shifts=-1, dims=0))
-            self.deviations[min(num_collected, self.max_rank - 1)].copy_(deviation)
+    def collect(self, weights: torch.Tensor | None = None) -> None:
+        """Update the SWAG statistics with a weight snapshot.
+
+        Args:
+            weights: Flat weight vector to collect. Defaults to the wrapped
+                model's current weights.
+        """
+        if weights is None:
+            weights = parameters_to_vector(self.model.parameters())
+        update_swag_stats(weights, self.mean, self.sq_mean, self.deviations, int(self.num_collected))
         self.num_collected += 1
 
     def _check_collected(self) -> None:
         if int(self.num_collected) == 0:
             msg = "No weight snapshots have been collected yet; call collect_swag during training first."
             raise RuntimeError(msg)
+
+    def sample_weight_vector(self, scale: float | None = None) -> torch.Tensor:
+        """Sample a flat weight vector from the SWAG posterior.
+
+        Args:
+            scale: Scaling factor for the sampled perturbation. Defaults to the
+                scale given at construction time.
+
+        Returns:
+            A sampled weight vector of shape ``(d,)``.
+        """
+        self._check_collected()
+        scale = self.scale if scale is None else scale
+        return sample_swag_vector(self.mean, self.sq_mean, self.deviations, int(self.num_collected), scale)
 
     @torch.no_grad()
     def sample_parameters(self, scale: float | None = None) -> None:
@@ -92,15 +167,7 @@ class TorchSWAGPredictor(nn.Module):
             scale: Scaling factor for the sampled perturbation. Defaults to the
                 scale given at construction time.
         """
-        self._check_collected()
-        scale = self.scale if scale is None else scale
-        variance = torch.clamp(self.sq_mean - self.mean.square(), min=VAR_CLAMP)
-        perturbation = variance.sqrt() * torch.randn_like(variance)
-        rank = min(int(self.num_collected), self.max_rank)
-        if rank > 1:
-            z = torch.randn(rank, dtype=self.deviations.dtype, device=self.deviations.device)
-            perturbation = perturbation + (z @ self.deviations[:rank]) / math.sqrt(rank - 1)
-        vector_to_parameters(self.mean + math.sqrt(scale) * perturbation, self.model.parameters())
+        vector_to_parameters(self.sample_weight_vector(scale), self.model.parameters())
 
     @torch.no_grad()
     def load_mean_parameters(self) -> None:
@@ -108,10 +175,19 @@ class TorchSWAGPredictor(nn.Module):
         self._check_collected()
         vector_to_parameters(self.mean, self.model.parameters())
 
+    def _named_parameter_views(self, vector: torch.Tensor) -> dict[str, torch.Tensor]:
+        views = {}
+        pointer = 0
+        for name, param in self.model.named_parameters():
+            views[name] = vector[pointer : pointer + param.numel()].view_as(param)
+            pointer += param.numel()
+        return views
+
     def forward(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
-        """Run the wrapped model, resampling its weights first when in sampling mode."""
+        """Run the wrapped model; in sampling mode with freshly sampled weights, without mutating it."""
         if self.sampling:
-            self.sample_parameters()
+            weights = self.sample_weight_vector()
+            return torch.func.functional_call(self.model, self._named_parameter_views(weights), args, kwargs)
         return self.model(*args, **kwargs)
 
 
@@ -120,16 +196,24 @@ def _torch_collect_swag(predictor: TorchSWAGPredictor) -> None:
     predictor.collect()
 
 
+@swag_snapshot_generator.register(nn.Module)
+def _torch_swag_from_snapshots(
+    base: nn.Module, snapshots: Iterable[torch.Tensor | nn.Module], max_rank: int, scale: float
+) -> TorchSWAGPredictor:
+    predictor = TorchSWAGPredictor(base, max_rank, scale)
+    for snapshot in snapshots:
+        weights = snapshot if isinstance(snapshot, torch.Tensor) else parameters_to_vector(snapshot.parameters())
+        predictor.collect(weights.to(predictor.mean))
+    return predictor
+
+
 def _prepare_swag_sampling(obj: TorchSWAGPredictor, state: State) -> tuple[TorchSWAGPredictor, State]:
     if not obj.sampling:
-        saved = parameters_to_vector(obj.model.parameters()).detach().clone()
+        obj.sampling = True
 
         def restore() -> None:
             obj.sampling = False
-            with torch.no_grad():
-                vector_to_parameters(saved, obj.model.parameters())
 
-        obj.sampling = True
         state[CLEANUP_FUNCS].add(restore)
     return obj, state
 

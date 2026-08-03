@@ -9,7 +9,7 @@ torch = pytest.importorskip("torch")
 from torch import nn  # noqa: E402
 from torch.nn.utils import parameters_to_vector, vector_to_parameters  # noqa: E402
 
-from probly.method.swag import SWAGPredictor, collect_swag, swag  # noqa: E402
+from probly.method.swag import SWAGPredictor, collect_swag, swag, swag_from_snapshots  # noqa: E402
 from probly.method.swag.torch import TorchSWAGPredictor  # noqa: E402
 from probly.quantification import quantify  # noqa: E402
 from probly.representer import representer  # noqa: E402
@@ -100,6 +100,7 @@ class TestCollect:
             torch.testing.assert_close(model.deviations[i], snapshots[i] - running_mean)
 
     def test_deviations_keep_last_max_rank_snapshots(self, linear_model: nn.Module) -> None:
+        # The deviation buffer is a ring: snapshot i writes row i % max_rank.
         model = make_swag(linear_model, max_rank=2)
         snapshots = [torch.randn_like(model.mean) for _ in range(3)]
         for weights in snapshots:
@@ -107,8 +108,8 @@ class TestCollect:
 
         stacked = torch.stack(snapshots)
         assert model.deviations.shape[0] == 2
-        torch.testing.assert_close(model.deviations[0], snapshots[1] - stacked[:2].mean(dim=0))
-        torch.testing.assert_close(model.deviations[1], snapshots[2] - stacked.mean(dim=0))
+        torch.testing.assert_close(model.deviations[0], snapshots[2] - stacked.mean(dim=0))
+        torch.testing.assert_close(model.deviations[1], snapshots[1] - stacked[:2].mean(dim=0))
 
 
 class TestSampling:
@@ -153,6 +154,47 @@ class TestSampling:
 
         model.sample_parameters()
         assert not torch.equal(parameters_to_vector(model.model.parameters()), model.mean)
+
+    def test_sampling_mode_forward_is_stochastic_and_non_mutating(self, linear_model: nn.Module) -> None:
+        model = make_swag(linear_model, max_rank=5)
+        for _ in range(3):
+            collect_with_weights(model, torch.randn_like(model.mean))
+
+        before = parameters_to_vector(model.model.parameters()).clone()
+        model.sampling = True
+        with torch.no_grad():
+            x = torch.randn(6, 4)
+            first, second = model(x), model(x)
+        model.sampling = False
+        assert not torch.equal(first, second)
+        assert torch.equal(parameters_to_vector(model.model.parameters()), before)
+
+
+class TestFromSnapshots:
+    """Tests for building a SWAG predictor from saved snapshots."""
+
+    def test_matches_sequential_collect(self, linear_model: nn.Module) -> None:
+        torch.manual_seed(0)
+        collected = make_swag(linear_model, max_rank=2)
+        snapshots = [torch.randn_like(collected.mean) for _ in range(3)]
+        for weights in snapshots:
+            collect_with_weights(collected, weights)
+
+        from_snapshots = swag_from_snapshots(linear_model, snapshots, max_rank=2)
+        assert isinstance(from_snapshots, TorchSWAGPredictor)
+        assert int(from_snapshots.num_collected) == 3
+        torch.testing.assert_close(from_snapshots.mean, collected.mean)
+        torch.testing.assert_close(from_snapshots.sq_mean, collected.sq_mean)
+        torch.testing.assert_close(from_snapshots.deviations, collected.deviations)
+
+    def test_accepts_modules_and_keeps_base_weights(self, linear_model: nn.Module) -> None:
+        base_weights = parameters_to_vector(linear_model.parameters()).detach().clone()
+        model = swag_from_snapshots(linear_model, [linear_model], max_rank=2)
+        assert isinstance(model, TorchSWAGPredictor)
+        assert int(model.num_collected) == 1
+        torch.testing.assert_close(model.mean, base_weights)
+        # The wrapped model keeps the base weights; only the statistics were fitted.
+        torch.testing.assert_close(parameters_to_vector(model.model.parameters()), base_weights)
 
 
 class TestRepresenter:
