@@ -22,6 +22,9 @@ jobs:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
       with:
         persist-credentials: false
+        # setuptools-scm derives the package version from the release tag,
+        # which needs the full history to be reachable.
+        fetch-depth: 0
     - name: Set up Python
       uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
       with:
@@ -39,6 +42,22 @@ jobs:
         pip install build
     - name: Build package
       run: python -m build
+    - name: Verify built version matches the release tag
+      env:
+        TAG: ${{ github.event.release.tag_name }}
+      run: |
+        python - <<'EOF'
+        import glob
+        import os
+        import sys
+
+        [wheel] = glob.glob("dist/*.whl")
+        version = os.path.basename(wheel).split("-")[1]
+        tag = os.environ["TAG"]
+        if f"v{version}" != tag:
+            sys.exit(f"built version {version} does not match release tag {tag}; refusing to publish")
+        print(f"built version {version} matches release tag {tag}")
+        EOF
     - name: Verify wheel ships type stubs
       run: |
         python - <<'EOF'

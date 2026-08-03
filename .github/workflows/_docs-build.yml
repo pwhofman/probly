@@ -37,6 +37,9 @@ jobs:
         with:
             persist-credentials: false
             ref: ${{ inputs.ref }}
+            # setuptools-scm derives probly.__version__ (shown in the docs)
+            # from the nearest git tag, so it needs the full history.
+            fetch-depth: 0
       - name: Set up Python and uv
         uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990  # v8.3.2
         with:
