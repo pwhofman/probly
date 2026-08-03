@@ -48,8 +48,8 @@ Seed-file schema (CSV or pickled DataFrame):
 
 Only rows with ``state == "finished"`` and ``dataset == "openml_6"`` are counted.
 
-New runs are launched with ``wandb.project=max-test`` and ``+wandb.entity=probly``;
-edit the ``WANDB_PROJECT`` / ``WANDB_ENTITY`` constants if you want to redirect.
+New runs default to ``wandb.project=max-test`` and ``+wandb.entity=probly``;
+use ``--wandb-project`` and ``--wandb-entity`` to redirect them.
 Default is dry-run; pass ``--execute`` to actually launch missing combos.
 """
 # ruff: noqa: T201, ANN401, D103
@@ -246,7 +246,13 @@ def block_combos() -> Iterator[tuple[str, list[Combo]]]:
 # ---- Command construction ----------------------------------------------------------
 
 
-def make_command(combo: Combo, *, device: str = DEFAULT_DEVICE) -> list[str]:
+def make_command(
+    combo: Combo,
+    *,
+    device: str = DEFAULT_DEVICE,
+    wandb_entity: str = WANDB_ENTITY,
+    wandb_project: str = WANDB_PROJECT,
+) -> list[str]:
     cmd = [
         "uv",
         "run",
@@ -258,8 +264,8 @@ def make_command(combo: Combo, *, device: str = DEFAULT_DEVICE) -> list[str]:
         f"seed={combo['seed']}",
         f"al_dataset={DATASET}",
         "wandb.enabled=true",
-        f"wandb.project={WANDB_PROJECT}",
-        f"+wandb.entity={WANDB_ENTITY}",
+        f"wandb.project={wandb_project}",
+        f"+wandb.entity={wandb_entity}",
         "save_results=false",
         f"device={device}",
     ]
@@ -275,7 +281,7 @@ def make_command(combo: Combo, *, device: str = DEFAULT_DEVICE) -> list[str]:
 # ---- CLI entry point ---------------------------------------------------------------
 
 
-def main(argv: Iterable[str] | None = None) -> int:  # noqa: PLR0912
+def main(argv: Iterable[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
         "--seed-file",
@@ -288,6 +294,8 @@ def main(argv: Iterable[str] | None = None) -> int:  # noqa: PLR0912
         ),
     )
     p.add_argument("--device", default=DEFAULT_DEVICE)
+    p.add_argument("--wandb-entity", default=WANDB_ENTITY)
+    p.add_argument("--wandb-project", default=WANDB_PROJECT)
     p.add_argument("--execute", action="store_true", help="run missing combos (default: dry-run)")
     p.add_argument(
         "--fail-fast",
@@ -324,7 +332,12 @@ def main(argv: Iterable[str] | None = None) -> int:  # noqa: PLR0912
         block_missing = [c for c in combos if _key(c) not in finished]
         print(f"=== {block_name}: {len(block_missing)}/{len(combos)} missing ===")
         for c in block_missing:
-            cmd = make_command(c, device=args.device)
+            cmd = make_command(
+                c,
+                device=args.device,
+                wandb_entity=args.wandb_entity,
+                wandb_project=args.wandb_project,
+            )
             print("  $", shlex.join(cmd))
         missing.extend((block_name, c) for c in block_missing)
         grand_total += len(combos)
@@ -348,7 +361,12 @@ def main(argv: Iterable[str] | None = None) -> int:  # noqa: PLR0912
 
     failures: list[tuple[Combo, int]] = []
     for i, (block_name, combo) in enumerate(missing, start=1):
-        cmd = make_command(combo, device=args.device)
+        cmd = make_command(
+            combo,
+            device=args.device,
+            wandb_entity=args.wandb_entity,
+            wandb_project=args.wandb_project,
+        )
         print(f"\n[{i}/{len(missing)}] {block_name}")
         print("  $", shlex.join(cmd), flush=True)
         rc = subprocess.run(cmd, check=False).returncode  # noqa: S603

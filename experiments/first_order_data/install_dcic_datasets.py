@@ -7,7 +7,7 @@ import tempfile
 from urllib import request
 import zipfile
 
-BASE_URL = "https://zenodo.org/records/7180818/files"
+BASE_URL = "https://zenodo.org/records/8115942/files"
 ARCHIVES = {
     "Benthic": "Benthic.zip",
     "CIFAR10H": "CIFAR10H.zip",
@@ -50,8 +50,9 @@ def main():
     parser.add_argument(
         "--dest",
         type=Path,
-        default=Path(__file__).resolve().parent / "data" / "image",
-        help="Directory that will contain the dataset folders.",
+        default=Path("~/datasets/dcic").expanduser(),
+        help="Directory that will contain the dataset folders. Shared with the"
+        " probly_benchmark training pipeline, which expects DCIC images under ~/datasets/dcic.",
     )
     args = parser.parse_args()
     dest = args.dest.expanduser().resolve()

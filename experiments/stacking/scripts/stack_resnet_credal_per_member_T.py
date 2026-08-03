@@ -17,7 +17,7 @@ Evaluation set
 
 Pipeline
     1. Download checkpoint artifact ``ensemble_resnet18_cifar10_<seed>:latest``
-       from ``probly/cifar10-benchmark`` (cached locally).
+       from W&B (defaults to ``probly/cifar10-benchmark``; cached locally).
     2. Build ``credal_wrapper(ResNet18(num_classes=10), num_members=10,
        predictor_type="logit_classifier")`` and ``load_state_dict``.
     3. Forward calib (5000) and CIFAR-10-H test (10000) through all members,
@@ -40,6 +40,7 @@ Pipeline
 Usage::
 
     uv run python scripts/stack_resnet_credal_per_member_T.py \\
+        --wandb-entity probly --wandb-project cifar10-benchmark \\
         --device cpu \\
         --results-json results/resnet_credal_per_member_T/cifar10h_seed0.json
 """
@@ -149,7 +150,12 @@ class _CifarResNet18(nn.Module):
 # ---------------------------------------------------------------------------
 
 
-def _wandb_download(run_id: str, cache_dir: Path) -> Path:
+def _wandb_download(
+    run_id: str,
+    cache_dir: Path,
+    wandb_entity: str,
+    wandb_project: str,
+) -> Path:
     """Download the model artifact logged by ``run_id``; cache locally."""
     cached = cache_dir / f"{ARTIFACT_NAME}.pt"
     if cached.exists():
@@ -168,7 +174,7 @@ def _wandb_download(run_id: str, cache_dir: Path) -> Path:
     import wandb
 
     api = wandb.Api(timeout=60)
-    run = api.run(f"{WANDB_ENTITY}/{WANDB_PROJECT}/runs/{run_id}")
+    run = api.run(f"{wandb_entity}/{wandb_project}/runs/{run_id}")
     artifacts = list(run.logged_artifacts())
     if not artifacts:
         msg = f"wandb run {run_id} has no logged artifacts"
@@ -375,6 +381,8 @@ def _write_results(path: Path, payload: dict[str, Any]) -> None:
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--wandb-entity", default=WANDB_ENTITY)
+    parser.add_argument("--wandb-project", default=WANDB_PROJECT)
     parser.add_argument("--wandb-run", default=DEFAULT_WANDB_RUN)
     parser.add_argument("--cache-dir", type=Path, default=Path(__file__).resolve().parent.parent / "cache")
     parser.add_argument("--seed", type=int, default=0, help="logging seed only; calib split is fixed by training-seed.")
@@ -392,7 +400,12 @@ def main() -> None:
     device = get_device(args.device)
     print(f"Device: {device}")
 
-    ckpt_path = _wandb_download(args.wandb_run, args.cache_dir / "wandb_artifacts")
+    ckpt_path = _wandb_download(
+        args.wandb_run,
+        args.cache_dir / "wandb_artifacts",
+        args.wandb_entity,
+        args.wandb_project,
+    )
     ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
     cfg = ckpt.get("config") or {}
     num_members = cfg.get("method", {}).get("params", {}).get("num_members", NUM_MEMBERS)
@@ -468,6 +481,8 @@ def main() -> None:
                 "dataset": "cifar10h",
                 "encoder": None,
                 "base_model": cfg.get("base_model"),
+                "wandb_entity": args.wandb_entity,
+                "wandb_project": args.wandb_project,
                 "wandb_run": args.wandb_run,
                 "training_seed": args.training_seed,
                 "seed": args.seed,

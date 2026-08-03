@@ -1,0 +1,4 @@
+# @package calibration
+name: "dirichlet_calibration"
+use-val-as-cal: true
+params: {}
