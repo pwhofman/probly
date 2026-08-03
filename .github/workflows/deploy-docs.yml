@@ -1,5 +1,5 @@
 # Deploy docs to GitHub Pages: /latest/ from main, /stable/ from the newest
-# release's docs asset, root redirecting to /stable/.
+# release's docs asset, root redirecting to /latest/ (temporary).
 name: Deploy Docs
 on:
   workflow_dispatch:
@@ -62,11 +62,11 @@ jobs:
           <html lang="en">
           <head>
             <meta charset="utf-8">
-            <meta http-equiv="refresh" content="0; url=stable/">
-            <link rel="canonical" href="https://pwhofman.github.io/probly/stable/">
+            <meta http-equiv="refresh" content="0; url=latest/">
+            <link rel="canonical" href="https://pwhofman.github.io/probly/latest/">
             <title>probly documentation</title>
           </head>
-          <body><p>Redirecting to the <a href="stable/">stable documentation</a>.</p></body>
+          <body><p>Redirecting to the <a href="latest/">latest documentation</a>.</p></body>
           </html>
           HTML
           cat > site/404.html <<'HTML'

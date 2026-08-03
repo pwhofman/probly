@@ -51,17 +51,20 @@ def set_seed(seed: int | None) -> None:
     torch.cuda.manual_seed_all(seed)
 
 
-def get_device(device_id: int | None = None) -> torch.device:
-    """Return the best available device, or a specific CUDA device if requested.
+def get_device(device_id: int | str | None = None) -> torch.device:
+    """Return the best available device, or a specific device if requested.
 
     Args:
-        device_id: Optional CUDA device ID to use. If None, automatically selects the least utilized CUDA device.
-            Ignored if CUDA is not available.
+        device_id: Device specification. Can be an int (CUDA device index),
+            a string like ``"cpu"``, ``"mps"``, or ``"cuda:0"``, or ``None``
+            to auto-select the best available device.
 
     Returns:
         The selected torch.device.
 
     """
+    if isinstance(device_id, str):
+        return torch.device(device_id)
     if torch.cuda.is_available():
         if device_id is not None:
             return torch.device(f"cuda:{device_id}")
@@ -443,6 +446,24 @@ def _move_laplace_hessian_to_device(model: BaseLaplace, device: torch.device) ->
         m.mean = m.mean.to(device)
 
 
+def _split_combined_member_state_dict(state: dict[str, Any], num_members: int) -> list[dict[str, Any]]:
+    """Split one flat multi-member state dict into per-member state dicts.
+
+    Before a train.py refactor, list-returning multi-member methods (e.g.
+    credal_relative_likelihood, which builds members as a plain list rather
+    than an nn.ModuleList) were saved as a single combined state dict with an
+    ``"{member_index}."`` key prefix per member -- the same convention
+    ``nn.ModuleList.state_dict()`` uses. Newer checkpoints instead save a list
+    of per-member state dicts directly (see ``_get_state_dict`` in train.py).
+    This recovers the old format so those older artifacts keep loading.
+    """
+    members: list[dict[str, Any]] = [{} for _ in range(num_members)]
+    for key, value in state.items():
+        prefix, _, rest = key.partition(".")
+        members[int(prefix)][rest] = value
+    return members
+
+
 def _build_uncalibrated_model_from_checkpoint(
     checkpoint: dict[str, Any],
     device: torch.device,
@@ -469,7 +490,10 @@ def _build_uncalibrated_model_from_checkpoint(
     build_method = target_method if target_method is not None else cfg["method"]["name"]
     model = build_model(build_method, method_params, ctx)
     if isinstance(model, list):
-        for m, state in zip(model, checkpoint["model_state_dict"], strict=True):
+        member_states = checkpoint["model_state_dict"]
+        if not isinstance(member_states, list):
+            member_states = _split_combined_member_state_dict(member_states, len(model))
+        for m, state in zip(model, member_states, strict=True):
             m = cast("nn.Module", m)
             m.load_state_dict(state)
             _to_device(m)

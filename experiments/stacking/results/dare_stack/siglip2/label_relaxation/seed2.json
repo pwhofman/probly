@@ -1,0 +1,26 @@
+{
+  "experiment": "dare_stack",
+  "calibration": "label_relaxation",
+  "dataset": "cifar10h",
+  "encoder": "siglip2",
+  "seed": 2,
+  "splits": {
+    "train": 50000,
+    "calib": 2500,
+    "test": 7500
+  },
+  "hyperparams": {
+    "num_members": 10,
+    "epochs": 200,
+    "lr_alpha": 0.1,
+    "ece_bins": 15
+  },
+  "metrics": {
+    "test_acc": 0.9666666388511658,
+    "ece_uncalibrated": 0.0030937157571315765,
+    "ece_calibrated": 0.0030937157571315765,
+    "conformal_alpha": 0.1,
+    "conformal_coverage": 0.9014666676521301,
+    "conformal_avg_set_size": 0.9562666666666667
+  }
+}
