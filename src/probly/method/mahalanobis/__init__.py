@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import TORCH_MODULE, TORCH_TENSOR, TORCH_TENSOR_LIKE
+from probly.lazy_types import SKLEARN_MODULE, TORCH_MODULE, TORCH_TENSOR, TORCH_TENSOR_LIKE
 
+from . import array as array
 from ._common import (
     MahalanobisDecomposition,
     MahalanobisPredictor,
@@ -28,6 +29,11 @@ def _(_: type) -> None:
 @combine_layer_scores.delayed_register(TORCH_TENSOR)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
+
+
+@mahalanobis_generator.delayed_register(SKLEARN_MODULE)
+def _(_: type) -> None:
+    from . import sklearn as sklearn  # noqa: PLC0415
 
 
 __all__ = [
