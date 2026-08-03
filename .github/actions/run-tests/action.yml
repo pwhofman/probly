@@ -41,6 +41,21 @@ runs:
         fi
         uv sync --no-dev --group test --group "$DEPENDENCY_GROUP"
 
+    - name: Verify the interpreter under test
+      # .python-version pins the development interpreter, so a matrix entry
+      # that failed to override it would silently test the wrong version.
+      shell: bash
+      env:
+        EXPECTED: ${{ inputs.python-version }}
+      run: |
+        expected="$(printf '%s' "$EXPECTED" | cut -d. -f1,2)"
+        actual="$(uv run --no-sync python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+        if [ "$actual" != "$expected" ]; then
+          echo "::error::requested Python $expected but the environment is $actual"
+          exit 1
+        fi
+        echo "testing on Python $actual"
+
     - name: Run tests with coverage
       if: inputs.coverage == 'true'
       shell: bash

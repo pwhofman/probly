@@ -35,10 +35,17 @@ jobs:
     # Install and Import Check
     # ----------------------------------------------------------------------------------------------
     install_and_import:
-        name: Install and Import Check
+        name: Install and Import Check (py${{ matrix.python-version }})
         # Skip draft PRs; runs on ready-for-review, push, and dispatch.
         if: github.event.pull_request.draft == false
         runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                # Oldest and newest supported interpreter; installs from the
+                # project metadata, so it also catches a requires-python that
+                # no longer matches what the code needs.
+                python-version: ["3.12", "3.13"]
         steps:
             -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
                 with:
@@ -46,40 +53,62 @@ jobs:
             -   name: Set up Python and uv
                 uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
                 with:
-                    python-version: "3.13"
+                    python-version: ${{ matrix.python-version }}
                     enable-cache: true
             -   name: Create uv virtual environment
                 run: uv venv
             -   name: Install probly package
                 run: uv run --no-sync uv pip install .
             -   name: Test import
-                run: uv run --no-sync python -c "import probly; print('✅ probly imported successfully')"
+                run: uv run --no-sync python -c "import sys, probly; print(f'✅ probly imported successfully on Python {sys.version.split()[0]}')"
     # ----------------------------------------------------------------------------------------------
     # Unit Tests with Matrix
     # ----------------------------------------------------------------------------------------------
     run_unit_tests:
-        name: Tests (${{ matrix.os }}, ${{ matrix.dependency-group }})
+        name: Tests (${{ matrix.os }}, py${{ matrix.python-version }}, ${{ matrix.dependency-group }})
         # Skip draft PRs; runs on ready-for-review, push, and dispatch.
         if: github.event.pull_request.draft == false
         strategy:
             fail-fast: false
+            # Both ends of the supported range (see project.requires-python) are
+            # covered on Linux; the other operating systems run the newest only.
             matrix:
                 include:
                     - os: ubuntu-latest
+                      python-version: "3.12"
                       dependency-group: torch
                     - os: ubuntu-latest
+                      python-version: "3.12"
                       dependency-group: jax
                     - os: ubuntu-latest
+                      python-version: "3.12"
                       dependency-group: river
                     - os: ubuntu-latest
+                      python-version: "3.12"
+                      dependency-group: transformers
+                    - os: ubuntu-latest
+                      python-version: "3.13"
+                      dependency-group: torch
+                    - os: ubuntu-latest
+                      python-version: "3.13"
+                      dependency-group: jax
+                    - os: ubuntu-latest
+                      python-version: "3.13"
+                      dependency-group: river
+                    - os: ubuntu-latest
+                      python-version: "3.13"
                       dependency-group: transformers
                     - os: macos-latest
+                      python-version: "3.13"
                       dependency-group: torch
                     - os: macos-latest
+                      python-version: "3.13"
                       dependency-group: jax
                     - os: windows-latest
+                      python-version: "3.13"
                       dependency-group: torch
                     - os: windows-latest
+                      python-version: "3.13"
                       dependency-group: jax
         runs-on: ${{ matrix.os }}
         steps:
@@ -89,10 +118,10 @@ jobs:
             -   name: Run tests
                 uses: ./.github/actions/run-tests
                 with:
-                    python-version: "3.13"
+                    python-version: ${{ matrix.python-version }}
                     dependency-group: ${{ matrix.dependency-group }}
                     coverage: "true"
-                    coverage-artifact-name: coverage-${{ matrix.os }}-${{ matrix.dependency-group }}
+                    coverage-artifact-name: coverage-${{ matrix.os }}-py${{ matrix.python-version }}-${{ matrix.dependency-group }}
     # ----------------------------------------------------------------------------------------------
     # Code Coverage
     # ----------------------------------------------------------------------------------------------
