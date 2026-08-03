@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from probly.calibrator._common import calibrate
-from probly.lazy_types import SKLEARN_CALIBRATED_CLASSIFIER_CV, SKLEARN_MODULE, TORCH_MODULE
+from probly.lazy_types import FLAX_MODULE, SKLEARN_CALIBRATED_CLASSIFIER_CV, SKLEARN_MODULE, TORCH_MODULE
 
 from ._common import (
     CalibrationPredictor,
@@ -18,6 +18,7 @@ from ._common import (
 )
 
 if TYPE_CHECKING:
+    from .flax import FlaxIdentityLogitModel
     from .sklearn import SklearnIdentityLogitEstimator
     from .torch import TorchIdentityLogitModel
 
@@ -34,6 +35,11 @@ def _(_: type[object]) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
+@calibration_generator.delayed_register(FLAX_MODULE)
+def _(_: type[object]) -> None:
+    from . import flax as flax  # noqa: PLC0415
+
+
 @calibration_generator.delayed_register(SKLEARN_MODULE)
 def _(_: type[object]) -> None:
     from . import sklearn as sklearn  # noqa: PLC0415
@@ -46,6 +52,13 @@ def torch_identity_logit_model() -> TorchIdentityLogitModel:
     return TorchIdentityLogitModel()
 
 
+def flax_identity_logit_model() -> FlaxIdentityLogitModel:
+    """Create a flax pass-through model for direct logit calibration."""
+    from .flax import FlaxIdentityLogitModel  # noqa: PLC0415
+
+    return FlaxIdentityLogitModel()
+
+
 def sklearn_identity_logit_estimator() -> SklearnIdentityLogitEstimator:
     """Create a sklearn pass-through estimator for direct logit calibration."""
     from .sklearn import SklearnIdentityLogitEstimator  # noqa: PLC0415
@@ -56,6 +69,7 @@ def sklearn_identity_logit_estimator() -> SklearnIdentityLogitEstimator:
 __all__ = [
     "CalibrationPredictor",
     "dirichlet_calibration",
+    "flax_identity_logit_model",
     "isotonic_regression",
     "platt_scaling",
     "sklearn_identity_logit_estimator",
