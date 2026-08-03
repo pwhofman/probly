@@ -120,6 +120,35 @@ def average_precision_score(y_true: object, y_score: object) -> object:
 
 
 @flexdispatch
+def classwise_ece(y_true: object, y_prob: object, *, num_bins: int = 15) -> object:
+    """Compute the classwise expected calibration error (classwise-ECE).
+
+    Introduced by :cite:`kullBeyondTemperatureScaling2019`. For every class
+    ``j`` the predicted probabilities ``p_j`` are grouped into ``num_bins``
+    equal-width bins; the per-class calibration error is the bin-size-weighted
+    mean absolute difference between the empirical frequency of class ``j``
+    and the mean predicted probability of class ``j`` within each bin. The
+    classwise-ECE is the average of these errors over all classes. Unlike the
+    confidence-based ECE, which only inspects the winning class, it is
+    sensitive to miscalibration on non-maximal class probabilities.
+
+    Args:
+        y_true: Integer ground-truth class labels of shape ``(n,)``.
+        y_prob: Predicted class probabilities of shape ``(n, k)``.
+        num_bins: Number of equal-width probability bins per class.
+
+    Returns:
+        The classwise expected calibration error in ``[0, 1]``.
+
+    Raises:
+        NotImplementedError: If no implementation is registered for the type
+            of ``y_true``.
+    """
+    msg = f"No classwise_ece implementation registered for type {type(y_true)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
 def coverage[T](y_pred: T, y_true: object) -> float:
     """Compute the empirical coverage of a predicted set against true labels.
 
