@@ -7,6 +7,7 @@ import pytest
 
 from probly.calibrator import calibrate
 from probly.method.calibration import (
+    dirichlet_calibration,
     flax_identity_logit_model,
     isotonic_regression,
     platt_scaling,
@@ -310,6 +311,12 @@ def test_calibration_supports_arbitrary_batch_dims() -> None:
     calibrate(binary, y_binary, x_binary)
     binary_logits = predict_raw(binary, x_binary)
     assert binary_logits.shape == (3, 6)
+
+
+def test_dirichlet_calibration_raises_not_implemented() -> None:
+    """Dirichlet calibration has no flax implementation and must fail fast instead of silently degrading."""
+    with pytest.raises(NotImplementedError, match="not implemented for the flax backend"):
+        dirichlet_calibration(flax_identity_logit_model(), num_classes=3)
 
 
 def test_isotonic_regression_rejects_multiclass_logits() -> None:

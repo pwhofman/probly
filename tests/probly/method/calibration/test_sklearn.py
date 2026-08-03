@@ -10,6 +10,7 @@ import sklearn
 
 from probly.calibrator import calibrate
 from probly.method.calibration import (
+    dirichlet_calibration,
     isotonic_regression,
     platt_scaling,
     sklearn_identity_logit_estimator,
@@ -84,6 +85,12 @@ def test_temperature_platt_and_isotonic_return_builtin_calibrated_classifier_cv(
 
     assert post_calibrated_model is calibrated_model
     assert post_calibrated_model.predict_proba(x).shape == (len(x), 2)
+
+
+def test_dirichlet_calibration_raises_not_implemented() -> None:
+    """Dirichlet calibration has no sklearn implementation and must fail fast instead of silently degrading."""
+    with pytest.raises(NotImplementedError, match="not implemented for the sklearn backend"):
+        dirichlet_calibration(sklearn_identity_logit_estimator(), num_classes=3)
 
 
 def test_vector_scaling_wrapper_uses_fit_for_calibration_and_exposes_estimator_alias() -> None:

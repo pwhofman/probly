@@ -378,4 +378,7 @@ def generate_flax_scaling_calibrator(
     """Create flax calibration wrappers from method configuration."""
     if config.method == "isotonic":
         return FlaxIsotonicCalibrationPredictor(base, config)
+    if config.method == "dirichlet":
+        msg = "Dirichlet calibration is not implemented for the flax backend."
+        raise NotImplementedError(msg)
     return FlaxAffineLogitCalibrationPredictor(base, config)
