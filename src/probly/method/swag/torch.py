@@ -12,14 +12,10 @@ from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
 from probly.representer.sampler._common import CLEANUP_FUNCS, sampling_preparation_traverser
 
-from ._common import collect_swag, swag_generator, swag_snapshot_generator
+from ._common import collect_swag, swag_generator
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     from pytraverse import State
-
-VAR_CLAMP = 1e-30
 
 
 @torch.no_grad()
@@ -32,9 +28,8 @@ def update_swag_stats(
 ) -> None:
     """Update SWAG statistics in place with a new weight snapshot.
 
-    ``deviations`` is used as a ring buffer: the new deviation (relative to the
-    updated running mean) overwrites the oldest row, so row order is not
-    chronological. Sampling is unaffected because the low-rank noise is
+    ``deviations`` is used as a ring buffer: the new deviation (relative to the updated running mean) overwrites
+    the oldest row, so row order is not chronological. Sampling is unaffected because the low-rank noise is
     isotropic over rows.
 
     Args:
@@ -70,7 +65,8 @@ def sample_swag_vector(
     Returns:
         A sampled weight vector of shape ``(d,)``.
     """
-    variance = torch.clamp(sq_mean - mean.square(), min=VAR_CLAMP)
+    # Clamp tiny negative variances from floating-point cancellation; 1e-30 as in the reference implementation.
+    variance = torch.clamp(sq_mean - mean.square(), min=1e-30)
     perturbation = variance.sqrt() * torch.randn_like(variance)
     rank = min(num_collected, deviations.shape[0])
     if rank > 1:
@@ -83,23 +79,19 @@ def sample_swag_vector(
 class TorchSWAGPredictor(nn.Module):
     """Torch implementation of a SWAG predictor.
 
-    Wraps a copy of the base model and tracks a Gaussian posterior over its
-    flattened weight vector: the running mean (the SWA solution), the running
-    second moment, and a low-rank deviation ring buffer holding the last
+    Wraps a copy of the base model and tracks a Gaussian posterior over its flattened weight vector: the running
+    mean (the SWA solution), the running second moment, and a low-rank deviation ring buffer holding the last
     ``max_rank`` snapshot deviations from the running mean.
 
-    Train the wrapper exactly like the base model (its parameters are the
-    wrapped model's parameters) and call :func:`~probly.method.swag.collect_swag`
-    periodically to record snapshots. During sampling-based prediction the
-    forward pass runs the wrapped model with a freshly sampled weight vector
-    via ``torch.func.functional_call``, leaving the model's own parameters
-    untouched. The statistics themselves live in :func:`update_swag_stats` and
-    :func:`sample_swag_vector`, which can also be used directly on user-held
+    Train the wrapper exactly like the base model (its parameters are the wrapped model's parameters) and call
+    :func:`~probly.method.swag.collect_swag` periodically to record snapshots. During sampling-based prediction
+    the forward pass runs the wrapped model with a freshly sampled weight vector via
+    ``torch.func.functional_call``, leaving the model's own parameters untouched. The statistics themselves live
+    in :func:`update_swag_stats` and :func:`sample_swag_vector`, which can also be used directly on user-held
     tensors.
 
-    Note that models containing batch normalization require their activation
-    statistics to be recomputed after loading sampled weights (e.g. with
-    ``torch.optim.swa_utils.update_bn``) for best results.
+    Models containing batch normalization require their activation statistics to be recomputed after loading
+    sampled weights (e.g. with ``torch.optim.swa_utils.update_bn``) for best results.
     """
 
     model: nn.Module
@@ -132,8 +124,7 @@ class TorchSWAGPredictor(nn.Module):
         """Update the SWAG statistics with a weight snapshot.
 
         Args:
-            weights: Flat weight vector to collect. Defaults to the wrapped
-                model's current weights.
+            weights: Flat weight vector to collect. Defaults to the wrapped model's current weights.
         """
         if weights is None:
             weights = parameters_to_vector(self.model.parameters())
@@ -149,8 +140,7 @@ class TorchSWAGPredictor(nn.Module):
         """Sample a flat weight vector from the SWAG posterior.
 
         Args:
-            scale: Scaling factor for the sampled perturbation. Defaults to the
-                scale given at construction time.
+            scale: Scaling factor for the sampled perturbation. Defaults to the scale given at construction time.
 
         Returns:
             A sampled weight vector of shape ``(d,)``.
@@ -164,8 +154,7 @@ class TorchSWAGPredictor(nn.Module):
         """Sample a weight vector from the SWAG posterior and load it into the wrapped model.
 
         Args:
-            scale: Scaling factor for the sampled perturbation. Defaults to the
-                scale given at construction time.
+            scale: Scaling factor for the sampled perturbation. Defaults to the scale given at construction time.
         """
         vector_to_parameters(self.sample_weight_vector(scale), self.model.parameters())
 
@@ -194,17 +183,6 @@ class TorchSWAGPredictor(nn.Module):
 @collect_swag.register(TorchSWAGPredictor)
 def _torch_collect_swag(predictor: TorchSWAGPredictor) -> None:
     predictor.collect()
-
-
-@swag_snapshot_generator.register(nn.Module)
-def _torch_swag_from_snapshots(
-    base: nn.Module, snapshots: Iterable[torch.Tensor | nn.Module], max_rank: int, scale: float
-) -> TorchSWAGPredictor:
-    predictor = TorchSWAGPredictor(base, max_rank, scale)
-    for snapshot in snapshots:
-        weights = snapshot if isinstance(snapshot, torch.Tensor) else parameters_to_vector(snapshot.parameters())
-        predictor.collect(weights.to(predictor.mean))
-    return predictor
 
 
 def _prepare_swag_sampling(obj: TorchSWAGPredictor, state: State) -> tuple[TorchSWAGPredictor, State]:
