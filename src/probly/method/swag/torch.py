@@ -75,6 +75,15 @@ def sample_swag_vector(
     return mean + math.sqrt(scale) * perturbation
 
 
+def _named_parameter_views(module: nn.Module, vector: torch.Tensor) -> dict[str, torch.Tensor]:
+    views = {}
+    pointer = 0
+    for name, param in module.named_parameters():
+        views[name] = vector[pointer : pointer + param.numel()].view_as(param)
+        pointer += param.numel()
+    return views
+
+
 @swag_generator.register(nn.Module)
 class TorchSWAGPredictor(nn.Module):
     """Torch implementation of a SWAG predictor.
@@ -164,19 +173,11 @@ class TorchSWAGPredictor(nn.Module):
         self._check_collected()
         vector_to_parameters(self.mean, self.model.parameters())
 
-    def _named_parameter_views(self, vector: torch.Tensor) -> dict[str, torch.Tensor]:
-        views = {}
-        pointer = 0
-        for name, param in self.model.named_parameters():
-            views[name] = vector[pointer : pointer + param.numel()].view_as(param)
-            pointer += param.numel()
-        return views
-
     def forward(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
         """Run the wrapped model; in sampling mode with freshly sampled weights, without mutating it."""
         if self.sampling:
             weights = self.sample_weight_vector()
-            return torch.func.functional_call(self.model, self._named_parameter_views(weights), args, kwargs)
+            return torch.func.functional_call(self.model, _named_parameter_views(self.model, weights), args, kwargs)
         return self.model(*args, **kwargs)
 
 
