@@ -46,7 +46,10 @@ def _evaluate(
         total += loss_fn(model(inputs), targets).item() * inputs.shape[0]
         num_samples += inputs.shape[0]
     model.train(was_training)
-    return total / max(num_samples, 1)
+    if num_samples == 0:
+        msg = "validation loader yielded no batches."
+        raise ValueError(msg)
+    return total / num_samples
 
 
 def train_model(
@@ -85,6 +88,9 @@ def train_model(
 
     Returns:
         The trained model, set to eval mode.
+
+    Raises:
+        ValueError: If the training or validation loader yields no batches.
     """
     model = model.to(device)
     optimizer = optimizer_factory(model.parameters())
@@ -102,12 +108,15 @@ def train_model(
             optimizer.step()
             running_loss += loss.item() * inputs.shape[0]
             num_samples += inputs.shape[0]
+        if num_samples == 0:
+            msg = "train_loader yielded no batches."
+            raise ValueError(msg)
         if scheduler is not None:
             scheduler.step()
         metrics = {
             **(extra_metrics or {}),
             "epoch": float(epoch),
-            "running_loss": running_loss / max(num_samples, 1),
+            "running_loss": running_loss / num_samples,
         }
         if val_loader is not None:
             metrics["val_loss"] = _evaluate(model, val_loader, loss_fn, device)

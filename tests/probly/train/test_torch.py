@@ -189,6 +189,16 @@ class TestTrainModel:
         with pytest.raises(RuntimeError, match="user hook failure"):
             train_model(_make_model(), _separable_loader(), nn.functional.cross_entropy, on_epoch=failing_hook)
 
+    def test_empty_train_loader_raises(self) -> None:
+        empty = DataLoader(TensorDataset(torch.zeros(0, 2), torch.zeros(0, dtype=torch.long)), batch_size=4)
+        with pytest.raises(ValueError, match="train_loader"):
+            train_model(_make_model(), empty, nn.functional.cross_entropy)
+
+    def test_empty_val_loader_raises(self) -> None:
+        empty = DataLoader(TensorDataset(torch.zeros(0, 2), torch.zeros(0, dtype=torch.long)), batch_size=4)
+        with pytest.raises(ValueError, match="validation loader"):
+            train_model(_make_model(), _separable_loader(), nn.functional.cross_entropy, val_loader=empty)
+
     def test_epochs_zero_is_a_noop(self) -> None:
         model = _make_model()
         before = [p.clone() for p in model.parameters()]
