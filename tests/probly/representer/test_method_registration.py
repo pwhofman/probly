@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from probly.method.credal_bnn import CredalBNNPredictor
+from probly.method.credal_dro import CredalDROPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.credal_wrapper import CredalWrapperPredictor
@@ -77,6 +78,14 @@ def test_credal_ensembling_uses_representative_convex_credal_set_representer() -
 
 def test_credal_wrapper_uses_probability_interval_representer() -> None:
     predictor = CredalWrapperPredictor.register_instance(_ensemble())
+
+    rep = representer(predictor)
+
+    assert isinstance(rep, ProbabilityIntervalsRepresenter)
+
+
+def test_credal_dro_uses_probability_interval_representer() -> None:
+    predictor = CredalDROPredictor.register_instance(_ensemble())
 
     rep = representer(predictor)
 

@@ -9,6 +9,35 @@ from torch.nn import functional as F
 from probly.utils.torch import intersection_probability
 
 
+def cvar_ce_loss(output: Tensor, targets: Tensor, delta: float) -> Tensor:
+    """Cross-entropy averaged over the top ``floor(delta * B)`` highest-loss samples.
+
+    The batch-wise CVaR approximation of Eq. 7 in
+    :cite:`wangLearningCredalEnsembles2026`: only the worst ``delta`` fraction of the
+    batch receives gradient. ``delta=1`` recovers the batch mean (ERM).
+
+    Args:
+        output: Logits of shape ``(B, num_classes)``.
+        targets: Ground-truth class indices of shape ``(B,)``.
+        delta: Fraction of highest-loss samples to keep, in (0, 1].
+
+    Returns:
+        Scalar cross-entropy loss averaged over the selected samples.
+
+    Raises:
+        ValueError: If delta is outside (0, 1].
+    """
+    if not 0.0 < delta <= 1.0:
+        msg = f"delta must be in (0, 1], got {delta}."
+        raise ValueError(msg)
+    per_sample = F.cross_entropy(output, targets, reduction="none")
+    if delta >= 1.0:
+        return per_sample.mean()
+    # floor(delta * B), clamped to 1 so degenerate tiny batches still train.
+    k = max(1, int(delta * per_sample.shape[0]))
+    return per_sample.topk(k).values.mean()
+
+
 def intersection_probability_ce_loss(output: Tensor, targets: Tensor) -> Tensor:
     """Cross-entropy on the intersection probability of an interval-valued prediction.
 
