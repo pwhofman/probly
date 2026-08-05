@@ -1,4 +1,4 @@
-"""Utilities for representations with protected trailing tensor axes."""
+"""Utilities for representations with protected trailing jax array axes."""
 
 from __future__ import annotations
 
@@ -182,6 +182,15 @@ class JaxAxisProtected[J: JaxLike | jax.Array | np.ndarray](JaxLikeImplementatio
     @property
     def device(self) -> jax.Device:
         return cast("jax.Device", self._jax_protected_value().device)
+
+    @property
+    def sharding(self) -> Any:  # noqa: ANN401
+        """The sharding of the underlying array."""
+        return self._jax_protected_value().sharding
+
+    def devices(self) -> set[jax.Device]:
+        """Return the set of devices the array lives on."""
+        return self._jax_protected_value().devices()
 
     @override
     @property
