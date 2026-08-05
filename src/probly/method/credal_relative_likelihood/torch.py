@@ -4,18 +4,21 @@ from __future__ import annotations
 
 from functools import partial
 import math
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import torch
+from torch import nn
 from torch.nn import functional as F
 
+from probly.method.credal_relative_likelihood._common import (
+    relative_likelihood_thresholds,
+    train_credal_relative_likelihood,
+)
 from probly.train.torch import train_model
 
 if TYPE_CHECKING:
-    from torch import nn
     from torch.utils.data import DataLoader
 
-    from probly.method.credal_relative_likelihood._common import CredalRelativeLikelihoodPredictor
     from probly.train.torch import EpochHook, OptimizerFactory, SchedulerFactory
 
 # The probly_benchmark CIFAR-10 recipe.
@@ -39,8 +42,9 @@ def _mean_log_likelihood(model: nn.Module, loader: DataLoader, device: torch.dev
     return total / max(count, 1)
 
 
-def train_credal_relative_likelihood[**In, Out](
-    predictor: CredalRelativeLikelihoodPredictor[In, Out],
+@train_credal_relative_likelihood.register((nn.ModuleList, list))
+def train_credal_relative_likelihood_torch(
+    predictor: nn.ModuleList | list[nn.Module],
     train_loader: DataLoader,
     *,
     val_loader: DataLoader | None = None,
@@ -50,7 +54,7 @@ def train_credal_relative_likelihood[**In, Out](
     scheduler_factory: SchedulerFactory | None = None,
     device: torch.device | str | None = None,
     on_epoch: EpochHook | None = None,
-) -> CredalRelativeLikelihoodPredictor[In, Out]:
+) -> nn.ModuleList | list[nn.Module]:
     """Train a credal relative likelihood ensemble based on :cite:`lohrCredalPrediction2025`.
 
     Member 0 is the maximum-likelihood reference; each remaining member trains with cross-entropy only until its
@@ -59,16 +63,16 @@ def train_credal_relative_likelihood[**In, Out](
     Args:
         predictor: The ``credal_relative_likelihood`` ensemble; members are trained in place.
         train_loader: Loader yielding ``(inputs, targets)`` batches.
-        val_loader: Optional validation loader; adds the member's ``"val_loss"`` (cross-entropy).
-        alpha: Lowest relative-likelihood target in (0, 1]. Default is 0.95; lower values loosen the members'
-            likelihood constraint (the probly_benchmark CIFAR-10 config uses 1.0).
+        val_loader: Optional validation loader; adds the member's cross-entropy ``"val_loss"`` to the metrics.
+        alpha: Lowest relative-likelihood target, in (0, 1]. Default is 0.95; the probly_benchmark CIFAR-10
+            config uses 1.0.
         epochs: Maximum number of epochs per member. Default is 10.
         optimizer_factory: Optimizer factory applied per member. Default follows the probly_benchmark CIFAR-10
-            recipe: SGD with learning rate 0.1, momentum 0.9, weight decay 5e-4. Weak optimizers can leave
-            members stuck in the saturated class-biased initialization (see ``tobias_value``).
+            recipe: SGD with learning rate 0.1, momentum 0.9, weight decay 5e-4. Weak optimizers leave members
+            stuck in the saturated class-biased initialization, see ``tobias_value``.
         scheduler_factory: Scheduler factory applied per member, stepped once per epoch.
         device: If given, move each member and every batch to this device.
-        on_epoch: Per-epoch hook receiving the member metrics plus ``"threshold"`` and ``"relative_likelihood"``
+        on_epoch: Per-epoch hook receiving the member metrics, plus ``"threshold"`` and ``"relative_likelihood"``
             for members past the reference; returning True stops that member early.
 
     Returns:
@@ -77,10 +81,8 @@ def train_credal_relative_likelihood[**In, Out](
     Raises:
         ValueError: If alpha is outside (0, 1].
     """
-    if not 0.0 < alpha <= 1.0:
-        msg = f"alpha must be in (0, 1], got {alpha}."
-        raise ValueError(msg)
-    members = [cast("nn.Module", member) for member in predictor]
+    members = list(predictor)
+    thresholds = relative_likelihood_thresholds(alpha, len(members))
 
     reference = members[0]
     train_model(
@@ -97,8 +99,6 @@ def train_credal_relative_likelihood[**In, Out](
     )
     max_ll = _mean_log_likelihood(reference, train_loader, device)
 
-    num_remaining = len(members) - 1
-    thresholds = [alpha + (1.0 - alpha) * j / num_remaining for j in range(num_remaining)]
     for i, (member, threshold) in enumerate(zip(members[1:], thresholds, strict=True), start=1):
 
         def rl_hook(metrics: dict[str, float], member: nn.Module = member, threshold: float = threshold) -> bool:
@@ -121,4 +121,4 @@ def train_credal_relative_likelihood[**In, Out](
     return predictor
 
 
-__all__ = ["train_credal_relative_likelihood"]
+__all__ = ["train_credal_relative_likelihood_torch"]

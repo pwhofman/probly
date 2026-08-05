@@ -11,8 +11,10 @@ from functools import partial  # noqa: E402
 from torch import nn  # noqa: E402
 from torch.utils.data import DataLoader, TensorDataset  # noqa: E402
 
-from probly.method.credal_relative_likelihood import credal_relative_likelihood  # noqa: E402
-from probly.method.credal_relative_likelihood.torch import train_credal_relative_likelihood  # noqa: E402
+from probly.method.credal_relative_likelihood import (  # noqa: E402
+    credal_relative_likelihood,
+    train_credal_relative_likelihood,
+)
 
 
 def _blobs_loader() -> DataLoader:
