@@ -1,6 +1,6 @@
 """Distribution subpackage."""
 
-from probly.lazy_types import TORCH_TENSOR
+from probly.lazy_types import JAX_ARRAY, TORCH_TENSOR
 
 from ._common import (
     BernoulliDistribution,
@@ -66,6 +66,13 @@ def _(_: type) -> None:
 @create_dirichlet_mixture_distribution_from_alphas_and_weights.delayed_register(TORCH_TENSOR)
 def _(_: type) -> None:
     from . import torch_mixture as torch_mixture  # noqa: PLC0415
+
+
+## Jax
+@create_categorical_distribution.delayed_register(JAX_ARRAY)
+@create_categorical_distribution_from_logits.delayed_register(JAX_ARRAY)
+def _(_: type) -> None:
+    from . import jax_categorical as jax_categorical  # noqa: PLC0415
 
 
 __all__ = [
