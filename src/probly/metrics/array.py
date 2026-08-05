@@ -16,9 +16,11 @@ from probly.representation.credal_set.array import (
     ArrayProbabilityIntervalsCredalSet,
     ArraySingletonCredalSet,
 )
+from probly.representation.distribution._common import CategoricalDistribution
 
 from ._common import (
     CREDAL_ROUND_DECIMALS,
+    accuracy,
     auc,
     average_interval_width,
     average_precision_score,
@@ -26,6 +28,9 @@ from ._common import (
     convex_hull_coverage,
     coverage,
     efficiency,
+    expected_calibration_error,
+    false_negative_rate,
+    false_positive_rate,
     precision_recall_curve,
     roc_auc_score,
     roc_curve,
@@ -33,6 +38,31 @@ from ._common import (
 
 if TYPE_CHECKING:
     from probly.representation.distribution import ArrayCategoricalDistribution
+
+
+@accuracy.register(np.ndarray)
+def accuracy_numpy(y_pred: np.ndarray, y_true: np.ndarray) -> np.floating:
+    """Compute top-1 classification accuracy for NumPy arrays."""
+    predicted = np.asarray(y_pred)
+    labels = np.asarray(y_true).reshape(-1)
+    if predicted.ndim == 2:
+        predicted = np.argmax(predicted, axis=-1)
+    elif predicted.ndim != 1:
+        msg = f"accuracy expects predictions of shape (n,) or (n, k), got shape {predicted.shape}."
+        raise ValueError(msg)
+    if predicted.shape[0] != labels.shape[0]:
+        msg = (
+            "accuracy labels must match predictions batch size. "
+            f"Got {labels.shape[0]} labels for {predicted.shape[0]} predictions."
+        )
+        raise ValueError(msg)
+    return np.mean(predicted == labels)
+
+
+@accuracy.register(CategoricalDistribution)
+def accuracy_categorical_distribution(y_pred: CategoricalDistribution, y_true: object) -> object:
+    """Compute accuracy for a categorical distribution via its class probabilities."""
+    return accuracy(y_pred.probabilities, y_true)
 
 
 @auc.register(np.ndarray)
@@ -75,7 +105,7 @@ def precision_recall_curve_numpy(y_true: np.ndarray, y_score: np.ndarray) -> tup
 
 
 @classwise_ece.register(np.ndarray)
-def classwise_ece_numpy(y_true: np.ndarray, y_prob: np.ndarray, *, num_bins: int = 15) -> np.floating:
+def classwise_ece_numpy(y_prob: np.ndarray, y_true: np.ndarray, *, num_bins: int = 15) -> np.floating:
     """Compute the classwise expected calibration error for NumPy arrays."""
     probs = np.asarray(y_prob, dtype=float)
     if probs.ndim != 2:
@@ -102,6 +132,86 @@ def classwise_ece_numpy(y_true: np.ndarray, y_prob: np.ndarray, *, num_bins: int
         freq = (one_hot * mask).sum(axis=0) / safe_count
         total += (count / n * np.abs(freq - mean_prob)).sum()
     return total / k
+
+
+@classwise_ece.register(CategoricalDistribution)
+def classwise_ece_categorical_distribution(
+    y_prob: CategoricalDistribution, y_true: object, *, num_bins: int = 15
+) -> object:
+    """Compute the classwise ECE for a categorical distribution via its class probabilities."""
+    return classwise_ece(y_prob.probabilities, y_true, num_bins=num_bins)
+
+
+@expected_calibration_error.register(np.ndarray)
+def expected_calibration_error_numpy(y_prob: np.ndarray, y_true: np.ndarray, *, num_bins: int = 15) -> np.floating:
+    """Compute the confidence expected calibration error for NumPy arrays."""
+    probs = np.asarray(y_prob, dtype=float)
+    if probs.ndim != 2:
+        msg = f"expected_calibration_error expects probabilities of shape (n, k), got shape {probs.shape}."
+        raise ValueError(msg)
+    labels = np.asarray(y_true).reshape(-1)
+    n = probs.shape[0]
+    if labels.shape[0] != n:
+        msg = (
+            "expected_calibration_error labels must match probabilities batch size. "
+            f"Got {labels.shape[0]} labels for {n} rows."
+        )
+        raise ValueError(msg)
+    if num_bins < 1:
+        msg = f"expected_calibration_error expects num_bins >= 1, got {num_bins}."
+        raise ValueError(msg)
+
+    conf = probs.max(axis=-1)
+    correct = (probs.argmax(axis=-1) == labels).astype(float)
+    bin_idx = np.minimum((conf * num_bins).astype(int), num_bins - 1)
+
+    total = np.float64(0.0)
+    for b in range(num_bins):
+        mask = (bin_idx == b).astype(float)
+        count = mask.sum()
+        safe_count = np.where(count > 0, count, 1.0)
+        acc_bin = (correct * mask).sum() / safe_count
+        conf_bin = (conf * mask).sum() / safe_count
+        total += count / n * np.abs(acc_bin - conf_bin)
+    return total
+
+
+@expected_calibration_error.register(CategoricalDistribution)
+def expected_calibration_error_categorical_distribution(
+    y_prob: CategoricalDistribution, y_true: object, *, num_bins: int = 15
+) -> object:
+    """Compute the confidence ECE for a categorical distribution via its class probabilities."""
+    return expected_calibration_error(y_prob.probabilities, y_true, num_bins=num_bins)
+
+
+@false_positive_rate.register(np.ndarray)
+def false_positive_rate_numpy(y_pred: np.ndarray, y_true: np.ndarray) -> np.floating:
+    """Compute the false positive rate for NumPy arrays."""
+    y = np.asarray(y_true).reshape(-1)
+    p = np.asarray(y_pred).reshape(-1)
+    if p.shape[0] != y.shape[0]:
+        msg = f"false_positive_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
+        raise ValueError(msg)
+    negatives = (y == 0).sum()
+    if negatives == 0:
+        return np.float64("nan")
+    false_positives = ((p == 1) & (y == 0)).sum()
+    return np.float64(false_positives / negatives)
+
+
+@false_negative_rate.register(np.ndarray)
+def false_negative_rate_numpy(y_pred: np.ndarray, y_true: np.ndarray) -> np.floating:
+    """Compute the false negative rate for NumPy arrays."""
+    y = np.asarray(y_true).reshape(-1)
+    p = np.asarray(y_pred).reshape(-1)
+    if p.shape[0] != y.shape[0]:
+        msg = f"false_negative_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
+        raise ValueError(msg)
+    positives = (y == 1).sum()
+    if positives == 0:
+        return np.float64("nan")
+    false_negatives = ((p == 0) & (y == 1)).sum()
+    return np.float64(false_negatives / positives)
 
 
 @roc_auc_score.register(np.ndarray)

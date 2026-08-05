@@ -6,17 +6,40 @@ import jax
 import jax.numpy as jnp
 
 from ._common import (
+    accuracy,
     auc,
     average_precision_score,
     classwise_ece,
+    expected_calibration_error,
+    false_negative_rate,
+    false_positive_rate,
     precision_recall_curve,
     roc_auc_score,
     roc_curve,
 )
 
 
+@accuracy.register(jax.Array)
+def accuracy_jax(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
+    """Compute top-1 classification accuracy for JAX arrays."""
+    labels = y_true.reshape(-1)
+    predicted = y_pred
+    if predicted.ndim == 2:
+        predicted = jnp.argmax(predicted, axis=-1)
+    elif predicted.ndim != 1:
+        msg = f"accuracy expects predictions of shape (n,) or (n, k), got shape {predicted.shape}."
+        raise ValueError(msg)
+    if predicted.shape[0] != labels.shape[0]:
+        msg = (
+            "accuracy labels must match predictions batch size. "
+            f"Got {labels.shape[0]} labels for {predicted.shape[0]} predictions."
+        )
+        raise ValueError(msg)
+    return (predicted == labels).astype(jnp.float32).mean()
+
+
 @classwise_ece.register(jax.Array)
-def classwise_ece_jax(y_true: jax.Array, y_prob: jax.Array, *, num_bins: int = 15) -> jax.Array:
+def classwise_ece_jax(y_prob: jax.Array, y_true: jax.Array, *, num_bins: int = 15) -> jax.Array:
     """Compute the classwise expected calibration error for JAX arrays."""
     probs = y_prob.astype(jnp.float32)
     if probs.ndim != 2:
@@ -43,6 +66,68 @@ def classwise_ece_jax(y_true: jax.Array, y_prob: jax.Array, *, num_bins: int = 1
         freq = (one_hot * mask).sum(axis=0) / safe_count
         total = total + (count / n * jnp.abs(freq - mean_prob)).sum()
     return total / k
+
+
+@expected_calibration_error.register(jax.Array)
+def expected_calibration_error_jax(y_prob: jax.Array, y_true: jax.Array, *, num_bins: int = 15) -> jax.Array:
+    """Compute the confidence expected calibration error for JAX arrays."""
+    probs = y_prob.astype(jnp.float32)
+    if probs.ndim != 2:
+        msg = f"expected_calibration_error expects probabilities of shape (n, k), got shape {probs.shape}."
+        raise ValueError(msg)
+    labels = y_true.reshape(-1)
+    n = probs.shape[0]
+    if labels.shape[0] != n:
+        msg = (
+            "expected_calibration_error labels must match probabilities batch size. "
+            f"Got {labels.shape[0]} labels for {n} rows."
+        )
+        raise ValueError(msg)
+    if num_bins < 1:
+        msg = f"expected_calibration_error expects num_bins >= 1, got {num_bins}."
+        raise ValueError(msg)
+
+    conf = probs.max(axis=-1)
+    correct = (probs.argmax(axis=-1) == labels).astype(jnp.float32)
+    bin_idx = jnp.minimum((conf * num_bins).astype(jnp.int32), num_bins - 1)
+
+    total = jnp.float32(0.0)
+    for b in range(num_bins):
+        mask = (bin_idx == b).astype(jnp.float32)
+        count = mask.sum()
+        safe_count = jnp.where(count > 0, count, 1.0)
+        acc_bin = (correct * mask).sum() / safe_count
+        conf_bin = (conf * mask).sum() / safe_count
+        total = total + count / n * jnp.abs(acc_bin - conf_bin)
+    return total
+
+
+@false_positive_rate.register(jax.Array)
+def false_positive_rate_jax(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
+    """Compute the false positive rate for JAX arrays."""
+    y = y_true.reshape(-1)
+    p = y_pred.reshape(-1)
+    if p.shape[0] != y.shape[0]:
+        msg = f"false_positive_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
+        raise ValueError(msg)
+    negatives = (y == 0).astype(jnp.float32)
+    false_positives = (p == 1).astype(jnp.float32) * negatives
+    # 0/0 yields NaN when there are no negative samples.
+    return false_positives.sum() / negatives.sum()
+
+
+@false_negative_rate.register(jax.Array)
+def false_negative_rate_jax(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
+    """Compute the false negative rate for JAX arrays."""
+    y = y_true.reshape(-1)
+    p = y_pred.reshape(-1)
+    if p.shape[0] != y.shape[0]:
+        msg = f"false_negative_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
+        raise ValueError(msg)
+    positives = (y == 1).astype(jnp.float32)
+    false_negatives = (p == 0).astype(jnp.float32) * positives
+    # 0/0 yields NaN when there are no positive samples.
+    return false_negatives.sum() / positives.sum()
 
 
 @auc.register(jax.Array)

@@ -117,8 +117,8 @@ with torch.no_grad():
     uncal_probs = _probs(model(X_test))
     cal_probs = _probs(predict_raw(calibrated_model, X_test))
 
-uncal_cw_ece = float(classwise_ece(labels_test, uncal_probs, num_bins=RELIABILITY_BINS))
-cal_cw_ece = float(classwise_ece(labels_test, cal_probs, num_bins=RELIABILITY_BINS))
+uncal_cw_ece = float(classwise_ece(uncal_probs, labels_test, num_bins=RELIABILITY_BINS))
+cal_cw_ece = float(classwise_ece(cal_probs, labels_test, num_bins=RELIABILITY_BINS))
 
 accuracy = (cal_probs.argmax(-1) == labels_test).mean() * 100
 print(f"Test accuracy:         {accuracy:.1f}%")

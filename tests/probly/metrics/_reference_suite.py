@@ -10,7 +10,15 @@ import numpy as np
 import pytest
 import sklearn.metrics as sm
 
-from probly.metrics import auc, average_precision_score, roc_auc_score, roc_curve
+from probly.metrics import (
+    accuracy,
+    auc,
+    average_precision_score,
+    false_negative_rate,
+    false_positive_rate,
+    roc_auc_score,
+    roc_curve,
+)
 
 # Each test runs 3 times with independent random data to increase confidence.
 _ROUNDS = pytest.mark.parametrize("_round", range(3), ids=lambda i: f"round{i}")
@@ -60,3 +68,38 @@ class ReferenceSuite:
         actual = float(average_precision_score(array_fn(y_true, dtype=float), array_fn(y_score, dtype=float)))
 
         assert actual == pytest.approx(expected, abs=1e-4)
+
+    @_ROUNDS
+    def test_accuracy_matches_sklearn(self, _round, array_fn):  # noqa: PT019
+        """Accuracy matches sklearn on random multiclass labels and probabilities."""
+        rng = np.random.default_rng()
+        y_true = rng.integers(0, 3, size=20)
+        y_pred = rng.integers(0, 3, size=20)
+        y_prob = rng.random(size=(20, 3))
+
+        expected_labels = sm.accuracy_score(y_true, y_pred)
+        expected_probs = sm.accuracy_score(y_true, y_prob.argmax(axis=-1))
+
+        actual_labels = float(accuracy(array_fn(y_pred), array_fn(y_true)))
+        actual_probs = float(accuracy(array_fn(y_prob, dtype=float), array_fn(y_true)))
+
+        assert actual_labels == pytest.approx(expected_labels, abs=1e-4)
+        assert actual_probs == pytest.approx(expected_probs, abs=1e-4)
+
+    @_ROUNDS
+    def test_error_rates_match_sklearn(self, _round, array_fn):  # noqa: PT019
+        """false_positive_rate and false_negative_rate match sklearn's confusion matrix."""
+        rng = np.random.default_rng()
+        # Prepend one sample of each class so both rates are defined.
+        y_true = np.concatenate([[0, 1], rng.integers(0, 2, size=18)])
+        y_pred = rng.integers(0, 2, size=20)
+
+        tn, fp, fn, tp = sm.confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
+        expected_fpr = fp / (fp + tn)
+        expected_fnr = fn / (fn + tp)
+
+        actual_fpr = float(false_positive_rate(array_fn(y_pred), array_fn(y_true)))
+        actual_fnr = float(false_negative_rate(array_fn(y_pred), array_fn(y_true)))
+
+        assert actual_fpr == pytest.approx(expected_fpr, abs=1e-4)
+        assert actual_fnr == pytest.approx(expected_fnr, abs=1e-4)
