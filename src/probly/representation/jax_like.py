@@ -379,6 +379,24 @@ class JaxLikeImplementation[DT](ArrayLike[DT], ABC):
         """Return a copy of the array."""
         return jax_copy(self)  # ty: ignore[invalid-return-type, invalid-argument-type]
 
+    def view(self, dtype: DTypeLike | None = None, type: None = None) -> Self:  # noqa: A002
+        """Return a bit-cast view of the array.
+
+        Args:
+            dtype: The data type to reinterpret the underlying bytes as.
+            type: Unsupported by JAX, must be ``None``.
+
+        Returns:
+            A copy with every array-valued field bit-cast to the given data type.
+
+        Raises:
+            NotImplementedError: If ``type`` is not None.
+        """
+        if type is not None:
+            msg = "The type argument of view() is not supported by JAX."
+            raise NotImplementedError(msg)
+        return self._map_array_fields(lambda child: child.view(dtype))
+
     def item(self, *args: int) -> bool | int | float | complex:
         """Return the array as a Python scalar.
 
