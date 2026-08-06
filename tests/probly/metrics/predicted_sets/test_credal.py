@@ -10,7 +10,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from probly.evaluation import average_interval_width, coverage, efficiency
+from probly.metrics import average_interval_width, coverage, efficiency
 from probly.representation.credal_set.array import (
     ArrayConvexCredalSet,
     ArrayDiscreteCredalSet,

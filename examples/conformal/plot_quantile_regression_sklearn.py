@@ -28,7 +28,7 @@ from sklearn.linear_model import QuantileRegressor
 from sklearn.model_selection import KFold, train_test_split
 
 from probly.calibrator import calibrate
-from probly.evaluation import coverage, efficiency
+from probly.metrics import coverage, efficiency
 from probly.method.conformal import conformal_cqr, conformal_cqr_r
 from probly.representer import representer
 
