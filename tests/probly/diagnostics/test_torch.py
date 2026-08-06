@@ -39,6 +39,7 @@ def test_report_structure(setup: dict) -> None:
     names = [result.name for result in report.results]
     assert names == [
         "pipeline",
+        "uncertainty_variation",
         "accuracy",
         "ece",
         "decomposition_additivity",
@@ -47,6 +48,7 @@ def test_report_structure(setup: dict) -> None:
         "baseline_selective_prediction",
     ]
     assert report["pipeline"].verdict is Verdict.PASS
+    assert report["uncertainty_variation"].verdict is Verdict.PASS
     assert report["accuracy"].verdict is Verdict.INFO
     assert 0.0 <= report["accuracy"].value <= 1.0
     assert report["accuracy"].reference is not None

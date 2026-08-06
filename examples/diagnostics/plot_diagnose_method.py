@@ -8,10 +8,11 @@ suite to check that its uncertainty estimates are actually meaningful.
 data and reports a verdict per diagnostic:
 
 * ``pipeline``: the representation and quantification machinery works,
+* ``uncertainty_variation``: the uncertainty estimates differ across instances,
 * ``accuracy`` / ``ece``: predictive quality of the mean prediction (informational),
 * ``decomposition_additivity``: total equals aleatoric plus epistemic,
 * ``selective_prediction``: rejecting by uncertainty beats random rejection,
-* ``ood_separation``: uncertainty is higher on out-of-distribution inputs,
+* ``ood_separation``: epistemic uncertainty is higher on out-of-distribution inputs,
 * ``baseline_selective_prediction``: the method is not worse than the
   max-softmax confidence of a plain deterministic predictor.
 
