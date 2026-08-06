@@ -11,6 +11,7 @@ from probly.method.conformal_credal_set import (
     conformal_wasserstein_distance,
 )
 from probly.method.credal_bnn import credal_bnn
+from probly.method.credal_dro import credal_dro
 from probly.method.credal_ensembling import credal_ensembling
 from probly.method.credal_relative_likelihood import credal_relative_likelihood
 from probly.method.credal_wrapper import credal_wrapper
@@ -35,6 +36,7 @@ from probly.method.mahalanobis import mahalanobis
 from probly.method.masksembles import masksembles
 from probly.method.sngp import sngp
 from probly.method.subensemble import subensemble
+from probly.method.swag import swag
 from probly.method.vbll import vbll
 
 __all__ = [
@@ -47,6 +49,7 @@ __all__ = [
     "conformal_total_variation",
     "conformal_wasserstein_distance",
     "credal_bnn",
+    "credal_dro",
     "credal_ensembling",
     "credal_relative_likelihood",
     "credal_wrapper",
@@ -68,5 +71,6 @@ __all__ = [
     "masksembles",
     "sngp",
     "subensemble",
+    "swag",
     "vbll",
 ]
