@@ -44,6 +44,9 @@ user calls dropout(model)
      -> torch handler (method/dropout/torch.py) wraps the layer
 ```
 **Lazy backend loading**: backends register via `delayed_register` in `__init__.py` files using fully-qualified type strings from `probly/lazy_types.py` (e.g. `TORCH_MODULE = "torch.nn.modules.module.Module"`). This means torch/flax/sklearn are only imported when actually needed.
+## API Conventions:
+- Backend-agnostic facades live in `_common.py` files (`flexdispatch` functions, with `delayed_register` backend triggers in `__init__.py`); backend files (`torch.py`, `flax.py`, `sklearn.py`, ...) register the implementations. Registered implementations append the backend as a suffix, e.g. `train_credal_relative_likelihood_torch`. Standalone backend utilities (losses, helpers) carry no backend marker; their module path does.
+- A facade declares only the parameters that are meaningful for every backend (typically the method's hyperparameters, e.g. `alpha`); backend-specific arguments (`epochs`, `on_epoch`, `optimizer_factory`, ...) pass through `**kwargs`. Facade keyword names must match implementation parameter names exactly, since dispatch forwards the call verbatim.
 ## Common Mistakes to do right:
 - `ty` may still fail to treat `np.ndarray` as a structural subtype of our `ArrayLike` protocol even after relaxing method requirements. Keep bounds as `ArrayLike | np.ndarray` where needed and use local `cast("Any", ...)` when dispatching ndarray-specific dunder methods.
 - Do not use special unicode characters where it is not necessary (comments, docstrings, variable names)
