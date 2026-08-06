@@ -18,7 +18,7 @@ from torch_uncertainty.models.wrappers import mc_dropout
 from torch_uncertainty.post_processing import ConformalClsTHR
 
 from probly.calibrator import calibrate
-from probly.evaluation import coverage, efficiency
+from probly.metrics import coverage, efficiency
 from probly.method.calibration import vector_scaling
 from probly.representer import representer
 
