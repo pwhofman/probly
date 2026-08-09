@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-from tkinter import NUMERIC
 from typing import Literal
 
+import pytest
+
+pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
-import pytest
-from scipy.stats import dirichlet, entropy as scipy_entropy, norm
+from scipy.stats import entropy as scipy_entropy
 
-from probly.quantification.measure.distribution import(
+from probly.quantification.measure.distribution import (
     conditional_entropy,
-    dempster_shafer_uncertainty,
     entropy,
     entropy_of_expected_predictive_distribution,
     expected_max_probability_complement,
@@ -20,9 +20,8 @@ from probly.quantification.measure.distribution import(
     max_probability_complement_of_expected,
     min_expected_total_variation,
     mutual_information,
-    vacuity,
 )
-from probly.representation.distribution.jax_categorical import(
+from probly.representation.distribution.jax_categorical import (
     JaxCategoricalDistributionSample,
     JaxProbabilityCategoricalDistribution,
 )
@@ -240,17 +239,16 @@ def test_jax_sample_min_expected_total_variation_known_value_ternary_contstraine
         dtype=float,
     )
     sample = JaxCategoricalDistributionSample(
-        array = JaxProbabilityCategoricalDistribution(probabilities),
+        array=JaxProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 
     assert jnp.allclose(min_expected_total_variation(sample), 0.3, rtol=1e-9, atol=1e-9)
 
 
-
 def test_jax_sample_min_expected_total_variation_is_zero_for_no_second_order_spread() -> None:
     """A second-order Dirac (all samples identical) has no epistemic uncertainty."""
-    probabilities = jnp.tile(jnp.array([1 / 3, 1 / 3, 1 / 3], dtype=float), (5,1))
+    probabilities = jnp.tile(jnp.array([1 / 3, 1 / 3, 1 / 3], dtype=float), (5, 1))
     sample = JaxCategoricalDistributionSample(
         array=JaxProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
@@ -261,7 +259,7 @@ def test_jax_sample_min_expected_total_variation_is_zero_for_no_second_order_spr
 
 def test_jax_sample_min_expected_total_variation_is_maximal_for_uniform_diracs() -> None:
     """EU attains its upper bound (K-1)/K for a uniform mixture of first-order Diracs."""
-    probabilities = jnp.eye(3, dtype=float) # one-hot samples on each vertex
+    probabilities = jnp.eye(3, dtype=float)  # one-hot samples on each vertex
     sample = JaxCategoricalDistributionSample(
         array=JaxProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
