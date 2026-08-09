@@ -34,7 +34,11 @@ def _(_: type) -> None:
 
 
 @auc.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@average_interval_width.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @average_precision_score.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@convex_hull_coverage.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@coverage.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@efficiency.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @precision_recall_curve.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @roc_auc_score.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @roc_curve.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
