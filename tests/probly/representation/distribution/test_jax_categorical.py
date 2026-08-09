@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import pytest
+
+pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
-import pytest
 
 from probly.representation.distribution import create_categorical_distribution
 from probly.representation.distribution.jax_categorical import (
