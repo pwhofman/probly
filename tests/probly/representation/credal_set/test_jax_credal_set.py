@@ -222,6 +222,79 @@ class TestSampleProbabilities:
         with pytest.raises(TypeError, match="JaxCategoricalDistribution"):
             _sample_probabilities(sample)
 
+    def test_reduces_over_the_sample_axis(self) -> None:
+        from probly.representation.credal_set.jax import _sample_probabilities  # noqa: PLC0415
+
+        # (batch=2, samples=3, classes=2): the sample axis is not axis 0.
+        probs = jnp.array(
+            [
+                [[0.1, 0.9], [0.2, 0.8], [0.15, 0.85]],
+                [[0.4, 0.6], [0.5, 0.5], [0.45, 0.55]],
+            ],
+            dtype=float,
+        )
+        sample = JaxArraySample(array=JaxProbabilityCategoricalDistribution(probs), sample_axis=1)
+
+        probabilities = _sample_probabilities(sample)
+
+        assert tuple(probabilities.shape) == (3, 2, 2)
+        assert jnp.allclose(probabilities, jnp.moveaxis(probs, 1, 0))
+
+
+@pytest.mark.parametrize(
+    ("credal_set_type", "lower", "upper"),
+    [
+        (JaxProbabilityIntervalsCredalSet, [[0.1, 0.6], [0.4, 0.4]], [[0.4, 0.9], [0.6, 0.6]]),
+        (JaxConvexCredalSet, [[0.1, 0.6], [0.4, 0.4]], [[0.4, 0.9], [0.6, 0.6]]),
+    ],
+)
+def test_jax_credal_set_from_sample_respects_a_non_zero_sample_axis(
+    credal_set_type: type[JaxProbabilityIntervalsCredalSet | JaxConvexCredalSet],
+    lower: list[list[float]],
+    upper: list[list[float]],
+) -> None:
+    """Regression: the factories used to reduce over axis 0 of the raw layout."""
+    # (batch=2, samples=3, classes=2)
+    probs = jnp.array(
+        [
+            [[0.1, 0.9], [0.4, 0.6], [0.2, 0.8]],
+            [[0.4, 0.6], [0.6, 0.4], [0.5, 0.5]],
+        ],
+        dtype=float,
+    )
+    by_axis_1 = credal_set_type.from_jax_sample(
+        JaxArraySample(array=JaxProbabilityCategoricalDistribution(probs), sample_axis=1)
+    )
+    by_axis_0 = credal_set_type.from_jax_sample(
+        JaxArraySample(array=JaxProbabilityCategoricalDistribution(jnp.moveaxis(probs, 1, 0)), sample_axis=0)
+    )
+
+    assert jnp.allclose(by_axis_1.lower(), jnp.array(lower, dtype=float))
+    assert jnp.allclose(by_axis_1.upper(), jnp.array(upper, dtype=float))
+    assert jnp.allclose(by_axis_1.lower(), by_axis_0.lower())
+    assert jnp.allclose(by_axis_1.upper(), by_axis_0.upper())
+
+
+def test_jax_distance_based_credal_set_from_sample_respects_a_non_zero_sample_axis() -> None:
+    """Regression: the factory used to reduce over axis 0 of the raw layout."""
+    probs = jnp.array(
+        [
+            [[0.1, 0.9], [0.4, 0.6], [0.2, 0.8]],
+            [[0.4, 0.6], [0.6, 0.4], [0.5, 0.5]],
+        ],
+        dtype=float,
+    )
+    by_axis_1 = JaxDistanceBasedCredalSet.from_jax_sample(
+        JaxArraySample(array=JaxProbabilityCategoricalDistribution(probs), sample_axis=1)
+    )
+    by_axis_0 = JaxDistanceBasedCredalSet.from_jax_sample(
+        JaxArraySample(array=JaxProbabilityCategoricalDistribution(jnp.moveaxis(probs, 1, 0)), sample_axis=0)
+    )
+
+    assert jnp.allclose(by_axis_1.nominal.probabilities, jnp.mean(probs, axis=1))
+    assert jnp.allclose(by_axis_1.radius, by_axis_0.radius)
+    assert jnp.allclose(by_axis_1.nominal.probabilities, by_axis_0.nominal.probabilities)
+
 
 class TestCreateFromBounds:
     """`create_probability_intervals_from_lower_upper_array` and `_from_bounds`."""

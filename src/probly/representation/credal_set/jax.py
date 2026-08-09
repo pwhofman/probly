@@ -5,6 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, override
+import weakref
 
 import jax
 import jax.numpy as jnp
@@ -47,7 +48,7 @@ def _ensure_jax_categorical_distribution(value: object) -> JaxCategoricalDistrib
 def _sample_probabilities(
     sample: JaxArraySample[JaxCategoricalDistribution],
 ) -> jax.Array:
-    sample_values = sample.array
+    sample_values = sample.samples
     if not isinstance(sample_values, JaxCategoricalDistribution):
         msg = "Jax categorical credal sets require samples of JaxCategoricalDistribution."
         raise TypeError(msg)
@@ -194,6 +195,11 @@ class JaxDistanceBasedCredalSet(
 
 _LEVEL_SET_SAMPLES = 10_000
 
+#: Monte Carlo draws of the default (fixed-key) level set, shared between ``lower()`` and
+#: ``upper()`` of the same credal set. Keyed by ``id`` of the credal set and cleaned up by a
+#: finalizer, so an entry never outlives the object it belongs to.
+_LEVEL_SET_SAMPLE_CACHE: dict[int, tuple[jax.Array, jax.Array]] = {}
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class JaxDirichletLevelSetCredalSet(
@@ -284,6 +290,25 @@ class JaxDirichletLevelSetCredalSet(
         mask = rl >= self.threshold
         return samples, mask
 
+    def _default_sample_and_filter(self) -> tuple[jax.Array, jax.Array]:
+        """Return the fixed-key Monte Carlo draws, computing them at most once per instance.
+
+        ``lower()`` and ``upper()`` reduce over the very same draws, so the sampling pass is
+        cached and shared instead of being repeated for each bound.
+
+        Returns:
+            Tuple of (samples, mask), see :meth:`_sample_and_filter`.
+        """
+        cache_key = id(self)
+        cached = _LEVEL_SET_SAMPLE_CACHE.get(cache_key)
+        if cached is not None:
+            return cached
+
+        result = self._sample_and_filter()
+        _LEVEL_SET_SAMPLE_CACHE[cache_key] = result
+        weakref.finalize(self, _LEVEL_SET_SAMPLE_CACHE.pop, cache_key, None)
+        return result
+
     def _mode_fallback(self) -> jax.Array:
         alpha_0 = self.alphas.sum(axis=-1)
         k = self.alphas.shape[-1]
@@ -299,7 +324,7 @@ class JaxDirichletLevelSetCredalSet(
         Returns:
             Lower probability bounds, shape (..., K).
         """
-        samples, mask = self._sample_and_filter(key=key)
+        samples, mask = self._default_sample_and_filter() if key is None else self._sample_and_filter(key=key)
         masked = jnp.where(jnp.expand_dims(mask, axis=-1), samples, jnp.inf)
         result = jnp.min(masked, axis=0)
         no_accepted = ~jnp.any(mask, axis=0)
@@ -316,7 +341,7 @@ class JaxDirichletLevelSetCredalSet(
         Returns:
             Upper probability bounds, shape (..., K).
         """
-        samples, mask = self._sample_and_filter(key=key)
+        samples, mask = self._default_sample_and_filter() if key is None else self._sample_and_filter(key=key)
         masked = jnp.where(jnp.expand_dims(mask, axis=-1), samples, -jnp.inf)
         result = jnp.max(masked, axis=0)
         no_accepted = ~jnp.any(mask, axis=0)

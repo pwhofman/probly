@@ -128,6 +128,21 @@ def test_convex_upper_entropy_invariants() -> None:
     assert ue <= np.log(3) + _ATOL
 
 
+def test_convex_upper_entropy_with_a_class_that_is_zero_in_every_vertex() -> None:
+    """Regression: the nan gradient through log(0) made BFGS fall back to uniform weights."""
+    cs = _convex_credal_set([[0.9, 0.1, 0.0], [0.5, 0.5, 0.0]])
+
+    assert float(upper_entropy(cs)) == pytest.approx(float(np.log(2)), abs=_ATOL)
+
+
+def test_jax_entropy_gradient_is_finite_at_exact_zeros() -> None:
+    p = jnp.array([0.5, 0.5, 0.0])
+
+    gradient = jax.grad(lambda x: jax_entropy(x).sum())(p)
+
+    assert bool(jnp.all(jnp.isfinite(gradient)))
+
+
 def test_convex_upper_ge_lower_entropy() -> None:
     """Upper entropy >= lower entropy for convex credal sets."""
     cs = _convex_credal_set(

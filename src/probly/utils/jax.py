@@ -8,14 +8,17 @@ import jax.numpy as jnp
 def jax_entropy(p: jnp.ndarray) -> jnp.ndarray:
     """Shannon entropy H(p) computed in jax along the last dim; 0*log(0) treated as 0.
 
+    The logarithm is fed with the zeros replaced by ones instead of masking its result, so the
+    gradient stays finite for probability vectors that contain exact zeros.
+
     Args:
         p: Probabilities to compute entropy of.
 
     Returns:
         Entropy of probabilities p.
     """
-    log_p = jnp.where(p > 0, jnp.log(p), jnp.zeros_like(p))
-    result = -jnp.sum(p * log_p, axis=-1)
+    safe_p = jnp.where(p > 0, p, jnp.ones_like(p))
+    result = -jnp.sum(p * jnp.log(safe_p), axis=-1)
     return jnp.clip(result, min=0.0) + 0.0
 
 
