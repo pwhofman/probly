@@ -1,6 +1,10 @@
 """probly: Uncertainty Representation and Quantification for Machine Learning."""
 
-__version__ = "0.9.1"
+try:
+    from probly._version import __version__ as __version__
+except ImportError:  # pragma: no cover - only hit in a source tree that was never built
+    # setuptools-scm writes _version.py at build/install time; a bare checkout has none.
+    __version__ = "0.0.0+unknown"
 
 from probly import (
     datasets as datasets,

@@ -293,4 +293,7 @@ def generate_sklearn_scaling_calibrator(
             raise ValueError(msg)
 
         return CalibratedClassifierCV(estimator=FrozenEstimator(base), method=method)
+    if config.method == "dirichlet":
+        msg = "Dirichlet calibration is not implemented for the sklearn backend."
+        raise NotImplementedError(msg)
     return SklearnVectorScalingPredictor(base, num_classes=config.num_classes)

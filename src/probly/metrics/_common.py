@@ -89,6 +89,84 @@ def average_precision_score(y_true: object, y_score: object) -> object:
     raise NotImplementedError(msg)
 
 
+@flexdispatch
+def accuracy(y_pred: object, y_true: object) -> object:
+    """Compute top-1 classification accuracy.
+
+    Args:
+        y_pred: Predicted class labels of shape ``(n,)``, class probabilities of shape ``(n, k)``, or a
+            categorical distribution; probabilities and distributions are reduced to labels via argmax.
+        y_true: Integer ground-truth class labels of shape ``(n,)``.
+
+    Returns:
+        The fraction of correct predictions in ``[0, 1]``.
+
+    Raises:
+        NotImplementedError: If no implementation is registered for the type of ``y_pred``.
+    """
+    msg = f"No accuracy implementation registered for type {type(y_pred)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def expected_calibration_error(y_prob: object, y_true: object, *, num_bins: int = 15) -> object:
+    """Compute the confidence expected calibration error (ECE) :cite:`guoOnCalibration2017`.
+
+    Predictions are grouped into ``num_bins`` equal-width bins by confidence, i.e. the maximum predicted
+    probability, and the ECE is the frequency-weighted mean absolute gap between accuracy and mean confidence
+    across bins. In contrast to :func:`classwise_ece`, only the winning class probability enters.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(n, k)``, or a categorical distribution.
+        y_true: Integer ground-truth class labels of shape ``(n,)``.
+        num_bins: Number of equal-width confidence bins.
+
+    Returns:
+        The expected calibration error in ``[0, 1]``.
+
+    Raises:
+        NotImplementedError: If no implementation is registered for the type of ``y_prob``.
+    """
+    msg = f"No expected_calibration_error implementation registered for type {type(y_prob)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def false_positive_rate(y_pred: object, y_true: object) -> object:
+    """Compute the false positive rate ``FP / (FP + TN)`` of binary predictions.
+
+    Args:
+        y_pred: Predicted binary labels (0 or 1) of shape ``(n,)``.
+        y_true: Ground-truth binary labels (0 or 1) of shape ``(n,)``.
+
+    Returns:
+        The fraction of true negatives that are predicted positive, or NaN if there are no negative samples.
+
+    Raises:
+        NotImplementedError: If no implementation is registered for the type of ``y_pred``.
+    """
+    msg = f"No false_positive_rate implementation registered for type {type(y_pred)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def false_negative_rate(y_pred: object, y_true: object) -> object:
+    """Compute the false negative rate ``FN / (FN + TP)`` of binary predictions.
+
+    Args:
+        y_pred: Predicted binary labels (0 or 1) of shape ``(n,)``.
+        y_true: Ground-truth binary labels (0 or 1) of shape ``(n,)``.
+
+    Returns:
+        The fraction of true positives that are predicted negative, or NaN if there are no positive samples.
+
+    Raises:
+        NotImplementedError: If no implementation is registered for the type of ``y_pred``.
+    """
+    msg = f"No false_negative_rate implementation registered for type {type(y_pred)}"
+    raise NotImplementedError(msg)
+
+
 # --- Predicted-set metrics ----------------------------------------------------
 #
 # Three top-level dispatched functions used to evaluate predicted-set
@@ -117,6 +195,31 @@ def average_precision_score(y_true: object, y_score: object) -> object:
 #   ``TorchProbabilityIntervalsCredalSet``, ``TorchDirichletLevelSetCredalSet``.
 #   Singleton and Discrete torch counterparts do not yet exist; constructing
 #   one numpy-side is the supported path for those semantics.
+
+
+@flexdispatch
+def classwise_ece(y_prob: object, y_true: object, *, num_bins: int = 15) -> object:
+    """Compute the classwise expected calibration error (classwise-ECE) :cite:`kullBeyondTemperatureScaling2019`.
+
+    For every class ``j``, the predicted probabilities ``p_j`` are grouped into ``num_bins`` equal-width bins;
+    the per-class error is the bin-size-weighted mean absolute difference between the empirical frequency of
+    class ``j`` and its mean predicted probability within each bin, and the classwise-ECE averages these errors
+    over all classes. In contrast to the confidence-based :func:`expected_calibration_error`, it is also
+    sensitive to miscalibration on non-maximal class probabilities.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(n, k)``, or a categorical distribution.
+        y_true: Integer ground-truth class labels of shape ``(n,)``.
+        num_bins: Number of equal-width probability bins per class.
+
+    Returns:
+        The classwise expected calibration error in ``[0, 1]``.
+
+    Raises:
+        NotImplementedError: If no implementation is registered for the type of ``y_prob``.
+    """
+    msg = f"No classwise_ece implementation registered for type {type(y_prob)}"
+    raise NotImplementedError(msg)
 
 
 @flexdispatch

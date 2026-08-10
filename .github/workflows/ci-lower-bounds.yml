@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   lower_bounds_tests:
-    name: Test Lower Bounds (${{ matrix.dependency-group }}, ${{ matrix.os }})
+    name: Test Lower Bounds (${{ matrix.dependency-group }}, py${{ matrix.python-version }}, ${{ matrix.os }})
     # Run on manual dispatch, or on PRs that carry the "run-lower-bounds" label
     # (label name may include decorative emoji/prefix — we substring-match via join).
     if: >-
@@ -18,29 +18,44 @@ jobs:
       contains(join(github.event.pull_request.labels.*.name, ','), 'run-lower-bounds')
     strategy:
       fail-fast: false
+      # The declared lower bounds were chosen when 3.13 was the minimum (see the
+      # "first cp313 wheels" comments in pyproject.toml), so the oldest
+      # interpreter is worth pairing with the oldest dependencies on Linux.
       matrix:
         include:
           - os: ubuntu-latest
+            python-version: "3.12"
             dependency-group: torch
           - os: ubuntu-latest
+            python-version: "3.12"
+            dependency-group: jax
+          - os: ubuntu-latest
+            python-version: "3.13"
+            dependency-group: torch
+          - os: ubuntu-latest
+            python-version: "3.13"
             dependency-group: jax
           - os: macos-latest
+            python-version: "3.13"
             dependency-group: torch
           - os: macos-latest
+            python-version: "3.13"
             dependency-group: jax
           - os: windows-latest
+            python-version: "3.13"
             dependency-group: torch
           - os: windows-latest
+            python-version: "3.13"
             dependency-group: jax
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
       - name: Run tests with minimum dependency versions
         uses: ./.github/actions/run-tests
         with:
-          python-version: "3.13"
+          python-version: ${{ matrix.python-version }}
           dependency-group: ${{ matrix.dependency-group }}
           resolution: "lowest-direct"
           coverage: "false"

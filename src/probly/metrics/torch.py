@@ -16,12 +16,17 @@ from typing import TYPE_CHECKING
 import torch
 
 from probly.metrics import (
+    accuracy,
     auc,
     average_interval_width,
     average_precision_score,
+    classwise_ece,
     convex_hull_coverage,
     coverage,
     efficiency,
+    expected_calibration_error,
+    false_negative_rate,
+    false_positive_rate,
     precision_recall_curve,
     roc_auc_score,
     roc_curve,
@@ -38,6 +43,25 @@ from probly.representation.credal_set.torch import (
 
 if TYPE_CHECKING:
     from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+
+
+@accuracy.register(torch.Tensor)
+def accuracy_torch(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+    """Compute top-1 classification accuracy for PyTorch tensors."""
+    labels = y_true.reshape(-1)
+    predicted = y_pred
+    if predicted.ndim == 2:
+        predicted = torch.argmax(predicted, dim=-1)
+    elif predicted.ndim != 1:
+        msg = f"accuracy expects predictions of shape (n,) or (n, k), got shape {tuple(predicted.shape)}."
+        raise ValueError(msg)
+    if predicted.shape[0] != labels.shape[0]:
+        msg = (
+            "accuracy labels must match predictions batch size. "
+            f"Got {labels.shape[0]} labels for {predicted.shape[0]} predictions."
+        )
+        raise ValueError(msg)
+    return (predicted == labels).float().mean()
 
 
 @auc.register(torch.Tensor)
@@ -81,6 +105,98 @@ def precision_recall_curve_torch(
     recall = torch.cat([recall.flip(-1), zeros], dim=-1)
 
     return precision, recall, y_score_sorted
+
+
+@classwise_ece.register(torch.Tensor)
+def classwise_ece_torch(y_prob: torch.Tensor, y_true: torch.Tensor, *, num_bins: int = 15) -> torch.Tensor:
+    """Compute the classwise expected calibration error for PyTorch tensors."""
+    probs = y_prob.float()
+    if probs.ndim != 2:
+        msg = f"classwise_ece expects probabilities of shape (n, k), got shape {tuple(probs.shape)}."
+        raise ValueError(msg)
+    labels = y_true.reshape(-1)
+    n, k = probs.shape
+    if labels.shape[0] != n:
+        msg = f"classwise_ece labels must match probabilities batch size. Got {labels.shape[0]} labels for {n} rows."
+        raise ValueError(msg)
+    if num_bins < 1:
+        msg = f"classwise_ece expects num_bins >= 1, got {num_bins}."
+        raise ValueError(msg)
+
+    one_hot = (labels[:, None] == torch.arange(k, device=probs.device)[None, :]).float()
+    bin_idx = torch.clamp((probs * num_bins).long(), max=num_bins - 1)
+
+    total = probs.new_zeros(())
+    for b in range(num_bins):
+        mask = (bin_idx == b).float()
+        count = mask.sum(dim=0)
+        safe_count = torch.where(count > 0, count, torch.ones_like(count))
+        mean_prob = (probs * mask).sum(dim=0) / safe_count
+        freq = (one_hot * mask).sum(dim=0) / safe_count
+        total = total + (count / n * (freq - mean_prob).abs()).sum()
+    return total / k
+
+
+@expected_calibration_error.register(torch.Tensor)
+def expected_calibration_error_torch(y_prob: torch.Tensor, y_true: torch.Tensor, *, num_bins: int = 15) -> torch.Tensor:
+    """Compute the confidence expected calibration error for PyTorch tensors."""
+    probs = y_prob.float()
+    if probs.ndim != 2:
+        msg = f"expected_calibration_error expects probabilities of shape (n, k), got shape {tuple(probs.shape)}."
+        raise ValueError(msg)
+    labels = y_true.reshape(-1)
+    n = probs.shape[0]
+    if labels.shape[0] != n:
+        msg = (
+            "expected_calibration_error labels must match probabilities batch size. "
+            f"Got {labels.shape[0]} labels for {n} rows."
+        )
+        raise ValueError(msg)
+    if num_bins < 1:
+        msg = f"expected_calibration_error expects num_bins >= 1, got {num_bins}."
+        raise ValueError(msg)
+
+    conf, predicted = torch.max(probs, dim=-1)
+    correct = (predicted == labels).float()
+    bin_idx = torch.clamp((conf * num_bins).long(), max=num_bins - 1)
+
+    total = probs.new_zeros(())
+    for b in range(num_bins):
+        mask = (bin_idx == b).float()
+        count = mask.sum()
+        safe_count = torch.where(count > 0, count, torch.ones_like(count))
+        acc_bin = (correct * mask).sum() / safe_count
+        conf_bin = (conf * mask).sum() / safe_count
+        total = total + count / n * (acc_bin - conf_bin).abs()
+    return total
+
+
+@false_positive_rate.register(torch.Tensor)
+def false_positive_rate_torch(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+    """Compute the false positive rate for PyTorch tensors."""
+    y = y_true.reshape(-1)
+    p = y_pred.reshape(-1)
+    if p.shape[0] != y.shape[0]:
+        msg = f"false_positive_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
+        raise ValueError(msg)
+    negatives = (y == 0).float()
+    false_positives = (p == 1).float() * negatives
+    # 0/0 yields NaN when there are no negative samples.
+    return false_positives.sum() / negatives.sum()
+
+
+@false_negative_rate.register(torch.Tensor)
+def false_negative_rate_torch(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+    """Compute the false negative rate for PyTorch tensors."""
+    y = y_true.reshape(-1)
+    p = y_pred.reshape(-1)
+    if p.shape[0] != y.shape[0]:
+        msg = f"false_negative_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
+        raise ValueError(msg)
+    positives = (y == 1).float()
+    false_negatives = (p == 0).float() * positives
+    # 0/0 yields NaN when there are no positive samples.
+    return false_negatives.sum() / positives.sum()
 
 
 @roc_auc_score.register(torch.Tensor)
