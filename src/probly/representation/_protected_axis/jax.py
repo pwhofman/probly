@@ -391,9 +391,10 @@ class JaxAxisProtected[J: JaxLike | jax.Array | np.ndarray](JaxLikeImplementatio
         dtype: jnp.dtype | None = None,
         /,
         *,
+        device: jax.Device | Sharding | None = None,
         copy: bool = False,
     ) -> JaxLikeImplementation[Any]:
-        return self.astype(dtype=dtype, copy=copy)
+        return self.astype(dtype=dtype, copy=copy, device=device)
 
     @classmethod
     def __jax_function__(

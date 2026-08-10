@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, override
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 from probly.representation._protected_axis.jax import JaxAxisProtected
 from probly.representation.distribution._common import (
@@ -23,6 +24,19 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from jax._src.typing import ArrayLike
+
+
+def _fresh_prng_key() -> jax.Array:
+    """Draw a fresh PRNG key seeded from OS entropy.
+
+    Mirrors the numpy backend, where a sampler without an explicit generator falls back to a
+    fresh ``numpy.random.default_rng()``, so repeated calls produce different draws.
+
+    Returns:
+        A new PRNG key.
+    """
+    seed = int(np.random.default_rng().integers(np.iinfo(np.uint32).max, dtype=np.uint32))
+    return jax.random.key(seed)
 
 
 class JaxCategoricalDistribution(CategoricalDistribution, JaxAxisProtected[jax.Array], ABC):
@@ -89,9 +103,18 @@ class JaxCategoricalDistribution(CategoricalDistribution, JaxAxisProtected[jax.A
         num_samples: int = 1,
         prng_key: ArrayLike | None = None,
     ) -> JaxArraySample[jax.Array]:
-        """Sample from the categorical distribution (Jax backend)."""
+        """Sample from the categorical distribution (Jax backend).
+
+        Args:
+            num_samples: The number of samples to draw.
+            prng_key: The PRNG key to sample with. Defaults to a fresh key seeded from OS
+                entropy, so repeated calls draw different samples.
+
+        Returns:
+            The drawn class indices with the sample axis first.
+        """
         if prng_key is None:
-            prng_key = jax.random.key(0)
+            prng_key = _fresh_prng_key()
 
         samples = jax.random.categorical(prng_key, self.logits, axis=-1, shape=(num_samples, *self.shape))
         return JaxArraySample(array=samples, sample_axis=0)

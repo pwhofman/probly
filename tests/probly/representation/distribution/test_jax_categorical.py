@@ -77,6 +77,24 @@ def test_sampling_relative_probabilities_matches_normalized_distribution() -> No
     assert jnp.allclose(frequencies, expected, atol=0.02)
 
 
+def test_sampling_without_a_key_draws_fresh_samples() -> None:
+    dist = JaxProbabilityCategoricalDistribution(jnp.array([[0.5, 0.5]], dtype=float))
+
+    first = dist.sample(num_samples=64)
+    second = dist.sample(num_samples=64)
+
+    assert not bool(jnp.all(first.array == second.array))
+
+
+def test_sampling_with_an_explicit_key_is_deterministic() -> None:
+    dist = JaxProbabilityCategoricalDistribution(jnp.array([[0.5, 0.5]], dtype=float))
+
+    first = dist.sample(num_samples=64, prng_key=jax.random.key(3))
+    second = dist.sample(num_samples=64, prng_key=jax.random.key(3))
+
+    assert bool(jnp.all(first.array == second.array))
+
+
 def test_getitem_cannot_index_class_axis_directly() -> None:
     probabilities = jnp.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
     dist = JaxProbabilityCategoricalDistribution(probabilities)

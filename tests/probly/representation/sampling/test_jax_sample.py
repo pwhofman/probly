@@ -13,12 +13,18 @@ from probly.representation.jax_functions import (
     jax_average,
     jax_concatenate,
     jax_conj,
+    jax_copy,
+    jax_expand_dims,
     jax_matrix_transpose,
     jax_mean,
     jax_moveaxis,
+    jax_reshape,
+    jax_squeeze,
     jax_stack,
     jax_std,
     jax_sum,
+    jax_swapaxes,
+    jax_take_along_axis,
     jax_transpose,
     jax_var,
 )
@@ -169,6 +175,15 @@ class TestJaxArraySampleEdgeCases:
         a = jnp.zeros((2, 3))
         s = JaxArraySample(a, sample_axis=-1)
         assert s.sample_axis == 1
+
+    def test_negative_sample_axis_normalised_in_a_subclass(self) -> None:
+        _, jnp = _jax_modules()
+        from probly.representation.sample.jax import JaxArraySample  # noqa: PLC0415
+
+        class _SubSample(JaxArraySample):
+            pass
+
+        assert _SubSample(jnp.zeros((2, 3)), sample_axis=-1).sample_axis == 1
 
     def test_negative_sample_axis_too_negative(self) -> None:
         _, jnp = _jax_modules()
@@ -442,6 +457,36 @@ class TestJaxArraySampleIsJaxLike:
     def test_is_jax_like_implementation(self, sample_3d: JaxArraySample) -> None:
         assert isinstance(sample_3d, JaxLikeImplementation)
 
+    def test_is_usable_as_a_plain_jax_array(self, sample_3d: JaxArraySample) -> None:
+        # The numpy backend's ArraySample works with plain numpy through ``__array__``; the jax
+        # backend needs ``__jax_array__`` for the same interop, also for wrapped results like .T.
+        np.testing.assert_allclose(np.asarray(jnp.sum(sample_3d)), np.asarray(jnp.sum(sample_3d.array)))
+        np.testing.assert_allclose(
+            np.asarray(jnp.sum(sample_3d.T)),
+            np.asarray(jnp.sum(sample_3d.array)),
+        )
+
+        weights = jnp.ones(2)
+        np.testing.assert_allclose(
+            np.asarray(sample_3d.T @ weights),
+            np.asarray(jnp.transpose(sample_3d.array) @ weights),
+        )
+
+    def test_from_iterable_of_a_traced_array_does_not_unroll(self) -> None:
+        # A tracer does not satisfy the ``JaxLike`` protocol, so it used to be treated as an
+        # iterable of rows.
+        recorded: list[bool] = []
+
+        def build(array: jax.Array) -> jax.Array:
+            sample = JaxArraySample.from_iterable(array, sample_axis=0)
+            recorded.append(sample.array is array)
+            return sample.array
+
+        traced = jax.jit(build)(jnp.zeros((4, 3)))
+
+        assert recorded == [True]
+        assert traced.shape == (4, 3)
+
     def test_transpose_property_tracks_sample_axis(self, sample_3d: JaxArraySample) -> None:
         result = sample_3d.T
 
@@ -552,8 +597,20 @@ class TestJaxFunctionReductions:
 
         assert not isinstance(result, JaxArraySample)
 
-    def test_average_uses_the_sample_weights(self, weighted_sample_2d: JaxArraySample) -> None:
+    def test_average_ignores_the_sample_weights(self, weighted_sample_2d: JaxArraySample) -> None:
+        # Mirrors the numpy backend, which never injects the stored weights into np.average.
         result = jax_average(weighted_sample_2d, 1)
+
+        expected = jnp.average(weighted_sample_2d.array, axis=1)
+        np.testing.assert_allclose(np.asarray(result), np.asarray(expected))
+
+    def test_average_over_all_axes_ignores_the_sample_weights(self, weighted_sample_2d: JaxArraySample) -> None:
+        result = jax_average(weighted_sample_2d, None)
+
+        np.testing.assert_allclose(np.asarray(result), np.asarray(jnp.average(weighted_sample_2d.array)))
+
+    def test_sample_mean_uses_the_sample_weights(self, weighted_sample_2d: JaxArraySample) -> None:
+        result = weighted_sample_2d.sample_mean()
 
         expected = jnp.average(weighted_sample_2d.array, axis=1, weights=weighted_sample_2d.weights)
         np.testing.assert_allclose(np.asarray(result), np.asarray(expected))
@@ -649,6 +706,106 @@ class TestJaxFunctionAxisMoves:
 
         assert isinstance(result, JaxArraySample)
         assert result.sample_axis == 1
+
+
+class TestJaxFunctionShapeChanges:
+    """``__jax_function__`` for the shape-changing wrappers, mirroring the numpy backend."""
+
+    def test_copy_preserves_the_sample_axis(self, weighted_sample_2d: JaxArraySample) -> None:
+        result = jax_copy(weighted_sample_2d)
+
+        assert isinstance(result, JaxArraySample)
+        assert result.sample_axis == weighted_sample_2d.sample_axis
+        assert_weights_equal(result, weighted_sample_2d.weights)
+
+    def test_reshape_keeps_a_surviving_sample_axis(self, sample_3d: JaxArraySample) -> None:
+        result = jax_reshape(sample_3d, (2, 3, 2, 2))
+
+        assert isinstance(result, JaxArraySample)
+        assert result.shape == (2, 3, 2, 2)
+        assert result.sample_axis == 1
+
+    def test_reshape_drops_a_merged_sample_axis(self, sample_3d: JaxArraySample) -> None:
+        result = jax_reshape(sample_3d, (2, 12))
+
+        assert not isinstance(result, JaxArraySample)
+        assert result.shape == (2, 12)
+
+    def test_reshape_matches_the_numpy_backend(self, sample_3d: JaxArraySample) -> None:
+        array_sample = ArraySample(np.asarray(sample_3d.array), sample_axis=sample_3d.sample_axis)
+
+        result = jax_reshape(sample_3d, (2, 3, 4, 1))
+        expected = np.reshape(array_sample, (2, 3, 4, 1))
+
+        assert isinstance(result, JaxArraySample)
+        assert isinstance(expected, ArraySample)
+        assert result.sample_axis == expected.sample_axis
+
+    def test_flatten_returns_a_bare_array(self, sample_3d: JaxArraySample) -> None:
+        assert not isinstance(sample_3d.flatten(), JaxArraySample)
+        assert not isinstance(sample_3d.ravel(), JaxArraySample)
+
+    def test_squeeze_shifts_the_sample_axis(self) -> None:
+        sample = JaxArraySample(jnp.zeros((1, 2, 3)), sample_axis=1)
+
+        result = jax_squeeze(sample, 0)
+
+        assert isinstance(result, JaxArraySample)
+        assert result.shape == (2, 3)
+        assert result.sample_axis == 0
+
+    def test_squeeze_of_the_sample_axis_drops_the_wrapper(self) -> None:
+        sample = JaxArraySample(jnp.zeros((2, 1, 3)), sample_axis=1)
+
+        result = jax_squeeze(sample)
+
+        assert not isinstance(result, JaxArraySample)
+        assert result.shape == (2, 3)
+
+    def test_expand_dims_shifts_the_sample_axis(self, sample_3d: JaxArraySample) -> None:
+        result = jax_expand_dims(sample_3d, 0)
+
+        assert isinstance(result, JaxArraySample)
+        assert result.shape == (1, 2, 3, 4)
+        assert result.sample_axis == 2
+
+    def test_expand_dims_after_the_sample_axis_keeps_it(self, sample_3d: JaxArraySample) -> None:
+        result = jax_expand_dims(sample_3d, -1)
+
+        assert isinstance(result, JaxArraySample)
+        assert result.sample_axis == 1
+
+    def test_swapaxes_follows_the_sample_axis(self, sample_3d: JaxArraySample) -> None:
+        result = jax_swapaxes(sample_3d, 1, 2)
+
+        assert isinstance(result, JaxArraySample)
+        assert result.shape == (2, 4, 3)
+        assert result.sample_axis == 2
+
+    def test_swapaxes_of_other_axes_keeps_the_sample_axis(self) -> None:
+        sample = JaxArraySample(jnp.zeros((2, 3, 4)), sample_axis=1)
+
+        result = jax_swapaxes(sample, 0, -1)
+
+        assert isinstance(result, JaxArraySample)
+        assert result.sample_axis == 1
+
+    def test_take_along_axis_off_the_sample_axis_keeps_it(self, sample_3d: JaxArraySample) -> None:
+        indices = jnp.zeros((2, 3, 1), dtype=jnp.int32)
+
+        result = jax_take_along_axis(sample_3d, indices, axis=-1)
+
+        assert isinstance(result, JaxArraySample)
+        assert result.shape == (2, 3, 1)
+        assert result.sample_axis == 1
+
+    def test_take_along_axis_on_the_sample_axis_drops_the_wrapper(self, sample_3d: JaxArraySample) -> None:
+        indices = jnp.zeros((2, 1, 4), dtype=jnp.int32)
+
+        result = jax_take_along_axis(sample_3d, indices, axis=1)
+
+        assert not isinstance(result, JaxArraySample)
+        assert result.shape == (2, 1, 4)
 
 
 class TestJaxFunctionSequences:

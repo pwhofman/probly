@@ -559,7 +559,7 @@ def protected_squeeze_function(
         shape = value_shape(value)
 
         if axis is None:
-            requested_axes = tuple(range(batch_ndim))
+            squeeze_axes = tuple(i for i, size in enumerate(shape[:batch_ndim]) if size == 1)
         else:
             if isinstance(axis, int):
                 axis_tuple = (axis,)
@@ -569,9 +569,10 @@ def protected_squeeze_function(
                 msg = "squeeze axis must be an int or tuple/list of ints."
                 raise TypeError(msg)
 
-            requested_axes = normalize_axes(axis_tuple, batch_ndim)
+            # Explicitly requested axes are passed through unfiltered so that squeezing an axis
+            # of length != 1 raises, mirroring the numpy backend.
+            squeeze_axes = normalize_axes(axis_tuple, batch_ndim)
 
-        squeeze_axes = tuple(sorted({item for item in requested_axes if shape[item] == 1}))
         if not squeeze_axes:
             return value
 

@@ -53,7 +53,9 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
             if self.sample_axis < -self.array.ndim:
                 msg = f"sample_axis {self.sample_axis} out of bounds for array with ndim {self.array.ndim}."
                 raise ValueError(msg)
-            super(type(self), self).__setattr__("sample_axis", self.array.ndim + self.sample_axis)
+            # ``object.__setattr__`` instead of ``super()``: for a subclass the latter resolves
+            # to the frozen dataclass ``__setattr__`` of this class and raises.
+            object.__setattr__(self, "sample_axis", self.array.ndim + self.sample_axis)
 
         if not isinstance(self.array, (jax.Array, JaxLikeImplementation)):
             msg = "array must be a JAX array."
@@ -83,7 +85,9 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
         Returns:
             The created JaxArraySample.
         """
-        if isinstance(samples, JaxLike):
+        # ``jax.Array`` covers tracers, which do not satisfy the ``JaxLike`` protocol; without
+        # it a traced array would be treated as an iterable of rows and unrolled.
+        if isinstance(samples, (jax.Array, JaxLike)):
             sample_array = cast("Any", samples)
             if sample_axis == "auto":
                 if sample_array.ndim == 0:
@@ -355,6 +359,19 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
             The underlying numpy array.
         """
         return np.asarray(self.array, dtype=dtype, copy=copy)
+
+    def __jax_array__(self) -> jax.Array:
+        """Get the underlying jax array.
+
+        This is the jax counterpart of :meth:`__array__`: it lets plain ``jax.numpy`` functions
+        and the arithmetic operators of ``jax.Array`` accept a sample directly, the same way
+        the numpy backend's :class:`~probly.representation.sample.array.ArraySample` works with
+        plain numpy.
+
+        Returns:
+            The underlying array.
+        """
+        return jnp.asarray(self.array)
 
     def copy(self) -> Self:
         """Create a copy of the JaxArraySample.

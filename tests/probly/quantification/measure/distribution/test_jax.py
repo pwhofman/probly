@@ -116,9 +116,9 @@ def test_jax_sample_second_order_measures_match_scipy(
         axis=sample_axis,
     )
 
-    assert jnp.allclose(measured_entropy_of_expected, expected_entropy_of_expected, rtol=1e-12, atol=1e-12)
-    assert jnp.allclose(measured_conditional_entropy, expected_conditional_entropy, rtol=1e-12, atol=1e-12)
-    assert jnp.allclose(measured_mutual_information, expected_mutual_information, rtol=1e-12, atol=1e-12)
+    assert jnp.allclose(measured_entropy_of_expected, expected_entropy_of_expected, rtol=1e-6, atol=1e-6)
+    assert jnp.allclose(measured_conditional_entropy, expected_conditional_entropy, rtol=1e-6, atol=1e-6)
+    assert jnp.allclose(measured_mutual_information, expected_mutual_information, rtol=1e-6, atol=1e-6)
 
 
 @pytest.mark.parametrize("base", CATEGORICAL_BASES)
@@ -281,3 +281,38 @@ def test_array_sample_min_expected_total_variation_differs_from_zero_one_epistem
 
     assert not jnp.allclose(wasserstein_eu, zero_one_eu)
     assert jnp.allclose(zero_one_eu, 0.0, atol=1e-12)
+
+
+def test_jax_categorical_entropy_stays_in_jax() -> None:
+    """Regression: the entropy measures used to round-trip through scipy on the host."""
+    from probly.quantification.measure.distribution.jax import jax_categorical_entropy  # noqa: PLC0415
+
+    probabilities = jnp.array([[0.25, 0.25, 0.5], [0.1, 0.2, 0.7]], dtype=float)
+
+    measured = jax_categorical_entropy(probabilities)
+    jitted = jax.jit(jax_categorical_entropy)(probabilities)
+
+    assert isinstance(measured, jax.Array)
+    assert jnp.allclose(measured, jitted, rtol=1e-6, atol=1e-6)
+
+
+def test_jax_mutual_information_stays_in_jax() -> None:
+    probabilities = jnp.array([[0.7, 0.2, 0.1], [0.15, 0.35, 0.5]], dtype=float)
+    sample = JaxCategoricalDistributionSample(
+        array=JaxProbabilityCategoricalDistribution(probabilities),
+        sample_axis=0,
+    )
+
+    assert isinstance(mutual_information(sample), jax.Array)
+
+
+def test_vacuity_and_dempster_shafer_are_not_registered_for_jax() -> None:
+    """The jax backend has no Dirichlet/Gaussian representation, so these have no jax handler."""
+    from probly.quantification.measure.distribution import dempster_shafer_uncertainty, vacuity  # noqa: PLC0415
+
+    alphas = jnp.array([[1.0, 2.0, 3.0]], dtype=float)
+
+    with pytest.raises(NotImplementedError, match="Vacuity"):
+        vacuity(alphas)
+    with pytest.raises(NotImplementedError):
+        dempster_shafer_uncertainty(alphas)

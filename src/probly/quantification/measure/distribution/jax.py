@@ -7,13 +7,13 @@ from typing import TYPE_CHECKING
 import jax
 from jax import numpy as jnp
 import numpy as np
-from scipy.stats import entropy as scipy_entropy
 
 from probly.representation.distribution.jax_categorical import (
     JaxCategoricalDistribution,
     JaxCategoricalDistributionSample,
 )
 from probly.representation.jax_functions import jax_mean, jax_moveaxis, jax_take_along_axis
+from probly.utils.jax import jax_entropy
 
 from ._common import (
     TOTAL_VARIATION_BISECTION_ITERATIONS,
@@ -45,10 +45,14 @@ def jax_categorical_entropy(distribution: JaxCategoricalDistribution | jax.Array
     else:
         p = distribution
 
+    result = jax_entropy(p)
+
+    if base is None or base == jnp.e:
+        return result
     if base == "normalize":
         base = p.shape[-1]
 
-    return scipy_entropy(p, axis=-1, base=base)
+    return result / jnp.log(jnp.asarray(base, dtype=result.dtype))
 
 
 # Entropy of expected value
@@ -89,12 +93,9 @@ def jax_categorical_sample_mutual_information(
     p = sample.array.probabilities
     axis = sample.sample_axis
     del sample  # Avoid keeping a reference to the sample for memory efficiency
-    expected_value = jax_mean(p, axis=axis, keepdims=True)
-
-    if base == "normalize":
-        base = p.shape[-1]
-
-    return jax_mean(scipy_entropy(p, expected_value, axis=-1, base=base), axis=axis)
+    expected_value_entropy = jax_categorical_entropy(jax_mean(p, axis=axis), base=base)
+    conditional_entropy_value = jax_mean(jax_categorical_entropy(p, base=base), axis=axis)
+    return expected_value_entropy - conditional_entropy_value
 
 
 # Zero-one proper scoring rule measures

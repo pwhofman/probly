@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import singledispatch, wraps
+import math
 from typing import TYPE_CHECKING, Any, Protocol, overload
 
 import jax.numpy as jnp
@@ -12,12 +13,18 @@ from probly.representation.jax_functions import (
     jax_average,
     jax_concatenate,
     jax_conj,
+    jax_copy,
+    jax_expand_dims,
     jax_matrix_transpose,
     jax_mean,
     jax_moveaxis,
+    jax_reshape,
+    jax_squeeze,
     jax_stack,
     jax_std,
     jax_sum,
+    jax_swapaxes,
+    jax_take_along_axis,
     jax_transpose,
     jax_var,
 )
@@ -273,6 +280,48 @@ def _normalize_axes_sequence(axes: object, ndim: int) -> tuple[int, ...] | None:
     return tuple(normalized)
 
 
+def _track_sample_axis_after_reshape(
+    in_shape: tuple[int, ...],
+    out_shape: tuple[int, ...],
+    sample_axis: int,
+    order: str,
+) -> int | None:
+    """Track the sample axis through a reshape, mirroring the numpy backend.
+
+    Args:
+        in_shape: The shape of the array before the reshape.
+        out_shape: The shape of the array after the reshape.
+        sample_axis: The sample axis before the reshape.
+        order: The read/write element order, either ``"C"`` or ``"F"``.
+
+    Returns:
+        The sample axis of the reshaped array, or ``None`` if it does not survive.
+    """
+    sample_size = in_shape[sample_axis]
+
+    if order == "C":
+        before_size = math.prod(in_shape[:sample_axis])
+        positions: range = range(len(out_shape))
+    else:
+        before_size = math.prod(in_shape[sample_axis + 1 :])
+        positions = range(len(out_shape) - 1, -1, -1)
+
+    after_size = 1
+
+    for i in positions:
+        if before_size == after_size:
+            if out_shape[i] == sample_size:
+                return i
+            if out_shape[i] != 1:
+                return None
+        if after_size > before_size:
+            return None
+
+        after_size *= out_shape[i]
+
+    return None
+
+
 #: Position of the ``keepdims`` parameter in each reduction wrapper's signature.
 _REDUCTION_KEEPDIMS_POSITION: dict[Callable, int] = {
     jax_average: 4,
@@ -281,9 +330,6 @@ _REDUCTION_KEEPDIMS_POSITION: dict[Callable, int] = {
     jax_sum: 4,
     jax_var: 5,
 }
-
-#: Position of the ``weights`` parameter of :func:`probly.representation.jax_functions.jax_average`.
-_AVERAGE_WEIGHTS_POSITION = 2
 
 
 @jax_function.multi_register(
@@ -305,6 +351,10 @@ def jax_reduction_function(
 
     Unlike the torch mirror there is no ``out`` handling: ``jax.numpy`` reductions reject any
     non-``None`` ``out`` argument, so a sample array can never be an output buffer.
+
+    Mirroring the numpy backend, the sample weights are never injected into ``jax_average``:
+    they only apply to a reduction over the sample axis, which the caller expresses through
+    :meth:`~probly.representation.sample.jax.JaxArraySample.sample_mean` instead.
     """
     if len(args) == 0:
         return NotImplemented
@@ -328,13 +378,6 @@ def jax_reduction_function(
 
     if axis is NotImplemented or not isinstance(keepdims, bool):
         return NotImplemented
-
-    if func is jax_average and internals.weights is not None:
-        if len(mutable_args) > _AVERAGE_WEIGHTS_POSITION:
-            if mutable_args[_AVERAGE_WEIGHTS_POSITION] is None:
-                mutable_args[_AVERAGE_WEIGHTS_POSITION] = internals.weights
-        elif mutable_kwargs.get("weights") is None:
-            mutable_kwargs["weights"] = internals.weights
 
     res = func(*tuple(mutable_args), **mutable_kwargs)
 
@@ -455,6 +498,199 @@ def jax_conj_function(
 ) -> Any:  # noqa: ANN401
     """Implementation of the sample-axis-preserving jax conjugate wrapper for sample arrays."""
     res = func(*args, **kwargs)
+
+    return create_sample(res, sample_axis=sample_axis, weights=weights)
+
+
+@jax_function.register(jax_copy)
+@jax_internals_override(jax_sample_param_pos=0)
+def jax_copy_function(
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    create_sample: JaxSampleCreator,
+    array: JaxLike,  # noqa: ARG001
+    sample_axis: int,
+    weights: jax.Array | None,
+) -> Any:  # noqa: ANN401
+    """Implementation of the jax copy wrapper for sample arrays."""
+    res = func(*args, **kwargs)
+
+    return create_sample(res, sample_axis=sample_axis, weights=weights)
+
+
+@jax_function.register(jax_reshape)
+@jax_internals_override(jax_sample_param_pos=0)
+def jax_reshape_function(
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    create_sample: JaxSampleCreator,
+    array: JaxLike,
+    sample_axis: int,
+    weights: jax.Array | None,
+) -> Any:  # noqa: ANN401
+    """Implementation of the jax reshape wrapper for sample arrays.
+
+    The sample axis survives a reshape if it maps onto exactly one axis of the result; this
+    mirrors the numpy backend. Jax arrays are always C-contiguous, so ``order="A"`` is
+    equivalent to ``order="C"``.
+    """
+    order = args[2] if len(args) > 2 else kwargs.get("order", "C")
+
+    res = func(*args, **kwargs)
+
+    if order == "A":
+        order = "C"
+    if order not in ("C", "F"):
+        return res
+
+    new_sample_axis = _track_sample_axis_after_reshape(array.shape, res.shape, sample_axis, order)
+
+    if new_sample_axis is None:
+        return res
+
+    return create_sample(res, sample_axis=new_sample_axis, weights=weights)
+
+
+@jax_function.register(jax_squeeze)
+@jax_internals_override(jax_sample_param_pos=0)
+def jax_squeeze_function(
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    create_sample: JaxSampleCreator,
+    array: JaxLike,
+    sample_axis: int,
+    weights: jax.Array | None,
+) -> Any:  # noqa: ANN401
+    """Implementation of the jax squeeze wrapper for sample arrays."""
+    axis = args[1] if len(args) > 1 else kwargs.get("axis")
+
+    ndim = array.ndim
+
+    if axis is None:
+        axes: tuple[int, ...] = tuple(i for i in range(ndim) if array.shape[i] == 1)
+    else:
+        normalized_axes = _normalize_axes_sequence(axis, ndim)
+        if normalized_axes is None:
+            return NotImplemented
+        axes = normalized_axes
+
+    new_sample_axis: int | None = sample_axis
+
+    for squeezed_axis in axes:
+        if squeezed_axis == new_sample_axis:
+            new_sample_axis = None
+            break
+        if squeezed_axis < new_sample_axis:
+            new_sample_axis -= 1
+
+    res = func(*args, **kwargs)
+
+    if new_sample_axis is None:
+        return res
+
+    return create_sample(res, sample_axis=new_sample_axis, weights=weights)
+
+
+@jax_function.register(jax_expand_dims)
+@jax_internals_override(jax_sample_param_pos=0)
+def jax_expand_dims_function(
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    create_sample: JaxSampleCreator,
+    array: JaxLike,
+    sample_axis: int,
+    weights: jax.Array | None,
+) -> Any:  # noqa: ANN401
+    """Implementation of the jax expand_dims wrapper for sample arrays."""
+    axis = args[1] if len(args) > 1 else kwargs.get("axis")
+
+    ndim = array.ndim
+    raw_axes: Sequence[Any] = axis if isinstance(axis, (tuple, list)) else (axis,)
+    normalized_axes: list[int] = []
+
+    for raw_axis in raw_axes:
+        if isinstance(raw_axis, bool) or not isinstance(raw_axis, int):
+            return NotImplemented
+        normalized_axes.append(raw_axis if raw_axis >= 0 else ndim + raw_axis + 1)
+
+    new_sample_axis = sample_axis
+
+    for inserted_axis in normalized_axes:
+        if inserted_axis <= new_sample_axis:
+            new_sample_axis += 1
+
+    res = func(*args, **kwargs)
+
+    return create_sample(res, sample_axis=new_sample_axis, weights=weights)
+
+
+@jax_function.register(jax_swapaxes)
+@jax_internals_override(jax_sample_param_pos=0)
+def jax_swapaxes_function(
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    create_sample: JaxSampleCreator,
+    array: JaxLike,
+    sample_axis: int,
+    weights: jax.Array | None,
+) -> Any:  # noqa: ANN401
+    """Implementation of the jax swapaxes wrapper for sample arrays."""
+    axis1 = args[1] if len(args) > 1 else kwargs.get("axis1")
+    axis2 = args[2] if len(args) > 2 else kwargs.get("axis2")
+
+    ndim = array.ndim
+    normalized = _normalize_axes_sequence([axis1, axis2], ndim)
+
+    if normalized is None:
+        return NotImplemented
+
+    first, second = normalized
+
+    if sample_axis == first:
+        new_sample_axis = second
+    elif sample_axis == second:
+        new_sample_axis = first
+    else:
+        new_sample_axis = sample_axis
+
+    res = func(*args, **kwargs)
+
+    return create_sample(res, sample_axis=new_sample_axis, weights=weights)
+
+
+@jax_function.register(jax_take_along_axis)
+@jax_internals_override(jax_sample_param_pos=0)
+def jax_take_along_axis_function(
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    create_sample: JaxSampleCreator,
+    array: JaxLike,
+    sample_axis: int,
+    weights: jax.Array | None,
+) -> Any:  # noqa: ANN401
+    """Implementation of the jax take_along_axis wrapper for sample arrays.
+
+    The sample axis only survives if the gather runs along a different axis and leaves the
+    number of samples untouched.
+    """
+    axis = args[2] if len(args) > 2 else kwargs.get("axis", -1)
+
+    res = func(*args, **kwargs)
+
+    if isinstance(axis, bool) or not isinstance(axis, int):
+        return res
+
+    ndim = array.ndim
+    normalized_axis = axis if axis >= 0 else ndim + axis
+
+    if normalized_axis == sample_axis or res.ndim != ndim or res.shape[sample_axis] != array.shape[sample_axis]:
+        return res
 
     return create_sample(res, sample_axis=sample_axis, weights=weights)
 

@@ -341,10 +341,9 @@ def test_mixed_numpy_sidecar_structural_unary_ops() -> None:
     assert tuple(squeezed.array.shape) == (2, 3, 4)
     np.testing.assert_array_equal(squeezed.sidecar, x.sidecar)
 
-    not_squeezed = jax_squeeze(x, axis=0)
-    assert isinstance(not_squeezed, MixedArrayNumpy)
-    assert tuple(not_squeezed.array.shape) == (2, 3, 4)
-    np.testing.assert_array_equal(not_squeezed.sidecar, x.sidecar)
+    # Squeezing an axis of length != 1 raises, mirroring the numpy backend.
+    with pytest.raises(ValueError, match="size not equal to one"):
+        jax_squeeze(x, axis=0)
 
     moved = jax_moveaxis(x, 0, 1)
     assert isinstance(moved, MixedArrayNumpy)
@@ -392,6 +391,20 @@ def test_mixed_numpy_sidecar_index_and_astype() -> None:
     converted = x.astype(jnp.float16)
     assert converted.sidecar is x.sidecar
     assert converted.array.dtype == jnp.float16
+
+
+def test_to_jax_like_accepts_the_device_keyword() -> None:
+    """Regression: ``to_jax_like`` always passes ``device=``, which ``__jax_like__`` rejected."""
+    from probly.representation.jax_like import to_jax_like  # noqa: PLC0415
+
+    x = SingleArray(jnp.arange(6.0).reshape(2, 3))
+
+    converted = to_jax_like(x)
+    assert isinstance(converted, SingleArray)
+
+    on_device = to_jax_like(x, jnp.float16, device=jax.devices()[0])
+    assert isinstance(on_device, SingleArray)
+    assert on_device.array.dtype == jnp.float16
 
 
 def test_mixed_numpy_sidecar_rejects_non_structural_jax_ops() -> None:
