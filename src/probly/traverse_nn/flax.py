@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 from typing import TYPE_CHECKING
 
-from flax.nnx.helpers import Sequential
+from flax.nnx.helpers import List, Sequential
 from flax.nnx.module import Module
 
 import pytraverse as t
@@ -100,6 +100,24 @@ def _module_traverser(
     for name, module in children:
         new_module, state = traverse(module, state, name)
         setattr(obj, name, new_module)
+
+    return obj, state
+
+
+@_torch_traverser.register
+def _list_traverser(
+    obj: List,
+    state: t.State[Module],
+    traverse: t.TraverserCallback[Module],
+) -> t.TraverserResult[Module]:
+    # nnx.List children carry integer keys, so they cannot be reassigned via setattr like other
+    # module children; index them directly instead.
+    indices: Iterable[int] = range(len(obj))
+    if state[TRAVERSE_REVERSED]:
+        indices = reversed(list(indices))
+    for i in indices:
+        new_module, state = traverse(obj[i], state, str(i))
+        obj[i] = new_module
 
     return obj, state
 
