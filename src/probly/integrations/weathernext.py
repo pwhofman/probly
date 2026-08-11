@@ -34,6 +34,7 @@ class WeatherNextPredictor:
     """
 
     def __init__(self, forecast_fn: Any = None, ensemble_fn: Any = None, seed: int = 0) -> None:  # noqa: ANN401
+        """Initialize the predictor from a member and/or bulk forecast function."""
         if forecast_fn is None and ensemble_fn is None:
             msg = "WeatherNextPredictor requires forecast_fn or ensemble_fn."
             raise ValueError(msg)
@@ -63,7 +64,10 @@ class WeatherNextRepresenter(Representer[Any, Any, Any, Any]):
         num_samples: Number of ensemble members to forecast.
     """
 
+    predictor: WeatherNextPredictor
+
     def __init__(self, predictor: WeatherNextPredictor, num_samples: int = DEFAULT_NUM_SAMPLES) -> None:
+        """Initialize the representer."""
         super().__init__(predictor)
         self.num_samples = num_samples
 

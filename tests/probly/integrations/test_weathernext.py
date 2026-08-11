@@ -14,6 +14,7 @@ from probly.representer import representer
 
 class FakeVariable:
     def __init__(self, data: np.ndarray) -> None:
+        """Store the variable data."""
         self.data = data
 
 
@@ -21,9 +22,11 @@ class FakeForecast:
     """Duck-typed stand-in for an xarray forecast dataset."""
 
     def __init__(self, variables: dict[str, np.ndarray]) -> None:
+        """Store the variables."""
         self.data_vars = variables
 
     def __getitem__(self, name: str) -> FakeVariable:
+        """Look up a variable by name."""
         return FakeVariable(self.data_vars[name])
 
 
