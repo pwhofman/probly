@@ -88,6 +88,7 @@ transformers = [
     "transformers>=4.33.2",  # first cp313 wheels
     "sentence-transformers>=2.3.0",
     "accelerate>=0.24.1",
+    "peft>=0.14.0",
 ]
 torch-uncertainty = [
     { include-group = "torch" },

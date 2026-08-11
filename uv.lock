@@ -2090,6 +2090,27 @@ wheels = [
 ]
 
 [[package]]
+name = "peft"
+version = "0.20.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "accelerate" },
+    { name = "huggingface-hub" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "psutil" },
+    { name = "pyyaml" },
+    { name = "safetensors" },
+    { name = "torch" },
+    { name = "tqdm" },
+    { name = "transformers" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b4/08/02541a2c29be7c78698f73d438bc0e733b214f3f35ec5db79fca8da8fc61/peft-0.20.0.tar.gz", hash = "sha256:4769c8093a4ca145fd6fb3fd4dd50449675f5fe46434ad1e98b285a132d4b1d0", size = 880503, upload-time = "2026-07-28T13:46:01.85Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/28/79/13bcabb8048126422d5c4b880575d40886c726f354db88cfeed4325525bb/peft-0.20.0-py3-none-any.whl", hash = "sha256:0fbba16ffebfad3de96e06f2da6860fd860292324b85b6141909fa1e26ea9233", size = 775777, upload-time = "2026-07-28T13:45:59.809Z" },
+]
+
+[[package]]
 name = "pillow"
 version = "12.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2220,6 +2241,7 @@ all-ml = [
     { name = "jax" },
     { name = "laplace-torch" },
     { name = "lightning" },
+    { name = "peft" },
     { name = "river" },
     { name = "scikit-learn" },
     { name = "sentence-transformers" },
@@ -2256,6 +2278,7 @@ dev = [
     { name = "nflows", marker = "python_full_version >= '3.13'" },
     { name = "nvidia-ml-py", marker = "python_full_version >= '3.13'" },
     { name = "packaging", marker = "python_full_version >= '3.13'" },
+    { name = "peft", marker = "python_full_version >= '3.13'" },
     { name = "prek", marker = "python_full_version >= '3.13'" },
     { name = "pytest", marker = "python_full_version >= '3.13'" },
     { name = "pytest-cov", marker = "python_full_version >= '3.13'" },
@@ -2332,6 +2355,7 @@ torch-uncertainty = [
 ]
 transformers = [
     { name = "accelerate" },
+    { name = "peft" },
     { name = "sentence-transformers" },
     { name = "torch" },
     { name = "torchvision" },
@@ -2356,6 +2380,7 @@ all-ml = [
     { name = "jax", specifier = ">=0.8.1" },
     { name = "laplace-torch", specifier = ">=0.2.0" },
     { name = "lightning", specifier = ">=2.6.0" },
+    { name = "peft", specifier = ">=0.14.0" },
     { name = "river", specifier = ">=0.21" },
     { name = "scikit-learn", specifier = ">=1.6.0" },
     { name = "sentence-transformers", specifier = ">=2.3.0" },
@@ -2392,6 +2417,7 @@ dev = [
     { name = "nflows", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=0.14" },
     { name = "nvidia-ml-py", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = "==13.595.45" },
     { name = "packaging", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
+    { name = "peft", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=0.14.0" },
     { name = "prek", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=0.3.8" },
     { name = "pytest", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=8.3.5" },
     { name = "pytest-cov", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=6.0.0" },
@@ -2466,6 +2492,7 @@ torch-uncertainty = [
 ]
 transformers = [
     { name = "accelerate", specifier = ">=0.24.1" },
+    { name = "peft", specifier = ">=0.14.0" },
     { name = "sentence-transformers", specifier = ">=2.3.0" },
     { name = "torch", specifier = ">=2.6.0" },
     { name = "torchvision", specifier = ">=0.21.0" },

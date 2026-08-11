@@ -47,4 +47,12 @@ def _(_: type[object]) -> None:
     from . import transformers as transformers  # noqa: PLC0415
 
 
+_PEFT_MODELS = ("peft.peft_model.PeftModel",)
+
+
+@predict_raw.delayed_register(_PEFT_MODELS)
+def _(_: type[object]) -> None:
+    from . import peft as peft  # noqa: PLC0415
+
+
 __all__ = []
