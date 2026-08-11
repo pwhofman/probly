@@ -51,6 +51,7 @@ class JaxAxisProtected[J: JaxLike | jax.Array | np.ndarray](JaxLikeImplementatio
 
     protected_axes: ClassVar[dict[str, int]] = {}
     permitted_functions: ClassVar[set[Callable[..., Any]]] = set()
+    allow_types: ClassVar[tuple[type, ...]] = (jnp.ndarray, jnp.generic, float, int)
 
     def __init_subclass__(cls, **kwargs: object) -> None:
         super().__init_subclass__(**kwargs)
@@ -423,6 +424,58 @@ class JaxAxisProtected[J: JaxLike | jax.Array | np.ndarray](JaxLikeImplementatio
         if copy:
             return array.copy()
         return array
+
+    def _postprocess_arithmetic_result(self, values: dict[str, JaxProtectedValue]) -> dict[str, JaxProtectedValue]:
+        """Optionally postprocess field values produced by ``+``/``-``.
+
+        Called with whichever fields ``_combine`` just computed (all of them for two same-type
+        operands, only the primary field for a scalar operand). The default is a no-op; override to
+        clamp results back into a valid domain, e.g. keeping Dirichlet concentration parameters positive.
+        """
+        return values
+
+    def _combine(self, other: object, *, subtract: bool, reflected: bool) -> Self:
+        def op(left: Any, right: Any) -> Any:  # noqa: ANN401
+            return left - right if subtract else left + right
+
+        if isinstance(other, type(self)):
+            values = self.protected_values()
+            other_values = other.protected_values()
+            combined = {
+                name: op(other_values[name], cast("Any", value))
+                if reflected
+                else op(cast("Any", value), other_values[name])
+                for name, value in values.items()
+            }
+        elif isinstance(other, self.allow_types):
+            primary_name = type(self).primary_protected_name()
+            primary_value = cast("Any", self.protected_values()[primary_name])
+            combined = {primary_name: op(other, primary_value) if reflected else op(primary_value, other)}
+        else:
+            return NotImplemented
+
+        combined = self._postprocess_arithmetic_result(combined)
+        return cast("Self", self.with_protected_values(combined))
+
+    def __add__(self, other: object) -> Self:
+        """Add another instance of the same type (fields combine pairwise) or a scalar/array.
+
+        JAX has no numpy-style operator override protocol, so this (and the other arithmetic dunders
+        here) is what makes ``+``/``-`` work at all for protected-axis subclasses.
+        """
+        return self._combine(other, subtract=False, reflected=False)
+
+    def __radd__(self, other: object) -> Self:
+        """Support ``scalar + instance``; addition here is symmetric."""
+        return self._combine(other, subtract=False, reflected=False)
+
+    def __sub__(self, other: object) -> Self:
+        """Subtract another instance of the same type or a scalar/array."""
+        return self._combine(other, subtract=True, reflected=False)
+
+    def __rsub__(self, other: object) -> Self:
+        """Support ``scalar - instance``."""
+        return self._combine(other, subtract=True, reflected=True)
 
     @override
     def reshape(self, *args: int | Sequence[int], order: str = "C") -> Self:
