@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -10,7 +10,7 @@ from scipy.stats import entropy
 import torch
 from torch import nn
 
-from probly.evaluation.tasks import selective_prediction
+from probly.evaluation.selective_prediction import selective_prediction
 from probly.method.dropconnect import dropconnect
 from probly.representer.sampler import Sampler
 from probly_benchmark import data, utils
@@ -144,9 +144,11 @@ def main(seed: int = 0) -> None:
     criterion = total_entropy(probs)
     mean_probs = probs.mean(axis=1)
     accs = (mean_probs.argmax(axis=1) == labels).astype(float)
-    auroc, bin_losses = selective_prediction(criterion, accs, n_bins=N_BINS)
+    auroc, bin_losses = cast("tuple[float, np.ndarray]", selective_prediction(criterion, accs, n_bins=N_BINS))
     random_criterion = np.random.default_rng(seed).permutation(len(accs)).astype(float)
-    random_auroc, random_bin_losses = selective_prediction(random_criterion, accs, n_bins=N_BINS)
+    random_auroc, random_bin_losses = cast(
+        "tuple[float, np.ndarray]", selective_prediction(random_criterion, accs, n_bins=N_BINS)
+    )
     baseline_acc = accs.mean()
     print(f"Baseline accuracy : {baseline_acc:.4f}")
     print(f"Selective pred AUROC: {auroc:.4f}")
