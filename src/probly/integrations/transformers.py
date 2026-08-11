@@ -35,7 +35,8 @@ def extract_logits(output: Any) -> torch.Tensor:  # noqa: ANN401
         return logits
     msg = (
         f"Cannot extract logits from a {type(output).__name__}; probly requires a transformers model with a "
-        "prediction head (e.g. a *ForSequenceClassification model)."
+        "prediction head (e.g. a *ForSequenceClassification or *ForImageClassification model) that returns a "
+        "ModelOutput with a 'logits' field (config option return_dict=True, the default)."
     )
     raise TypeError(msg)
 

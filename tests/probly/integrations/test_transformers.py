@@ -7,7 +7,7 @@ import pytest
 pytest.importorskip("torch")
 pytest.importorskip("transformers")
 import torch
-from transformers import BertConfig, BertForSequenceClassification, BertModel
+from transformers import BertConfig, BertForSequenceClassification, BertModel, ViTConfig, ViTForImageClassification
 
 from probly.method import dropout, ensemble
 from probly.predictor import predict_raw
@@ -60,6 +60,32 @@ def test_mc_dropout_end_to_end(model: BertForSequenceClassification, input_ids: 
         sample = rep.represent(input_ids)
     decomposition = quantify(sample)
     assert decomposition["total"].shape == (4,)
+
+
+def test_vision_model_end_to_end() -> None:
+    torch.manual_seed(0)
+    config = ViTConfig(
+        image_size=8,
+        patch_size=4,
+        num_channels=3,
+        hidden_size=16,
+        num_hidden_layers=1,
+        num_attention_heads=2,
+        intermediate_size=32,
+    )
+    config.num_labels = 2
+    model = ViTForImageClassification(config)
+    pixel_values = torch.randn(4, 3, 8, 8)
+
+    with torch.no_grad():
+        logits = predict_raw(model, pixel_values)
+    assert logits.shape == (4, 2)
+
+    dropout_model = dropout(model, p=0.1, predictor_type="logit_classifier")
+    dropout_model.eval()
+    with torch.no_grad():
+        sample = representer(dropout_model, num_samples=3).represent(pixel_values)
+    assert quantify(sample)["total"].shape == (4,)
 
 
 def test_ensemble_members_differ_and_predict(model: BertForSequenceClassification, input_ids: torch.Tensor) -> None:
