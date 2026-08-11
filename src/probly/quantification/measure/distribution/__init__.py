@@ -57,6 +57,8 @@ def _(_: type) -> None:
 @expected_max_probability_complement.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @max_disagreement.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @min_expected_total_variation.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@vacuity.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@dempster_shafer_uncertainty.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 def _(_: type) -> None:
     from . import jax as jax  # noqa: PLC0415
 
