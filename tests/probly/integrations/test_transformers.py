@@ -7,7 +7,17 @@ import pytest
 pytest.importorskip("torch")
 pytest.importorskip("transformers")
 import torch
-from transformers import BertConfig, BertForSequenceClassification, BertModel, ViTConfig, ViTForImageClassification
+from transformers import (
+    BertConfig,
+    BertForSequenceClassification,
+    BertModel,
+    GLPNConfig,
+    GLPNForDepthEstimation,
+    PatchTSTConfig,
+    PatchTSTForPrediction,
+    ViTConfig,
+    ViTForImageClassification,
+)
 
 from probly.method import dropout, ensemble
 from probly.predictor import predict_raw
@@ -86,6 +96,61 @@ def test_vision_model_end_to_end() -> None:
     with torch.no_grad():
         sample = representer(dropout_model, num_samples=3).represent(pixel_values)
     assert quantify(sample)["total"].shape == (4,)
+
+
+def test_depth_model_end_to_end() -> None:
+    torch.manual_seed(0)
+    config = GLPNConfig(
+        num_channels=3,
+        num_encoder_blocks=2,
+        depths=[1, 1],
+        sr_ratios=[2, 1],
+        hidden_sizes=[8, 16],
+        patch_sizes=[7, 3],
+        strides=[2, 2],
+        num_attention_heads=[1, 2],
+        mlp_ratios=[2, 2],
+        decoder_hidden_size=16,
+    )
+    model = GLPNForDepthEstimation(config)
+    pixel_values = torch.randn(2, 3, 32, 32)
+
+    with torch.no_grad():
+        depth = predict_raw(model, pixel_values)
+    assert depth.shape == (2, 64, 64)
+
+    members = ensemble(model, num_members=2)
+    with torch.no_grad():
+        sample = representer(members).represent(pixel_values)
+    assert quantify(sample)["total"].shape == (2, 64, 64)
+
+
+def test_time_series_model_end_to_end() -> None:
+    torch.manual_seed(0)
+    config = PatchTSTConfig(
+        num_input_channels=1,
+        context_length=64,
+        prediction_length=16,
+        patch_length=8,
+        patch_stride=8,
+        d_model=16,
+        num_attention_heads=2,
+        num_hidden_layers=1,
+        ffn_dim=32,
+        loss="mse",
+    )
+    model = PatchTSTForPrediction(config)
+    past_values = torch.randn(2, 64, 1)
+
+    with torch.no_grad():
+        forecast = predict_raw(model, past_values=past_values)
+    assert forecast.shape == (2, 16, 1)
+
+    dropout_model = dropout(model, p=0.1)
+    dropout_model.eval()
+    with torch.no_grad():
+        sample = representer(dropout_model, num_samples=3).represent(past_values=past_values)
+    assert quantify(sample)["total"].shape == (2, 16, 1)
 
 
 def test_ensemble_members_differ_and_predict(model: BertForSequenceClassification, input_ids: torch.Tensor) -> None:
