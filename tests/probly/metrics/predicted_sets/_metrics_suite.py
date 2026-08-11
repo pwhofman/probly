@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
-from probly.evaluation import coverage, efficiency
+from probly.metrics import coverage, efficiency
 
 if TYPE_CHECKING:
     from collections.abc import Callable

@@ -13,7 +13,7 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from probly.evaluation import average_interval_width, coverage, efficiency  # noqa: E402
+from probly.metrics import average_interval_width, coverage, efficiency  # noqa: E402
 from probly.representation.credal_set.array import (  # noqa: E402
     ArrayConvexCredalSet,
     ArrayDistanceBasedCredalSet,

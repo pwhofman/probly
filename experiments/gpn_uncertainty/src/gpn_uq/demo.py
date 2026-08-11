@@ -21,7 +21,7 @@ from torch_geometric.data import Data
 from torch_geometric.datasets import Amazon
 import networkx as nx
 
-from probly.evaluation.tasks import selective_prediction
+from probly.evaluation.selective_prediction import selective_prediction
 from probly.predictor import predict
 from probly.quantification import quantify
 from probly.train.evidential.torch import mixture_uce_loss, postnet_loss

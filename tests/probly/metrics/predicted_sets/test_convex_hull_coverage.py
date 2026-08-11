@@ -150,11 +150,6 @@ class TestDispatch:
         with pytest.raises(NotImplementedError, match="convex_hull_coverage is not implemented"):
             convex_hull_coverage(object(), _dist(np.array([[0.5, 0.5]])))
 
-    def test_evaluation_reexport_resolves_identically(self) -> None:
-        from probly.evaluation import convex_hull_coverage as reexport  # noqa: PLC0415
-
-        assert reexport is convex_hull_coverage
-
 
 class TestEdgeCases:
     def test_zero_instances_returns_nan(self) -> None:

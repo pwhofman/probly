@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
-from probly.evaluation import average_interval_width, coverage, efficiency
+from probly.metrics import average_interval_width, coverage, efficiency
 
 if TYPE_CHECKING:
     from collections.abc import Callable
