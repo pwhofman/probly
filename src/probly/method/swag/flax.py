@@ -98,22 +98,23 @@ class FlaxSWAGPredictor(nnx.Module):
     :func:`~probly.method.swag.collect_swag` periodically to record snapshots. During sampling-based prediction
     the wrapped model is rebuilt functionally with a freshly sampled parameter state via ``nnx.merge``, leaving
     the model's own parameters untouched. Sampling randomness is drawn from the ``sample`` stream of the
-    wrapper's ``rngs`` attribute, which can be reassigned for reproducibility.
+    wrapper's ``rngs`` attribute.
     """
 
-    def __init__(self, model: nnx.Module, max_rank: int = 20, scale: float = 0.5) -> None:
+    def __init__(self, model: nnx.Module, max_rank: int = 20, scale: float = 0.5, rngs: nnx.Rngs | int = 0) -> None:
         """Initialize the SWAG wrapper around a clone of the base model.
 
         Args:
             model: The base model; it is cloned, so the original is not mutated.
             max_rank: Maximum number of rows of the low-rank deviation matrix.
             scale: Default scaling factor for sampled weight perturbations.
+            rngs: Rngs for the sampling randomness.
         """
         self.model = nnx.clone(model)
         self.max_rank = max_rank
         self.scale = scale
         self.sampling = False
-        self.rngs = nnx.Rngs(0)
+        self.rngs = rngs if isinstance(rngs, nnx.Rngs) else nnx.Rngs(rngs)
         weights = self._weight_vector()
         self.mean = SWAGStat(jnp.zeros_like(weights))
         self.sq_mean = SWAGStat(jnp.zeros_like(weights))

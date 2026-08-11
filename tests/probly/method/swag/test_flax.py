@@ -158,6 +158,29 @@ class TestSampling:
         model.sample_parameters()
         assert not jnp.array_equal(weight_vector(model.model), model.mean[...])
 
+    def test_same_rngs_seed_reproduces_samples(self, linear_model: nnx.Module) -> None:
+        snapshots = None
+        vectors = []
+        for _ in range(2):
+            model = swag(linear_model, max_rank=5, rngs=42)
+            assert isinstance(model, FlaxSWAGPredictor)
+            if snapshots is None:
+                snapshots = [random_like(jax.random.key(i), model.mean[...]) for i in range(3)]
+            for weights in snapshots:
+                model.collect(weights)
+            vectors.append(model.sample_weight_vector())
+        assert jnp.array_equal(vectors[0], vectors[1])
+
+    def test_different_rngs_seeds_differ(self, linear_model: nnx.Module) -> None:
+        vectors = []
+        for seed in (0, 1):
+            model = swag(linear_model, max_rank=5, rngs=seed)
+            assert isinstance(model, FlaxSWAGPredictor)
+            model.collect(jnp.ones_like(model.mean[...]))
+            model.collect(jnp.zeros_like(model.mean[...]))
+            vectors.append(model.sample_weight_vector())
+        assert not jnp.array_equal(vectors[0], vectors[1])
+
     def test_sampling_mode_call_is_stochastic_and_non_mutating(self, linear_model: nnx.Module) -> None:
         model = make_swag(linear_model, max_rank=5)
         for i in range(3):
