@@ -73,6 +73,22 @@ class TestTransformation:
         params, _ = ravel_pytree(nnx.state(model, nnx.Param))
         assert params.size == model.mean[...].size  # only the wrapped model's weights are nnx.Param
 
+    def test_trains_like_the_base_model(self, linear_model: nnx.Module) -> None:
+        optax = pytest.importorskip("optax")
+        model = make_swag(linear_model, max_rank=5)
+        optimizer = nnx.Optimizer(model, optax.sgd(0.1), wrt=nnx.Param)
+        x, y = jnp.ones((8, 4)), jnp.zeros(8, dtype=jnp.int32)
+
+        def loss_fn(m: FlaxSWAGPredictor) -> jax.Array:
+            return optax.softmax_cross_entropy_with_integer_labels(m(x), y).mean()
+
+        before = weight_vector(model.model)
+        _, grads = nnx.value_and_grad(loss_fn)(model)
+        optimizer.update(model, grads)
+
+        assert not jnp.array_equal(weight_vector(model.model), before)  # weights train
+        assert jnp.array_equal(model.mean[...], jnp.zeros_like(model.mean[...]))  # statistics do not
+
 
 class TestCollect:
     """Tests for the collection of SWAG statistics."""

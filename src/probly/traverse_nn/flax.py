@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 from typing import TYPE_CHECKING
 
+from flax import nnx
 from flax.nnx.helpers import List, Sequential
 from flax.nnx.module import Module
 
@@ -94,7 +95,7 @@ def _module_traverser(
     state: t.State[Module],
     traverse: t.TraverserCallback[Module],
 ) -> t.TraverserResult[Module]:
-    children: Iterator[tuple[str, Module]] = obj.iter_children()  # ty: ignore[invalid-assignment]
+    children: Iterator[tuple[str, Module]] = nnx.iter_children(obj)  # ty: ignore[invalid-assignment]
     if state[TRAVERSE_REVERSED]:
         children = reversed(list(children))
     for name, module in children:
