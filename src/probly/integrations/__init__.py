@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from probly.calibrator import calibrate
-from probly.predictor import predict
+from probly.predictor import predict, predict_raw
 from probly.representer import representer
 
 _TU_BATCHED_WRAPPERS = (
@@ -37,6 +37,22 @@ _TU_PREDICTION_POSTPROCESSORS = (
 @calibrate.delayed_register(_TU_PREDICTION_POSTPROCESSORS)
 def _(_: type[object]) -> None:
     from . import torch_uncertainty as torch_uncertainty  # noqa: PLC0415
+
+
+_TRANSFORMERS_MODELS = ("transformers.modeling_utils.PreTrainedModel",)
+
+
+@predict_raw.delayed_register(_TRANSFORMERS_MODELS)
+def _(_: type[object]) -> None:
+    from . import transformers as transformers  # noqa: PLC0415
+
+
+_PEFT_MODELS = ("peft.peft_model.PeftModel",)
+
+
+@predict_raw.delayed_register(_PEFT_MODELS)
+def _(_: type[object]) -> None:
+    from . import peft as peft  # noqa: PLC0415
 
 
 __all__ = []
