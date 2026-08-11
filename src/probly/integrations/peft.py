@@ -6,14 +6,17 @@ the transformers binding; registering ``predict_raw`` for it unwraps predictions
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import torch
 from peft.peft_model import PeftModel
 
 from probly.predictor import predict_raw
 
+# Safe to import: peft declares transformers as a hard dependency.
 from .transformers import extract_predictions
+
+if TYPE_CHECKING:
+    import torch
 
 
 @predict_raw.register(PeftModel)
