@@ -74,18 +74,22 @@ def _(_: type) -> None:
 def _(_: type) -> None:
     from . import jax_categorical as jax_categorical  # noqa: PLC0415
 
+
 @create_bernoulli_distribution.delayed_register(JAX_ARRAY)
 @create_bernoulli_distribution_from_logits.delayed_register(JAX_ARRAY)
 def _(_: type) -> None:
     from . import jax_bernoulli as jax_bernoulli  # noqa: PLC0415
 
+
 @create_dirichlet_distribution_from_alphas.delayed_register(JAX_ARRAY)
 def _(_: type) -> None:
-    from . import jax_dirichlet as jax_dirichlet # noqa: PLC0415
+    from . import jax_dirichlet as jax_dirichlet  # noqa: PLC0415
+
 
 @create_gaussian_distribution.delayed_register(JAX_ARRAY)
 def _(_: type) -> None:
-    from . import jax_gaussian as jax_gaussian # noqa: PLC0415
+    from . import jax_gaussian as jax_gaussian  # noqa: PLC0415
+
 
 __all__ = [
     "ArrayBernoulliDistribution",

@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-
 import pytest
 
-jax = pytest.importorskip("jax")
+pytest.importorskip("jax")
 from jax import numpy as jnp
 
 from probly.predictor import BinaryLogitClassifier, BinaryProbabilisticClassifier, predict
@@ -104,7 +103,7 @@ class TestJaxBernoulliDistribution:
     """Jax-based Bernoulli distribution validation (concrete implementations)."""
 
     def test_invalid_probabilities_raise(self) -> None:
-        from probly.representation.distribution.jax_bernoulli import ( # noqa: PLC0415
+        from probly.representation.distribution.jax_bernoulli import (  # noqa: PLC0415
             JaxProbabilityBernoulliDistribution,
         )
 
@@ -112,7 +111,7 @@ class TestJaxBernoulliDistribution:
             JaxProbabilityBernoulliDistribution(array=jnp.array([1.5]))
 
     def test_negative_probabilities_raise(self) -> None:
-        from probly.representation.distribution.jax_bernoulli import ( # noqa: PLC0415
+        from probly.representation.distribution.jax_bernoulli import (  # noqa: PLC0415
             JaxProbabilityBernoulliDistribution,
         )
 
@@ -120,15 +119,14 @@ class TestJaxBernoulliDistribution:
             JaxProbabilityBernoulliDistribution(array=jnp.array([-0.1]))
 
     def test_array_must_be_ndarray(self) -> None:
-        from probly.representation.distribution.jax_bernoulli import ( # noqa: PLC0415
+        from probly.representation.distribution.jax_bernoulli import (  # noqa: PLC0415
             JaxProbabilityBernoulliDistribution,
         )
 
         with pytest.raises(TypeError, match="jax Array"):
-            JaxProbabilityBernoulliDistribution(array=[0.3]) # type: ignore[arg-type]
+            JaxProbabilityBernoulliDistribution(array=[0.3])  # type: ignore[arg-type]
 
     def test_logit_array_must_be_ndarray(self) -> None:
-        from probly.representation.distribution.jax_bernoulli import JaxBernoulliDistribution # noqa: PLC0415
 
         with pytest.raises(TypeError, match="jax Array"):
-            JaxLogitBernoulliDistribution(array=[0.3]) # type: ignore[arg-type]
+            JaxLogitBernoulliDistribution(array=[0.3])  # type: ignore[arg-type]

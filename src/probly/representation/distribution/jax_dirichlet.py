@@ -20,8 +20,8 @@ from probly.representation.sample.jax import JaxArraySample
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from jax.typing import DTypeLike
     from jax._src.typing import ArrayLike
+    from jax.typing import DTypeLike
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -30,7 +30,7 @@ class JaxDirichletDistribution(
     DirichletDistribution[JaxCategoricalDistribution],
 ):
     """A Dirichlet distribution stored as a jax Array.
-    
+
     Shape: (..., num_classes)
     The last axis represents the category dimension.
     """
@@ -38,10 +38,6 @@ class JaxDirichletDistribution(
     alphas: jax.Array
     protected_axes: ClassVar[dict[str, int]] = {"alphas": 1}
     permitted_functions: ClassVar[set[Callable]] = {jax_mean, jax_sum, jax_average}
-    permitted_ufuncs: ClassVar[dict[jnp.ufunc, list[str]]] = {
-        jnp.add: ["__call__"],
-        jnp.subtract: ["__call__"],
-    }
 
     def __post_init__(self) -> None:
         """Validate the concentration parameters."""
@@ -84,17 +80,17 @@ class JaxDirichletDistribution(
         gammas = jax.random.gamma(
             prng_key,
             self.alphas,
-            shape = (num_samples, *self.alphas.shape),
+            shape=(num_samples, *self.alphas.shape),
         )
         return JaxArraySample(array=JaxProbabilityCategoricalDistribution(gammas), sample_axis=0)
 
     @override
-    def _postprocess_ufunc_result(self, result: jax.Array, *, ufunc: jnp.ufunc, method: str) -> jax.Array:
-        del ufunc, method
-        return jnp.maximum(result, 1e-10)
+    def _postprocess_arithmetic_result(self, values: dict[str, Any]) -> dict[str, Any]:
+        """Keep concentration parameters strictly positive after ``+``/``-``."""
+        return {name: jnp.maximum(value, 1e-10) for name, value in values.items()}
 
     @override
-    def __eq__(self, value: Any) -> jax.Array: # ty: ignore[invalid-method-override] # noqa: PYI032
+    def __eq__(self, value: Any) -> jax.Array:  # ty: ignore[invalid-method-override] # noqa: PYI032
         """Vectorized equality comparison."""
         if isinstance(value, JaxDirichletDistribution):
             eq = jnp.equal(self.alphas, value.alphas)
@@ -104,7 +100,7 @@ class JaxDirichletDistribution(
 
     def __hash__(self) -> int:
         """Return an identity-based hash.
-        
+
         We intentionally bypass ``super()`` here because protocol-heave MROs can
         produce invalid ``super(type, obj)`` bindings at runtime. ``object``'s
         hash gives per-instance indentity semantics.
