@@ -1,0 +1,190 @@
+"""====================================================
+Cyclone forecast uncertainty with WeatherNext
+====================================================
+
+WeatherNext (https://github.com/google-deepmind/weathernext) is Google DeepMind's family of global weather
+forecasting models. Its FGN models are stochastic: every random key yields one ensemble member. The
+WeatherNext integration wraps such a model as a probly predictor, so ``representer`` collects an ensemble
+and probly quantifies per-grid-cell forecast uncertainty.
+
+The scenario is Hurricane Milton (initialization 2024-10-07, the storm made landfall in Florida on
+2024-10-09). A single deterministic forecast gives one cyclone track and intensity, with no signal about
+where it can be trusted; the quantified ensemble marks exactly the regions where members disagree, and
+rejecting the most uncertain grid cells demonstrably lowers the forecast error (selective prediction).
+
+This example is not executed in the documentation build: it requires the ``weathernext`` package and its
+dependencies (JAX, haiku, xarray), a GPU (inference fits in 16GB), and ~600MB of downloads (public GCS
+checkpoint and HRES initial conditions). Set ``WEATHERNEXT_DATA`` to the directory holding the downloads:
+
+.. code-block:: bash
+
+    BASE=https://storage.googleapis.com/dm_graphcast/weathernext2
+    curl -o wn_mini_2024.npz "$BASE/params/WeatherNextCyclones_Mini_%3C2024.npz"
+    curl -o hres_1deg_steps12.nc \
+        "$BASE/dataset/source-hres_forecast_init-2024-10-07%2000%3A00%3A00_res-1.0_levels-13_steps-12.nc"
+"""
+
+from __future__ import annotations
+
+import dataclasses
+import os
+
+import haiku as hk
+import jax
+import matplotlib.pyplot as plt
+import numpy as np
+import xarray
+import xarray_jax
+from weathernext.utils import checkpoint, data_utils, fiddle_config_io, rollout
+from weathernext.weathernext2 import fgn
+
+from probly.evaluation.selective_prediction import selective_prediction
+from probly.integrations.weathernext import WeatherNextPredictor
+from probly.quantification import quantify
+from probly.representer import representer
+
+DATA_DIR = os.environ.get("WEATHERNEXT_DATA", ".")
+NUM_MEMBERS = 8
+
+# %%
+# Load the model and Hurricane Milton initial conditions
+# ------------------------------------------------------
+
+example_batch = xarray.load_dataset(f"{DATA_DIR}/hres_1deg_steps12.nc").compute()
+config = fiddle_config_io.get_fiddle_config_by_name("weathernext2/configs/WeatherNextCyclones_Mini")
+with open(f"{DATA_DIR}/wn_mini_2024.npz", "rb") as f:
+    ckpt = checkpoint.load(f, fgn.CheckPoint)
+
+eval_inputs, eval_targets, eval_forcings = data_utils.extract_inputs_targets_forcings(
+    example_batch,
+    target_lead_times=slice("6h", f"{(example_batch.sizes['time'] - 2) * 6}h"),
+    **dataclasses.asdict(config.task),
+)
+
+# %%
+# Build the jitted forecast function (from the WeatherNext demo)
+# --------------------------------------------------------------
+
+transformer_kwargs = config.predictor_kwargs["noisy_function_kwargs"]["mesh_model_ctor"].keywords[
+    "transformer_kwargs"
+]
+if jax.default_backend() == "gpu":
+    transformer_kwargs["attention_type"] = "triblockdiag_mha"
+
+config_inference = fgn.PredictorConfig(
+    task=config.task,
+    predictor_constructor=config.predictor_constructor,
+    predictor_kwargs=config.predictor_kwargs,
+    predictor_wrappers=config.predictor_wrappers[:-1],  # remove the ensemble wrapper
+)
+
+
+@hk.transform
+def run_forward(inputs, targets_template, forcings):
+    predictor = fgn.construct_predictor(config_inference)
+    return predictor(inputs, targets_template=targets_template, forcings=forcings)
+
+
+run_forward_jitted = jax.jit(lambda rng, i, t, f: run_forward.apply(ckpt.params, rng, i, t, f))
+run_forward_pmap = xarray_jax.pmap(run_forward_jitted, dim="sample")
+
+
+# %%
+# Wrap the model as a probly predictor
+# ------------------------------------
+#
+# ``ensemble_fn`` forecasts all requested members at once, parallelized across
+# the available GPUs by the pmapped WeatherNext rollout.
+
+
+def ensemble_fn(seeds, inputs, targets_template, forcings):
+    rngs = np.stack([jax.random.fold_in(jax.random.PRNGKey(0), seed) for seed in seeds])
+    chunks = list(
+        rollout.chunked_prediction_generator_multiple_runs(
+            predictor_fn=run_forward_pmap,
+            rngs=rngs,
+            inputs=inputs,
+            targets_template=targets_template,
+            forcings=forcings,
+            num_steps_per_chunk=1,
+            num_samples=len(seeds),
+            pmap_devices=jax.local_devices(),
+        )
+    )
+    return xarray.combine_by_coords(chunks).isel(batch=0)
+
+
+predictor = WeatherNextPredictor(ensemble_fn=ensemble_fn)
+rep = representer(predictor, num_samples=NUM_MEMBERS)
+samples = rep.represent(eval_inputs, eval_targets * np.nan, eval_forcings)
+
+# %%
+# Quantify forecast uncertainty per grid cell
+# -------------------------------------------
+
+u10, v10 = samples["10m_u_component_of_wind"], samples["10m_v_component_of_wind"]
+wind_members = np.sqrt(u10.array**2 + v10.array**2)  # (members, time, lat, lon)
+wind_sample = type(u10)(wind_members, sample_axis=0)
+wind_uncertainty = np.asarray(quantify(wind_sample)["total"])  # (time, lat, lon)
+wind_mean = wind_members.mean(axis=0)
+
+target_wind = np.sqrt(
+    eval_targets["10m_u_component_of_wind"].isel(batch=0).values ** 2
+    + eval_targets["10m_v_component_of_wind"].isel(batch=0).values ** 2
+)
+
+# %%
+# Uncertainty is informative: selective prediction on grid cells
+# --------------------------------------------------------------
+#
+# Using the quantified uncertainty as rejection criterion, discarding the most
+# uncertain cells lowers the wind forecast error much faster than random
+# rejection - the single deterministic forecast offers no such signal.
+
+t = wind_members.shape[1] - 1  # last lead time
+errors = np.abs(wind_mean[t] - target_wind[t]).ravel()
+criterion = wind_uncertainty[t].ravel()
+
+aurc, risks = selective_prediction(criterion, errors, n_bins=50)
+rng = np.random.default_rng(0)
+aurc_random, risks_random = selective_prediction(rng.permutation(len(errors)).astype(float), errors, n_bins=50)
+print(f"AURC uncertainty-based: {aurc:.4f}  vs random rejection: {aurc_random:.4f}")
+
+# %%
+# Visualize Hurricane Milton forecast uncertainty
+# -----------------------------------------------
+
+lat, lon = example_batch.lat.values, example_batch.lon.values
+lat_mask, lon_mask = (lat >= 10) & (lat <= 40), (lon >= 255) & (lon <= 300)
+extent = [lon[lon_mask].min(), lon[lon_mask].max(), lat[lat_mask].min(), lat[lat_mask].max()]
+origin = "lower" if lat[0] < lat[-1] else "upper"
+
+
+def crop(a: np.ndarray) -> np.ndarray:
+    return a[..., lat_mask, :][..., lon_mask]
+
+
+lead = (t + 1) * 6
+fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+panels = [
+    (crop(target_wind[t]), f"HRES target 10m wind, +{lead}h [m/s]", "viridis"),
+    (crop(wind_mean[t]), "WeatherNext ensemble mean", "viridis"),
+    (crop(wind_uncertainty[t]), "probly total uncertainty", "magma"),
+]
+for ax, (data, title, cmap) in zip(axes.flat, panels):
+    im = ax.imshow(data, origin=origin, extent=extent, cmap=cmap)
+    ax.set_title(title)
+    fig.colorbar(im, ax=ax, shrink=0.8)
+
+coverage = 1 - np.arange(len(risks)) / len(risks)
+axes[1, 1].plot(coverage, risks, label=f"reject by uncertainty (AURC {aurc:.3f})")
+axes[1, 1].plot(coverage, risks_random, label=f"reject randomly (AURC {aurc_random:.3f})")
+axes[1, 1].set_xlabel("coverage (fraction of grid cells kept)")
+axes[1, 1].set_ylabel("mean 10m wind error [m/s]")
+axes[1, 1].set_title("Selective prediction on grid cells")
+axes[1, 1].legend()
+axes[1, 1].invert_xaxis()
+
+fig.suptitle(f"Hurricane Milton, WeatherNext Cyclones Mini x probly ({NUM_MEMBERS} members)")
+fig.tight_layout()
+plt.show()
