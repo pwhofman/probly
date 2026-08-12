@@ -13,8 +13,9 @@ The scenario is Hurricane Milton (initialization 2024-10-07, landfall in Florida
 72 hours ahead. Compared head-to-head at identical compute (eight forward rollouts each):
 
 * the **single-model distribution**: one checkpoint, eight samples of its learned generative noise;
-* a **checkpoint ensemble**: two independently trained checkpoints, four samples each, adding epistemic
-  weight-space diversity;
+* a small **deep ensemble**: the two independently trained released checkpoints, four samples each,
+  adding epistemic weight-space diversity (training-time methods like SWAG are not applicable here,
+  since only final weights are released, not training trajectories);
 * two **single-forecast heuristics** that need no distribution at all (strong winds and sharp gradients
   are hard to predict), plus random rejection.
 
@@ -109,7 +110,7 @@ run_forward_params = jax.jit(lambda params, rng, i, t, f: run_forward.apply(para
 #
 # ``make_ensemble_fn`` builds a bulk forecast function: members are split evenly
 # across the given checkpoints (one checkpoint gives the single-model generative
-# distribution, two give a checkpoint ensemble) and rolled out with the pmapped
+# distribution, two give a small deep ensemble) and rolled out with the pmapped
 # WeatherNext machinery, parallelized across the available GPUs.
 
 
@@ -144,14 +145,14 @@ def make_ensemble_fn(member_params):
 
 
 single_model = WeatherNextPredictor(ensemble_fn=make_ensemble_fn([checkpoints["2024"].params]))
-checkpoint_ensemble = WeatherNextPredictor(
+deep_ensemble = WeatherNextPredictor(
     ensemble_fn=make_ensemble_fn([checkpoints["2024"].params, checkpoints["2023"].params])
 )
 
 samples_single = representer(single_model, num_samples=NUM_MEMBERS).represent(
     eval_inputs, eval_targets * np.nan, eval_forcings
 )
-samples_ckpt = representer(checkpoint_ensemble, num_samples=NUM_MEMBERS).represent(
+samples_ckpt = representer(deep_ensemble, num_samples=NUM_MEMBERS).represent(
     eval_inputs, eval_targets * np.nan, eval_forcings
 )
 
@@ -193,7 +194,7 @@ gradient = np.hypot(*np.gradient(single_forecast))
 rng = np.random.default_rng(0)
 criteria = {
     "single-model distribution (1 ckpt x 8 samples)": wind_uncertainty[t].ravel(),
-    "checkpoint ensemble (2 ckpts x 4 samples)": ckpt_uncertainty[t].ravel(),
+    "deep ensemble (2 ckpts x 4 samples)": ckpt_uncertainty[t].ravel(),
     "single-forecast wind magnitude": single_forecast.ravel(),
     "single-forecast gradient": gradient.ravel(),
     "random": rng.permutation(len(errors)).astype(float),
@@ -222,7 +223,7 @@ panels = [
     ("target", crop(target_wind[t]), f"HRES target 10m wind, +{lead}h [m/s]", "viridis"),
     ("mean", crop(wind_mean[t]), "WeatherNext ensemble mean", "viridis"),
     ("single_unc", crop(wind_uncertainty[t]), "single-model distribution uncertainty", "magma"),
-    ("ckpt_unc", crop(ckpt_uncertainty[t]), "checkpoint ensemble uncertainty", "magma"),
+    ("ckpt_unc", crop(ckpt_uncertainty[t]), "deep ensemble uncertainty", "magma"),
 ]
 for key, data, title, cmap in panels:
     im = axes[key].imshow(data, origin=origin, extent=extent, cmap=cmap)
