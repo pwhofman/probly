@@ -106,18 +106,21 @@ run_forward_pmap = xarray_jax.pmap(run_forward_jitted, dim="sample")
 
 def ensemble_fn(seeds, inputs, targets_template, forcings):
     rngs = np.stack([jax.random.fold_in(jax.random.PRNGKey(0), seed) for seed in seeds])
-    chunks = list(
-        rollout.chunked_prediction_generator_multiple_runs(
-            predictor_fn=run_forward_pmap,
-            rngs=rngs,
-            inputs=inputs,
-            targets_template=targets_template,
-            forcings=forcings,
-            num_steps_per_chunk=1,
-            num_samples=len(seeds),
-            pmap_devices=jax.local_devices(),
-        )
-    )
+    chunks = []
+    for chunk in rollout.chunked_prediction_generator_multiple_runs(
+        predictor_fn=run_forward_pmap,
+        rngs=rngs,
+        inputs=inputs,
+        targets_template=targets_template,
+        forcings=forcings,
+        num_steps_per_chunk=1,
+        num_samples=len(seeds),
+        pmap_devices=jax.local_devices(),
+    ):
+        # Block on the chunk so progress is observable; autoregressive steps serialize anyway.
+        jax.block_until_ready([xarray_jax.unwrap_data(chunk[var]) for var in chunk.data_vars])
+        chunks.append(chunk)
+        print(f"forecast chunk {len(chunks)} done", flush=True)
     return xarray.combine_by_coords(chunks).isel(batch=0)
 
 
