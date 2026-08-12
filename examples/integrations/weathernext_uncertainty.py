@@ -149,17 +149,28 @@ target_wind = np.sqrt(
 # --------------------------------------------------------------
 #
 # Using the quantified uncertainty as rejection criterion, discarding the most
-# uncertain cells lowers the wind forecast error much faster than random
-# rejection - the single deterministic forecast offers no such signal.
+# uncertain cells lowers the wind forecast error. To make the comparison fair,
+# a single forecast also provides heuristic uncertainty signals: strong winds
+# and sharp gradients are harder to predict, so the wind magnitude and the
+# gradient magnitude of one ensemble member serve as single-model baselines.
+# All criteria reject cells of the same ensemble-mean forecast, isolating the
+# value of the uncertainty signal itself.
 
 t = wind_members.shape[1] - 1  # last lead time
 errors = np.abs(wind_mean[t] - target_wind[t]).ravel()
-criterion = wind_uncertainty[t].ravel()
 
-aurc, risks = selective_prediction(criterion, errors, n_bins=50)
+single_forecast = wind_members[0, t]  # what a single model run provides
+gradient = np.hypot(*np.gradient(single_forecast))
 rng = np.random.default_rng(0)
-aurc_random, risks_random = selective_prediction(rng.permutation(len(errors)).astype(float), errors, n_bins=50)
-print(f"AURC uncertainty-based: {aurc:.4f}  vs random rejection: {aurc_random:.4f}")
+criteria = {
+    "ensemble uncertainty": wind_uncertainty[t].ravel(),
+    "single-forecast wind magnitude": single_forecast.ravel(),
+    "single-forecast gradient": gradient.ravel(),
+    "random": rng.permutation(len(errors)).astype(float),
+}
+curves = {name: selective_prediction(criterion, errors, n_bins=50) for name, criterion in criteria.items()}
+for name, (aurc, _) in curves.items():
+    print(f"AURC {name}: {aurc:.4f}")
 
 # %%
 # Visualize Hurricane Milton forecast uncertainty
@@ -187,9 +198,9 @@ for ax, (data, title, cmap) in zip(axes.flat, panels):
     ax.set_title(title)
     fig.colorbar(im, ax=ax, shrink=0.8)
 
-coverage = 1 - np.arange(len(risks)) / len(risks)
-axes[1, 1].plot(coverage, risks, label=f"reject by uncertainty (AURC {aurc:.3f})")
-axes[1, 1].plot(coverage, risks_random, label=f"reject randomly (AURC {aurc_random:.3f})")
+for name, (aurc, risks) in curves.items():
+    coverage = 1 - np.arange(len(risks)) / len(risks)
+    axes[1, 1].plot(coverage, risks, label=f"{name} (AURC {aurc:.3f})")
 axes[1, 1].set_xlabel("coverage (fraction of grid cells kept)")
 axes[1, 1].set_ylabel("mean 10m wind error [m/s]")
 axes[1, 1].set_title("Selective prediction on grid cells")
