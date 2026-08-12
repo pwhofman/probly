@@ -5,6 +5,10 @@ conditions to an xarray forecast and sample one ensemble member per random key. 
 :class:`WeatherNextPredictor` makes it a stochastic probly predictor: every call draws a fresh member, and
 ``representer(predictor, num_samples=...)`` collects an ensemble and returns one
 :class:`~probly.representation.sample.array.ArraySample` per forecast variable, ready for quantification.
+
+Note that only sampling-based consumption is supported: probly's model transformations (e.g. ``dropout``)
+cannot be applied because the wrapped model is an opaque function without a torch or flax module tree, and
+training-time methods (e.g. ``swag``) are unavailable since only final weights are released.
 """
 
 from __future__ import annotations
