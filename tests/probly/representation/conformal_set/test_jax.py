@@ -14,7 +14,7 @@ class TestJaxArrayOneHotConformalSet:
 
         arr = jnp.array([[True, False, True], [False, True, False]])
         s = JaxArrayOneHotConformalSet(array=arr)
-        jnp.array_equal(s.set_size, jnp.array([2, 1]))
+        assert jnp.array_equal(s.set_size, jnp.array([2, 1]))
 
     def test_from_int_array_with_only_zeros_and_ones(self) -> None:
         from probly.representation.conformal_set.jax import JaxArrayOneHotConformalSet  # noqa: PLC0415
@@ -23,7 +23,7 @@ class TestJaxArrayOneHotConformalSet:
         s = JaxArrayOneHotConformalSet(array=arr)
         # Coerced to bool internally.
         assert s.array.dtype == bool
-        jnp.array_equal(s.set_size, jnp.array([2, 1]))
+        assert jnp.array_equal(s.set_size, jnp.array([2, 1]))
 
     def test_invalid_array_raises(self) -> None:
         from probly.representation.conformal_set.jax import JaxArrayOneHotConformalSet  # noqa: PLC0415
@@ -63,7 +63,7 @@ class TestJaxArrayIntervalConformalSet:
         lower = jnp.array([1.0, 2.0])
         upper = jnp.array([2.0, 3.0])
         s = JaxArrayIntervalConformalSet.from_array_samples(lower, upper)
-        jnp.array_equal(s.set_size, jnp.array([1.0, 1.0]))
+        assert jnp.array_equal(s.set_size, jnp.array([1.0, 1.0]))
 
     def test_from_array_samples_non_array_raises(self) -> None:
         from probly.representation.conformal_set.jax import JaxArrayIntervalConformalSet  # noqa: PLC0415
@@ -78,7 +78,7 @@ class TestJaxArrayIntervalConformalSet:
         lower = JaxArraySample(array=jnp.array([1.0, 2.0]), sample_axis=0)
         upper = JaxArraySample(array=jnp.array([2.0, 3.0]), sample_axis=0)
         s = JaxArrayIntervalConformalSet.from_samples(lower, upper)
-        jnp.array_equal(s.set_size, jnp.array([1.0, 1.0]))
+        assert jnp.array_equal(s.set_size, jnp.array([1.0, 1.0]))
 
     def test_from_samples_non_sample_raises(self) -> None:
         from probly.representation.conformal_set.jax import JaxArrayIntervalConformalSet  # noqa: PLC0415
