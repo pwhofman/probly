@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from jax import numpy as jnp
 import pytest
+
+pytest.importorskip("jax")
+from jax import numpy as jnp
 
 
 class TestJaxArrayOneHotConformalSet:

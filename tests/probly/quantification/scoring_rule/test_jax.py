@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import pytest
+
+pytest.importorskip("jax")
 from jax import numpy as jnp
 
 from probly.quantification.scoring_rule import BrierLoss, LogLoss, SphericalLoss, ZeroOneLoss

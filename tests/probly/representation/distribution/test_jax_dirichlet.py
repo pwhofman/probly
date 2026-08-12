@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 import pytest
+
+pytest.importorskip("jax")
+import jax
+from jax import numpy as jnp
 from scipy import stats
 
+from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
 from probly.representation.jax_functions import (
     jax_average,
     jax_expand_dims,
@@ -14,12 +19,6 @@ from probly.representation.jax_functions import (
     jax_transpose,
 )
 from probly.representation.sample.jax import JaxArraySample
-
-pytest.importorskip("jax")
-import jax
-from jax import numpy as jnp
-
-from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
 
 
 def test_jax_dirichlet_initialization_valid() -> None:

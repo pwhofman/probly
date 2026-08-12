@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from jax import numpy as jnp
 import pytest
+
+pytest.importorskip("jax")
+from jax import numpy as jnp
 from scipy.stats import entropy as scipy_entropy
 
 from probly.quantification import (
