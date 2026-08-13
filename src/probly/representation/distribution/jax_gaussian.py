@@ -54,7 +54,7 @@ class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[
         """Get the standard deviation."""
         return jnp.sqrt(self.var)
 
-    def quantile(self, q: float | list[float] | jnp.ndarray) -> jnp.ndarray:
+    def quantile(self, q: float | list[float] | jax.Array) -> jax.Array:
         """Calculate the quantile function at the given points."""
         q_arr = jnp.asarray(q)
         res = norm.ppf(q_arr, loc=self.mean[..., None], scale=self.std[..., None])
@@ -68,7 +68,7 @@ class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[
         self,
         num_samples: int = 1,
         prng_key: ArrayLike | None = None,
-    ) -> JaxArraySample[jnp.ndarray]:
+    ) -> JaxArraySample[jax.Array]:
         """Draw samples and wrap them in an JaxArraySample (sample_axis=0)."""
         if prng_key is None:
             prng_key = jax.random.key(0)
@@ -90,7 +90,7 @@ class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[
         return np.asarray(stacked, dtype=dtype, copy=copy)
 
     @override
-    def __eq__(self, other: Any) -> jnp.ndarray:  # ty: ignore[invalid-method-override] # noqa: PYI032
+    def __eq__(self, other: Any) -> jax.Array:  # ty: ignore[invalid-method-override] # noqa: PYI032
         """Compare two Gaussians by their parameter."""
         if not isinstance(other, JaxGaussianDistribution):
             return NotImplemented
@@ -106,8 +106,8 @@ class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[
         return object.__hash__(self)
 
 
-@create_gaussian_distribution.register(jnp.ndarray)
-def _(mean: jnp.ndarray, var: jnp.ndarray | None = None) -> JaxGaussianDistribution:
+@create_gaussian_distribution.register(jax.Array)
+def _(mean: jax.Array, var: jax.Array | None = None) -> JaxGaussianDistribution:
     """Create a JaxGaussianDistribution from jax arrays."""
     if var is None:
         if mean.shape[-1] != 2:
