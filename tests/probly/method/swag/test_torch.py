@@ -184,6 +184,44 @@ class TestSampling:
         assert torch.equal(parameters_to_vector(model.model.parameters()), before)
 
 
+class TestPredictRawRouting:
+    """Tests that predict_raw dispatches on the wrapped model's type."""
+
+    class InnerWithPredict(nn.Sequential):
+        """Inner model whose type-specific prediction differs from its forward."""
+
+        def predict(self, x: torch.Tensor) -> torch.Tensor:
+            return self(x) + 100.0
+
+    def test_routes_to_inner_model_handling(self) -> None:
+        from probly.predictor import predict_raw  # noqa: PLC0415
+
+        inner = self.InnerWithPredict(nn.Linear(4, 3))
+        model = make_swag(inner, max_rank=2)
+        x = torch.randn(5, 4)
+        with torch.no_grad():
+            routed = predict_raw(model, x)
+            forwarded = model(x)
+        # predict_raw picks up the inner type's handling (predict), plain forward does not.
+        torch.testing.assert_close(routed, forwarded + 100.0)
+
+    def test_sampling_mode_is_stochastic_and_restores_weights(self, linear_model: nn.Module) -> None:
+        from probly.predictor import predict_raw  # noqa: PLC0415
+
+        model = make_swag(linear_model, max_rank=5)
+        for _ in range(3):
+            collect_with_weights(model, torch.randn_like(model.mean))
+
+        before = parameters_to_vector(model.model.parameters()).clone()
+        model.sampling = True
+        x = torch.randn(5, 4)
+        with torch.no_grad():
+            first, second = predict_raw(model, x), predict_raw(model, x)
+        model.sampling = False
+        assert not torch.equal(first, second)
+        assert torch.equal(parameters_to_vector(model.model.parameters()), before)
+
+
 class TestRepresenter:
     """End-to-end tests through the representer and quantification."""
 
