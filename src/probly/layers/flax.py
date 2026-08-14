@@ -29,6 +29,18 @@ def _init_fast_weight(
     raise ValueError(msg)
 
 
+def _inverse_softplus(x: jax.Array) -> jax.Array:
+    """Compute the inverse softplus function.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        Output tensor after applying the inverse softplus function.
+    """
+    return jnp.log(jnp.exp(x) - 1)
+
+
 class DropConnectLinear(nnx.Module):
     """Custom Linear layer with DropConnect applied to weights during training based on :cite:`aminiDeepEvidential2020`.
 
