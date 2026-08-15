@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import pytest
 
+from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
+
 pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
@@ -278,3 +280,43 @@ def test_average_preserves_distribution_type_and_uses_weights() -> None:
     assert isinstance(averaged, JaxDirichletDistribution)
     assert averaged.shape == (3,)
     assert jnp.allclose(averaged.alphas, jax_average(alphas, axis=0, weights=weights))
+
+
+def test_mean_returns_probability_categorical() -> None:
+    alphas = jnp.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    dist = JaxDirichletDistribution(alphas=alphas)
+
+    mean = dist.mean
+
+    assert isinstance(mean, JaxProbabilityCategoricalDistribution)
+
+
+def test_eq_with_dirchlet() -> None:
+    """``__eq__`` accepts dirichlet comparison."""
+    alphas = jnp.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    dist1 = JaxDirichletDistribution(alphas=alphas)
+    dist2 = JaxDirichletDistribution(alphas=alphas)
+
+    assert isinstance(dist1, JaxDirichletDistribution)
+    assert isinstance(dist2, JaxDirichletDistribution)
+    assert dist1 is not dist2
+    assert dist1.__eq__(dist2).all()
+
+
+def test_eq_with_alphas() -> None:
+    """``__eq__`` accepts non-dirichlet comparison."""
+    alphas = jnp.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    dist = JaxDirichletDistribution(alphas=alphas)
+
+    assert isinstance(dist, JaxDirichletDistribution)
+    assert not isinstance(alphas, JaxDirichletDistribution)
+    assert dist.__eq__(alphas).all()
+
+
+def test_hash_returns_identity() -> None:
+    """``hash`` returns int."""
+    alphas = jnp.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    dist = JaxDirichletDistribution(alphas=alphas)
+
+    assert isinstance(dist, JaxDirichletDistribution)
+    assert isinstance(hash(dist), int)

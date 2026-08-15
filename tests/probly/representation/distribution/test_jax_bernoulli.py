@@ -99,6 +99,16 @@ def test_binary_logit_predictor_converts_to_bernoulli_distribution() -> None:
     assert jnp.allclose(prediction.logits[..., 1] - prediction.logits[..., 0], jnp.array([-1.0, 1.0]))
 
 
+def test_jax_logit_bernoulli_to_categorical_returns_categorical() -> None:
+    logits = jnp.array([-2.0, 0.0, 2.0], dtype=float)
+
+    dist = JaxLogitBernoulliDistribution(logits)
+
+    categorical = dist.to_categorical()
+
+    assert isinstance(categorical, JaxCategoricalDistribution)
+
+
 class TestJaxBernoulliDistribution:
     """Jax-based Bernoulli distribution validation (concrete implementations)."""
 

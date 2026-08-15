@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import pytest
 
+from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
+
 pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
@@ -181,6 +183,18 @@ def test_copy_method() -> None:
     assert copied == dist
     assert copied is not dist
     assert copied.mean is not dist.mean
+
+
+def test_eq_returns_notimplemented_for_wrong_other_type() -> None:
+    """``__eq__`` declines when compared against a non-Gaussian type."""
+    mean = jnp.array([10.0, 20.0, 30.0])
+    var = jnp.array([1.0, 1.0, 1.0])
+    dist = JaxGaussianDistribution(mean, var)
+
+    probabilities = jnp.array([[2.0, 3.0, 5.0], [1.0, 1.0, 1.0]], dtype=float)
+    categorical = JaxProbabilityCategoricalDistribution(probabilities)
+
+    assert dist.__eq__(categorical) is NotImplemented
 
 
 class TestJaxGaussianDistribution:

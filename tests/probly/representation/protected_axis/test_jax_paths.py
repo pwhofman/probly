@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from inspect import signature
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 import pytest
@@ -14,10 +15,22 @@ import jax
 from jax import numpy as jnp
 
 from probly.representation._protected_axis.jax import JaxAxisProtected
+from probly.representation._protected_axis.jax_functions import (
+    ProtectedValueSequenceInternals,
+    _validate_batch_sync,
+    jax_axis_protected_internals,
+    protected_batch_reduction_function,
+    protected_concatenate_function,
+    protected_stack_function,
+)
+
+if TYPE_CHECKING:
+    from probly.representation.array_like import ToIndices
 from probly.representation.jax_functions import (
     jax_astype,
     jax_average,
     jax_concatenate,
+    jax_conj,
     jax_copy,
     jax_expand_dims,
     jax_matrix_transpose,
@@ -50,6 +63,7 @@ class _ScalarArray(JaxAxisProtected[Any]):
 
     array: jax.Array
     protected_axes: ClassVar[dict[str, int]] = {"array": 0}
+    permitted_functions: ClassVar[set[Any]] = {jax_mean, jax_sum, jax_average, jax_std, jax_var}
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,6 +112,18 @@ class _MixedBatchArrayNumpy(JaxAxisProtected[Any]):
     array: jax.Array
     sidecar: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"array": 0, "sidecar": 0}
+
+
+@dataclass(frozen=True, slots=True)
+class _BrokenIndexing(JaxAxisProtected[Any]):
+    """Single protected field whose indexing helper skips the trailing-axis guard."""
+
+    array: jax.Array
+    protected_axes: ClassVar[dict[str, int]] = {"array": 1}
+
+    def _index_with_protected_axes(self, index: ToIndices, protected_axes_count: int) -> tuple[Any, ...]:
+        del protected_axes_count
+        return index if isinstance(index, tuple) else (index,)
 
 
 # ---------------------------------------------------------------------------
@@ -563,6 +589,26 @@ def test_copy_function_declines_numpy_sidecars() -> None:
         _ = jax_copy(x)
 
 
+def test_conj_leaves_real_fields_untouched() -> None:
+    """A real-valued field is returned as-is, without going through ``jnp.conj``."""
+    x = _SingleArray(jnp.arange(6.0).reshape(2, 3))
+
+    y = jax_conj(x)
+
+    assert isinstance(y, _SingleArray)
+    assert y.array is x.array
+
+
+def test_conj_negates_imaginary_part_of_complex_fields() -> None:
+    """A complex-valued field is conjugated elementwise."""
+    x = _SingleArray(jnp.array([[1 + 2j, 3 - 1j, 0j]]))
+
+    y = jax_conj(x)
+
+    assert isinstance(y, _SingleArray)
+    assert jnp.allclose(y.array, jnp.conj(x.array))
+
+
 @pytest.mark.parametrize("func", [jax_std, jax_var])
 def test_std_and_var_reduce_only_batch_axes(func: Callable[..., Any]) -> None:
     """``jax_std``/``jax_var`` are registered alongside the other batch reductions."""
@@ -588,6 +634,25 @@ def test_take_along_axis_forwards_mode() -> None:
     assert jnp.array_equal(y.array[0, 0], x.array[0, 2])
 
 
+def test_take_along_axis_rejects_non_array_indices() -> None:
+    """A plain list of indices (not a jax/numpy array) falls through to ``NotImplemented``."""
+    x = _SingleArray(jnp.arange(6.0).reshape(2, 3))
+
+    with pytest.raises(TypeError, match="no implementation found"):
+        _ = jax_take_along_axis(x, [0, 1], axis=0)
+
+
+def test_average_skips_weight_expansion_for_unprotected_axes() -> None:
+    """Weight expansion is a no-op when the field has no protected trailing axes."""
+    x = _ScalarArray(jnp.arange(6.0).reshape(2, 3))
+    weights = jnp.ones((2, 3))
+
+    y = jax_average(x, weights=weights)
+
+    assert isinstance(y, _ScalarArray)
+    assert jnp.allclose(y.array, jnp.average(x.array, weights=weights))
+
+
 def test_moveaxis_accepts_sequence_source_and_destination() -> None:
     """Tuple ``source``/``destination`` are normalized against the batch dimensions."""
     x = _SingleArray(jnp.arange(24.0).reshape(2, 3, 4))
@@ -607,6 +672,34 @@ def test_reshape_function_expands_none_entries() -> None:
 
     assert isinstance(y, _SingleArray)
     assert tuple(y.array.shape) == (1, 6, 4)
+
+
+def test_reshape_rejects_missing_shape() -> None:
+    """``shape=None`` falls through to ``NotImplemented``, since no target shape was given."""
+    x = _SingleArray(jnp.arange(24.0).reshape(2, 3, 4))
+
+    with pytest.raises(TypeError, match="no implementation found"):
+        _ = jax_reshape(x, shape=None)
+
+
+def test_reshape_accepts_bare_int_shape() -> None:
+    """A bare int ``shape`` is treated as a single-element batch target shape."""
+    x = _SingleArray(jnp.arange(24.0).reshape(2, 3, 4))
+
+    y = jax_reshape(x, shape=6)
+
+    assert isinstance(y, _SingleArray)
+    assert tuple(y.array.shape) == (6, 4)
+
+
+def test_reshape_forwards_copy_kwarg() -> None:
+    """``copy=True`` is forwarded through to the underlying reshape call."""
+    x = _SingleArray(jnp.arange(24.0).reshape(2, 3, 4))
+
+    y = jax_reshape(x, shape=(6,), copy=True)
+
+    assert isinstance(y, _SingleArray)
+    assert tuple(y.array.shape) == (6, 4)
 
 
 def test_jax_like_converts_dtype() -> None:
@@ -711,6 +804,16 @@ def test_squeeze_rejects_non_int_axis() -> None:
         _ = jax_squeeze(x, axis="0")
 
 
+def test_squeeze_accepts_tuple_axis() -> None:
+    """A tuple/list ``axis`` squeezes each named batch dimension."""
+    x = _SingleArray(jnp.arange(3.0).reshape(1, 1, 3))
+
+    y = jax_squeeze(x, axis=(0, 1))
+
+    assert isinstance(y, _SingleArray)
+    assert tuple(y.array.shape) == (3,)
+
+
 def test_swapaxes_rejects_non_int_axis() -> None:
     """``swapaxes`` only accepts integer axes."""
     x = _SingleArray(jnp.arange(24.0).reshape(2, 3, 4))
@@ -758,3 +861,259 @@ def test_subclassing_a_concrete_protected_class_is_rejected() -> None:
         @dataclass(frozen=True, slots=True)
         class _Sub(_SingleArray):
             pass
+
+
+def test_jax_sharding() -> None:
+    """Test sharding property."""
+    x = _SingleArray(jnp.arange(24.0).reshape(2, 3, 4))
+    assert x.sharding == x.protected_value().sharding
+    assert isinstance(x.sharding, jax.sharding.Sharding)
+    assert x.devices() == {jax.devices()[0]}
+
+
+def test_jax_gather_protected_values_rejects_indexing_into_protected_axis() -> None:
+    """``_gather_protected_values`` guards against indices that shrink a protected axis.
+
+    Unreachable through the normal ``__getitem__`` path (see ``_BrokenIndexing``), but the
+    guard still protects subclasses that override the indexing helpers incorrectly.
+    """
+    x = _BrokenIndexing(jnp.arange(15.0).reshape(5, 3))
+    with pytest.raises(IndexError, match="modified protected trailing axes"):
+        _ = x[:, 0]
+
+
+def test_jax_radd() -> None:
+    """``other + x`` falls back to ``__radd__`` and matches ``x + other`` (addition is symmetric)."""
+    x = _SingleArray(jnp.arange(6.0).reshape(2, 3))
+    result = 5.0 + x
+    assert isinstance(result, _SingleArray)
+    assert jnp.allclose(result.array, x.array + 5.0)
+    assert jnp.allclose(result.array, (x + 5.0).array)
+
+
+def test_jax_rsub() -> None:
+    """``other - x`` falls back to ``__rsub__`` and computes ``other - x``, not ``x - other``."""
+    x = _SingleArray(jnp.arange(6.0).reshape(2, 3))
+    result = 5.0 - x
+    assert isinstance(result, _SingleArray)
+    assert jnp.allclose(result.array, 5.0 - x.array)
+
+
+def test_jax_take_along_axis() -> None:
+    """``take_along_axis`` method delegates to ``jax_take_along_axis`` on the batch axis."""
+    x = _SingleArray(jnp.arange(24.0).reshape(2, 3, 4))
+    index = jnp.array([[2, 0], [1, 1]])
+
+    gathered = x.take_along_axis(index, axis=1)
+
+    assert isinstance(gathered, _SingleArray)
+    assert tuple[int, ...](gathered.array.shape) == (2, 2, 4)
+    assert jnp.allclose(gathered.array, jnp.take_along_axis(x.array, index[..., None], axis=1))
+
+
+# ---------------------------------------------------------------------------
+# Direct internals coverage.
+#
+# Everything below calls the module-private extraction/dispatch helpers directly instead of
+# going through __getitem__/jax_reshape/jax_concatenate/etc. The branches exercised here are
+# defense-in-depth: given the invariants the public API already enforces before a value can
+# reach these helpers (e.g. dispatch only routes here once at least one argument is confirmed
+# protected, and JaxAxisProtected.protected_values() validates field ndim eagerly), they cannot
+# be triggered through any real JaxAxisProtected subclass or public jax_* call. They still guard
+# against a future refactor (or a hand-rolled duck-typed object) weakening those invariants, so
+# they are tested by calling the helpers with deliberately invalid/synthetic inputs.
+# ---------------------------------------------------------------------------
+
+
+def _unwrap(func: Callable, levels: int) -> Callable:
+    """Peel back ``@wraps``-based decoration to reach a dispatch handler's original body."""
+    for _ in range(levels):
+        func = func.__wrapped__  # ty: ignore[unresolved-attribute]
+    return func
+
+
+_reduction_impl = _unwrap(protected_batch_reduction_function, 2)
+_concatenate_impl = _unwrap(protected_concatenate_function, 1)
+_stack_impl = _unwrap(protected_stack_function, 1)
+
+
+class _FakeEmptyProtectedAxes:
+    """Duck-typed stand-in with an empty ``protected_axes``, which real subclasses cannot have."""
+
+    protected_axes: ClassVar[dict[str, int]] = {}
+    permitted_functions: ClassVar[set[Any]] = set()
+
+    def protected_values(self, func: Callable | None = None) -> dict[str, Any]:
+        del func
+        return {}
+
+    def with_protected_values(self, values: dict[str, Any], func: Callable | None = None) -> Any:  # noqa: ANN401
+        del values, func
+        return self
+
+
+class _FakeMissingField:
+    """Duck-typed stand-in whose ``protected_values()`` omits a field it declares."""
+
+    protected_axes: ClassVar[dict[str, int]] = {"array": 1}
+    permitted_functions: ClassVar[set[Any]] = set()
+
+    def protected_values(self, func: Callable | None = None) -> dict[str, Any]:
+        del func
+        return {}
+
+    def with_protected_values(self, values: dict[str, Any], func: Callable | None = None) -> Any:  # noqa: ANN401
+        del values, func
+        return self
+
+
+class _FakeInsufficientNdim:
+    """Duck-typed stand-in whose field ndim is below its declared protected-axis count.
+
+    Real ``JaxAxisProtected`` subclasses cannot reach this state: ``protected_values()``
+    validates field ndim eagerly and raises before returning.
+    """
+
+    protected_axes: ClassVar[dict[str, int]] = {"array": 2}
+    permitted_functions: ClassVar[set[Any]] = set()
+
+    def protected_values(self, func: Callable | None = None) -> dict[str, Any]:
+        del func
+        return {"array": jnp.array(5.0)}
+
+    def with_protected_values(self, values: dict[str, Any], func: Callable | None = None) -> Any:  # noqa: ANN401
+        del values, func
+        return self
+
+
+def test_jax_axis_protected_internals_rejects_empty_protected_axes() -> None:
+    """A duck-typed object with no declared protected axes is not extractable."""
+    assert jax_axis_protected_internals(_FakeEmptyProtectedAxes()) is None
+
+
+def test_jax_axis_protected_internals_rejects_missing_field() -> None:
+    """A duck-typed object whose ``protected_values()`` omits a declared field is rejected."""
+    assert jax_axis_protected_internals(_FakeMissingField()) is None
+
+
+def test_jax_axis_protected_internals_rejects_insufficient_ndim() -> None:
+    """A duck-typed object whose field ndim undercuts its declared protected axes is rejected."""
+    assert jax_axis_protected_internals(_FakeInsufficientNdim()) is None
+
+
+def test_validate_batch_sync_rejects_result_that_lost_protected_axes() -> None:
+    """A result field with fewer dims than its protected-axis count is rejected."""
+    with pytest.raises(ValueError, match="removed protected trailing axes"):
+        _validate_batch_sync({"array": jnp.array(5.0)}, {"array": 1})
+
+
+def test_validate_batch_sync_rejects_mismatched_batch_shapes() -> None:
+    """Result fields that disagree on batch shape are rejected."""
+    with pytest.raises(ValueError, match="inconsistent batch-shapes"):
+        _validate_batch_sync({"left": jnp.ones((2, 3)), "right": jnp.ones((3, 3))}, {"left": 1, "right": 1})
+
+
+def test_reduction_promotes_bare_scalar_result_to_array() -> None:
+    """A reduction ``func`` returning a bare Python float is promoted back to a 0-d array.
+
+    The registered reduction functions (``jax_mean``/``jax_sum``/...) always return array-likes,
+    so this path is unreachable via the public API; ``fake_sum`` stands in for a hypothetical
+    ``func`` that does not.
+    """
+    x = _ScalarArray(jnp.arange(6.0).reshape(2, 3))
+    internals = jax_axis_protected_internals(x, jax_sum, check_is_permitted=True)
+    assert internals is not None
+
+    def fake_sum(value: jax.Array, axis: object = None, **kwargs: object) -> float:
+        del axis, kwargs
+        return float(jnp.sum(value))
+
+    params = signature(jax_sum).bind(x.array, axis=None)
+    params.apply_defaults()
+
+    result = _reduction_impl(fake_sum, params, internals)
+
+    assert isinstance(result, _ScalarArray)
+    assert result.array.ndim == 0
+
+
+def test_reduction_rejects_result_that_shrinks_protected_axis() -> None:
+    """A reduction ``func`` that changes the protected trailing axis is rejected."""
+    x = _SingleArray(jnp.arange(6.0).reshape(2, 3))
+    internals = jax_axis_protected_internals(x, jax_sum, check_is_permitted=True)
+    assert internals is not None
+
+    def fake_shrink(value: jax.Array, axis: object = None, **kwargs: object) -> jax.Array:
+        del axis, kwargs
+        return value[..., :1]
+
+    params = signature(jax_sum).bind(x.array, axis=0)
+    params.apply_defaults()
+
+    with pytest.raises(ValueError, match="Reduction modified protected trailing axes"):
+        _reduction_impl(fake_shrink, params, internals)
+
+
+def test_concatenate_impl_returns_notimplemented_without_protected_inputs() -> None:
+    """Calling the concatenate handler directly with no protected inputs declines.
+
+    Unreachable via ``jax_concatenate`` itself: dispatch only routes here once at least one
+    argument is already confirmed protected.
+    """
+    params = signature(jax_concatenate).bind((jnp.ones((2, 3)), jnp.ones((2, 3))), axis=0, dtype=None)
+    params.apply_defaults()
+
+    assert _concatenate_impl(jax_concatenate, params) is NotImplemented
+
+
+def test_stack_impl_returns_notimplemented_without_protected_inputs() -> None:
+    """Calling the stack handler directly with no protected inputs declines."""
+    params = signature(jax_stack).bind((jnp.ones((2, 3)), jnp.ones((2, 3))), axis=0, out=None, dtype=None)
+    params.apply_defaults()
+
+    assert _stack_impl(jax_stack, params) is NotImplemented
+
+
+def test_concatenate_rejects_sequence_with_template_but_no_protected_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Defends against a template present without any protected input, should extraction ever regress.
+
+    ``_extract_protected_value_sequence_internals`` cannot itself produce this combination (a
+    non-None template implies ``has_protected``), so the extraction step is monkeypatched to
+    return the contradictory result directly.
+    """
+    x = _SingleArray(jnp.arange(6.0).reshape(2, 3))
+    internals = jax_axis_protected_internals(x)
+    assert internals is not None
+    fake_sequence = ProtectedValueSequenceInternals(False, internals, {"array": [x.array, x.array]})
+
+    monkeypatch.setattr(
+        "probly.representation._protected_axis.jax_functions._extract_protected_value_sequence_internals",
+        lambda *_args, **_kwargs: fake_sequence,
+    )
+
+    params = signature(jax_concatenate).bind((x, x), axis=0, dtype=None)
+    params.apply_defaults()
+
+    with pytest.raises(TypeError, match="concatenate with protected out requires at least one protected input"):
+        _concatenate_impl(jax_concatenate, params)
+
+
+def test_stack_rejects_sequence_with_template_but_no_protected_values(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Stack analog of the concatenate defense-in-depth check above."""
+    x = _SingleArray(jnp.arange(6.0).reshape(2, 3))
+    internals = jax_axis_protected_internals(x)
+    assert internals is not None
+    fake_sequence = ProtectedValueSequenceInternals(False, internals, {"array": [x.array, x.array]})
+
+    monkeypatch.setattr(
+        "probly.representation._protected_axis.jax_functions._extract_protected_value_sequence_internals",
+        lambda *_args, **_kwargs: fake_sequence,
+    )
+
+    params = signature(jax_stack).bind((x, x), axis=0, out=None, dtype=None)
+    params.apply_defaults()
+
+    with pytest.raises(TypeError, match="stack with protected out requires at least one protected input"):
+        _stack_impl(jax_stack, params)
