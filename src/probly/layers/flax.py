@@ -88,7 +88,7 @@ class BayesLinear(nnx.Module):
 
         shape = (self.in_features, self.out_features)
 
-        rho = cast("float", _inverse_softplus(jax.Array(posterior_std)))
+        rho = cast("float", _inverse_softplus(jnp.array(posterior_std)))
         self.weight_rho = nnx.Param(jnp.full(shape, rho))
 
         if use_base_weights:
