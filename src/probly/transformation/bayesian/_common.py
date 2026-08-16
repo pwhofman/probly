@@ -10,6 +10,7 @@ from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, flexdispatch_traverser, traverse
 
 if TYPE_CHECKING:
+    from flax.nnx.rnglib import Rngs
     from flextype.isinstance import LazyType
 
     from probly.predictor import Predictor
@@ -24,6 +25,8 @@ USE_BASE_WEIGHTS = GlobalVariable[bool]("USE_BASE_WEIGHTS", default=False)
 POSTERIOR_STD = GlobalVariable[float]("POSTERIOR_STD", default=0.05)
 PRIOR_MEAN = GlobalVariable[float]("PRIOR_MEAN", default=0.0)
 PRIOR_STD = GlobalVariable[float]("PRIOR_STD", default=1.0)
+type RNG = Rngs | int
+RNGS = GlobalVariable[RNG]("RNGS", "rngs for flax layer initialization.", default=1)
 
 bayesian_traverser = flexdispatch_traverser[object](name="bayesian_traverser")
 
@@ -38,6 +41,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
             "posterior_std": POSTERIOR_STD,
             "prior_mean": PRIOR_MEAN,
             "prior_std": PRIOR_STD,
+            "rngs": RNGS,
         },
     )
 
@@ -50,6 +54,7 @@ def bayesian[**In, Out](
     posterior_std: float = POSTERIOR_STD.default,
     prior_mean: float = PRIOR_MEAN.default,
     prior_std: float = PRIOR_STD.default,
+    rngs: RNG = RNGS.default,
 ) -> BayesianPredictor[In, Out]:
     """Create a Bayesian predictor from a base predictor based on :cite:`blundellWeightUncertainty2015`.
 
@@ -59,6 +64,7 @@ def bayesian[**In, Out](
         posterior_std: The initial posterior standard deviation.
         prior_mean: The prior mean.
         prior_std: The prior standard deviation.
+        rngs: The rngs used for flax layer initialization (ignored for torch models).
 
     Returns:
         The Bayesian predictor.
@@ -80,6 +86,7 @@ def bayesian[**In, Out](
             POSTERIOR_STD: posterior_std,
             PRIOR_MEAN: prior_mean,
             PRIOR_STD: prior_std,
+            RNGS: rngs,
             CLONE: True,
         },
     )
