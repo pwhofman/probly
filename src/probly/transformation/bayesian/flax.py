@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from flax.nnx import Linear, Rngs, rnglib
+from flax.nnx import Conv, Linear, Rngs, rnglib
 
-from probly.layers.flax import BayesLinear
+from probly.layers.flax import BayesConv, BayesLinear
 
 from ._common import register
 
@@ -32,4 +32,28 @@ def replace_flax_bayesian_linear(
     )
 
 
+def replace_flax_bayesian_conv(
+    obj: Conv,
+    use_base_weights: bool,
+    posterior_std: float,
+    prior_mean: float,
+    prior_std: float,
+    rngs: rnglib.Rngs | rnglib.RngStream | int,
+    rng_collection: str = "bayesian",
+) -> BayesConv:
+    """Replace a given layer by a BayesConv layer :cite:`blundellWeightUncertainty2015`."""
+    if isinstance(rngs, int):
+        rngs = Rngs(rngs)
+    return BayesConv(
+        base_layer=obj,
+        use_base_weights=use_base_weights,
+        posterior_std=posterior_std,
+        prior_mean=prior_mean,
+        prior_std=prior_std,
+        rng_collection=rng_collection,
+        rngs=rngs,
+    )
+
+
 register(Linear, replace_flax_bayesian_linear)
+register(Conv, replace_flax_bayesian_conv)
