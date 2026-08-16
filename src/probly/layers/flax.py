@@ -84,7 +84,7 @@ class BayesLinear(nnx.Module):
         self.dot_general = base_layer.dot_general
         self.promote_dtype = base_layer.promote_dtype
 
-        self._init_rngs(rngs)
+        self.rngs = _init_rngs(self.rng_collection, rngs)
 
         shape = (self.in_features, self.out_features)
 
@@ -127,7 +127,7 @@ class BayesLinear(nnx.Module):
             self.bias_prior_mu = BayesianPrior(bias_prior_mu_init)
             self.bias_prior_sigma = BayesianPrior(jnp.full(bias_shape, prior_std))
 
-    def _init_rngs(
+    """def _init_rngs(
         self,
         rngs: rnglib.Rngs | rnglib.RngStream | None = None,
     ) -> None:
@@ -139,7 +139,7 @@ class BayesLinear(nnx.Module):
             self.rngs = nnx.data(None)
         else:
             msg = f"rngs must be a RNGS, RngStream or None, but got {type(rngs)}."
-            raise TypeError(msg)
+            raise TypeError(msg)"""
 
     def __call__(
         self,
@@ -217,6 +217,224 @@ class BayesLinear(nnx.Module):
                 ),
             )
         return kl
+
+
+class BayesConv(nnx.Conv):
+    """Implementation of a Bayesian convolutional layer based on :cite:`blundellWeightUncertainty2015`.
+
+    Reuses ``nnx.Conv.__call__`` for the actual convolution (padding canonicalization,
+    dimension numbers, grouped convolution, masking, ...) by sampling a fresh ``kernel``/
+    ``bias`` from the variational posterior on every call and temporarily installing them
+    before delegating to ``super().__call__``, analogous to :class:`BatchEnsembleConv`.
+
+    Attributes:
+        in_features: int, number of input channels.
+        out_features: int, number of output channels.
+        kernel_size: int or Sequence[int], size of the kernel.
+        strides: int or Sequence[int], the inter-window strides.
+        padding: flax.typing.PaddingLike, see ``nnx.Conv`` for the accepted forms.
+        input_dilation: int or Sequence[int], dilation applied to the inputs.
+        kernel_dilation: int or Sequence[int], dilation applied to the kernel ('atrous' convolution).
+        feature_group_count: int, number of groups for grouped convolution.
+        use_bias: bool, whether to add a bias term.
+        weight_mu: nnx.Param, mean of the posterior weights.
+        weight_rho: nnx.Param, transformed standard deviation of the posterior weights.
+        weight_prior_mu: BayesianPrior, mean of the prior weights.
+        weight_prior_sigma: BayesianPrior, standard deviation of the prior weights.
+        bias_mu: nnx.Param, mean of the posterior bias.
+        bias_rho: nnx.Param, transformed standard deviation of the posterior bias.
+        bias_prior_mu: BayesianPrior, mean of the prior bias.
+        bias_prior_sigma: BayesianPrior, standard deviation of the prior bias.
+    """
+
+    def __init__(
+        self,
+        base_layer: nnx.Conv,
+        use_base_weights: bool = False,
+        posterior_std: float = 0.05,
+        prior_mean: float = 0.0,
+        prior_std: float = 1.0,
+        rng_collection: str = "bayesian",
+        rngs: rnglib.Rngs | rnglib.RngStream | None = None,
+    ) -> None:
+        """Reparameterize the standard deviation of the posterior weights using the re-parameterization trick.
+
+        Args:
+            base_layer: The original conv layer to be used.
+            use_base_weights: Whether to use the weights of the base layer as prior means.
+            posterior_std: Initial standard deviation of the posterior.
+            prior_mean: Mean of the prior.
+            prior_std: Standard deviation of the prior.
+            rng_collection: str, the rng collection name to use when requesting a rng key.
+            rngs: rnglib.Rngs or rnglib.RngStream or None, rng key.
+        """
+        self.rng_collection = rng_collection
+        _copy_conv_attrs(self, base_layer)
+
+        self.rngs = _init_rngs(self.rng_collection, rngs)
+
+        shape = self.kernel_shape
+
+        rho = cast("float", _inverse_softplus(jnp.array(posterior_std)))
+
+        if use_base_weights:
+            self.weight_mu = nnx.Param(base_layer.kernel.value)
+            prior_mu_init = base_layer.kernel.value
+        else:
+            if self.rngs is None:
+                msg = "rngs must be provided when use_base_weights is False, to initialize new weights."
+                raise ValueError(msg)
+            kernel_init = jax.nn.initializers.lecun_normal()
+            self.weight_mu = nnx.Param(kernel_init(self.rngs(), shape, base_layer.param_dtype))
+            prior_mu_init = jnp.full(shape, prior_mean)
+
+        self.weight_rho = nnx.Param(jnp.full(shape, rho, self.param_dtype))
+        self.weight_prior_mu = BayesianPrior(prior_mu_init)
+        self.weight_prior_sigma = BayesianPrior(jnp.full(shape, prior_std))
+
+        # placeholder kernel Param required by nnx.Conv.__call__; resampled on every __call__
+        self.kernel = nnx.Param(self.weight_mu[...])
+
+        if not self.use_bias:
+            self.bias = nnx.data(None)
+            self.bias_mu = nnx.data(None)
+            self.bias_rho = nnx.data(None)
+            self.bias_prior_mu = nnx.data(None)
+            self.bias_prior_sigma = nnx.data(None)
+            return
+
+        bias_shape = (self.out_features,)
+
+        if use_base_weights and base_layer.bias is not None:
+            self.bias_mu = nnx.Param(base_layer.bias.value)
+            bias_prior_mu_init = base_layer.bias.value
+        else:
+            self.bias_mu = nnx.Param(jnp.zeros(bias_shape, self.param_dtype))
+            bias_prior_mu_init = jnp.full(bias_shape, prior_mean)
+
+        self.bias_rho = nnx.Param(jnp.full(bias_shape, rho, self.param_dtype))
+        self.bias_prior_mu = BayesianPrior(bias_prior_mu_init)
+        self.bias_prior_sigma = BayesianPrior(jnp.full(bias_shape, prior_std))
+
+        # placeholder bias Param required by nnx.Conv.__call__; resampled on every __call__
+        self.bias = nnx.Param(self.bias_mu[...])
+
+    def __call__(
+        self,
+        inputs: jax.Array,
+        out_sharding: Any = None,  # noqa: ANN401
+        *,
+        rngs: rnglib.Rngs | rnglib.RngStream | None = None,
+    ) -> jax.Array:
+        """Forward pass of the Bayesian conv layer.
+
+        Args:
+            inputs: jax.Array, input data
+            out_sharding: Optional sharding specification for the output array.
+            rngs: rnglib.Rngs, rnglib.RngStream or None, optional key used to sample the
+                reparameterization noise for this call. Falls back to the rng stream captured
+                at construction time.
+
+        Returns:
+            jax.Array, layer output
+        """
+        rngs = first_from(
+            rngs,
+            self.rngs,
+            error_msg="""No `rngs` argument was provided to BayesianConv
+                as either a __call__ argument or class attribute.""",
+        )
+        if isinstance(rngs, rnglib.Rngs):
+            key = rngs[self.rng_collection]()
+        elif isinstance(rngs, rnglib.RngStream):
+            key = rngs()
+        elif isinstance(rngs, jax.Array):
+            key = rngs
+        else:
+            msg = f"rngs must be Rngs, RngStream or jax.Array, but got {type(rngs)}."
+            raise TypeError(msg)
+
+        key_weight, key_bias = jax.random.split(key)
+
+        eps_weight = jax.random.normal(key_weight, self.weight_mu.shape, self.param_dtype)
+        weight = self.weight_mu[...] + jnp.log1p(jnp.exp(self.weight_rho[...])) * eps_weight
+        self.kernel = nnx.Param(weight)
+
+        if self.use_bias:
+            bias_mu = nnx.Param(self.bias_mu)
+            bias_rho = nnx.Param(self.bias_rho)
+            eps_bias = jax.random.normal(key_bias, bias_mu.shape, self.param_dtype)
+            bias = bias_mu[...] + jnp.log1p(jnp.exp(bias_rho[...])) * eps_bias
+            self.bias = nnx.Param(bias)
+
+        return super().__call__(inputs, out_sharding=out_sharding)
+
+    @property
+    def kl_divergence(self) -> jax.Array:
+        """Computes the KL-divergence between the posterior and prior."""
+        weight_mu = cast("jax.Array", self.weight_mu)
+        weight_rho = cast("jax.Array", self.weight_rho)
+        kl = jnp.sum(
+            _kl_divergence_gaussian(
+                weight_mu,
+                jnp.log1p(jnp.exp(weight_rho)) ** 2,
+                cast("jax.Array", self.weight_prior_mu),
+                cast("jax.Array", self.weight_prior_sigma) ** 2,
+            ),
+        )
+        if self.use_bias:
+            bias_mu = cast("jax.Array", self.bias_mu)
+            bias_rho = cast("jax.Array", self.bias_rho)
+            kl += jnp.sum(
+                _kl_divergence_gaussian(
+                    bias_mu,
+                    jnp.log1p(jnp.exp(bias_rho)) ** 2,
+                    cast("jax.Array", self.bias_prior_mu),
+                    cast("jax.Array", self.bias_prior_sigma) ** 2,
+                ),
+            )
+        return kl
+
+
+def _copy_conv_attrs(module: BayesConv, base_layer: nnx.Conv) -> None:
+    """Copy the structural ``nnx.Conv`` config from ``base_layer`` onto ``module``.
+
+    These attributes are read directly by ``nnx.Conv.__call__``, which :class:`BayesConv`
+    reuses via ``super().__call__`` instead of reimplementing the convolution itself.
+    """
+    module.kernel_shape = base_layer.kernel_shape
+    module.in_features = base_layer.in_features
+    module.out_features = base_layer.out_features
+    module.kernel_size = base_layer.kernel_size
+    module.strides = base_layer.strides
+    module.padding = base_layer.padding
+    module.input_dilation = base_layer.input_dilation
+    module.kernel_dilation = base_layer.kernel_dilation
+    module.feature_group_count = base_layer.feature_group_count
+    module.use_bias = base_layer.use_bias
+    module.mask = base_layer.mask
+    module.dtype = base_layer.dtype
+    module.param_dtype = base_layer.param_dtype
+    module.precision = base_layer.precision
+    module.conv_general_dilated = base_layer.conv_general_dilated
+    module.promote_dtype = base_layer.promote_dtype
+    module.preferred_element_type = base_layer.preferred_element_type
+
+
+def _init_rngs(
+    rng_collection: str,
+    rngs: rnglib.Rngs | rnglib.RngStream | None = None,
+) -> nnx.Rngs | None:
+    if isinstance(rngs, rnglib.Rngs):
+        rngs = rngs[rng_collection].fork()
+    elif isinstance(rngs, rnglib.RngStream):
+        rngs = rngs.fork()
+    elif rngs is None:
+        rngs = nnx.data(None)
+    else:
+        msg = f"rngs must be a RNGS, RngStream or None, but got {type(rngs)}."
+        raise TypeError(msg)
+    return rngs
 
 
 def _kl_divergence_gaussian(
