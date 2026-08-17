@@ -127,20 +127,6 @@ class BayesLinear(nnx.Module):
             self.bias_prior_mu = BayesianPrior(bias_prior_mu_init)
             self.bias_prior_sigma = BayesianPrior(jnp.full(bias_shape, prior_std))
 
-    """def _init_rngs(
-        self,
-        rngs: rnglib.Rngs | rnglib.RngStream | None = None,
-    ) -> None:
-        if isinstance(rngs, rnglib.Rngs):
-            self.rngs = rngs[self.rng_collection].fork()
-        elif isinstance(rngs, rnglib.RngStream):
-            self.rngs = rngs.fork()
-        elif rngs is None:
-            self.rngs = nnx.data(None)
-        else:
-            msg = f"rngs must be a RNGS, RngStream or None, but got {type(rngs)}."
-            raise TypeError(msg)"""
-
     def __call__(
         self,
         inputs: jax.Array,
@@ -424,7 +410,7 @@ def _copy_conv_attrs(module: BayesConv, base_layer: nnx.Conv) -> None:
 def _init_rngs(
     rng_collection: str,
     rngs: rnglib.Rngs | rnglib.RngStream | None = None,
-) -> nnx.Rngs | None:
+) -> nnx.rnglib.RngStream | None:
     if isinstance(rngs, rnglib.Rngs):
         rngs = rngs[rng_collection].fork()
     elif isinstance(rngs, rnglib.RngStream):
