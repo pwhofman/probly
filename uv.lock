@@ -1556,14 +1556,14 @@ wheels = [
 
 [[package]]
 name = "mpltern"
-version = "1.0.4"
+version = "1.0.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "matplotlib" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b9/4a/6a4d93d676f21236362ebfff8534ffb74eb5fbda73fbe6c7f1c3ff5e251e/mpltern-1.0.4.tar.gz", hash = "sha256:204d54227406eea54b602abac1617d0e3c2c2484fbd6718f455c238bca7cc60d", size = 1365358, upload-time = "2024-04-25T20:52:42.044Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3e/55/f5f15d0eabe2c723f74d3dfd3f130181e7938f784ab9ba8b823e6aab2b5e/mpltern-1.0.5.tar.gz", hash = "sha256:86f60a883d64d0de0e9af044fb4f7b7d5d1025fdef54e631c1c2691c60f4b2f6", size = 1368368, upload-time = "2026-06-26T21:09:12.312Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/60/f6/251635c032d4eca83fa880c27e40c9849ef74110d971c3a64f6347cb5a3d/mpltern-1.0.4-py3-none-any.whl", hash = "sha256:68b1f2cb140c2984bee30bed4b652614a3070136f6fbda2eeb9e750aeb44aa78", size = 32910, upload-time = "2024-04-25T20:52:40.849Z" },
+    { url = "https://files.pythonhosted.org/packages/47/34/2fd8494bc838cf4aee9883d18231b20e9821edc943f0634475964d460107/mpltern-1.0.5-py3-none-any.whl", hash = "sha256:120ab48aed0c1913205d1424714b98e705037527075ef06073f90a7afbabeb29", size = 36723, upload-time = "2026-06-26T21:09:11.398Z" },
 ]
 
 [[package]]
