@@ -13,6 +13,11 @@ from .raps import RAPSScore, raps_score
 from .saps import SAPSScore, saps_score
 from .total_variation import TVScore, tv_score_func
 from .uacqr import uacqr_score
+from .wasserstein_distance import (
+    WassersteinDistanceScore,
+    wasserstein_distance_score,
+    wasserstein_distance_score_func,
+)
 
 __all__ = [
     "APSScore",
@@ -23,6 +28,7 @@ __all__ = [
     "RAPSScore",
     "SAPSScore",
     "TVScore",
+    "WassersteinDistanceScore",
     "absolute_error_score",
     "aps_score",
     "cqr_r_score",
@@ -38,4 +44,6 @@ __all__ = [
     "saps_score",
     "tv_score_func",
     "uacqr_score",
+    "wasserstein_distance_score",
+    "wasserstein_distance_score_func",
 ]
