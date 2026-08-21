@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
-
 pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
 
+from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
 from probly.representation.distribution.jax_gaussian import JaxGaussianDistribution
 from probly.representation.sample.jax import JaxArraySample
 
