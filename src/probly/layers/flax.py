@@ -208,10 +208,9 @@ class BayesLinear(nnx.Module):
 class BayesConv(nnx.Conv):
     """Implementation of a Bayesian convolutional layer based on :cite:`blundellWeightUncertainty2015`.
 
-    Reuses ``nnx.Conv.__call__`` for the actual convolution (padding canonicalization,
-    dimension numbers, grouped convolution, masking, ...) by sampling a fresh ``kernel``/
+    Uses `nnx.Conv.__cal__` for the actual convolution attributes by sampling a fresh ``kernel``/
     ``bias`` from the variational posterior on every call and temporarily installing them
-    before delegating to ``super().__call__``, analogous to :class:`BatchEnsembleConv`.
+    before delegating to ``super().__call__``.
 
     Attributes:
         in_features: int, number of input channels.
@@ -278,7 +277,6 @@ class BayesConv(nnx.Conv):
         self.weight_prior_mu = BayesianPrior(prior_mu_init)
         self.weight_prior_sigma = BayesianPrior(jnp.full(shape, prior_std))
 
-        # placeholder kernel Param required by nnx.Conv.__call__; resampled on every __call__
         self.kernel = nnx.Param(self.weight_mu[...])
 
         if not self.use_bias:
@@ -302,7 +300,6 @@ class BayesConv(nnx.Conv):
         self.bias_prior_mu = BayesianPrior(bias_prior_mu_init)
         self.bias_prior_sigma = BayesianPrior(jnp.full(bias_shape, prior_std))
 
-        # placeholder bias Param required by nnx.Conv.__call__; resampled on every __call__
         self.bias = nnx.Param(self.bias_mu[...])
 
     def __call__(
@@ -383,10 +380,10 @@ class BayesConv(nnx.Conv):
 
 
 def _copy_conv_attrs(module: BayesConv, base_layer: nnx.Conv) -> None:
-    """Copy the structural ``nnx.Conv`` config from ``base_layer`` onto ``module``.
+    """Copy the attributes of `nnx.Conv` onto BayesConv layer.
 
-    These attributes are read directly by ``nnx.Conv.__call__``, which :class:`BayesConv`
-    reuses via ``super().__call__`` instead of reimplementing the convolution itself.
+    They are read by `nnx.Conv.__call__`, which is resued by BayesConv layer
+    via `super().__call__()` instead of reimplementing the convolution itself.
     """
     module.kernel_shape = base_layer.kernel_shape
     module.in_features = base_layer.in_features
