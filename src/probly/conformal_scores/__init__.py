@@ -11,7 +11,7 @@ from .kullback_leibler import KLDivergenceScore, kl_divergence_score, kl_diverge
 from .lac import lac_score
 from .raps import RAPSScore, raps_score
 from .saps import SAPSScore, saps_score
-from .total_variation import TVScore, tv_score_func
+from .total_variation import TVScore, tv_score, tv_score_func
 from .uacqr import uacqr_score
 from .wasserstein_distance import (
     WassersteinDistanceScore,
@@ -42,6 +42,7 @@ __all__ = [
     "lac_score",
     "raps_score",
     "saps_score",
+    "tv_score",
     "tv_score_func",
     "uacqr_score",
     "wasserstein_distance_score",
