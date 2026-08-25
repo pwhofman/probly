@@ -29,10 +29,6 @@ def _init_fast_weight(
     raise ValueError(msg)
 
 
-class BayesianPrior(nnx.Variable):
-    """Class to create variables similar to torch Buffer."""
-
-
 class BayesLinear(nnx.Module):
     """Implement a Bayesian linear layer based on :cite:`blundellWeightUncertainty2015`.
 
@@ -103,8 +99,8 @@ class BayesLinear(nnx.Module):
             prior_mu_init = jnp.full(shape, prior_mean)
 
         self.weight_rho = nnx.Param(jnp.full(shape, rho, self.param_dtype))
-        self.weight_prior_mu = BayesianPrior(prior_mu_init)
-        self.weight_prior_sigma = BayesianPrior(jnp.full(shape, prior_std))
+        self.weight_prior_mu = nnx.data(prior_mu_init)
+        self.weight_prior_sigma = nnx.data(jnp.full(shape, prior_std))
 
         if not self.use_bias:
             self.bias_mu = nnx.data(None)
@@ -124,8 +120,8 @@ class BayesLinear(nnx.Module):
                 bias_prior_mu_init = jnp.full(bias_shape, prior_mean)
 
             self.bias_rho = nnx.Param(jnp.full(bias_shape, rho, self.param_dtype))
-            self.bias_prior_mu = BayesianPrior(bias_prior_mu_init)
-            self.bias_prior_sigma = BayesianPrior(jnp.full(bias_shape, prior_std))
+            self.bias_prior_mu = nnx.data(bias_prior_mu_init)
+            self.bias_prior_sigma = nnx.data(jnp.full(bias_shape, prior_std))
 
     def __call__(
         self,
@@ -190,7 +186,7 @@ class BayesLinear(nnx.Module):
                 weight_mu,
                 jnp.log1p(jnp.exp(weight_rho)) ** 2,
                 cast("jax.Array", self.weight_prior_mu),
-                cast("jax.Array", self.weight_prior_sigma) ** 2,
+                self.weight_prior_sigma**2,
             ),
         )
         if self.bias:
@@ -224,12 +220,12 @@ class BayesConv(nnx.Conv):
         use_bias: bool, whether to add a bias term.
         weight_mu: nnx.Param, mean of the posterior weights.
         weight_rho: nnx.Param, transformed standard deviation of the posterior weights.
-        weight_prior_mu: BayesianPrior, mean of the prior weights.
-        weight_prior_sigma: BayesianPrior, standard deviation of the prior weights.
+        weight_prior_mu: jax.Array, mean of the prior weights.
+        weight_prior_sigma: jax.Array, standard deviation of the prior weights.
         bias_mu: nnx.Param, mean of the posterior bias.
         bias_rho: nnx.Param, transformed standard deviation of the posterior bias.
-        bias_prior_mu: BayesianPrior, mean of the prior bias.
-        bias_prior_sigma: BayesianPrior, standard deviation of the prior bias.
+        bias_prior_mu: jax.Array, mean of the prior bias.
+        bias_prior_sigma: jax.Array, standard deviation of the prior bias.
     """
 
     def __init__(
@@ -274,8 +270,8 @@ class BayesConv(nnx.Conv):
             prior_mu_init = jnp.full(shape, prior_mean)
 
         self.weight_rho = nnx.Param(jnp.full(shape, rho, self.param_dtype))
-        self.weight_prior_mu = BayesianPrior(prior_mu_init)
-        self.weight_prior_sigma = BayesianPrior(jnp.full(shape, prior_std))
+        self.weight_prior_mu = nnx.data(prior_mu_init)
+        self.weight_prior_sigma = nnx.data(jnp.full(shape, prior_std))
 
         self.kernel = nnx.Param(self.weight_mu[...])
 
@@ -297,8 +293,8 @@ class BayesConv(nnx.Conv):
             bias_prior_mu_init = jnp.full(bias_shape, prior_mean)
 
         self.bias_rho = nnx.Param(jnp.full(bias_shape, rho, self.param_dtype))
-        self.bias_prior_mu = BayesianPrior(bias_prior_mu_init)
-        self.bias_prior_sigma = BayesianPrior(jnp.full(bias_shape, prior_std))
+        self.bias_prior_mu = nnx.data(bias_prior_mu_init)
+        self.bias_prior_sigma = nnx.data(jnp.full(bias_shape, prior_std))
 
         self.bias = nnx.Param(self.bias_mu[...])
 
@@ -362,7 +358,7 @@ class BayesConv(nnx.Conv):
                 weight_mu,
                 jnp.log1p(jnp.exp(weight_rho)) ** 2,
                 cast("jax.Array", self.weight_prior_mu),
-                cast("jax.Array", self.weight_prior_sigma) ** 2,
+                self.weight_prior_sigma**2,
             ),
         )
         if self.use_bias:
