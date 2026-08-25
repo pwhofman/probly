@@ -4,14 +4,16 @@ from __future__ import annotations
 
 from typing import cast
 
-from flax import nnx
-import jax
-import jax.numpy as jnp
 import pytest
 
 from probly.layers.flax import BayesConv, BayesLinear, _copy_conv_attrs, _inverse_softplus, _kl_divergence_gaussian
 from probly.transformation.bayesian import bayesian
 from tests.probly.flax_utils import count_layers
+
+flax = pytest.importorskip("flax")
+from flax import nnx  # noqa: E402
+import jax  # noqa: E402
+import jax.numpy as jnp  # noqa: E402
 
 use_base_weights = False
 posterior_std = 0.05
