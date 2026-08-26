@@ -17,8 +17,7 @@ pytest.importorskip("jax")
 
 import jax.numpy as jnp
 
-from probly.evaluation import average_interval_width, coverage, efficiency
-from probly.metrics import convex_hull_coverage
+from probly.metrics import average_interval_width, convex_hull_coverage, coverage, efficiency
 from probly.representation.credal_set.array import (
     ArrayConvexCredalSet,
     ArrayDistanceBasedCredalSet,
