@@ -10,6 +10,8 @@ from probly.predictor import RandomPredictor
 from probly.transformation.transformation import predictor_transformation
 
 if TYPE_CHECKING:
+    from flax.nnx.rnglib import Rngs, RngStream
+
     from probly.predictor import Predictor
 
 
@@ -19,7 +21,9 @@ class SWAGPredictor[**In, Out](RandomPredictor[In, Out], Protocol):
 
 
 @flexdispatch
-def swag_generator[**In, Out](base: Predictor[In, Out], max_rank: int, scale: float) -> SWAGPredictor[In, Out]:
+def swag_generator[**In, Out](
+    base: Predictor[In, Out], max_rank: int, scale: float, rngs: Rngs | RngStream | int
+) -> SWAGPredictor[In, Out]:
     """Generate a SWAG predictor from a base predictor."""
     msg = f"No SWAG generator is registered for type {type(base)}"
     raise NotImplementedError(msg)
@@ -42,7 +46,9 @@ def collect_swag(predictor: Predictor) -> None:
 
 @predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=True)
 @SWAGPredictor.register_factory
-def swag[**In, Out](base: Predictor[In, Out], max_rank: int = 20, scale: float = 0.5) -> SWAGPredictor[In, Out]:
+def swag[**In, Out](
+    base: Predictor[In, Out], max_rank: int = 20, scale: float = 0.5, rngs: Rngs | RngStream | int = 0
+) -> SWAGPredictor[In, Out]:
     """Create a SWAG predictor from a base predictor based on :cite:`maddoxSimpleBaseline2019`.
 
     SWAG (SWA-Gaussian) fits a Gaussian distribution to the weights visited by SGD: the mean is the stochastic
@@ -59,6 +65,8 @@ def swag[**In, Out](base: Predictor[In, Out], max_rank: int = 20, scale: float =
         scale: Scaling factor applied to the sampled weight perturbations. The default of 0.5 is the 1/2
             covariance scaling the paper uses for the full posterior; its diagonal-only variant samples without
             this factor, which corresponds to a scale of 1.0.
+        rngs: Optional rngs for the sampling randomness of the flax backend; the torch backend uses the global
+            torch generator instead and ignores this. Default is 0.
 
     Returns:
         The SWAG predictor.
@@ -69,4 +77,4 @@ def swag[**In, Out](base: Predictor[In, Out], max_rank: int = 20, scale: float =
     if scale < 0:
         msg = f"The scale must be non-negative, but got {scale} instead."
         raise ValueError(msg)
-    return swag_generator(base, max_rank, scale)
+    return swag_generator(base, max_rank, scale, rngs)

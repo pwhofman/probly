@@ -84,7 +84,6 @@ def _named_parameter_views(module: nn.Module, vector: torch.Tensor) -> dict[str,
     return views
 
 
-@swag_generator.register(nn.Module)
 class TorchSWAGPredictor(nn.Module):
     """Torch implementation of a SWAG predictor.
 
@@ -179,6 +178,16 @@ class TorchSWAGPredictor(nn.Module):
             weights = self.sample_weight_vector()
             return torch.func.functional_call(self.model, _named_parameter_views(self.model, weights), args, kwargs)
         return self.model(*args, **kwargs)
+
+
+@swag_generator.register(nn.Module)
+def _torch_swag_generator(
+    base: nn.Module,
+    max_rank: int,
+    scale: float,
+    rngs: object,  # noqa: ARG001, sampling uses the global torch generator
+) -> TorchSWAGPredictor:
+    return TorchSWAGPredictor(base, max_rank, scale)
 
 
 @collect_swag.register(TorchSWAGPredictor)

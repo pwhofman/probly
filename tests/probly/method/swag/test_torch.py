@@ -50,6 +50,10 @@ class TestTransformation:
         assert isinstance(model, TorchSWAGPredictor)
         assert isinstance(model, SWAGPredictor)
 
+    def test_rngs_argument_is_ignored(self, linear_model: nn.Module) -> None:
+        model = swag(linear_model, rngs=42)
+        assert isinstance(model, TorchSWAGPredictor)
+
     def test_original_model_is_not_mutated(self, linear_model: nn.Module) -> None:
         original = parameters_to_vector(linear_model.parameters()).detach().clone()
         model = make_swag(linear_model)

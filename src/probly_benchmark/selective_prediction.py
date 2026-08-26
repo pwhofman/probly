@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
-from probly.evaluation.tasks import selective_prediction
+from probly.evaluation.selective_prediction import selective_prediction
 from probly.representer import representer
 from probly_benchmark import calibration, data, utils
 from probly_benchmark.uncertainty import SUPPORTED_DECOMPOSITIONS
@@ -90,7 +90,7 @@ def main(cfg: DictConfig) -> None:
     mean_probs = mean_probs_t.detach().cpu().numpy()
     labels = targets_t.detach().cpu().numpy()
     loss = _compute_loss(mean_probs, labels, cfg.loss)
-    auroc, bin_losses = selective_prediction(uncertainties, loss, n_bins=cfg.n_bins)
+    auroc, bin_losses = cast("tuple[float, np.ndarray]", selective_prediction(uncertainties, loss, n_bins=cfg.n_bins))
     print(f"Selective prediction AUROC: {auroc:.4f}")
 
     if cfg.wandb.enabled:

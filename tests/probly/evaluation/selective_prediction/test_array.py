@@ -1,13 +1,11 @@
-"""Tests for the tasks module."""
+"""NumPy backend tests for selective prediction."""
 
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from probly.evaluation.tasks import (
-    selective_prediction,
-)
+from probly.evaluation.selective_prediction import selective_prediction
 
 
 def test_selective_prediction_shapes() -> None:
@@ -23,6 +21,14 @@ def test_selective_prediction_order() -> None:
     losses = np.linspace(0, 1, 10)
     _, bin_losses = selective_prediction(criterion, losses, n_bins=5)
     assert np.all(np.diff(bin_losses) <= 0)
+
+
+def test_selective_prediction_exact_values() -> None:
+    criterion = np.array([3.0, 1.0, 2.0, 0.0])
+    losses = np.array([30.0, 10.0, 20.0, 0.0])
+    aurc, bin_losses = selective_prediction(criterion, losses, n_bins=2)
+    np.testing.assert_array_equal(bin_losses, [15.0, 5.0])
+    assert aurc == 10.0
 
 
 def test_selective_prediction_too_many_bins() -> None:
