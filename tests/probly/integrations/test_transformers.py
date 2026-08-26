@@ -153,6 +153,23 @@ def test_time_series_model_end_to_end() -> None:
     assert quantify(sample)["total"].shape == (2, 16, 1)
 
 
+def test_swag_wrapper_end_to_end(model: BertForSequenceClassification, input_ids: torch.Tensor) -> None:
+    from probly.method import swag  # noqa: PLC0415
+    from probly.method.swag import collect_swag  # noqa: PLC0415
+
+    swag_model = swag(model, max_rank=3, predictor_type="logit_classifier")
+    for _ in range(3):
+        with torch.no_grad():
+            for param in swag_model.model.parameters():  # ty: ignore[unresolved-attribute]
+                param.add_(torch.randn_like(param) * 0.01)
+        collect_swag(swag_model)
+    swag_model.eval()  # ty: ignore[call-non-callable]
+
+    with torch.no_grad():
+        sample = representer(swag_model, num_samples=3).represent(input_ids)
+    assert quantify(sample)["total"].shape == (4,)
+
+
 def test_ensemble_members_differ_and_predict(model: BertForSequenceClassification, input_ids: torch.Tensor) -> None:
     members = ensemble(model, num_members=3, predictor_type="logit_classifier")
     vectors = [torch.nn.utils.parameters_to_vector(member.parameters()) for member in members]
