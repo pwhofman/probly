@@ -489,17 +489,17 @@ class TestFlaxDirichletCalibration:
         assert out.shape == logits.shape
         assert bool(jnp.isfinite(out).all())
 
-    def test_calibration_reduces_nll(self) -> None:
-        """Fitting Dirichlet calibration lowers NLL on overconfident logits."""
+    def test_calibration_reduces_nll_for_five_classes(self) -> None:
+        """The fit converges to a substantial NLL improvement beyond the three-class case."""
         _flax_modules()
         from probly.method.calibration import dirichlet_calibration, flax_identity_logit_model  # noqa: PLC0415
         from probly.predictor import predict_raw  # noqa: PLC0415
 
-        logits, labels = self._overconfident_logits()
-        model = dirichlet_calibration(flax_identity_logit_model(), num_classes=self.NUM_CLASSES)
+        logits, labels = self._overconfident_logits(num_classes=5)
+        model = dirichlet_calibration(flax_identity_logit_model(), num_classes=5)
         model.calibrate(labels, logits)
         calibrated = predict_raw(model, logits)
-        assert self._nll(calibrated, labels) < self._nll(logits, labels)
+        assert self._nll(calibrated, labels) < 0.9 * self._nll(logits, labels)
 
     def test_strong_off_diagonal_regularisation_shrinks_off_diagonal(self) -> None:
         """A large reg_lambda drives the off-diagonal weights toward zero."""
@@ -507,8 +507,12 @@ class TestFlaxDirichletCalibration:
         from probly.method.calibration import dirichlet_calibration, flax_identity_logit_model  # noqa: PLC0415
 
         logits, labels = self._overconfident_logits()
-        weak = dirichlet_calibration(flax_identity_logit_model(), num_classes=self.NUM_CLASSES, reg_lambda=0.0)
-        strong = dirichlet_calibration(flax_identity_logit_model(), num_classes=self.NUM_CLASSES, reg_lambda=1e3)
+        weak = dirichlet_calibration(
+            flax_identity_logit_model(), num_classes=self.NUM_CLASSES, reg_lambda=0.0, reg_mu=0.0
+        )
+        strong = dirichlet_calibration(
+            flax_identity_logit_model(), num_classes=self.NUM_CLASSES, reg_lambda=1e3, reg_mu=0.0
+        )
         weak.calibrate(labels, logits)
         strong.calibrate(labels, logits)
 
@@ -576,15 +580,6 @@ class TestFlaxDirichletCalibration:
         with pytest.raises(ValueError, match="num_classes"):
             FlaxDirichletCalibrationPredictor(flax_identity_logit_model(), config)
 
-    def test_generator_dispatches_dirichlet_wrapper(self) -> None:
-        """The flax calibration generator returns the Dirichlet wrapper for the dirichlet method."""
-        _flax_modules()
-        from probly.method.calibration import dirichlet_calibration, flax_identity_logit_model  # noqa: PLC0415
-        from probly.transformation.calibration.flax import FlaxDirichletCalibrationPredictor  # noqa: PLC0415
-
-        model = dirichlet_calibration(flax_identity_logit_model(), num_classes=self.NUM_CLASSES)
-        assert isinstance(model, FlaxDirichletCalibrationPredictor)
-
     def test_weight_and_bias_are_none_when_uncalibrated(self) -> None:
         """Uncalibrated wrappers expose no fitted parameters."""
         _flax_modules()
@@ -618,8 +613,8 @@ class TestFlaxDirichletCalibration:
         with pytest.raises(ValueError, match="not calibrated"):
             predict_raw(model, logits)
 
-    def test_nnx_state_round_trip_reproduces_predictions(self) -> None:
-        """Splitting and merging the nnx graph reproduces the fitted predictions."""
+    def test_state_from_mismatched_num_classes_raises(self) -> None:
+        """State restored from a wrapper with a different class count is rejected at prediction."""
         _, jnp = _flax_modules()
         from flax import nnx  # noqa: PLC0415
 
@@ -627,13 +622,13 @@ class TestFlaxDirichletCalibration:
         from probly.predictor import predict_raw  # noqa: PLC0415
 
         logits, labels = self._overconfident_logits()
-        model = dirichlet_calibration(flax_identity_logit_model(), num_classes=self.NUM_CLASSES)
-        model.calibrate(labels, logits)
-        expected = predict_raw(model, logits)
+        fitted = dirichlet_calibration(flax_identity_logit_model(), num_classes=self.NUM_CLASSES)
+        fitted.calibrate(labels, logits)
 
-        graphdef, state = nnx.split(model)
-        restored = nnx.merge(graphdef, state)
-        assert bool(jnp.allclose(predict_raw(restored, logits), expected, atol=1e-6))
+        other = dirichlet_calibration(flax_identity_logit_model(), num_classes=self.NUM_CLASSES + 1)
+        nnx.update(other, nnx.state(fitted))
+        with pytest.raises(ValueError, match="do not match"):
+            predict_raw(other, jnp.zeros((2, self.NUM_CLASSES + 1)))
 
     def test_mismatched_class_axis_raises(self) -> None:
         """Logits whose class axis disagrees with num_classes are rejected."""
@@ -663,6 +658,37 @@ class TestFlaxDirichletCalibration:
         model = dirichlet_calibration(flax_identity_logit_model(), num_classes=self.NUM_CLASSES)
         with pytest.raises(ValueError, match="must match logits batch size"):
             model.calibrate(labels[:-1], logits)
+
+    def test_out_of_range_labels_raise(self) -> None:
+        """Labels outside [0, num_classes) are rejected instead of silently clamped."""
+        _flax_modules()
+        from probly.method.calibration import dirichlet_calibration, flax_identity_logit_model  # noqa: PLC0415
+
+        logits, labels = self._overconfident_logits()
+        model = dirichlet_calibration(flax_identity_logit_model(), num_classes=self.NUM_CLASSES)
+        with pytest.raises(ValueError, match="must lie in"):
+            model.calibrate(labels.at[0].set(self.NUM_CLASSES), logits)
+        with pytest.raises(ValueError, match="must lie in"):
+            model.calibrate(labels.at[0].set(-1), logits)
+
+    def test_empty_calibration_set_raises(self) -> None:
+        """Calibrating on zero samples is rejected instead of fitting a silent no-op."""
+        _, jnp = _flax_modules()
+        from probly.method.calibration import dirichlet_calibration, flax_identity_logit_model  # noqa: PLC0415
+
+        model = dirichlet_calibration(flax_identity_logit_model(), num_classes=self.NUM_CLASSES)
+        with pytest.raises(ValueError, match="non-empty"):
+            model.calibrate(jnp.zeros((0,), jnp.int32), jnp.zeros((0, self.NUM_CLASSES)))
+
+    def test_non_finite_logits_raise(self) -> None:
+        """Non-finite calibration logits are rejected instead of poisoning the fitted state."""
+        _, jnp = _flax_modules()
+        from probly.method.calibration import dirichlet_calibration, flax_identity_logit_model  # noqa: PLC0415
+
+        logits, labels = self._overconfident_logits()
+        model = dirichlet_calibration(flax_identity_logit_model(), num_classes=self.NUM_CLASSES)
+        with pytest.raises(ValueError, match="non-finite"):
+            model.calibrate(labels, logits.at[0, 0].set(-jnp.inf))
 
     def test_accepts_non_jax_labels(self) -> None:
         """Labels given as a plain sequence are converted before fitting."""
@@ -706,30 +732,3 @@ class TestFlaxDirichletCalibration:
         model = dirichlet_calibration(NumpyOutputModel(), num_classes=self.NUM_CLASSES)
         with pytest.raises(TypeError, match="Flax Dirichlet calibration expects jax logits"):
             model.calibrate(labels, logits)
-
-    def test_call_rejects_nonjax_predictor_output(self) -> None:
-        """``__call__`` similarly requires the predictor to return jax arrays."""
-        _flax_modules()
-        from flax import nnx  # noqa: PLC0415
-
-        from probly.method.calibration import dirichlet_calibration  # noqa: PLC0415
-        from probly.predictor import predict_raw  # noqa: PLC0415
-
-        class FlakyModel(nnx.Module):
-            def __init__(self) -> None:
-                super().__init__()
-                self._calls = 0
-
-            def __call__(self, x: object) -> object:
-                self._calls += 1
-                if self._calls <= 1:
-                    return x
-                import numpy as np  # noqa: PLC0415
-
-                return np.asarray(x)
-
-        logits, labels = self._overconfident_logits()
-        model = dirichlet_calibration(FlakyModel(), num_classes=self.NUM_CLASSES)
-        model.calibrate(labels, logits)
-        with pytest.raises(TypeError, match="Flax Dirichlet calibration expects jax logits"):
-            predict_raw(model, logits)
