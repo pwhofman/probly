@@ -11,12 +11,14 @@ import jax
 import jax.numpy as jnp
 from jax.scipy.optimize import minimize as jax_minimize
 import numpy as np
+from scipy.optimize import minimize as scipy_minimize
 
 from probly.predictor import BinaryLogitClassifier, LogitClassifier, predict_raw
 
 from ._common import CalibrationMethodConfig, _CalibrationPredictorBase, calibration_generator
 
 _ISOTONIC_MAX_KNOTS = 4096
+_LBFGS_MAX_ITER = 256
 
 
 def _reshape_binary_preds(preds: jax.Array) -> jax.Array:
@@ -265,6 +267,125 @@ class FlaxAffineLogitCalibrationPredictor[**In](_FlaxCalibrationPredictorBase[In
         return _apply_affine(raw_logits, temperature, bias)
 
 
+class FlaxDirichletCalibrationPredictor[**In](_FlaxCalibrationPredictorBase[In]):
+    """Flax wrapper applying a fitted Dirichlet calibration map to logits."""
+
+    def __init__(self, predictor: nnx.Module, config: CalibrationMethodConfig) -> None:
+        """Initialize NaN-filled Dirichlet calibration state for the given class count."""
+        super().__init__(predictor, config)
+        if config.num_classes is None or config.num_classes <= 1:
+            msg = f"Dirichlet calibration expects num_classes > 1, but got {config.num_classes}."
+            raise ValueError(msg)
+        self.num_classes = int(config.num_classes)
+        self.reg_lambda = float(config.reg_lambda)
+        self.reg_mu = float(config.reg_lambda if config.reg_mu is None else config.reg_mu)
+        self._dirichlet_weight = jnp.full((self.num_classes, self.num_classes), jnp.nan, dtype=jnp.float32)
+        self._dirichlet_bias = jnp.full((self.num_classes,), jnp.nan, dtype=jnp.float32)
+        self._is_calibrated = jnp.asarray(False)
+
+    @property
+    def weight(self) -> jax.Array | None:
+        """Return the fitted weight matrix ``W`` when available."""
+        if not self.is_calibrated:
+            return None
+        return jnp.asarray(self._dirichlet_weight)
+
+    @property
+    def bias(self) -> jax.Array | None:
+        """Return the fitted bias ``b`` when available."""
+        if not self.is_calibrated:
+            return None
+        return jnp.asarray(self._dirichlet_bias)
+
+    def _require_calibrated(self) -> tuple[jax.Array, jax.Array]:
+        if not self.is_calibrated:
+            msg = "Calibration wrapper is not calibrated. Please call calibrate() before prediction."
+            raise ValueError(msg)
+        weight = jnp.asarray(self._dirichlet_weight)
+        bias = jnp.asarray(self._dirichlet_bias)
+        if weight.shape != (self.num_classes, self.num_classes) or bias.shape != (self.num_classes,):
+            msg = (
+                f"Dirichlet calibration state shapes {tuple(weight.shape)} and {tuple(bias.shape)} do not match "
+                f"num_classes={self.num_classes}; the state was likely restored from a different configuration."
+            )
+            raise ValueError(msg)
+        return weight, bias
+
+    def _log_probabilities(self, *args: In.args, **kwargs: In.kwargs) -> jax.Array:
+        raw_logits = predict_raw(self.predictor, *args, **kwargs)
+        if not isinstance(raw_logits, jax.Array):
+            msg = f"Flax Dirichlet calibration expects jax logits, got {type(raw_logits)}"
+            raise TypeError(msg)
+        if raw_logits.ndim < 2 or raw_logits.shape[-1] != self.num_classes:
+            msg = (
+                "Dirichlet calibration expects logits with an explicit class axis of size "
+                f"{self.num_classes}, got shape {tuple(raw_logits.shape)}."
+            )
+            raise ValueError(msg)
+        return jax.nn.log_softmax(raw_logits, axis=-1)
+
+    @override
+    def calibrate(self, y_calib: jax.Array, *calib_args: In.args, **calib_kwargs: In.kwargs) -> Self:
+        """Calibrate the Dirichlet map on calibration data with ODIR regularization."""
+        log_p = jax.lax.stop_gradient(self._log_probabilities(*calib_args, **calib_kwargs))
+        labels = y_calib if isinstance(y_calib, jax.Array) else jnp.asarray(y_calib)
+        labels_int = _reshape_multiclass_labels(labels, tuple(log_p.shape[:-1])).astype(jnp.int32)
+
+        flat_log_p = log_p.reshape(-1, self.num_classes)
+        if flat_log_p.shape[0] == 0:
+            msg = "Dirichlet calibration requires a non-empty calibration set."
+            raise ValueError(msg)
+        if not bool(jnp.isfinite(flat_log_p).all()):
+            msg = "Dirichlet calibration received non-finite log-probabilities from the predictor."
+            raise ValueError(msg)
+        if bool(jnp.any((labels_int < 0) | (labels_int >= self.num_classes))):
+            msg = f"Dirichlet calibration labels must lie in [0, {self.num_classes})."
+            raise ValueError(msg)
+
+        num_weights = self.num_classes * self.num_classes
+        off_diag_mask = ~jnp.eye(self.num_classes, dtype=bool)
+        off_diag_count = self.num_classes * (self.num_classes - 1)
+
+        def objective(params: jax.Array) -> jax.Array:
+            weight = params[:num_weights].reshape(self.num_classes, self.num_classes)
+            bias = params[num_weights:]
+            calibrated = flat_log_p @ weight.T + bias
+            loss = _calibration_nll(calibrated, labels_int)
+            off_diagonal = jnp.where(off_diag_mask, weight, 0.0)
+            loss = loss + self.reg_lambda * jnp.sum(off_diagonal**2) / off_diag_count
+            return loss + self.reg_mu * jnp.sum(bias**2) / self.num_classes
+
+        # jax.scipy.optimize.minimize's BFGS line search stalls on this objective and its
+        # dense inverse-Hessian needs O(num_classes**4) memory, so optimize with scipy's
+        # L-BFGS-B driven by jax gradients instead.
+        value_and_grad = jax.jit(jax.value_and_grad(objective))
+
+        def scipy_objective(params: np.ndarray) -> tuple[float, np.ndarray]:
+            value, grad = value_and_grad(jnp.asarray(params, dtype=flat_log_p.dtype))
+            return float(value), np.asarray(grad, dtype=np.float64)
+
+        initial_params = np.concatenate([np.eye(self.num_classes).reshape(-1), np.zeros(self.num_classes)])
+        result = scipy_minimize(
+            scipy_objective,
+            initial_params,
+            jac=True,
+            method="L-BFGS-B",
+            options={"maxiter": _LBFGS_MAX_ITER},
+        )
+        fitted_params = jnp.asarray(result.x, dtype=jnp.float32)
+
+        self._dirichlet_weight = fitted_params[:num_weights].reshape(self.num_classes, self.num_classes)
+        self._dirichlet_bias = fitted_params[num_weights:]
+        self._is_calibrated = jnp.asarray(True)
+        return self
+
+    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> jax.Array:
+        """Apply the fitted Dirichlet calibration map and return calibrated logits."""
+        weight, bias = self._require_calibrated()
+        log_p = self._log_probabilities(*args, **kwargs)
+        return log_p @ weight.T.astype(log_p.dtype) + bias.astype(log_p.dtype)
+
+
 class FlaxIsotonicCalibrationPredictor[**In](_FlaxCalibrationPredictorBase[In]):
     """Flax wrapper for non-parametric isotonic calibration on binary logits."""
 
@@ -379,6 +500,5 @@ def generate_flax_scaling_calibrator(
     if config.method == "isotonic":
         return FlaxIsotonicCalibrationPredictor(base, config)
     if config.method == "dirichlet":
-        msg = "Dirichlet calibration is not implemented for the flax backend."
-        raise NotImplementedError(msg)
+        return FlaxDirichletCalibrationPredictor(base, config)
     return FlaxAffineLogitCalibrationPredictor(base, config)
