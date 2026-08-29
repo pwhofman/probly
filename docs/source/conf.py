@@ -315,7 +315,8 @@ linkcode_resolve = make_linkcode_resolve(REPO_ROOT)
 html_theme = "furo"
 
 html_static_path = ["_static"]
-html_css_files = ["css/custom.css"]
+html_css_files = ["css/custom.css", "css/ecosystem.css"]
+html_js_files = ["js/ecosystem.js"]
 pygments_dark_style = "monokai"
 
 html_theme_options = {
