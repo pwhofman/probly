@@ -6,6 +6,7 @@ import importlib
 import inspect
 import os
 from pathlib import Path
+import pkgutil
 from typing import TYPE_CHECKING
 
 # env.dependencies entries must be _StrPath; plain str crashes _has_doc_changed.
@@ -210,3 +211,110 @@ def make_linkcode_resolve(repo_root: Path) -> Callable[[str, dict[str, str]], st
         return f"{base}/blob/{ref}/{relpath}#L{lineno}"
 
     return linkcode_resolve
+
+
+def _is_documented(modname: str, modules: dict[str, object]) -> bool:
+    """Check whether autosummary generates a page for *modname*.
+
+    Args:
+        modname: Dotted name of a module.
+        modules: The importable modules found while walking the packages.
+
+    Returns:
+        True if the module was imported and every component of its dotted
+        name is public; private modules such as ``_common`` get no page.
+    """
+    return modname in modules and not any(part.startswith("_") for part in modname.split("."))
+
+
+def _reexported_candidates(modname: str, module: object, modules: dict[str, object]) -> list[tuple[str, str, int]]:
+    """Return ``(name, kind, id)`` for each ``__all__`` name imported into *module*.
+
+    Args:
+        modname: Dotted name of the module being scanned.
+        module: The imported module object.
+        modules: All importable modules found while walking the packages, used
+            to tell a documented defining module from a private one.
+
+    Returns:
+        One entry per public name that the module re-exports rather than
+        defines, with *kind* being ``"classes"`` or ``"functions"``.
+    """
+    found: list[tuple[str, str, int]] = []
+    for name in getattr(module, "__all__", ()) or ():
+        value = getattr(module, name, None)
+        if value is None or inspect.ismodule(value):
+            continue
+        # Members defined here are already in autosummary's own lists.
+        defining_module = getattr(value, "__module__", None)
+        if defining_module == modname:
+            continue
+        # A class defined in a public submodule is documented there under its
+        # own ``__module__``; re-exporting it would add a second page and make
+        # every short-name cross-reference ambiguous.
+        if inspect.isclass(value) and defining_module is not None and _is_documented(defining_module, modules):
+            continue
+        if inspect.isclass(value):
+            found.append((name, "classes", id(value)))
+        elif callable(value):
+            found.append((name, "functions", id(value)))
+    return found
+
+
+def build_reexported_map(package_names: tuple[str, ...] = ("probly", "pytraverse")) -> dict[str, dict[str, list[str]]]:
+    """Map each module to the ``__all__`` names autosummary would otherwise skip.
+
+    probly re-exports its public API from private ``_common`` submodules, so
+    names like ``conformal_lac`` reach their package as imported members. With
+    ``autosummary_imported_members`` disabled they land in no autosummary list,
+    get no API page, and every cross-reference to them silently renders as
+    plain text instead of a link.
+
+    Classes need de-duplication: autodoc registers a class under its defining
+    ``__module__``, so documenting one from two re-export sites collides on the
+    same target ("duplicate object description"). Each class is therefore
+    assigned to the deepest module that re-exports it. Functions register under
+    the module they are documented from, so the same function re-exported by
+    ``probly.method`` and ``probly.transformation`` yields two distinct targets
+    and must NOT be de-duplicated -- both namespaces are public and the user
+    guide links into either.
+
+    The result is plain data so Sphinx can pickle it into the config cache;
+    passing a callable through ``autosummary_context`` disables that cache.
+
+    Args:
+        package_names: Top-level packages to walk.
+
+    Returns:
+        A mapping of module name to ``{"classes": [...], "functions": [...]}``,
+        containing only modules that have such names.
+    """
+    modules: dict[str, object] = {}
+    for root_name in package_names:
+        try:
+            root = importlib.import_module(root_name)
+        except Exception:  # noqa: BLE001, S112  (an unimportable package documents nothing)
+            continue
+        modules[root_name] = root
+        for info in pkgutil.walk_packages(root.__path__, prefix=f"{root_name}."):
+            try:
+                modules[info.name] = importlib.import_module(info.name)
+            except Exception:  # noqa: BLE001, S112  (optional backends may be absent)
+                continue
+
+    candidates: list[tuple[str, str, str, int]] = []
+    owner: dict[int, str] = {}
+    for modname, module in modules.items():
+        for name, kind, obj_id in _reexported_candidates(modname, module, modules):
+            candidates.append((modname, name, kind, obj_id))
+            if kind == "classes":
+                current = owner.get(obj_id)
+                if current is None or modname.count(".") > current.count("."):
+                    owner[obj_id] = modname
+
+    result: dict[str, dict[str, list[str]]] = {}
+    for modname, name, kind, obj_id in candidates:
+        if kind == "classes" and owner[obj_id] != modname:
+            continue
+        result.setdefault(modname, {"classes": [], "functions": []})[kind].append(name)
+    return {modname: {kind: sorted(names) for kind, names in kinds.items()} for modname, kinds in result.items()}

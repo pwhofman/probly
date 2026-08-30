@@ -15,6 +15,7 @@ sys.path.insert(0, str(_here.parent.parent))  # make examples.utils importable
 
 from _sphinx_helpers import (  # noqa: E402
     add_member_source_dependencies,
+    build_reexported_map,
     ignore_installed_template_mtimes,
     make_linkcode_resolve,
     scrub_external_dependencies,
@@ -74,6 +75,7 @@ extensions = [
     "sphinx.ext.linkcode",  # adds [source] links to code that link to GitHub.
     "sphinx.ext.autosectionlabel",  # for auto-generating section labels
     "sphinxcontrib.bibtex",  # for bibliography support
+    "sphinx_design",  # grid and card directives used by the methods guide
 ]
 
 suppress_warnings = []
@@ -82,6 +84,9 @@ suppress_warnings = []
 autosummary_generate = True
 autosummary_generate_overwrite = True
 autosummary_imported_members = False
+# Expose the re-exported public names to the autosummary module template,
+# which lists them alongside the module's own members. See _templates/autosummary/module.rst.
+autosummary_context = {"reexported_members": build_reexported_map()}
 
 # --- Autodoc settings --------------------------------------------------------
 autoclass_content = "both"  # class docstring AND __init__ docstring
