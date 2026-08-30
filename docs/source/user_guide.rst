@@ -8,8 +8,6 @@ User Guide
    :numbered:
    :maxdepth: 3
 
-   modules/transformation
-   modules/representation
-   modules/quantification
-   modules/evaluation
-   modules/visualization
+   guide/uncertainty/index
+   guide/core_pillars
+   guide/methods/index
