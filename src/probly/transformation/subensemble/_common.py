@@ -38,7 +38,7 @@ def subensemble[**In, H, Out](
     reset_params: bool = True,
     head_layer: int = 1,
 ) -> SubensemblePredictor[In, Out]:
-    """Create a subensemble predictor from a base model or a base model and head model.
+    """Create a subensemble predictor from a base model and optional head based on :cite:`valdenegro-toroDeepSub2019`.
 
     Supported configurations:
         1. base only:
