@@ -67,7 +67,10 @@ def credal_dro_deltas(delta_g: float, num_members: int) -> list[float]:
         raise ValueError(msg)
     if num_members == 1:
         return [delta_g]
-    return [delta_g + (1.0 - delta_g) * i / (num_members - 1) for i in range(num_members)]
+    # Endpoints are pinned exactly: float rounding in delta_g + (1 - delta_g) can land just below
+    # 1.0, which would deny the ERM member the delta == 1 shortcut of the CVaR loss.
+    interior = [delta_g + (1.0 - delta_g) * i / (num_members - 1) for i in range(1, num_members - 1)]
+    return [delta_g, *interior, 1.0]
 
 
 representer.register(CredalDROPredictor, ProbabilityIntervalsRepresenter)
