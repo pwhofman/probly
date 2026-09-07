@@ -10,6 +10,7 @@ import torch
 from torch import nn
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
+from probly.predictor import predict_raw
 from probly.representer.sampler._common import CLEANUP_FUNCS, sampling_preparation_traverser
 
 from ._common import collect_swag, swag_generator
@@ -188,6 +189,27 @@ def _torch_swag_generator(
     rngs: object,  # noqa: ARG001, sampling uses the global torch generator
 ) -> TorchSWAGPredictor:
     return TorchSWAGPredictor(base, max_rank, scale)
+
+
+@predict_raw.register(TorchSWAGPredictor)
+def _torch_swag_predict_raw(predictor: TorchSWAGPredictor, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+    """Predict by dispatching on the wrapped model, so its type-specific output handling applies.
+
+    Routing the call through ``predict_raw`` of the wrapped model makes wrappers transparent to
+    integrations that adapt model outputs, e.g. the transformers binding that unwraps ``ModelOutput``
+    into logits. In sampling mode the sampled weights are loaded into the wrapped model around the
+    call and the original weights are restored afterwards.
+    """
+    if not predictor.sampling:
+        return predict_raw(predictor.model, *args, **kwargs)
+    saved = parameters_to_vector(predictor.model.parameters()).detach().clone()
+    with torch.no_grad():
+        vector_to_parameters(predictor.sample_weight_vector(), predictor.model.parameters())
+    try:
+        return predict_raw(predictor.model, *args, **kwargs)
+    finally:
+        with torch.no_grad():
+            vector_to_parameters(saved, predictor.model.parameters())
 
 
 @collect_swag.register(TorchSWAGPredictor)

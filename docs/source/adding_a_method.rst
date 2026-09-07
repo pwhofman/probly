@@ -183,6 +183,14 @@ How much more you need in ``_common.py`` depends on what your method outputs:
   ``Representer`` with ``@representer.register(SNGPPredictor)`` and a custom
   uncertainty decomposition with ``@decompose.register(...)``.
 
+* **Wrapper predictors** (the method returns a new predictor class holding the base model,
+  like ``swag``): register a ``predict_raw`` implementation that routes the call through
+  ``predict_raw`` of the wrapped model, adding whatever context makes the inner call
+  equivalent to the wrapper's forward (e.g. loading sampled weights). This keeps wrappers
+  transparent to integrations that adapt model outputs, such as the transformers binding.
+  See ``src/probly/method/swag/torch.py`` and the ensemble ``nn.ModuleList`` registration
+  for the pattern.
+
 Step 2: Implement the backends (``torch.py``, ``flax.py``, ...)
 ===============================================================
 
