@@ -25,7 +25,6 @@ uncertainty into their machine learning workflows.
    :maxdepth: 1
    :caption: Table of Contents
 
-   introduction
    getting_started
    installation
    user_guide
