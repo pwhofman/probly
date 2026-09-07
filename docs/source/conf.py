@@ -15,6 +15,7 @@ sys.path.insert(0, str(_here.parent.parent))  # make examples.utils importable
 
 from _sphinx_helpers import (  # noqa: E402
     add_member_source_dependencies,
+    build_case_collision_filename_map,
     build_reexported_map,
     ignore_installed_template_mtimes,
     make_linkcode_resolve,
@@ -86,7 +87,12 @@ autosummary_generate_overwrite = True
 autosummary_imported_members = False
 # Expose the re-exported public names to the autosummary module template,
 # which lists them alongside the module's own members. See _templates/autosummary/module.rst.
-autosummary_context = {"reexported_members": build_reexported_map()}
+_reexported_members = build_reexported_map()
+autosummary_context = {"reexported_members": _reexported_members}
+# Keep a class and a same-named factory (Representer / representer) on separate
+# stub files, so their autosectionlabels do not collide on a case-sensitive
+# filesystem. See _sphinx_helpers.build_case_collision_filename_map.
+autosummary_filename_map = build_case_collision_filename_map(_reexported_members)
 
 # --- Autodoc settings --------------------------------------------------------
 autoclass_content = "both"  # class docstring AND __init__ docstring

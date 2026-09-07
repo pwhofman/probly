@@ -318,3 +318,33 @@ def build_reexported_map(package_names: tuple[str, ...] = ("probly", "pytraverse
             continue
         result.setdefault(modname, {"classes": [], "functions": []})[kind].append(name)
     return {modname: {kind: sorted(names) for kind, names in kinds.items()} for modname, kinds in result.items()}
+
+
+def build_case_collision_filename_map(reexported: dict[str, dict[str, list[str]]]) -> dict[str, str]:
+    """Give a case-colliding function its own stub filename.
+
+    A module may export a class and a factory function whose names differ only
+    in case, such as ``Representer`` and ``representer``. Autosummary derives a
+    stub filename from the object name, and Sphinx normalizes
+    ``autosectionlabel`` labels to lowercase, so the two stubs claim the same
+    label and the build fails under ``-W``. A case-insensitive filesystem hides
+    this: macOS folds both stubs into a single file, so the clash appears only
+    on Linux CI.
+
+    Both pages are wanted, so the function keeps its page under a suffixed
+    filename rather than being dropped from the listing. Only re-exported names
+    are considered, which is where probly's public API lives.
+
+    Args:
+        reexported: The mapping returned by :func:`build_reexported_map`.
+
+    Returns:
+        A mapping of object name to stub filename for ``autosummary_filename_map``.
+    """
+    filename_map: dict[str, str] = {}
+    for modname, kinds in reexported.items():
+        lowered_classes = {name.lower() for name in kinds["classes"]}
+        for name in kinds["functions"]:
+            if name.lower() in lowered_classes:
+                filename_map[f"{modname}.{name}"] = f"{modname}.{name}_function"
+    return filename_map
