@@ -2879,15 +2879,15 @@ wheels = [
 
 [[package]]
 name = "pytorch-optimizer"
-version = "3.10.0"
+version = "3.10.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
     { name = "torch" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/89/fc/313e6ad458114f3b5ad982c72343f88ef686a238787bcc39cad866a39282/pytorch_optimizer-3.10.0.tar.gz", hash = "sha256:da50f3700e403ac0ce774cbbfdfe94a3f39162eca65eea79d67cfde28ead642b", size = 21314846, upload-time = "2026-03-01T06:20:11.622Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/15/4e/e12eb9026eb94be8d8c763b4243845e19080c23b150441b20c00d2e45013/pytorch_optimizer-3.10.1.tar.gz", hash = "sha256:c262319cc3ae7be9f591e8728f1883d3096b9d7e15bea358b4ca20dd848c6d2a", size = 21328294, upload-time = "2026-05-23T13:57:07.094Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bd/e3/bfc6f22bbcccf2b824c3e9d84a094d1ca9151a5d8a6c0b7990aeefa5cbb6/pytorch_optimizer-3.10.0-py3-none-any.whl", hash = "sha256:931b0c85d665fa635c8cd4d04f9a7fd8f23b915a8e19a23b2c07341f783c5799", size = 287433, upload-time = "2026-03-01T06:20:09.107Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/82/7c715ba010ab8256215a0510494b4a0eedeea24860f652b89345cac594c1/pytorch_optimizer-3.10.1-py3-none-any.whl", hash = "sha256:3719842dee778de50943a6865961f5d3bd6812d28f091822d3a68385dc7481b6", size = 300837, upload-time = "2026-05-23T13:57:09.688Z" },
 ]
 
 [[package]]
