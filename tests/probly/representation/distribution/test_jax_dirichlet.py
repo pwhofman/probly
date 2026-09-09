@@ -22,6 +22,16 @@ from probly.representation.jax_functions import (
 from probly.representation.sample.jax import JaxArraySample
 
 
+def test_sampling_keys() -> None:
+    """Default draws are fresh, while an explicit key is reproducible."""
+    distribution = JaxDirichletDistribution(jnp.ones(3))
+    assert not jnp.array_equal(distribution.sample(16).array.probabilities, distribution.sample(16).array.probabilities)
+    key = jax.random.key(7)
+    assert jnp.array_equal(
+        distribution.sample(16, key).array.probabilities, distribution.sample(16, key).array.probabilities
+    )
+
+
 def test_jax_dirichlet_initialization_valid() -> None:
     """Test standard initialization with valid numpy arrays."""
     alphas = jnp.array([0.5, 1.0, 2.5], dtype=float)

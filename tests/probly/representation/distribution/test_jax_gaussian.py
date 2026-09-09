@@ -13,6 +13,14 @@ from probly.representation.distribution.jax_gaussian import JaxGaussianDistribut
 from probly.representation.sample.jax import JaxArraySample
 
 
+def test_sampling_keys() -> None:
+    """Default draws are fresh, while an explicit key is reproducible."""
+    distribution = JaxGaussianDistribution(jnp.zeros(2), jnp.ones(2))
+    assert not jnp.array_equal(distribution.sample(16).array, distribution.sample(16).array)
+    key = jax.random.key(7)
+    assert jnp.array_equal(distribution.sample(16, key).array, distribution.sample(16, key).array)
+
+
 def test_jax_gaussian_initialization_valid() -> None:
     """Test standard initialization with valid jax arrays aswell as types."""
     mean = jnp.array([0.0, 1.0])

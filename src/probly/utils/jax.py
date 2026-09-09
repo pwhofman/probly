@@ -2,7 +2,22 @@
 
 from __future__ import annotations
 
+import jax
 import jax.numpy as jnp
+import numpy as np
+
+
+def fresh_prng_key() -> jax.Array:
+    """Draw a fresh PRNG key seeded from OS entropy.
+
+    Mirrors the numpy backend, where a sampler without an explicit generator falls back to a
+    fresh ``numpy.random.default_rng()``, so repeated calls produce different draws.
+
+    Returns:
+        A new PRNG key.
+    """
+    seed = int(np.random.default_rng().integers(np.iinfo(np.uint32).max, dtype=np.uint32))
+    return jax.random.key(seed)
 
 
 def jax_entropy(p: jnp.ndarray) -> jnp.ndarray:

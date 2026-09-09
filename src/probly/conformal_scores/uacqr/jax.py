@@ -5,6 +5,8 @@ from __future__ import annotations
 from jax import Array
 import jax.numpy as jnp
 
+from probly.representation.sample.jax import JaxArraySample
+
 from ._common import uacqr_score
 
 
@@ -30,3 +32,9 @@ def _(y_pred: Array, y_true: Array) -> Array:
     std_hi = std[..., 1]
 
     return jnp.maximum((lower - y) / std_lo, (y - upper) / std_hi)
+
+
+@uacqr_score.register(JaxArraySample)
+def _(y_pred: JaxArraySample, y_true: Array) -> Array:
+    """Compute UACQR scores for JAX samples."""
+    return uacqr_score(y_pred.array, y_true)

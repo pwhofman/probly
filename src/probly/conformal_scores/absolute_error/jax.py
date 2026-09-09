@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from jax import Array
 import jax.numpy as jnp
+
+from probly.representation.sample.jax import JaxArraySample
 
 from ._common import absolute_error_score
 
@@ -24,3 +28,10 @@ def _(y_pred: Array, y_true: Array) -> Array:
         raise ValueError(msg)
 
     return jnp.abs(y_true_j - y_pred_j)
+
+
+@absolute_error_score.register(JaxArraySample)
+def _(y_pred: JaxArraySample, y_true: Array | JaxArraySample) -> Array:
+    """Compute absolute error for JAX samples."""
+    y_true_j = y_true.array if isinstance(y_true, JaxArraySample) else y_true
+    return cast("Array", absolute_error_score(y_pred.array, y_true_j))

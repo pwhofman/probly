@@ -5,6 +5,9 @@ from __future__ import annotations
 import jax
 import jax.numpy as jnp
 
+from probly.representation.distribution.jax_categorical import JaxCategoricalDistribution
+from probly.representation.sample.jax import JaxArraySample
+
 from ._common import tv_score_func
 
 
@@ -20,3 +23,15 @@ def compute_tv_score_jax(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
         y_true_j = y_one_hot
 
     return 0.5 * jnp.sum(jnp.abs(y_pred_j - y_true_j), axis=-1)
+
+
+@tv_score_func.register(JaxArraySample)
+def _(y_pred: JaxArraySample, y_true: jax.Array) -> jax.Array:
+    """Compute total variation scores for JAX samples."""
+    return tv_score_func(y_pred.array, y_true)
+
+
+@tv_score_func.register(JaxCategoricalDistribution)
+def _(y_pred: JaxCategoricalDistribution, y_true: jax.Array) -> jax.Array:
+    """Compute total variation scores for JAX categorical distributions."""
+    return tv_score_func(y_pred.probabilities, y_true)

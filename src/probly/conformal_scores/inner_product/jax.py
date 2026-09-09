@@ -14,9 +14,10 @@ def compute_inner_product_score_jax(y_pred: jax.Array, y_true: jax.Array) -> jax
     y_pred_t = jnp.asarray(y_pred)
     y_true_t = jnp.asarray(y_true)
 
-    if y_true_t.ndim == 1 or (y_true_t.shape[0] == 1 and y_true_t.size == y_pred_t.shape[0]):
-        y_one_hot = jnp.zeros_like(y_pred_t)
-        y_one_hot = y_one_hot.at[jnp.arange(len(y_true_t)), y_true_t.flatten().astype(int)].set(1.0)
-        y_true_t = y_one_hot
+    if y_true_t.shape == y_pred_t.shape[:-1] or (
+        y_pred_t.ndim == 2 and y_true_t.shape == (1, y_pred_t.shape[0]) and y_true_t.shape != y_pred_t.shape
+    ):
+        labels = y_true_t.reshape(y_pred_t.shape[:-1]).astype(int)
+        return 1.0 - jnp.take_along_axis(y_pred_t, labels[..., None], axis=-1).squeeze(-1)
 
     return 1.0 - jnp.sum(y_pred_t * y_true_t, axis=-1)

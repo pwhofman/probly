@@ -16,6 +16,7 @@ from probly.representation.distribution.jax_categorical import (
 )
 from probly.representation.jax_functions import jax_average, jax_mean, jax_sum
 from probly.representation.sample.jax import JaxArraySample
+from probly.utils.jax import fresh_prng_key
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -75,7 +76,7 @@ class JaxDirichletDistribution(
     ) -> JaxArraySample[JaxCategoricalDistribution]:
         """Sample from the Dirichlet distribution (Jax backend)."""
         if prng_key is None:
-            prng_key = jax.random.key(0)
+            prng_key = fresh_prng_key()
 
         gammas = jax.random.gamma(
             prng_key,

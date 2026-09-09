@@ -5,6 +5,9 @@ from __future__ import annotations
 import jax
 import jax.numpy as jnp
 
+from probly.representation.distribution.jax_categorical import JaxCategoricalDistribution
+from probly.representation.sample.jax import JaxArraySample
+
 from ._common import wasserstein_distance_score_func
 
 
@@ -25,3 +28,15 @@ def compute_wasserstein_distance_score_jax(y_pred: jax.Array, y_true: jax.Array)
         y_true_j = y_one_hot
 
     return jnp.sum(jnp.abs(jnp.cumsum(y_pred_j, axis=-1) - jnp.cumsum(y_true_j, axis=-1)), axis=-1)
+
+
+@wasserstein_distance_score_func.register(JaxArraySample)
+def _(y_pred: JaxArraySample, y_true: jax.Array) -> jax.Array:
+    """Compute Wasserstein distance scores for JAX samples."""
+    return wasserstein_distance_score_func(y_pred.array, y_true)
+
+
+@wasserstein_distance_score_func.register(JaxCategoricalDistribution)
+def _(y_pred: JaxCategoricalDistribution, y_true: jax.Array) -> jax.Array:
+    """Compute Wasserstein distance scores for JAX categorical distributions."""
+    return wasserstein_distance_score_func(y_pred.probabilities, y_true)
