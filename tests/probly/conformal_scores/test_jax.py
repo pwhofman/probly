@@ -16,6 +16,7 @@ from probly.conformal_scores import (
     absolute_error_score,
     cqr_r_score,
     cqr_score,
+    dirichlet_rl_score_func,
     inner_product_score_func,
     kl_divergence_score_func,
     lac_score,
@@ -26,6 +27,7 @@ from probly.conformal_scores import (
 from probly.conformal_scores.inner_product.jax import compute_inner_product_score_jax
 from probly.conformal_scores.kullback_leibler.jax import compute_kl_divergence_score_jax
 from probly.representation.distribution.jax_categorical import JaxLogitCategoricalDistribution
+from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
 from probly.representation.sample.jax import JaxArraySample
 
 
@@ -38,6 +40,8 @@ from probly.representation.sample.jax import JaxArraySample
         SAPSScore(randomized=False, lambda_val=0.3),
         tv_score_func,
         wasserstein_distance_score_func,
+        inner_product_score_func,
+        kl_divergence_score_func,
     ],
 )
 @pytest.mark.parametrize("wrapper", ["sample", "categorical", "nested"])
@@ -66,6 +70,18 @@ def test_regression_samples(score) -> None:
     result = score(JaxArraySample(predictions, sample_axis=0), labels)
     assert isinstance(result, jax.Array)
     np.testing.assert_allclose(result, score(predictions, labels), atol=1e-6)
+
+
+@pytest.mark.parametrize("nested", [False, True])
+@pytest.mark.parametrize("sample_axis", [0, 1])
+def test_dirichlet_relative_likelihood_samples(nested: bool, sample_axis: int) -> None:
+    alphas = jnp.array([[[1.0, 2.0, 4.0], [3.0, 6.0, 2.0]], [[2.0, 4.0, 8.0], [6.0, 12.0, 4.0]]])
+    labels = jnp.array([[1, 0], [2, 1]])
+    values = JaxDirichletDistribution(alphas) if nested else alphas
+    sample = JaxArraySample(values, sample_axis=sample_axis, weights=jnp.array([0.25, 0.75]))
+    result = dirichlet_rl_score_func(sample, labels)
+    assert isinstance(result, jax.Array)
+    np.testing.assert_allclose(result, [[0.5, 0.5], [0.0, 0.0]])
 
 
 @pytest.mark.parametrize("batch_shape", [(), (2,), (2, 3)])

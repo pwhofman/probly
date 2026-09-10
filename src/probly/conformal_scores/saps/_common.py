@@ -9,6 +9,8 @@ from flextype import flexdispatch
 import numpy as np
 
 from probly.representation.array_like import ArrayLike
+from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
+from probly.representation.sample.array import ArraySample
 
 
 @flexdispatch
@@ -56,6 +58,28 @@ def compute_saps_score_func_numpy(
         scores = np.take_along_axis(scores, y_cal_np[..., np.newaxis], axis=-1)
         scores = np.squeeze(scores, axis=-1)
     return np.asarray(scores, dtype=float)
+
+
+@_saps_score_dispatch.register(ArrayCategoricalDistribution)
+def _(
+    probs: ArrayCategoricalDistribution,
+    y_cal: np.ndarray | None = None,
+    randomized: bool = True,
+    lambda_val: float = 0.1,
+) -> np.ndarray:
+    """Compute SAPS scores from normalized categorical probabilities."""
+    return _saps_score_dispatch(probs.probabilities, y_cal, randomized=randomized, lambda_val=lambda_val)
+
+
+@_saps_score_dispatch.register(ArraySample)
+def _(
+    probs: ArraySample,
+    y_cal: np.ndarray | None = None,
+    randomized: bool = True,
+    lambda_val: float = 0.1,
+) -> np.ndarray:
+    """Compute memberwise SAPS scores for NumPy samples."""
+    return _saps_score_dispatch(probs.array, y_cal, randomized=randomized, lambda_val=lambda_val)
 
 
 @dataclass(frozen=True, slots=True)

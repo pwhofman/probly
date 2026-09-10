@@ -10,6 +10,8 @@ import numpy as np
 
 from probly.conformal_scores import NonConformityScore
 from probly.representation.array_like import ArrayLike
+from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
+from probly.representation.sample.array import ArraySample
 
 
 @flexdispatch
@@ -40,6 +42,18 @@ def compute_kl_divergence_score_numpy(y_pred: np.ndarray | ArrayLike, y_true: np
     y_true_safe = np.clip(y_true_np, eps, 1.0)
 
     return np.sum(y_true_np * np.log(y_true_safe / y_pred_safe), axis=-1)
+
+
+@kl_divergence_score_func.register(ArrayCategoricalDistribution)
+def _(y_pred: ArrayCategoricalDistribution, y_true: np.ndarray) -> np.ndarray:
+    """Compute the score from normalized categorical probabilities."""
+    return kl_divergence_score_func(y_pred.probabilities, y_true)
+
+
+@kl_divergence_score_func.register(ArraySample)
+def _(y_pred: ArraySample, y_true: np.ndarray) -> np.ndarray:
+    """Compute memberwise scores for NumPy samples."""
+    return kl_divergence_score_func(y_pred.array, y_true)
 
 
 @dataclass(frozen=True, slots=True)

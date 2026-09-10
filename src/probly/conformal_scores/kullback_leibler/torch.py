@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import torch
 
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.sample.torch import TorchSample
+
 from ._common import kl_divergence_score_func
 
 
@@ -25,3 +28,15 @@ def compute_kl_divergence_score_torch(y_pred: torch.Tensor, y_true: torch.Tensor
     y_true_safe = torch.clamp(y_true_t, min=eps)
 
     return torch.sum(y_true_t * torch.log(y_true_safe / y_pred_safe), dim=-1)
+
+
+@kl_divergence_score_func.register(TorchSample)
+def _(y_pred: TorchSample, y_true: torch.Tensor) -> torch.Tensor:
+    """Compute memberwise scores for Torch samples."""
+    return kl_divergence_score_func(y_pred.tensor, y_true)
+
+
+@kl_divergence_score_func.register(TorchCategoricalDistribution)
+def _(y_pred: TorchCategoricalDistribution, y_true: torch.Tensor) -> torch.Tensor:
+    """Compute the score from normalized categorical probabilities."""
+    return kl_divergence_score_func(y_pred.probabilities, y_true)

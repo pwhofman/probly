@@ -10,6 +10,8 @@ import numpy as np
 
 from probly.conformal_scores import NonConformityScore
 from probly.representation.array_like import ArrayLike
+from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
+from probly.representation.sample.array import ArraySample
 
 
 @flexdispatch
@@ -36,6 +38,18 @@ def compute_tv_score_numpy(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray | 
         y_true_np = y_one_hot
 
     return 0.5 * np.sum(np.abs(y_pred_np - y_true_np), axis=-1)
+
+
+@tv_score_func.register(ArrayCategoricalDistribution)
+def _(y_pred: ArrayCategoricalDistribution, y_true: np.ndarray) -> np.ndarray:
+    """Compute total variation from normalized categorical probabilities."""
+    return tv_score_func(y_pred.probabilities, y_true)
+
+
+@tv_score_func.register(ArraySample)
+def _(y_pred: ArraySample, y_true: np.ndarray) -> np.ndarray:
+    """Compute memberwise total variation scores for NumPy samples."""
+    return tv_score_func(y_pred.array, y_true)
 
 
 @dataclass(frozen=True, slots=True)

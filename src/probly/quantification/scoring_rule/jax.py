@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from jax import numpy as jnp
 
+from probly.representation.sample.jax import JaxArraySample
+
 from ._common import _brier_loss_vector, _log_loss_vector, _spherical_loss_vector, _zero_one_loss_vector
 
 
@@ -34,3 +36,27 @@ def array_spherical_loss_vector(probabilities: jnp.ndarray) -> jnp.ndarray:
     """Compute the per-label spherical loss vector for a JAX array."""
     norm = jnp.sqrt(jnp.sum(probabilities**2, axis=-1, keepdims=True))
     return 1.0 - probabilities / norm
+
+
+@_log_loss_vector.register(JaxArraySample)
+def _(probabilities: JaxArraySample) -> JaxArraySample:
+    """Compute memberwise log loss, preserving sample metadata."""
+    return JaxArraySample(_log_loss_vector(probabilities.array), probabilities.sample_axis, probabilities.weights)
+
+
+@_brier_loss_vector.register(JaxArraySample)
+def _(probabilities: JaxArraySample) -> JaxArraySample:
+    """Compute memberwise Brier loss, preserving sample metadata."""
+    return JaxArraySample(_brier_loss_vector(probabilities.array), probabilities.sample_axis, probabilities.weights)
+
+
+@_zero_one_loss_vector.register(JaxArraySample)
+def _(probabilities: JaxArraySample) -> JaxArraySample:
+    """Compute memberwise zero-one loss, preserving sample metadata."""
+    return JaxArraySample(_zero_one_loss_vector(probabilities.array), probabilities.sample_axis, probabilities.weights)
+
+
+@_spherical_loss_vector.register(JaxArraySample)
+def _(probabilities: JaxArraySample) -> JaxArraySample:
+    """Compute memberwise spherical loss, preserving sample metadata."""
+    return JaxArraySample(_spherical_loss_vector(probabilities.array), probabilities.sample_axis, probabilities.weights)

@@ -10,6 +10,8 @@ import numpy as np
 
 from probly.conformal_scores import NonConformityScore
 from probly.representation.array_like import ArrayLike
+from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
+from probly.representation.sample.array import ArraySample
 
 
 @flexdispatch
@@ -36,6 +38,18 @@ def compute_inner_product_score_numpy(y_pred: np.ndarray | ArrayLike, y_true: np
         y_true_np = y_one_hot
 
     return 1.0 - np.sum(y_pred_np * y_true_np, axis=-1)
+
+
+@inner_product_score_func.register(ArrayCategoricalDistribution)
+def _(y_pred: ArrayCategoricalDistribution, y_true: np.ndarray) -> np.ndarray:
+    """Compute the score from normalized categorical probabilities."""
+    return inner_product_score_func(y_pred.probabilities, y_true)
+
+
+@inner_product_score_func.register(ArraySample)
+def _(y_pred: ArraySample, y_true: np.ndarray) -> np.ndarray:
+    """Compute memberwise scores for NumPy samples."""
+    return inner_product_score_func(y_pred.array, y_true)
 
 
 @dataclass(frozen=True, slots=True)

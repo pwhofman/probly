@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import torch
 
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.sample.torch import TorchSample
+
 from ._common import inner_product_score_func
 
 
@@ -20,3 +23,15 @@ def compute_inner_product_score_torch(y_pred: torch.Tensor, y_true: torch.Tensor
         return 1.0 - torch.gather(y_pred_t, -1, labels.unsqueeze(-1)).squeeze(-1)
 
     return 1.0 - torch.sum(y_pred_t * y_true_t, dim=-1)
+
+
+@inner_product_score_func.register(TorchSample)
+def _(y_pred: TorchSample, y_true: torch.Tensor) -> torch.Tensor:
+    """Compute memberwise scores for Torch samples."""
+    return inner_product_score_func(y_pred.tensor, y_true)
+
+
+@inner_product_score_func.register(TorchCategoricalDistribution)
+def _(y_pred: TorchCategoricalDistribution, y_true: torch.Tensor) -> torch.Tensor:
+    """Compute the score from normalized categorical probabilities."""
+    return inner_product_score_func(y_pred.probabilities, y_true)

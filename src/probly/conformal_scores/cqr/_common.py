@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 from flextype import flexdispatch
 import numpy as np
 
+from probly.representation.sample.array import ArraySample
+
 if TYPE_CHECKING:
     from probly.representation.array_like import ArrayLike
 
@@ -52,6 +54,12 @@ def compute_cqr_score_numpy(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray) 
     upper = pred_np[..., 1]
 
     return np.maximum(lower - y_np, y_np - upper)
+
+
+@cqr_score.register(ArraySample)
+def _(y_pred: ArraySample, y_true: np.ndarray) -> np.ndarray:
+    """Compute CQR scores for NumPy samples."""
+    return cqr_score(y_pred.array, y_true)
 
 
 __all__ = ["cqr_score"]

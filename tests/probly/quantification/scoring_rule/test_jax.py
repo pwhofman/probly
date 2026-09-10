@@ -5,9 +5,31 @@ from __future__ import annotations
 import pytest
 
 pytest.importorskip("jax")
+import jax
 from jax import numpy as jnp
 
 from probly.quantification.scoring_rule import BrierLoss, LogLoss, SphericalLoss, ZeroOneLoss
+from probly.representation.distribution.jax_categorical import JaxLogitCategoricalDistribution
+from probly.representation.sample.jax import JaxArraySample
+
+
+@pytest.mark.parametrize("rule", [LogLoss(), BrierLoss(), ZeroOneLoss(), SphericalLoss()])
+@pytest.mark.parametrize("sample_axis", [0, 1])
+def test_representation_loss(rule, sample_axis: int) -> None:
+    probabilities = jnp.broadcast_to(jnp.array([0.2, 0.3, 0.1, 0.4]), (2, 3, 4))
+    distribution = JaxLogitCategoricalDistribution(jnp.log(probabilities) + 3.0)
+    expected = rule.loss(probabilities)
+    result = rule.loss(distribution)
+    assert isinstance(result, jax.Array)
+    assert jnp.allclose(result, expected, atol=1e-6)
+    weights = jnp.arange(1, probabilities.shape[sample_axis] + 1, dtype=float)
+    for values in (probabilities, distribution):
+        sample = JaxArraySample(values, sample_axis=sample_axis, weights=weights)
+        result = rule.loss(sample)
+        assert isinstance(result, JaxArraySample)
+        assert result.sample_axis == sample_axis
+        assert result.weights is weights
+        assert jnp.allclose(result.array, expected, atol=1e-6)
 
 
 def test_log_loss_vector() -> None:

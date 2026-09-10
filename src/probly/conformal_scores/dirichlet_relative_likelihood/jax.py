@@ -6,6 +6,7 @@ import jax
 import jax.numpy as jnp
 
 from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
+from probly.representation.sample.jax import JaxArraySample
 
 from ._common import dirichlet_rl_score_func
 
@@ -29,3 +30,9 @@ def compute_dirichlet_rl_score_jax(alphas: jax.Array, y_true: jax.Array) -> jax.
 def compute_dirichlet_rl_score_jax_dirichlet(dirichlet: JaxDirichletDistribution, y_true: jax.Array) -> jax.Array:
     """Compute the score from a JaxDirichletDistribution."""
     return compute_dirichlet_rl_score_jax(dirichlet.alphas, y_true)
+
+
+@dirichlet_rl_score_func.register(JaxArraySample)
+def _(alphas: JaxArraySample, y_true: jax.Array) -> jax.Array:
+    """Compute memberwise relative likelihood for JAX samples."""
+    return dirichlet_rl_score_func(alphas.array, y_true)
