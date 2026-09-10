@@ -2,20 +2,32 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from functools import wraps
-from inspect import BoundArguments, signature
-from typing import TYPE_CHECKING, Any, Protocol, cast, overload, runtime_checkable
+from typing import TYPE_CHECKING, Any, cast
 
 import jax
 from jax import numpy as jnp
 import numpy as np
 
 from probly.representation._protected_axis._common_functions import (
-    batch_shape,
+    AxisProtectedCreator,
+    AxisProtectedInternals,
+    BoundFunctionWithInternals,
+    FunctionOverride,
+    ProtectedValueSequenceInternals,
+    SupportsProtectedInternals,
+    apply_structural_op as _apply_structural_op,
+    apply_unary as _apply_unary,
+    extract_axis_protected_internals,
+    extract_protected_value_sequence_internals,
+    function_override as jax_function_override,
+    has_numpy_protected_value as _has_numpy_protected_value,
+    internals_override,
+    map_batch_axes as _map_batch_axes,
     normalize_axes,
     normalize_axis,
+    normalize_batch_reduction_axes as _normalize_batch_reduction_dims,
     protected_shape,
+    validate_batch_sync as _validate_batch_sync,
     value_ndim,
     value_shape,
 )
@@ -44,199 +56,36 @@ from probly.utils import switchdispatch
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from inspect import BoundArguments
 
 
 type JaxProtectedValue = JaxLike[Any] | jax.Array | np.ndarray
 
 
-class JaxAxisProtectedCreator(Protocol):
-    """Protocol for rebuilding protected-axis representations."""
-
-    def __call__(self, values: dict[str, JaxProtectedValue]) -> Any:  # noqa: ANN401
-        """Create object from updated protected values."""
-
-
-@runtime_checkable
-class _SupportsProtectedInternals(Protocol):
-    protected_axes: dict[str, int]
-    permitted_functions: set[Callable[..., Any]]
-
-    @overload
-    def protected_values(self) -> dict[str, JaxProtectedValue]: ...
-
-    @overload
-    def protected_values(self, func: Callable) -> dict[str, JaxProtectedValue] | None: ...
-
-    def protected_values(self, func: Callable | None = None) -> dict[str, JaxProtectedValue] | None:
-        """Return protected field values."""
-
-    def with_protected_values(self, values: dict[str, JaxProtectedValue], func: Callable | None = None) -> Any:  # noqa: ANN401
-        """Create a copy with updated protected values."""
-
-
-@dataclass(frozen=True, slots=True)
-class JaxAxisProtectedInternals:
-    """Internal representation for one protected-axis object."""
-
-    create: JaxAxisProtectedCreator
-    values: dict[str, JaxProtectedValue]
-    protected_axes: dict[str, int]
-    primary_name: str
-    owner_type: type[Any]
-
-    @property
-    def primary_value(self) -> JaxProtectedValue:
-        """Return the primary protected value."""
-        return self.values[self.primary_name]
-
-    @property
-    def batch_ndim(self) -> int:
-        axes = self.protected_axes[self.primary_name]
-        return value_ndim(self.primary_value) - axes
-
-
-@dataclass(frozen=True, slots=True)
-class ProtectedValueSequenceInternals:
-    """Extracted internals for sequence-based operations."""
-
-    has_protected: bool
-    template: JaxAxisProtectedInternals | None
-    values_by_field: dict[str, list[object]]
+type JaxAxisProtectedCreator = AxisProtectedCreator[JaxProtectedValue, Any]
+type JaxAxisProtectedInternals = AxisProtectedInternals[JaxProtectedValue, Any]
+type _BoundJaxFunctionWithInternals = BoundFunctionWithInternals[JaxProtectedValue, Any]
 
 
 def jax_axis_protected_internals(
     obj: object, func: Callable | None = None, *, check_is_permitted: bool = False
 ) -> JaxAxisProtectedInternals | None:
     """Extract protected-axis internals from object."""
-    if not isinstance(obj, _SupportsProtectedInternals):
+    if not isinstance(obj, SupportsProtectedInternals):
         return None
-    protected_axes = obj.protected_axes
-    if not isinstance(protected_axes, dict) or len(protected_axes) == 0:
-        return None
-    values = obj.protected_values(func if check_is_permitted else None)  # ty:ignore[invalid-argument-type]
-
-    if values is None:
-        return None
-
-    for name, axes in protected_axes.items():
-        if name not in values:
-            return None
-        ndim = value_ndim(values[name])
-        if ndim < axes:
-            return None
-
-    primary_name = next(iter(protected_axes))
-
-    def create(values: dict[str, JaxProtectedValue]) -> Any:  # noqa: ANN401
-        return obj.with_protected_values(values, func)
-
-    owner_type = type(obj)
-    return JaxAxisProtectedInternals(
-        create=create,
-        values=dict(values),
-        protected_axes=dict(protected_axes),
-        primary_name=primary_name,
-        owner_type=owner_type,
+    # Dispatch establishes the value family; runtime protocol checks only test members.
+    return extract_axis_protected_internals(
+        cast("SupportsProtectedInternals[JaxProtectedValue, Any]", obj),
+        func,
+        check_is_permitted=check_is_permitted,
     )
-
-
-def _validate_batch_sync(values: dict[str, JaxProtectedValue], protected_axes: dict[str, int]) -> None:
-    expected: tuple[int, ...] | None = None
-    for name, value in values.items():
-        axes = protected_axes[name]
-        ndim = value_ndim(value)
-        shape = value_shape(value)
-        if ndim < axes:
-            msg = f"Operation removed protected trailing axes for field {name!r}."
-            raise ValueError(msg)
-        current = batch_shape(shape, axes)
-        if expected is None:
-            expected = current
-        elif current != expected:
-            msg = "Operation produced inconsistent batch-shapes across protected fields."
-            raise ValueError(msg)
-
-
-def _has_numpy_protected_value(internals: JaxAxisProtectedInternals) -> bool:
-    return any(isinstance(value, np.ndarray) for value in internals.values.values())
-
-
-def _apply_structural_op(
-    value: JaxProtectedValue,
-    jax_op: Callable[[JaxProtectedValue], object],
-    numpy_op: Callable[[np.ndarray], object],
-) -> JaxProtectedValue:
-    if isinstance(value, np.ndarray):
-        return cast("JaxProtectedValue", numpy_op(value))
-    return cast("JaxProtectedValue", jax_op(value))
-
-
-def _apply_unary(
-    internals: JaxAxisProtectedInternals,
-    op: Callable[[str, JaxProtectedValue, int], JaxProtectedValue],
-) -> Any:  # noqa: ANN401
-    results: dict[str, JaxProtectedValue] = {}
-    for name, value in internals.values.items():
-        results[name] = op(name, value, internals.protected_axes[name])
-
-    _validate_batch_sync(results, internals.protected_axes)
-    return internals.create(results)
 
 
 def _extract_protected_value_sequence_internals(
     values: tuple[object, ...], func: Callable | None = None
-) -> ProtectedValueSequenceInternals:
+) -> ProtectedValueSequenceInternals[JaxProtectedValue, Any]:
     """Extract and align protected values for sequence operations."""
-    template: JaxAxisProtectedInternals | None = None
-    values_by_field: dict[str, list[object]] = {}
-    has_protected = False
-
-    for value in values:
-        internals = jax_axis_protected_internals(value, func)
-        if internals is None:
-            if template is None:
-                continue
-            for name in template.protected_axes:
-                values_by_field[name].append(value)
-            continue
-
-        has_protected = True
-        if template is None:
-            template = internals
-            values_by_field = {name: [] for name in internals.protected_axes}
-        elif internals.protected_axes != template.protected_axes:
-            msg = "All protected inputs must share identical protected_axes definitions."
-            raise ValueError(msg)
-
-        for name in template.protected_axes:
-            values_by_field[name].append(internals.values[name])
-
-    if not has_protected:
-        return ProtectedValueSequenceInternals(False, None, {})
-
-    return ProtectedValueSequenceInternals(True, template, values_by_field)
-
-
-def _map_batch_axes(
-    value: JaxProtectedValue, protected_axes_count: int, batch_axes: tuple[int, ...]
-) -> tuple[int, ...]:
-    ndim = value_ndim(value)
-    batch_ndim = ndim - protected_axes_count
-    normalized = normalize_axes(batch_axes, batch_ndim)
-    return (*normalized, *range(batch_ndim, ndim))
-
-
-def _normalize_batch_reduction_dims(axis: object, batch_ndim: int) -> int | tuple[int, ...]:
-    if axis is None:
-        return tuple(range(batch_ndim))
-    if isinstance(axis, int):
-        return normalize_axis(axis, batch_ndim)
-    if isinstance(axis, (tuple, list)) and all(isinstance(item, int) for item in axis):
-        dim_tuple = cast("tuple[int, ...]", tuple(axis))
-        return normalize_axes(dim_tuple, batch_ndim)
-
-    msg = "reduction axis must be None, an int, or a tuple/list of ints."
-    raise TypeError(msg)
+    return extract_protected_value_sequence_internals(values, func, extract=jax_axis_protected_internals)
 
 
 def _expand_average_weights_for_protected_axes(
@@ -259,36 +108,6 @@ def _expand_average_weights_for_protected_axes(
     )
 
 
-class _JaxFunction(Protocol):
-    def __call__(
-        self,
-        func: Callable,
-        types: tuple[type[Any], ...],
-        args: tuple[Any, ...],
-        kwargs: dict[str, Any],
-    ) -> Any:  # noqa: ANN401
-        ...
-
-
-class _BoundJaxFunction(Protocol):
-    def __call__(
-        self,
-        func: Callable,
-        params: BoundArguments,
-    ) -> Any:  # noqa: ANN401
-        ...
-
-
-class _BoundJaxFunctionWithInternals(Protocol):
-    def __call__(
-        self,
-        func: Callable,
-        params: BoundArguments,
-        internals: JaxAxisProtectedInternals,
-    ) -> Any:  # noqa: ANN401
-        ...
-
-
 @switchdispatch
 def jax_function(
     func: Callable,
@@ -301,45 +120,12 @@ def jax_function(
     return NotImplemented
 
 
-def jax_function_override(jax_func: _BoundJaxFunction) -> _JaxFunction:
-    """Decorator to convert a bound jax function to ``__jax_function__`` shape."""
-
-    @wraps(jax_func)
-    def wrapper(
-        func: Callable,
-        types: tuple[type[Any], ...],  # noqa: ARG001
-        args: tuple[Any, ...],
-        kwargs: dict[str, Any],
-    ) -> Any:  # noqa: ANN401
-        params = signature(func).bind(*args, **kwargs)
-        params.apply_defaults()
-        return jax_func(func, params)
-
-    return wrapper
-
-
 def _jax_internals_override(
     jax_param_name: str,
     check_is_permitted: bool = False,
-) -> Callable[[_BoundJaxFunctionWithInternals], _JaxFunction]:
+) -> Callable[[_BoundJaxFunctionWithInternals], FunctionOverride]:
     """Decorator to convert a function taking a protected-axis argument."""
-
-    def decorator(f: _BoundJaxFunctionWithInternals) -> _JaxFunction:
-        @wraps(f)
-        def wrapper(func: Callable, params: BoundArguments) -> Any:  # noqa: ANN401
-            argument = params.arguments[jax_param_name]
-            internals = jax_axis_protected_internals(
-                argument,
-                func,
-                check_is_permitted=check_is_permitted,
-            )
-            if internals is None:
-                return NotImplemented
-            return f(func, params, internals)
-
-        return jax_function_override(wrapper)
-
-    return decorator
+    return internals_override(jax_param_name, check_is_permitted, extract=jax_axis_protected_internals)
 
 
 @jax_function.register(jax_copy)
