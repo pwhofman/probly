@@ -33,8 +33,9 @@ def cvar_ce_loss(output: Tensor, targets: Tensor, delta: float) -> Tensor:
     per_sample = F.cross_entropy(output, targets, reduction="none")
     if delta >= 1.0:
         return per_sample.mean()
-    # floor(delta * B), clamped to 1 so degenerate tiny batches still train.
-    k = max(1, int(delta * per_sample.shape[0]))
+    # floor(delta * B), clamped to 1 so degenerate tiny batches still train. The epsilon keeps
+    # mathematically integer products exact, e.g. int(0.29 * 100) truncates to 28 without it.
+    k = max(1, int(delta * per_sample.shape[0] + 1e-9))
     return per_sample.topk(k).values.mean()
 
 
