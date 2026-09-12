@@ -1,4 +1,4 @@
-"""Flax/JAX implementation for APS scores."""
+"""JAX implementation for APS scores."""
 
 from __future__ import annotations
 

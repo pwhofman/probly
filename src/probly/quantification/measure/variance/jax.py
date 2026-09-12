@@ -20,7 +20,7 @@ from ._common import (
 
 
 @variance.register(JaxGaussianDistribution)
-def array_gaussian_variance(
+def jax_gaussian_variance(
     distribution: JaxGaussianDistribution | jnp.ndarray,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
@@ -31,7 +31,7 @@ def array_gaussian_variance(
 
 
 @conditional_variance.register(JaxGaussianDistributionSample)
-def array_gaussian_sample_conditional_variance(
+def jax_gaussian_sample_conditional_variance(
     sample: JaxGaussianDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
@@ -40,7 +40,7 @@ def array_gaussian_sample_conditional_variance(
 
 
 @mutual_information_variance.register(JaxGaussianDistributionSample)
-def array_gaussian_sample_mutual_information(
+def jax_gaussian_sample_mutual_information(
     sample: JaxGaussianDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
@@ -49,16 +49,16 @@ def array_gaussian_sample_mutual_information(
 
 
 @variance_of_expected_predictive_distribution.register(JaxGaussianDistributionSample)
-def array_gaussian_sample_variance_of_expected_predictive_distribution(
+def jax_gaussian_sample_variance_of_expected_predictive_distribution(
     sample: JaxGaussianDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
     """Compute the total predictive variance of a Gaussian sample via the law of total variance."""
-    return array_gaussian_sample_conditional_variance(sample) + array_gaussian_sample_mutual_information(sample)
+    return jax_gaussian_sample_conditional_variance(sample) + jax_gaussian_sample_mutual_information(sample)
 
 
 @variance_of_expected_predictive_distribution.register(JaxArraySample)
-def array_sample_variance_of_expected_predictive_distribution(
+def jax_sample_variance_of_expected_predictive_distribution(
     sample: JaxArraySample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
@@ -67,7 +67,7 @@ def array_sample_variance_of_expected_predictive_distribution(
 
 
 @conditional_variance.register(JaxArraySample)
-def array_sample_conditional_variance(
+def jax_sample_conditional_variance(
     sample: JaxArraySample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
@@ -76,7 +76,7 @@ def array_sample_conditional_variance(
 
 
 @mutual_information_variance.register(JaxArraySample)
-def array_sample_mutual_information(
+def jax_sample_mutual_information(
     sample: JaxArraySample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:

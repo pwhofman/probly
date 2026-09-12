@@ -153,7 +153,7 @@ def jax_gaussian_sample_entropy_of_expected_predictive_distribution(
 
 
 @entropy_of_expected_predictive_distribution.register(JaxCategoricalDistributionSample)
-def jax_categoircal_sample_entropy_of_expected_predictive_distribution(
+def jax_categorical_sample_entropy_of_expected_predictive_distribution(
     sample: JaxCategoricalDistributionSample, base: LogBase = None
 ) -> jax.Array:
     """Compute the entropy of the expected value of a sample from a categorical distribution."""
