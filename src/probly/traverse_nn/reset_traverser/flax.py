@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 import inspect
 from typing import Any
 
@@ -111,15 +110,6 @@ def _refork_rng_stream(obj: nnx.Module, rngs: nnx.Rngs) -> None:
 @reset_traverser.register(cls=nnx.Variable)
 def _reset_variable(obj: nnx.Variable) -> nnx.Variable:
     """Leave variables alone: they are reset by the module that owns them."""
-    return obj
-
-
-# ``nnx.Sequential`` holds plain callables (``nnx.relu``, lambdas, ...) alongside its modules, and
-# the flax nn_traverser descends into them. They carry no parameters, so pass them through instead
-# of hitting the "not supported" fallback. Modules win this dispatch: they are registered below.
-@reset_traverser.register(cls=Callable)
-def _reset_callable(obj: Callable) -> Callable:
-    """Leave bare callables (activation functions) untouched."""
     return obj
 
 

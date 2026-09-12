@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import subprocess
+import sys
+import textwrap
 
 import pytest
 
@@ -54,6 +57,56 @@ class RandomResettableLinear(ResettableLinear):
     def reset_parameters(self) -> None:
         self.kernel[...] = jax.random.normal(self.rngs(), self.kernel.shape)
         self.reset_count += 1
+
+
+@pytest.mark.parametrize("first_layer", ["activation", "dropout"])
+@pytest.mark.parametrize("entrypoint", ["ensemble", "traverse"])
+def test_reset_lazy_loading_before_first_child(first_layer: str, entrypoint: str) -> None:
+    script = textwrap.dedent(
+        """
+        import sys
+        from flax import nnx
+        import jax.numpy as jnp
+        from probly.transformation.ensemble import ensemble
+        from probly.traverse_nn import nn_compose, reset_traverser
+        from pytraverse import CLONE, traverse
+
+        first_layer, entrypoint = sys.argv[1:]
+        rngs = nnx.Rngs(0)
+        first = nnx.relu if first_layer == "activation" else nnx.Dropout(
+            rate=0.5, deterministic=True, rngs=rngs
+        )
+        model = nnx.Sequential(first, nnx.Linear(2, 2, rngs=rngs))
+        before = model.layers[1].kernel[...]
+        assert "probly.traverse_nn.reset_traverser.flax" not in sys.modules
+        assert traverse(nnx.relu, reset_traverser) is nnx.relu
+        assert "probly.traverse_nn.reset_traverser.flax" not in sys.modules
+
+        if entrypoint == "ensemble":
+            members = list(ensemble(model, num_members=2, reset_params=True))
+        else:
+            # Importing traversal alone must not load reset support.
+            from probly.traverse_nn.flax import flax_traverser
+            assert "probly.traverse_nn.reset_traverser.flax" not in sys.modules
+            members = [
+                traverse(model, nn_compose(reset_traverser, nn_traverser=flax_traverser), init={CLONE: True})
+                for _ in range(2)
+            ]
+
+        assert "probly.traverse_nn.reset_traverser.flax" in sys.modules
+        assert all(member(jnp.ones((1, 2))).shape == (1, 2) for member in members)
+        assert not jnp.array_equal(members[0].layers[1].kernel[...], members[1].layers[1].kernel[...])
+        assert jnp.array_equal(model.layers[1].kernel[...], before)
+        """
+    )
+    result = subprocess.run(  # noqa: S603 - fixed script and parametrized test cases
+        [sys.executable, "-c", script, first_layer, entrypoint],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 class TestResetParameters:
