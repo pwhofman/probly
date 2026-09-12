@@ -8,6 +8,7 @@ import pytest
 pytest.importorskip("jax")
 
 import jax
+from jax.experimental import checkify
 import jax.numpy as jnp
 
 from probly.representation.credal_set._common import (
@@ -20,9 +21,10 @@ from probly.representation.credal_set.jax import (
 )
 from probly.representation.distribution.jax_categorical import (
     JaxCategoricalDistribution,
+    JaxLogitCategoricalDistribution,
     JaxProbabilityCategoricalDistribution,
 )
-from probly.representation.jax_functions import jax_expand_dims
+from probly.representation.jax_functions import jax_expand_dims, jax_matrix_transpose
 from probly.representation.sample.jax import JaxArraySample
 
 
@@ -54,6 +56,25 @@ def test_jax_convex_credal_set_barycenter_averages_normalized_probabilities() ->
 
     assert isinstance(barycenter, JaxCategoricalDistribution)
     assert jnp.allclose(barycenter.probabilities, jnp.array([0.7, 0.3], dtype=float))
+
+
+@pytest.mark.parametrize("batch_shape", [(2, 3), (2, 3, 6)])
+@pytest.mark.parametrize("distribution_type", [JaxProbabilityCategoricalDistribution, JaxLogitCategoricalDistribution])
+def test_matrix_transpose_preserves_nested_distribution(batch_shape, distribution_type) -> None:
+    shape = (*batch_shape, 4, 5)
+    values = jnp.arange(1, np.prod(shape) + 1, dtype=float).reshape(shape)
+    cset = JaxConvexCredalSet(tensor=distribution_type(values))
+    expected = np.swapaxes(np.asarray(cset.tensor.probabilities), -4, -3)
+
+    error, compiled = jax.jit(checkify.checkify(jax_matrix_transpose))(cset)
+    error.throw()
+    for result in (jax_matrix_transpose(cset), cset.mT, compiled):
+        assert isinstance(result, JaxConvexCredalSet)
+        assert isinstance(result.tensor, distribution_type)
+        assert result.shape == (*batch_shape[:-2], batch_shape[-1], batch_shape[-2])
+        assert result.protected_shape == (4,)
+        assert result.num_classes == 5
+        np.testing.assert_allclose(result.tensor.probabilities, expected, atol=1e-6)
 
 
 def test_jax_probability_intervals_numpy_and_shape_ops() -> None:

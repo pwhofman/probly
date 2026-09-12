@@ -261,7 +261,7 @@ def protected_matrix_transpose_function(
         full_axes = _map_batch_axes(value, axes_count, tuple(batch_axes))
         return _apply_structural_op(
             value,
-            lambda field_value: jnp.transpose(cast("Any", field_value), axes=full_axes),
+            lambda field_value: jax_transpose(cast("Any", field_value), axes=full_axes),
             lambda field_value: np.transpose(field_value, axes=full_axes),
         )
 
