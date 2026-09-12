@@ -48,6 +48,14 @@ class ResettableLinear(nnx.Linear):
         self.reset_count += 1
 
 
+class RandomResettableLinear(ResettableLinear):
+    """A custom reset hook that draws weights from its stored RNG stream."""
+
+    def reset_parameters(self) -> None:
+        self.kernel[...] = jax.random.normal(self.rngs(), self.kernel.shape)
+        self.reset_count += 1
+
+
 class TestResetParameters:
     def test_parameters_change(self, flax_model_small_2d_2d: nnx.Module) -> None:
         before = kernels(flax_model_small_2d_2d)
@@ -119,6 +127,21 @@ class TestResetParameters:
 
 
 class TestResetParametersHook:
+    def test_random_hook_uses_explicit_reset_seed(self) -> None:
+        layer = RandomResettableLinear(2, 2, rngs=nnx.Rngs(0))
+        first = reset(layer, {RNGS: 7})
+        repeated = reset(layer, {RNGS: nnx.Rngs(7)})
+        other = reset(layer, {RNGS: 99})
+
+        assert jnp.array_equal(first.kernel[...], repeated.kernel[...])
+        assert not jnp.array_equal(first.kernel[...], other.kernel[...])
+        expected_stream = nnx.Rngs(7)["resettable"].fork()
+        expected_kernel = jax.random.normal(expected_stream(), (2, 2))
+        assert jnp.array_equal(first.kernel[...], expected_kernel)
+        # The stored stream must retain the draw consumed by the hook.
+        assert jnp.array_equal(first.rngs(), expected_stream())
+        assert first.reset_count == 1
+
     def test_reset_parameters_is_preferred_over_reconstruction(self, flax_rngs: nnx.Rngs) -> None:
         layer = ResettableLinear(2, 2, rngs=flax_rngs)
 
@@ -186,6 +209,26 @@ class TestUnsupportedLayers:
 
 
 class TestEnsembleIntegration:
+    def test_random_reset_hooks_produce_distinct_members(self) -> None:
+        from probly.transformation.ensemble import ensemble  # noqa: PLC0415
+
+        layer = RandomResettableLinear(2, 2, rngs=nnx.Rngs(0))
+        original_kernel = layer.kernel[...]
+        original_key = jax.random.key_data(layer.rngs.key[...])
+        original_count = layer.rngs.count[...]
+        members = list(ensemble(layer, num_members=3, reset_params=True))
+
+        assert all(member.reset_count == 1 for member in members)
+        assert all(
+            not jnp.array_equal(members[i].kernel[...], members[j].kernel[...])
+            for i in range(len(members))
+            for j in range(i + 1, len(members))
+        )
+        assert jnp.array_equal(layer.kernel[...], original_kernel)
+        assert jnp.array_equal(jax.random.key_data(layer.rngs.key[...]), original_key)
+        assert jnp.array_equal(layer.rngs.count[...], original_count)
+        assert layer.reset_count == 0
+
     def test_ensemble_members_differ_when_parameters_are_reset(self, flax_model_small_2d_2d: nnx.Module) -> None:
         from probly.transformation.ensemble import ensemble  # noqa: PLC0415
 

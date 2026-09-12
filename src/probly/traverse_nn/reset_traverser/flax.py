@@ -87,9 +87,13 @@ def _reset_variables(obj: nnx.Module, rngs: nnx.Rngs) -> nnx.Module:
     """
     reset = getattr(obj, "reset_parameters", None)
     if callable(reset):
+        # Hooks may draw from the module's stored stream while resetting weights.
+        _refork_rng_stream(obj, rngs)
         reset()
         return obj
-    return type(obj)(**_init_kwargs(obj, rngs))
+    new_obj = type(obj)(**_init_kwargs(obj, rngs))
+    _refork_rng_stream(new_obj, rngs)
+    return new_obj
 
 
 def _refork_rng_stream(obj: nnx.Module, rngs: nnx.Rngs) -> None:
@@ -129,5 +133,4 @@ def _reset_module(obj: nnx.Module, rngs: RNG) -> tuple[nnx.Module, dict[str, RNG
     if not _owns_variables(obj):
         return obj, {"rngs": rngs}
     new_obj = _reset_variables(obj, rngs)
-    _refork_rng_stream(new_obj, rngs)
     return new_obj, {"rngs": rngs}
