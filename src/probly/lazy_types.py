@@ -11,6 +11,7 @@ FLAX_MODULE = "flax.nnx.module.Module"
 FLAX_LIST = "flax.nnx.list.List"
 FLAX_VARIABLE = "flax.nnx.variablelib.Variable"
 JAX_ARRAY = "jax.Array"
+JAX_TRACER = "jax._src.core.Tracer"
 JAX_ARRAY_LIKE = "probly.representation.jax_like.JaxLikeImplementation"
 
 SKLEARN_MODULE = "sklearn.base.BaseEstimator"

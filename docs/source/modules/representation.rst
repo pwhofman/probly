@@ -6,6 +6,30 @@ Representation
 
 .. currentmodule:: probly.representation
 
+Categorical score targets
+=========================
+
+The inner-product, KL-divergence, total-variation, and Wasserstein conformal
+scores interpret targets consistently across NumPy, Torch, and JAX:
+
+* Integer arrays contain class indices, interpreted as point-mass targets.
+* Floating-point arrays contain probability vectors with a trailing class axis.
+* ``CategoricalDistribution`` targets supply their normalized probabilities,
+  regardless of their storage dtype or whether they store logits.
+* Boolean and complex target arrays are rejected.
+
+Types and dtypes determine the interpretation. Shapes only validate the class
+count and establish ordinary batch broadcasting. For example, predictions of
+shape ``(members, batch, classes)`` accept floating targets of shape
+``(batch, classes)`` or integer labels of shape ``(batch,)``. Singleton batch
+dimensions are preserved according to normal broadcasting rules.
+
+Integer one-hot arrays must be cast to floating point or wrapped in a
+categorical distribution to be interpreted as probability vectors. Conversely,
+class labels stored as floats must be explicitly converted to an integer dtype.
+There is no special reshaping of row-vector labels and no rank-based inference
+of target semantics.
+
 JAX protected-axis operators
 ============================
 

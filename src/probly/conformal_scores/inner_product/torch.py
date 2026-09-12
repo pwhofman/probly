@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import torch
 
+from probly.representation.distribution import CategoricalDistribution
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.sample.torch import TorchSample
 
@@ -13,14 +14,29 @@ from ._common import inner_product_score_func
 @inner_product_score_func.register(torch.Tensor)
 def compute_inner_product_score_torch(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
     """Computes the Inner Product score using Torch Tensor."""
-    y_pred_t = torch.asarray(y_pred)
-    y_true_t = torch.asarray(y_true, device=y_pred_t.device)
+    y_pred_t = torch.as_tensor(y_pred)
+    distribution_target = isinstance(y_true, CategoricalDistribution)
+    y_true_t = torch.as_tensor(y_true.probabilities if distribution_target else y_true, device=y_pred_t.device)
+    if y_pred_t.ndim == 0:
+        msg = "Predicted probabilities must have a class axis."
+        raise ValueError(msg)
 
-    if y_true_t.shape == y_pred_t.shape[:-1] or (
-        y_pred_t.ndim == 2 and y_true_t.shape == (1, y_pred_t.shape[0]) and y_true_t.shape != y_pred_t.shape
+    if (
+        not distribution_target
+        and y_true_t.dtype != torch.bool
+        and not (y_true_t.is_floating_point() or y_true_t.is_complex())
     ):
-        labels = y_true_t.reshape(y_pred_t.shape[:-1]).long()
-        return 1.0 - torch.gather(y_pred_t, -1, labels.unsqueeze(-1)).squeeze(-1)
+        batch_shape = torch.broadcast_shapes(y_pred_t.shape[:-1], y_true_t.shape)
+        probabilities = y_pred_t.expand(*batch_shape, y_pred_t.shape[-1])
+        labels = y_true_t.expand(batch_shape).long()
+        return 1.0 - torch.gather(probabilities, -1, labels.unsqueeze(-1)).squeeze(-1)
+
+    if not distribution_target and not y_true_t.is_floating_point():
+        msg = "Targets must be integer labels, floating-point probabilities, or a categorical distribution."
+        raise TypeError(msg)
+    if y_true_t.ndim == 0 or y_true_t.shape[-1] != y_pred_t.shape[-1]:
+        msg = "Target probabilities must have the same number of classes as predictions."
+        raise ValueError(msg)
 
     return 1.0 - torch.sum(y_pred_t * y_true_t, dim=-1)
 

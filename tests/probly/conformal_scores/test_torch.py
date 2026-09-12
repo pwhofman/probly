@@ -15,9 +15,32 @@ from probly.conformal_scores import (
     tv_score_func,
     wasserstein_distance_score_func,
 )
-from probly.representation.distribution.torch_categorical import TorchLogitCategoricalDistribution
+from probly.representation.distribution.torch_categorical import (
+    TorchLogitCategoricalDistribution,
+    TorchProbabilityCategoricalDistribution,
+)
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
 from probly.representation.sample.torch import TorchSample
+
+from ._classification_target_suite import PREDICTIONS, ClassificationTargetSuite
+
+
+@pytest.fixture
+def classification_backend():
+    return torch.as_tensor, TorchProbabilityCategoricalDistribution, TorchLogitCategoricalDistribution
+
+
+class TestClassificationTargets(ClassificationTargetSuite):
+    """Torch target interpretation follows types and dtypes."""
+
+
+def test_broadcast_target_gradients():
+    predictions = torch.tensor(PREDICTIONS, requires_grad=True)
+    target = torch.tensor([[0.1, 0.9], [0.7, 0.3]], dtype=predictions.dtype, requires_grad=True)
+    result = inner_product_score_func(predictions, target)
+    result.sum().backward()
+    torch.testing.assert_close(predictions.grad, -target.detach().expand_as(predictions))
+    torch.testing.assert_close(target.grad, -predictions.detach().sum(dim=0))
 
 
 @pytest.mark.parametrize(

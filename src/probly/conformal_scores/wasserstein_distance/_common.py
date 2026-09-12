@@ -10,13 +10,25 @@ import numpy as np
 
 from probly.conformal_scores import NonConformityScore
 from probly.representation.array_like import ArrayLike
+from probly.representation.distribution import CategoricalDistribution
 from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
 from probly.representation.sample.array import ArraySample
 
 
 @flexdispatch
 def wasserstein_distance_score_func[T](y_pred: T, y_true: T | None = None) -> T:
-    """Compute Wasserstein distance."""
+    """Compute Wasserstein distance with type-based target semantics.
+
+    Args:
+        y_pred: Predicted categorical probabilities or a categorical representation.
+        y_true: Integer class labels, floating-point probability vectors, or a
+            categorical representation. Integer arrays always encode labels,
+            including arrays containing only zeros and ones. Batch dimensions
+            broadcast normally; shapes never select the target interpretation.
+
+    Returns:
+        Scores with the broadcast batch shape in the prediction backend.
+    """
     msg = "Wasserstein distance score not implemented for this type."
     raise NotImplementedError(msg)
 
@@ -32,12 +44,23 @@ def compute_wasserstein_distance_score_numpy(
         y_true: True probability mass functions or integer labels.
     """
     y_pred_np = np.asarray(y_pred)
-    y_true_np = np.asarray(y_true)
+    distribution_target = isinstance(y_true, CategoricalDistribution)
+    y_true_np = np.asarray(y_true.probabilities if distribution_target else y_true)
+    if y_pred_np.ndim == 0:
+        msg = "Predicted probabilities must have a class axis."
+        raise ValueError(msg)
 
-    if y_true_np.ndim == 1 or (y_true_np.shape[0] == 1 and y_true_np.size == y_pred_np.shape[0]):
-        y_one_hot = np.zeros_like(y_pred_np)
-        y_one_hot[np.arange(len(y_true_np)), y_true_np.flatten().astype(int)] = 1.0
-        y_true_np = y_one_hot
+    if not distribution_target and np.issubdtype(y_true_np.dtype, np.integer):
+        # A point mass has a step-function CDF; no one-hot array or target cumsum is needed.
+        target_cdf = np.arange(y_pred_np.shape[-1]) >= y_true_np[..., None]
+        return np.sum(np.abs(np.cumsum(y_pred_np, axis=-1) - target_cdf), axis=-1)
+
+    if not distribution_target and not np.issubdtype(y_true_np.dtype, np.floating):
+        msg = "Targets must be integer labels, floating-point probabilities, or a categorical distribution."
+        raise TypeError(msg)
+    if y_true_np.ndim == 0 or y_true_np.shape[-1] != y_pred_np.shape[-1]:
+        msg = "Target probabilities must have the same number of classes as predictions."
+        raise ValueError(msg)
 
     return np.sum(np.abs(np.cumsum(y_pred_np, axis=-1) - np.cumsum(y_true_np, axis=-1)), axis=-1)
 

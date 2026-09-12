@@ -26,9 +26,42 @@ from probly.conformal_scores import (
 )
 from probly.conformal_scores.inner_product.jax import compute_inner_product_score_jax
 from probly.conformal_scores.kullback_leibler.jax import compute_kl_divergence_score_jax
-from probly.representation.distribution.jax_categorical import JaxLogitCategoricalDistribution
+from probly.representation.distribution.jax_categorical import (
+    JaxLogitCategoricalDistribution,
+    JaxProbabilityCategoricalDistribution,
+)
 from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
 from probly.representation.sample.jax import JaxArraySample
+
+from ._classification_target_suite import PREDICTIONS, SCORES, ClassificationTargetSuite, expected_score
+
+
+@pytest.fixture
+def classification_backend():
+    return jnp.asarray, JaxProbabilityCategoricalDistribution, JaxLogitCategoricalDistribution
+
+
+class TestClassificationTargets(ClassificationTargetSuite):
+    """JAX target interpretation follows types and dtypes."""
+
+
+@pytest.mark.parametrize("score", SCORES)
+@pytest.mark.parametrize("integer", [False, True])
+def test_target_interpretation_under_jit(score, integer):
+    target = np.array([[0, 1], [1, 0]]) if integer else np.array([[0.1, 0.9], [0.7, 0.3]])
+    probabilities = np.eye(2)[target] if integer else target
+    result = jax.jit(score)(jnp.asarray(PREDICTIONS), jnp.asarray(target))
+    np.testing.assert_allclose(result, expected_score(score, PREDICTIONS, probabilities), atol=1e-6)
+
+
+def test_broadcast_target_gradients():
+    predictions = jnp.asarray(PREDICTIONS)
+    target = jnp.array([[0.1, 0.9], [0.7, 0.3]])
+    gradients = jax.jit(jax.grad(lambda p, q: inner_product_score_func(p, q).sum(), argnums=(0, 1)))(
+        predictions, target
+    )
+    np.testing.assert_allclose(gradients[0], -jnp.broadcast_to(target, predictions.shape))
+    np.testing.assert_allclose(gradients[1], -predictions.sum(axis=0))
 
 
 @pytest.mark.parametrize(

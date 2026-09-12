@@ -22,6 +22,17 @@ from probly.representation.distribution.array_categorical import (
 from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
 from probly.representation.sample.array import ArraySample
 
+from ._classification_target_suite import ClassificationTargetSuite
+
+
+@pytest.fixture
+def classification_backend():
+    return np.asarray, ArrayProbabilityCategoricalDistribution, ArrayLogitCategoricalDistribution
+
+
+class TestClassificationTargets(ClassificationTargetSuite):
+    """NumPy target interpretation follows types and dtypes."""
+
 
 @pytest.mark.parametrize(
     "score",
