@@ -8,7 +8,7 @@ from typing import ClassVar, override
 
 import jax
 from jax import numpy as jnp
-from scipy.special import logit
+from jax.scipy.special import logit
 
 from probly.representation.distribution._common import (
     BernoulliDistribution,

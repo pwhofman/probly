@@ -7,6 +7,7 @@ import pytest
 pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
+from scipy.stats import norm
 
 from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
 from probly.representation.distribution.jax_gaussian import JaxGaussianDistribution
@@ -98,6 +99,30 @@ def test_quantile() -> None:
     assert jnp.allclose(scalar_quantile, dist.mean)
     assert vector_quantile.shape == (2, 2)
     assert jnp.allclose(vector_quantile[:, 0], dist.mean)
+
+
+@pytest.mark.parametrize("q", [0.75, [0.1, 0.5, 0.9], [0.0, 1.0]])
+def test_quantile_supports_jit(q: float | list[float]) -> None:
+    dist = JaxGaussianDistribution(jnp.array([0.0, 1.0]), jnp.array([1.0, 4.0]))
+    q_arr = jnp.asarray(q)
+    expected = norm.ppf(q_arr, loc=dist.mean[..., None], scale=dist.std[..., None])
+    if q_arr.ndim == 0:
+        expected = expected.squeeze(-1)
+
+    for result in (dist.quantile(q), jax.jit(lambda d, p: d.quantile(p))(dist, q_arr)):
+        assert isinstance(result, jax.Array)
+        assert result.shape == expected.shape
+        assert jnp.allclose(result, expected, atol=1e-6)
+
+
+def test_quantile_gradients() -> None:
+    dist = JaxGaussianDistribution(jnp.array([0.0, 1.0]), jnp.array([1.0, 4.0]))
+    q = 0.75
+    gradient, q_gradient = jax.jit(jax.grad(lambda d, p: d.quantile(p).sum(), argnums=(0, 1)))(dist, q)
+
+    assert jnp.allclose(gradient.mean, jnp.ones_like(dist.mean))
+    assert jnp.allclose(gradient.var, norm.ppf(q) / (2 * dist.std))
+    assert jnp.allclose(q_gradient, dist.std.sum() / norm.pdf(norm.ppf(q)))
 
 
 def test_transpose_property() -> None:

@@ -9,6 +9,7 @@ import pytest
 pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
+from scipy.special import digamma, polygamma
 from scipy.stats import dirichlet, entropy as scipy_entropy, norm
 
 from probly.quantification.measure.distribution import (
@@ -99,7 +100,34 @@ def test_jax_dirichlet_entropy_matches_scipy(base: None | float) -> None:
     expected_natural = jnp.array([dirichlet(alpha).entropy() for alpha in alphas], dtype=float)
     expected = _change_base_natural_log(expected_natural, base)
 
-    assert jnp.allclose(measured, expected, rtol=1e-10, atol=1e-7)
+    # Allow rounding error from JAX's float32 special functions.
+    assert jnp.allclose(measured, expected, rtol=1e-5, atol=1e-6)
+
+
+@pytest.mark.parametrize("measure", [entropy, conditional_entropy])
+def test_dirichlet_entropy_measures_support_jit_and_grad(measure) -> None:
+    alphas = jnp.array([[2.0, 3.0, 4.0], [0.5, 1.5, 2.5]])
+    distribution = JaxDirichletDistribution(alphas)
+    result = jax.jit(measure)(distribution)
+    assert isinstance(result, jax.Array)
+    assert result.shape == (2,)
+    assert jnp.allclose(result, measure(distribution), atol=1e-6)
+
+    alpha_sum = alphas.sum(axis=-1, keepdims=True)
+    if measure is entropy:
+        expected_gradient = (alpha_sum - alphas.shape[-1]) * polygamma(1, alpha_sum) - (alphas - 1) * polygamma(
+            1, alphas
+        )
+    else:
+        mean_digamma = (alphas / alpha_sum * digamma(alphas + 1)).sum(axis=-1, keepdims=True)
+        expected_gradient = (
+            polygamma(1, alpha_sum + 1)
+            - (digamma(alphas + 1) - mean_digamma) / alpha_sum
+            - alphas / alpha_sum * polygamma(1, alphas + 1)
+        )
+
+    gradient = jax.jit(jax.grad(lambda d: measure(d).sum()))(distribution)
+    assert jnp.allclose(gradient.alphas, expected_gradient, atol=1e-6)
 
 
 @pytest.mark.parametrize("base", NUMERIC_BASES)

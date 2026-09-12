@@ -155,7 +155,8 @@ def test_entropy_matches_scipy_single() -> None:
 
     expected = stats.dirichlet(alpha).entropy()
     assert jnp.all(jnp.isfinite(expected))
-    assert jnp.allclose(dist.entropy(), expected, rtol=1e-7, atol=1e-7)
+    # JAX's float32 special functions accumulate rounding error in the entropy formula.
+    assert jnp.allclose(dist.entropy(), expected, rtol=1e-5, atol=1e-6)
 
 
 def test_entropy_matches_scipy_batched() -> None:
@@ -176,7 +177,7 @@ def test_entropy_matches_scipy_batched() -> None:
     assert jnp.all(jnp.isfinite(ent))
 
     expected = jnp.array([stats.dirichlet(a).entropy() for a in alphas], dtype=float)
-    assert jnp.allclose(ent, expected, rtol=1e-7, atol=1e-7)
+    assert jnp.allclose(ent, expected, rtol=1e-5, atol=1e-6)
 
 
 def test_sample_function_dirichlet() -> None:

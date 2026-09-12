@@ -5,7 +5,9 @@ from __future__ import annotations
 import pytest
 
 pytest.importorskip("jax")
+import jax
 from jax import numpy as jnp
+from scipy.special import logit
 
 from probly.predictor import BinaryLogitClassifier, BinaryProbabilisticClassifier, predict
 from probly.representation.distribution import (
@@ -33,6 +35,19 @@ def test_probability_bernoulli_exposes_categorical_fields_with_class_axis() -> N
     assert jnp.allclose(dist.unnormalized_probabilities, dist.probabilities)
     assert jnp.allclose(dist.log_probabilities, jnp.log(dist.probabilities))
     assert jnp.allclose(1.0 / (1.0 + jnp.exp(-dist.logits[..., 1])), positive)
+
+
+def test_probability_bernoulli_logits_support_jit_and_grad() -> None:
+    dist = JaxProbabilityBernoulliDistribution(jnp.array([0.0, 0.2, 0.8, 1.0]))
+    logits = jax.jit(lambda d: d.logits)(dist)
+
+    assert isinstance(logits, jax.Array)
+    assert jnp.allclose(logits[..., 0], 0.0)
+    assert jnp.allclose(logits[..., 1], logit(dist.array))
+
+    interior = JaxProbabilityBernoulliDistribution(jnp.array([0.2, 0.8]))
+    gradient = jax.jit(jax.grad(lambda d: d.logits[..., 1].sum()))(interior)
+    assert jnp.allclose(gradient.array, 1.0 / (interior.array * (1.0 - interior.array)))
 
 
 def test_logit_bernoulli_exposes_true_log_odds_as_class_1_logit_gap() -> None:

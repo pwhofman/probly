@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 import jax
 from jax import numpy as jnp
+from jax.scipy import special
 import numpy as np
-from scipy import special
 
 from probly.representation.distribution.jax_categorical import (
     JaxCategoricalDistribution,

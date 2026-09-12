@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, Any, ClassVar, Literal, override
 import jax
 from jax import numpy as jnp
 from jax.core import Tracer
+from jax.scipy.stats import norm
 import numpy as np
-from scipy.stats import norm
 
 from probly.representation._protected_axis.jax import JaxAxisProtected
 from probly.representation.distribution._common import (
