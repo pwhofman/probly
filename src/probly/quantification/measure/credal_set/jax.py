@@ -21,6 +21,8 @@ from ._common import LogBase, generalized_hartley, lower_entropy, upper_entropy
 
 _BISECT_ITERS = 64
 _BFGS_ITERS = 128
+_FRANK_WOLFE_ITERS = 512
+_FRANK_WOLFE_TOL = 1e-5
 
 
 def _apply_base(result: jax.Array, n_classes: int, base: LogBase) -> jax.Array:
@@ -167,14 +169,54 @@ def jax_distance_based_lower_entropy(
     return result
 
 
+def _convex_entropy_fallback(vertices: jax.Array, weights: jax.Array) -> jax.Array:
+    """Improve feasible mixture weights using pairwise Frank-Wolfe steps.
+
+    Entropy is concave in the mixture weights. Transfer mass from the active
+    vertex with the smallest derivative to the vertex with the largest one.
+    A bounded line search preserves feasibility, and the Frank-Wolfe gap
+    bounds the remaining entropy improvement.
+    """
+    tiny = jnp.finfo(vertices.dtype).tiny
+
+    def condition(state: tuple[jax.Array, jax.Array, jax.Array]) -> jax.Array:
+        iteration, _, gap = state
+        return (iteration < _FRANK_WOLFE_ITERS) & (gap > _FRANK_WOLFE_TOL)
+
+    def step(state: tuple[jax.Array, jax.Array, jax.Array]) -> tuple[jax.Array, jax.Array, jax.Array]:
+        iteration, current, _ = state
+        p = current @ vertices
+        gradient = -jnp.log(jnp.maximum(p, tiny)) - 1.0
+        derivatives = vertices @ gradient
+        index = jnp.argmax(derivatives)
+        away = jnp.argmin(jnp.where(current > 0, derivatives, jnp.inf))
+        gap = derivatives[index] - p @ gradient
+        direction = vertices[index] - vertices[away]
+
+        def bisect(_: int, bounds: tuple[jax.Array, jax.Array]) -> tuple[jax.Array, jax.Array]:
+            low, high = bounds
+            mid = (low + high) / 2.0
+            derivative = -jnp.sum(direction * (jnp.log(jnp.maximum(p + mid * direction, tiny)) + 1.0))
+            return jnp.where(derivative > 0, mid, low), jnp.where(derivative > 0, high, mid)
+
+        low, high = jax.lax.fori_loop(0, 32, bisect, (jnp.array(0.0, p.dtype), current[away]))
+        fraction = (low + high) / 2.0
+        candidate = current.at[away].add(-fraction).at[index].add(fraction)
+        improved = jax_entropy(candidate @ vertices) >= jax_entropy(p)
+        return iteration + 1, jnp.where(improved, candidate, current), gap
+
+    _, result, _ = jax.lax.while_loop(condition, step, (jnp.array(0), weights, jnp.array(jnp.inf, vertices.dtype)))
+    return result
+
+
 def _convex_max_entropy_weights(vertices: jax.Array) -> jax.Array:
-    """Find entropy-maximizing softmax weights over a single set of vertices.
+    """Find entropy-maximizing mixture weights over a single set of vertices.
 
     Args:
         vertices: Vertex probabilities of shape ``(n_vertices, n_classes)``.
 
     Returns:
-        Unconstrained softmax logits of shape ``(n_vertices,)``.
+        Nonnegative mixture weights summing to one, shape ``(n_vertices,)``.
     """
 
     def objective(logits: jax.Array) -> jax.Array:
@@ -183,7 +225,18 @@ def _convex_max_entropy_weights(vertices: jax.Array) -> jax.Array:
 
     x0 = jnp.zeros(vertices.shape[0], dtype=vertices.dtype)
     result = jax.scipy.optimize.minimize(objective, x0, method="BFGS", options={"maxiter": _BFGS_ITERS})
-    return jnp.where(jnp.isfinite(result.x).all(), result.x, x0)
+    uniform = jax.nn.softmax(x0)
+    best_vertex = jnp.argmax(jax_entropy(vertices))
+    vertex_weights = jax.nn.one_hot(best_vertex, vertices.shape[0], dtype=vertices.dtype)
+    baseline = jnp.where(jax_entropy(uniform @ vertices) >= jax_entropy(vertices[best_vertex]), uniform, vertex_weights)
+    candidate = jax.nn.softmax(result.x)
+    candidate_entropy = jax_entropy(candidate @ vertices)
+    usable = jnp.isfinite(candidate).all() & jnp.isfinite(candidate_entropy)
+    improved = usable & (candidate_entropy >= jax_entropy(baseline @ vertices))
+    best = jnp.where(improved, candidate, baseline)
+    # Failed iterates may still be useful starting points, but are not accepted
+    # as an optimum. The fallback never replaces a better feasible candidate.
+    return jax.lax.cond(result.success & improved, lambda: best, lambda: _convex_entropy_fallback(vertices, best))
 
 
 @upper_entropy.register(JaxConvexCredalSet)
@@ -195,7 +248,8 @@ def jax_convex_upper_entropy(
 ) -> jax.Array | tuple[jax.Array, jax.Array]:
     """Compute the upper entropy of a convex hull credal set.
 
-    Maximize entropy over ``conv(vertices)`` with BFGS on softmax weights.
+    Maximize entropy over ``conv(vertices)`` with BFGS on softmax weights,
+    falling back to feasible Frank-Wolfe steps if optimization fails.
 
     Since entropy is concave the maximum over a convex hull may lie in the
     interior; the unconstrained softmax parameterization handles this. This is
@@ -207,8 +261,8 @@ def jax_convex_upper_entropy(
     *_, n_vertices, n_classes = vertices.shape
     flat_v = vertices.reshape(-1, n_vertices, n_classes)
 
-    w_logits = jax.vmap(_convex_max_entropy_weights)(flat_v)
-    p = jnp.sum(jnp.expand_dims(jax.nn.softmax(w_logits, axis=-1), axis=-1) * flat_v, axis=-2)
+    weights = jax.vmap(_convex_max_entropy_weights)(flat_v)
+    p = jnp.sum(jnp.expand_dims(weights, axis=-1) * flat_v, axis=-2)
     result = _apply_base(jax_entropy(p).reshape(batch_shape), credal_set.num_classes, base)
     if return_distribution:
         return result, p.reshape(*batch_shape, n_classes)

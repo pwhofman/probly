@@ -10,6 +10,8 @@ Torch is deliberately never imported here: the CI jax job installs no torch.
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 pytest.importorskip("jax")
@@ -17,6 +19,7 @@ pytest.importorskip("jax")
 import jax
 import jax.numpy as jnp
 import numpy as np
+from scipy.optimize import minimize as scipy_minimize
 from scipy.stats import entropy as scipy_entropy
 
 from probly.quantification.measure.credal_set import (
@@ -133,6 +136,53 @@ def test_convex_upper_entropy_with_a_class_that_is_zero_in_every_vertex() -> Non
     cs = _convex_credal_set([[0.9, 0.1, 0.0], [0.5, 0.5, 0.0]])
 
     assert float(upper_entropy(cs)) == pytest.approx(float(np.log(2)), abs=_ATOL)
+
+
+def test_convex_upper_entropy_recovers_from_failed_bfgs_iterate() -> None:
+    vertices = np.array(
+        [
+            [0.031282384, 0.935407877, 0.033309750],
+            [0.995511591, 0.0021431835, 0.0023452058],
+            [0.040209554, 0.927039504, 0.032750942],
+            [0.469053388, 0.082905725, 0.448040873],
+        ],
+        dtype=np.float32,
+    )
+    cs = JaxConvexCredalSet(JaxProbabilityCategoricalDistribution(jnp.stack([vertices, vertices])))
+    normalized = np.asarray(cs.tensor.probabilities[0], dtype=np.float64)
+    reference = scipy_minimize(
+        lambda weights: -scipy_entropy(weights @ normalized),
+        np.full(4, 0.25),
+        method="SLSQP",
+        bounds=[(0.0, 1.0)] * 4,
+        constraints={"type": "eq", "fun": lambda weights: weights.sum() - 1.0},
+        options={"ftol": 1e-12},
+    )
+    assert reference.success
+    compiled = jax.jit(lambda c: upper_entropy(c, return_distribution=True))
+    for measured, distribution in (upper_entropy(cs, return_distribution=True), compiled(cs)):
+        np.testing.assert_allclose(measured, -reference.fun, atol=_ATOL)
+        assert jnp.all(measured >= jax_entropy(cs.tensor.probabilities.mean(axis=-2)))
+        assert jnp.all(distribution >= 0)
+        np.testing.assert_allclose(distribution.sum(axis=-1), 1.0, atol=1e-6)
+        np.testing.assert_allclose(jax_entropy(distribution), measured, atol=1e-6)
+
+
+@pytest.mark.parametrize("failed_logits", [[100.0, -100.0], [float("nan"), float("nan")]])
+def test_convex_upper_entropy_fallback_reaches_feasible_optimum(monkeypatch, failed_logits) -> None:
+    from probly.quantification.measure.credal_set import jax as jax_measures  # noqa: PLC0415
+
+    def failed_minimize(*args: object, **kwargs: object):
+        del args, kwargs
+        return SimpleNamespace(x=jnp.array(failed_logits), success=jnp.array(False))
+
+    monkeypatch.setattr(jax_measures.jax.scipy.optimize, "minimize", failed_minimize)
+    # The uniform mixture of these vertices is not itself the maximum-entropy
+    # distribution, so merely falling back to the initial weights is insufficient.
+    cs = _convex_credal_set([[0.9, 0.1], [0.2, 0.8]])
+    measured, distribution = upper_entropy(cs, return_distribution=True)
+    assert float(measured) == pytest.approx(np.log(2), abs=_ATOL)
+    np.testing.assert_allclose(distribution, [0.5, 0.5], atol=_ATOL)
 
 
 def test_jax_entropy_gradient_is_finite_at_exact_zeros() -> None:
