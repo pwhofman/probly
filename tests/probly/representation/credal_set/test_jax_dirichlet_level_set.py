@@ -93,3 +93,52 @@ def test_explicit_key_gives_reproducible_bounds() -> None:
     other_key = jax.random.key(7)
     lower_other = cs.lower(key=other_key)
     assert lower_other.shape == lower_a.shape
+
+
+def test_default_key_gives_reproducible_bounds() -> None:
+    cs = _make_credal_set([5.0, 3.0, 2.0], 0.5)
+    for bound in (cs.lower, cs.upper):
+        expected = bound(key=jax.random.key(0))
+        assert jnp.array_equal(bound(), expected)
+        assert jnp.array_equal(bound(), expected)
+
+
+@pytest.mark.parametrize("bound_name", ["lower", "upper"])
+@pytest.mark.parametrize("eager_first", [False, True])
+def test_bound_methods_mix_compiled_and_eager_calls_without_leaks(bound_name: str, eager_first: bool) -> None:
+    cs = _make_credal_set([5.0, 3.0, 2.0], 0.5)
+    bound = getattr(cs, bound_name)
+    if eager_first:
+        bound()
+
+    with jax.checking_leaks():
+        compiled = jax.jit(bound)()
+
+    assert jnp.allclose(compiled, bound(), atol=1e-6)
+    assert jnp.all(cs.lower() <= cs.upper())
+
+
+def test_compiled_bounds_use_current_parameters() -> None:
+    compiled = jax.jit(lambda cs: (cs.lower(), cs.upper()))
+    results = []
+    for alphas, threshold in [([5.0, 3.0, 2.0], 0.5), ([2.0, 3.0, 5.0], 0.5), ([2.0, 3.0, 5.0], 0.9)]:
+        cs = _make_credal_set(alphas, threshold)
+        with jax.checking_leaks():
+            lower, upper = compiled(cs)
+        assert jnp.allclose(lower, cs.lower(), atol=1e-6)
+        assert jnp.allclose(upper, cs.upper(), atol=1e-6)
+        results.append((lower, upper))
+
+    assert not jnp.allclose(results[0][0], results[1][0])
+    assert not jnp.allclose(results[1][1], results[2][1])
+
+
+def test_compiled_bounds_use_explicit_keys() -> None:
+    cs = _make_credal_set([5.0, 3.0, 2.0], 0.5)
+    compiled = jax.jit(lambda key: (cs.lower(key=key), cs.upper(key=key)))
+    for seed in (42, 7):
+        key = jax.random.key(seed)
+        with jax.checking_leaks():
+            lower, upper = compiled(key)
+        assert jnp.allclose(lower, cs.lower(key=key), atol=1e-6)
+        assert jnp.allclose(upper, cs.upper(key=key), atol=1e-6)
