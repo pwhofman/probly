@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Literal, override
 
 import jax
 from jax import numpy as jnp
+from jax.core import Tracer
 import numpy as np
 from scipy.stats import norm
 
@@ -16,11 +17,13 @@ from probly.representation.distribution._common import (
     GaussianDistributionSample,
     create_gaussian_distribution,
 )
-from probly.representation.jax_functions import jax_stack
+from probly.representation.jax_functions import jax_add, jax_stack, jax_subtract
 from probly.representation.sample.jax import JaxArraySample
 from probly.utils.jax import fresh_prng_key
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from jax._src.typing import ArrayLike
     from numpy.typing import DTypeLike
 
@@ -34,6 +37,7 @@ class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[
 
     type: Literal["gaussian"] = "gaussian"
     protected_axes: ClassVar[dict[str, int]] = {"mean": 0, "var": 0}
+    permitted_functions: ClassVar[set[Callable]] = {jax_add, jax_subtract}
 
     def __post_init__(self) -> None:
         """Validate shapes and variances."""
@@ -43,12 +47,27 @@ class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[
         if mean.shape != var.shape:
             msg = f"mean and var must have same shape, got {mean.shape} and {var.shape}."
             raise ValueError(msg)
-        if jnp.any(var <= 0):
+        # Reconstruction during tracing can validate shapes, but not array values.
+        if not isinstance(var, Tracer) and jnp.any(var <= 0):
             msg = "Variance must be positive."
             raise ValueError(msg)
 
         object.__setattr__(self, "mean", mean)
         object.__setattr__(self, "var", var)
+
+    @override
+    def _postprocess_elementwise_result(
+        self, values: dict[str, Any], *, func: Callable, operands: tuple[object, ...]
+    ) -> dict[str, Any]:
+        """Shift by constants and add variances when combining independent Gaussians."""
+        if func not in (jax_add, jax_subtract):
+            return values
+        left, right = operands
+        if isinstance(left, JaxGaussianDistribution) and isinstance(right, JaxGaussianDistribution):
+            values["var"] = left.var + right.var
+        else:
+            values["var"] = jnp.broadcast_to(self.var, values["mean"].shape)
+        return values
 
     @property
     def std(self) -> jax.Array:

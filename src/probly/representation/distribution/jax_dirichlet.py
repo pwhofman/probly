@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self, override
 
 import jax
 from jax import numpy as jnp
+from jax.core import Tracer
 
 from probly.representation._protected_axis.jax import JaxAxisProtected
 from probly.representation.distribution._common import DirichletDistribution
@@ -14,7 +15,7 @@ from probly.representation.distribution.jax_categorical import (
     JaxCategoricalDistribution,
     JaxProbabilityCategoricalDistribution,
 )
-from probly.representation.jax_functions import jax_average, jax_mean, jax_sum
+from probly.representation.jax_functions import jax_add, jax_average, jax_mean, jax_subtract, jax_sum
 from probly.representation.sample.jax import JaxArraySample
 from probly.utils.jax import fresh_prng_key
 
@@ -38,7 +39,7 @@ class JaxDirichletDistribution(
 
     alphas: jax.Array
     protected_axes: ClassVar[dict[str, int]] = {"alphas": 1}
-    permitted_functions: ClassVar[set[Callable]] = {jax_mean, jax_sum, jax_average}
+    permitted_functions: ClassVar[set[Callable]] = {jax_mean, jax_sum, jax_average, jax_add, jax_subtract}
 
     def __post_init__(self) -> None:
         """Validate the concentration parameters."""
@@ -50,7 +51,8 @@ class JaxDirichletDistribution(
             msg = "alphas must have at least one dimension."
             raise ValueError(msg)
 
-        if jnp.any(self.alphas <= 0):
+        # Reconstruction during tracing can validate shapes, but not array values.
+        if not isinstance(self.alphas, Tracer) and jnp.any(self.alphas <= 0):
             msg = "alphas must be strictly positive."
             raise ValueError(msg)
 
@@ -86,9 +88,14 @@ class JaxDirichletDistribution(
         return JaxArraySample(array=JaxProbabilityCategoricalDistribution(gammas), sample_axis=0)
 
     @override
-    def _postprocess_arithmetic_result(self, values: dict[str, Any]) -> dict[str, Any]:
+    def _postprocess_elementwise_result(
+        self, values: dict[str, Any], *, func: Callable, operands: tuple[object, ...]
+    ) -> dict[str, Any]:
         """Keep concentration parameters strictly positive after ``+``/``-``."""
-        return {name: jnp.maximum(value, 1e-10) for name, value in values.items()}
+        del operands
+        if func in (jax_add, jax_subtract):
+            return {name: jnp.maximum(value, 1e-10) for name, value in values.items()}
+        return values
 
     @override
     def __eq__(self, value: Any) -> jax.Array:  # ty: ignore[invalid-method-override] # noqa: PYI032

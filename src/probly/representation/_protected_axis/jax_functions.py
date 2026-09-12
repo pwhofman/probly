@@ -8,6 +8,7 @@ import jax
 from jax import numpy as jnp
 import numpy as np
 
+from probly.representation import jax_functions as jf
 from probly.representation._protected_axis._common_functions import (
     AxisProtectedCreator,
     AxisProtectedInternals,
@@ -588,3 +589,149 @@ def protected_conj_function(
         return _apply_structural_op(value, func, np.conj)
 
     return _apply_unary(internals, op)
+
+
+_COMPARISONS = (
+    jf.jax_equal,
+    jf.jax_not_equal,
+    jf.jax_less,
+    jf.jax_less_equal,
+    jf.jax_greater,
+    jf.jax_greater_equal,
+)
+
+
+def _operator_inputs(
+    func: Callable, args: tuple[object, ...]
+) -> tuple[Any, JaxAxisProtectedInternals, list[JaxAxisProtectedInternals | None]] | None:
+    """Check every operand's permissions and align compatible protected layouts."""
+    owner: Any = None
+    template: JaxAxisProtectedInternals | None = None
+    inputs: list[JaxAxisProtectedInternals | None] = []
+    for arg in args:
+        if not isinstance(arg, SupportsProtectedInternals):
+            if jf.has_jax_function((arg,)) or not isinstance(
+                arg, (jax.Array, np.ndarray, np.number, np.bool_, bool, int, float, complex)
+            ):
+                return None
+            inputs.append(None)
+            continue
+
+        internals = jax_axis_protected_internals(arg, func, check_is_permitted=True)
+        if internals is None or _has_numpy_protected_value(internals):
+            return None
+        if template is None:
+            owner, template = arg, internals
+        else:
+            if internals.owner_type is not template.owner_type:
+                return None
+            if internals.protected_axes != template.protected_axes:
+                msg = "All protected inputs must share identical protected_axes definitions."
+                raise ValueError(msg)
+            for name, axes in template.protected_axes.items():
+                if protected_shape(value_shape(internals.values[name]), axes) != protected_shape(
+                    value_shape(template.values[name]), axes
+                ):
+                    msg = f"All protected inputs must share identical protected trailing shapes for field {name!r}."
+                    raise ValueError(msg)
+        inputs.append(internals)
+
+    if template is None:
+        return None
+    return owner, template, inputs
+
+
+def _validate_operator_result(values: dict[str, Any], template: JaxAxisProtectedInternals) -> None:
+    """Ensure both computed and postprocessed values preserve the protected layout."""
+    if values.keys() != template.values.keys():
+        msg = "Operator results must contain every protected field."
+        raise ValueError(msg)
+    _validate_batch_sync(values, template.protected_axes)
+    for name, axes in template.protected_axes.items():
+        if protected_shape(value_shape(values[name]), axes) != protected_shape(
+            value_shape(template.values[name]), axes
+        ):
+            msg = f"Operator modified protected trailing axes for field {name!r}."
+            raise ValueError(msg)
+
+
+def _batch_comparison(values: dict[str, Any], template: JaxAxisProtectedInternals, func: Callable) -> jax.Array:
+    """Reduce component comparisons to one boolean per visible batch entry."""
+    any_difference = func is jf.jax_not_equal
+    reduce = jnp.any if any_difference else jnp.all
+    combine = jnp.logical_or if any_difference else jnp.logical_and
+    result = None
+    for name, value in values.items():
+        count = template.protected_axes[name]
+        axes = tuple(range(value.ndim - count, value.ndim))
+        field_result = reduce(value, axis=axes)
+        result = field_result if result is None else combine(result, field_result)
+    return cast("jax.Array", result)
+
+
+@jax_function.multi_register(
+    [
+        jf.jax_add,
+        jf.jax_subtract,
+        jf.jax_multiply,
+        jf.jax_true_divide,
+        jf.jax_floor_divide,
+        jf.jax_remainder,
+        jf.jax_divmod,
+        jf.jax_power,
+        jf.jax_matmul,
+        jf.jax_bitwise_and,
+        jf.jax_bitwise_or,
+        jf.jax_bitwise_xor,
+        jf.jax_left_shift,
+        jf.jax_right_shift,
+        jf.jax_positive,
+        jf.jax_negative,
+        jf.jax_absolute,
+        jf.jax_invert,
+        *_COMPARISONS,
+    ]
+)
+def protected_operator_function(
+    func: Callable,
+    types: tuple[type[Any], ...],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> Any:  # noqa: ANN401
+    """Apply permission-controlled operators without exposing protected dimensions."""
+    del types
+    if kwargs:
+        return NotImplemented
+    extracted = _operator_inputs(func, args)
+    if extracted is None:
+        return NotImplemented
+    owner, template, inputs = extracted
+
+    results: dict[str, Any] = {}
+    for name, count in template.protected_axes.items():
+        field_args = tuple(
+            arg if internals is None else internals.values[name] for arg, internals in zip(args, inputs, strict=True)
+        )
+        operation = func
+        if func is jf.jax_matmul:
+            # Vectorize over protected coordinates, leaving matmul to operate
+            # only on visible dimensions (including its vector special cases).
+            in_axes = tuple(None if internals is None else -1 for internals in inputs)
+            for _ in range(count):
+                operation = jax.vmap(operation, in_axes=in_axes, out_axes=-1)
+        results[name] = operation(*field_args)
+
+    result_sets = (
+        tuple({name: value[index] for name, value in results.items()} for index in range(2))
+        if func is jf.jax_divmod
+        else (results,)
+    )
+    reconstructed = []
+    for values in result_sets:
+        _validate_operator_result(values, template)
+        if func in _COMPARISONS:
+            return _batch_comparison(values, template, func)
+        processed = owner._postprocess_elementwise_result(values, func=func, operands=args)  # noqa: SLF001
+        _validate_operator_result(processed, template)
+        reconstructed.append(template.create(processed))
+    return tuple(reconstructed) if func is jf.jax_divmod else reconstructed[0]

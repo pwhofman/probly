@@ -27,6 +27,7 @@ from probly.representation._protected_axis.jax_functions import (
 if TYPE_CHECKING:
     from probly.representation.array_like import ToIndices
 from probly.representation.jax_functions import (
+    jax_add,
     jax_astype,
     jax_average,
     jax_concatenate,
@@ -40,6 +41,7 @@ from probly.representation.jax_functions import (
     jax_squeeze,
     jax_stack,
     jax_std,
+    jax_subtract,
     jax_sum,
     jax_swapaxes,
     jax_take_along_axis,
@@ -54,7 +56,7 @@ class _SingleArray(JaxAxisProtected[Any]):
 
     array: jax.Array
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
-    permitted_functions: ClassVar[set[Any]] = {jax_mean, jax_sum, jax_average, jax_std, jax_var}
+    permitted_functions: ClassVar[set[Any]] = {jax_mean, jax_sum, jax_average, jax_std, jax_var, jax_add, jax_subtract}
 
 
 @dataclass(frozen=True, slots=True)
