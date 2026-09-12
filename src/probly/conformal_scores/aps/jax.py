@@ -1,10 +1,13 @@
-"""Flax/JAX implementation for APS scores."""
+"""JAX implementation for APS scores."""
 
 from __future__ import annotations
 
 from jax import Array
 import jax.numpy as jnp
 import jax.random
+
+from probly.representation.distribution.jax_categorical import JaxCategoricalDistribution
+from probly.representation.sample.jax import JaxArraySample
 
 from ._common import _aps_score_dispatch
 
@@ -46,3 +49,15 @@ def _(probs: Array, y_cal: Array | None = None, randomized: bool = True) -> Arra
         scores = jnp.take_along_axis(scores, labels[..., None], axis=-1)
         scores = jnp.squeeze(scores, axis=-1)
     return scores
+
+
+@_aps_score_dispatch.register(JaxArraySample)
+def _(probs: JaxArraySample, y_cal: Array | None = None, randomized: bool = True) -> Array:
+    """Compute APS scores for JAX samples."""
+    return _aps_score_dispatch(probs.array, y_cal, randomized=randomized)
+
+
+@_aps_score_dispatch.register(JaxCategoricalDistribution)
+def _(probs: JaxCategoricalDistribution, y_cal: Array | None = None, randomized: bool = True) -> Array:
+    """Compute APS scores for JAX categorical distributions."""
+    return _aps_score_dispatch(probs.probabilities, y_cal, randomized=randomized)

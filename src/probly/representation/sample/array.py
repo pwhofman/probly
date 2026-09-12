@@ -1,3 +1,4 @@
+# pyright: reportInvalidTypeForm=false
 """Numpy-based sample representation."""
 
 from __future__ import annotations
@@ -29,9 +30,12 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
     from types import ModuleType
 
+    import jax
+    from jax.sharding import Sharding
     from numpy.typing import DTypeLike
     import torch
 
+    from probly.representation.jax_like import JaxLikeImplementation
     from probly.representation.torch_like import TorchLikeImplementation
 
 
@@ -430,6 +434,27 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
             cast("Any", tensor),
             sample_dim=self.sample_axis,
             weights=to_torch_like(self.weights) if self.weights is not None else None,  # ty:ignore[invalid-argument-type]
+        )
+
+    def __jax_like__(
+        self,
+        dtype: jax.typing.DTypeLike | None = None,
+        /,
+        *,
+        device: jax.Device | Sharding | None = None,
+        copy: bool = False,
+    ) -> JaxLikeImplementation[Any]:
+        """Convert to a JaxArraySample."""
+        from probly.representation.jax_like import to_jax_like  # noqa: PLC0415
+
+        from .jax import JaxArraySample  # noqa: PLC0415
+
+        array = to_jax_like(self.array, dtype, device=device, copy=copy)
+
+        return JaxArraySample(
+            cast("Any", array),
+            sample_axis=self.sample_axis,
+            weights=cast("Any", to_jax_like(self.weights)) if self.weights is not None else None,
         )
 
 

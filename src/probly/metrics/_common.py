@@ -187,7 +187,8 @@ def false_negative_rate(y_pred: object, y_true: object) -> object:
 # Currently registered types
 # --------------------------
 # * Conformal: ``ArrayOneHotConformalSet``, ``ArrayIntervalConformalSet``,
-#   ``TorchOneHotConformalSet``, ``TorchIntervalConformalSet``.
+#   ``TorchOneHotConformalSet``, ``TorchIntervalConformalSet``,
+#   ``JaxArrayOneHotConformalSet``, ``JaxArrayIntervalConformalSet``.
 # * Credal (numpy): ``ArraySingletonCredalSet``, ``ArrayDiscreteCredalSet``,
 #   ``ArrayConvexCredalSet``, ``ArrayDistanceBasedCredalSet``,
 #   ``ArrayProbabilityIntervalsCredalSet``.

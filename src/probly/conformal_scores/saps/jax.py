@@ -6,6 +6,9 @@ from jax import Array
 import jax.numpy as jnp
 import jax.random
 
+from probly.representation.distribution.jax_categorical import JaxCategoricalDistribution
+from probly.representation.sample.jax import JaxArraySample
+
 from ._common import _saps_score_dispatch
 
 
@@ -45,3 +48,25 @@ def _(
         scores = jnp.take_along_axis(scores, labels[..., None], axis=-1)
         scores = jnp.squeeze(scores, axis=-1)
     return jnp.asarray(scores, dtype=float)
+
+
+@_saps_score_dispatch.register(JaxArraySample)
+def _(
+    probs: JaxArraySample,
+    y_cal: Array | None = None,
+    randomized: bool = True,
+    lambda_val: float = 0.1,
+) -> Array:
+    """Compute SAPS scores for JAX samples."""
+    return _saps_score_dispatch(probs.array, y_cal, randomized=randomized, lambda_val=lambda_val)
+
+
+@_saps_score_dispatch.register(JaxCategoricalDistribution)
+def _(
+    probs: JaxCategoricalDistribution,
+    y_cal: Array | None = None,
+    randomized: bool = True,
+    lambda_val: float = 0.1,
+) -> Array:
+    """Compute SAPS scores for JAX categorical distributions."""
+    return _saps_score_dispatch(probs.probabilities, y_cal, randomized=randomized, lambda_val=lambda_val)

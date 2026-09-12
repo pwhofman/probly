@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Any
 
 from flextype import flexdispatch
+
+from probly.representation.distribution import CategoricalDistribution
 
 
 class ScoringRule(ABC):
@@ -36,10 +39,12 @@ class ScoringRule(ABC):
         """Return the per-label loss vector ``[l(theta_hat, 1), ..., l(theta_hat, K)]``.
 
         Args:
-            probabilities: Predicted categorical probabilities of shape ``(..., K)``.
+            probabilities: Predicted categorical probabilities of shape ``(..., K)``,
+                a categorical distribution, or a sample of either representation.
 
         Returns:
             The loss vector of shape ``(..., K)`` in the same backend as the input.
+            Samples are evaluated memberwise and retain their sample axis and weights.
         """
 
 
@@ -69,6 +74,30 @@ def _spherical_loss_vector[ArrayT](probabilities: ArrayT) -> ArrayT:
     """Per-label spherical loss vector ``1 - theta_hat / ||theta_hat||_2``."""
     msg = f"SphericalLoss is not supported for arrays of type {type(probabilities)}."
     raise NotImplementedError(msg)
+
+
+@_log_loss_vector.register(CategoricalDistribution)
+def _(probabilities: CategoricalDistribution) -> Any:  # noqa: ANN401
+    """Compute log loss from normalized categorical probabilities."""
+    return _log_loss_vector(probabilities.probabilities)
+
+
+@_brier_loss_vector.register(CategoricalDistribution)
+def _(probabilities: CategoricalDistribution) -> Any:  # noqa: ANN401
+    """Compute Brier loss from normalized categorical probabilities."""
+    return _brier_loss_vector(probabilities.probabilities)
+
+
+@_zero_one_loss_vector.register(CategoricalDistribution)
+def _(probabilities: CategoricalDistribution) -> Any:  # noqa: ANN401
+    """Compute zero-one loss from normalized categorical probabilities."""
+    return _zero_one_loss_vector(probabilities.probabilities)
+
+
+@_spherical_loss_vector.register(CategoricalDistribution)
+def _(probabilities: CategoricalDistribution) -> Any:  # noqa: ANN401
+    """Compute spherical loss from normalized categorical probabilities."""
+    return _spherical_loss_vector(probabilities.probabilities)
 
 
 @dataclass(frozen=True, slots=True)

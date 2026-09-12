@@ -3,8 +3,30 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from probly.quantification.scoring_rule import BrierLoss, LogLoss, SphericalLoss, ZeroOneLoss
+from probly.representation.distribution.array_categorical import ArrayLogitCategoricalDistribution
+from probly.representation.sample.array import ArraySample
+
+
+@pytest.mark.parametrize("rule", [LogLoss(), BrierLoss(), ZeroOneLoss(), SphericalLoss()])
+@pytest.mark.parametrize("sample_axis", [0, 1])
+def test_representation_loss(rule, sample_axis: int) -> None:
+    probabilities = np.broadcast_to([0.2, 0.3, 0.1, 0.4], (2, 3, 4)).copy()
+    distribution = ArrayLogitCategoricalDistribution(np.log(probabilities) + 3.0)
+    expected = rule.loss(probabilities)
+    result = rule.loss(distribution)
+    assert isinstance(result, np.ndarray)
+    np.testing.assert_allclose(result, expected, atol=1e-6)
+    weights = np.arange(1, probabilities.shape[sample_axis] + 1, dtype=float)
+    for values in (probabilities, distribution):
+        sample = ArraySample(values, sample_axis=sample_axis, weights=weights)
+        result = rule.loss(sample)
+        assert isinstance(result, ArraySample)
+        assert result.sample_axis == sample_axis
+        assert result.weights is weights
+        np.testing.assert_allclose(result.array, expected, atol=1e-6)
 
 
 def test_log_loss_vector() -> None:

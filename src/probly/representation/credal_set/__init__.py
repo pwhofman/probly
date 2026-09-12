@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
+from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
 
 from ._common import (
     CategoricalCredalSet,
@@ -31,6 +31,17 @@ from .array import ArrayCategoricalCredalSet, ArrayDiscreteCredalSet
 @create_dirichlet_level_set_credal_set.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
+
+
+@create_probability_intervals.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@create_probability_intervals_from_lower_upper_array.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@create_convex_credal_set.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@create_probability_intervals_from_bounds.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@create_distance_based_credal_set.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@create_distance_based_credal_set_from_center_and_radius.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@create_dirichlet_level_set_credal_set.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+def _jax(_: type) -> None:
+    from . import jax as jax  # noqa: PLC0415
 
 
 __all__ = [

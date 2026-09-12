@@ -72,6 +72,61 @@ class TestTorch:
         assert torch.allclose(scores, expected)
 
 
+class TestJax:
+    """Jax-specific tests."""
+
+    @pytest.fixture(autouse=True)
+    def _skip_no_jax(self) -> None:
+        pytest.importorskip("jax")
+
+    def test_jax_matches_numpy(self) -> None:
+        import jax.numpy as jnp  # noqa: PLC0415
+
+        alphas_np = np.array([[10.0, 2.0, 1.0], [1.0, 5.0, 3.0]])
+        y_true_np = np.array([0, 2])
+        scores_np = dirichlet_rl_score_func(alphas_np, y_true_np)
+
+        scores_j = dirichlet_rl_score_func(jnp.asarray(alphas_np), jnp.asarray(y_true_np))
+        np.testing.assert_allclose(np.asarray(scores_j), scores_np, atol=1e-6)
+
+    def test_jax_batched_leading_axes(self) -> None:
+        import jax.numpy as jnp  # noqa: PLC0415
+
+        alphas_np = np.array([[[10.0, 1.0], [1.0, 4.0]], [[2.0, 6.0], [7.0, 7.0]]])
+        y_true_np = np.array([[0, 0], [1, 0]])
+        scores_np = dirichlet_rl_score_func(alphas_np, y_true_np)
+
+        scores_j = dirichlet_rl_score_func(jnp.asarray(alphas_np), jnp.asarray(y_true_np))
+        np.testing.assert_allclose(np.asarray(scores_j), scores_np, atol=1e-6)
+
+    def test_jax_dirichlet_distribution_input(self) -> None:
+        import jax.numpy as jnp  # noqa: PLC0415
+
+        from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution  # noqa: PLC0415
+
+        alphas = jnp.asarray([[10.0, 2.0, 1.0], [1.0, 5.0, 3.0]])
+        dirichlet = JaxDirichletDistribution(alphas)
+        y_true = jnp.asarray([0, 2])
+        scores = dirichlet_rl_score_func(dirichlet, y_true)
+        np.testing.assert_allclose(np.asarray(scores), [0.0, 1.0 - 3.0 / 5.0], atol=1e-6)
+
+    def test_jax_callable_requires_y_true(self) -> None:
+        import jax.numpy as jnp  # noqa: PLC0415
+
+        from probly.conformal_scores import dirichlet_rl_score  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="y_true is required"):
+            dirichlet_rl_score(jnp.asarray([[1.0, 2.0]]))
+
+
+class TestDirichletRLFallback:
+    """The Dirichlet relative likelihood dispatch raises for unknown types."""
+
+    def test_unsupported_type_raises(self) -> None:
+        with pytest.raises(NotImplementedError, match="not implemented"):
+            dirichlet_rl_score_func(object(), object())
+
+
 class TestDirichletRLValidation:
     def test_callable_requires_y_true(self) -> None:
         from probly.conformal_scores import dirichlet_rl_score  # noqa: PLC0415

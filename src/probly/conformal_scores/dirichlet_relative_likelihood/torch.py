@@ -5,6 +5,7 @@ from __future__ import annotations
 import torch
 
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
+from probly.representation.sample.torch import TorchSample
 
 from ._common import dirichlet_rl_score_func
 
@@ -30,3 +31,9 @@ def compute_dirichlet_rl_score_torch_dirichlet(
 ) -> torch.Tensor:
     """Compute the score from a TorchDirichletDistribution."""
     return compute_dirichlet_rl_score_torch(dirichlet.alphas, y_true)
+
+
+@dirichlet_rl_score_func.register(TorchSample)
+def _(alphas: TorchSample, y_true: torch.Tensor) -> torch.Tensor:
+    """Compute memberwise relative likelihood for Torch samples."""
+    return dirichlet_rl_score_func(alphas.tensor, y_true)

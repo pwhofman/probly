@@ -71,7 +71,7 @@ torch_geometric = [
 ]
 jax = [
     "jax>=0.8.1",
-    "flax>=0.12.4"
+    "flax>=0.12.5"
 ]
 sklearn = [
     "scikit-learn>=1.6.0"  # first cp313 wheels + FrozenEstimator support

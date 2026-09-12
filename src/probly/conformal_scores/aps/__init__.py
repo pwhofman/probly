@@ -13,7 +13,7 @@ def _(_: type) -> None:
 
 @_aps_score_dispatch.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 def _(_: type) -> None:
-    from . import flax as flax  # noqa: PLC0415
+    from . import jax as jax  # noqa: PLC0415
 
 
 __all__ = ["APSScore", "aps_score"]

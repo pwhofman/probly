@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from probly.representation.sample.array import ArraySample
+
 from ._common import _brier_loss_vector, _log_loss_vector, _spherical_loss_vector, _zero_one_loss_vector
 
 
@@ -34,3 +36,27 @@ def array_spherical_loss_vector(probabilities: np.ndarray) -> np.ndarray:
     """Compute the per-label spherical loss vector for a NumPy array."""
     norm = np.sqrt(np.sum(probabilities**2, axis=-1, keepdims=True))
     return 1.0 - probabilities / norm
+
+
+@_log_loss_vector.register(ArraySample)
+def _(probabilities: ArraySample) -> ArraySample:
+    """Compute memberwise log loss, preserving sample metadata."""
+    return ArraySample(_log_loss_vector(probabilities.array), probabilities.sample_axis, probabilities.weights)
+
+
+@_brier_loss_vector.register(ArraySample)
+def _(probabilities: ArraySample) -> ArraySample:
+    """Compute memberwise Brier loss, preserving sample metadata."""
+    return ArraySample(_brier_loss_vector(probabilities.array), probabilities.sample_axis, probabilities.weights)
+
+
+@_zero_one_loss_vector.register(ArraySample)
+def _(probabilities: ArraySample) -> ArraySample:
+    """Compute memberwise zero-one loss, preserving sample metadata."""
+    return ArraySample(_zero_one_loss_vector(probabilities.array), probabilities.sample_axis, probabilities.weights)
+
+
+@_spherical_loss_vector.register(ArraySample)
+def _(probabilities: ArraySample) -> ArraySample:
+    """Compute memberwise spherical loss, preserving sample metadata."""
+    return ArraySample(_spherical_loss_vector(probabilities.array), probabilities.sample_axis, probabilities.weights)

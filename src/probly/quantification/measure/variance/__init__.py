@@ -1,6 +1,8 @@
 """Measures for regression."""
 
 from probly.lazy_types import (
+    JAX_ARRAY,
+    JAX_ARRAY_LIKE,
     TORCH_TENSOR,
     TORCH_TENSOR_LIKE,
 )
@@ -29,6 +31,15 @@ from .array import (  # noqa: F401  (registers numpy implementations)
 def _(_: type) -> None:
     """Register delayed implementations for torch tensors."""
     from . import torch as torch  # noqa: PLC0415
+
+
+@variance.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@variance_of_expected_predictive_distribution.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@conditional_variance.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@mutual_information_variance.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+def _(_: type) -> None:
+    """Register delayed implementations for jax arrays."""
+    from . import jax as jax  # noqa: PLC0415
 
 
 __all__ = [
