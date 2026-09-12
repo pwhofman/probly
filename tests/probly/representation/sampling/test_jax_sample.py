@@ -9,6 +9,10 @@ import jax
 from jax import numpy as jnp
 import numpy as np
 
+from probly.representation.distribution.jax_categorical import (
+    JaxLogitCategoricalDistribution,
+    JaxProbabilityCategoricalDistribution,
+)
 from probly.representation.jax_functions import (
     jax_average,
     jax_concatenate,
@@ -28,7 +32,7 @@ from probly.representation.jax_functions import (
     jax_transpose,
     jax_var,
 )
-from probly.representation.jax_like import JaxLikeImplementation
+from probly.representation.jax_like import JaxLikeImplementation, to_jax_like
 from probly.representation.sample.array import ArraySample
 from probly.representation.sample.jax import JaxArraySample
 
@@ -885,6 +889,42 @@ class TestJaxFunctionSequences:
 
 class TestJaxArraySampleConversions:
     """``__jax_like__`` and ``__array_like__`` round-trips."""
+
+    @pytest.mark.parametrize(
+        "distribution_type", [JaxLogitCategoricalDistribution, JaxProbabilityCategoricalDistribution]
+    )
+    @pytest.mark.parametrize("conversion", ["dtype", "copy", "device"])
+    def test_conversion_preserves_nested_distribution(self, distribution_type, conversion: str) -> None:
+        values = jnp.arange(1, 25, dtype=jnp.float32).reshape(2, 3, 4)
+        weights = jnp.array([0.2, 0.3, 0.5])
+        sample = JaxArraySample(distribution_type(values), sample_axis=1, weights=weights)
+        dtype = jnp.float16 if conversion == "dtype" else values.dtype
+        device = jax.devices()[0] if conversion == "device" else None
+
+        converted = to_jax_like(
+            sample,
+            dtype=dtype if conversion == "dtype" else None,
+            device=device,
+            copy=conversion == "copy",
+        )
+
+        assert isinstance(converted, JaxArraySample)
+        assert isinstance(converted.array, distribution_type)
+        assert converted.shape == sample.shape == (2, 3)
+        assert converted.sample_axis == sample.sample_axis == 1
+        assert converted.array.num_classes == 4
+        assert converted.dtype == dtype
+        np.testing.assert_array_equal(converted.array.array, values.astype(dtype))
+        assert_weights_equal(converted, weights)
+        if conversion == "copy":
+            assert converted.array is not sample.array
+            assert converted.array.array is not values
+            assert converted.weights is not weights
+        if conversion == "device":
+            assert converted.device == device
+            assert converted.weights.device == device
+        assert sample.array.array is values
+        assert sample.weights is weights
 
     def test_array_sample_to_jax_sample(self) -> None:
         array_sample = ArraySample(

@@ -21,7 +21,7 @@ from probly.representation.jax_functions import (
     jax_std,
     jax_var,
 )
-from probly.representation.jax_like import JaxLike, JaxLikeImplementation
+from probly.representation.jax_like import JaxLike, JaxLikeImplementation, to_jax_like
 from probly.representation.sample._common import Sample, SampleAxis, create_sample
 from probly.representation.sample.array import ArraySample
 from probly.representation.sample.axis_tracking import track_axis
@@ -463,7 +463,7 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
             return self
 
         return type(self)(
-            array=cast("D", jnp.asarray(self.array, dtype=dtype, device=device, copy=copy)),
+            array=cast("D", to_jax_like(self.array, dtype=dtype, device=device, copy=copy)),
             sample_axis=self.sample_axis,
             weights=jnp.asarray(self.weights, device=device, copy=copy) if self.weights is not None else None,
         )
