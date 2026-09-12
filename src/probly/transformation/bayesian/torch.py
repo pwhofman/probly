@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from torch import nn
 
 from probly.layers.torch import BayesConv2d, BayesLinear
@@ -15,6 +17,7 @@ def replace_torch_bayesian_linear(
     posterior_std: float,
     prior_mean: float,
     prior_std: float,
+    rngs: Any = None,  # noqa: ARG001, ANN401
 ) -> BayesLinear:
     """Replace a given layer by a BayesLinear layer based on :cite:`blundellWeightUncertainty2015`."""
     return BayesLinear(obj, use_base_weights, posterior_std, prior_mean, prior_std)
@@ -26,6 +29,7 @@ def replace_torch_bayesian_conv2d(
     posterior_std: float,
     prior_mean: float,
     prior_std: float,
+    rngs: Any = None,  # noqa: ARG001, ANN401
 ) -> BayesConv2d:
     """Replace a given layer by a BayesConv2d layer based on :cite:`blundellWeightUncertainty2015`."""
     return BayesConv2d(obj, use_base_weights, posterior_std, prior_mean, prior_std)
