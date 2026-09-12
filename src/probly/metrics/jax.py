@@ -18,6 +18,7 @@ import jax.numpy as jnp
 
 from probly.metrics._common import CREDAL_ROUND_DECIMALS
 from probly.metrics.array import _convex_hull_lp_coverage
+from probly.representation.conformal_set.jax import JaxArrayIntervalConformalSet, JaxArrayOneHotConformalSet
 from probly.representation.credal_set.jax import (
     JaxConvexCredalSet,
     JaxDirichletLevelSetCredalSet,
@@ -266,6 +267,64 @@ def _envelope_efficiency(lower: jax.Array, upper: jax.Array) -> float:
 
 def _envelope_average_interval_width(lower: jax.Array, upper: jax.Array) -> float:
     return float(jnp.mean((upper - lower).astype(jnp.float32)))
+
+
+@coverage.register(JaxArrayOneHotConformalSet)
+def _coverage_jax_onehot(y_pred: JaxArrayOneHotConformalSet, y_true: jax.Array) -> float:
+    """Compute coverage for a one-hot conformal set.
+
+    Args:
+        y_pred: Class membership masks with arbitrary leading batch dimensions.
+        y_true: Integer class labels aligned with the batch dimensions.
+
+    Returns:
+        The fraction of sets containing the true class.
+    """
+    membership = _onehot_membership(y_pred.array, y_true)
+    return float(jnp.mean(membership.astype(jnp.float32)))
+
+
+@efficiency.register(JaxArrayOneHotConformalSet)
+def _efficiency_jax_onehot(y_pred: JaxArrayOneHotConformalSet) -> float:
+    """Compute the average cardinality of a one-hot conformal set.
+
+    Args:
+        y_pred: Class membership masks with arbitrary leading batch dimensions.
+
+    Returns:
+        The mean number of selected classes.
+    """
+    return float(jnp.mean(jnp.sum(y_pred.array.astype(jnp.float32), axis=-1)))
+
+
+@coverage.register(JaxArrayIntervalConformalSet)
+def _coverage_jax_interval(y_pred: JaxArrayIntervalConformalSet, y_true: jax.Array) -> float:
+    """Compute coverage for an interval conformal set, including its endpoints.
+
+    Args:
+        y_pred: Lower and upper bounds with arbitrary leading batch dimensions.
+        y_true: Targets aligned with the batch dimensions.
+
+    Returns:
+        The fraction of intervals containing the target.
+    """
+    array = y_pred.array
+    target = jnp.asarray(y_true)
+    inside = (target >= array[..., 0]) & (target <= array[..., 1])
+    return float(jnp.mean(inside.astype(jnp.float32)))
+
+
+@efficiency.register(JaxArrayIntervalConformalSet)
+def _efficiency_jax_interval(y_pred: JaxArrayIntervalConformalSet) -> float:
+    """Compute the average width of an interval conformal set.
+
+    Args:
+        y_pred: Lower and upper bounds with arbitrary leading batch dimensions.
+
+    Returns:
+        The mean interval width.
+    """
+    return float(jnp.mean((y_pred.array[..., 1] - y_pred.array[..., 0]).astype(jnp.float32)))
 
 
 def _is_first_order_target(y_true: object, num_classes: int) -> bool:

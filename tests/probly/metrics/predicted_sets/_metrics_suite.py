@@ -17,6 +17,23 @@ if TYPE_CHECKING:
 class MetricsSuite:
     """Tests that run identically against every backend's conformal-set wrapper."""
 
+    def test_onehot_empty_selections(self, make_onehot_set: Callable[[Any], Any], array_fn: Callable[..., Any]) -> None:
+        mask = array_fn([[False, False], [False, False]])
+        prediction = make_onehot_set(mask)
+        assert coverage(prediction, array_fn([0, 1])) == pytest.approx(0.0)
+        assert efficiency(prediction) == pytest.approx(0.0)
+
+    def test_interval_endpoints_are_included(
+        self, make_interval_set: Callable[[Any], Any], array_fn: Callable[..., Any]
+    ) -> None:
+        prediction = make_interval_set(array_fn([[0.0, 1.0], [2.0, 3.0]], dtype=float))
+        assert coverage(prediction, array_fn([0.0, 3.0], dtype=float)) == pytest.approx(1.0)
+
+    def test_zero_width_intervals(self, make_interval_set: Callable[[Any], Any], array_fn: Callable[..., Any]) -> None:
+        prediction = make_interval_set(array_fn([[1.0, 1.0], [2.0, 2.0]], dtype=float))
+        assert coverage(prediction, array_fn([1.0, 3.0], dtype=float)) == pytest.approx(0.5)
+        assert efficiency(prediction) == pytest.approx(0.0)
+
     def test_onehot_perfect_coverage(self, make_onehot_set: Callable[[Any], Any], array_fn: Callable[..., Any]) -> None:
         """Coverage is 1.0 when every set contains the true class."""
         mask = array_fn([[True, False, False], [False, True, False], [False, False, True]])
