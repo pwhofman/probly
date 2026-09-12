@@ -96,14 +96,20 @@ def _reset_variables(obj: nnx.Module, rngs: nnx.Rngs) -> nnx.Module:
 
 
 def _refork_rng_stream(obj: nnx.Module, rngs: nnx.Rngs) -> None:
-    """Give ``obj`` a fresh rng stream if it carries one.
+    """Refresh stored RNGs while preserving containers and individual streams.
 
     Layers such as :class:`probly.layers.flax.DropConnectLinear` keep their own stream to draw
     masks from. Cloned members would otherwise share it and draw identical masks.
+    Containers retain their stream names and default-stream fallback; individual
+    streams retain their tag unless the module specifies ``rng_collection``.
     """
-    if getattr(obj, "rngs", None) is None:
+    stored_rngs = getattr(obj, "rngs", None)
+    if stored_rngs is None:
         return
-    collection = getattr(obj, "rng_collection", "default")
+    if isinstance(stored_rngs, nnx.Rngs):
+        obj.rngs = nnx.Rngs(**{name: rngs[name].fork() for name in stored_rngs})  # ty: ignore[unresolved-attribute]
+        return
+    collection = getattr(obj, "rng_collection", getattr(stored_rngs, "tag", "default"))
     obj.rngs = rngs[collection].fork()  # ty: ignore[unresolved-attribute]
 
 

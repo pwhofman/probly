@@ -59,6 +59,20 @@ class RandomResettableLinear(ResettableLinear):
         self.reset_count += 1
 
 
+class ContainerResettableLinear(nnx.Linear):
+    """A custom layer using named streams from an Rngs container."""
+
+    def __init__(self, in_features: int, out_features: int, *, rngs: nnx.Rngs) -> None:
+        """Initialize the layer and retain its named RNG container."""
+        super().__init__(in_features, out_features, rngs=rngs)
+        self.rngs = rngs
+
+    def reset_parameters(self) -> None:
+        self.kernel[...] = jax.random.normal(self.rngs.params(), self.kernel.shape)
+        assert self.bias is not None
+        self.bias[...] = jax.random.normal(self.rngs.noise(), self.bias.shape)
+
+
 @pytest.mark.parametrize("first_layer", ["activation", "dropout"])
 @pytest.mark.parametrize("entrypoint", ["ensemble", "traverse"])
 def test_reset_lazy_loading_before_first_child(first_layer: str, entrypoint: str) -> None:
@@ -180,6 +194,39 @@ class TestResetParameters:
 
 
 class TestResetParametersHook:
+    @pytest.mark.parametrize("named_streams", [False, True])
+    def test_rng_container_interface_and_seeding_are_preserved(self, named_streams: bool) -> None:
+        rngs = nnx.Rngs(params=0, noise=1) if named_streams else nnx.Rngs(0)
+        layer = ContainerResettableLinear(2, 2, rngs=rngs)
+        original_kernel = layer.kernel[...]
+        original_counts = {name: stream.count[...] for name, stream in rngs.items()}
+        first = reset(layer, {RNGS: 7})
+        repeated = reset(layer, {RNGS: 7})
+        other = reset(layer, {RNGS: 99})
+
+        assert isinstance(first.rngs, nnx.Rngs)
+        assert set(first.rngs) == set(rngs)
+        assert first.bias is not None
+        assert repeated.bias is not None
+        assert other.bias is not None
+        assert jnp.array_equal(first.kernel[...], repeated.kernel[...])
+        assert jnp.array_equal(first.bias[...], repeated.bias[...])
+        assert not jnp.array_equal(first.kernel[...], other.kernel[...])
+        assert not jnp.array_equal(first.bias[...], other.bias[...])
+        first.reset_parameters()  # Named streams remain usable after the reset.
+        assert jnp.array_equal(layer.kernel[...], original_kernel)
+        for name, stream in rngs.items():
+            assert jnp.array_equal(stream.count[...], original_counts[name])
+
+    def test_single_rng_stream_retains_its_collection(self) -> None:
+        layer = RandomResettableLinear(2, 2, rngs=nnx.Rngs(0))
+        layer.rngs = nnx.Rngs(params=0).params.fork()
+        del layer.rng_collection
+        result = reset(layer, {RNGS: nnx.Rngs(params=7)})
+        assert isinstance(result.rngs, nnx.RngStream)
+        assert result.rngs.tag == "params"
+        assert not jnp.array_equal(result.kernel[...], layer.kernel[...])
+
     def test_random_hook_uses_explicit_reset_seed(self) -> None:
         layer = RandomResettableLinear(2, 2, rngs=nnx.Rngs(0))
         first = reset(layer, {RNGS: 7})
@@ -262,6 +309,18 @@ class TestUnsupportedLayers:
 
 
 class TestEnsembleIntegration:
+    def test_rng_containers_produce_distinct_members(self) -> None:
+        from probly.transformation.ensemble import ensemble  # noqa: PLC0415
+
+        layer = ContainerResettableLinear(2, 2, rngs=nnx.Rngs(params=0, noise=1))
+        members = list(ensemble(layer, num_members=3, reset_params=True))
+        assert all(isinstance(member.rngs, nnx.Rngs) for member in members)
+        assert all(
+            not jnp.array_equal(members[i].kernel[...], members[j].kernel[...])
+            for i in range(len(members))
+            for j in range(i + 1, len(members))
+        )
+
     def test_random_reset_hooks_produce_distinct_members(self) -> None:
         from probly.transformation.ensemble import ensemble  # noqa: PLC0415
 
