@@ -70,7 +70,7 @@ def create_deup_representation(softmax: CategoricalDistribution, error_score: Ar
 class DEUPPredictor[**In, Out: DEUPRepresentation](RepresentationPredictor[In, Out], Protocol):
     """A predictor combining a feature encoder with a learned error head.
 
-    Components:
+    Attributes:
         encoder: Feature extractor (backbone with classification head removed).
         classification_head: The original classification linear layer.
         error_head: A small MLP trained post-hoc to predict the per-sample

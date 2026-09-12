@@ -5,6 +5,9 @@
 ``probly``
 ==========
 
+.. raw:: html
+   :file: _includes/ecosystem_ring.html
+
 Welcome to the documentation for ``probly``, a Python library for uncertainty quantification in
 machine learning. ``probly``'s name, coming from *probably this is the right answer*, reflects
 its **core functionality**: Providing an easy-to-use interface for allowing practitioners to incorporate
@@ -22,7 +25,7 @@ uncertainty into their machine learning workflows.
    :maxdepth: 1
    :caption: Table of Contents
 
-   introduction
+   getting_started
    installation
    user_guide
    examples

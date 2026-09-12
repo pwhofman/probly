@@ -1,5 +1,6 @@
 """Uncertainty-aware methods."""
 
+from probly.method import laplace
 from probly.method.batchensemble import batchensemble
 from probly.method.bayesian import bayesian
 from probly.method.cast import cast
@@ -31,7 +32,6 @@ from probly.method.graph_posterior_network import (
     lop_graph_posterior_network,
 )
 from probly.method.het_net import het_net
-import probly.method.laplace  # noqa: F401  # registers LaplaceRepresenter lazily
 from probly.method.mahalanobis import mahalanobis
 from probly.method.masksembles import masksembles
 from probly.method.sngp import sngp
@@ -66,6 +66,7 @@ __all__ = [
     "g_vbll",
     "graph_posterior_network",
     "het_net",
+    "laplace",
     "lop_graph_posterior_network",
     "mahalanobis",
     "masksembles",
