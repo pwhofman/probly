@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC
 from dataclasses import dataclass
-from typing import Any, ClassVar, override
+from typing import ClassVar, override
 
 import jax
 from jax import numpy as jnp
@@ -91,11 +91,6 @@ class JaxBernoulliDistributionSample(  # ty:ignore[conflicting-metaclass]
     """Sample type for jax Bernoulli distributins."""
 
     sample_space: ClassVar[type[BernoulliDistribution]] = JaxBernoulliDistribution
-
-
-@create_bernoulli_distribution.register((list, tuple))
-def _create_jax_bernoulli_distribution_from_sequence(data: list[Any] | tuple[Any, ...]) -> BernoulliDistribution:
-    return _create_jax_bernoulli_distribution(jnp.asarray(data))
 
 
 @create_bernoulli_distribution.register(jax.Array)

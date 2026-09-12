@@ -10,7 +10,7 @@ from jax import numpy as jnp
 from jax.core import Tracer
 
 from probly.representation._protected_axis.jax import JaxAxisProtected
-from probly.representation.distribution._common import DirichletDistribution
+from probly.representation.distribution._common import DirichletDistribution, create_dirichlet_distribution_from_alphas
 from probly.representation.distribution.jax_categorical import (
     JaxCategoricalDistribution,
     JaxProbabilityCategoricalDistribution,
@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from jax.typing import DTypeLike
 
 
+@create_dirichlet_distribution_from_alphas.register(jax.Array)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class JaxDirichletDistribution(
     JaxAxisProtected[jax.Array],
