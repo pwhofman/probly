@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, override
 
 import jax
+from jax.experimental import checkify
 import jax.numpy as jnp
 
 from probly.representation._protected_axis.jax import JaxAxisProtected
@@ -125,9 +126,7 @@ class JaxProbabilityCategoricalDistribution(JaxCategoricalDistribution):
         if self.array.ndim < 1:
             msg = "probabilities must have at least one dimension."
             raise ValueError(msg)
-        if jnp.any(self.array < 0):
-            msg = "Relative probabilities must be a non-negative."
-            raise ValueError(msg)
+        checkify.check(~jnp.any(self.array < 0), "Relative probabilities must be a non-negative.")
 
     @override
     @property

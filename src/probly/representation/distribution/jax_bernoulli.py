@@ -8,6 +8,7 @@ from typing import ClassVar, override
 
 import jax
 from jax import numpy as jnp
+from jax.experimental import checkify
 from jax.scipy.special import logit
 
 from probly.representation.distribution._common import (
@@ -41,9 +42,10 @@ class JaxProbabilityBernoulliDistribution(JaxProbabilityCategoricalDistribution,
         if not isinstance(self.array, jax.Array):
             msg = "probabilities must be a jax Array."
             raise TypeError(msg)
-        if jnp.any((self.array < 0.0) | (self.array > 1.0)):
-            msg = "Bernoulli probabilities must be in [0, 1]."
-            raise ValueError(msg)
+        checkify.check(
+            ~jnp.any((self.array < 0.0) | (self.array > 1.0)),
+            "Bernoulli probabilities must be in [0, 1].",
+        )
 
     @override
     @property

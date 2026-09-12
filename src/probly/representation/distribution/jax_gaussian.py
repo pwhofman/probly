@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Literal, override
 
 import jax
 from jax import numpy as jnp
-from jax.core import Tracer
+from jax.experimental import checkify
 from jax.scipy.stats import norm
 import numpy as np
 
@@ -47,10 +47,7 @@ class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[
         if mean.shape != var.shape:
             msg = f"mean and var must have same shape, got {mean.shape} and {var.shape}."
             raise ValueError(msg)
-        # Reconstruction during tracing can validate shapes, but not array values.
-        if not isinstance(var, Tracer) and jnp.any(var <= 0):
-            msg = "Variance must be positive."
-            raise ValueError(msg)
+        checkify.check(~jnp.any(var <= 0), "Variance must be positive.")
 
         object.__setattr__(self, "mean", mean)
         object.__setattr__(self, "var", var)

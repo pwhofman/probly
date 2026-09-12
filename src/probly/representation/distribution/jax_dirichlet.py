@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self, override
 
 import jax
 from jax import numpy as jnp
-from jax.core import Tracer
+from jax.experimental import checkify
 
 from probly.representation._protected_axis.jax import JaxAxisProtected
 from probly.representation.distribution._common import DirichletDistribution, create_dirichlet_distribution_from_alphas
@@ -52,10 +52,7 @@ class JaxDirichletDistribution(
             msg = "alphas must have at least one dimension."
             raise ValueError(msg)
 
-        # Reconstruction during tracing can validate shapes, but not array values.
-        if not isinstance(self.alphas, Tracer) and jnp.any(self.alphas <= 0):
-            msg = "alphas must be strictly positive."
-            raise ValueError(msg)
+        checkify.check(~jnp.any(self.alphas <= 0), "alphas must be strictly positive.")
 
         if self.alphas.shape[-1] < 2:
             msg = "Dirichlet distribution requires at least 2 classes."

@@ -101,6 +101,38 @@ the wrapper function and original operands in expression order. Its results
 are checked for protected-shape and batch-shape preservation before
 ``with_protected_values(values, func)`` reconstructs the representation.
 
-Operators support JAX tracing and differentiation when the representation's
-reconstruction supports tracers. Dirichlet and Gaussian reconstruction retains
-shape checks during tracing; value-dependent positivity checks run eagerly.
+JAX constructor validation
+--------------------------
+
+JAX representation types use
+``jax.experimental.checkify.check`` for their constructor argument value validation
+in ``__post_init__``. Type and shape validation uses ordinary Python checks.
+Boolean-backed conformal sets need no binary-value check.
+
+Eager construction still raises a ``ValueError`` subclass for invalid values.
+When a compiled function constructs or reconstructs one of these representations
+(including through indexing, reshaping, arithmetic, or sampling), functionalize
+the checks with ``checkify``:
+
+.. code-block:: python
+
+    import jax
+    import jax.numpy as jnp
+    from jax.experimental import checkify
+
+    from probly.representation.distribution.jax_categorical import (
+        JaxProbabilityCategoricalDistribution,
+    )
+    from probly.representation.jax_functions import jax_mean
+
+    distribution = JaxProbabilityCategoricalDistribution(
+        jnp.array([[0.2, 0.8], [0.4, 0.6]])
+    )
+    checked_mean = jax.jit(checkify.checkify(lambda d: jax_mean(d, axis=0)))
+    error, result = checked_mean(distribution)
+    error.throw()  # Check the error outside the compiled function.
+
+Plain ``jax.jit`` cannot stage these checks without ``checkify``. Checks run on
+each execution, including calls that reuse compiled code. Checkified functions
+also compose with ``jax.vmap`` and ``jax.grad``. Operations that only read
+parameters and do not invoke validation can still use plain ``jax.jit``.

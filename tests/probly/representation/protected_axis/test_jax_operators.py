@@ -12,6 +12,7 @@ import pytest
 
 pytest.importorskip("jax")
 import jax
+from jax.experimental import checkify
 import jax.numpy as jnp
 
 from probly.representation import jax_functions as jf
@@ -286,12 +287,14 @@ def test_traced_arithmetic_and_gradients():
 
 def test_distribution_opt_ins_and_traced_reconstruction():
     d = JaxDirichletDistribution(jnp.array([[1.0, 2.0], [3.0, 4.0]]))
-    result = jax.jit(lambda x: 2 - x)(d)
+    error, result = jax.jit(checkify.checkify(lambda x: 2 - x))(d)
+    error.throw()
     np.testing.assert_allclose(result.alphas, jnp.maximum(2 - d.alphas, 1e-10))
     with pytest.raises(TypeError):
         _ = d * 2
     g = JaxGaussianDistribution(jnp.array([1.0, 2.0]), jnp.array([3.0, 4.0]))
-    shifted = jax.jit(lambda x, offset: offset - x)(g, 5)
+    error, shifted = jax.jit(checkify.checkify(lambda x, offset: offset - x))(g, 5)
+    error.throw()
     np.testing.assert_array_equal(shifted.mean, 5 - g.mean)
     np.testing.assert_array_equal(shifted.var, g.var)
     difference = g - g

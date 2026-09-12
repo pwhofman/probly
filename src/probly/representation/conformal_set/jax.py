@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from probly.representation.sample._common import Sample
 
 from jax import numpy as jnp
+from jax.experimental import checkify
 
 from probly.representation._protected_axis.jax import JaxAxisProtected
 from probly.representation.conformal_set._common import (
@@ -21,12 +22,13 @@ from probly.representation.sample.jax import JaxArraySample
 
 
 def _ensure_array_one_hot(value: object) -> jnp.ndarray:
+    msg = "Value must be a one-hot encoded array of booleans or integers."
     if isinstance(value, jnp.ndarray):
         if value.dtype == bool:
             return value
-        if jnp.issubdtype(value.dtype, jnp.integer) and jnp.array_equal(value, value.astype(jnp.bool_)):
+        if jnp.issubdtype(value.dtype, jnp.integer):
+            checkify.check(jnp.array_equal(value, value.astype(jnp.bool_)), msg)
             return value.astype(bool)
-    msg = "Value must be a one-hot encoded array of booleans or integers."
     raise ValueError(msg)
 
 
