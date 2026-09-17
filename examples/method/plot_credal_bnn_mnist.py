@@ -16,7 +16,7 @@ import torch
 from probly.method.credal_bnn import credal_bnn
 from probly.quantification import quantify
 from probly.representer import representer
-from probly.train.bayesian.torch import ELBOLoss
+from probly.train.bayesian.torch import elbo_loss
 from probly.transformation.bayesian import collect_kl_divergence
 from probly_benchmark.data import load_mnist
 
@@ -52,7 +52,6 @@ credal_model = credal_bnn(
 # Train each member with the ELBO objective: cross-entropy on the logits plus a
 # KL penalty on the variational posterior, mirroring the benchmark recipe.
 
-criterion = ELBOLoss(kl_penalty=1e-5)
 
 for member in credal_model:
     member.train()
@@ -63,7 +62,7 @@ for member in credal_model:
             opt.zero_grad()
             logits = member(X_flat)
             kl = collect_kl_divergence(member)
-            loss = criterion(logits, y_batch, kl)
+            loss = elbo_loss(logits, y_batch, kl, kl_penalty=1e-5)
             loss.backward()
             opt.step()
     member.eval()

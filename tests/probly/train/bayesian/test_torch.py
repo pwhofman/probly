@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from probly.method.bayesian import bayesian
-from probly.train.bayesian.torch import ELBOLoss
+from probly.train.bayesian.torch import elbo_loss
 from probly.transformation.bayesian import collect_kl_divergence
 from tests.probly.torch_utils import validate_loss
 
@@ -20,10 +20,5 @@ def test_elbo_loss(
     model = bayesian(torch_conv_linear_model)
     outputs = model(inputs)
 
-    criterion = ELBOLoss()
-    loss = criterion(outputs, targets, collect_kl_divergence(model))
-    validate_loss(loss)
-
-    criterion = ELBOLoss(0.0)
-    loss = criterion(outputs, targets, collect_kl_divergence(model))
-    validate_loss(loss)
+    validate_loss(elbo_loss(outputs, targets, collect_kl_divergence(model)))
+    validate_loss(elbo_loss(outputs, targets, collect_kl_divergence(model), kl_penalty=0.0))

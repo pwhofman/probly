@@ -13,7 +13,7 @@ import torch
 
 from probly.representer import representer
 from probly.transformation import bayesian_ensemble
-from probly.train.bayesian.torch import ELBOLoss
+from probly.train.bayesian.torch import elbo_loss
 from probly.transformation.bayesian import collect_kl_divergence
 
 from examples.utils.model import MLPClassifier
@@ -51,7 +51,6 @@ bayesian_ensemble_model = bayesian_ensemble(
 # collect_kl_divergence is called on each member individually because the KL
 # divergence is accumulated per-member during the forward pass.
 
-criterion = ELBOLoss(1.0 / len(X_tensor))
 
 for member in bayesian_ensemble_model:
     member.train()
@@ -60,7 +59,7 @@ for member in bayesian_ensemble_model:
         opt.zero_grad()
         out = member(X_tensor)
         kl = collect_kl_divergence(member)
-        loss = criterion(out, y_tensor, kl)
+        loss = elbo_loss(out, y_tensor, kl, kl_penalty=1.0 / len(X_tensor))
         loss.backward()
         opt.step()
 

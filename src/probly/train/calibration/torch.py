@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import torch
-from torch import nn
 import torch.nn.functional as F
 
 
-class LabelRelaxationLoss(nn.Module):
+def label_relaxation_loss(inputs: torch.Tensor, targets: torch.Tensor, *, alpha: float = 0.1) -> torch.Tensor:
     """Label Relaxation Loss from :cite:`lienenFromLabel2021`.
 
     This loss is used to improve the calibration of a neural network. It works by minimizing
@@ -16,112 +15,44 @@ class LabelRelaxationLoss(nn.Module):
     Kullback-Leibler divergence from the predicted probabilities. If the predicted probability distribution
     is in the credal set, the loss is zero.
 
-    Attributes:
-        alpha: float, the parameter that controls the amount of label relaxation. Increasing alpha, increases the size
+    Args:
+        inputs: Logits of size (n_instances, n_classes).
+        targets: Class labels of size (n_instances,).
+        alpha: The parameter that controls the amount of label relaxation. Increasing alpha, increases the size
             of the credal set and thus the amount of label relaxation.
+
+    Returns:
+        The mean loss value.
     """
+    inputs_probs = F.softmax(inputs, dim=1)
 
-    def __init__(self, alpha: float = 0.1) -> None:
-        """Initializes an instance of the LabelRelaxationLoss class.
+    with torch.no_grad():
+        inv_one_hot = 1 - F.one_hot(targets, inputs.shape[1])
+        targets_real = alpha * inputs_probs / torch.sum(inv_one_hot * inputs_probs, dim=1, keepdim=True)
+        targets_real[torch.arange(targets.shape[0]), targets] = 1 - alpha
 
-        Args:
-            alpha: float, the parameter that controls the amount of label relaxation.
-                Increasing alpha, increases the size of the credal set and thus the amount of label relaxation.
-        """
-        super().__init__()
-        self.alpha = alpha
-
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the label relaxation loss.
-
-        Args:
-            inputs: torch.Tensor of size (n_instances, n_classes)
-            targets: torch.Tensor of size (n_instances,)
-
-        Returns:
-            loss: torch.Tensor, mean loss value
-        """
-        inputs_probs = F.softmax(inputs, dim=1)
-
-        with torch.no_grad():
-            inv_one_hot = 1 - F.one_hot(targets, inputs.shape[1])
-            targets_real = self.alpha * inputs_probs / torch.sum(inv_one_hot * inputs_probs, dim=1, keepdim=True)
-            targets_real[torch.arange(targets.shape[0]), targets] = 1 - self.alpha
-
-        kl_div = torch.sum(F.kl_div(inputs_probs.log(), targets_real, log_target=False, reduction="none"), dim=1)
-        loss = torch.where(torch.sum(inv_one_hot * inputs_probs, dim=1) <= self.alpha, 0, kl_div)
-        return loss.mean()
+    kl_div = torch.sum(F.kl_div(inputs_probs.log(), targets_real, log_target=False, reduction="none"), dim=1)
+    loss = torch.where(torch.sum(inv_one_hot * inputs_probs, dim=1) <= alpha, 0, kl_div)
+    return loss.mean()
 
 
-class LabelSmoothingLoss(nn.CrossEntropyLoss):
-    """Cross-entropy loss with label smoothing.
-
-    This is a thin wrapper around :class:`torch.nn.CrossEntropyLoss` that exposes
-    PyTorch's ``label_smoothing`` parameter as ``epsilon``.
-
-    Attributes:
-        epsilon: Amount of probability mass to smooth away from the one-hot target.
-    """
-
-    def __init__(
-        self,
-        epsilon: float = 0.1,
-        weight: torch.Tensor | None = None,
-        ignore_index: int = -100,
-        reduction: str = "mean",
-    ) -> None:
-        """Initializes an instance of the LabelSmoothingLoss class.
-
-        Args:
-            epsilon: Amount of probability mass to smooth away from the one-hot target.
-            weight: Optional manual rescaling weight for each class.
-            ignore_index: Target value ignored by the loss.
-            reduction: Reduction applied to the output. One of ``"none"``, ``"mean"``, or ``"sum"``.
-        """
-        super().__init__(
-            weight=weight,
-            ignore_index=ignore_index,
-            reduction=reduction,
-            label_smoothing=epsilon,
-        )
-        self.epsilon = epsilon
-
-
-class FocalLoss(nn.Module):
+def focal_loss(inputs: torch.Tensor, targets: torch.Tensor, *, alpha: float = 1, gamma: float = 2) -> torch.Tensor:
     """Focal Loss based on :cite:`linFocalLoss2017`.
 
-    Attributes:
-        alpha: float, control importance of minority class
-        gamma: float, control loss for hard instances
+    Args:
+        inputs: Logits of size (n_instances, n_classes).
+        targets: Class labels of size (n_instances,).
+        alpha: Control importance of minority class.
+        gamma: Control loss for hard instances.
+
+    Returns:
+        The mean loss value.
     """
+    targets_one_hot = F.one_hot(targets, num_classes=inputs.shape[-1])
+    prob = F.softmax(inputs, dim=-1)
+    p_t = torch.sum(prob * targets_one_hot, dim=-1)
 
-    def __init__(self, alpha: float = 1, gamma: float = 2) -> None:
-        """Initializes an instance of the FocalLoss class.
+    log_prob = torch.log(prob)
+    loss = -alpha * (1 - p_t) ** gamma * torch.sum(log_prob * targets_one_hot, dim=-1)
 
-        Args:
-            alpha: float, control importance of minority class
-            gamma: float, control loss for hard instances
-        """
-        super().__init__()
-        self.alpha = alpha
-        self.gamma = gamma
-
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the focal loss.
-
-        Args:
-            inputs: torch.Tensor of size (n_instances, n_classes)
-            targets: torch.Tensor of size (n_instances,)
-
-        Returns:
-            loss: torch.Tensor, mean loss value
-
-        """
-        targets_one_hot = F.one_hot(targets, num_classes=inputs.shape[-1])
-        prob = F.softmax(inputs, dim=-1)
-        p_t = torch.sum(prob * targets_one_hot, dim=-1)
-
-        log_prob = torch.log(prob)
-        loss = -self.alpha * (1 - p_t) ** self.gamma * torch.sum(log_prob * targets_one_hot, dim=-1)
-
-        return torch.mean(loss)
+    return torch.mean(loss)

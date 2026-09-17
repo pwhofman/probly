@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import partial
 from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 from flextype import flexdispatch
@@ -34,8 +35,8 @@ from probly.method.sngp import SNGPPredictor
 from probly.method.subensemble import SubensemblePredictor
 from probly.metrics import expected_calibration_error
 from probly.predictor import predict_raw
-from probly.train.bayesian.torch import ELBOLoss
-from probly.train.calibration.torch import LabelRelaxationLoss, LabelSmoothingLoss
+from probly.train.bayesian.torch import elbo_loss
+from probly.train.calibration.torch import label_relaxation_loss
 from probly.train.credal.torch import intersection_probability_ce_loss
 from probly.train.dare.torch import dare_regularizer
 from probly.train.evidential.torch import (
@@ -51,6 +52,8 @@ from probly.utils.torch import intersection_probability
 from probly_benchmark.base import BasePredictor
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from torch.utils.data import DataLoader
 
     from probly.predictor import Predictor
@@ -63,7 +66,9 @@ EVIDENTIAL_LOSSES = {
 }
 
 
-def _get_supervised_criterion(supervised_loss: dict[str, Any] | None = None) -> nn.Module:
+def _get_supervised_criterion(
+    supervised_loss: dict[str, Any] | None = None,
+) -> Callable[[torch.Tensor, torch.Tensor], torch.Tensor]:
     """Build the training criterion for CE-compatible supervised classifiers."""
     if supervised_loss is None:
         return nn.CrossEntropyLoss()
@@ -74,9 +79,9 @@ def _get_supervised_criterion(supervised_loss: dict[str, Any] | None = None) -> 
             params.pop("alpha", None)
             return nn.CrossEntropyLoss(**params)
         case "label_relaxation":
-            return LabelRelaxationLoss(**params)
+            return partial(label_relaxation_loss, **params)
         case "label_smoothing":
-            return LabelSmoothingLoss(**params)
+            return partial(F.cross_entropy, label_smoothing=params.pop("epsilon", 0.1), **params)
         case _:
             msg = f"Unknown supervised loss: {name}"
             raise ValueError(msg)
@@ -114,12 +119,12 @@ def _(
     **kwargs: Any,  # noqa: ANN401
 ) -> torch.Tensor | float:
     """Train a Bayesian predictor for one epoch."""
-    criterion = ELBOLoss(kl_penalty=kwargs.get("kl_penalty", 1e-5))
+    criterion = partial(elbo_loss, kl_penalty=kwargs.get("kl_penalty", 1e-5))
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
         outputs = model(inputs)
         kl = collect_kl_divergence(model)
-        loss = criterion(outputs, targets, kl)
+        loss = criterion(outputs, targets, kl)  # ty: ignore[invalid-argument-type]
     if scaler is not None:
         scaler.scale(loss).backward()
         if grad_clip_norm is not None:
