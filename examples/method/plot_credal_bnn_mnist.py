@@ -16,7 +16,8 @@ import torch
 from probly.method.credal_bnn import credal_bnn
 from probly.quantification import quantify
 from probly.representer import representer
-from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
+from probly.train.bayesian.torch import ELBOLoss
+from probly.transformation.bayesian import collect_kl_divergence
 from probly_benchmark.data import load_mnist
 
 from examples.utils.model import MLPClassifier

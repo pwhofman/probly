@@ -14,7 +14,8 @@ import torch
 from probly.quantification import quantify
 from probly.representer import representer
 from probly.transformation import bayesian_ensemble
-from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
+from probly.train.bayesian.torch import ELBOLoss
+from probly.transformation.bayesian import collect_kl_divergence
 from probly_benchmark.data import load_mnist
 
 from examples.utils.model import MLPClassifier

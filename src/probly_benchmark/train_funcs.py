@@ -34,7 +34,7 @@ from probly.method.sngp import SNGPPredictor
 from probly.method.subensemble import SubensemblePredictor
 from probly.metrics import expected_calibration_error
 from probly.predictor import predict_raw
-from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
+from probly.train.bayesian.torch import ELBOLoss
 from probly.train.calibration.torch import LabelRelaxationLoss, LabelSmoothingLoss
 from probly.train.credal.torch import intersection_probability_ce_loss
 from probly.train.dare.torch import dare_regularizer
@@ -46,6 +46,7 @@ from probly.train.evidential.torch import (
     postnet_loss,
 )
 from probly.transformation.batchensemble.torch import tile_inputs as tile_be_inputs
+from probly.transformation.bayesian import collect_kl_divergence
 from probly.utils.torch import intersection_probability
 from probly_benchmark.base import BasePredictor
 
@@ -655,7 +656,7 @@ def _(
             val_loss += F.cross_entropy(outputs, targets).item()
             val_acc += _accuracy(outputs, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
-    kl_value = collect_kl_divergence(model).item()
+    kl_value = collect_kl_divergence(model).item()  # ty: ignore[unresolved-attribute]
     return {  # ty: ignore[invalid-return-type]
         "loss": val_loss / len(val_loader),
         "acc": val_acc / num_instances,

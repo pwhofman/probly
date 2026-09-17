@@ -13,7 +13,8 @@ import torch
 
 from probly.representer import representer
 from probly.transformation import bayesian
-from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
+from probly.train.bayesian.torch import ELBOLoss
+from probly.transformation.bayesian import collect_kl_divergence
 
 from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
