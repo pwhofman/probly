@@ -65,6 +65,23 @@ class APScoreSuite:
         ap_bad = float(average_precision_score(y_true_bad, y_score_bad))
         assert ap_good > ap_bad
 
+    def test_all_tied_scores(self, array_fn):
+        """All scores equal means one threshold that accepts everything, so AP is the positive rate."""
+        y_true = array_fn([0, 0, 0, 1, 1, 1], dtype=float)
+        y_score = array_fn([0.5] * 6, dtype=float)
+        assert float(average_precision_score(y_true, y_score)) == pytest.approx(0.5)
+
+    def test_ties_share_threshold(self, array_fn):
+        """Samples with equal scores are accepted together, so the precision of the whole tie group counts."""
+        y_true = array_fn([0, 1, 0, 1, 0, 1, 0, 1], dtype=float)
+        y_score = array_fn([0.5, 0.5, 0.2, 0.5, 0.5, 0.9, 0.5, 0.2], dtype=float)
+        # Threshold 0.9 accepts 1 sample (1 positive), 0.5 accepts 6 (3 positives), 0.2 accepts all 8 (4 positives).
+        # AP sums the recall gained at each threshold times the precision there.
+        recall_gain = [1 / 4, 2 / 4, 1 / 4]
+        precision = [1 / 1, 3 / 6, 4 / 8]
+        expected = sum(r * p for r, p in zip(recall_gain, precision, strict=True))
+        assert float(average_precision_score(y_true, y_score)) == pytest.approx(expected)
+
     def test_batched_shape(self, array_fn):
         """2D input produces one score per row."""
         y_true = array_fn([[0, 0, 1, 1, 0, 1], [1, 0, 1, 0, 0, 1]], dtype=float)

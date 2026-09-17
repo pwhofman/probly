@@ -78,22 +78,56 @@ def average_precision_score_numpy(y_true: np.ndarray, y_score: np.ndarray) -> np
     return -np.sum(np.diff(recall, axis=-1) * precision[..., :-1], axis=-1)  # ty:ignore[no-matching-overload, not-subscriptable]
 
 
+def _binary_clf_curve(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Count false and true positives at every score threshold, along the last axis.
+
+    Adapted from scikit-learn's ``sklearn.metrics._ranking._binary_clf_curve`` (BSD-3-Clause). Samples are
+    ranked by decreasing score and the counts after accepting each sample are recorded. Equal scores form a
+    single threshold: sklearn keeps only the last index of every run of equal scores, which makes the number
+    of thresholds depend on the data, whereas this batched version maps every sample to the last index of its
+    run and keeps the ``(..., n)`` shape. For scores ``[0.9, 0.5, 0.5, 0.5, 0.2]`` the threshold indices are
+    ``[0, 3, 3, 3, 4]``. Reading the counts per sample instead would let the sort order among tied samples
+    decide the curve, and identical scores could then yield an AUROC of 1.0 or 0.0 instead of 0.5.
+
+    Args:
+        y_true: Binary labels of shape ``(..., n)``.
+        y_score: Scores of shape ``(..., n)``.
+
+    Returns:
+        fps: False positives after each threshold, shape ``(..., n)``.
+        tps: True positives after each threshold, shape ``(..., n)``.
+        thresholds: Scores in decreasing order, shape ``(..., n)``.
+    """
+    n = y_score.shape[-1]
+    # Sort scores and corresponding truth values.
+    desc_score_indices = np.flip(np.argsort(y_score, axis=-1, kind="mergesort"), axis=-1)
+    y_score = np.take_along_axis(y_score, desc_score_indices, axis=-1)
+    y_true = np.take_along_axis(y_true, desc_score_indices, axis=-1)
+
+    # y_score typically has many tied values. A distinct value ends where the next score differs, and the end
+    # of the curve is always a threshold. The running minimum from the right turns these ends into the
+    # threshold index of every position.
+    end = np.ones((*y_score.shape[:-1], 1), dtype=bool)
+    is_distinct_value = np.concatenate([y_score[..., 1:] != y_score[..., :-1], end], axis=-1)
+    threshold_idxs = np.where(is_distinct_value, np.arange(n), n - 1)
+    threshold_idxs = np.flip(np.minimum.accumulate(np.flip(threshold_idxs, axis=-1), axis=-1), axis=-1)
+
+    # Accumulate the true positives with decreasing threshold.
+    tps = np.take_along_axis(np.cumsum(y_true, axis=-1), threshold_idxs, axis=-1)
+    fps = 1 + threshold_idxs - tps
+    return fps, tps, y_score
+
+
 @precision_recall_curve.register(np.ndarray)
 def precision_recall_curve_numpy(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Compute precision-recall curve along the last axis."""
     y_true = np.asarray(y_true, dtype=float)
     y_score = np.asarray(y_score, dtype=float)
-    n = y_score.shape[-1]
 
-    desc_idx = np.flip(np.argsort(y_score, axis=-1, kind="mergesort"), axis=-1)
-    y_score_sorted = np.take_along_axis(y_score, desc_idx, axis=-1)
-    y_true_sorted = np.take_along_axis(y_true, desc_idx, axis=-1)
-
-    tps = np.cumsum(y_true_sorted, axis=-1)
-    predicted_pos = np.arange(1, n + 1, dtype=float)
+    fps, tps, thresholds = _binary_clf_curve(y_true, y_score)
     total_pos = tps[..., -1:]
 
-    precision = tps / predicted_pos
+    precision = tps / (tps + fps)
     recall = np.where(total_pos > 0, tps / np.where(total_pos > 0, total_pos, 1.0), 0.0)
 
     ones = np.ones((*y_score.shape[:-1], 1))
@@ -101,7 +135,7 @@ def precision_recall_curve_numpy(y_true: np.ndarray, y_score: np.ndarray) -> tup
     precision = np.concatenate([np.flip(precision, axis=-1), ones], axis=-1)
     recall = np.concatenate([np.flip(recall, axis=-1), zeros], axis=-1)
 
-    return precision, recall, y_score_sorted
+    return precision, recall, thresholds
 
 
 @classwise_ece.register(np.ndarray)
@@ -226,15 +260,8 @@ def roc_curve_numpy(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarray
     """Compute ROC curve along the last axis."""
     y_true = np.asarray(y_true, dtype=float)
     y_score = np.asarray(y_score, dtype=float)
-    n = y_score.shape[-1]
 
-    desc_idx = np.flip(np.argsort(y_score, axis=-1, kind="mergesort"), axis=-1)
-    y_score_sorted = np.take_along_axis(y_score, desc_idx, axis=-1)
-    y_true_sorted = np.take_along_axis(y_true, desc_idx, axis=-1)
-
-    tps = np.cumsum(y_true_sorted, axis=-1)
-    fps = np.arange(1, n + 1, dtype=float) - tps
-
+    fps, tps, thresholds = _binary_clf_curve(y_true, y_score)
     total_pos = tps[..., -1:]
     total_neg = fps[..., -1:]
 
@@ -244,7 +271,7 @@ def roc_curve_numpy(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarray
     zeros = np.zeros((*y_score.shape[:-1], 1))
     tpr = np.concatenate([zeros, tpr], axis=-1)
     fpr = np.concatenate([zeros, fpr], axis=-1)
-    thresholds = np.concatenate([y_score_sorted[..., :1] + 1, y_score_sorted], axis=-1)
+    thresholds = np.concatenate([thresholds[..., :1] + 1, thresholds], axis=-1)
 
     return fpr, tpr, thresholds
 

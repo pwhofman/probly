@@ -77,6 +77,46 @@ def average_precision_score_torch(y_true: torch.Tensor, y_score: torch.Tensor) -
     return -torch.sum(torch.diff(recall, dim=-1) * precision[..., :-1], dim=-1)  # ty:ignore[invalid-argument-type, not-subscriptable]
 
 
+def _binary_clf_curve(y_true: torch.Tensor, y_score: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Count false and true positives at every score threshold, along the last axis.
+
+    Adapted from scikit-learn's ``sklearn.metrics._ranking._binary_clf_curve`` (BSD-3-Clause). Samples are
+    ranked by decreasing score and the counts after accepting each sample are recorded. Equal scores form a
+    single threshold: sklearn keeps only the last index of every run of equal scores, which makes the number
+    of thresholds depend on the data, whereas this batched version maps every sample to the last index of its
+    run and keeps the ``(..., n)`` shape. For scores ``[0.9, 0.5, 0.5, 0.5, 0.2]`` the threshold indices are
+    ``[0, 3, 3, 3, 4]``. Reading the counts per sample instead would let the sort order among tied samples
+    decide the curve, and identical scores could then yield an AUROC of 1.0 or 0.0 instead of 0.5.
+
+    Args:
+        y_true: Binary labels of shape ``(..., n)``.
+        y_score: Scores of shape ``(..., n)``.
+
+    Returns:
+        fps: False positives after each threshold, shape ``(..., n)``.
+        tps: True positives after each threshold, shape ``(..., n)``.
+        thresholds: Scores in decreasing order, shape ``(..., n)``.
+    """
+    n = y_score.shape[-1]
+    # Sort scores and corresponding truth values.
+    desc_score_indices = torch.argsort(y_score, dim=-1, stable=True, descending=True)
+    y_score = torch.take_along_dim(y_score, desc_score_indices, dim=-1)
+    y_true = torch.take_along_dim(y_true, desc_score_indices, dim=-1)
+
+    # y_score typically has many tied values. A distinct value ends where the next score differs, and the end
+    # of the curve is always a threshold. The running minimum from the right turns these ends into the
+    # threshold index of every position.
+    end = torch.ones((*y_score.shape[:-1], 1), dtype=torch.bool, device=y_score.device)
+    is_distinct_value = torch.cat([y_score[..., 1:] != y_score[..., :-1], end], dim=-1)
+    threshold_idxs = torch.where(is_distinct_value, torch.arange(n, device=y_score.device), n - 1)
+    threshold_idxs = torch.cummin(threshold_idxs.flip(-1), dim=-1).values.flip(-1)
+
+    # Accumulate the true positives with decreasing threshold.
+    tps = torch.take_along_dim(torch.cumsum(y_true, dim=-1), threshold_idxs, dim=-1)
+    fps = 1 + threshold_idxs - tps
+    return fps, tps, y_score
+
+
 @precision_recall_curve.register(torch.Tensor)
 def precision_recall_curve_torch(
     y_true: torch.Tensor, y_score: torch.Tensor
@@ -84,17 +124,11 @@ def precision_recall_curve_torch(
     """Compute precision-recall curve along the last axis."""
     y_true = y_true.float()
     y_score = y_score.float()
-    n = y_score.shape[-1]
 
-    desc_idx = torch.argsort(y_score, dim=-1, stable=True, descending=True)
-    y_score_sorted = torch.take_along_dim(y_score, desc_idx, dim=-1)
-    y_true_sorted = torch.take_along_dim(y_true, desc_idx, dim=-1)
-
-    tps = torch.cumsum(y_true_sorted, dim=-1)
-    predicted_pos = torch.arange(1, n + 1, device=y_true.device, dtype=y_true.dtype)
+    fps, tps, thresholds = _binary_clf_curve(y_true, y_score)
     total_pos = tps[..., -1:]
 
-    precision = tps / predicted_pos
+    precision = tps / (tps + fps)
     recall = torch.where(
         total_pos > 0, tps / torch.where(total_pos > 0, total_pos, torch.ones_like(total_pos)), torch.zeros_like(tps)
     )
@@ -104,7 +138,7 @@ def precision_recall_curve_torch(
     precision = torch.cat([precision.flip(-1), ones], dim=-1)
     recall = torch.cat([recall.flip(-1), zeros], dim=-1)
 
-    return precision, recall, y_score_sorted
+    return precision, recall, thresholds
 
 
 @classwise_ece.register(torch.Tensor)
@@ -211,15 +245,8 @@ def roc_curve_torch(y_true: torch.Tensor, y_score: torch.Tensor) -> tuple[torch.
     """Compute ROC curve along the last axis."""
     y_true = y_true.float()
     y_score = y_score.float()
-    n = y_score.shape[-1]
 
-    desc_idx = torch.argsort(y_score, dim=-1, stable=True, descending=True)
-    y_score_sorted = torch.take_along_dim(y_score, desc_idx, dim=-1)
-    y_true_sorted = torch.take_along_dim(y_true, desc_idx, dim=-1)
-
-    tps = torch.cumsum(y_true_sorted, dim=-1)
-    fps = torch.arange(1, n + 1, device=y_true.device, dtype=y_true.dtype) - tps
-
+    fps, tps, thresholds = _binary_clf_curve(y_true, y_score)
     total_pos = tps[..., -1:]
     total_neg = fps[..., -1:]
 
@@ -233,7 +260,7 @@ def roc_curve_torch(y_true: torch.Tensor, y_score: torch.Tensor) -> tuple[torch.
     zeros = torch.zeros((*y_score.shape[:-1], 1), device=y_true.device, dtype=y_true.dtype)
     tpr = torch.cat([zeros, tpr], dim=-1)
     fpr = torch.cat([zeros, fpr], dim=-1)
-    thresholds = torch.cat([y_score_sorted[..., :1] + 1, y_score_sorted], dim=-1)
+    thresholds = torch.cat([thresholds[..., :1] + 1, thresholds], dim=-1)
 
     return fpr, tpr, thresholds
 
