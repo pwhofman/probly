@@ -7,55 +7,6 @@ from torch import nn
 import torch.nn.functional as F
 
 
-class ExpectedCalibrationError(nn.Module):
-    """Expected Calibration Error (ECE) :cite:`guoOnCalibration2017`.
-
-    Attributes:
-        num_bins: int, number of bins to use for calibration
-        self.bins: torch.Tensor, the actual bins for calibration
-    """
-
-    def __init__(self, num_bins: int = 15) -> None:
-        """Initializes an instance of the ExpectedCalibrationError class.
-
-        Args:
-            num_bins: int, number of bins to use for calibration
-        """
-        super().__init__()
-        self.num_bins = num_bins
-        self.bins = torch.linspace(0, 1, num_bins + 1)
-
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the expected calibration error.
-
-        Assumes that inputs are probability distributions over classes.
-
-        Args:
-            inputs: torch.Tensor of size (n_instances, n_classes).
-            targets: torch.Tensor of size (n_instances,)
-
-        Returns:
-            loss: torch.Tensor, mean loss value
-        """
-        confs, preds = torch.max(inputs, dim=1)
-        # Clamp so confidence == 1.0 lands in the last bin instead of being dropped.
-        bin_indices = (torch.bucketize(confs, self.bins.to(inputs.device), right=True) - 1).clamp_(
-            min=0, max=self.num_bins - 1
-        )
-        num_instances = inputs.shape[0]
-        loss: torch.Tensor = torch.tensor(0, dtype=torch.float32, device=inputs.device)
-        for i in range(self.num_bins):
-            _bin = torch.where(bin_indices == i)[0]
-            # check if bin is empty
-            if _bin.shape[0] == 0:
-                continue
-            acc_bin = torch.mean((preds[_bin] == targets[_bin]).float())
-            conf_bin = torch.mean(confs[_bin])
-            weight = _bin.shape[0] / num_instances
-            loss += weight * torch.abs(acc_bin - conf_bin)
-        return loss
-
-
 class LabelRelaxationLoss(nn.Module):
     """Label Relaxation Loss from :cite:`lienenFromLabel2021`.
 

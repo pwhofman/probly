@@ -32,9 +32,10 @@ from probly.method.natural_posterior_network import NaturalPosteriorNetworkPredi
 from probly.method.posterior_network import PosteriorNetworkPredictor
 from probly.method.sngp import SNGPPredictor
 from probly.method.subensemble import SubensemblePredictor
+from probly.metrics import expected_calibration_error
 from probly.predictor import predict_raw
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
-from probly.train.calibration.torch import ExpectedCalibrationError, LabelRelaxationLoss, LabelSmoothingLoss
+from probly.train.calibration.torch import LabelRelaxationLoss, LabelSmoothingLoss
 from probly.train.credal.torch import intersection_probability_ce_loss
 from probly.train.dare.torch import dare_regularizer
 from probly.train.evidential.torch import (
@@ -1458,7 +1459,7 @@ def _compute_metrics(probs: torch.Tensor, labels: torch.Tensor, n_bins: int) -> 
     eps = torch.finfo(probs.dtype).eps
     logprobs = torch.log(probs.clamp(min=eps))
     nll = F.nll_loss(logprobs, labels).item()
-    ece = ExpectedCalibrationError(num_bins=n_bins)(probs, labels).item()
+    ece = expected_calibration_error(probs, labels, num_bins=n_bins).item()  # ty: ignore[unresolved-attribute]
 
     return {"accuracy": accuracy, "nll": nll, "ece": ece}
 

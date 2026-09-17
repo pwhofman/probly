@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 from flextype import flexdispatch
 import numpy as np
 
+from probly.metrics import expected_calibration_error
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -79,18 +81,15 @@ def _compute_ece_numpy(probs: np.ndarray, y_true: np.ndarray, n_bins: int = 10) 
 try:
     import torch
 
-    from probly.train.calibration.torch import ExpectedCalibrationError
-
     @compute_accuracy.register(torch.Tensor)
     def _compute_accuracy_torch(y_pred: torch.Tensor, y_true: torch.Tensor) -> float:
         return float((y_pred == y_true).float().mean().item())
 
     @compute_ece.register(torch.Tensor)
     def _compute_ece_torch(probs: torch.Tensor, y_true: torch.Tensor, n_bins: int = 10) -> float:
-        ece_fn = ExpectedCalibrationError(num_bins=n_bins)
         with torch.no_grad():
-            loss = ece_fn(probs.float(), y_true.long())
-        return float(loss.item())
+            loss = expected_calibration_error(probs.float(), y_true.long(), num_bins=n_bins)
+        return float(loss.item())  # ty: ignore[unresolved-attribute]
 
 except ImportError:
     pass
