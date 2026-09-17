@@ -11,6 +11,7 @@ from torch.nn import functional as F
 from torch.special import digamma, gammaln
 
 from probly.utils.switchdispatch import switchdispatch
+from probly.utils.torch import dirichlet_entropy
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -725,7 +726,11 @@ def ird_loss(
             msg2 = f"{adversarial_alpha.shape[1]} vs {alpha.shape[1]}"
             raise ValueError(msg1 + msg2)
 
-        entropy_term = dirichlet_entropy(adversarial_alpha)
+        if not torch.all(adversarial_alpha > 0):
+            msg = f"All alpha values must be > 0, got min={adversarial_alpha.min().item()}"
+            raise ValueError(msg)
+
+        entropy_term = dirichlet_entropy(adversarial_alpha).sum()
     else:
         entropy_term = 0.0
 
@@ -857,54 +862,6 @@ def regularization_fn(alpha: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 
     # Sum over classes and batch
     loss = torch.sum(term)
-
-    return loss
-
-
-def dirichlet_entropy(alpha: torch.Tensor) -> torch.Tensor:
-    """Dirichlet entropy for predictive uncertainty estimation.
-
-    Used in Information Robust Dirichlet Networks to encourage uncertainty on
-    adversarial or out-of-distribution inputs by maximizing the entropy of the
-    Dirichlet distribution.
-
-    Reference:
-        Tsiligkaridis, "Information Robust Dirichlet Networks for Predictive Uncertainty Estimation",
-        2019.
-        https://arxiv.org/abs/1910.04819
-
-    The entropy is given by:
-
-    .. code-block:: none
-
-        H(alpha) = log B(alpha)
-                   + (alpha_0 - K) * psi(alpha_0)
-                   - sum_k (alpha_k - 1) * psi(alpha_k)
-
-    Args:
-        alpha: Dirichlet concentration parameters, shape (B_a, K), must be > 0.
-
-    Returns:
-        Scalar Dirichlet entropy summed over the batch.
-
-    Raises:
-        ValueError: If ``alpha`` contains non-positive values.
-    """
-    if not torch.all(alpha > 0):
-        msg = f"All alpha values must be > 0, got min={alpha.min().item()}"
-        raise ValueError(msg)
-
-    k = alpha.size(-1)
-    alpha0 = alpha.sum(dim=-1)
-
-    log_b = torch.lgamma(alpha).sum(dim=-1) - torch.lgamma(alpha0)
-
-    term1 = log_b
-    term2 = (alpha0 - k) * digamma(alpha0)
-    term3 = ((alpha - 1) * digamma(alpha)).sum(dim=-1)
-    entropy = term1 + term2 - term3
-
-    loss = entropy.sum()
 
     return loss
 

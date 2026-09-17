@@ -7,7 +7,6 @@ from probly.method.evidential import evidential_regression
 from probly.predictor import Predictor
 from probly.train.evidential.torch import (
     der_loss,
-    dirichlet_entropy,
     evidential_ce_loss,
     evidential_kl_divergence,
     evidential_log_loss,
@@ -292,18 +291,6 @@ def test_regularization_fn(
     validate_loss(loss)
 
 
-@pytest.mark.skip
-def test_dirichlet_entropy(
-    sample_classification_data: tuple[Tensor, Tensor],
-    evidential_classification_model: nn.Module,
-) -> None:
-    inputs, _ = sample_classification_data  # targets not needed for dirichlet_entropy
-    outputs = evidential_classification_model(inputs)
-    criterion = dirichlet_entropy
-    loss = criterion(outputs)
-    validate_loss(loss)
-
-
 def test_ird_loss(
     sample_classification_data: tuple[Tensor, Tensor],
     evidential_classification_model: nn.Module,
@@ -533,19 +520,6 @@ class TestRegularizationFn:
         y_onehot = torch.tensor([[1.0, 0.0, 0.0]])
         reg = regularization_fn(alphas, y_onehot)
         assert torch.isfinite(reg)
-
-
-class TestDirichletEntropy:
-    def test_higher_entropy_for_uniform(self) -> None:
-        torch = _torch_modules()
-        from probly.train.evidential.torch import dirichlet_entropy  # noqa: PLC0415
-
-        sharp = torch.tensor([[10.0, 1.0, 1.0]])
-        flat = torch.tensor([[1.0, 1.0, 1.0]])
-        h_sharp = dirichlet_entropy(sharp).sum()
-        h_flat = dirichlet_entropy(flat).sum()
-        # Uniform Dirichlet has higher entropy than peaked Dirichlet.
-        assert h_flat.item() > h_sharp.item()
 
 
 class TestEvidentialNigNllLoss:
@@ -805,17 +779,6 @@ class TestRegularizationFnValidation:
             regularization_fn(alpha, y)
 
 
-class TestDirichletEntropyValidation:
-    """dirichlet_entropy validates positivity of alpha."""
-
-    def test_non_positive_alpha_raises(self) -> None:
-        torch = _torch_modules()
-        from probly.train.evidential.torch import dirichlet_entropy  # noqa: PLC0415
-
-        with pytest.raises(ValueError, match=r"alpha values must be > 0"):
-            dirichlet_entropy(torch.tensor([[0.0, 1.0, 1.0]]))
-
-
 class TestIRDValidation:
     """ird_loss checks input shapes and adversarial alpha shapes."""
 
@@ -983,3 +946,11 @@ class TestPnLoss:
         loss = pn_loss(model, x_in, y_in, x_ood)
         assert loss.shape == ()
         assert torch.isfinite(loss).all()
+
+
+class TestIRDAdversarialAlphaValidation:
+    def test_non_positive_adversarial_alpha_raises(self) -> None:
+        alpha = torch.tensor([[2.0, 1.0, 1.0]])
+        y = torch.tensor([[1.0, 0.0, 0.0]])
+        with pytest.raises(ValueError, match=r"alpha values must be > 0"):
+            ird_loss(alpha, y, adversarial_alpha=torch.tensor([[0.0, 1.0, 1.0]]))

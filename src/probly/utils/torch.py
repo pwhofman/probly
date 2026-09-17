@@ -106,3 +106,14 @@ def intersection_probability(lower: torch.Tensor, upper: torch.Tensor) -> torch.
     denominator = torch.where(slack_sum != 0, slack_sum, torch.ones_like(slack_sum))
     weights = torch.where(slack_sum != 0, slack / denominator, torch.zeros_like(slack))
     return lower + remaining * weights
+
+
+def dirichlet_entropy(alphas: torch.Tensor) -> torch.Tensor:
+    """Compute the differential entropy of Dirichlet distributions with concentrations of shape ``(..., K)``."""
+    alpha_0 = torch.sum(alphas, dim=-1)
+    num_classes = alphas.shape[-1]
+
+    log_beta = torch.sum(torch.lgamma(alphas), dim=-1) - torch.lgamma(alpha_0)
+    digamma_sum = (alpha_0 - num_classes) * torch.digamma(alpha_0)
+    digamma_individual = torch.sum((alphas - 1) * torch.digamma(alphas), dim=-1)
+    return log_beta + digamma_sum - digamma_individual
