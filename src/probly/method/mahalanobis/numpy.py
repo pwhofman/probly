@@ -19,7 +19,7 @@ from ._common import (
 
 @create_mahalanobis_representation.register(ArrayCategoricalDistribution)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayMahalanobisRepresentation(MahalanobisRepresentation, ArrayAxisProtected[np.ndarray]):
+class NumpyMahalanobisRepresentation(MahalanobisRepresentation, ArrayAxisProtected[np.ndarray]):
     """Mahalanobis representation backed by numpy arrays.
 
     ``weight`` and ``bias`` are shared (non per-sample) combiner parameters and
@@ -35,7 +35,7 @@ class ArrayMahalanobisRepresentation(MahalanobisRepresentation, ArrayAxisProtect
 
 
 @combine_layer_scores.register(np.ndarray)
-def array_combine_layer_scores(layer_scores: np.ndarray, weight: np.ndarray, bias: np.ndarray) -> np.ndarray:
+def numpy_combine_layer_scores(layer_scores: np.ndarray, weight: np.ndarray, bias: np.ndarray) -> np.ndarray:
     """Combine per-layer Mahalanobis confidences into a single OOD score.
 
     The combination is the logistic-regression logit ``s @ w + b``. With the

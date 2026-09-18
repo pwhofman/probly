@@ -24,7 +24,7 @@ class CovarianceEstimator(Protocol):
         """Fit the estimator on a feature matrix of shape ``(N, feature_dim)``."""
 
 
-class ArrayMahalanobisHead:
+class NumpyMahalanobisHead:
     """Class-conditional Gaussian head with a tied covariance (Mahalanobis OOD).
 
     Numpy counterpart of :class:`probly.layers.torch.MahalanobisHead`, implementing
@@ -95,7 +95,7 @@ class ArrayMahalanobisHead:
             means[c] = mu
             centered.append(z - mu)
         if not centered:
-            msg = "Cannot fit ArrayMahalanobisHead: no labelled samples were provided."
+            msg = "Cannot fit NumpyMahalanobisHead: no labelled samples were provided."
             raise ValueError(msg)
 
         centered_all = np.concatenate(centered, axis=0)

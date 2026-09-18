@@ -6,9 +6,9 @@ import numpy as np
 import pytest
 
 from probly.decider import categorical_from_mean
-from probly.layers.array import ArrayMahalanobisHead
+from probly.layers.numpy import NumpyMahalanobisHead
 from probly.method.mahalanobis import create_mahalanobis_representation
-from probly.method.mahalanobis.array import ArrayMahalanobisRepresentation
+from probly.method.mahalanobis.numpy import NumpyMahalanobisRepresentation
 from probly.quantification import decompose
 from probly.quantification.notion import AleatoricUncertainty, EpistemicUncertainty
 from probly.representation.distribution.array_categorical import (
@@ -28,9 +28,9 @@ def softmax() -> ArrayProbabilityCategoricalDistribution:
 
 
 @pytest.fixture
-def representation(softmax: ArrayProbabilityCategoricalDistribution) -> ArrayMahalanobisRepresentation:
+def representation(softmax: ArrayProbabilityCategoricalDistribution) -> NumpyMahalanobisRepresentation:
     """A two-layer Mahalanobis representation over three samples."""
-    return ArrayMahalanobisRepresentation(
+    return NumpyMahalanobisRepresentation(
         softmax,
         np.array([[1.0, 2.0], [3.0, 4.0], [0.5, 0.5]]),
         -np.ones(NUM_LAYERS),
@@ -59,10 +59,10 @@ class _StubCovarianceEstimator:
 
 
 class TestRepresentation:
-    """The ArrayMahalanobisRepresentation dataclass."""
+    """The NumpyMahalanobisRepresentation dataclass."""
 
     def test_fields_are_preserved(
-        self, representation: ArrayMahalanobisRepresentation, softmax: ArrayProbabilityCategoricalDistribution
+        self, representation: NumpyMahalanobisRepresentation, softmax: ArrayProbabilityCategoricalDistribution
     ) -> None:
         """The dataclass stores the values it was built from unchanged."""
         assert representation.softmax is softmax
@@ -74,22 +74,22 @@ class TestRepresentation:
         created = create_mahalanobis_representation(
             softmax, np.zeros((3, NUM_LAYERS)), -np.ones(NUM_LAYERS), np.zeros(())
         )
-        assert isinstance(created, ArrayMahalanobisRepresentation)
+        assert isinstance(created, NumpyMahalanobisRepresentation)
 
-    def test_categorical_from_mean_returns_softmax(self, representation: ArrayMahalanobisRepresentation) -> None:
+    def test_categorical_from_mean_returns_softmax(self, representation: NumpyMahalanobisRepresentation) -> None:
         """The categorical mean decider reduces the representation to its softmax."""
         single = categorical_from_mean(representation)
         assert isinstance(single, ArrayCategoricalDistribution)
         assert single is representation.softmax
 
-    def test_indexing_preserves_combiner(self, representation: ArrayMahalanobisRepresentation) -> None:
+    def test_indexing_preserves_combiner(self, representation: NumpyMahalanobisRepresentation) -> None:
         """Indexing batches the per-sample fields but keeps the shared combiner weights."""
         sub = representation[:2]
         assert sub.layer_scores.shape == (2, NUM_LAYERS)
         assert np.array_equal(sub.weight, representation.weight)
         assert np.array_equal(sub.bias, representation.bias)
 
-    def test_decomposition_is_epistemic_only(self, representation: ArrayMahalanobisRepresentation) -> None:
+    def test_decomposition_is_epistemic_only(self, representation: NumpyMahalanobisRepresentation) -> None:
         """The decomposition exposes the combined OOD score as epistemic uncertainty only."""
         decomposition = decompose(representation)
         expected = representation.layer_scores @ representation.weight + representation.bias
@@ -98,13 +98,13 @@ class TestRepresentation:
             _ = decomposition[AleatoricUncertainty]
 
 
-class TestArrayMahalanobisHead:
+class TestNumpyMahalanobisHead:
     """The numpy class-conditional Gaussian head."""
 
     def test_fit_populates_parameters(self, labelled_features: tuple[np.ndarray, np.ndarray]) -> None:
         """Fitting sets non-trivial class means and a non-identity precision."""
         features, labels = labelled_features
-        head = ArrayMahalanobisHead(NUM_CLASSES, FEATURE_DIM)
+        head = NumpyMahalanobisHead(NUM_CLASSES, FEATURE_DIM)
         head.fit(features, labels)
         assert head.means.shape == (NUM_CLASSES, FEATURE_DIM)
         assert np.any(head.means != 0)
@@ -113,7 +113,7 @@ class TestArrayMahalanobisHead:
     def test_score_shape_and_sign(self, labelled_features: tuple[np.ndarray, np.ndarray]) -> None:
         """Scores are non-positive per-class confidences of shape (N, num_classes)."""
         features, labels = labelled_features
-        head = ArrayMahalanobisHead(NUM_CLASSES, FEATURE_DIM)
+        head = NumpyMahalanobisHead(NUM_CLASSES, FEATURE_DIM)
         head.fit(features, labels)
         scores = head.score(features)
         assert scores.shape == (len(features), NUM_CLASSES)
@@ -123,7 +123,7 @@ class TestArrayMahalanobisHead:
     def test_far_samples_score_lower(self, labelled_features: tuple[np.ndarray, np.ndarray]) -> None:
         """Samples far from every class centroid get a lower confidence."""
         features, labels = labelled_features
-        head = ArrayMahalanobisHead(NUM_CLASSES, FEATURE_DIM)
+        head = NumpyMahalanobisHead(NUM_CLASSES, FEATURE_DIM)
         head.fit(features, labels)
         far = features * 5 + 20
         assert head.score(far).max(axis=-1).mean() < head.score(features).max(axis=-1).mean()
@@ -131,7 +131,7 @@ class TestArrayMahalanobisHead:
     def test_fit_without_matching_labels_raises(self, labelled_features: tuple[np.ndarray, np.ndarray]) -> None:
         """Fitting when no sample matches any class index raises a clear error."""
         features, _ = labelled_features
-        head = ArrayMahalanobisHead(NUM_CLASSES, FEATURE_DIM)
+        head = NumpyMahalanobisHead(NUM_CLASSES, FEATURE_DIM)
         out_of_range = np.full(len(features), NUM_CLASSES)
         with pytest.raises(ValueError, match="no labelled samples"):
             head.fit(features, out_of_range)
@@ -141,7 +141,7 @@ class TestArrayMahalanobisHead:
         features, labels = labelled_features
         precision = np.full((FEATURE_DIM, FEATURE_DIM), 0.25)
         estimator = _StubCovarianceEstimator(precision)
-        head = ArrayMahalanobisHead(NUM_CLASSES, FEATURE_DIM)
+        head = NumpyMahalanobisHead(NUM_CLASSES, FEATURE_DIM)
         head.fit(features, labels, covariance_estimator=estimator)
         np.testing.assert_allclose(head.precision, precision)
         # The estimator sees the per-class-centered features, not the raw ones.

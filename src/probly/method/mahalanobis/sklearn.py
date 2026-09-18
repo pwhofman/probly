@@ -12,17 +12,17 @@ from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 
-from probly.layers.array import ArrayMahalanobisHead
+from probly.layers.numpy import NumpyMahalanobisHead
 from probly.predictor import LogitClassifier, predict_raw
 from probly.representation.distribution.array_categorical import ArrayProbabilityCategoricalDistribution
 
 from ._common import MahalanobisPredictor, mahalanobis_generator
-from .array import ArrayMahalanobisRepresentation
+from .numpy import NumpyMahalanobisRepresentation
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from probly.layers.array import CovarianceEstimator
+    from probly.layers.numpy import CovarianceEstimator
 
 # The activations ``MLPClassifier`` supports. Reimplemented here rather than taken
 # from ``sklearn.neural_network._base`` (a private module whose implementations
@@ -121,14 +121,14 @@ def _resolve_feature_sources(
 @mahalanobis_generator.register(BaseEstimator)
 class SklearnMahalanobisPredictor(
     BaseEstimator,
-    MahalanobisPredictor[[np.ndarray], ArrayMahalanobisRepresentation],
+    MahalanobisPredictor[[np.ndarray], NumpyMahalanobisRepresentation],
 ):
     """sklearn Mahalanobis OOD predictor.
 
     The estimator is split into a feature encoder and a classification head, so
     that class-conditional Gaussians can be fitted on the features exactly as the
     torch backend fits them on penultimate activations. One
-    :class:`~probly.layers.array.ArrayMahalanobisHead` is fitted per feature layer
+    :class:`~probly.layers.numpy.NumpyMahalanobisHead` is fitted per feature layer
     (any user-provided intermediate nodes plus the penultimate features), and the
     per-layer Mahalanobis confidences are combined into a single OOD score.
 
@@ -217,7 +217,7 @@ class SklearnMahalanobisPredictor(
         # Intermediate nodes come first and the penultimate features last, matching the torch backend.
         self._feature_sources: list[_FeatureSource] = [*intermediate, encoder]
 
-        self.mahalanobis_heads: list[ArrayMahalanobisHead] = []
+        self.mahalanobis_heads: list[NumpyMahalanobisHead] = []
         # Default combiner: negated sum of per-layer confidences (high score => out-of-distribution).
         self.combiner_weight = -np.ones(len(self._feature_sources))
         self.combiner_bias = np.zeros(())
@@ -320,7 +320,7 @@ class SklearnMahalanobisPredictor(
         feats = self._features(features)
         encoded = self._encode_labels(labels)
 
-        heads = [ArrayMahalanobisHead(self._num_classes, feat.shape[-1]) for feat in feats]
+        heads = [NumpyMahalanobisHead(self._num_classes, feat.shape[-1]) for feat in feats]
         for head, feat in zip(heads, feats, strict=True):
             # safe=False deep-copies duck-typed covariance estimators that are not sklearn estimators.
             head.fit(feat, encoded, covariance_estimator=clone(estimator, safe=False))
@@ -369,12 +369,12 @@ class SklearnMahalanobisPredictor(
         self.combiner_weight = np.asarray(combiner.coef_[0], dtype=float)
         self.combiner_bias = np.asarray(combiner.intercept_[0], dtype=float)
 
-    def predict_representation(self, x: object) -> ArrayMahalanobisRepresentation:
+    def predict_representation(self, x: object) -> NumpyMahalanobisRepresentation:
         """Predict the Mahalanobis representation (softmax and per-layer scores)."""
         logits = self._logits(x)
         layer_scores = self._layer_scores(self._features(x))
 
-        return ArrayMahalanobisRepresentation(
+        return NumpyMahalanobisRepresentation(
             ArrayProbabilityCategoricalDistribution(softmax(logits, axis=-1)),
             layer_scores,
             self.combiner_weight,

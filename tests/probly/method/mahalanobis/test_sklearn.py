@@ -7,7 +7,7 @@ import pytest
 
 from probly.decider import categorical_from_mean
 from probly.method.mahalanobis import mahalanobis
-from probly.method.mahalanobis.array import ArrayMahalanobisRepresentation
+from probly.method.mahalanobis.numpy import NumpyMahalanobisRepresentation
 from probly.predictor import predict
 
 pytest.importorskip("sklearn")
@@ -158,7 +158,7 @@ class TestFitAndPredict:
         x, y = train_data
         out = mahalanobis(mlp)
         out.fit_mahalanobis_heads(x, y)
-        assert isinstance(predict(out, x), ArrayMahalanobisRepresentation)
+        assert isinstance(predict(out, x), NumpyMahalanobisRepresentation)
 
     def test_categorical_from_mean_matches_predict_proba(
         self, mlp: MLPClassifier, train_data: tuple[np.ndarray, np.ndarray]
