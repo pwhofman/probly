@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, override
 
 from flextype import flexdispatch
 
-from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
+from probly.lazy_types import TORCH_TENSOR_LIKE
 from probly.predictor import IterablePredictor, predict
 from probly.representation.credal_set import create_convex_credal_set, create_probability_intervals
 from probly.representation.credal_set._common import ConvexCredalSet, ProbabilityIntervalsCredalSet
@@ -15,13 +15,12 @@ from probly.representation.distribution import CategoricalDistribution
 from probly.representation.sample import Sample, create_sample
 from probly.representer._representer import Representer
 from probly.representer.sampler import Sampler
-from probly.utils.iterable import first_element
 
 if TYPE_CHECKING:
     from probly.transformation.ensemble import EnsemblePredictor
 
 
-@flexdispatch(dispatch_on=first_element)
+@flexdispatch
 def compute_representative_sample[T: CategoricalDistribution](
     sample: Sample[T], alpha: float, distance: str
 ) -> Sample[T]:
@@ -146,7 +145,7 @@ class SampleMeanConvexCredalSetRepresenter[**In, Out: CategoricalDistribution, C
         return create_sample(per_member_means)
 
 
-@compute_representative_sample.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@compute_representative_sample.delayed_register(TORCH_TENSOR_LIKE)
 def _(_: type) -> None:
     from . import torch_credal_set  # noqa: F401, PLC0415
 

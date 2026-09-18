@@ -2,27 +2,21 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import torch
 
 from probly.representation.distribution.torch_categorical import (
-    TorchCategoricalDistribution,
     TorchCategoricalDistributionSample,
     TorchProbabilityCategoricalDistribution,
 )
 from probly.representer.credal_set import compute_representative_sample
 
-if TYPE_CHECKING:
-    from probly.representation.sample.torch import TorchSample
 
-
-@compute_representative_sample.register(TorchCategoricalDistribution)
+@compute_representative_sample.register(TorchCategoricalDistributionSample)
 def torch_compute_representative_sample(
-    sample: TorchSample[TorchCategoricalDistribution],
+    sample: TorchCategoricalDistributionSample,
     alpha: float,
     distance: str,
-) -> TorchSample[TorchCategoricalDistribution]:
+) -> TorchCategoricalDistributionSample:
     """Select predictions closest to the sample mean under the requested distance."""
     if distance == "euclidean":
         if alpha == 0.0:
