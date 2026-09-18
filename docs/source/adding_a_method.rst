@@ -43,7 +43,7 @@ Depending on what the method needs, it may also touch:
 .. code-block:: text
 
     src/probly/layers/torch.py            # reusable custom layers (e.g. SNGPLayer)
-    src/probly/train/mymethod/            # custom training losses / loops (e.g. vbll)
+    src/probly/losses/torch.py            # training losses the method needs (functions, no new package)
     src/probly/method/__init__.py         # export the new transformation
     docs/source/references.bib            # BibTeX entry for the paper
     examples/method/plot_mymethod.py      # gallery example

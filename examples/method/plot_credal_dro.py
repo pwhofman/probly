@@ -25,7 +25,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from probly.method.credal_dro import credal_dro, credal_dro_deltas
 from probly.plot.credal import plot_credal_set
 from probly.representer import representer
-from probly.train.credal.torch import cvar_ce_loss
+from probly.losses.torch import cvar_ce_loss
 
 from examples.utils.model import MLPClassifier
 

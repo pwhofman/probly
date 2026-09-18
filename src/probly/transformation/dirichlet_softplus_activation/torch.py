@@ -20,7 +20,7 @@ def append_activation_torch(obj: nn.Module) -> nn.Sequential:
 
     Softplus ensures non-negative evidence; the +1 shift produces Dirichlet
     concentration parameters alpha suitable for the evidential losses in
-    :mod:`probly.train.evidential.torch`.
+    :mod:`probly.losses.torch`.
     """
     return nn.Sequential(obj, nn.Softplus(), _AddOne())
 

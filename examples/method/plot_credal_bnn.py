@@ -17,7 +17,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from probly.method.credal_bnn import credal_bnn
 from probly.plot.credal import plot_credal_set
 from probly.representer import representer
-from probly.train.bayesian.torch import elbo_loss
+from probly.losses.torch import elbo_loss
 from probly.transformation.bayesian import collect_kl_divergence
 
 from examples.utils.model import MLPClassifier

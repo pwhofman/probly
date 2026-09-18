@@ -18,7 +18,7 @@ from torch import nn
 
 from probly.method.vbll import find_vbll_layer, vbll
 from probly.representer import representer
-from probly.train.vbll import vbll_loss
+from probly.losses import vbll_loss
 
 from examples.utils.model import SequentialModel
 from examples.utils.plotting import plot_example_uncertainty

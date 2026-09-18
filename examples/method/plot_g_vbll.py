@@ -20,7 +20,7 @@ from torch import nn
 
 from probly.method.g_vbll import find_g_vbll_layer, g_vbll
 from probly.representer import representer
-from probly.train.vbll import vbll_loss
+from probly.losses import vbll_loss
 
 from examples.utils.model import ResFFN
 from examples.utils.plotting import plot_example_uncertainty

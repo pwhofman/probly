@@ -13,6 +13,16 @@ from torch.amp import GradScaler, autocast
 import torch.nn.functional as F
 
 from probly.layers.torch import HeteroscedasticLayer, SNGPLayer
+from probly.losses.torch import (
+    elbo_loss,
+    evidential_ce_loss,
+    evidential_kl_divergence,
+    evidential_log_loss,
+    evidential_mse_loss,
+    intersection_probability_ce_loss,
+    label_relaxation_loss,
+    postnet_loss,
+)
 from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
@@ -35,16 +45,6 @@ from probly.method.sngp import SNGPPredictor
 from probly.method.subensemble import SubensemblePredictor
 from probly.metrics import expected_calibration_error
 from probly.predictor import predict_raw
-from probly.train.bayesian.torch import elbo_loss
-from probly.train.calibration.torch import label_relaxation_loss
-from probly.train.credal.torch import intersection_probability_ce_loss
-from probly.train.evidential.torch import (
-    evidential_ce_loss,
-    evidential_kl_divergence,
-    evidential_log_loss,
-    evidential_mse_loss,
-    postnet_loss,
-)
 from probly.transformation.batchensemble.torch import tile_inputs as tile_be_inputs
 from probly.transformation.bayesian import collect_kl_divergence
 from probly.utils.torch import intersection_probability

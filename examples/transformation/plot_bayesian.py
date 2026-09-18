@@ -13,7 +13,7 @@ import torch
 
 from probly.representer import representer
 from probly.transformation import bayesian
-from probly.train.bayesian.torch import elbo_loss
+from probly.losses.torch import elbo_loss
 from probly.transformation.bayesian import collect_kl_divergence
 
 from examples.utils.model import MLPClassifier

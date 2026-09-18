@@ -2409,7 +2409,7 @@ class VBLLLayer(nn.Module):
 
     This layer implements the (sample-free) forward predictive; the discriminative
     ELBO needed to fit it is provided by
-    :func:`probly.train.vbll.torch.vbll_loss`. The variational parameters follow
+    :func:`probly.losses.vbll_loss`. The variational parameters follow
     the reference initialization (kaiming-normal mean, tight posterior
     covariance), so meaningful uncertainty only emerges once the layer has been
     trained.
@@ -2605,7 +2605,7 @@ class GVBLLLayer(nn.Module):
     parametrization is supported, matching the reference implementation.
 
     This layer implements the forward predictive; the generative ELBO terms needed
-    to fit it are provided by :func:`probly.train.vbll.torch.g_vbll_loss`.
+    to fit it are provided by :func:`probly.losses.torch.g_vbll_loss`.
 
     Attributes:
         in_features: Number of input (feature) dimensions.

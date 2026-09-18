@@ -1,1 +1,1 @@
-"""Train module for probly."""
+"""Training utilities."""
