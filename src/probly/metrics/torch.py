@@ -32,7 +32,7 @@ from probly.metrics import (
     roc_curve,
 )
 from probly.metrics._common import CREDAL_ROUND_DECIMALS
-from probly.metrics.array import _convex_hull_lp_coverage
+from probly.metrics.numpy import _convex_hull_lp_coverage
 from probly.representation.conformal_set.torch import TorchIntervalConformalSet, TorchOneHotConformalSet
 from probly.representation.credal_set.torch import (
     TorchConvexCredalSet,

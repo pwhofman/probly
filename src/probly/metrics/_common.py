@@ -182,7 +182,7 @@ def false_negative_rate(y_pred: object, y_true: object) -> object:
 # Concrete semantics depend on the dispatched type. Conformal sets follow the
 # classical conformal-prediction definitions (cardinality of a one-hot set,
 # width of an interval). Credal-set semantics specialize per subtype; see the
-# implementations in :mod:`probly.metrics.array` and :mod:`probly.metrics.torch`.
+# implementations in :mod:`probly.metrics.numpy` and :mod:`probly.metrics.torch`.
 #
 # Currently registered types
 # --------------------------

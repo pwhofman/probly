@@ -201,7 +201,7 @@ class TestEpsilonValidation:
 class TestShapeValidation:
     def test_2d_unbatched_vertices_raises(self) -> None:
         # User accidentally passes (V, K) instead of (N, V, K).
-        from probly.metrics.array import _convex_hull_lp_coverage  # noqa: PLC0415
+        from probly.metrics.numpy import _convex_hull_lp_coverage  # noqa: PLC0415
 
         with pytest.raises(ValueError, match="vertices must be 3D"):
             _convex_hull_lp_coverage(np.zeros((2, 3)), np.zeros((1, 3)), 0.0)

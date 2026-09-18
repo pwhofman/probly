@@ -17,7 +17,7 @@ import jax
 import jax.numpy as jnp
 
 from probly.metrics._common import CREDAL_ROUND_DECIMALS
-from probly.metrics.array import _convex_hull_lp_coverage
+from probly.metrics.numpy import _convex_hull_lp_coverage
 from probly.representation.conformal_set.jax import JaxArrayIntervalConformalSet, JaxArrayOneHotConformalSet
 from probly.representation.credal_set.jax import (
     JaxConvexCredalSet,
