@@ -12,12 +12,11 @@ belongs in the package whose concept it instantiates, or in a new one.
 
 ## Backend naming
 
-Backend-specific code is kept in a module named after the backend, `torch.py`, `jax.py`, `flax.py`, `sklearn.py` or
-`array.py` for NumPy, next to a `_common.py` with the backend-free part: the dispatching function and the protocols.
-A name without a backend refers to the definition in `_common.py`; every public name in a backend module includes
-the name of that module, so that a dispatching function or another backend can be added without renaming anything
-and no two backend modules define the same name. NumPy is called `array` throughout: `array.py`, `array_accuracy`,
-`ArraySample`.
+Backend-specific code is kept in a module named after the backend, `numpy.py`, `torch.py`, `jax.py`, `flax.py` or
+`sklearn.py`, next to a `_common.py` with the backend-free part: the dispatching function and the protocols. A name
+without a backend refers to the definition in `_common.py`; every public name in a backend module includes the name
+of that module, so that a dispatching function or another backend can be added without renaming anything and no two
+backend modules define the same name. For example, for NumPy this gives `numpy.py`, `numpy_accuracy` and `NumpySample`.
 
 The backend is a prefix, for functions and for classes: `torch_entropy`, `TorchSample`. When a module has several
 implementations of one function, one per representation, the representation is named between the backend and the
