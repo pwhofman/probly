@@ -2,7 +2,7 @@
 
 from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
 
-from . import array as array  # eager numpy registration
+from . import numpy as numpy  # eager numpy registration
 from ._common import (
     BrierLoss,
     LogLoss,

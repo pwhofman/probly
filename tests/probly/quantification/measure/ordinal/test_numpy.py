@@ -23,11 +23,11 @@ class TestArrayOrdinal:
     def test_variance_on_raw_array_branch(self) -> None:
         # Direct call to the registered handler with a raw array exercises the
         # else branch of the dispatch.
-        from probly.quantification.measure.ordinal.array import (  # noqa: PLC0415
-            array_categorical_ordinal_variance,
+        from probly.quantification.measure.ordinal.numpy import (  # noqa: PLC0415
+            numpy_categorical_ordinal_variance,
         )
 
-        out = array_categorical_ordinal_variance(np.array([[0.5, 0.5]]))
+        out = numpy_categorical_ordinal_variance(np.array([[0.5, 0.5]]))
         np.testing.assert_allclose(out, [0.25])
 
     def test_entropy_on_distribution(self) -> None:

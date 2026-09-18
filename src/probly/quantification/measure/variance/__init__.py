@@ -13,14 +13,14 @@ from ._common import (
     variance,
     variance_of_expected_predictive_distribution,
 )
-from .array import (  # noqa: F401  (registers numpy implementations)
-    array_gaussian_sample_conditional_variance,
-    array_gaussian_sample_mutual_information,
-    array_gaussian_sample_variance_of_expected_predictive_distribution,
-    array_gaussian_variance,
-    array_sample_conditional_variance,
-    array_sample_mutual_information,
-    array_sample_variance_of_expected_predictive_distribution,
+from .numpy import (  # noqa: F401  (registers numpy implementations)
+    numpy_gaussian_sample_conditional_variance,
+    numpy_gaussian_sample_mutual_information,
+    numpy_gaussian_sample_variance_of_expected_predictive_distribution,
+    numpy_gaussian_variance,
+    numpy_sample_conditional_variance,
+    numpy_sample_mutual_information,
+    numpy_sample_variance_of_expected_predictive_distribution,
 )
 
 

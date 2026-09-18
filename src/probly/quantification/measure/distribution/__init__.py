@@ -20,14 +20,14 @@ from ._common import (
     mutual_information,
     vacuity,
 )
-from .array import (
-    array_categorical_entropy,
-    array_categorical_sample_min_expected_total_variation,
-    array_dirichlet_entropy,
-    array_dirichlet_max_probability_complement_of_expected,
-    array_dirichlet_vacuity,
-    array_gaussian_dempster_shafer_uncertainty,
-    array_gaussian_entropy,
+from .numpy import (
+    numpy_categorical_entropy,
+    numpy_categorical_sample_min_expected_total_variation,
+    numpy_dirichlet_entropy,
+    numpy_dirichlet_max_probability_complement_of_expected,
+    numpy_dirichlet_vacuity,
+    numpy_gaussian_dempster_shafer_uncertainty,
+    numpy_gaussian_entropy,
 )
 
 
@@ -68,13 +68,6 @@ __all__ = [
     "DEFAULT_NUM_SAMPLES",
     "LogBase",
     "SecondOrderDistributionLike",
-    "array_categorical_entropy",
-    "array_categorical_sample_min_expected_total_variation",
-    "array_dirichlet_entropy",
-    "array_dirichlet_max_probability_complement_of_expected",
-    "array_dirichlet_vacuity",
-    "array_gaussian_dempster_shafer_uncertainty",
-    "array_gaussian_entropy",
     "conditional_entropy",
     "dempster_shafer_uncertainty",
     "entropy",
@@ -86,5 +79,12 @@ __all__ = [
     "max_probability_complement_of_expected",
     "min_expected_total_variation",
     "mutual_information",
+    "numpy_categorical_entropy",
+    "numpy_categorical_sample_min_expected_total_variation",
+    "numpy_dirichlet_entropy",
+    "numpy_dirichlet_max_probability_complement_of_expected",
+    "numpy_dirichlet_vacuity",
+    "numpy_gaussian_dempster_shafer_uncertainty",
+    "numpy_gaussian_entropy",
     "vacuity",
 ]

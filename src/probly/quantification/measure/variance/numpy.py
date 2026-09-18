@@ -20,7 +20,7 @@ from ._common import (
 
 
 @variance.register(ArrayGaussianDistribution)
-def array_gaussian_variance(
+def numpy_gaussian_variance(
     distribution: ArrayGaussianDistribution | np.ndarray,
     base: LogBase = None,  # noqa: ARG001
 ) -> np.ndarray:
@@ -31,7 +31,7 @@ def array_gaussian_variance(
 
 
 @conditional_variance.register(ArrayGaussianDistributionSample)
-def array_gaussian_sample_conditional_variance(
+def numpy_gaussian_sample_conditional_variance(
     sample: ArrayGaussianDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> np.ndarray:
@@ -40,7 +40,7 @@ def array_gaussian_sample_conditional_variance(
 
 
 @mutual_information_variance.register(ArrayGaussianDistributionSample)
-def array_gaussian_sample_mutual_information(
+def numpy_gaussian_sample_mutual_information(
     sample: ArrayGaussianDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> np.ndarray:
@@ -49,16 +49,16 @@ def array_gaussian_sample_mutual_information(
 
 
 @variance_of_expected_predictive_distribution.register(ArrayGaussianDistributionSample)
-def array_gaussian_sample_variance_of_expected_predictive_distribution(
+def numpy_gaussian_sample_variance_of_expected_predictive_distribution(
     sample: ArrayGaussianDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> np.ndarray:
     """Compute the total predictive variance of a Gaussian sample via the law of total variance."""
-    return array_gaussian_sample_conditional_variance(sample) + array_gaussian_sample_mutual_information(sample)
+    return numpy_gaussian_sample_conditional_variance(sample) + numpy_gaussian_sample_mutual_information(sample)
 
 
 @variance_of_expected_predictive_distribution.register(ArraySample)
-def array_sample_variance_of_expected_predictive_distribution(
+def numpy_sample_variance_of_expected_predictive_distribution(
     sample: ArraySample,
     base: LogBase = None,  # noqa: ARG001
 ) -> np.ndarray:
@@ -67,7 +67,7 @@ def array_sample_variance_of_expected_predictive_distribution(
 
 
 @conditional_variance.register(ArraySample)
-def array_sample_conditional_variance(
+def numpy_sample_conditional_variance(
     sample: ArraySample,
     base: LogBase = None,  # noqa: ARG001
 ) -> np.ndarray:
@@ -76,7 +76,7 @@ def array_sample_conditional_variance(
 
 
 @mutual_information_variance.register(ArraySample)
-def array_sample_mutual_information(
+def numpy_sample_mutual_information(
     sample: ArraySample,
     base: LogBase = None,  # noqa: ARG001
 ) -> np.ndarray:

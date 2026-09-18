@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 
 
 @entropy.register
-def array_categorical_entropy(
+def numpy_categorical_entropy(
     distribution: ArrayCategoricalDistribution | np.ndarray, base: LogBase = None
 ) -> np.ndarray:
     """Compute the entropy of a categorical distribution represented as a numpy array."""
@@ -61,7 +61,7 @@ def array_categorical_entropy(
 
 
 @entropy.register(ArrayDirichletDistribution)
-def array_dirichlet_entropy(distribution: ArrayDirichletDistribution | np.ndarray, base: LogBase = None) -> np.ndarray:
+def numpy_dirichlet_entropy(distribution: ArrayDirichletDistribution | np.ndarray, base: LogBase = None) -> np.ndarray:
     """Compute the (differential) entropy of a Dirichlet distribution represented as a numpy array."""
     if isinstance(distribution, ArrayDirichletDistribution):
         alphas = distribution.alphas
@@ -88,7 +88,7 @@ def array_dirichlet_entropy(distribution: ArrayDirichletDistribution | np.ndarra
 
 
 @entropy.register(ArrayGaussianDistribution)
-def array_gaussian_entropy(distribution: ArrayGaussianDistribution | np.ndarray, base: LogBase = None) -> np.ndarray:
+def numpy_gaussian_entropy(distribution: ArrayGaussianDistribution | np.ndarray, base: LogBase = None) -> np.ndarray:
     """Compute the (differential) entropy of a Gaussian distribution represented as a numpy array.
 
     Takes either an `ArrayGaussianDistribution` or a single np.ndarray representing the variance.
@@ -111,7 +111,7 @@ def array_gaussian_entropy(distribution: ArrayGaussianDistribution | np.ndarray,
 
 
 @entropy_of_expected_predictive_distribution.register(ArrayDirichletDistribution)
-def array_dirichlet_entropy_of_expected_predictive_distribution(
+def numpy_dirichlet_entropy_of_expected_predictive_distribution(
     distribution: ArrayDirichletDistribution | np.ndarray, base: LogBase = None
 ) -> np.ndarray:
     """Compute the entropy of the expected value of a Dirichlet distribution."""
@@ -119,11 +119,11 @@ def array_dirichlet_entropy_of_expected_predictive_distribution(
         distribution = ArrayDirichletDistribution(alphas=distribution)
 
     expected_distribution = distribution.mean
-    return array_categorical_entropy(expected_distribution, base=base)
+    return numpy_categorical_entropy(expected_distribution, base=base)
 
 
 @entropy_of_expected_predictive_distribution.register(ArrayGaussianDistributionSample)
-def array_gaussian_sample_entropy_of_expected_predictive_distribution(
+def numpy_gaussian_sample_entropy_of_expected_predictive_distribution(
     sample: ArrayGaussianDistributionSample, base: LogBase = None
 ) -> np.ndarray:
     """Compute the entropy of the expected Gaussian via the law of total variance."""
@@ -137,23 +137,23 @@ def array_gaussian_sample_entropy_of_expected_predictive_distribution(
     # Interpreting this value as total uncertainty, this means that epistemic uncertainty
     # may be overestimated as-well, while aleatoric uncertainty is computed correctly.
     var = np.mean(array.var, axis=axis) + np.var(array.mean, axis=axis)
-    return array_gaussian_entropy(var, base=base)
+    return numpy_gaussian_entropy(var, base=base)
 
 
 @entropy_of_expected_predictive_distribution.register(ArrayCategoricalDistributionSample)
-def array_categorical_sample_entropy_of_expected_predictive_distribution(
+def numpy_categorical_sample_entropy_of_expected_predictive_distribution(
     sample: ArrayCategoricalDistributionSample, base: LogBase = None
 ) -> np.ndarray:
     """Compute the entropy of the expected value of a sample from a categorical distribution."""
     expected_distribution = sample.sample_mean()
-    return array_categorical_entropy(expected_distribution, base=base)
+    return numpy_categorical_entropy(expected_distribution, base=base)
 
 
 # Conditional entropy
 
 
 @conditional_entropy.register(ArrayDirichletDistribution)
-def array_dirichlet_conditional_entropy(
+def numpy_dirichlet_conditional_entropy(
     distribution: ArrayDirichletDistribution | np.ndarray, base: LogBase = None
 ) -> np.ndarray:
     """Compute the conditional entropy of a Dirichlet distribution."""
@@ -178,24 +178,24 @@ def array_dirichlet_conditional_entropy(
 
 
 @conditional_entropy.register(ArrayGaussianDistributionSample)
-def array_gaussian_sample_conditional_entropy(
+def numpy_gaussian_sample_conditional_entropy(
     sample: ArrayGaussianDistributionSample, base: LogBase = None
 ) -> np.ndarray:
     """Compute the mean per-tree Gaussian entropy (aleatoric uncertainty)."""
     axis = sample.sample_axis
-    entropies = array_gaussian_entropy(sample.array, base=base)
+    entropies = numpy_gaussian_entropy(sample.array, base=base)
     return np.mean(entropies, axis=axis)
 
 
 @conditional_entropy.register(ArrayCategoricalDistributionSample)
-def array_categorical_sample_conditional_entropy(
+def numpy_categorical_sample_conditional_entropy(
     sample: ArrayCategoricalDistributionSample, base: LogBase = None
 ) -> np.ndarray:
     """Compute the conditional entropy of a sample from a categorical distribution."""
     p = sample.array.probabilities
     axis = sample.sample_axis
     del sample  # Avoid keeping a reference to the sample for memory efficiency
-    entropies = array_categorical_entropy(p, base=base)
+    entropies = numpy_categorical_entropy(p, base=base)
     return np.mean(entropies, axis=axis)
 
 
@@ -203,7 +203,7 @@ def array_categorical_sample_conditional_entropy(
 
 
 @mutual_information.register(ArrayDirichletDistribution)
-def array_dirichlet_mutual_information(
+def numpy_dirichlet_mutual_information(
     distribution: ArrayDirichletDistribution | np.ndarray, base: LogBase = None
 ) -> np.ndarray:
     """Compute the mutual information of a Dirichlet distribution."""
@@ -213,23 +213,23 @@ def array_dirichlet_mutual_information(
     else:
         alphas = distribution
 
-    return array_dirichlet_entropy_of_expected_predictive_distribution(
+    return numpy_dirichlet_entropy_of_expected_predictive_distribution(
         alphas, base=base
-    ) - array_dirichlet_conditional_entropy(alphas, base=base)
+    ) - numpy_dirichlet_conditional_entropy(alphas, base=base)
 
 
 @mutual_information.register(ArrayGaussianDistributionSample)
-def array_gaussian_sample_mutual_information(
+def numpy_gaussian_sample_mutual_information(
     sample: ArrayGaussianDistributionSample, base: LogBase = None
 ) -> np.ndarray:
     """Compute the epistemic uncertainty (total entropy minus aleatoric entropy)."""
-    return array_gaussian_sample_entropy_of_expected_predictive_distribution(
+    return numpy_gaussian_sample_entropy_of_expected_predictive_distribution(
         sample, base=base
-    ) - array_gaussian_sample_conditional_entropy(sample, base=base)
+    ) - numpy_gaussian_sample_conditional_entropy(sample, base=base)
 
 
 @mutual_information.register(ArrayCategoricalDistributionSample)
-def array_categorical_sample_mutual_information(
+def numpy_categorical_sample_mutual_information(
     sample: ArrayCategoricalDistributionSample, base: LogBase = None
 ) -> np.ndarray:
     """Compute the mutual information of a sample from a categorical distribution."""
@@ -248,7 +248,7 @@ def array_categorical_sample_mutual_information(
 
 
 @max_probability_complement_of_expected.register(ArrayCategoricalDistributionSample)
-def array_categorical_sample_max_probability_complement_of_expected(
+def numpy_categorical_sample_max_probability_complement_of_expected(
     sample: ArrayCategoricalDistributionSample,
 ) -> np.ndarray:
     """Compute one minus the max probability of the expected value of a categorical sample."""
@@ -257,7 +257,7 @@ def array_categorical_sample_max_probability_complement_of_expected(
 
 
 @expected_max_probability_complement.register(ArrayCategoricalDistributionSample)
-def array_categorical_sample_expected_max_probability_complement(
+def numpy_categorical_sample_expected_max_probability_complement(
     sample: ArrayCategoricalDistributionSample,
 ) -> np.ndarray:
     """Compute the expected value of one minus the max probability of a categorical sample."""
@@ -269,7 +269,7 @@ def array_categorical_sample_expected_max_probability_complement(
 
 
 @expected_max_probability_complement.register(ArrayDirichletDistribution)
-def array_dirichlet_expected_max_probability_complement(
+def numpy_dirichlet_expected_max_probability_complement(
     distribution: ArrayDirichletDistribution,
     *,
     num_samples: int = DEFAULT_NUM_SAMPLES,
@@ -277,11 +277,11 @@ def array_dirichlet_expected_max_probability_complement(
 ) -> np.ndarray:
     """Estimate ``1 - E[max_k p_k]`` for a Dirichlet by Monte-Carlo (no closed form)."""
     sample = distribution.sample(num_samples, rng=generator)
-    return array_categorical_sample_expected_max_probability_complement(sample)
+    return numpy_categorical_sample_expected_max_probability_complement(sample)
 
 
 @max_disagreement.register(ArrayCategoricalDistributionSample)
-def array_categorical_sample_max_disagreement(
+def numpy_categorical_sample_max_disagreement(
     sample: ArrayCategoricalDistributionSample,
 ) -> np.ndarray:
     """Compute the expected gap between each sample's max probability and its probability on the BMA argmax."""
@@ -299,7 +299,7 @@ def array_categorical_sample_max_disagreement(
 
 
 @generalized_entropy_of_expected.register(ArrayCategoricalDistributionSample)
-def array_categorical_sample_generalized_entropy_of_expected(
+def numpy_categorical_sample_generalized_entropy_of_expected(
     sample: ArrayCategoricalDistributionSample, scoring_rule: ScoringRule
 ) -> np.ndarray:
     """Compute G(theta_bar) = <theta_bar, loss(theta_bar)> for a categorical sample."""
@@ -311,7 +311,7 @@ def array_categorical_sample_generalized_entropy_of_expected(
 
 
 @expected_generalized_entropy.register(ArrayCategoricalDistributionSample)
-def array_categorical_sample_expected_generalized_entropy(
+def numpy_categorical_sample_expected_generalized_entropy(
     sample: ArrayCategoricalDistributionSample, scoring_rule: ScoringRule
 ) -> np.ndarray:
     """Compute E[G(theta)] = mean_m <theta_m, loss(theta_m)> for a categorical sample."""
@@ -366,7 +366,7 @@ def _min_expected_total_variation_from_samples(probabilities: np.ndarray, sample
 
 
 @min_expected_total_variation.register(ArrayCategoricalDistributionSample)
-def array_categorical_sample_min_expected_total_variation(
+def numpy_categorical_sample_min_expected_total_variation(
     sample: ArrayCategoricalDistributionSample,
 ) -> np.ndarray:
     """Compute the distance-based epistemic uncertainty of a categorical sample."""
@@ -377,7 +377,7 @@ def array_categorical_sample_min_expected_total_variation(
 
 
 @min_expected_total_variation.register(ArrayDirichletDistribution)
-def array_dirichlet_min_expected_total_variation(
+def numpy_dirichlet_min_expected_total_variation(
     distribution: ArrayDirichletDistribution,
     *,
     num_samples: int = DEFAULT_NUM_SAMPLES,
@@ -385,14 +385,14 @@ def array_dirichlet_min_expected_total_variation(
 ) -> np.ndarray:
     """Estimate the distance-based epistemic uncertainty of a Dirichlet by Monte-Carlo."""
     sample = distribution.sample(num_samples, rng=generator)
-    return array_categorical_sample_min_expected_total_variation(sample)
+    return numpy_categorical_sample_min_expected_total_variation(sample)
 
 
 # Vacuity
 
 
 @vacuity.register(ArrayDirichletDistribution)
-def array_dirichlet_vacuity(distribution: ArrayDirichletDistribution | np.ndarray) -> np.ndarray:
+def numpy_dirichlet_vacuity(distribution: ArrayDirichletDistribution | np.ndarray) -> np.ndarray:
     """Compute the vacuity K / alpha_0 of a Dirichlet distribution."""
     if isinstance(distribution, ArrayDirichletDistribution):
         alphas = distribution.alphas
@@ -406,7 +406,7 @@ def array_dirichlet_vacuity(distribution: ArrayDirichletDistribution | np.ndarra
 
 
 @max_probability_complement_of_expected.register(ArrayDirichletDistribution)
-def array_dirichlet_max_probability_complement_of_expected(
+def numpy_dirichlet_max_probability_complement_of_expected(
     distribution: ArrayDirichletDistribution | np.ndarray,
 ) -> np.ndarray:
     """Compute one minus the max probability of the mean of a Dirichlet distribution.
@@ -428,7 +428,7 @@ def array_dirichlet_max_probability_complement_of_expected(
 
 
 @dempster_shafer_uncertainty.register(ArrayGaussianDistribution)
-def array_gaussian_dempster_shafer_uncertainty(
+def numpy_gaussian_dempster_shafer_uncertainty(
     distribution: ArrayGaussianDistribution,
     mean_field_factor: float = DEFAULT_MEAN_FIELD_FACTOR,
 ) -> np.ndarray:

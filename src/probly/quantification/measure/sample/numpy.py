@@ -12,7 +12,7 @@ from probly.representation.distribution.array_categorical import ArrayCategorica
 
 
 @mean_squared_distance_to_scaled_one_hot.register(ArrayCategoricalDistributionSample)
-def array_mean_squared_distance_to_scaled_one_hot(
+def numpy_mean_squared_distance_to_scaled_one_hot(
     sample: ArrayCategoricalDistributionSample, scale: float | None = None
 ) -> np.ndarray:
     r"""Numpy impl. Uses :math:`\|h_k - s e_c\|^2 = \|h_k\|^2 - 2s \max_j h_{k,j} + s^2` (no one-hot built)."""
@@ -30,7 +30,7 @@ def array_mean_squared_distance_to_scaled_one_hot(
 
 
 @total_logit_sample_variance.register(ArrayCategoricalDistributionSample)
-def array_total_logit_sample_variance(sample: ArrayCategoricalDistributionSample) -> np.ndarray:
+def numpy_total_logit_sample_variance(sample: ArrayCategoricalDistributionSample) -> np.ndarray:
     """Numpy impl. Variance of total logits (logits summed across members)."""
     array = sample.array.logits
     sample_axis = sample.sample_axis
