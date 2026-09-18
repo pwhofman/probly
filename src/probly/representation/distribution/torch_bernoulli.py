@@ -91,14 +91,14 @@ class TorchBernoulliDistributionSample(  # ty:ignore[conflicting-metaclass]
 
 
 @create_bernoulli_distribution.register(torch.Tensor)
-def _create_torch_bernoulli_distribution(data: torch.Tensor) -> BernoulliDistribution:
+def _torch_create_bernoulli_distribution(data: torch.Tensor) -> BernoulliDistribution:
     if data.ndim >= 2 and data.shape[-1] <= 2:
         data = data[..., -1]
     return TorchProbabilityBernoulliDistribution(data)
 
 
 @create_bernoulli_distribution_from_logits.register(torch.Tensor)
-def _create_torch_bernoulli_distribution_from_logits(data: torch.Tensor) -> BernoulliDistribution:
+def _torch_create_bernoulli_distribution_from_logits(data: torch.Tensor) -> BernoulliDistribution:
     if data.ndim >= 2 and data.shape[-1] == 2:
         data = data[..., -1] - data[..., 0]
     elif data.ndim >= 2 and data.shape[-1] == 1:

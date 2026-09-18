@@ -51,7 +51,7 @@ class _NumpyFunction(Protocol):
         ...
 
 
-class _BoundNumpyFunction(Protocol):
+class _NumpyBoundFunction(Protocol):
     def __call__(
         self,
         func: Callable,
@@ -60,7 +60,7 @@ class _BoundNumpyFunction(Protocol):
         ...
 
 
-class _BoundNumpyFunctionWithInternals(Protocol):
+class _NumpyBoundFunctionWithInternals(Protocol):
     def __call__(
         self,
         func: Callable,
@@ -85,7 +85,7 @@ def numpy_function(
 
 
 def numpy_function_override(
-    array_func: _BoundNumpyFunction,
+    array_func: _NumpyBoundFunction,
 ) -> _NumpyFunction:
     """Decorator to convert a bound array function to an array function."""
 
@@ -107,35 +107,35 @@ def numpy_function_override(
 
 @overload
 def numpy_internals_override(
-    array_sample_param_name: str,
-) -> Callable[[_BoundNumpyFunctionWithInternals], _NumpyFunction]: ...
+    numpy_sample_param_name: str,
+) -> Callable[[_NumpyBoundFunctionWithInternals], _NumpyFunction]: ...
 
 
 @overload
 def numpy_internals_override(
     *,
-    array_sample_param_pos: int,
-) -> Callable[[_BoundNumpyFunctionWithInternals], _NumpyFunction]: ...
+    numpy_sample_param_pos: int,
+) -> Callable[[_NumpyBoundFunctionWithInternals], _NumpyFunction]: ...
 
 
 def numpy_internals_override(
-    array_sample_param_name: str | None = None, *, array_sample_param_pos: int | None = None
-) -> Callable[[_BoundNumpyFunctionWithInternals], _NumpyFunction]:
-    """Decorator to convert a function that takes a call with an array-sample ."""
-    if array_sample_param_name is None and array_sample_param_pos is None:
-        msg = "Either array_sample_param_name or array_sample_param_pos must be provided."
+    numpy_sample_param_name: str | None = None, *, numpy_sample_param_pos: int | None = None
+) -> Callable[[_NumpyBoundFunctionWithInternals], _NumpyFunction]:
+    """Decorator to convert a function taking a NumPy sample argument."""
+    if numpy_sample_param_name is None and numpy_sample_param_pos is None:
+        msg = "Either numpy_sample_param_name or numpy_sample_param_pos must be provided."
         raise ValueError(msg)
-    if array_sample_param_name is not None and array_sample_param_pos is not None:
-        msg = "Only one of array_sample_param_name or array_sample_param_pos can be provided."
+    if numpy_sample_param_name is not None and numpy_sample_param_pos is not None:
+        msg = "Only one of numpy_sample_param_name or numpy_sample_param_pos can be provided."
         raise ValueError(msg)
 
-    def decorator(f: _BoundNumpyFunctionWithInternals) -> _NumpyFunction:
+    def decorator(f: _NumpyBoundFunctionWithInternals) -> _NumpyFunction:
         @wraps(f)
         def wrapper(
             func: Callable,
             params: BoundArguments,
         ) -> Any:  # noqa: ANN401
-            param_name = next(iter(params.arguments)) if array_sample_param_name is None else array_sample_param_name
+            param_name = next(iter(params.arguments)) if numpy_sample_param_name is None else numpy_sample_param_name
             array_sample_arg = params.arguments[param_name]
             internals = numpy_sample_internals(array_sample_arg)
 
@@ -328,7 +328,7 @@ def numpy_matrix_transpose(
         np.roll,
     ],
 )
-@numpy_internals_override(array_sample_param_pos=0)
+@numpy_internals_override(numpy_sample_param_pos=0)
 def numpy_sample_axis_preserving_function(
     func: Callable,
     params: BoundArguments,

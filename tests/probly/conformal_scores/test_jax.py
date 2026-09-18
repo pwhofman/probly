@@ -24,8 +24,8 @@ from probly.conformal_scores import (
     uacqr_score,
     wasserstein_distance_score_func,
 )
-from probly.conformal_scores.inner_product.jax import compute_inner_product_score_jax
-from probly.conformal_scores.kullback_leibler.jax import compute_kl_divergence_score_jax
+from probly.conformal_scores.inner_product.jax import jax_compute_inner_product_score
+from probly.conformal_scores.kullback_leibler.jax import jax_compute_kl_divergence_score
 from probly.representation.distribution.jax_categorical import (
     JaxLogitCategoricalDistribution,
     JaxProbabilityCategoricalDistribution,
@@ -126,5 +126,5 @@ def test_label_and_distribution_batching(score, batch_shape: tuple[int, ...]) ->
     expected = np.full(batch_shape, 0.5 if score is inner_product_score_func else -np.log(0.5))
     np.testing.assert_allclose(score(probabilities, labels), expected, atol=1e-6)
     np.testing.assert_allclose(score(probabilities, one_hot), expected, atol=1e-6)
-    handler = compute_inner_product_score_jax if score is inner_product_score_func else compute_kl_divergence_score_jax
+    handler = jax_compute_inner_product_score if score is inner_product_score_func else jax_compute_kl_divergence_score
     np.testing.assert_allclose(jax.jit(handler)(probabilities, labels), expected, atol=1e-6)

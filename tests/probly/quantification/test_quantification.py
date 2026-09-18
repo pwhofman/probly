@@ -15,7 +15,7 @@ from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDis
 from probly.representation.sample import NumpySample
 
 
-def _array_sample() -> NumpySample[np.ndarray]:
+def _numpy_sample() -> NumpySample[np.ndarray]:
     return NumpySample(
         array=np.array(
             [
@@ -29,7 +29,7 @@ def _array_sample() -> NumpySample[np.ndarray]:
     )
 
 
-def _array_dirichlet_distribution() -> NumpyDirichletDistribution:
+def _numpy_dirichlet_distribution() -> NumpyDirichletDistribution:
     return NumpyDirichletDistribution(
         np.array(
             [
@@ -41,7 +41,7 @@ def _array_dirichlet_distribution() -> NumpyDirichletDistribution:
     )
 
 
-def _array_categorical_sample() -> NumpyCategoricalDistributionSample:
+def _numpy_categorical_sample() -> NumpyCategoricalDistributionSample:
     probabilities = np.array(
         [
             [[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]],
@@ -57,7 +57,7 @@ def _array_categorical_sample() -> NumpyCategoricalDistributionSample:
 
 
 def test_measure_dispatches_to_registered_sample_measure() -> None:
-    sample = _array_sample()
+    sample = _numpy_sample()
 
     uncertainty = measure(sample)
 
@@ -65,7 +65,7 @@ def test_measure_dispatches_to_registered_sample_measure() -> None:
 
 
 def test_decompose_wraps_registered_measure_as_constant_total_decomposition() -> None:
-    sample = _array_sample()
+    sample = _numpy_sample()
 
     decomposition = decompose(sample)
 
@@ -74,13 +74,13 @@ def test_decompose_wraps_registered_measure_as_constant_total_decomposition() ->
 
 
 def test_decompose_dispatches_to_registered_entropy_decomposition() -> None:
-    decomposition = decompose(_array_categorical_sample())
+    decomposition = decompose(_numpy_categorical_sample())
 
     assert isinstance(decomposition, SecondOrderEntropyDecomposition)
 
 
 def test_measure_falls_back_to_registered_decomposition_total() -> None:
-    distribution = _array_dirichlet_distribution()
+    distribution = _numpy_dirichlet_distribution()
 
     uncertainty = measure(distribution)
 
@@ -90,7 +90,7 @@ def test_measure_falls_back_to_registered_decomposition_total() -> None:
 
 
 def test_measure_prefers_registered_decomposition_for_distribution_sample() -> None:
-    sample = _array_categorical_sample()
+    sample = _numpy_categorical_sample()
 
     uncertainty = measure(sample)
 
@@ -100,13 +100,13 @@ def test_measure_prefers_registered_decomposition_for_distribution_sample() -> N
 
 
 def test_quantify_prefers_registered_decomposition_for_distribution_sample() -> None:
-    quantification = quantify(_array_categorical_sample())
+    quantification = quantify(_numpy_categorical_sample())
 
     assert isinstance(quantification, SecondOrderEntropyDecomposition)
 
 
 def test_quantify_uses_decompose_fallback_for_plain_sample() -> None:
-    sample = _array_sample()
+    sample = _numpy_sample()
 
     quantification = quantify(sample)
 

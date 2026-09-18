@@ -1,4 +1,4 @@
-"""Array-based deciders for reducing representations to categorical distributions."""
+"""NumPy-based deciders for reducing representations to categorical distributions."""
 
 from __future__ import annotations
 

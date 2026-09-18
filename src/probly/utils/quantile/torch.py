@@ -9,7 +9,7 @@ from ._common import calculate_quantile, calculate_weighted_quantile
 
 
 @calculate_quantile.register(torch.Tensor)
-def _compute_quantile_score_torch(scores: torch.Tensor, alpha: float) -> float:
+def _torch_compute_quantile_score(scores: torch.Tensor, alpha: float) -> float:
     # Implementation for PyTorch tensors
     with torch.no_grad():
         if not 0 <= alpha <= 1:
@@ -30,7 +30,7 @@ def _compute_quantile_score_torch(scores: torch.Tensor, alpha: float) -> float:
 
 
 @calculate_weighted_quantile.register(torch.Tensor)
-def _compute_weighted_quantile_torch(
+def _torch_compute_weighted_quantile(
     values: torch.Tensor, quantile: float, sample_weight: torch.Tensor | None = None
 ) -> float:
     with torch.no_grad():

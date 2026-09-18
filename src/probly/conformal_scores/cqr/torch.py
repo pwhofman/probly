@@ -10,7 +10,7 @@ from ._common import cqr_score
 
 
 @cqr_score.register(torch.Tensor)
-def compute_cqr_score_torch(
+def torch_compute_cqr_score(
     y_pred: torch.Tensor,
     y_true: torch.Tensor,
 ) -> torch.Tensor:
@@ -42,4 +42,4 @@ def compute_cqr_score_torch(
 @cqr_score.register(TorchSample)
 def _(y_pred: TorchSample, y_true: torch.Tensor) -> torch.Tensor:
     """CQR nonconformity scores for TorchSamples."""
-    return compute_cqr_score_torch(y_pred.tensor, y_true)
+    return torch_compute_cqr_score(y_pred.tensor, y_true)

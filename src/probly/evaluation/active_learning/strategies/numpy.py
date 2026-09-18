@@ -15,13 +15,13 @@ from ._selection import random_select, topk_select
 
 
 @least_confident_score.register(np.ndarray)
-def _least_confident_score_numpy(probs: np.ndarray) -> np.ndarray:
+def _numpy_least_confident_score(probs: np.ndarray) -> np.ndarray:
     """Numpy implementation of least confident scoring."""
     return 1.0 - probs.max(axis=1)
 
 
 @margin_score.register(np.ndarray)
-def _margin_score_numpy(probs: np.ndarray) -> np.ndarray:
+def _numpy_margin_score(probs: np.ndarray) -> np.ndarray:
     """Numpy implementation of margin scoring (negative margin: higher = smaller margin)."""
     sorted_probs = np.sort(probs, axis=1)
     return -(sorted_probs[:, -1] - sorted_probs[:, -2])
@@ -33,7 +33,7 @@ def _margin_score_numpy(probs: np.ndarray) -> np.ndarray:
 
 
 @topk_select.register(np.ndarray)
-def _topk_select_numpy(scores: np.ndarray, n: int) -> np.ndarray:
+def _numpy_topk_select(scores: np.ndarray, n: int) -> np.ndarray:
     """Numpy implementation of top-k selection (highest scores)."""
     if n >= len(scores):
         return np.arange(len(scores))
@@ -46,7 +46,7 @@ def _topk_select_numpy(scores: np.ndarray, n: int) -> np.ndarray:
 
 
 @badge_select.register(np.ndarray)
-def _badge_select_numpy(
+def _numpy_badge_select(
     embeddings: np.ndarray,
     probs: np.ndarray,
     n: int,
@@ -85,7 +85,7 @@ def _badge_select_numpy(
 
 
 @random_select.register(np.ndarray)
-def _random_select_numpy(
+def _numpy_random_select(
     x_ref: np.ndarray,  # noqa: ARG001
     n_pool: int,
     n: int,

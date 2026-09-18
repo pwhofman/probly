@@ -38,7 +38,7 @@ def _copy(module: nnx.Module) -> nnx.Module:
 
 
 @subensemble_generator.register(nnx.Module)
-def generate_flax_subensemble(
+def flax_generate_subensemble(
     obj: nnx.Module,
     num_heads: int,
     *,

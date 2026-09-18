@@ -34,7 +34,7 @@ def tv_score_func[T](y_pred: T, y_true: T | None = None) -> T:
 
 
 @tv_score_func.register(np.ndarray | ArrayLike)
-def compute_tv_score_numpy(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray | ArrayLike) -> np.ndarray:
+def numpy_compute_tv_score(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray | ArrayLike) -> np.ndarray:
     """Computes the Total Variation score using NumPy Arrays.
 
     Args:

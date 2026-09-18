@@ -201,16 +201,16 @@ class TestEpsilonValidation:
 class TestShapeValidation:
     def test_2d_unbatched_vertices_raises(self) -> None:
         # User accidentally passes (V, K) instead of (N, V, K).
-        from probly.metrics.numpy import _convex_hull_lp_coverage  # noqa: PLC0415
+        from probly.metrics.numpy import _numpy_convex_hull_lp_coverage  # noqa: PLC0415
 
         with pytest.raises(ValueError, match="vertices must be 3D"):
-            _convex_hull_lp_coverage(np.zeros((2, 3)), np.zeros((1, 3)), 0.0)
+            _numpy_convex_hull_lp_coverage(np.zeros((2, 3)), np.zeros((1, 3)), 0.0)
         with pytest.raises(ValueError, match="targets must be 2D"):
-            _convex_hull_lp_coverage(np.zeros((1, 2, 3)), np.zeros((3,)), 0.0)
+            _numpy_convex_hull_lp_coverage(np.zeros((1, 2, 3)), np.zeros((3,)), 0.0)
         with pytest.raises(ValueError, match="vertices and targets must agree on N"):
-            _convex_hull_lp_coverage(np.zeros((2, 2, 3)), np.zeros((1, 3)), 0.0)
+            _numpy_convex_hull_lp_coverage(np.zeros((2, 2, 3)), np.zeros((1, 3)), 0.0)
         with pytest.raises(ValueError, match="vertices and targets must agree on K"):
-            _convex_hull_lp_coverage(np.zeros((1, 2, 3)), np.zeros((1, 4)), 0.0)
+            _numpy_convex_hull_lp_coverage(np.zeros((1, 2, 3)), np.zeros((1, 4)), 0.0)
 
 
 class TestTorchParity:

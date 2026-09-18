@@ -20,7 +20,7 @@ def _is_torch_available() -> bool:
 
 
 @compute_efficient_credal_prediction_bounds.register(np.ndarray)
-def _compute_bounds_numpy(
+def _numpy_compute_bounds(
     logits_train: np.ndarray,
     targets_train: np.ndarray,
     num_classes: int,

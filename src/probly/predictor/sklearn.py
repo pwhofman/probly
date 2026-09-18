@@ -92,7 +92,7 @@ def _sklearn_binary_logit_prediction[**In](predictor: BaseEstimator, *args: In.a
 
 
 @predict_raw.register(BaseEstimator)
-def predict_sklearn[**In](predictor: BaseEstimator, /, *args: In.args, **kwargs: In.kwargs) -> Any:  # noqa: ANN401, PLR0911
+def sklearn_predict[**In](predictor: BaseEstimator, /, *args: In.args, **kwargs: In.kwargs) -> Any:  # noqa: ANN401, PLR0911
     """Predict for sklearn estimators."""
     # Representation predictors take priority over their distribution/label surfaces,
     # matching the branch order of the generic predict_raw fallback in _common.py.

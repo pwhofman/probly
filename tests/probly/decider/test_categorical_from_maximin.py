@@ -1,4 +1,4 @@
-"""Tests for the maximin categorical decider (array backend)."""
+"""Tests for the maximin categorical decider (NumPy backend)."""
 
 from __future__ import annotations
 

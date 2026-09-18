@@ -15,7 +15,7 @@ def lac_score[T](probs: T, y_cal: T | None = None) -> T:
 
 
 @lac_score.register(np.ndarray)
-def compute_lac_score_numpy(probs: np.ndarray, y_cal: np.ndarray | None = None) -> np.ndarray:
+def numpy_compute_lac_score(probs: np.ndarray, y_cal: np.ndarray | None = None) -> np.ndarray:
     probs_np = np.asarray(probs, dtype=float)
     if probs_np.ndim < 1:
         msg = f"probs must have at least one dimension with classes on the last axis, got shape {probs_np.shape}."
@@ -36,10 +36,12 @@ def compute_lac_score_numpy(probs: np.ndarray, y_cal: np.ndarray | None = None) 
 
 
 @lac_score.register(NumpyCategoricalDistribution)
-def compute_lac_score_categorical(probs: NumpyCategoricalDistribution, y_cal: np.ndarray | None = None) -> np.ndarray:
-    return compute_lac_score_numpy(probs.probabilities, y_cal)
+def numpy_compute_lac_score_categorical(
+    probs: NumpyCategoricalDistribution, y_cal: np.ndarray | None = None
+) -> np.ndarray:
+    return numpy_compute_lac_score(probs.probabilities, y_cal)
 
 
 @lac_score.register(NumpySample)
-def compute_lac_score_sample(probs: NumpySample, y_cal: np.ndarray | None = None) -> np.ndarray:
+def numpy_compute_lac_score_sample(probs: NumpySample, y_cal: np.ndarray | None = None) -> np.ndarray:
     return lac_score(probs.array, y_cal)

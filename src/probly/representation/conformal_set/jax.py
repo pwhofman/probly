@@ -21,7 +21,7 @@ from probly.representation.conformal_set._common import (
 from probly.representation.sample.jax import JaxSample
 
 
-def _ensure_numpy_one_hot(value: object) -> jnp.ndarray:
+def _jax_ensure_one_hot(value: object) -> jnp.ndarray:
     msg = "Value must be a one-hot encoded array of booleans or integers."
     if isinstance(value, jnp.ndarray):
         if value.dtype == bool:
@@ -41,22 +41,22 @@ class JaxOneHotConformalSet(JaxAxisProtected[Any], OneHotConformalSet):
 
     def __post_init__(self) -> None:
         """Validate and coerce the array to a boolean one-hot array."""
-        object.__setattr__(self, "array", _ensure_numpy_one_hot(self.array))
+        object.__setattr__(self, "array", _jax_ensure_one_hot(self.array))
 
     @classmethod
-    def from_numpy_sample(cls, sample: jnp.ndarray) -> Self:
+    def from_array(cls, array: jnp.ndarray) -> Self:
         """Create a one-hot conformal set from a raw JAX array.
 
         Args:
-            sample: A one-hot encoded boolean or integer array.
+            array: A one-hot encoded boolean or integer array.
 
         Returns:
             The created conformal set.
         """
-        if not isinstance(sample, jnp.ndarray):
+        if not isinstance(array, jnp.ndarray):
             msg = "Expected jnp.ndarray for one-hot conformal sets."
             raise TypeError(msg)
-        return cls(array=sample)
+        return cls(array=array)
 
     @classmethod
     def from_sample(cls, sample: Sample[jnp.ndarray]) -> Self:
@@ -69,7 +69,7 @@ class JaxOneHotConformalSet(JaxAxisProtected[Any], OneHotConformalSet):
             The created conformal set.
         """
         array_sample = JaxSample.from_sample(sample)
-        return cls.from_numpy_sample(array_sample.array)
+        return cls.from_array(array_sample.array)
 
     @property
     def set_size(self) -> jnp.ndarray:
@@ -85,7 +85,7 @@ class JaxIntervalConformalSet(JaxAxisProtected[Any], IntervalConformalSet):
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
 
     @classmethod
-    def from_numpy_samples(cls, lower: jnp.ndarray, upper: jnp.ndarray) -> Self:
+    def from_arrays(cls, lower: jnp.ndarray, upper: jnp.ndarray) -> Self:
         """Create an interval conformal set from lower and upper bound arrays.
 
         Args:
@@ -114,7 +114,7 @@ class JaxIntervalConformalSet(JaxAxisProtected[Any], IntervalConformalSet):
         if not isinstance(lower, JaxSample) or not isinstance(upper, JaxSample):
             msg = "Expected JaxSample for interval conformal sets."
             raise TypeError(msg)
-        return cls.from_numpy_samples(lower.array, upper.array)
+        return cls.from_arrays(lower.array, upper.array)
 
     @property
     def set_size(self) -> jnp.ndarray:
@@ -122,7 +122,7 @@ class JaxIntervalConformalSet(JaxAxisProtected[Any], IntervalConformalSet):
         return self.array[..., 1] - self.array[..., 0]
 
 
-create_onehot_conformal_set.register(jnp.ndarray)(JaxOneHotConformalSet.from_numpy_sample)
+create_onehot_conformal_set.register(jnp.ndarray)(JaxOneHotConformalSet.from_array)
 create_onehot_conformal_set.register(JaxSample)(JaxOneHotConformalSet.from_sample)
-create_interval_conformal_set.register(jnp.ndarray)(JaxIntervalConformalSet.from_numpy_samples)
+create_interval_conformal_set.register(jnp.ndarray)(JaxIntervalConformalSet.from_arrays)
 create_interval_conformal_set.register(JaxSample)(JaxIntervalConformalSet.from_samples)

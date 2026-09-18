@@ -92,19 +92,19 @@ class NumpyBernoulliDistributionSample(  # ty:ignore[conflicting-metaclass]
 
 
 @create_bernoulli_distribution.register((list, tuple))
-def _create_numpy_bernoulli_distribution_from_sequence(data: list[Any] | tuple[Any, ...]) -> BernoulliDistribution:
-    return _create_numpy_bernoulli_distribution(np.asarray(data))
+def _numpy_create_bernoulli_distribution_from_sequence(data: list[Any] | tuple[Any, ...]) -> BernoulliDistribution:
+    return _numpy_create_bernoulli_distribution(np.asarray(data))
 
 
 @create_bernoulli_distribution.register(np.ndarray)
-def _create_numpy_bernoulli_distribution(data: np.ndarray) -> BernoulliDistribution:
+def _numpy_create_bernoulli_distribution(data: np.ndarray) -> BernoulliDistribution:
     if data.ndim >= 2 and data.shape[-1] <= 2:
         data = data[..., -1]
     return NumpyProbabilityBernoulliDistribution(data)
 
 
 @create_bernoulli_distribution_from_logits.register(np.ndarray)
-def _create_numpy_bernoulli_distribution_from_logits(data: np.ndarray) -> BernoulliDistribution:
+def _numpy_create_bernoulli_distribution_from_logits(data: np.ndarray) -> BernoulliDistribution:
     if data.ndim >= 2 and data.shape[-1] == 2:
         data = data[..., -1] - data[..., 0]
     elif data.ndim >= 2 and data.shape[-1] == 1:

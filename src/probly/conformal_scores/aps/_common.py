@@ -21,7 +21,7 @@ def _aps_score_dispatch[T](probs: T, y_cal: T | None = None, randomized: bool = 
 
 
 @_aps_score_dispatch.register(np.ndarray | ArrayLike)
-def compute_aps_score_numpy(
+def numpy_compute_aps_score(
     probs: np.ndarray | ArrayLike, y_cal: np.ndarray | ArrayLike | None = None, randomized: bool = True
 ) -> np.ndarray:
     """APS Nonconformity-Scores for numpy arrays."""

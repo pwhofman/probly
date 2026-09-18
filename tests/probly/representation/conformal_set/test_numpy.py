@@ -32,18 +32,18 @@ class TestNumpyOneHotConformalSet:
         with pytest.raises(ValueError, match="one-hot encoded"):
             NumpyOneHotConformalSet(array=np.array([[2, 1]], dtype=int))
 
-    def test_from_array_sample_factory(self) -> None:
+    def test_from_array_factory(self) -> None:
         from probly.representation.conformal_set.numpy import NumpyOneHotConformalSet  # noqa: PLC0415
 
         arr = np.array([[True, False]])
-        s = NumpyOneHotConformalSet.from_numpy_sample(arr)
+        s = NumpyOneHotConformalSet.from_array(arr)
         assert isinstance(s, NumpyOneHotConformalSet)
 
-    def test_from_array_sample_with_non_array_raises(self) -> None:
+    def test_from_array_with_non_array_raises(self) -> None:
         from probly.representation.conformal_set.numpy import NumpyOneHotConformalSet  # noqa: PLC0415
 
         with pytest.raises(TypeError, match=r"np\.ndarray"):
-            NumpyOneHotConformalSet.from_numpy_sample([[True, False]])  # type: ignore[arg-type]
+            NumpyOneHotConformalSet.from_array([[True, False]])  # type: ignore[arg-type]
 
     def test_from_sample_factory(self) -> None:
         from probly.representation.conformal_set.numpy import NumpyOneHotConformalSet  # noqa: PLC0415
@@ -57,19 +57,19 @@ class TestNumpyOneHotConformalSet:
 class TestNumpyIntervalConformalSet:
     """Numpy-backed interval conformal sets."""
 
-    def test_from_array_samples(self) -> None:
+    def test_from_arrays(self) -> None:
         from probly.representation.conformal_set.numpy import NumpyIntervalConformalSet  # noqa: PLC0415
 
         lower = np.array([1.0, 2.0])
         upper = np.array([2.0, 3.0])
-        s = NumpyIntervalConformalSet.from_numpy_samples(lower, upper)
+        s = NumpyIntervalConformalSet.from_arrays(lower, upper)
         np.testing.assert_array_equal(s.set_size, [1.0, 1.0])
 
-    def test_from_array_samples_non_array_raises(self) -> None:
+    def test_from_arrays_non_array_raises(self) -> None:
         from probly.representation.conformal_set.numpy import NumpyIntervalConformalSet  # noqa: PLC0415
 
         with pytest.raises(TypeError, match=r"np\.ndarray"):
-            NumpyIntervalConformalSet.from_numpy_samples([1, 2], np.array([2, 3]))  # type: ignore[arg-type]
+            NumpyIntervalConformalSet.from_arrays([1, 2], np.array([2, 3]))  # type: ignore[arg-type]
 
     def test_from_samples_factory(self) -> None:
         from probly.representation.conformal_set.numpy import NumpyIntervalConformalSet  # noqa: PLC0415

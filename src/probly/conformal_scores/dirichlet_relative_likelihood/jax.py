@@ -12,7 +12,7 @@ from ._common import dirichlet_rl_score_func
 
 
 @dirichlet_rl_score_func.register(jax.Array)
-def compute_dirichlet_rl_score_jax(alphas: jax.Array, y_true: jax.Array) -> jax.Array:
+def jax_compute_dirichlet_rl_score(alphas: jax.Array, y_true: jax.Array) -> jax.Array:
     """Compute the Dirichlet relative likelihood score using JAX Arrays.
 
     Args:
@@ -27,9 +27,9 @@ def compute_dirichlet_rl_score_jax(alphas: jax.Array, y_true: jax.Array) -> jax.
 
 
 @dirichlet_rl_score_func.register(JaxDirichletDistribution)
-def compute_dirichlet_rl_score_jax_dirichlet(dirichlet: JaxDirichletDistribution, y_true: jax.Array) -> jax.Array:
+def jax_compute_dirichlet_rl_score_dirichlet(dirichlet: JaxDirichletDistribution, y_true: jax.Array) -> jax.Array:
     """Compute the score from a JaxDirichletDistribution."""
-    return compute_dirichlet_rl_score_jax(dirichlet.alphas, y_true)
+    return jax_compute_dirichlet_rl_score(dirichlet.alphas, y_true)
 
 
 @dirichlet_rl_score_func.register(JaxSample)

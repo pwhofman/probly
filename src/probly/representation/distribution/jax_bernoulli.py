@@ -96,14 +96,14 @@ class JaxBernoulliDistributionSample(  # ty:ignore[conflicting-metaclass]
 
 
 @create_bernoulli_distribution.register(jax.Array)
-def _create_jax_bernoulli_distribution(data: jax.Array) -> BernoulliDistribution:
+def _jax_create_bernoulli_distribution(data: jax.Array) -> BernoulliDistribution:
     if data.ndim >= 2 and data.shape[-1] <= 2:
         data = data[..., -1]
     return JaxProbabilityBernoulliDistribution(data)
 
 
 @create_bernoulli_distribution_from_logits.register(jax.Array)
-def _create_jax_bernoulli_distribution_from_logits(data: jax.Array) -> BernoulliDistribution:
+def _jax_create_bernoulli_distribution_from_logits(data: jax.Array) -> BernoulliDistribution:
     if data.ndim >= 2 and data.shape[-1] == 2:
         data = data[..., -1] - data[..., 0]
     elif data.ndim >= 2 and data.shape[-1] == 1:

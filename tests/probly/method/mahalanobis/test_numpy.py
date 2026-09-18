@@ -69,7 +69,7 @@ class TestRepresentation:
         assert representation.layer_scores.shape == (3, NUM_LAYERS)
         assert representation.weight.shape == (NUM_LAYERS,)
 
-    def test_factory_dispatches_to_array_backend(self, softmax: NumpyProbabilityCategoricalDistribution) -> None:
+    def test_factory_dispatches_to_numpy_backend(self, softmax: NumpyProbabilityCategoricalDistribution) -> None:
         """A numpy-backed softmax selects the numpy representation implementation."""
         created = create_mahalanobis_representation(
             softmax, np.zeros((3, NUM_LAYERS)), -np.ones(NUM_LAYERS), np.zeros(())

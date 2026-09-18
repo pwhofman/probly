@@ -34,7 +34,7 @@ def wasserstein_distance_score_func[T](y_pred: T, y_true: T | None = None) -> T:
 
 
 @wasserstein_distance_score_func.register(np.ndarray | ArrayLike)
-def compute_wasserstein_distance_score_numpy(
+def numpy_compute_wasserstein_distance_score(
     y_pred: np.ndarray | ArrayLike, y_true: np.ndarray | ArrayLike
 ) -> np.ndarray:
     """Computes the Wasserstein distance score using NumPy Arrays.

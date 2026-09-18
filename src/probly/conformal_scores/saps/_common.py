@@ -26,7 +26,7 @@ def _saps_score_dispatch[T](
 
 
 @_saps_score_dispatch.register(np.ndarray | ArrayLike)
-def compute_saps_score_func_numpy(
+def numpy_compute_saps_score_func(
     probs: np.ndarray | ArrayLike,
     y_cal: np.ndarray | None = None,
     randomized: bool = True,

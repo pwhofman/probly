@@ -11,7 +11,7 @@ from probly.layers.torch import DropConnectLinear
 from ._common import register
 
 
-def replace_torch_dropconnect(
+def torch_replace_dropconnect(
     obj: nn.Linear,
     p: float,
     rng_collection: Any = None,  # noqa: ANN401, ARG001
@@ -21,4 +21,4 @@ def replace_torch_dropconnect(
     return DropConnectLinear(obj, p=p)
 
 
-register(nn.Linear, replace_torch_dropconnect)
+register(nn.Linear, torch_replace_dropconnect)

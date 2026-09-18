@@ -8,7 +8,7 @@ from ._common import selective_prediction
 
 
 @selective_prediction.register(np.ndarray)
-def selective_prediction_numpy(criterion: np.ndarray, losses: np.ndarray, n_bins: int = 50) -> tuple[float, np.ndarray]:
+def numpy_selective_prediction(criterion: np.ndarray, losses: np.ndarray, n_bins: int = 50) -> tuple[float, np.ndarray]:
     """Perform selective prediction for NumPy arrays."""
     if n_bins > len(losses):
         msg = "The number of bins can not be larger than the number of elements criterion"

@@ -218,18 +218,18 @@ class TestJaxProbabilityIntervalsCredalSet:
 
 
 class TestEnsureJaxCategoricalDistribution:
-    """The internal _ensure_jax_categorical_distribution coerces inputs."""
+    """The internal _jax_ensure_categorical_distribution coerces inputs."""
 
     def test_passthrough(self) -> None:
-        from probly.representation.credal_set.jax import _ensure_jax_categorical_distribution  # noqa: PLC0415
+        from probly.representation.credal_set.jax import _jax_ensure_categorical_distribution  # noqa: PLC0415
 
         d = JaxProbabilityCategoricalDistribution(jnp.array([[0.5, 0.5]]))
-        assert _ensure_jax_categorical_distribution(d) is d
+        assert _jax_ensure_categorical_distribution(d) is d
 
     def test_wraps_array(self) -> None:
-        from probly.representation.credal_set.jax import _ensure_jax_categorical_distribution  # noqa: PLC0415
+        from probly.representation.credal_set.jax import _jax_ensure_categorical_distribution  # noqa: PLC0415
 
-        d = _ensure_jax_categorical_distribution(jnp.array([[0.5, 0.5]]))
+        d = _jax_ensure_categorical_distribution(jnp.array([[0.5, 0.5]]))
         assert isinstance(d, JaxCategoricalDistribution)
 
 

@@ -144,7 +144,7 @@ def _torch_wrap_masksembles_logits(sample: TorchSample[Any]) -> TorchCategorical
     return TorchCategoricalDistributionSample(tensor=distribution, sample_dim=sample_dim)  # ty: ignore[invalid-argument-type]
 
 
-def append_torch_masksembles_conv(
+def torch_append_masksembles_conv(
     obj: nn.Module,
     num_masks: int,
     scale: float,
@@ -165,7 +165,7 @@ def append_torch_masksembles_conv(
     return obj
 
 
-def append_torch_masksembles_linear(
+def torch_append_masksembles_linear(
     obj: nn.Module,
     num_masks: int,
     scale: float,
@@ -186,5 +186,5 @@ def append_torch_masksembles_linear(
     return obj
 
 
-register(nn.Conv2d, append_torch_masksembles_conv)
-register(nn.Linear, append_torch_masksembles_linear)
+register(nn.Conv2d, torch_append_masksembles_conv)
+register(nn.Linear, torch_append_masksembles_linear)

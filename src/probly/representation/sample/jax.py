@@ -294,7 +294,7 @@ class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
             new_sample_axis: The new sample dimension.
 
         Returns:
-            A new NumpySample with the sample dimension moved.
+            A new JaxSample with the sample dimension moved.
         """
         moved_array = jax_moveaxis(cast("Any", self.array), self.sample_axis, new_sample_axis)
         return type(self)(array=cast("D", moved_array), sample_axis=new_sample_axis, weights=self.weights)

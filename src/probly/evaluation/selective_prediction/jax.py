@@ -9,7 +9,7 @@ from ._common import selective_prediction
 
 
 @selective_prediction.register(jax.Array)
-def selective_prediction_jax(criterion: jax.Array, losses: jax.Array, n_bins: int = 50) -> tuple[jax.Array, jax.Array]:
+def jax_selective_prediction(criterion: jax.Array, losses: jax.Array, n_bins: int = 50) -> tuple[jax.Array, jax.Array]:
     """Perform selective prediction for JAX arrays."""
     if n_bins > losses.shape[0]:
         msg = "The number of bins can not be larger than the number of elements criterion"

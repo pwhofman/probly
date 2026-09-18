@@ -14,7 +14,7 @@ from ._common import wasserstein_distance_score_func
 
 
 @wasserstein_distance_score_func.register((jax.Array, Tracer))
-def compute_wasserstein_distance_score_jax(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
+def jax_compute_wasserstein_distance_score(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
     """Computes the Wasserstein distance score using JAX arrays.
 
     Args:

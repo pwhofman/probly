@@ -34,18 +34,18 @@ class TestJaxOneHotConformalSet:
         with pytest.raises(ValueError, match="one-hot encoded"):
             JaxOneHotConformalSet(array=jnp.array([[2, 1]], dtype=int))
 
-    def test_from_array_sample_factory(self) -> None:
+    def test_from_array_factory(self) -> None:
         from probly.representation.conformal_set.jax import JaxOneHotConformalSet  # noqa: PLC0415
 
         arr = jnp.array([[True, False]])
-        s = JaxOneHotConformalSet.from_numpy_sample(arr)
+        s = JaxOneHotConformalSet.from_array(arr)
         assert isinstance(s, JaxOneHotConformalSet)
 
-    def test_from_array_sample_with_non_array_raises(self) -> None:
+    def test_from_array_with_non_array_raises(self) -> None:
         from probly.representation.conformal_set.jax import JaxOneHotConformalSet  # noqa: PLC0415
 
         with pytest.raises(TypeError, match=r"jnp\.ndarray"):
-            JaxOneHotConformalSet.from_numpy_sample([[True, False]])  # type: ignore[arg-type]
+            JaxOneHotConformalSet.from_array([[True, False]])  # type: ignore[arg-type]
 
     def test_from_sample_factory(self) -> None:
         from probly.representation.conformal_set.jax import JaxOneHotConformalSet  # noqa: PLC0415
@@ -59,19 +59,19 @@ class TestJaxOneHotConformalSet:
 class TestJaxIntervalConformalSet:
     """Jax-backed interval conformal sets."""
 
-    def test_from_array_samples(self) -> None:
+    def test_from_arrays(self) -> None:
         from probly.representation.conformal_set.jax import JaxIntervalConformalSet  # noqa: PLC0415
 
         lower = jnp.array([1.0, 2.0])
         upper = jnp.array([2.0, 3.0])
-        s = JaxIntervalConformalSet.from_numpy_samples(lower, upper)
+        s = JaxIntervalConformalSet.from_arrays(lower, upper)
         assert jnp.array_equal(s.set_size, jnp.array([1.0, 1.0]))
 
-    def test_from_array_samples_non_array_raises(self) -> None:
+    def test_from_arrays_non_array_raises(self) -> None:
         from probly.representation.conformal_set.jax import JaxIntervalConformalSet  # noqa: PLC0415
 
         with pytest.raises(TypeError, match=r"jnp\.ndarray"):
-            JaxIntervalConformalSet.from_numpy_samples([1, 2], jnp.array([2, 3]))  # type: ignore[arg-type]
+            JaxIntervalConformalSet.from_arrays([1, 2], jnp.array([2, 3]))  # type: ignore[arg-type]
 
     def test_from_samples_factory(self) -> None:
         from probly.representation.conformal_set.jax import JaxIntervalConformalSet  # noqa: PLC0415

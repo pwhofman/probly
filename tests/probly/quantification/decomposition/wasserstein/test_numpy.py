@@ -40,7 +40,7 @@ def _batched_sample() -> NumpyCategoricalDistributionSample:
     )
 
 
-def test_array_wasserstein_decomposition_known_values_and_non_additive() -> None:
+def test_numpy_wasserstein_decomposition_known_values_and_non_additive() -> None:
     decomposition = SecondOrderWassersteinDecomposition(_binary_sample())
 
     np.testing.assert_allclose(decomposition.total, 0.3, rtol=1e-9, atol=1e-9)
@@ -50,7 +50,7 @@ def test_array_wasserstein_decomposition_known_values_and_non_additive() -> None
     assert not np.allclose(decomposition.total, decomposition.aleatoric + decomposition.epistemic)
 
 
-def test_array_wasserstein_decomposition_matches_measure_functions() -> None:
+def test_numpy_wasserstein_decomposition_matches_measure_functions() -> None:
     sample = _binary_sample()
     decomposition = SecondOrderWassersteinDecomposition(sample)
 
@@ -63,7 +63,7 @@ def test_array_wasserstein_decomposition_matches_measure_functions() -> None:
     np.testing.assert_allclose(decomposition.epistemic, min_expected_total_variation(sample), rtol=1e-12, atol=1e-12)
 
 
-def test_array_wasserstein_decomposition_satisfies_axiom_a3_and_ranges() -> None:
+def test_numpy_wasserstein_decomposition_satisfies_axiom_a3_and_ranges() -> None:
     """For a sample, AU <= TU and EU <= TU hold exactly, and TU <= (K-1)/K."""
     rng = np.random.default_rng(seed=0)
     logits = rng.normal(size=(20, 8, 4))  # (batch, samples, classes)
@@ -82,7 +82,7 @@ def test_array_wasserstein_decomposition_satisfies_axiom_a3_and_ranges() -> None
     assert np.all(epistemic >= -1e-9)
 
 
-def test_array_wasserstein_decomposition_notion_access() -> None:
+def test_numpy_wasserstein_decomposition_notion_access() -> None:
     decomposition = SecondOrderWassersteinDecomposition(_batched_sample())
 
     assert isinstance(decomposition["tu"], np.ndarray)
@@ -90,7 +90,7 @@ def test_array_wasserstein_decomposition_notion_access() -> None:
     assert isinstance(decomposition["eu"], np.ndarray)
 
 
-def test_array_wasserstein_decomposition_caches_components() -> None:
+def test_numpy_wasserstein_decomposition_caches_components() -> None:
     decomposition = SecondOrderWassersteinDecomposition(_binary_sample())
 
     assert decomposition.total is decomposition.total
@@ -98,7 +98,7 @@ def test_array_wasserstein_decomposition_caches_components() -> None:
     assert decomposition.epistemic is decomposition.epistemic
 
 
-def test_array_wasserstein_decomposition_dirichlet_total_is_closed_form() -> None:
+def test_numpy_wasserstein_decomposition_dirichlet_total_is_closed_form() -> None:
     distribution = NumpyDirichletDistribution(np.array([[2.0, 3.0, 5.0]], dtype=float))
     decomposition = SecondOrderWassersteinDecomposition(
         distribution, num_samples=2000, generator=np.random.default_rng(0)

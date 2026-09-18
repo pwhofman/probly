@@ -9,7 +9,7 @@ from probly.layers.torch import BayesConv2d, BayesLinear
 from ._common import register
 
 
-def replace_torch_bayesian_linear(
+def torch_replace_bayesian_linear(
     obj: nn.Linear,
     use_base_weights: bool,
     posterior_std: float,
@@ -20,7 +20,7 @@ def replace_torch_bayesian_linear(
     return BayesLinear(obj, use_base_weights, posterior_std, prior_mean, prior_std)
 
 
-def replace_torch_bayesian_conv2d(
+def torch_replace_bayesian_conv2d(
     obj: nn.Conv2d,
     use_base_weights: bool,
     posterior_std: float,
@@ -31,5 +31,5 @@ def replace_torch_bayesian_conv2d(
     return BayesConv2d(obj, use_base_weights, posterior_std, prior_mean, prior_std)
 
 
-register(nn.Linear, replace_torch_bayesian_linear)
-register(nn.Conv2d, replace_torch_bayesian_conv2d)
+register(nn.Linear, torch_replace_bayesian_linear)
+register(nn.Conv2d, torch_replace_bayesian_conv2d)

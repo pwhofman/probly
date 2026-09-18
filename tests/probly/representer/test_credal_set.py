@@ -49,8 +49,8 @@ def _ensemble() -> _DummyEnsemble:
 class TestComputeRepresentativeSampleDispatch:
     """``compute_representative_sample`` raises for unsupported sample backends."""
 
-    def test_array_sample_without_handler_raises(self) -> None:
-        """An NumpySample (no array handler registered) hits the default branch (lines 29-30)."""
+    def test_numpy_sample_without_handler_raises(self) -> None:
+        """A NumpySample (no NumPy handler registered) hits the default branch (lines 29-30)."""
         sample = NumpySample(
             array=NumpyProbabilityCategoricalDistribution(np.array([[0.5, 0.5], [0.7, 0.3]])),
             sample_axis=0,

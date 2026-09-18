@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 
 
 @accuracy.register(np.ndarray)
-def accuracy_numpy(y_pred: np.ndarray, y_true: np.ndarray) -> np.floating:
+def numpy_accuracy(y_pred: np.ndarray, y_true: np.ndarray) -> np.floating:
     """Compute top-1 classification accuracy for NumPy arrays."""
     predicted = np.asarray(y_pred)
     labels = np.asarray(y_true).reshape(-1)
@@ -66,13 +66,13 @@ def accuracy_categorical_distribution(y_pred: CategoricalDistribution, y_true: o
 
 
 @auc.register(np.ndarray)
-def auc_numpy(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+def numpy_auc(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Compute area under a curve using the trapezoid rule."""
     return np.trapezoid(y, x, axis=-1)
 
 
 @average_precision_score.register(np.ndarray)
-def average_precision_score_numpy(y_true: np.ndarray, y_score: np.ndarray) -> np.ndarray:
+def numpy_average_precision_score(y_true: np.ndarray, y_score: np.ndarray) -> np.ndarray:
     """Compute average precision for NumPy arrays."""
     precision, recall, _ = precision_recall_curve(y_true, y_score)
     return -np.sum(np.diff(recall, axis=-1) * precision[..., :-1], axis=-1)  # ty:ignore[no-matching-overload, not-subscriptable]
@@ -119,7 +119,7 @@ def _binary_clf_curve(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarr
 
 
 @precision_recall_curve.register(np.ndarray)
-def precision_recall_curve_numpy(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def numpy_precision_recall_curve(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Compute precision-recall curve along the last axis."""
     y_true = np.asarray(y_true, dtype=float)
     y_score = np.asarray(y_score, dtype=float)
@@ -139,7 +139,7 @@ def precision_recall_curve_numpy(y_true: np.ndarray, y_score: np.ndarray) -> tup
 
 
 @classwise_ece.register(np.ndarray)
-def classwise_ece_numpy(y_prob: np.ndarray, y_true: np.ndarray, *, num_bins: int = 15) -> np.floating:
+def numpy_classwise_ece(y_prob: np.ndarray, y_true: np.ndarray, *, num_bins: int = 15) -> np.floating:
     """Compute the classwise expected calibration error for NumPy arrays."""
     probs = np.asarray(y_prob, dtype=float)
     if probs.ndim != 2:
@@ -177,7 +177,7 @@ def classwise_ece_categorical_distribution(
 
 
 @expected_calibration_error.register(np.ndarray)
-def expected_calibration_error_numpy(y_prob: np.ndarray, y_true: np.ndarray, *, num_bins: int = 15) -> np.floating:
+def numpy_expected_calibration_error(y_prob: np.ndarray, y_true: np.ndarray, *, num_bins: int = 15) -> np.floating:
     """Compute the confidence expected calibration error for NumPy arrays."""
     probs = np.asarray(y_prob, dtype=float)
     if probs.ndim != 2:
@@ -219,7 +219,7 @@ def expected_calibration_error_categorical_distribution(
 
 
 @false_positive_rate.register(np.ndarray)
-def false_positive_rate_numpy(y_pred: np.ndarray, y_true: np.ndarray) -> np.floating:
+def numpy_false_positive_rate(y_pred: np.ndarray, y_true: np.ndarray) -> np.floating:
     """Compute the false positive rate for NumPy arrays."""
     y = np.asarray(y_true).reshape(-1)
     p = np.asarray(y_pred).reshape(-1)
@@ -234,7 +234,7 @@ def false_positive_rate_numpy(y_pred: np.ndarray, y_true: np.ndarray) -> np.floa
 
 
 @false_negative_rate.register(np.ndarray)
-def false_negative_rate_numpy(y_pred: np.ndarray, y_true: np.ndarray) -> np.floating:
+def numpy_false_negative_rate(y_pred: np.ndarray, y_true: np.ndarray) -> np.floating:
     """Compute the false negative rate for NumPy arrays."""
     y = np.asarray(y_true).reshape(-1)
     p = np.asarray(y_pred).reshape(-1)
@@ -249,14 +249,14 @@ def false_negative_rate_numpy(y_pred: np.ndarray, y_true: np.ndarray) -> np.floa
 
 
 @roc_auc_score.register(np.ndarray)
-def roc_auc_score_numpy(y_true: np.ndarray, y_score: np.ndarray) -> np.ndarray:
+def numpy_roc_auc_score(y_true: np.ndarray, y_score: np.ndarray) -> np.ndarray:
     """Compute area under the ROC curve for NumPy arrays."""
     fpr, tpr, _ = roc_curve(y_true, y_score)
     return auc(fpr, tpr)  # ty:ignore[invalid-return-type]
 
 
 @roc_curve.register(np.ndarray)
-def roc_curve_numpy(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def numpy_roc_curve(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Compute ROC curve along the last axis."""
     y_true = np.asarray(y_true, dtype=float)
     y_score = np.asarray(y_score, dtype=float)
@@ -386,7 +386,7 @@ def _numpy_discrete_efficiency(y_pred: NumpyDiscreteCredalSet) -> np.floating:
     return np.mean(classes_picked.sum(axis=-1))
 
 
-def _credal_containment_coverage(lower: np.ndarray, upper: np.ndarray, y_true: np.ndarray) -> np.floating:
+def _numpy_credal_containment_coverage(lower: np.ndarray, upper: np.ndarray, y_true: np.ndarray) -> np.floating:
     """Fraction of instances whose target lies inside the credal set's envelope.
 
     Dispatches on the shape of ``y_true``:
@@ -424,7 +424,7 @@ def _credal_containment_coverage(lower: np.ndarray, upper: np.ndarray, y_true: n
     return np.mean(covered)
 
 
-def _credal_interval_efficiency(lower: np.ndarray, upper: np.ndarray) -> np.floating:
+def _numpy_credal_interval_efficiency(lower: np.ndarray, upper: np.ndarray) -> np.floating:
     """Efficiency of a credal set as ``1 - mean(upper - lower)``.
 
     Bounds are rounded to ``CREDAL_ROUND_DECIMALS`` decimals before subtracting
@@ -454,7 +454,7 @@ def _numpy_convex_coverage(y_pred: NumpyConvexCredalSet, y_true: np.ndarray) -> 
     Returns:
         Fraction of instances where the target lies in ``[lower, upper]`` for all classes.
     """
-    return _credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
+    return _numpy_credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
 
 
 @efficiency.register(NumpyConvexCredalSet)
@@ -464,7 +464,7 @@ def _numpy_convex_efficiency(y_pred: NumpyConvexCredalSet) -> np.floating:
     Returns:
         Scalar efficiency; higher means a tighter credal set.
     """
-    return _credal_interval_efficiency(y_pred.lower(), y_pred.upper())
+    return _numpy_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
 
 
 @coverage.register(NumpyDistanceBasedCredalSet)
@@ -493,7 +493,7 @@ def _numpy_distance_efficiency(y_pred: NumpyDistanceBasedCredalSet) -> np.floati
     Same semantic as ``ConvexCredalSet`` and ``ProbabilityIntervalsCredalSet``:
     higher = tighter credal set.
     """
-    return _credal_interval_efficiency(y_pred.lower(), y_pred.upper())
+    return _numpy_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
 
 
 @coverage.register(NumpyProbabilityIntervalsCredalSet)
@@ -509,7 +509,7 @@ def _numpy_probability_intervals_coverage(
     Returns:
         Fraction of instances where the target lies in ``[lower, upper]`` for all classes.
     """
-    return _credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
+    return _numpy_credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
 
 
 @efficiency.register(NumpyProbabilityIntervalsCredalSet)
@@ -519,7 +519,7 @@ def _numpy_probability_intervals_efficiency(y_pred: NumpyProbabilityIntervalsCre
     Returns:
         Scalar efficiency; higher means a tighter credal set.
     """
-    return _credal_interval_efficiency(y_pred.lower(), y_pred.upper())
+    return _numpy_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
 
 
 @average_interval_width.register(NumpyConvexCredalSet)
@@ -556,7 +556,7 @@ def _validate_epsilon(epsilon: float) -> None:
         raise ValueError(msg)
 
 
-def _convex_hull_lp_coverage(
+def _numpy_convex_hull_lp_coverage(
     vertices: np.ndarray,
     targets: np.ndarray,
     epsilon: float,
@@ -641,7 +641,7 @@ def _numpy_convex_convex_hull_coverage(
     **linprog_kwargs: object,
 ) -> np.floating:
     """LP-based hull coverage for a convex credal set."""
-    return _convex_hull_lp_coverage(
+    return _numpy_convex_hull_lp_coverage(
         np.asarray(y_pred.array.probabilities),
         np.asarray(y_true.probabilities),
         epsilon,
@@ -658,7 +658,7 @@ def _numpy_discrete_convex_hull_coverage(
     **linprog_kwargs: object,
 ) -> np.floating:
     """LP-based hull coverage for a discrete credal set (same vertex structure as Convex)."""
-    return _convex_hull_lp_coverage(
+    return _numpy_convex_hull_lp_coverage(
         np.asarray(y_pred.array.probabilities),
         np.asarray(y_true.probabilities),
         epsilon,

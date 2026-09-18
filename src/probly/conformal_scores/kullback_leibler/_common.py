@@ -34,7 +34,7 @@ def kl_divergence_score_func[T](y_pred: T, y_true: T | None = None) -> T:
 
 
 @kl_divergence_score_func.register(np.ndarray | ArrayLike)
-def compute_kl_divergence_score_numpy(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray | ArrayLike) -> np.ndarray:
+def numpy_compute_kl_divergence_score(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray | ArrayLike) -> np.ndarray:
     """Computes the Kullback-Leibler divergence score using NumPy Arrays.
 
     Args:

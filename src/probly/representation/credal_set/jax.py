@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     from probly.representation.sample._common import Sample
 
 
-def _ensure_jax_categorical_distribution(value: object) -> JaxCategoricalDistribution:
+def _jax_ensure_categorical_distribution(value: object) -> JaxCategoricalDistribution:
     if isinstance(value, JaxCategoricalDistribution):
         return value
     return JaxProbabilityCategoricalDistribution(jnp.asarray(value))
@@ -89,7 +89,7 @@ class JaxConvexCredalSet(
 
     def __post_init__(self) -> None:
         """Validate that the tensor contains valid categorical distributions."""
-        object.__setattr__(self, "tensor", _ensure_jax_categorical_distribution(self.tensor))
+        object.__setattr__(self, "tensor", _jax_ensure_categorical_distribution(self.tensor))
 
     @override
     @classmethod
@@ -136,7 +136,7 @@ class JaxDistanceBasedCredalSet(
 
     def __post_init__(self) -> None:
         """Validate that nominal is a valid categorical distribution and radius is non-negative."""
-        object.__setattr__(self, "nominal", _ensure_jax_categorical_distribution(self.nominal))
+        object.__setattr__(self, "nominal", _jax_ensure_categorical_distribution(self.nominal))
         object.__setattr__(self, "radius", jnp.asarray(self.radius))
 
     @override

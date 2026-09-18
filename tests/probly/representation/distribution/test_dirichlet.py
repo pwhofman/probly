@@ -10,7 +10,7 @@ from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDis
 from probly.representation.sample import NumpySample
 
 
-def test_array_dirichlet_initialization_valid() -> None:
+def test_numpy_dirichlet_initialization_valid() -> None:
     """Test standard initialization with valid numpy arrays."""
     alphas = np.array([0.5, 1.0, 2.5], dtype=float)
 
@@ -37,20 +37,20 @@ def test_from_array_basic() -> None:
     np.testing.assert_array_equal(dist.alphas, np.array(alphas_list, dtype=np.float32))
 
 
-def test_array_dirichlet_raises_on_non_ndarray() -> None:
+def test_numpy_dirichlet_raises_on_non_ndarray() -> None:
     """Test that __post_init__ enforces alphas to be a numpy ndarray."""
     with pytest.raises(TypeError, match="alphas must be a numpy ndarray"):
         NumpyDirichletDistribution(alphas=[1.0, 2.0, 3.0])  # type: ignore[arg-type]
 
 
-def test_array_dirichlet_raises_on_0d_array() -> None:
+def test_numpy_dirichlet_raises_on_0d_array() -> None:
     """Test that alphas must have at least one dimension."""
     with pytest.raises(ValueError, match="alphas must have at least one dimension"):
         NumpyDirichletDistribution(alphas=np.asarray(1.0))
 
 
 @pytest.mark.parametrize("invalid_value", [0.0, -0.1, -5.0])
-def test_array_dirichlet_raises_on_non_positive_alphas(invalid_value: float) -> None:
+def test_numpy_dirichlet_raises_on_non_positive_alphas(invalid_value: float) -> None:
     """Test that concentration parameters must be strictly positive."""
     alphas = np.array([1.0, invalid_value, 2.0], dtype=float)
 
@@ -58,7 +58,7 @@ def test_array_dirichlet_raises_on_non_positive_alphas(invalid_value: float) -> 
         NumpyDirichletDistribution(alphas=alphas)
 
 
-def test_array_dirichlet_raises_on_too_few_classes() -> None:
+def test_numpy_dirichlet_raises_on_too_few_classes() -> None:
     """Test that Dirichlet needs at least 2 classes (K >= 2)."""
     alphas = np.array([1.0], dtype=float)
 
@@ -66,7 +66,7 @@ def test_array_dirichlet_raises_on_too_few_classes() -> None:
         NumpyDirichletDistribution(alphas=alphas)
 
 
-def test_array_properties_batched() -> None:
+def test_numpy_properties_batched() -> None:
     """Test shape, ndim, size delegation."""
     alphas = np.ones((2, 3, 4), dtype=float)
     dist = NumpyDirichletDistribution(alphas=alphas)

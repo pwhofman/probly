@@ -60,7 +60,7 @@ def test_probability_intervals_array_and_shape_ops() -> None:
 class TestNumpyDiscreteCredalSet:
     """Discrete credal set behaviour."""
 
-    def test_from_array_sample(self) -> None:
+    def test_from_numpy_sample(self) -> None:
         sample = NumpySample(
             array=NumpyProbabilityCategoricalDistribution(
                 array=np.array([[[0.5, 0.5]], [[0.3, 0.7]]]),
@@ -87,7 +87,7 @@ class TestNumpyDiscreteCredalSet:
 class TestNumpyConvexCredalSet:
     """Convex credal set behaviour."""
 
-    def test_from_array_sample(self) -> None:
+    def test_from_numpy_sample(self) -> None:
         sample = NumpySample(
             array=NumpyProbabilityCategoricalDistribution(
                 array=np.array([[[0.5, 0.5]], [[0.3, 0.7]]]),
@@ -112,7 +112,7 @@ class TestNumpyConvexCredalSet:
 class TestNumpyDistanceBasedCredalSet:
     """Distance-based credal set behaviour."""
 
-    def test_from_array_sample(self) -> None:
+    def test_from_numpy_sample(self) -> None:
         sample = NumpySample(
             array=NumpyProbabilityCategoricalDistribution(
                 array=np.array([[[0.5, 0.5]], [[0.3, 0.7]]]),
@@ -167,7 +167,7 @@ class TestNumpyDistanceBasedCredalSet:
 class TestNumpyProbabilityIntervalsCredalSet:
     """Interval credal set behaviour."""
 
-    def test_from_array_sample(self) -> None:
+    def test_from_numpy_sample(self) -> None:
         sample = NumpySample(
             array=NumpyProbabilityCategoricalDistribution(
                 array=np.array([[[0.5, 0.5]], [[0.3, 0.7]]]),
@@ -225,7 +225,7 @@ class TestNumpyProbabilityIntervalsCredalSet:
 class TestNumpySingletonCredalSet:
     """Singleton credal set has lower=upper=value."""
 
-    def test_from_array_sample(self) -> None:
+    def test_from_numpy_sample(self) -> None:
         sample = NumpySample(
             array=NumpyProbabilityCategoricalDistribution(
                 array=np.array([[[0.5, 0.5]], [[0.3, 0.7]]]),

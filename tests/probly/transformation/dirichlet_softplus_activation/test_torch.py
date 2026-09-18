@@ -20,11 +20,11 @@ class TestDirichletSoftplusActivationTorch:
         _, nn = _torch_nn()
         from probly.transformation.dirichlet_softplus_activation.torch import (  # noqa: PLC0415
             _AddOne,
-            append_activation_torch,
+            torch_append_activation,
         )
 
         base = nn.Linear(4, 3)
-        wrapped = append_activation_torch(base)
+        wrapped = torch_append_activation(base)
         assert isinstance(wrapped, nn.Sequential)
         assert len(wrapped) == 3
         assert wrapped[0] is base
@@ -33,10 +33,10 @@ class TestDirichletSoftplusActivationTorch:
 
     def test_alpha_is_strictly_greater_than_one(self) -> None:
         torch, nn = _torch_nn()
-        from probly.transformation.dirichlet_softplus_activation.torch import append_activation_torch  # noqa: PLC0415
+        from probly.transformation.dirichlet_softplus_activation.torch import torch_append_activation  # noqa: PLC0415
 
         base = nn.Linear(4, 3)
-        wrapped = append_activation_torch(base)
+        wrapped = torch_append_activation(base)
         x = torch.randn(2, 4)
         out = wrapped(x)
         assert torch.all(out > 1.0)

@@ -31,14 +31,14 @@ def _to_numpy(val: object) -> np.ndarray:
 
 
 def _flatten_batch[T: CategoricalCredalSet](data: T) -> T:
-    """Flatten batch dimensions if the credal set supports it (Torch or Array)."""
+    """Flatten batch dimensions if the credal set supports it (Torch or NumPy)."""
     reshape_fn = getattr(data, "reshape", None)
     if callable(reshape_fn):
         return reshape_fn(-1)
 
     msg = (
         f"Input of type {type(data).__name__} is not a supported batched credal set. "
-        "Plotting requires credal sets from standard backends (Torch or Array) that implement '.reshape()'."
+        "Plotting requires credal sets from standard backends (Torch or NumPy) that implement '.reshape()'."
     )
     raise TypeError(msg)
 

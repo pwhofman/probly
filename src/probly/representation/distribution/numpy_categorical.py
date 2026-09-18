@@ -205,7 +205,7 @@ class NumpyCategoricalDistributionSample(  # ty:ignore[conflicting-metaclass]
 
 
 @create_categorical_distribution.register((list, tuple))
-def _create_numpy_categorical_distribution_from_sequence(
+def _numpy_create_categorical_distribution_from_sequence(
     data: list[Any] | tuple[Any, ...],
 ) -> NumpyCategoricalDistribution:
     return NumpyProbabilityCategoricalDistribution(np.asarray(data))

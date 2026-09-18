@@ -48,12 +48,12 @@ def compute_ece(probs: object, y_true: object, n_bins: int = 10) -> float:
 
 
 @compute_accuracy.register(np.ndarray)
-def _compute_accuracy_numpy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
+def _numpy_compute_accuracy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
     return float(np.mean(y_pred == y_true))
 
 
 @compute_ece.register(np.ndarray)
-def _compute_ece_numpy(probs: np.ndarray, y_true: np.ndarray, n_bins: int = 10) -> float:
+def _numpy_compute_ece(probs: np.ndarray, y_true: np.ndarray, n_bins: int = 10) -> float:
     confs = probs.max(axis=1)
     preds = probs.argmax(axis=1)
     bins = np.linspace(0, 1, n_bins + 1)

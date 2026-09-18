@@ -17,7 +17,7 @@ from probly.representation.distribution.numpy_categorical import (
 from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
 
 
-def _array_dirichlet_distribution() -> NumpyDirichletDistribution:
+def _numpy_dirichlet_distribution() -> NumpyDirichletDistribution:
     return NumpyDirichletDistribution(
         np.array(
             [
@@ -29,7 +29,7 @@ def _array_dirichlet_distribution() -> NumpyDirichletDistribution:
     )
 
 
-def _array_categorical_sample() -> NumpyCategoricalDistributionSample:
+def _numpy_categorical_sample() -> NumpyCategoricalDistributionSample:
     probabilities = np.array(
         [
             [[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]],
@@ -44,16 +44,16 @@ def _array_categorical_sample() -> NumpyCategoricalDistributionSample:
     )
 
 
-def test_quantify_dispatches_to_entropy_decomposition_for_array_second_order_distribution() -> None:
-    distribution = _array_dirichlet_distribution()
+def test_quantify_dispatches_to_entropy_decomposition_for_numpy_second_order_distribution() -> None:
+    distribution = _numpy_dirichlet_distribution()
 
     decomposition = quantify(distribution)
 
     assert isinstance(decomposition, SecondOrderEntropyDecomposition)
 
 
-def test_array_second_order_distribution_decomposition_matches_measure_functions() -> None:
-    distribution = _array_dirichlet_distribution()
+def test_numpy_second_order_distribution_decomposition_matches_measure_functions() -> None:
+    distribution = _numpy_dirichlet_distribution()
 
     decomposition = quantify(distribution)
 
@@ -67,16 +67,16 @@ def test_array_second_order_distribution_decomposition_matches_measure_functions
     )
 
 
-def test_quantify_dispatches_to_entropy_decomposition_for_array_distribution_sample() -> None:
-    sample = _array_categorical_sample()
+def test_quantify_dispatches_to_entropy_decomposition_for_numpy_distribution_sample() -> None:
+    sample = _numpy_categorical_sample()
 
     decomposition = quantify(sample)
 
     assert isinstance(decomposition, SecondOrderEntropyDecomposition)
 
 
-def test_array_distribution_sample_decomposition_matches_measure_functions() -> None:
-    sample = _array_categorical_sample()
+def test_numpy_distribution_sample_decomposition_matches_measure_functions() -> None:
+    sample = _numpy_categorical_sample()
 
     decomposition = quantify(sample)
 
@@ -90,8 +90,8 @@ def test_array_distribution_sample_decomposition_matches_measure_functions() -> 
     )
 
 
-def test_array_second_order_distribution_notion_access_and_types_match_backend() -> None:
-    decomposition = quantify(_array_dirichlet_distribution())
+def test_numpy_second_order_distribution_notion_access_and_types_match_backend() -> None:
+    decomposition = quantify(_numpy_dirichlet_distribution())
 
     total = decomposition["tu"]
     aleatoric = decomposition["au"]
@@ -102,8 +102,8 @@ def test_array_second_order_distribution_notion_access_and_types_match_backend()
     assert isinstance(epistemic, np.ndarray)
 
 
-def test_array_decomposition_notion_access_and_types_match_backend() -> None:
-    decomposition = quantify(_array_categorical_sample())
+def test_numpy_decomposition_notion_access_and_types_match_backend() -> None:
+    decomposition = quantify(_numpy_categorical_sample())
 
     total = decomposition["tu"]
     aleatoric = decomposition["au"]
@@ -114,8 +114,8 @@ def test_array_decomposition_notion_access_and_types_match_backend() -> None:
     assert isinstance(epistemic, np.ndarray)
 
 
-def test_array_decomposition_caches_component_objects() -> None:
-    decomposition = quantify(_array_categorical_sample())
+def test_numpy_decomposition_caches_component_objects() -> None:
+    decomposition = quantify(_numpy_categorical_sample())
 
     total = decomposition.total
     aleatoric = decomposition.aleatoric

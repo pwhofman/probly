@@ -14,7 +14,7 @@ from ._common import kl_divergence_score_func
 
 
 @kl_divergence_score_func.register((jax.Array, Tracer))
-def compute_kl_divergence_score_jax(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
+def jax_compute_kl_divergence_score(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
     """Computes the Kullback-Leibler divergence score using JAX Array."""
     y_pred_t = jnp.asarray(y_pred)
     distribution_target = isinstance(y_true, CategoricalDistribution)

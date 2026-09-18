@@ -493,7 +493,7 @@ class FlaxIsotonicCalibrationPredictor[**In](_FlaxCalibrationPredictorBase[In]):
 
 
 @calibration_generator.register(nnx.Module)
-def generate_flax_scaling_calibrator(
+def flax_generate_scaling_calibrator(
     base: nnx.Module, config: CalibrationMethodConfig
 ) -> _FlaxCalibrationPredictorBase:
     """Create flax calibration wrappers from method configuration."""

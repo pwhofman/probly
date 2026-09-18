@@ -16,7 +16,7 @@ from probly.representation.distribution.numpy_categorical import (
 )
 
 
-def _array_categorical_sample() -> NumpyCategoricalDistributionSample:
+def _numpy_categorical_sample() -> NumpyCategoricalDistributionSample:
     probabilities = np.array(
         [
             [[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]],
@@ -31,8 +31,8 @@ def _array_categorical_sample() -> NumpyCategoricalDistributionSample:
     )
 
 
-def test_array_zero_one_decomposition_matches_measure_functions() -> None:
-    sample = _array_categorical_sample()
+def test_numpy_zero_one_decomposition_matches_measure_functions() -> None:
+    sample = _numpy_categorical_sample()
 
     decomposition = SecondOrderZeroOneDecomposition(sample)
 
@@ -48,7 +48,7 @@ def test_array_zero_one_decomposition_matches_measure_functions() -> None:
     )
 
 
-def test_array_zero_one_decomposition_known_values() -> None:
+def test_numpy_zero_one_decomposition_known_values() -> None:
     probabilities = np.array(
         [
             [0.90, 0.10],
@@ -68,8 +68,8 @@ def test_array_zero_one_decomposition_known_values() -> None:
     np.testing.assert_allclose(decomposition.epistemic, 0.30, rtol=1e-12, atol=1e-12)
 
 
-def test_array_zero_one_decomposition_notion_access_and_types_match_backend() -> None:
-    decomposition = SecondOrderZeroOneDecomposition(_array_categorical_sample())
+def test_numpy_zero_one_decomposition_notion_access_and_types_match_backend() -> None:
+    decomposition = SecondOrderZeroOneDecomposition(_numpy_categorical_sample())
 
     total = decomposition["tu"]
     aleatoric = decomposition["au"]
@@ -80,8 +80,8 @@ def test_array_zero_one_decomposition_notion_access_and_types_match_backend() ->
     assert isinstance(epistemic, np.ndarray)
 
 
-def test_array_zero_one_decomposition_caches_component_objects() -> None:
-    decomposition = SecondOrderZeroOneDecomposition(_array_categorical_sample())
+def test_numpy_zero_one_decomposition_caches_component_objects() -> None:
+    decomposition = SecondOrderZeroOneDecomposition(_numpy_categorical_sample())
 
     total = decomposition.total
     aleatoric = decomposition.aleatoric

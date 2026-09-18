@@ -14,7 +14,7 @@ from probly.quantification.measure.distribution import (
 from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
 
 
-def _array_dirichlet() -> NumpyDirichletDistribution:
+def _numpy_dirichlet() -> NumpyDirichletDistribution:
     alphas = np.array(
         [
             [2.0, 3.0, 5.0],  # alpha_0=10
@@ -27,8 +27,8 @@ def _array_dirichlet() -> NumpyDirichletDistribution:
     return NumpyDirichletDistribution(alphas=alphas)
 
 
-def test_array_decomposition_components_match_measure_functions() -> None:
-    distribution = _array_dirichlet()
+def test_numpy_decomposition_components_match_measure_functions() -> None:
+    distribution = _numpy_dirichlet()
 
     decomposition = PosteriorNetworkDecomposition(distribution)
 
@@ -41,16 +41,16 @@ def test_array_decomposition_components_match_measure_functions() -> None:
     np.testing.assert_allclose(decomposition.epistemic, vacuity(distribution), rtol=1e-12, atol=1e-12)
 
 
-def test_array_decomposition_components_only_aleatoric_and_epistemic() -> None:
+def test_numpy_decomposition_components_only_aleatoric_and_epistemic() -> None:
     """Paper has no formal TU; decomposition has only AU and EU slots."""
-    decomposition = PosteriorNetworkDecomposition(_array_dirichlet())
+    decomposition = PosteriorNetworkDecomposition(_numpy_dirichlet())
 
     assert decomposition.components == [AleatoricUncertainty, EpistemicUncertainty]
     assert len(decomposition) == 2
 
 
-def test_array_decomposition_notion_access() -> None:
-    decomposition = PosteriorNetworkDecomposition(_array_dirichlet())
+def test_numpy_decomposition_notion_access() -> None:
+    decomposition = PosteriorNetworkDecomposition(_numpy_dirichlet())
 
     np.testing.assert_array_equal(decomposition[AleatoricUncertainty], decomposition.aleatoric)
     np.testing.assert_array_equal(decomposition[EpistemicUncertainty], decomposition.epistemic)
@@ -58,9 +58,9 @@ def test_array_decomposition_notion_access() -> None:
     np.testing.assert_array_equal(decomposition["eu"], decomposition.epistemic)
 
 
-def test_array_decomposition_does_not_expose_total() -> None:
+def test_numpy_decomposition_does_not_expose_total() -> None:
     """The paper has no formal total uncertainty measure; decomposition reflects that."""
-    decomposition = PosteriorNetworkDecomposition(_array_dirichlet())
+    decomposition = PosteriorNetworkDecomposition(_numpy_dirichlet())
 
     with pytest.raises(KeyError):
         decomposition[TotalUncertainty]
@@ -68,8 +68,8 @@ def test_array_decomposition_does_not_expose_total() -> None:
         decomposition["tu"]
 
 
-def test_array_decomposition_caches_components() -> None:
-    decomposition = PosteriorNetworkDecomposition(_array_dirichlet())
+def test_numpy_decomposition_caches_components() -> None:
+    decomposition = PosteriorNetworkDecomposition(_numpy_dirichlet())
 
     aleatoric = decomposition.aleatoric
     epistemic = decomposition.epistemic
@@ -78,16 +78,16 @@ def test_array_decomposition_caches_components() -> None:
     assert decomposition.epistemic is epistemic
 
 
-def test_array_decomposition_returns_ndarrays() -> None:
-    decomposition = PosteriorNetworkDecomposition(_array_dirichlet())
+def test_numpy_decomposition_returns_ndarrays() -> None:
+    decomposition = PosteriorNetworkDecomposition(_numpy_dirichlet())
 
     assert isinstance(decomposition.aleatoric, np.ndarray)
     assert isinstance(decomposition.epistemic, np.ndarray)
 
 
-def test_array_decomposition_aleatoric_is_max_prob_complement() -> None:
+def test_numpy_decomposition_aleatoric_is_max_prob_complement() -> None:
     """AU = 1 - max_c (alpha_c / alpha_0): paper's Alea Conf complement (Tables 1-7)."""
-    distribution = _array_dirichlet()
+    distribution = _numpy_dirichlet()
     decomposition = PosteriorNetworkDecomposition(distribution)
 
     expected = np.array(
@@ -101,14 +101,14 @@ def test_array_decomposition_aleatoric_is_max_prob_complement() -> None:
     np.testing.assert_allclose(decomposition.aleatoric, expected, rtol=1e-12, atol=1e-12)
 
 
-def test_array_decomposition_aleatoric_in_unit_interval() -> None:
-    decomposition = PosteriorNetworkDecomposition(_array_dirichlet())
+def test_numpy_decomposition_aleatoric_in_unit_interval() -> None:
+    decomposition = PosteriorNetworkDecomposition(_numpy_dirichlet())
 
     assert np.all(decomposition.aleatoric >= 0.0)
     assert np.all(decomposition.aleatoric < 1.0)
 
 
-def test_array_decomposition_uniform_dirichlet_has_max_uncertainties() -> None:
+def test_numpy_decomposition_uniform_dirichlet_has_max_uncertainties() -> None:
     """A uniform Dir(1,...,1) is the maximally-uncertain case for both AU and EU."""
     uniform = NumpyDirichletDistribution(alphas=np.array([1.0, 1.0, 1.0, 1.0], dtype=float))
     decomposition = PosteriorNetworkDecomposition(uniform)
@@ -119,9 +119,9 @@ def test_array_decomposition_uniform_dirichlet_has_max_uncertainties() -> None:
     np.testing.assert_allclose(decomposition.epistemic, 1.0, rtol=1e-12, atol=1e-12)
 
 
-def test_array_decomposition_no_canonical_notion() -> None:
+def test_numpy_decomposition_no_canonical_notion() -> None:
     """AU and EU are equally valid; no canonical notion."""
-    decomposition = PosteriorNetworkDecomposition(_array_dirichlet())
+    decomposition = PosteriorNetworkDecomposition(_numpy_dirichlet())
 
     assert decomposition.canonical_notion is None
     with pytest.raises(NotImplementedError):

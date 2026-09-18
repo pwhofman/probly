@@ -26,7 +26,7 @@ def dirichlet_rl_score_func[T](alphas: T, y_true: T | None = None) -> T:
 
 
 @dirichlet_rl_score_func.register(np.ndarray | ArrayLike)
-def compute_dirichlet_rl_score_numpy(alphas: np.ndarray | ArrayLike, y_true: np.ndarray | ArrayLike) -> np.ndarray:
+def numpy_compute_dirichlet_rl_score(alphas: np.ndarray | ArrayLike, y_true: np.ndarray | ArrayLike) -> np.ndarray:
     """Compute the Dirichlet relative likelihood score using NumPy.
 
     Args:

@@ -159,7 +159,7 @@ def _as_gaussian_sample(samples: Mapping[str, TorchSample[torch.Tensor]]) -> Tor
 
 
 @predict.register(_BATCHED_WRAPPER_TYPES)
-def _predict_batched_torch_uncertainty[**In, Out](
+def _torch_uncertainty_predict_batched[**In, Out](
     predictor: Predictor[In, Out], *args: In.args, **kwargs: In.kwargs
 ) -> TorchSample[torch.Tensor] | Mapping[str, TorchSample[torch.Tensor]]:
     batch_size = _first_tensor_batch_size(args, kwargs)
@@ -204,7 +204,7 @@ class TorchUncertaintyCalibratedLogitRepresenter(Representer[Any, Any, Any, Torc
 
 
 @predict.register(_CONFORMAL_TYPES)
-def _predict_torch_uncertainty_conformal[**In, Out](
+def _torch_uncertainty_predict_conformal[**In, Out](
     predictor: Predictor[In, Out], *args: In.args, **kwargs: In.kwargs
 ) -> TorchOneHotConformalSet:
     return TorchOneHotConformalSet(predict_raw(predictor, *args, **kwargs) > 0)
@@ -223,7 +223,7 @@ Calibrator.register(PostProcessing)
 
 
 @calibrate.register(PostProcessing)
-def _calibrate_torch_uncertainty_scaler[**In, Out](
+def _torch_uncertainty_calibrate_scaler[**In, Out](
     predictor: PostProcessing,
     dataloader: DataLoader,
     **kwargs: Any,  # noqa: ANN401

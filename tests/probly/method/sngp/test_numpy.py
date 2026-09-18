@@ -35,7 +35,7 @@ def _gaussian() -> NumpyGaussianDistribution:
     return NumpyGaussianDistribution(mean=mean, var=var)
 
 
-def test_array_decomposition_epistemic_matches_measure() -> None:
+def test_numpy_decomposition_epistemic_matches_measure() -> None:
     distribution = _gaussian()
 
     decomposition = SNGPDecomposition(distribution)
@@ -45,21 +45,21 @@ def test_array_decomposition_epistemic_matches_measure() -> None:
     )
 
 
-def test_array_decomposition_components_only_epistemic() -> None:
+def test_numpy_decomposition_components_only_epistemic() -> None:
     decomposition = SNGPDecomposition(_gaussian())
 
     assert decomposition.components == [EpistemicUncertainty]
     assert len(decomposition) == 1
 
 
-def test_array_decomposition_canonical_notion_is_epistemic() -> None:
+def test_numpy_decomposition_canonical_notion_is_epistemic() -> None:
     decomposition = SNGPDecomposition(_gaussian())
 
     assert decomposition.canonical_notion is EpistemicUncertainty
     np.testing.assert_array_equal(decomposition.get_canonical(), decomposition.epistemic)
 
 
-def test_array_decomposition_does_not_expose_aleatoric_or_total() -> None:
+def test_numpy_decomposition_does_not_expose_aleatoric_or_total() -> None:
     """SNGP paper has no aleatoric / total measures; decomposition reflects that."""
     decomposition = SNGPDecomposition(_gaussian())
 
@@ -73,7 +73,7 @@ def test_array_decomposition_does_not_expose_aleatoric_or_total() -> None:
         decomposition["tu"]
 
 
-def test_array_decomposition_caches_component() -> None:
+def test_numpy_decomposition_caches_component() -> None:
     decomposition = SNGPDecomposition(_gaussian())
 
     epistemic = decomposition.epistemic
@@ -82,13 +82,13 @@ def test_array_decomposition_caches_component() -> None:
     assert decomposition[EpistemicUncertainty] is epistemic
 
 
-def test_array_decomposition_returns_ndarray() -> None:
+def test_numpy_decomposition_returns_ndarray() -> None:
     decomposition = SNGPDecomposition(_gaussian())
 
     assert isinstance(decomposition.epistemic, np.ndarray)
 
 
-def test_array_decomposition_uniform_zero_logits_gives_one_half() -> None:
+def test_numpy_decomposition_uniform_zero_logits_gives_one_half() -> None:
     """h=0 with default mean-field correction: u = K / (K + K * exp(0)) = 1/2."""
     distribution = NumpyGaussianDistribution(mean=np.zeros((1, 4), dtype=float), var=np.ones((1, 4), dtype=float))
 
@@ -97,7 +97,7 @@ def test_array_decomposition_uniform_zero_logits_gives_one_half() -> None:
     np.testing.assert_allclose(decomposition.epistemic, 0.5, rtol=1e-12, atol=1e-12)
 
 
-def test_array_decomposition_high_variance_increases_uncertainty() -> None:
+def test_numpy_decomposition_high_variance_increases_uncertainty() -> None:
     """Mean-field correction shrinks logits when variance is large -> vacuity goes up."""
     mean = np.array([[10.0, -10.0, 0.0, 0.0]], dtype=float)
     low_var = np.full_like(mean, 1e-3)
@@ -109,7 +109,7 @@ def test_array_decomposition_high_variance_increases_uncertainty() -> None:
     assert high_score[0] > low_score[0]
 
 
-def test_array_decomposition_mean_field_factor_is_configurable() -> None:
+def test_numpy_decomposition_mean_field_factor_is_configurable() -> None:
     distribution = _gaussian()
 
     default_score = SNGPDecomposition(distribution).epistemic
@@ -121,7 +121,7 @@ def test_array_decomposition_mean_field_factor_is_configurable() -> None:
     assert not np.allclose(default_score, custom_score)
 
 
-def test_array_decomposition_default_mean_field_factor_is_pi_over_eight() -> None:
+def test_numpy_decomposition_default_mean_field_factor_is_pi_over_eight() -> None:
     distribution = _gaussian()
 
     default_score = SNGPDecomposition(distribution).epistemic

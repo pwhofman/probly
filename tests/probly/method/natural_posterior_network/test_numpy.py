@@ -17,7 +17,7 @@ from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDis
 NUMERIC_BASES: tuple[None | float, ...] = (None, 2.0, 10.0)
 
 
-def _array_dirichlet() -> NumpyDirichletDistribution:
+def _numpy_dirichlet() -> NumpyDirichletDistribution:
     alphas = np.array(
         [
             [2.0, 3.0, 5.0],  # alpha_0=10, vacuity=0.3
@@ -30,8 +30,8 @@ def _array_dirichlet() -> NumpyDirichletDistribution:
 
 
 @pytest.mark.parametrize("base", NUMERIC_BASES)
-def test_array_decomposition_components_match_measure_functions(base: None | float) -> None:
-    distribution = _array_dirichlet()
+def test_numpy_decomposition_components_match_measure_functions(base: None | float) -> None:
+    distribution = _numpy_dirichlet()
 
     decomposition = NaturalPosteriorDecomposition(distribution, base=base)
 
@@ -45,16 +45,16 @@ def test_array_decomposition_components_match_measure_functions(base: None | flo
     np.testing.assert_allclose(decomposition.epistemic, vacuity(distribution), rtol=1e-12, atol=1e-12)
 
 
-def test_array_decomposition_components_have_all_three() -> None:
+def test_numpy_decomposition_components_have_all_three() -> None:
     """Appendix E formally defines TU, AU, and EU."""
-    decomposition = NaturalPosteriorDecomposition(_array_dirichlet())
+    decomposition = NaturalPosteriorDecomposition(_numpy_dirichlet())
 
     assert decomposition.components == [TotalUncertainty, AleatoricUncertainty, EpistemicUncertainty]
     assert len(decomposition) == 3
 
 
-def test_array_decomposition_notion_access() -> None:
-    decomposition = NaturalPosteriorDecomposition(_array_dirichlet())
+def test_numpy_decomposition_notion_access() -> None:
+    decomposition = NaturalPosteriorDecomposition(_numpy_dirichlet())
 
     np.testing.assert_array_equal(decomposition[TotalUncertainty], decomposition.total)
     np.testing.assert_array_equal(decomposition[AleatoricUncertainty], decomposition.aleatoric)
@@ -64,8 +64,8 @@ def test_array_decomposition_notion_access() -> None:
     np.testing.assert_array_equal(decomposition["eu"], decomposition.epistemic)
 
 
-def test_array_decomposition_caches_components() -> None:
-    decomposition = NaturalPosteriorDecomposition(_array_dirichlet())
+def test_numpy_decomposition_caches_components() -> None:
+    decomposition = NaturalPosteriorDecomposition(_numpy_dirichlet())
 
     total = decomposition.total
     aleatoric = decomposition.aleatoric
@@ -76,23 +76,23 @@ def test_array_decomposition_caches_components() -> None:
     assert decomposition.epistemic is epistemic
 
 
-def test_array_decomposition_returns_ndarrays() -> None:
-    decomposition = NaturalPosteriorDecomposition(_array_dirichlet())
+def test_numpy_decomposition_returns_ndarrays() -> None:
+    decomposition = NaturalPosteriorDecomposition(_numpy_dirichlet())
 
     assert isinstance(decomposition.total, np.ndarray)
     assert isinstance(decomposition.aleatoric, np.ndarray)
     assert isinstance(decomposition.epistemic, np.ndarray)
 
 
-def test_array_decomposition_uniform_dirichlet_has_max_vacuity() -> None:
+def test_numpy_decomposition_uniform_dirichlet_has_max_vacuity() -> None:
     uniform = NumpyDirichletDistribution(alphas=np.array([1.0, 1.0, 1.0], dtype=float))
     decomposition = NaturalPosteriorDecomposition(uniform)
 
     np.testing.assert_allclose(decomposition.epistemic, 1.0, rtol=1e-12, atol=1e-12)
 
 
-def test_array_decomposition_canonical_notion_is_total() -> None:
+def test_numpy_decomposition_canonical_notion_is_total() -> None:
     """The canonical notion of the NatPN decomposition is total uncertainty."""
-    decomposition = NaturalPosteriorDecomposition(_array_dirichlet())
+    decomposition = NaturalPosteriorDecomposition(_numpy_dirichlet())
 
     np.testing.assert_array_equal(decomposition.get_canonical(), decomposition.total)

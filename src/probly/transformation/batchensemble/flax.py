@@ -44,7 +44,7 @@ def predict_batchensemble(
     return JaxSample(array=out, sample_axis=0)
 
 
-def replace_flax_batchensemble_linear(
+def flax_replace_batchensemble_linear(
     obj: nnx.Linear,
     num_members: int,
     use_base_weights: bool,
@@ -69,7 +69,7 @@ def replace_flax_batchensemble_linear(
     )
 
 
-def replace_flax_batchensemble_conv(
+def flax_replace_batchensemble_conv(
     obj: nnx.Conv,
     num_members: int,
     use_base_weights: bool,
@@ -94,5 +94,5 @@ def replace_flax_batchensemble_conv(
     )
 
 
-register(nnx.Linear, replace_flax_batchensemble_linear)
-register(nnx.Conv, replace_flax_batchensemble_conv)
+register(nnx.Linear, flax_replace_batchensemble_linear)
+register(nnx.Conv, flax_replace_batchensemble_conv)

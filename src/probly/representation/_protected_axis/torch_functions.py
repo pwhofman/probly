@@ -84,7 +84,7 @@ def _expand_average_weights_for_protected_axes(
     return weights
 
 
-class _BoundTorchFunction(Protocol):
+class _TorchBoundFunction(Protocol):
     def __call__(
         self,
         func: Callable,
@@ -94,7 +94,7 @@ class _BoundTorchFunction(Protocol):
         ...
 
 
-class _BoundTorchFunctionWithInternals(Protocol):
+class _TorchBoundFunctionWithInternals(Protocol):
     def __call__(
         self,
         func: Callable,
@@ -117,7 +117,7 @@ def torch_function(
     return NotImplemented
 
 
-def torch_function_override(torch_func: _BoundTorchFunction) -> _TorchFunction:
+def torch_function_override(torch_func: _TorchBoundFunction) -> _TorchFunction:
     """Decorator to convert a bound torch function to ``__torch_function__`` shape."""
 
     @wraps(torch_func)
@@ -137,7 +137,7 @@ def torch_internals_override(
     torch_param_name: str,
     *,
     check_is_permitted: bool = False,
-) -> Callable[[_BoundTorchFunctionWithInternals], _TorchFunction]: ...
+) -> Callable[[_TorchBoundFunctionWithInternals], _TorchFunction]: ...
 
 
 @overload
@@ -145,7 +145,7 @@ def torch_internals_override(
     *,
     torch_param_pos: int,
     check_is_permitted: bool = False,
-) -> Callable[[_BoundTorchFunctionWithInternals], _TorchFunction]: ...
+) -> Callable[[_TorchBoundFunctionWithInternals], _TorchFunction]: ...
 
 
 def torch_internals_override(
@@ -153,7 +153,7 @@ def torch_internals_override(
     *,
     torch_param_pos: int | None = None,
     check_is_permitted: bool = False,
-) -> Callable[[_BoundTorchFunctionWithInternals], _TorchFunction]:
+) -> Callable[[_TorchBoundFunctionWithInternals], _TorchFunction]:
     """Decorator to convert a function taking a protected-axis argument."""
     if torch_param_name is None and torch_param_pos is None:
         msg = "Either torch_param_name or torch_param_pos must be provided."
@@ -162,7 +162,7 @@ def torch_internals_override(
         msg = "Only one of torch_param_name or torch_param_pos can be provided."
         raise ValueError(msg)
 
-    def decorator(f: _BoundTorchFunctionWithInternals) -> _TorchFunction:
+    def decorator(f: _TorchBoundFunctionWithInternals) -> _TorchFunction:
         @wraps(f)
         def wrapper(
             func: Callable,

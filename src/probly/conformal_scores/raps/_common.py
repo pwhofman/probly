@@ -26,7 +26,7 @@ def _raps_score_dispatch[T](
 
 
 @_raps_score_dispatch.register(np.ndarray)
-def compute_raps_score_numpy(
+def numpy_compute_raps_score(
     probs: np.ndarray,
     y_cal: np.ndarray | None = None,
     randomized: bool = True,
@@ -84,7 +84,7 @@ def _(
     k_reg: int = 0,
 ) -> np.ndarray:
     """RAPS Nonconformity-Scores for NumpyCategoricalDistributions."""
-    return compute_raps_score_numpy(
+    return numpy_compute_raps_score(
         probs.probabilities,
         y_cal,
         randomized=randomized,

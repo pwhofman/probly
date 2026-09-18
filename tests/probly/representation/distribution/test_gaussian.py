@@ -9,7 +9,7 @@ from probly.representation.distribution.numpy_gaussian import NumpyGaussianDistr
 from probly.representation.sample import NumpySample
 
 
-def test_array_gaussian_initialization_valid() -> None:
+def test_numpy_gaussian_initialization_valid() -> None:
     """Test standard initialization with valid numpy arrays aswell as types."""
     mean = np.array([0.0, 1.0])
     var = np.array([1.0, 0.5])
@@ -24,7 +24,7 @@ def test_array_gaussian_initialization_valid() -> None:
     assert dist.var.dtype == np.float64
 
 
-def test_array_gaussian_raises_on_shape_mismatch() -> None:
+def test_numpy_gaussian_raises_on_shape_mismatch() -> None:
     """Test if the function does raise a ValueError upon wrong initialization."""
     mean = np.zeros((5,))
     var = np.ones((4,))
@@ -34,7 +34,7 @@ def test_array_gaussian_raises_on_shape_mismatch() -> None:
 
 
 @pytest.mark.parametrize("invalid_var", [0.0, -0.1, -5.0])
-def test_array_gaussian_raises_on_non_positive_variance(invalid_var: float) -> None:
+def test_numpy_gaussian_raises_on_non_positive_variance(invalid_var: float) -> None:
     """Test if the function does raise a ValueError upon using a negative variance."""
     mean = np.array([0.0, 0.0])
     var = np.array([1.0, invalid_var])
@@ -56,7 +56,7 @@ def test_from_parameters_creates_instance() -> None:
     np.testing.assert_array_equal(dist.var, np.array(var_list, dtype=float))
 
 
-def test_array_properties() -> None:
+def test_numpy_properties() -> None:
     """Test shape, ndim, size delegation."""
     shape = (2, 3)
     mean = np.zeros(shape)

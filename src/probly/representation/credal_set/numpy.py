@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from probly.representation.sample._common import Sample
 
 
-def _ensure_numpy_categorical_distribution(value: object) -> NumpyCategoricalDistribution:
+def _numpy_ensure_categorical_distribution(value: object) -> NumpyCategoricalDistribution:
     if isinstance(value, NumpyCategoricalDistribution):
         return value
     return NumpyProbabilityCategoricalDistribution(np.asarray(value))
@@ -87,7 +87,7 @@ class NumpyDiscreteCredalSet(
 
     def __post_init__(self) -> None:
         """Validate that the array contains valid categorical distributions."""
-        object.__setattr__(self, "array", _ensure_numpy_categorical_distribution(self.array))
+        object.__setattr__(self, "array", _numpy_ensure_categorical_distribution(self.array))
 
     @override
     @classmethod
@@ -129,7 +129,7 @@ class NumpyConvexCredalSet(
 
     def __post_init__(self) -> None:
         """Validate that the array contains valid categorical distributions."""
-        object.__setattr__(self, "array", _ensure_numpy_categorical_distribution(self.array))
+        object.__setattr__(self, "array", _numpy_ensure_categorical_distribution(self.array))
 
     @override
     @classmethod
@@ -175,7 +175,7 @@ class NumpyDistanceBasedCredalSet(
 
     def __post_init__(self) -> None:
         """Validate that nominal is a valid categorical distribution and radius is non-negative."""
-        object.__setattr__(self, "nominal", _ensure_numpy_categorical_distribution(self.nominal))
+        object.__setattr__(self, "nominal", _numpy_ensure_categorical_distribution(self.nominal))
         object.__setattr__(self, "radius", np.asarray(self.radius))
 
     @override
@@ -315,7 +315,7 @@ class NumpySingletonCredalSet(
 
     def __post_init__(self) -> None:
         """Validate that the array contains a valid categorical distribution."""
-        object.__setattr__(self, "array", _ensure_numpy_categorical_distribution(self.array))
+        object.__setattr__(self, "array", _numpy_ensure_categorical_distribution(self.array))
 
     @override
     @classmethod

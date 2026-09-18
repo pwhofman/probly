@@ -14,7 +14,7 @@ from ._common import tv_score_func
 
 
 @tv_score_func.register((jax.Array, Tracer))
-def compute_tv_score_jax(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
+def jax_compute_tv_score(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
     """Computes the Total Variation score using JAX arrays."""
     y_pred_j = jnp.asarray(y_pred)
     distribution_target = isinstance(y_true, CategoricalDistribution)

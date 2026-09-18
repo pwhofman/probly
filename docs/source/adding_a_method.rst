@@ -196,7 +196,13 @@ Step 2: Implement the backends (``torch.py``, ``flax.py``, ...)
 
 Each backend module imports its framework at module level (this is safe because the
 module is only imported lazily, see Step 3), defines the per-layer transformation, and
-registers it:
+registers it.
+
+Use backend prefixes for implementation names: ``numpy_``, ``jax_``, ``torch_``,
+``flax_``, or ``sklearn_`` for functions, and ``Numpy``, ``Jax``, ``Torch``, ``Flax``,
+or ``Sklearn`` for classes. Private names retain their leading underscore, as in
+``_torch_transform_linear``. Conversion names such as ``from_numpy_sample``
+describe their inputs and retain that ordering.
 
 .. code-block:: python
 
@@ -209,12 +215,12 @@ registers it:
     from ._common import register
 
 
-    def transform_torch_linear(obj: nn.Linear, strength: float) -> nn.Module:
+    def torch_transform_linear(obj: nn.Linear, strength: float) -> nn.Module:
         """Replace a Linear layer with its mymethod counterpart."""
         return nn.Sequential(MyMethodLayer(strength=strength), obj)
 
 
-    register(nn.Linear, transform_torch_linear)
+    register(nn.Linear, torch_transform_linear)
 
 The keyword arguments of the transformation function (here ``strength``) are filled
 from the global variables declared in the ``register`` helper's ``vars`` mapping.
@@ -294,7 +300,7 @@ Tests live under ``tests/probly/method/mymethod/`` (do not forget the ``__init__
 and are split by backend:
 
 * ``test_common.py`` for backend-agnostic checks,
-* ``test_torch.py``, ``test_flax.py``, ``test_array.py``, ... for backend-specific
+* ``test_torch.py``, ``test_flax.py``, ``test_numpy.py``, ``test_jax.py``, ... for backend-specific
   checks.
 
 Backend-specific test files call ``pytest.importorskip`` once at the top instead of

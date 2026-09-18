@@ -11,7 +11,7 @@ from ._common import lac_score
 
 
 @lac_score.register(jnp.ndarray)
-def compute_lac_score_jax(probs: jnp.ndarray, y_cal: jnp.ndarray | None = None) -> jnp.ndarray:
+def jax_compute_lac_score(probs: jnp.ndarray, y_cal: jnp.ndarray | None = None) -> jnp.ndarray:
     """Compute the LAC score."""
     probs_jnp = jnp.asarray(probs, dtype=float)
     if probs_jnp.ndim < 1:

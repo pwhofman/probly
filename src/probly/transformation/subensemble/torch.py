@@ -32,7 +32,7 @@ class _FrozenBackbone(nn.Module):
 
 
 @subensemble_generator.register(nn.Module)
-def generate_torch_subensemble(
+def torch_generate_subensemble(
     obj: nn.Module,
     num_heads: int,
     *,

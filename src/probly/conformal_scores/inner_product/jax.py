@@ -14,7 +14,7 @@ from ._common import inner_product_score_func
 
 
 @inner_product_score_func.register((jax.Array, Tracer))
-def compute_inner_product_score_jax(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
+def jax_compute_inner_product_score(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
     """Computes the Inner Product score using JAX Array."""
     y_pred_t = jnp.asarray(y_pred)
     distribution_target = isinstance(y_true, CategoricalDistribution)

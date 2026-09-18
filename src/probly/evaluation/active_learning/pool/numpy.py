@@ -41,7 +41,7 @@ class NumpyActiveLearningPool:
 
 
 @from_dataset.register(np.ndarray)
-def _from_dataset_numpy(
+def _numpy_from_dataset(
     x: np.ndarray,
     y: np.ndarray,
     x_test: np.ndarray,
@@ -65,7 +65,7 @@ def _from_dataset_numpy(
 
 
 @query.register(NumpyActiveLearningPool)
-def _query_numpy(pool: NumpyActiveLearningPool, indices: np.ndarray) -> None:
+def _numpy_query(pool: NumpyActiveLearningPool, indices: np.ndarray) -> None:
     pool.x_labeled = np.concatenate([pool.x_labeled, pool.x_unlabeled[indices]], axis=0)
     pool.y_labeled = np.concatenate([pool.y_labeled, pool.y_unlabeled[indices]], axis=0)
     mask = np.ones(len(pool.x_unlabeled), dtype=bool)

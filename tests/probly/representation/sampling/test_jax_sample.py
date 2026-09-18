@@ -920,7 +920,7 @@ class TestJaxSampleConversions:
         assert sample.array.array is values
         assert sample.weights is weights
 
-    def test_array_sample_to_jax_sample(self) -> None:
+    def test_numpy_sample_to_jax_sample(self) -> None:
         array_sample = NumpySample(
             np.arange(12, dtype=np.float32).reshape(3, 4),
             sample_axis=1,
@@ -934,7 +934,7 @@ class TestJaxSampleConversions:
         assert_weights_equal(converted, array_sample.weights)
         np.testing.assert_allclose(np.asarray(converted), np.asarray(array_sample))
 
-    def test_array_sample_to_jax_sample_honours_dtype(self) -> None:
+    def test_numpy_sample_to_jax_sample_honours_dtype(self) -> None:
         array_sample = NumpySample(np.arange(12).reshape(3, 4), sample_axis=1)
 
         converted = array_sample.__jax_like__(jnp.float32)

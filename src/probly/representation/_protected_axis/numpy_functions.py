@@ -40,7 +40,7 @@ type NumpyProtectedValue = NumpyArrayLike[Any] | np.ndarray
 
 type NumpyAxisProtectedCreator = AxisProtectedCreator[NumpyProtectedValue, Any]
 type NumpyAxisProtectedInternals = AxisProtectedInternals[NumpyProtectedValue, Any]
-type _BoundNumpyFunctionWithInternals = BoundFunctionWithInternals[NumpyProtectedValue, Any]
+type _NumpyBoundFunctionWithInternals = BoundFunctionWithInternals[NumpyProtectedValue, Any]
 
 
 def numpy_axis_protected_internals(
@@ -79,7 +79,7 @@ def numpy_function(
 def numpy_internals_override(
     array_param_name: str,
     check_is_permitted: bool = False,
-) -> Callable[[_BoundNumpyFunctionWithInternals], FunctionOverride]:
+) -> Callable[[_NumpyBoundFunctionWithInternals], FunctionOverride]:
     """Decorator for functions that operate on one protected-axis argument."""
     return internals_override(array_param_name, check_is_permitted, extract=numpy_axis_protected_internals)
 
