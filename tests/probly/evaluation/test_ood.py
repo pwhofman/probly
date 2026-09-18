@@ -54,6 +54,17 @@ def test_evaluate_ood_all_metrics_includes_static_and_dynamic() -> None:
         assert isinstance(result[k], float)
 
 
+def test_evaluate_ood_identical_scores_are_chance_level() -> None:
+    """Scores that do not separate the two sets give chance-level metrics, not a perfect score."""
+    scores = np.full(20, 0.3)
+
+    result = evaluate_ood(scores, scores, metrics="all")
+
+    assert result["auroc"] == pytest.approx(0.5)
+    assert result["aupr"] == pytest.approx(0.5)
+    assert result["fpr"] == pytest.approx(1.0)
+
+
 def test_evaluate_ood_unknown_metric_raises() -> None:
     in_distribution = np.array([0.9, 0.8])
     out_distribution = np.array([0.1, 0.2])
