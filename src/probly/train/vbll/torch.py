@@ -71,19 +71,6 @@ def _gaussian_weight_kl(
     return 0.5 * (combined_mean_sq + trace_term + log_det_term)
 
 
-def _noise_wishart_term(layer: VBLLLayer | GVBLLLayer) -> torch.Tensor:
-    """Wishart prior regularizer on the layer's learnable noise precision.
-
-    Args:
-        layer: A VBLL layer with ``noise_logdiag``, ``dof`` and ``wishart_scale``.
-
-    Returns:
-        A scalar tensor with the Wishart log-prior term of the ELBO.
-    """
-    noise_log_var = 2.0 * layer.noise_logdiag
-    return layer.dof * (-noise_log_var.sum()) - 0.5 * layer.wishart_scale * torch.exp(-noise_log_var).sum()
-
-
 def _reduced_kn_bound(
     mean: torch.Tensor,
     cov: torch.Tensor,
@@ -148,7 +135,7 @@ def disc_vbll_loss(
     log_normalizer = torch.logsumexp(mean + 0.5 * var, dim=-1)
     expected_log_likelihood = (true_logit - log_normalizer).mean()
 
-    total_elbo = expected_log_likelihood + regularization_weight * (_noise_wishart_term(layer) - layer.kl_divergence)
+    total_elbo = expected_log_likelihood + regularization_weight * (layer.noise_wishart_term - layer.kl_divergence)
     return -total_elbo
 
 
@@ -187,7 +174,7 @@ def g_vbll_loss(
     lse_term = torch.logsumexp(layer(features), dim=-1)
     jensen_bound = linear_term - 0.5 * trace_term - lse_term
 
-    total_elbo = jensen_bound.mean() + regularization_weight * (_noise_wishart_term(layer) - layer.kl_divergence)
+    total_elbo = jensen_bound.mean() + regularization_weight * (layer.noise_wishart_term - layer.kl_divergence)
     return -total_elbo
 
 

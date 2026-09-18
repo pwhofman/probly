@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import torch
 from torch import Tensor, nn
-from torch.distributions import Dirichlet
+from torch.distributions import Dirichlet, kl_divergence
 from torch.nn import functional as F
-from torch.special import digamma, gammaln
+from torch.special import digamma
 
 from probly.utils.switchdispatch import switchdispatch
 from probly.utils.torch import dirichlet_entropy
@@ -260,51 +260,6 @@ def make_ood_target_alpha(
     return mu * alpha0
 
 
-def kl_dirichlet(prior_alpha: Tensor, posterior_alpha: Tensor) -> Tensor:
-    """Compute KL(Dir(alpha_p) || Dir(alpha_q)) for each batch item.
-
-    Used by Posterior Networks, Dirichlet Prior Networks, and PN-style
-    in-distribution / out-of-distribution losses to compare Dirichlet
-    distributions.
-
-    Args:
-        prior_alpha: Prior Dirichlet concentration parameters, shape (B, C).
-        posterior_alpha: Posterior Dirichlet concentration parameters, shape (B, C).
-
-    Returns:
-        KL divergence for each batch element, shape (B,)
-    """
-    prior_alpha_sum = prior_alpha.sum(dim=-1, keepdim=True)
-    posterior_alpha_sum = posterior_alpha.sum(dim=-1, keepdim=True)
-
-    normalization_term = gammaln(prior_alpha_sum) - gammaln(posterior_alpha_sum)
-    log_gamma_ratio_term = (gammaln(posterior_alpha) - gammaln(prior_alpha)).sum(dim=-1, keepdim=True)
-    digamma_expectation_term = (
-        (prior_alpha - posterior_alpha) * (digamma(prior_alpha) - digamma(prior_alpha_sum))
-    ).sum(
-        dim=-1,
-        keepdim=True,
-    )
-
-    return (normalization_term + log_gamma_ratio_term + digamma_expectation_term).squeeze(-1)
-
-
-def predictive_probs(alpha: Tensor) -> Tensor:
-    """Expected categorical probabilities under Dirichlet.
-
-    Used by Posterior Networks, Dirichlet Prior Networks, and other
-    Dirichlet-based classification models to obtain predictive class
-    probabilities.
-
-    Args:
-        alpha: Dirichlet concentration parameters, shape (B, C).
-
-    Returns:
-        Expected categorical probabilities, shape (B, C).
-    """
-    return alpha / alpha.sum(dim=-1, keepdim=True)
-
-
 def evidential_log_loss(alphas: Tensor, targets: Tensor) -> Tensor:
     """Evidential Log Loss for classification uncertainty estimation.
 
@@ -501,15 +456,19 @@ def pn_loss(model: nn.Module, x_in: torch.Tensor, y_in: torch.Tensor, x_ood: tor
     # ID forward
     alpha_in = model(x_in)
     alpha_target_in = make_in_domain_target_alpha(y_in).to(alpha_in.device)
-    kl_in = kl_dirichlet(alpha_target_in, alpha_in).mean()
+    kl_in = kl_divergence(
+        Dirichlet(alpha_target_in, validate_args=False), Dirichlet(alpha_in, validate_args=False)
+    ).mean()
 
-    probs_in = predictive_probs(alpha_in)
+    probs_in = alpha_in / alpha_in.sum(dim=-1, keepdim=True)
     ce_term = F.nll_loss(torch.log(probs_in + 1e-8), y_in)
 
     # OOD forward
     alpha_ood = model(x_ood)
     alpha_target_ood = make_ood_target_alpha(x_ood.size(0)).to(alpha_ood.device)
-    kl_ood = kl_dirichlet(alpha_target_ood, alpha_ood).mean()
+    kl_ood = kl_divergence(
+        Dirichlet(alpha_target_ood, validate_args=False), Dirichlet(alpha_ood, validate_args=False)
+    ).mean()
 
     loss = kl_in + kl_ood + 0.1 * ce_term
 

@@ -390,38 +390,6 @@ class TestMakeOodTargetAlpha:
         torch.testing.assert_close(out.sum(dim=-1), torch.full((2,), 20.0))
 
 
-class TestPredictiveProbs:
-    def test_normalises_alpha(self) -> None:
-        torch = _torch_modules()
-        from probly.train.evidential.torch import predictive_probs  # noqa: PLC0415
-
-        alpha = torch.tensor([[1.0, 2.0, 3.0], [10.0, 0.0, 0.0]])
-        probs = predictive_probs(alpha)
-        torch.testing.assert_close(probs, alpha / alpha.sum(dim=-1, keepdim=True))
-        torch.testing.assert_close(probs.sum(dim=-1), torch.tensor([1.0, 1.0]))
-
-
-class TestKLDirichlet:
-    def test_zero_divergence_for_identical(self) -> None:
-        torch = _torch_modules()
-        from probly.train.evidential.torch import kl_dirichlet  # noqa: PLC0415
-
-        a = torch.tensor([[2.0, 3.0]])
-        kl = kl_dirichlet(a, a)
-        # KL(p || p) = 0
-        torch.testing.assert_close(kl.squeeze(), torch.tensor(0.0), atol=1e-5, rtol=1e-5)
-
-    def test_positive_divergence_for_different(self) -> None:
-        torch = _torch_modules()
-        from probly.train.evidential.torch import kl_dirichlet  # noqa: PLC0415
-
-        prior = torch.tensor([[2.0, 3.0]])
-        posterior = torch.tensor([[5.0, 5.0]])
-        kl = kl_dirichlet(prior, posterior)
-        # KL(p, q) >= 0 and != 0 when p != q.
-        assert kl.item() > 0
-
-
 class TestEvidentialLogLoss:
     def test_smaller_for_correct_class(self) -> None:
         torch = _torch_modules()

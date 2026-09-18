@@ -2537,6 +2537,16 @@ class VBLLLayer(nn.Module):
         return mean, var
 
     @property
+    def noise_wishart_term(self) -> torch.Tensor:
+        """Wishart prior regularizer on the layer's learnable noise precision.
+
+        Returns:
+            A scalar tensor with the Wishart log-prior term of the ELBO.
+        """
+        noise_log_var = 2.0 * self.noise_logdiag
+        return self.dof * (-noise_log_var.sum()) - 0.5 * self.wishart_scale * torch.exp(-noise_log_var).sum()
+
+    @property
     def kl_divergence(self) -> torch.Tensor:
         """KL divergence from the weight posterior to the prior.
 
@@ -2671,6 +2681,16 @@ class GVBLLLayer(nn.Module):
         var = torch.exp(log_var)
         diff = x.unsqueeze(-2) - self.mu_mean
         return -0.5 * ((diff.square() / var) + log_var + math.log(2.0 * math.pi)).sum(dim=-1)
+
+    @property
+    def noise_wishart_term(self) -> torch.Tensor:
+        """Wishart prior regularizer on the layer's learnable noise precision.
+
+        Returns:
+            A scalar tensor with the Wishart log-prior term of the ELBO.
+        """
+        noise_log_var = 2.0 * self.noise_logdiag
+        return self.dof * (-noise_log_var.sum()) - 0.5 * self.wishart_scale * torch.exp(-noise_log_var).sum()
 
     @property
     def kl_divergence(self) -> torch.Tensor:
