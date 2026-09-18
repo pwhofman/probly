@@ -1,30 +1,23 @@
-"""Collection of torch dare training functions."""
+"""Torch DARE implementation."""
 
 from __future__ import annotations
 
 import torch
 from torch import nn
 
+from ._common import dare_anti_regularization
+
 EPS_LOG = torch.finfo(torch.float32).eps
 
 
-def dare_regularizer(
+@dare_anti_regularization.register(nn.Module)
+def _torch_dare_anti_regularization(
     model: nn.Module,
     device: torch.device | str,
     loss: torch.Tensor,
     threshold: torch.Tensor | float,
 ) -> torch.Tensor:
-    """Compute the DARE anti-regularization term following Algorithm 1.
-
-    Args:
-        model: The DARE model.
-        device: The device of the model.
-        loss: The current loss value, used for the switching condition.
-        threshold: The threshold at or below which anti-regularization activates.
-
-    Returns:
-        The anti-regularization term when loss <= threshold, else 0.0.
-    """
+    """Compute the DARE anti-regularization term of a torch model."""
     if loss <= threshold:
         anti_reg = torch.zeros((), device=device)
         d = 0

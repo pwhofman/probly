@@ -19,7 +19,7 @@ from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_net import CredalNetPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.credal_wrapper import CredalWrapperPredictor
-from probly.method.dare import DarePredictor
+from probly.method.dare import DarePredictor, dare_anti_regularization
 from probly.method.ddu import DDUPredictor
 from probly.method.deup import DEUPPredictor
 from probly.method.dropconnect import DropConnectPredictor
@@ -38,7 +38,6 @@ from probly.predictor import predict_raw
 from probly.train.bayesian.torch import elbo_loss
 from probly.train.calibration.torch import label_relaxation_loss
 from probly.train.credal.torch import intersection_probability_ce_loss
-from probly.train.dare.torch import dare_regularizer
 from probly.train.evidential.torch import (
     evidential_ce_loss,
     evidential_kl_divergence,
@@ -270,7 +269,7 @@ def train_epoch_dare(
 ) -> float:
     """Train a DARE ensemble member for one step with cross-entropy minus the anti-regularizer.
 
-    Backward target is ``CE(outputs, targets) - dare_regularizer(model, ..., threshold)``;
+    Backward target is ``CE(outputs, targets) - dare_anti_regularization(model, ..., threshold)``;
     the regularizer activates only when the current CE is at or below ``threshold``
     (Algorithm 1 of arXiv:2304.04042). Returns raw CE so logged training loss is
     comparable across methods.
@@ -280,7 +279,7 @@ def train_epoch_dare(
     with autocast(inputs.device.type, enabled=amp_enabled):
         outputs = model(inputs)
         loss = criterion(outputs, targets)
-        reg = dare_regularizer(model, inputs.device, loss.detach(), threshold)
+        reg = dare_anti_regularization(model, inputs.device, loss.detach(), threshold)
         total = loss - reg
     if scaler is not None:
         scaler.scale(total).backward()
