@@ -12,12 +12,12 @@ from probly.quantification.measure.distribution import (
     entropy_of_expected_predictive_distribution,
     vacuity,
 )
-from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
+from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
 
 NUMERIC_BASES: tuple[None | float, ...] = (None, 2.0, 10.0)
 
 
-def _array_dirichlet() -> ArrayDirichletDistribution:
+def _array_dirichlet() -> NumpyDirichletDistribution:
     alphas = np.array(
         [
             [2.0, 3.0, 5.0],  # alpha_0=10, vacuity=0.3
@@ -26,7 +26,7 @@ def _array_dirichlet() -> ArrayDirichletDistribution:
         ],
         dtype=float,
     )
-    return ArrayDirichletDistribution(alphas=alphas)
+    return NumpyDirichletDistribution(alphas=alphas)
 
 
 @pytest.mark.parametrize("base", NUMERIC_BASES)
@@ -85,7 +85,7 @@ def test_array_decomposition_returns_ndarrays() -> None:
 
 
 def test_array_decomposition_uniform_dirichlet_has_max_vacuity() -> None:
-    uniform = ArrayDirichletDistribution(alphas=np.array([1.0, 1.0, 1.0], dtype=float))
+    uniform = NumpyDirichletDistribution(alphas=np.array([1.0, 1.0, 1.0], dtype=float))
     decomposition = NaturalPosteriorDecomposition(uniform)
 
     np.testing.assert_allclose(decomposition.epistemic, 1.0, rtol=1e-12, atol=1e-12)

@@ -8,7 +8,7 @@ import jax.numpy as jnp
 
 from probly.representation.distribution import CategoricalDistribution
 from probly.representation.distribution.jax_categorical import JaxCategoricalDistribution
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 
 from ._common import wasserstein_distance_score_func
 
@@ -43,8 +43,8 @@ def compute_wasserstein_distance_score_jax(y_pred: jax.Array, y_true: jax.Array)
     return jnp.sum(jnp.abs(jnp.cumsum(y_pred_j, axis=-1) - jnp.cumsum(y_true_j, axis=-1)), axis=-1)
 
 
-@wasserstein_distance_score_func.register(JaxArraySample)
-def _(y_pred: JaxArraySample, y_true: jax.Array) -> jax.Array:
+@wasserstein_distance_score_func.register(JaxSample)
+def _(y_pred: JaxSample, y_true: jax.Array) -> jax.Array:
     """Compute Wasserstein distance scores for JAX samples."""
     return wasserstein_distance_score_func(y_pred.array, y_true)
 

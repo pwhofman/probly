@@ -10,10 +10,10 @@ import pytest
 from probly.method.sngp import SNGPDecomposition
 from probly.quantification import AleatoricUncertainty, EpistemicUncertainty, TotalUncertainty
 from probly.quantification.measure.distribution import dempster_shafer_uncertainty
-from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution
+from probly.representation.distribution.numpy_gaussian import NumpyGaussianDistribution
 
 
-def _gaussian() -> ArrayGaussianDistribution:
+def _gaussian() -> NumpyGaussianDistribution:
     mean = np.array(
         [
             [0.0, 0.0, 0.0],  # uniform-zero -> u = 1/2
@@ -32,7 +32,7 @@ def _gaussian() -> ArrayGaussianDistribution:
         ],
         dtype=float,
     )
-    return ArrayGaussianDistribution(mean=mean, var=var)
+    return NumpyGaussianDistribution(mean=mean, var=var)
 
 
 def test_array_decomposition_epistemic_matches_measure() -> None:
@@ -90,7 +90,7 @@ def test_array_decomposition_returns_ndarray() -> None:
 
 def test_array_decomposition_uniform_zero_logits_gives_one_half() -> None:
     """h=0 with default mean-field correction: u = K / (K + K * exp(0)) = 1/2."""
-    distribution = ArrayGaussianDistribution(mean=np.zeros((1, 4), dtype=float), var=np.ones((1, 4), dtype=float))
+    distribution = NumpyGaussianDistribution(mean=np.zeros((1, 4), dtype=float), var=np.ones((1, 4), dtype=float))
 
     decomposition = SNGPDecomposition(distribution)
 
@@ -103,8 +103,8 @@ def test_array_decomposition_high_variance_increases_uncertainty() -> None:
     low_var = np.full_like(mean, 1e-3)
     high_var = np.full_like(mean, 1000.0)
 
-    low_score = SNGPDecomposition(ArrayGaussianDistribution(mean=mean, var=low_var)).epistemic
-    high_score = SNGPDecomposition(ArrayGaussianDistribution(mean=mean, var=high_var)).epistemic
+    low_score = SNGPDecomposition(NumpyGaussianDistribution(mean=mean, var=low_var)).epistemic
+    high_score = SNGPDecomposition(NumpyGaussianDistribution(mean=mean, var=high_var)).epistemic
 
     assert high_score[0] > low_score[0]
 

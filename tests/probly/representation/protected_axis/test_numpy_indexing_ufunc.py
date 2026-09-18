@@ -1,4 +1,4 @@
-"""Tests for ``ArrayAxisProtected`` indexing, ufunc, and conversion paths."""
+"""Tests for ``NumpyAxisProtected`` indexing, ufunc, and conversion paths."""
 
 from __future__ import annotations
 
@@ -8,11 +8,11 @@ from typing import Any, ClassVar
 import numpy as np
 import pytest
 
-from probly.representation._protected_axis.array import ArrayAxisProtected
+from probly.representation._protected_axis.numpy import NumpyAxisProtected
 
 
 @dataclass(frozen=True, slots=True)
-class _SingleProtected(ArrayAxisProtected[np.ndarray]):
+class _SingleProtected(NumpyAxisProtected[np.ndarray]):
     """Single-field representation with a 1D protected trailing axis."""
 
     array: np.ndarray
@@ -24,7 +24,7 @@ class _SingleProtected(ArrayAxisProtected[np.ndarray]):
 
 
 @dataclass(frozen=True, slots=True)
-class _ScalarProtected(ArrayAxisProtected[np.ndarray]):
+class _ScalarProtected(NumpyAxisProtected[np.ndarray]):
     """Single-field representation with no protected trailing axis."""
 
     array: np.ndarray
@@ -35,7 +35,7 @@ class _ScalarProtected(ArrayAxisProtected[np.ndarray]):
 
 
 @dataclass(frozen=True, slots=True)
-class _TwoFieldProtected(ArrayAxisProtected[np.ndarray]):
+class _TwoFieldProtected(NumpyAxisProtected[np.ndarray]):
     """Two-field representation with one protected trailing axis."""
 
     left: np.ndarray
@@ -63,7 +63,7 @@ def test_protected_values_with_permitted_func_returns_dict() -> None:
     """``protected_values(np.mean)`` returns the dict for permitted reductions."""
 
     @dataclass(frozen=True, slots=True)
-    class _Reducer(ArrayAxisProtected[np.ndarray]):
+    class _Reducer(NumpyAxisProtected[np.ndarray]):
         array: np.ndarray
         protected_axes: ClassVar[dict[str, int]] = {"array": 1}
         permitted_functions: ClassVar[set[Any]] = {np.mean}

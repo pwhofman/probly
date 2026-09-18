@@ -11,10 +11,10 @@ from probly.quantification.measure.distribution import (
     max_probability_complement_of_expected,
     vacuity,
 )
-from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
+from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
 
 
-def _array_dirichlet() -> ArrayDirichletDistribution:
+def _array_dirichlet() -> NumpyDirichletDistribution:
     alphas = np.array(
         [
             [2.0, 3.0, 5.0],  # alpha_0=10
@@ -24,7 +24,7 @@ def _array_dirichlet() -> ArrayDirichletDistribution:
         ],
         dtype=float,
     )
-    return ArrayDirichletDistribution(alphas=alphas)
+    return NumpyDirichletDistribution(alphas=alphas)
 
 
 def test_array_decomposition_components_match_measure_functions() -> None:
@@ -110,7 +110,7 @@ def test_array_decomposition_aleatoric_in_unit_interval() -> None:
 
 def test_array_decomposition_uniform_dirichlet_has_max_uncertainties() -> None:
     """A uniform Dir(1,...,1) is the maximally-uncertain case for both AU and EU."""
-    uniform = ArrayDirichletDistribution(alphas=np.array([1.0, 1.0, 1.0, 1.0], dtype=float))
+    uniform = NumpyDirichletDistribution(alphas=np.array([1.0, 1.0, 1.0, 1.0], dtype=float))
     decomposition = PosteriorNetworkDecomposition(uniform)
 
     # AU = 1 - 1/K = 1 - 1/4 = 0.75

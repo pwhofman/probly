@@ -31,7 +31,7 @@ from probly.representation.distribution.jax_categorical import (
     JaxProbabilityCategoricalDistribution,
 )
 from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 
 from ._classification_target_suite import PREDICTIONS, SCORES, ClassificationTargetSuite, expected_score
 
@@ -83,11 +83,11 @@ def test_classification_representations(score, wrapper: str) -> None:
     labels = jnp.array([1, 2])
     distribution = JaxLogitCategoricalDistribution(jnp.log(probabilities))
     if wrapper == "sample":
-        prediction = JaxArraySample(probabilities, sample_axis=0)
+        prediction = JaxSample(probabilities, sample_axis=0)
     elif wrapper == "categorical":
         prediction = distribution
     else:
-        prediction = JaxArraySample(distribution, sample_axis=0)
+        prediction = JaxSample(distribution, sample_axis=0)
     # Call the wrapper first to exercise lazy backend registration.
     result = score(prediction, labels)
     assert isinstance(result, jax.Array)
@@ -100,7 +100,7 @@ def test_regression_samples(score) -> None:
     labels = jnp.array([3.0, 0.0])
     if score is absolute_error_score:
         predictions = predictions[..., 0]
-    result = score(JaxArraySample(predictions, sample_axis=0), labels)
+    result = score(JaxSample(predictions, sample_axis=0), labels)
     assert isinstance(result, jax.Array)
     np.testing.assert_allclose(result, score(predictions, labels), atol=1e-6)
 
@@ -111,7 +111,7 @@ def test_dirichlet_relative_likelihood_samples(nested: bool, sample_axis: int) -
     alphas = jnp.array([[[1.0, 2.0, 4.0], [3.0, 6.0, 2.0]], [[2.0, 4.0, 8.0], [6.0, 12.0, 4.0]]])
     labels = jnp.array([[1, 0], [2, 1]])
     values = JaxDirichletDistribution(alphas) if nested else alphas
-    sample = JaxArraySample(values, sample_axis=sample_axis, weights=jnp.array([0.25, 0.75]))
+    sample = JaxSample(values, sample_axis=sample_axis, weights=jnp.array([0.25, 0.75]))
     result = dirichlet_rl_score_func(sample, labels)
     assert isinstance(result, jax.Array)
     np.testing.assert_allclose(result, [[0.5, 0.5], [0.0, 0.0]])

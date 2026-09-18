@@ -24,20 +24,20 @@ from ._common import (
     create_dirichlet_mixture_distribution_from_alphas_and_weights,
     create_gaussian_distribution,
 )
-from .array_bernoulli import (
-    ArrayBernoulliDistribution,
-    ArrayBernoulliDistributionSample,
-    ArrayLogitBernoulliDistribution,
-    ArrayProbabilityBernoulliDistribution,
+from .numpy_bernoulli import (
+    NumpyBernoulliDistribution,
+    NumpyBernoulliDistributionSample,
+    NumpyLogitBernoulliDistribution,
+    NumpyProbabilityBernoulliDistribution,
 )
-from .array_categorical import (
-    ArrayCategoricalDistribution,
-    ArrayCategoricalDistributionSample,
-    ArrayLogitCategoricalDistribution,
-    ArrayProbabilityCategoricalDistribution,
+from .numpy_categorical import (
+    NumpyCategoricalDistribution,
+    NumpyCategoricalDistributionSample,
+    NumpyLogitCategoricalDistribution,
+    NumpyProbabilityCategoricalDistribution,
 )
-from .array_dirichlet import ArrayDirichletDistribution
-from .array_gaussian import ArrayGaussianDistribution, ArrayGaussianDistributionSample
+from .numpy_dirichlet import NumpyDirichletDistribution
+from .numpy_gaussian import NumpyGaussianDistribution, NumpyGaussianDistributionSample
 
 
 ## Torch
@@ -92,17 +92,6 @@ def _(_: type) -> None:
 
 
 __all__ = [
-    "ArrayBernoulliDistribution",
-    "ArrayBernoulliDistributionSample",
-    "ArrayCategoricalDistribution",
-    "ArrayCategoricalDistributionSample",
-    "ArrayDirichletDistribution",
-    "ArrayGaussianDistribution",
-    "ArrayGaussianDistributionSample",
-    "ArrayLogitBernoulliDistribution",
-    "ArrayLogitCategoricalDistribution",
-    "ArrayProbabilityBernoulliDistribution",
-    "ArrayProbabilityCategoricalDistribution",
     "BernoulliDistribution",
     "BernoulliDistributionSample",
     "CategoricalDistribution",
@@ -115,6 +104,17 @@ __all__ = [
     "GaussianDistribution",
     "GaussianDistributionSample",
     "MixtureDistribution",
+    "NumpyBernoulliDistribution",
+    "NumpyBernoulliDistributionSample",
+    "NumpyCategoricalDistribution",
+    "NumpyCategoricalDistributionSample",
+    "NumpyDirichletDistribution",
+    "NumpyGaussianDistribution",
+    "NumpyGaussianDistributionSample",
+    "NumpyLogitBernoulliDistribution",
+    "NumpyLogitCategoricalDistribution",
+    "NumpyProbabilityBernoulliDistribution",
+    "NumpyProbabilityCategoricalDistribution",
     "SecondOrderDistribution",
     "create_bernoulli_distribution",
     "create_bernoulli_distribution_from_logits",

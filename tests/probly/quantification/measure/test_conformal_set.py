@@ -6,11 +6,11 @@ import numpy as np
 
 from probly.quantification import decompose, measure, quantify
 from probly.quantification.decomposition.decomposition import ConstantTotalDecomposition
-from probly.representation.conformal_set import ArrayIntervalConformalSet, ArrayOneHotConformalSet
+from probly.representation.conformal_set import NumpyIntervalConformalSet, NumpyOneHotConformalSet
 
 
 def test_measure_uses_set_size_for_array_one_hot_conformal_set() -> None:
-    conformal_set = ArrayOneHotConformalSet(
+    conformal_set = NumpyOneHotConformalSet(
         np.array(
             [
                 [True, False, True],
@@ -27,7 +27,7 @@ def test_measure_uses_set_size_for_array_one_hot_conformal_set() -> None:
 def test_measure_uses_set_size_for_array_interval_conformal_set() -> None:
     lower = np.array([0.0, 2.0, -1.0])
     upper = np.array([1.5, 5.0, 2.0])
-    conformal_set = ArrayIntervalConformalSet.from_array_samples(lower, upper)
+    conformal_set = NumpyIntervalConformalSet.from_numpy_samples(lower, upper)
 
     uncertainty = measure(conformal_set)
 
@@ -35,7 +35,7 @@ def test_measure_uses_set_size_for_array_interval_conformal_set() -> None:
 
 
 def test_decompose_wraps_array_conformal_set_size_as_total_uncertainty() -> None:
-    conformal_set = ArrayOneHotConformalSet(
+    conformal_set = NumpyOneHotConformalSet(
         np.array(
             [
                 [True, False, True],
@@ -53,7 +53,7 @@ def test_decompose_wraps_array_conformal_set_size_as_total_uncertainty() -> None
 def test_quantify_uses_decompose_wrapper_for_array_conformal_set() -> None:
     lower = np.array([[0.0, 1.0], [2.0, 3.0]])
     upper = np.array([[0.5, 2.5], [5.0, 4.0]])
-    conformal_set = ArrayIntervalConformalSet.from_array_samples(lower, upper)
+    conformal_set = NumpyIntervalConformalSet.from_numpy_samples(lower, upper)
 
     quantification = quantify(conformal_set)
 

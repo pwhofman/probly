@@ -514,9 +514,9 @@ def test_torch_sample_min_expected_total_variation_matches_numpy(sample_dim: int
     """The torch implementation matches the numpy implementation on random batched data."""
     import numpy as np  # noqa: PLC0415
 
-    from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
-        ArrayCategoricalDistributionSample,
-        ArrayProbabilityCategoricalDistribution,
+    from probly.representation.distribution.numpy_categorical import (  # noqa: PLC0415
+        NumpyCategoricalDistributionSample,
+        NumpyProbabilityCategoricalDistribution,
     )
 
     rng = np.random.default_rng(seed=0)
@@ -528,8 +528,8 @@ def test_torch_sample_min_expected_total_variation_matches_numpy(sample_dim: int
         tensor=TorchProbabilityCategoricalDistribution(torch.as_tensor(probabilities, dtype=torch.float64)),
         sample_dim=sample_dim,
     )
-    array_sample = ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    array_sample = NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=sample_dim,
     )
 

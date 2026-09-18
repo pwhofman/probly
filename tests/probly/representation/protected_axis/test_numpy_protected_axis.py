@@ -8,18 +8,18 @@ from typing import Any, ClassVar
 import numpy as np
 import pytest
 
-from probly.representation._protected_axis.array import ArrayAxisProtected
+from probly.representation._protected_axis.numpy import NumpyAxisProtected
 
 
 @dataclass(frozen=True, slots=True)
-class SingleArray(ArrayAxisProtected[np.ndarray]):
+class SingleArray(NumpyAxisProtected[np.ndarray]):
     array: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
     permitted_ufuncs: ClassVar[dict[np.ufunc, list[str]]] = {np.add: ["__call__"]}
 
 
 @dataclass(frozen=True, slots=True)
-class ReductionArray(ArrayAxisProtected[np.ndarray]):
+class ReductionArray(NumpyAxisProtected[np.ndarray]):
     array: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
     permitted_functions: ClassVar[set[Any]] = {np.mean, np.sum}
@@ -27,21 +27,21 @@ class ReductionArray(ArrayAxisProtected[np.ndarray]):
 
 
 @dataclass(frozen=True, slots=True)
-class PairArray(ArrayAxisProtected[np.ndarray]):
+class PairArray(NumpyAxisProtected[np.ndarray]):
     first: np.ndarray
     second: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"first": 0, "second": 0}
 
 
 @dataclass(frozen=True, slots=True)
-class InnerPair(ArrayAxisProtected[np.ndarray]):
+class InnerPair(NumpyAxisProtected[np.ndarray]):
     left: np.ndarray
     right: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"left": 1, "right": 1}
 
 
 @dataclass(frozen=True, slots=True)
-class OuterNested(ArrayAxisProtected[Any]):
+class OuterNested(NumpyAxisProtected[Any]):
     inner: InnerPair
     aux: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"inner": 1, "aux": 1}

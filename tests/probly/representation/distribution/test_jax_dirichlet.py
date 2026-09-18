@@ -19,7 +19,7 @@ from probly.representation.jax_functions import (
     jax_sum,
     jax_transpose,
 )
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 
 
 def test_sampling_keys() -> None:
@@ -188,7 +188,7 @@ def test_sample_function_dirichlet() -> None:
     n_samples = 4
     samples = dist.sample(n_samples)
 
-    assert isinstance(samples, JaxArraySample)
+    assert isinstance(samples, JaxSample)
     assert samples.array.shape == (n_samples, 2)
     assert samples.sample_axis == 0
 

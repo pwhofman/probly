@@ -9,8 +9,8 @@ from flextype import flexdispatch
 import numpy as np
 
 from probly.representation.array_like import ArrayLike
-from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
-from probly.representation.sample.array import ArraySample
+from probly.representation.distribution.numpy_categorical import NumpyCategoricalDistribution
+from probly.representation.sample.numpy import NumpySample
 
 
 @flexdispatch
@@ -60,9 +60,9 @@ def compute_saps_score_func_numpy(
     return np.asarray(scores, dtype=float)
 
 
-@_saps_score_dispatch.register(ArrayCategoricalDistribution)
+@_saps_score_dispatch.register(NumpyCategoricalDistribution)
 def _(
-    probs: ArrayCategoricalDistribution,
+    probs: NumpyCategoricalDistribution,
     y_cal: np.ndarray | None = None,
     randomized: bool = True,
     lambda_val: float = 0.1,
@@ -71,9 +71,9 @@ def _(
     return _saps_score_dispatch(probs.probabilities, y_cal, randomized=randomized, lambda_val=lambda_val)
 
 
-@_saps_score_dispatch.register(ArraySample)
+@_saps_score_dispatch.register(NumpySample)
 def _(
-    probs: ArraySample,
+    probs: NumpySample,
     y_cal: np.ndarray | None = None,
     randomized: bool = True,
     lambda_val: float = 0.1,

@@ -28,7 +28,7 @@ from probly.representation.jax_functions import (
     jax_transpose,
     jax_var,
 )
-from probly.representation.sample.array_functions import track_sample_axis_after_reduction
+from probly.representation.sample.numpy_functions import track_sample_axis_after_reduction
 from probly.utils import switchdispatch
 
 if TYPE_CHECKING:
@@ -354,7 +354,7 @@ def jax_reduction_function(
 
     Mirroring the numpy backend, the sample weights are never injected into ``jax_average``:
     they only apply to a reduction over the sample axis, which the caller expresses through
-    :meth:`~probly.representation.sample.jax.JaxArraySample.sample_mean` instead.
+    :meth:`~probly.representation.sample.jax.JaxSample.sample_mean` instead.
     """
     if len(args) == 0:
         return NotImplemented

@@ -18,13 +18,13 @@ from probly.representation.array_like import (
     to_numpy_array_like,
 )
 from probly.representation.sample._common import Sample, SampleAxis, create_sample
-from probly.representation.sample.array_functions import (
-    ArraySampleInternals,
-    array_function,
-    array_sample_internals,
+from probly.representation.sample.axis_tracking import track_axis
+from probly.representation.sample.numpy_functions import (
+    NumpySampleInternals,
+    numpy_function,
+    numpy_sample_internals,
     track_sample_axis_after_reduction,
 )
-from probly.representation.sample.axis_tracking import track_axis
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D], Sample[D]):
+class NumpySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D], Sample[D]):
     """A sample of predictions stored in a numpy array."""
 
     array: D
@@ -75,7 +75,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
         sample_axis: SampleAxis = "auto",
         dtype: DTypeLike | None = None,
     ) -> Self:
-        """Create an ArraySample from a sequence of samples.
+        """Create an NumpySample from a sequence of samples.
 
         Args:
             samples: The predictions to create the sample from.
@@ -84,7 +84,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
             dtype: Desired data type of the array.
 
         Returns:
-            The created ArraySample.
+            The created NumpySample.
         """
         if isinstance(samples, NumpyArrayLike):
             sample_array = to_numpy_array_like(samples, dtype=dtype)
@@ -96,7 +96,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
             if sample_axis != 0:
                 samples = np.moveaxis(sample_array, 0, sample_axis)  # ty:ignore[invalid-argument-type]
         else:
-            # Preserve NumpyArrayLike subtypes (e.g. ArrayGaussianDistribution) so np.stack
+            # Preserve NumpyArrayLike subtypes (e.g. NumpyGaussianDistribution) so np.stack
             # can use their __array_function__; to_numpy_array_like would flatten them to ndarray.
             samples = [s if isinstance(s, NumpyArrayLike) else to_numpy_array_like(s, dtype=dtype) for s in samples]  # ty:ignore[invalid-assignment]
             if sample_axis == "auto":
@@ -113,12 +113,12 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
     def from_sample(cls, sample: Sample[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike | None = None) -> Self:
         if isinstance(sample, NumpyArrayLikeConvertible):
             array_sample = to_numpy_array_like(sample, dtype=dtype)
-            if not isinstance(array_sample, ArraySample):
-                msg = "Converted array must be an ArraySample."
+            if not isinstance(array_sample, NumpySample):
+                msg = "Converted array must be an NumpySample."
                 raise TypeError(msg)
             sample = array_sample
 
-        if isinstance(sample, ArraySample):
+        if isinstance(sample, NumpySample):
             sample_array: D = sample.array  # ty:ignore[invalid-assignment]
             sample_weights: np.ndarray | None = sample.weights
 
@@ -218,7 +218,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
 
     @override
     def concat(self, other: Sample[D]) -> Self:
-        if isinstance(other, ArraySample):
+        if isinstance(other, NumpySample):
             other_array = np.moveaxis(other.array, other.sample_axis, self.sample_axis)  # ty:ignore[invalid-argument-type]
         else:
             other_array = np.stack(list(other.samples), axis=self.sample_axis, dtype=self.array.dtype)
@@ -236,14 +236,14 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
 
         return type(self)(array=concatenated, sample_axis=self.sample_axis, weights=weights)
 
-    def move_sample_axis(self, new_sample_axis: int) -> ArraySample[D]:
-        """Return a new ArraySample with the sample dimension moved to new_sample_axis.
+    def move_sample_axis(self, new_sample_axis: int) -> NumpySample[D]:
+        """Return a new NumpySample with the sample dimension moved to new_sample_axis.
 
         Args:
             new_sample_axis: The new sample dimension.
 
         Returns:
-            A new ArraySample with the sample dimension moved.
+            A new NumpySample with the sample dimension moved.
         """
         moved_array = np.moveaxis(self.array, self.sample_axis, new_sample_axis)  # ty:ignore[invalid-argument-type]
         return type(self)(array=moved_array, sample_axis=new_sample_axis, weights=self.weights)
@@ -312,14 +312,14 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
             The result of applying the ufunc.
         """
         new_sample_axis: int | None = self.sample_axis
-        arrays = [x.array if isinstance(x, ArraySample) else x for x in inputs]
+        arrays = [x.array if isinstance(x, NumpySample) else x for x in inputs]
 
         if method in ("__call__", "reduce", "reduceat", "accumulate") and "out" in kwargs:
             outs = kwargs["out"]
             if outs is not None:
                 if not isinstance(outs, tuple):
                     outs = (outs,)
-                cast_outs = tuple(o.array if isinstance(o, ArraySample) else o for o in outs)
+                cast_outs = tuple(o.array if isinstance(o, NumpySample) else o for o in outs)
                 kwargs["out"] = cast_outs
         else:
             outs = None
@@ -360,7 +360,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
         Returns:
             The result of applying the numpy function.
         """
-        return array_function(
+        return numpy_function(
             func,
             types,
             args,
@@ -368,11 +368,11 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
         )
 
     @override
-    def copy(self, order: Order = "C") -> ArraySample[D]:
-        """Create a copy of the ArraySample.
+    def copy(self, order: Order = "C") -> NumpySample[D]:
+        """Create a copy of the NumpySample.
 
         Returns:
-            A copy of the ArraySample.
+            A copy of the NumpySample.
         """
         copied_array = cast("Any", self.array).copy(order=order)
         return type(self)(array=copied_array, sample_axis=self.sample_axis, weights=self.weights)
@@ -382,7 +382,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
         return np.equal(self, value)
 
     def __hash__(self) -> int:
-        """Compute the hash of the ArraySample."""
+        """Compute the hash of the NumpySample."""
         return object.__hash__(self)
 
     @override
@@ -413,7 +413,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
         """
         return cast("Any", self.array).__iter__()
 
-    def __array_like__(self, dtype: DTypeLike | None = None, /, *, copy: bool | None = None) -> ArraySample[D]:
+    def __array_like__(self, dtype: DTypeLike | None = None, /, *, copy: bool | None = None) -> NumpySample[D]:
         """Convert to a NumpyArrayLike."""
         if copy:
             return self.copy()
@@ -444,24 +444,24 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
         device: jax.Device | Sharding | None = None,
         copy: bool = False,
     ) -> JaxLikeImplementation[Any]:
-        """Convert to a JaxArraySample."""
+        """Convert to a JaxSample."""
         from probly.representation.jax_like import to_jax_like  # noqa: PLC0415
 
-        from .jax import JaxArraySample  # noqa: PLC0415
+        from .jax import JaxSample  # noqa: PLC0415
 
         array = to_jax_like(self.array, dtype, device=device, copy=copy)
 
-        return JaxArraySample(
+        return JaxSample(
             cast("Any", array),
             sample_axis=self.sample_axis,
             weights=cast("Any", to_jax_like(self.weights)) if self.weights is not None else None,
         )
 
 
-@array_sample_internals.register(ArraySample)
-def _[D: NumpyArrayLike](array: ArraySample[D]) -> ArraySampleInternals[D]:
-    """Get the sample dimension of an ArraySample."""
-    return ArraySampleInternals(
+@numpy_sample_internals.register(NumpySample)
+def _[D: NumpyArrayLike](array: NumpySample[D]) -> NumpySampleInternals[D]:
+    """Get the sample dimension of an NumpySample."""
+    return NumpySampleInternals(
         create=type(array),
         array=array.array,
         sample_axis=array.sample_axis,
@@ -471,5 +471,5 @@ def _[D: NumpyArrayLike](array: ArraySample[D]) -> ArraySampleInternals[D]:
 
 create_sample.register(
     np.number | np.ndarray | float | int | NumpyArrayLikeImplementation,
-    ArraySample.from_iterable,
+    NumpySample.from_iterable,
 )

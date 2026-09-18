@@ -16,7 +16,7 @@ from probly.representation._protected_axis._common_functions import (
     apply_unary as _apply_unary,
     extract_axis_protected_internals,
     extract_protected_value_sequence_internals,
-    function_override as array_function_override,
+    function_override as numpy_function_override,
     internals_override,
     map_batch_axes as _map_batch_axes,
     normalize_axes,
@@ -35,23 +35,23 @@ if TYPE_CHECKING:
     from inspect import BoundArguments
 
 
-type ArrayProtectedValue = NumpyArrayLike[Any] | np.ndarray
+type NumpyProtectedValue = NumpyArrayLike[Any] | np.ndarray
 
 
-type ArrayAxisProtectedCreator = AxisProtectedCreator[ArrayProtectedValue, Any]
-type ArrayAxisProtectedInternals = AxisProtectedInternals[ArrayProtectedValue, Any]
-type _BoundArrayFunctionWithInternals = BoundFunctionWithInternals[ArrayProtectedValue, Any]
+type NumpyAxisProtectedCreator = AxisProtectedCreator[NumpyProtectedValue, Any]
+type NumpyAxisProtectedInternals = AxisProtectedInternals[NumpyProtectedValue, Any]
+type _BoundNumpyFunctionWithInternals = BoundFunctionWithInternals[NumpyProtectedValue, Any]
 
 
-def array_axis_protected_internals(
+def numpy_axis_protected_internals(
     obj: object, func: Callable | None = None, *, check_is_permitted: bool = False
-) -> ArrayAxisProtectedInternals | None:
+) -> NumpyAxisProtectedInternals | None:
     """Extract protected-axis internals from object."""
     if not isinstance(obj, SupportsProtectedInternals):
         return None
     # Dispatch establishes the value family; runtime protocol checks only test members.
     return extract_axis_protected_internals(
-        cast("SupportsProtectedInternals[ArrayProtectedValue, Any]", obj),
+        cast("SupportsProtectedInternals[NumpyProtectedValue, Any]", obj),
         func,
         check_is_permitted=check_is_permitted,
     )
@@ -59,13 +59,13 @@ def array_axis_protected_internals(
 
 def _extract_protected_value_sequence_internals(
     values: tuple[object, ...], func: Callable | None
-) -> ProtectedValueSequenceInternals[ArrayProtectedValue, Any]:
+) -> ProtectedValueSequenceInternals[NumpyProtectedValue, Any]:
     """Extract and align protected values for sequence operations."""
-    return extract_protected_value_sequence_internals(values, func, extract=array_axis_protected_internals)
+    return extract_protected_value_sequence_internals(values, func, extract=numpy_axis_protected_internals)
 
 
 @switchdispatch
-def array_function(
+def numpy_function(
     func: Callable,
     types: tuple[type[Any], ...],  # noqa: ARG001
     args: tuple[Any, ...],
@@ -76,20 +76,20 @@ def array_function(
     return NotImplemented
 
 
-def array_internals_override(
+def numpy_internals_override(
     array_param_name: str,
     check_is_permitted: bool = False,
-) -> Callable[[_BoundArrayFunctionWithInternals], FunctionOverride]:
+) -> Callable[[_BoundNumpyFunctionWithInternals], FunctionOverride]:
     """Decorator for functions that operate on one protected-axis argument."""
-    return internals_override(array_param_name, check_is_permitted, extract=array_axis_protected_internals)
+    return internals_override(array_param_name, check_is_permitted, extract=numpy_axis_protected_internals)
 
 
-@array_function.register(np.copy)
-@array_internals_override("a")
+@numpy_function.register(np.copy)
+@numpy_internals_override("a")
 def protected_copy_function(
     func: Callable,
     params: BoundArguments,
-    internals: ArrayAxisProtectedInternals,
+    internals: NumpyAxisProtectedInternals,
 ) -> Any:  # noqa: ANN401
     order = params.arguments.get("order", "C")
     subok = params.arguments.get("subok", True)
@@ -103,28 +103,28 @@ def protected_copy_function(
     return _apply_unary(internals, lambda _name, value, _axes: func(value, order=order, subok=subok))
 
 
-@array_function.register(np.astype)
-@array_internals_override("x")
+@numpy_function.register(np.astype)
+@numpy_internals_override("x")
 def protected_astype_function(
     func: Callable,
     params: BoundArguments,
-    internals: ArrayAxisProtectedInternals,
+    internals: NumpyAxisProtectedInternals,
 ) -> Any:  # noqa: ANN401
     dtype = params.arguments["dtype"]
     copy = params.arguments.get("copy", True)
     return _apply_unary(internals, lambda _name, value, _axes: func(value, dtype=dtype, copy=copy))
 
 
-@array_function.multi_register([np.mean, np.sum, np.average])
-@array_internals_override("a", check_is_permitted=True)
+@numpy_function.multi_register([np.mean, np.sum, np.average])
+@numpy_internals_override("a", check_is_permitted=True)
 def protected_batch_reduction_function(  # noqa: PLR0912
     func: Callable,
     params: BoundArguments,
-    internals: ArrayAxisProtectedInternals,
+    internals: NumpyAxisProtectedInternals,
 ) -> Any:  # noqa: ANN401
     axis = params.arguments.get("axis", None)
     out = params.arguments.get("out", None)
-    out_internals = array_axis_protected_internals(out, None)
+    out_internals = numpy_axis_protected_internals(out, None)
     if out_internals is not None and out_internals.protected_axes != internals.protected_axes:
         msg = "out must use the same protected_axes layout as input values."
         raise ValueError(msg)
@@ -133,7 +133,7 @@ def protected_batch_reduction_function(  # noqa: PLR0912
         msg = "non-protected out is only supported for single-field protected objects."
         raise TypeError(msg)
 
-    results: dict[str, ArrayProtectedValue] = {}
+    results: dict[str, NumpyProtectedValue] = {}
     for name, axes_count in internals.protected_axes.items():
         value = internals.values[name]
         batch_ndim = value_ndim(value) - axes_count
@@ -170,7 +170,7 @@ def protected_batch_reduction_function(  # noqa: PLR0912
             msg = f"Reduction modified protected trailing axes for field {name!r}."
             raise ValueError(msg)
 
-        results[name] = cast("ArrayProtectedValue", result)
+        results[name] = cast("NumpyProtectedValue", result)
 
     if out is not None:
         return out
@@ -179,12 +179,12 @@ def protected_batch_reduction_function(  # noqa: PLR0912
     return internals.create(results)
 
 
-@array_function.register(np.transpose)
-@array_internals_override("a")
+@numpy_function.register(np.transpose)
+@numpy_internals_override("a")
 def protected_transpose_function(
     func: Callable,
     params: BoundArguments,
-    internals: ArrayAxisProtectedInternals,
+    internals: NumpyAxisProtectedInternals,
 ) -> Any:  # noqa: ANN401
     axes = params.arguments.get("axes", None)
 
@@ -199,19 +199,19 @@ def protected_transpose_function(
             msg = "transpose axes must only refer to batch dimensions."
             raise ValueError(msg)
 
-    def op(_name: str, value: ArrayProtectedValue, axes_count: int) -> ArrayProtectedValue:
+    def op(_name: str, value: NumpyProtectedValue, axes_count: int) -> NumpyProtectedValue:
         full_axes = _map_batch_axes(value, axes_count, batch_axes)
         return func(value, axes=full_axes)
 
     return _apply_unary(internals, op)
 
 
-@array_function.register(np.matrix_transpose)
-@array_internals_override("x")
+@numpy_function.register(np.matrix_transpose)
+@numpy_internals_override("x")
 def protected_matrix_transpose_function(
     func: Callable,
     params: BoundArguments,  # noqa: ARG001
-    internals: ArrayAxisProtectedInternals,
+    internals: NumpyAxisProtectedInternals,
 ) -> Any:  # noqa: ANN401
     del func
 
@@ -222,19 +222,19 @@ def protected_matrix_transpose_function(
     batch_axes = list(range(internals.batch_ndim))
     batch_axes[-2], batch_axes[-1] = batch_axes[-1], batch_axes[-2]
 
-    def op(_name: str, value: ArrayProtectedValue, axes_count: int) -> ArrayProtectedValue:
+    def op(_name: str, value: NumpyProtectedValue, axes_count: int) -> NumpyProtectedValue:
         full_axes = _map_batch_axes(value, axes_count, tuple(batch_axes))
         return np.transpose(value, axes=full_axes)
 
     return _apply_unary(internals, op)
 
 
-@array_function.register(np.reshape)
-@array_internals_override("a")
+@numpy_function.register(np.reshape)
+@numpy_internals_override("a")
 def protected_reshape_function(
     func: Callable,
     params: BoundArguments,
-    internals: ArrayAxisProtectedInternals,
+    internals: NumpyAxisProtectedInternals,
 ) -> Any:  # noqa: ANN401
     shape = params.arguments.get("shape", params.arguments.get("newshape", None))
     if shape is None:
@@ -251,7 +251,7 @@ def protected_reshape_function(
     order = params.arguments.get("order", "C")
     copy = params.arguments.get("copy", None)
 
-    def op(_name: str, value: ArrayProtectedValue, axes_count: int) -> ArrayProtectedValue:
+    def op(_name: str, value: NumpyProtectedValue, axes_count: int) -> NumpyProtectedValue:
         target_shape = (*batch_target_shape, *protected_shape(value_shape(value), axes_count))
         kwargs: dict[str, object] = {"order": order}
         if copy is not None:
@@ -261,12 +261,12 @@ def protected_reshape_function(
     return _apply_unary(internals, op)
 
 
-@array_function.register(np.expand_dims)
-@array_internals_override("a")
+@numpy_function.register(np.expand_dims)
+@numpy_internals_override("a")
 def protected_expand_dims_function(
     func: Callable,
     params: BoundArguments,
-    internals: ArrayAxisProtectedInternals,
+    internals: NumpyAxisProtectedInternals,
 ) -> Any:  # noqa: ANN401
     axis = params.arguments["axis"]
     if isinstance(axis, int):
@@ -277,7 +277,7 @@ def protected_expand_dims_function(
         msg = "expand_dims axis must be an int or tuple/list of ints."
         raise TypeError(msg)
 
-    def op(_name: str, value: ArrayProtectedValue, axes_count: int) -> ArrayProtectedValue:
+    def op(_name: str, value: NumpyProtectedValue, axes_count: int) -> NumpyProtectedValue:
         batch_ndim = value_ndim(value) - axes_count
         full_axes = normalize_axes(axis_tuple, batch_ndim, allow_endpoint=True)
         return func(value, axis=full_axes)
@@ -285,16 +285,16 @@ def protected_expand_dims_function(
     return _apply_unary(internals, op)
 
 
-@array_function.register(np.squeeze)
-@array_internals_override("a")
+@numpy_function.register(np.squeeze)
+@numpy_internals_override("a")
 def protected_squeeze_function(
     func: Callable,
     params: BoundArguments,
-    internals: ArrayAxisProtectedInternals,
+    internals: NumpyAxisProtectedInternals,
 ) -> Any:  # noqa: ANN401
     axis = params.arguments.get("axis", None)
 
-    def op(_name: str, value: ArrayProtectedValue, axes_count: int) -> ArrayProtectedValue:
+    def op(_name: str, value: NumpyProtectedValue, axes_count: int) -> NumpyProtectedValue:
         batch_ndim = value_ndim(value) - axes_count
         shape = value_shape(value)
 
@@ -316,12 +316,12 @@ def protected_squeeze_function(
     return _apply_unary(internals, op)
 
 
-@array_function.register(np.swapaxes)
-@array_internals_override("a")
+@numpy_function.register(np.swapaxes)
+@numpy_internals_override("a")
 def protected_swapaxes_function(
     func: Callable,
     params: BoundArguments,
-    internals: ArrayAxisProtectedInternals,
+    internals: NumpyAxisProtectedInternals,
 ) -> Any:  # noqa: ANN401
     axis1 = params.arguments["axis1"]
     axis2 = params.arguments["axis2"]
@@ -329,7 +329,7 @@ def protected_swapaxes_function(
         msg = "swapaxes axis values must be integers."
         raise TypeError(msg)
 
-    def op(_name: str, value: ArrayProtectedValue, axes_count: int) -> ArrayProtectedValue:
+    def op(_name: str, value: NumpyProtectedValue, axes_count: int) -> NumpyProtectedValue:
         batch_ndim = value_ndim(value) - axes_count
         full_axis1 = normalize_axis(axis1, batch_ndim)
         full_axis2 = normalize_axis(axis2, batch_ndim)
@@ -338,12 +338,12 @@ def protected_swapaxes_function(
     return _apply_unary(internals, op)
 
 
-@array_function.register(np.moveaxis)
-@array_internals_override("a")
+@numpy_function.register(np.moveaxis)
+@numpy_internals_override("a")
 def protected_moveaxis_function(
     func: Callable,
     params: BoundArguments,
-    internals: ArrayAxisProtectedInternals,
+    internals: NumpyAxisProtectedInternals,
 ) -> Any:  # noqa: ANN401
     source = params.arguments["source"]
     destination = params.arguments["destination"]
@@ -368,7 +368,7 @@ def protected_moveaxis_function(
         msg = "moveaxis destination must be an int or tuple/list of ints."
         raise TypeError(msg)
 
-    def op(_name: str, value: ArrayProtectedValue, axes_count: int) -> ArrayProtectedValue:
+    def op(_name: str, value: NumpyProtectedValue, axes_count: int) -> NumpyProtectedValue:
         batch_ndim = value_ndim(value) - axes_count
         mapped_source = normalize_axes(source_tuple, batch_ndim)
         mapped_destination = normalize_axes(destination_tuple, batch_ndim)
@@ -379,7 +379,7 @@ def protected_moveaxis_function(
     return _apply_unary(internals, op)
 
 
-@array_function.register(np.concatenate)
+@numpy_function.register(np.concatenate)
 def protected_concatenate_function(
     func: Callable,
     types: tuple[type[Any], ...],  # noqa: ARG001
@@ -390,7 +390,7 @@ def protected_concatenate_function(
     axis = kwargs.get("axis", 0)
     out = kwargs.get("out")
 
-    out_internals = array_axis_protected_internals(out, None)
+    out_internals = numpy_axis_protected_internals(out, None)
     sequence = _extract_protected_value_sequence_internals(values, None)
     template = sequence.template if sequence.template is not None else out_internals
     if template is None:
@@ -404,7 +404,7 @@ def protected_concatenate_function(
         msg = "concatenate axis must be an int or None."
         raise TypeError(msg)
 
-    results: dict[str, ArrayProtectedValue] = {}
+    results: dict[str, NumpyProtectedValue] = {}
     for name, axes_count in template.protected_axes.items():
         if not sequence.has_protected:
             msg = "concatenate with protected out requires at least one protected input."
@@ -428,8 +428,8 @@ def protected_concatenate_function(
     return template.create(results)
 
 
-@array_function.register(np.stack)
-@array_function_override
+@numpy_function.register(np.stack)
+@numpy_function_override
 def protected_stack_function(
     func: Callable,
     params: BoundArguments,
@@ -438,7 +438,7 @@ def protected_stack_function(
     axis = params.arguments.get("axis", 0)
     out = params.arguments.get("out", None)
 
-    out_internals = array_axis_protected_internals(out, None)
+    out_internals = numpy_axis_protected_internals(out, None)
     sequence = _extract_protected_value_sequence_internals(values, None)
     template = sequence.template if sequence.template is not None else out_internals
     if template is None:
@@ -452,7 +452,7 @@ def protected_stack_function(
         msg = "stack axis must be an int."
         raise TypeError(msg)
 
-    results: dict[str, ArrayProtectedValue] = {}
+    results: dict[str, NumpyProtectedValue] = {}
     for name, axes_count in template.protected_axes.items():
         if not sequence.has_protected:
             msg = "stack with protected out requires at least one protected input."

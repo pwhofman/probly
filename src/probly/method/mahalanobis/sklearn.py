@@ -14,7 +14,7 @@ from sklearn.pipeline import Pipeline
 
 from probly.layers.numpy import NumpyMahalanobisHead
 from probly.predictor import LogitClassifier, predict_raw
-from probly.representation.distribution.array_categorical import ArrayProbabilityCategoricalDistribution
+from probly.representation.distribution.numpy_categorical import NumpyProbabilityCategoricalDistribution
 
 from ._common import MahalanobisPredictor, mahalanobis_generator
 from .numpy import NumpyMahalanobisRepresentation
@@ -375,7 +375,7 @@ class SklearnMahalanobisPredictor(
         layer_scores = self._layer_scores(self._features(x))
 
         return NumpyMahalanobisRepresentation(
-            ArrayProbabilityCategoricalDistribution(softmax(logits, axis=-1)),
+            NumpyProbabilityCategoricalDistribution(softmax(logits, axis=-1)),
             layer_scores,
             self.combiner_weight,
             self.combiner_bias,

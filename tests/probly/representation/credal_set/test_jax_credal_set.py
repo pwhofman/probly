@@ -25,7 +25,7 @@ from probly.representation.distribution.jax_categorical import (
     JaxProbabilityCategoricalDistribution,
 )
 from probly.representation.jax_functions import jax_expand_dims, jax_matrix_transpose
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 
 
 def test_jax_convex_credal_set_from_distribution_sample() -> None:
@@ -37,7 +37,7 @@ def test_jax_convex_credal_set_from_distribution_sample() -> None:
         ],
         dtype=float,
     )
-    sample = JaxArraySample(
+    sample = JaxSample(
         array=JaxProbabilityCategoricalDistribution(probs),
         sample_axis=0,
     )
@@ -85,7 +85,7 @@ def test_jax_probability_intervals_numpy_and_shape_ops() -> None:
         ],
         dtype=float,
     )
-    sample = JaxArraySample(
+    sample = JaxSample(
         array=JaxProbabilityCategoricalDistribution(probs),
         sample_axis=0,
     )
@@ -120,7 +120,7 @@ class TestJaxConvexCredalSet:
 
     def test_from_jax_sample(self) -> None:
         probs = jnp.array([[[0.5, 0.5]], [[0.3, 0.7]], [[0.6, 0.4]]])
-        sample = JaxArraySample(
+        sample = JaxSample(
             array=JaxProbabilityCategoricalDistribution(probs),
             sample_axis=0,
         )
@@ -144,7 +144,7 @@ class TestJaxDistanceBasedCredalSet:
 
     def test_from_jax_sample(self) -> None:
         probs = jnp.array([[[0.5, 0.5]], [[0.3, 0.7]]])
-        sample = JaxArraySample(
+        sample = JaxSample(
             array=JaxProbabilityCategoricalDistribution(probs),
             sample_axis=0,
         )
@@ -239,7 +239,7 @@ class TestSampleProbabilities:
     def test_non_categorical_raises(self) -> None:
         from probly.representation.credal_set.jax import _sample_probabilities  # noqa: PLC0415
 
-        sample = JaxArraySample(array=jnp.array([[0.5, 0.5], [0.3, 0.7]]), sample_axis=0)
+        sample = JaxSample(array=jnp.array([[0.5, 0.5], [0.3, 0.7]]), sample_axis=0)
         with pytest.raises(TypeError, match="JaxCategoricalDistribution"):
             _sample_probabilities(sample)
 
@@ -254,7 +254,7 @@ class TestSampleProbabilities:
             ],
             dtype=float,
         )
-        sample = JaxArraySample(array=JaxProbabilityCategoricalDistribution(probs), sample_axis=1)
+        sample = JaxSample(array=JaxProbabilityCategoricalDistribution(probs), sample_axis=1)
 
         probabilities = _sample_probabilities(sample)
 
@@ -284,10 +284,10 @@ def test_jax_credal_set_from_sample_respects_a_non_zero_sample_axis(
         dtype=float,
     )
     by_axis_1 = credal_set_type.from_jax_sample(
-        JaxArraySample(array=JaxProbabilityCategoricalDistribution(probs), sample_axis=1)
+        JaxSample(array=JaxProbabilityCategoricalDistribution(probs), sample_axis=1)
     )
     by_axis_0 = credal_set_type.from_jax_sample(
-        JaxArraySample(array=JaxProbabilityCategoricalDistribution(jnp.moveaxis(probs, 1, 0)), sample_axis=0)
+        JaxSample(array=JaxProbabilityCategoricalDistribution(jnp.moveaxis(probs, 1, 0)), sample_axis=0)
     )
 
     assert jnp.allclose(by_axis_1.lower(), jnp.array(lower, dtype=float))
@@ -306,10 +306,10 @@ def test_jax_distance_based_credal_set_from_sample_respects_a_non_zero_sample_ax
         dtype=float,
     )
     by_axis_1 = JaxDistanceBasedCredalSet.from_jax_sample(
-        JaxArraySample(array=JaxProbabilityCategoricalDistribution(probs), sample_axis=1)
+        JaxSample(array=JaxProbabilityCategoricalDistribution(probs), sample_axis=1)
     )
     by_axis_0 = JaxDistanceBasedCredalSet.from_jax_sample(
-        JaxArraySample(array=JaxProbabilityCategoricalDistribution(jnp.moveaxis(probs, 1, 0)), sample_axis=0)
+        JaxSample(array=JaxProbabilityCategoricalDistribution(jnp.moveaxis(probs, 1, 0)), sample_axis=0)
     )
 
     assert jnp.allclose(by_axis_1.nominal.probabilities, jnp.mean(probs, axis=1))

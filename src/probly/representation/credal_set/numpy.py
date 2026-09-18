@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, ClassVar, Self, override
 
 import numpy as np
 
-from probly.representation._protected_axis.array import ArrayAxisProtected
+from probly.representation._protected_axis.numpy import NumpyAxisProtected
 from probly.representation.credal_set._common import (
     CategoricalCredalSet,
     ConvexCredalSet,
@@ -21,9 +21,9 @@ from probly.representation.credal_set._common import (
     create_distance_based_credal_set_from_center_and_radius,
     create_probability_intervals,
 )
-from probly.representation.distribution import ArrayCategoricalDistribution
-from probly.representation.distribution.array_categorical import ArrayProbabilityCategoricalDistribution
-from probly.representation.sample import ArraySample
+from probly.representation.distribution import NumpyCategoricalDistribution
+from probly.representation.distribution.numpy_categorical import NumpyProbabilityCategoricalDistribution
+from probly.representation.sample import NumpySample
 
 if TYPE_CHECKING:
     from numpy.typing import DTypeLike
@@ -31,10 +31,10 @@ if TYPE_CHECKING:
     from probly.representation.sample._common import Sample
 
 
-def _ensure_array_categorical_distribution(value: object) -> ArrayCategoricalDistribution:
-    if isinstance(value, ArrayCategoricalDistribution):
+def _ensure_numpy_categorical_distribution(value: object) -> NumpyCategoricalDistribution:
+    if isinstance(value, NumpyCategoricalDistribution):
         return value
-    return ArrayProbabilityCategoricalDistribution(np.asarray(value))
+    return NumpyProbabilityCategoricalDistribution(np.asarray(value))
 
 
 def _probability_interval_center(lower_bounds: np.ndarray, upper_bounds: np.ndarray) -> np.ndarray:
@@ -45,23 +45,23 @@ def _probability_interval_center(lower_bounds: np.ndarray, upper_bounds: np.ndar
     return lower_bounds + remaining * weights
 
 
-class ArrayCategoricalCredalSet(CategoricalCredalSet, ABC):
+class NumpyCategoricalCredalSet(CategoricalCredalSet, ABC):
     """Base class for NumPy-backed categorical credal sets."""
 
     @classmethod
-    def from_sample(cls, sample: Sample[ArrayCategoricalDistribution]) -> Self:
+    def from_sample(cls, sample: Sample[NumpyCategoricalDistribution]) -> Self:
         """Create a credal set from a sample of categorical distributions."""
-        array_sample = ArraySample.from_sample(sample)
-        if not isinstance(array_sample.array, ArrayCategoricalDistribution):
-            msg = "Expected ArraySample[ArrayCategoricalDistribution] for categorical credal sets."
+        array_sample = NumpySample.from_sample(sample)
+        if not isinstance(array_sample.array, NumpyCategoricalDistribution):
+            msg = "Expected NumpySample[NumpyCategoricalDistribution] for categorical credal sets."
             raise TypeError(msg)
-        return cls.from_array_sample(array_sample)
+        return cls.from_numpy_sample(array_sample)
 
     @classmethod
     @abstractmethod
-    def from_array_sample(
+    def from_numpy_sample(
         cls,
-        sample: ArraySample[ArrayCategoricalDistribution],
+        sample: NumpySample[NumpyCategoricalDistribution],
     ) -> Self:
         """Create a credal set from categorical distribution samples."""
 
@@ -75,23 +75,23 @@ class ArrayCategoricalCredalSet(CategoricalCredalSet, ABC):
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
-class ArrayDiscreteCredalSet(
-    ArrayAxisProtected[ArrayCategoricalDistribution],
-    ArrayCategoricalCredalSet,
+class NumpyDiscreteCredalSet(
+    NumpyAxisProtected[NumpyCategoricalDistribution],
+    NumpyCategoricalCredalSet,
     DiscreteCredalSet,
 ):
     """A finite set of categorical distributions."""
 
-    array: ArrayCategoricalDistribution
+    array: NumpyCategoricalDistribution
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
 
     def __post_init__(self) -> None:
         """Validate that the array contains valid categorical distributions."""
-        object.__setattr__(self, "array", _ensure_array_categorical_distribution(self.array))
+        object.__setattr__(self, "array", _ensure_numpy_categorical_distribution(self.array))
 
     @override
     @classmethod
-    def from_array_sample(cls, sample: ArraySample[ArrayCategoricalDistribution]) -> Self:
+    def from_numpy_sample(cls, sample: NumpySample[NumpyCategoricalDistribution]) -> Self:
         return cls(array=sample.move_sample_axis(-1).array)
 
     @override
@@ -112,30 +112,30 @@ class ArrayDiscreteCredalSet(
 
     @override
     @property
-    def barycenter(self) -> ArrayCategoricalDistribution:
+    def barycenter(self) -> NumpyCategoricalDistribution:
         return np.mean(self.array, axis=-1)
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
-class ArrayConvexCredalSet(
-    ArrayAxisProtected[ArrayCategoricalDistribution],
-    ArrayCategoricalCredalSet,
+class NumpyConvexCredalSet(
+    NumpyAxisProtected[NumpyCategoricalDistribution],
+    NumpyCategoricalCredalSet,
     ConvexCredalSet,
 ):
     """A convex hull over a finite set of categorical distributions."""
 
-    array: ArrayCategoricalDistribution
+    array: NumpyCategoricalDistribution
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
 
     def __post_init__(self) -> None:
         """Validate that the array contains valid categorical distributions."""
-        object.__setattr__(self, "array", _ensure_array_categorical_distribution(self.array))
+        object.__setattr__(self, "array", _ensure_numpy_categorical_distribution(self.array))
 
     @override
     @classmethod
-    def from_array_sample(
+    def from_numpy_sample(
         cls,
-        sample: ArraySample[ArrayCategoricalDistribution],
+        sample: NumpySample[NumpyCategoricalDistribution],
     ) -> Self:
         return cls(array=sample.move_sample_axis(-1).array)
 
@@ -157,30 +157,30 @@ class ArrayConvexCredalSet(
 
     @override
     @property
-    def barycenter(self) -> ArrayCategoricalDistribution:
+    def barycenter(self) -> NumpyCategoricalDistribution:
         return np.mean(self.array, axis=-1)
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
-class ArrayDistanceBasedCredalSet(
-    ArrayAxisProtected[ArrayCategoricalDistribution],
-    ArrayCategoricalCredalSet,
+class NumpyDistanceBasedCredalSet(
+    NumpyAxisProtected[NumpyCategoricalDistribution],
+    NumpyCategoricalCredalSet,
     DistanceBasedCredalSet,
 ):
     """Distance-based credal set around a nominal categorical distribution."""
 
-    nominal: ArrayCategoricalDistribution
+    nominal: NumpyCategoricalDistribution
     radius: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"nominal": 0, "radius": 0}
 
     def __post_init__(self) -> None:
         """Validate that nominal is a valid categorical distribution and radius is non-negative."""
-        object.__setattr__(self, "nominal", _ensure_array_categorical_distribution(self.nominal))
+        object.__setattr__(self, "nominal", _ensure_numpy_categorical_distribution(self.nominal))
         object.__setattr__(self, "radius", np.asarray(self.radius))
 
     @override
     @classmethod
-    def from_array_sample(cls, sample: ArraySample[ArrayCategoricalDistribution]) -> Self:
+    def from_numpy_sample(cls, sample: NumpySample[NumpyCategoricalDistribution]) -> Self:
         nominal = sample.sample_mean()
         diff = np.abs(sample.samples.probabilities - nominal.probabilities)
         tv_dists = 0.5 * np.sum(diff, axis=-1)
@@ -230,15 +230,15 @@ class ArrayDistanceBasedCredalSet(
 
     @override
     @property
-    def barycenter(self) -> ArrayCategoricalDistribution:
+    def barycenter(self) -> NumpyCategoricalDistribution:
         """Return the nominal distribution as the barycenter of the credal set."""
         return self.nominal
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
-class ArrayProbabilityIntervalsCredalSet(
-    ArrayAxisProtected[ArrayCategoricalDistribution],
-    ArrayCategoricalCredalSet,
+class NumpyProbabilityIntervalsCredalSet(
+    NumpyAxisProtected[NumpyCategoricalDistribution],
+    NumpyCategoricalCredalSet,
     ProbabilityIntervalsCredalSet,
 ):
     """Credal set represented by lower/upper categorical bounds."""
@@ -255,7 +255,7 @@ class ArrayProbabilityIntervalsCredalSet(
 
     @override
     @classmethod
-    def from_array_sample(cls, sample: ArraySample[ArrayCategoricalDistribution]) -> Self:
+    def from_numpy_sample(cls, sample: NumpySample[NumpyCategoricalDistribution]) -> Self:
         probabilities = sample.samples.probabilities
         lower_bounds = np.min(probabilities, axis=0)
         upper_bounds = np.max(probabilities, axis=0)
@@ -296,30 +296,30 @@ class ArrayProbabilityIntervalsCredalSet(
 
     @override
     @property
-    def barycenter(self) -> ArrayCategoricalDistribution:
+    def barycenter(self) -> NumpyCategoricalDistribution:
         """Compute the barycenter of the credal set as the center of the probability intervals."""
         center = _probability_interval_center(self.lower_bounds, self.upper_bounds)
-        return ArrayProbabilityCategoricalDistribution(center)
+        return NumpyProbabilityCategoricalDistribution(center)
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
-class ArraySingletonCredalSet(
-    ArrayAxisProtected[ArrayCategoricalDistribution],
-    ArrayCategoricalCredalSet,
+class NumpySingletonCredalSet(
+    NumpyAxisProtected[NumpyCategoricalDistribution],
+    NumpyCategoricalCredalSet,
     SingletonCredalSet,
 ):
     """A singleton credal set with one precise categorical distribution."""
 
-    array: ArrayCategoricalDistribution
+    array: NumpyCategoricalDistribution
     protected_axes: ClassVar[dict[str, int]] = {"array": 0}
 
     def __post_init__(self) -> None:
         """Validate that the array contains a valid categorical distribution."""
-        object.__setattr__(self, "array", _ensure_array_categorical_distribution(self.array))
+        object.__setattr__(self, "array", _ensure_numpy_categorical_distribution(self.array))
 
     @override
     @classmethod
-    def from_array_sample(cls, sample: ArraySample[ArrayCategoricalDistribution]) -> Self:
+    def from_numpy_sample(cls, sample: NumpySample[NumpyCategoricalDistribution]) -> Self:
         return cls(array=sample.sample_mean())
 
     @override
@@ -340,18 +340,18 @@ class ArraySingletonCredalSet(
 
     @override
     @property
-    def barycenter(self) -> ArrayCategoricalDistribution:
+    def barycenter(self) -> NumpyCategoricalDistribution:
         return self.array
 
 
-create_probability_intervals.register(ArrayCategoricalDistribution, ArrayProbabilityIntervalsCredalSet.from_sample)
-create_convex_credal_set.register(ArraySample, ArrayConvexCredalSet.from_array_sample)
-create_distance_based_credal_set.register(ArraySample, ArrayDistanceBasedCredalSet.from_array_sample)
+create_probability_intervals.register(NumpyCategoricalDistribution, NumpyProbabilityIntervalsCredalSet.from_sample)
+create_convex_credal_set.register(NumpySample, NumpyConvexCredalSet.from_numpy_sample)
+create_distance_based_credal_set.register(NumpySample, NumpyDistanceBasedCredalSet.from_numpy_sample)
 
 
-@create_distance_based_credal_set_from_center_and_radius.register(ArrayCategoricalDistribution)
+@create_distance_based_credal_set_from_center_and_radius.register(NumpyCategoricalDistribution)
 def _create_distance_based_credal_set_from_center_and_radius(
-    center: ArrayCategoricalDistribution,
+    center: NumpyCategoricalDistribution,
     radius: np.ndarray,
-) -> ArrayDistanceBasedCredalSet:
-    return ArrayDistanceBasedCredalSet(nominal=center, radius=np.asarray(radius))
+) -> NumpyDistanceBasedCredalSet:
+    return NumpyDistanceBasedCredalSet(nominal=center, radius=np.asarray(radius))

@@ -7,13 +7,13 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self, override
 
 import numpy as np
 
-from probly.representation._protected_axis.array import ArrayAxisProtected
+from probly.representation._protected_axis.numpy import NumpyAxisProtected
 from probly.representation.distribution._common import DirichletDistribution
-from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistribution,
-    ArrayProbabilityCategoricalDistribution,
+from probly.representation.distribution.numpy_categorical import (
+    NumpyCategoricalDistribution,
+    NumpyProbabilityCategoricalDistribution,
 )
-from probly.representation.sample import ArraySample
+from probly.representation.sample import NumpySample
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -22,9 +22,9 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayDirichletDistribution(
-    ArrayAxisProtected[np.ndarray],
-    DirichletDistribution[ArrayCategoricalDistribution],
+class NumpyDirichletDistribution(
+    NumpyAxisProtected[np.ndarray],
+    DirichletDistribution[NumpyCategoricalDistribution],
 ):
     """A Dirichlet distribution stored as a numpy array.
 
@@ -64,16 +64,16 @@ class ArrayDirichletDistribution(
         return cls(alphas=np.asarray(alphas, dtype=dtype))
 
     @property
-    def mean(self) -> ArrayCategoricalDistribution:
+    def mean(self) -> NumpyCategoricalDistribution:
         """Return the mean of the Dirichlet distribution."""
-        return ArrayProbabilityCategoricalDistribution(self.alphas)
+        return NumpyProbabilityCategoricalDistribution(self.alphas)
 
     @override
     def sample(
         self,
         num_samples: int = 1,
         rng: np.random.Generator | None = None,
-    ) -> ArraySample[ArrayCategoricalDistribution]:
+    ) -> NumpySample[NumpyCategoricalDistribution]:
         """Sample from the Dirichlet distribution (NumPy backend)."""
         if rng is None:
             rng = np.random.default_rng()
@@ -83,7 +83,7 @@ class ArrayDirichletDistribution(
             scale=1.0,
             size=(num_samples, *self.alphas.shape),
         )
-        return ArraySample(array=ArrayProbabilityCategoricalDistribution(gammas), sample_axis=0)
+        return NumpySample(array=NumpyProbabilityCategoricalDistribution(gammas), sample_axis=0)
 
     @override
     def _postprocess_ufunc_result(self, result: np.ndarray, *, ufunc: np.ufunc, method: str) -> np.ndarray:
@@ -93,7 +93,7 @@ class ArrayDirichletDistribution(
     @override
     def __eq__(self, value: Any) -> np.ndarray:  # ty: ignore[invalid-method-override]  # noqa: PYI032
         """Vectorized equality comparison."""
-        if isinstance(value, ArrayDirichletDistribution):
+        if isinstance(value, NumpyDirichletDistribution):
             eq = np.equal(self.alphas, value.alphas)
         else:
             eq = np.equal(self.alphas, value)

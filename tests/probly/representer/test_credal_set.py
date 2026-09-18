@@ -13,11 +13,11 @@ import pytest
 
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.representation.credal_set._common import ConvexCredalSet
-from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistribution,
-    ArrayProbabilityCategoricalDistribution,
+from probly.representation.distribution.numpy_categorical import (
+    NumpyCategoricalDistribution,
+    NumpyProbabilityCategoricalDistribution,
 )
-from probly.representation.sample import ArraySample
+from probly.representation.sample import NumpySample
 from probly.representer import (
     ConvexCredalSetRepresenter,
     ProbabilityIntervalsRepresenter,
@@ -26,13 +26,13 @@ from probly.representer import (
 from probly.representer.credal_set import compute_representative_sample
 
 
-class _DummyEnsemble(list[Callable[[], ArrayCategoricalDistribution]]):
+class _DummyEnsemble(list[Callable[[], NumpyCategoricalDistribution]]):
     __slots__ = ("__weakref__",)
 
 
-def _categorical_member(probabilities: list[float]) -> Callable[[], ArrayCategoricalDistribution]:
-    def predict() -> ArrayCategoricalDistribution:
-        return ArrayProbabilityCategoricalDistribution(np.asarray(probabilities))
+def _categorical_member(probabilities: list[float]) -> Callable[[], NumpyCategoricalDistribution]:
+    def predict() -> NumpyCategoricalDistribution:
+        return NumpyProbabilityCategoricalDistribution(np.asarray(probabilities))
 
     return predict
 
@@ -50,9 +50,9 @@ class TestComputeRepresentativeSampleDispatch:
     """``compute_representative_sample`` raises for unsupported sample backends."""
 
     def test_array_sample_without_handler_raises(self) -> None:
-        """An ArraySample (no array handler registered) hits the default branch (lines 29-30)."""
-        sample = ArraySample(
-            array=ArrayProbabilityCategoricalDistribution(np.array([[0.5, 0.5], [0.7, 0.3]])),
+        """An NumpySample (no array handler registered) hits the default branch (lines 29-30)."""
+        sample = NumpySample(
+            array=NumpyProbabilityCategoricalDistribution(np.array([[0.5, 0.5], [0.7, 0.3]])),
             sample_axis=0,
         )
 
@@ -72,13 +72,13 @@ class TestConvexCredalSetRepresenter:
         assert isinstance(cset, ConvexCredalSet)
 
     def test_predict_returns_array_sample(self) -> None:
-        """``_predict`` wraps the iterable predictions in an ArraySample (lines 50-51)."""
+        """``_predict`` wraps the iterable predictions in an NumpySample (lines 50-51)."""
         predictor = CredalEnsemblingPredictor.register_instance(_ensemble())
         rep = ConvexCredalSetRepresenter(predictor)
 
         sample = rep._predict()  # noqa: SLF001
 
-        assert isinstance(sample, ArraySample)
+        assert isinstance(sample, NumpySample)
         assert sample.sample_size == len(predictor)
 
 
@@ -94,7 +94,7 @@ class TestProbabilityIntervalsRepresenter:
 
         sample = rep._predict()  # noqa: SLF001
 
-        assert isinstance(sample, ArraySample)
+        assert isinstance(sample, NumpySample)
         assert sample.sample_size == len(predictor)
 
     def test_represent_returns_probability_intervals_torch(self) -> None:
@@ -130,16 +130,16 @@ class TestRepresentativeConvexCredalSetRepresenter:
     def test_predict_alpha_zero_passes_through(self) -> None:
         """``alpha=0`` calls super()._predict (lines 50-51) then short-circuits in the torch handler.
 
-        For ArraySample inputs there is no registered handler for ``compute_representative_sample``,
+        For NumpySample inputs there is no registered handler for ``compute_representative_sample``,
         so we call the parent's ``_predict`` directly to cover lines 50-51.
         """
         predictor = CredalEnsemblingPredictor.register_instance(_ensemble())
         rep = RepresentativeConvexCredalSetRepresenter(predictor, alpha=0.0, distance="euclidean")
 
-        # Parent _predict (lines 50-51) returns an ArraySample.
+        # Parent _predict (lines 50-51) returns an NumpySample.
         sample = ConvexCredalSetRepresenter._predict(rep)  # type: ignore[arg-type]  # noqa: SLF001
 
-        assert isinstance(sample, ArraySample)
+        assert isinstance(sample, NumpySample)
 
     def test_alpha_zero_falls_back_to_unfiltered(self) -> None:
         """alpha=0 short-circuits the torch handler — direct call test."""

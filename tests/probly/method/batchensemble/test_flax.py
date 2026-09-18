@@ -14,7 +14,7 @@ import jax.numpy as jnp  # noqa: E402
 from probly.layers.flax import BatchEnsembleConv, BatchEnsembleLinear  # noqa: E402
 from probly.method.batchensemble import batchensemble  # noqa: E402
 from probly.predictor import predict  # noqa: E402
-from probly.representation.sample.jax import JaxArraySample  # noqa: E402
+from probly.representation.sample.jax import JaxSample  # noqa: E402
 from tests.probly.flax_utils import count_layers  # noqa: E402
 
 
@@ -264,7 +264,7 @@ class TestBatchEnsembleCalls:
 
         BatchEnsemble layers expect ``[E*B, ...]`` inputs and return ``[E*B, ...]``
         outputs (the "pure" forward signature). The user-facing ``predict()`` handler
-        wraps these into a :class:`JaxArraySample` with ``sample_axis=0``.
+        wraps these into a :class:`JaxSample` with ``sample_axis=0``.
         """
         rngs = nnx.Rngs(0, params=1)
         batch_size = 1
@@ -298,9 +298,9 @@ class TestBatchEnsembleCalls:
         assert be_conv2d_out.shape == (num_members * batch_size, 1, 1, out_dim)
         assert be_conv3d_out.shape == (num_members * batch_size, 1, 1, 1, out_dim)
 
-        # predict() wraps in a JaxArraySample with sample_axis=0 and shape [E, B, ...].
+        # predict() wraps in a JaxSample with sample_axis=0 and shape [E, B, ...].
         linear_sample = predict(batchensemble_linear, x_linear)
-        assert isinstance(linear_sample, JaxArraySample)
+        assert isinstance(linear_sample, JaxSample)
         assert linear_sample.sample_axis == 0
         assert linear_sample.array.shape == (num_members, batch_size, out_dim)
 
@@ -316,7 +316,7 @@ class TestBatchEnsembleCalls:
         # Sample-wrap are handled for you.
         x = jnp.ones((1, 10))
         sample = predict(batchensemble_model, x)
-        assert isinstance(sample, JaxArraySample)
+        assert isinstance(sample, JaxSample)
         assert sample.sample_axis == 0
         assert sample.array.shape == (num_members, 1, 4)
 

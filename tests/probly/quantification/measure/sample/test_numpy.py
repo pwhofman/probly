@@ -12,28 +12,28 @@ class TestSampleMeasureArray:
         from probly.quantification.measure.sample import (  # noqa: PLC0415
             mean_squared_distance_to_scaled_one_hot,
         )
-        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
-            ArrayCategoricalDistributionSample,
-            ArrayProbabilityCategoricalDistribution,
+        from probly.representation.distribution.numpy_categorical import (  # noqa: PLC0415
+            NumpyCategoricalDistributionSample,
+            NumpyProbabilityCategoricalDistribution,
         )
 
         probs = np.array([[[0.6, 0.3, 0.1]], [[0.1, 0.6, 0.3]]])
-        dist = ArrayProbabilityCategoricalDistribution(array=probs)
-        sample = ArrayCategoricalDistributionSample(array=dist, sample_axis=0)
+        dist = NumpyProbabilityCategoricalDistribution(array=probs)
+        sample = NumpyCategoricalDistributionSample(array=dist, sample_axis=0)
         result = mean_squared_distance_to_scaled_one_hot(sample, scale=1.0)
         assert result.shape == (1,)
         assert np.isfinite(result).all()
 
     def test_total_logit_sample_variance_array(self) -> None:
         from probly.quantification.measure.sample import total_logit_sample_variance  # noqa: PLC0415
-        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
-            ArrayCategoricalDistributionSample,
-            ArrayProbabilityCategoricalDistribution,
+        from probly.representation.distribution.numpy_categorical import (  # noqa: PLC0415
+            NumpyCategoricalDistributionSample,
+            NumpyProbabilityCategoricalDistribution,
         )
 
         probs = np.array([[[0.6, 0.3, 0.1]], [[0.1, 0.6, 0.3]]])
-        dist = ArrayProbabilityCategoricalDistribution(array=probs)
-        sample = ArrayCategoricalDistributionSample(array=dist, sample_axis=0)
+        dist = NumpyProbabilityCategoricalDistribution(array=probs)
+        sample = NumpyCategoricalDistributionSample(array=dist, sample_axis=0)
         result = total_logit_sample_variance(sample)
         assert result.shape == (1,)
         assert np.isfinite(result).all()

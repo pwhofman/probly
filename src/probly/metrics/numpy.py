@@ -8,13 +8,13 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.optimize import linprog
 
-from probly.representation.conformal_set.array import ArrayIntervalConformalSet, ArrayOneHotConformalSet
-from probly.representation.credal_set.array import (
-    ArrayConvexCredalSet,
-    ArrayDiscreteCredalSet,
-    ArrayDistanceBasedCredalSet,
-    ArrayProbabilityIntervalsCredalSet,
-    ArraySingletonCredalSet,
+from probly.representation.conformal_set.numpy import NumpyIntervalConformalSet, NumpyOneHotConformalSet
+from probly.representation.credal_set.numpy import (
+    NumpyConvexCredalSet,
+    NumpyDiscreteCredalSet,
+    NumpyDistanceBasedCredalSet,
+    NumpyProbabilityIntervalsCredalSet,
+    NumpySingletonCredalSet,
 )
 from probly.representation.distribution._common import CategoricalDistribution
 
@@ -37,7 +37,7 @@ from ._common import (
 )
 
 if TYPE_CHECKING:
-    from probly.representation.distribution import ArrayCategoricalDistribution
+    from probly.representation.distribution import NumpyCategoricalDistribution
 
 
 @accuracy.register(np.ndarray)
@@ -326,49 +326,49 @@ def _envelope_average_interval_width(lower: np.ndarray, upper: np.ndarray) -> np
     return np.mean(np.asarray(upper) - np.asarray(lower))
 
 
-@coverage.register(ArrayOneHotConformalSet)
-def _numpy_onehot_coverage(y_pred: ArrayOneHotConformalSet, y_true: np.ndarray) -> np.floating:
+@coverage.register(NumpyOneHotConformalSet)
+def _numpy_onehot_coverage(y_pred: NumpyOneHotConformalSet, y_true: np.ndarray) -> np.floating:
     """Coverage for a one-hot conformal set."""
     return np.mean(_onehot_membership(np.asarray(y_pred.array), np.asarray(y_true)))
 
 
-@efficiency.register(ArrayOneHotConformalSet)
-def _numpy_onehot_efficiency(y_pred: ArrayOneHotConformalSet) -> np.floating:
+@efficiency.register(NumpyOneHotConformalSet)
+def _numpy_onehot_efficiency(y_pred: NumpyOneHotConformalSet) -> np.floating:
     """Average cardinality of a one-hot conformal set."""
     return np.mean(np.asarray(y_pred.array).sum(axis=-1))
 
 
-@coverage.register(ArrayIntervalConformalSet)
-def _numpy_interval_coverage(y_pred: ArrayIntervalConformalSet, y_true: np.ndarray) -> np.floating:
+@coverage.register(NumpyIntervalConformalSet)
+def _numpy_interval_coverage(y_pred: NumpyIntervalConformalSet, y_true: np.ndarray) -> np.floating:
     """Coverage for an interval conformal set."""
     arr = np.asarray(y_pred.array)
     y = np.asarray(y_true)
     return np.mean((y >= arr[..., 0]) & (y <= arr[..., 1]))
 
 
-@efficiency.register(ArrayIntervalConformalSet)
-def _numpy_interval_efficiency(y_pred: ArrayIntervalConformalSet) -> np.floating:
+@efficiency.register(NumpyIntervalConformalSet)
+def _numpy_interval_efficiency(y_pred: NumpyIntervalConformalSet) -> np.floating:
     """Average width of an interval conformal set."""
     arr = np.asarray(y_pred.array)
     return np.mean(arr[..., 1] - arr[..., 0])
 
 
-@coverage.register(ArraySingletonCredalSet)
-def _numpy_singleton_coverage(y_pred: ArraySingletonCredalSet, y_true: np.ndarray) -> np.floating:
+@coverage.register(NumpySingletonCredalSet)
+def _numpy_singleton_coverage(y_pred: NumpySingletonCredalSet, y_true: np.ndarray) -> np.floating:
     """Top-1 coverage for a singleton credal set (degenerate to argmax accuracy)."""
     probs = np.asarray(y_pred.array.probabilities)
     predicted = np.argmax(probs, axis=-1)
     return np.mean(predicted == np.asarray(y_true))
 
 
-@efficiency.register(ArraySingletonCredalSet)
-def _numpy_singleton_efficiency(_: ArraySingletonCredalSet) -> np.floating:
+@efficiency.register(NumpySingletonCredalSet)
+def _numpy_singleton_efficiency(_: NumpySingletonCredalSet) -> np.floating:
     """A singleton credal set always yields a single predicted class."""
     return np.float64(1.0)
 
 
-@coverage.register(ArrayDiscreteCredalSet)
-def _numpy_discrete_coverage(y_pred: ArrayDiscreteCredalSet, y_true: np.ndarray) -> np.floating:
+@coverage.register(NumpyDiscreteCredalSet)
+def _numpy_discrete_coverage(y_pred: NumpyDiscreteCredalSet, y_true: np.ndarray) -> np.floating:
     """Coverage for a discrete credal set: any vertex's argmax matches the true class."""
     probs = np.asarray(y_pred.array.probabilities)
     argmax_per_vertex = np.argmax(probs, axis=-1)
@@ -376,8 +376,8 @@ def _numpy_discrete_coverage(y_pred: ArrayDiscreteCredalSet, y_true: np.ndarray)
     return np.mean(np.any(argmax_per_vertex == y, axis=-1))
 
 
-@efficiency.register(ArrayDiscreteCredalSet)
-def _numpy_discrete_efficiency(y_pred: ArrayDiscreteCredalSet) -> np.floating:
+@efficiency.register(NumpyDiscreteCredalSet)
+def _numpy_discrete_efficiency(y_pred: NumpyDiscreteCredalSet) -> np.floating:
     """Average number of distinct argmax classes across the vertex set."""
     probs = np.asarray(y_pred.array.probabilities)
     num_classes = probs.shape[-1]
@@ -443,8 +443,8 @@ def _credal_interval_efficiency(lower: np.ndarray, upper: np.ndarray) -> np.floa
     return np.float64(1.0 - float(np.mean(upper_r - lower_r)))
 
 
-@coverage.register(ArrayConvexCredalSet)
-def _numpy_convex_coverage(y_pred: ArrayConvexCredalSet, y_true: np.ndarray) -> np.floating:
+@coverage.register(NumpyConvexCredalSet)
+def _numpy_convex_coverage(y_pred: NumpyConvexCredalSet, y_true: np.ndarray) -> np.floating:
     """Containment coverage for a convex credal set.
 
     Args:
@@ -457,8 +457,8 @@ def _numpy_convex_coverage(y_pred: ArrayConvexCredalSet, y_true: np.ndarray) -> 
     return _credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
 
 
-@efficiency.register(ArrayConvexCredalSet)
-def _numpy_convex_efficiency(y_pred: ArrayConvexCredalSet) -> np.floating:
+@efficiency.register(NumpyConvexCredalSet)
+def _numpy_convex_efficiency(y_pred: NumpyConvexCredalSet) -> np.floating:
     """Interval-width efficiency for a convex credal set: ``1 - mean(upper - lower)``.
 
     Returns:
@@ -467,8 +467,8 @@ def _numpy_convex_efficiency(y_pred: ArrayConvexCredalSet) -> np.floating:
     return _credal_interval_efficiency(y_pred.lower(), y_pred.upper())
 
 
-@coverage.register(ArrayDistanceBasedCredalSet)
-def _numpy_distance_coverage(y_pred: ArrayDistanceBasedCredalSet, y_true: np.ndarray) -> np.floating:
+@coverage.register(NumpyDistanceBasedCredalSet)
+def _numpy_distance_coverage(y_pred: NumpyDistanceBasedCredalSet, y_true: np.ndarray) -> np.floating:
     """Coverage for a distance-based (TV-ball) credal set.
 
     With class-index targets: interval-dominance coverage on the envelope.
@@ -486,8 +486,8 @@ def _numpy_distance_coverage(y_pred: ArrayDistanceBasedCredalSet, y_true: np.nda
     return _envelope_coverage(y_pred.lower(), y_pred.upper(), y_true)
 
 
-@efficiency.register(ArrayDistanceBasedCredalSet)
-def _numpy_distance_efficiency(y_pred: ArrayDistanceBasedCredalSet) -> np.floating:
+@efficiency.register(NumpyDistanceBasedCredalSet)
+def _numpy_distance_efficiency(y_pred: NumpyDistanceBasedCredalSet) -> np.floating:
     """Interval-width efficiency for a distance-based credal set: ``1 - mean(upper - lower)``.
 
     Same semantic as ``ConvexCredalSet`` and ``ProbabilityIntervalsCredalSet``:
@@ -496,9 +496,9 @@ def _numpy_distance_efficiency(y_pred: ArrayDistanceBasedCredalSet) -> np.floati
     return _credal_interval_efficiency(y_pred.lower(), y_pred.upper())
 
 
-@coverage.register(ArrayProbabilityIntervalsCredalSet)
+@coverage.register(NumpyProbabilityIntervalsCredalSet)
 def _numpy_probability_intervals_coverage(
-    y_pred: ArrayProbabilityIntervalsCredalSet, y_true: np.ndarray
+    y_pred: NumpyProbabilityIntervalsCredalSet, y_true: np.ndarray
 ) -> np.floating:
     """Containment coverage for a probability-intervals credal set.
 
@@ -512,8 +512,8 @@ def _numpy_probability_intervals_coverage(
     return _credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
 
 
-@efficiency.register(ArrayProbabilityIntervalsCredalSet)
-def _numpy_probability_intervals_efficiency(y_pred: ArrayProbabilityIntervalsCredalSet) -> np.floating:
+@efficiency.register(NumpyProbabilityIntervalsCredalSet)
+def _numpy_probability_intervals_efficiency(y_pred: NumpyProbabilityIntervalsCredalSet) -> np.floating:
     """Interval-width efficiency for a probability-intervals credal set: ``1 - mean(upper - lower)``.
 
     Returns:
@@ -522,27 +522,27 @@ def _numpy_probability_intervals_efficiency(y_pred: ArrayProbabilityIntervalsCre
     return _credal_interval_efficiency(y_pred.lower(), y_pred.upper())
 
 
-@average_interval_width.register(ArrayConvexCredalSet)
-def _numpy_convex_average_interval_width(y_pred: ArrayConvexCredalSet) -> np.floating:
+@average_interval_width.register(NumpyConvexCredalSet)
+def _numpy_convex_average_interval_width(y_pred: NumpyConvexCredalSet) -> np.floating:
     """Mean per-class width of the vertex-derived envelope of a convex credal set."""
     return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
 
 
-@average_interval_width.register(ArrayDiscreteCredalSet)
-def _numpy_discrete_average_interval_width(y_pred: ArrayDiscreteCredalSet) -> np.floating:
+@average_interval_width.register(NumpyDiscreteCredalSet)
+def _numpy_discrete_average_interval_width(y_pred: NumpyDiscreteCredalSet) -> np.floating:
     """Mean per-class width of the vertex-min/vertex-max envelope of a discrete credal set."""
     probs = np.asarray(y_pred.array.probabilities)
     return _envelope_average_interval_width(np.min(probs, axis=-2), np.max(probs, axis=-2))
 
 
-@average_interval_width.register(ArrayDistanceBasedCredalSet)
-def _numpy_distance_average_interval_width(y_pred: ArrayDistanceBasedCredalSet) -> np.floating:
+@average_interval_width.register(NumpyDistanceBasedCredalSet)
+def _numpy_distance_average_interval_width(y_pred: NumpyDistanceBasedCredalSet) -> np.floating:
     """Mean per-class width of the L1-clip envelope of a distance-based credal set."""
     return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
 
 
-@average_interval_width.register(ArrayProbabilityIntervalsCredalSet)
-def _numpy_probability_intervals_average_interval_width(y_pred: ArrayProbabilityIntervalsCredalSet) -> np.floating:
+@average_interval_width.register(NumpyProbabilityIntervalsCredalSet)
+def _numpy_probability_intervals_average_interval_width(y_pred: NumpyProbabilityIntervalsCredalSet) -> np.floating:
     """Mean per-class interval width of a probability-intervals credal set."""
     return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
 
@@ -632,10 +632,10 @@ def _convex_hull_lp_coverage(
     return np.float64(covered / n_instances) if n_instances > 0 else np.float64("nan")
 
 
-@convex_hull_coverage.register(ArrayConvexCredalSet)
+@convex_hull_coverage.register(NumpyConvexCredalSet)
 def _numpy_convex_convex_hull_coverage(
-    y_pred: ArrayConvexCredalSet,
-    y_true: ArrayCategoricalDistribution,
+    y_pred: NumpyConvexCredalSet,
+    y_true: NumpyCategoricalDistribution,
     *,
     epsilon: float = 0.0,
     **linprog_kwargs: object,
@@ -649,10 +649,10 @@ def _numpy_convex_convex_hull_coverage(
     )
 
 
-@convex_hull_coverage.register(ArrayDiscreteCredalSet)
+@convex_hull_coverage.register(NumpyDiscreteCredalSet)
 def _numpy_discrete_convex_hull_coverage(
-    y_pred: ArrayDiscreteCredalSet,
-    y_true: ArrayCategoricalDistribution,
+    y_pred: NumpyDiscreteCredalSet,
+    y_true: NumpyCategoricalDistribution,
     *,
     epsilon: float = 0.0,
     **linprog_kwargs: object,
@@ -666,10 +666,10 @@ def _numpy_discrete_convex_hull_coverage(
     )
 
 
-@convex_hull_coverage.register(ArraySingletonCredalSet)
+@convex_hull_coverage.register(NumpySingletonCredalSet)
 def _numpy_singleton_convex_hull_coverage(
-    y_pred: ArraySingletonCredalSet,
-    y_true: ArrayCategoricalDistribution,
+    y_pred: NumpySingletonCredalSet,
+    y_true: NumpyCategoricalDistribution,
     *,
     epsilon: float = 0.0,
     **_linprog_kwargs: object,

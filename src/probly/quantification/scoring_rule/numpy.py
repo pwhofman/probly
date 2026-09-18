@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from probly.representation.sample.array import ArraySample
+from probly.representation.sample.numpy import NumpySample
 
 from ._common import _brier_loss_vector, _log_loss_vector, _spherical_loss_vector, _zero_one_loss_vector
 
@@ -38,25 +38,25 @@ def numpy_spherical_loss_vector(probabilities: np.ndarray) -> np.ndarray:
     return 1.0 - probabilities / norm
 
 
-@_log_loss_vector.register(ArraySample)
-def _(probabilities: ArraySample) -> ArraySample:
+@_log_loss_vector.register(NumpySample)
+def _(probabilities: NumpySample) -> NumpySample:
     """Compute memberwise log loss, preserving sample metadata."""
-    return ArraySample(_log_loss_vector(probabilities.array), probabilities.sample_axis, probabilities.weights)
+    return NumpySample(_log_loss_vector(probabilities.array), probabilities.sample_axis, probabilities.weights)
 
 
-@_brier_loss_vector.register(ArraySample)
-def _(probabilities: ArraySample) -> ArraySample:
+@_brier_loss_vector.register(NumpySample)
+def _(probabilities: NumpySample) -> NumpySample:
     """Compute memberwise Brier loss, preserving sample metadata."""
-    return ArraySample(_brier_loss_vector(probabilities.array), probabilities.sample_axis, probabilities.weights)
+    return NumpySample(_brier_loss_vector(probabilities.array), probabilities.sample_axis, probabilities.weights)
 
 
-@_zero_one_loss_vector.register(ArraySample)
-def _(probabilities: ArraySample) -> ArraySample:
+@_zero_one_loss_vector.register(NumpySample)
+def _(probabilities: NumpySample) -> NumpySample:
     """Compute memberwise zero-one loss, preserving sample metadata."""
-    return ArraySample(_zero_one_loss_vector(probabilities.array), probabilities.sample_axis, probabilities.weights)
+    return NumpySample(_zero_one_loss_vector(probabilities.array), probabilities.sample_axis, probabilities.weights)
 
 
-@_spherical_loss_vector.register(ArraySample)
-def _(probabilities: ArraySample) -> ArraySample:
+@_spherical_loss_vector.register(NumpySample)
+def _(probabilities: NumpySample) -> NumpySample:
     """Compute memberwise spherical loss, preserving sample metadata."""
-    return ArraySample(_spherical_loss_vector(probabilities.array), probabilities.sample_axis, probabilities.weights)
+    return NumpySample(_spherical_loss_vector(probabilities.array), probabilities.sample_axis, probabilities.weights)

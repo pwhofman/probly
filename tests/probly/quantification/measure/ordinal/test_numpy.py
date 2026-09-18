@@ -10,11 +10,11 @@ class TestArrayOrdinal:
 
     def test_variance_on_distribution(self) -> None:
         from probly.quantification.measure.ordinal import ordinal_variance  # noqa: PLC0415
-        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
-            ArrayProbabilityCategoricalDistribution,
+        from probly.representation.distribution.numpy_categorical import (  # noqa: PLC0415
+            NumpyProbabilityCategoricalDistribution,
         )
 
-        d = ArrayProbabilityCategoricalDistribution(array=np.array([[0.5, 0.5, 0.0]]))
+        d = NumpyProbabilityCategoricalDistribution(array=np.array([[0.5, 0.5, 0.0]]))
         out = ordinal_variance(d)
         # cdf = [0.5, 1.0] -> excluding last bin -> [0.5]
         # variance = 0.5 * (1 - 0.5) = 0.25
@@ -32,22 +32,22 @@ class TestArrayOrdinal:
 
     def test_entropy_on_distribution(self) -> None:
         from probly.quantification.measure.ordinal import ordinal_entropy  # noqa: PLC0415
-        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
-            ArrayProbabilityCategoricalDistribution,
+        from probly.representation.distribution.numpy_categorical import (  # noqa: PLC0415
+            NumpyProbabilityCategoricalDistribution,
         )
 
         # For a uniform 2-class distribution, the binary entropy is log(2) (in nats).
-        d = ArrayProbabilityCategoricalDistribution(array=np.array([[0.5, 0.5]]))
+        d = NumpyProbabilityCategoricalDistribution(array=np.array([[0.5, 0.5]]))
         out = ordinal_entropy(d)
         np.testing.assert_allclose(out, [np.log(2)], atol=1e-6)
 
     def test_entropy_normalized_base(self) -> None:
         from probly.quantification.measure.ordinal import ordinal_entropy  # noqa: PLC0415
-        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
-            ArrayProbabilityCategoricalDistribution,
+        from probly.representation.distribution.numpy_categorical import (  # noqa: PLC0415
+            NumpyProbabilityCategoricalDistribution,
         )
 
         # Uniform 2-class, normalized base -> entropy = 1.
-        d = ArrayProbabilityCategoricalDistribution(array=np.array([[0.5, 0.5]]))
+        d = NumpyProbabilityCategoricalDistribution(array=np.array([[0.5, 0.5]]))
         out = ordinal_entropy(d, base="normalize")
         np.testing.assert_allclose(out, [1.0], atol=1e-6)

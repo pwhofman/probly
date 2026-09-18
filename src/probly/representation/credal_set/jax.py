@@ -29,7 +29,7 @@ from probly.representation.distribution.jax_categorical import (
     JaxProbabilityCategoricalDistribution,
 )
 from probly.representation.jax_functions import jax_mean
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 from probly.utils.jax import intersection_probability
 
 if TYPE_CHECKING:
@@ -45,7 +45,7 @@ def _ensure_jax_categorical_distribution(value: object) -> JaxCategoricalDistrib
 
 
 def _sample_probabilities(
-    sample: JaxArraySample[JaxCategoricalDistribution],
+    sample: JaxSample[JaxCategoricalDistribution],
 ) -> jax.Array:
     sample_values = sample.samples
     if not isinstance(sample_values, JaxCategoricalDistribution):
@@ -61,17 +61,17 @@ class JaxCategoricalCredalSet(CategoricalCredalSet, ABC):
     @override
     @classmethod
     def from_sample(cls, sample: Sample[JaxCategoricalDistribution]) -> Self:
-        jax_sample = JaxArraySample.from_iterable(sample.samples, sample_axis=0)
+        jax_sample = JaxSample.from_iterable(sample.samples, sample_axis=0)
         if not isinstance(jax_sample.array, JaxCategoricalDistribution):
-            msg = "Expected JaxArraySample[JaxCategoricalDistribution] for categorical credal sets."
+            msg = "Expected JaxSample[JaxCategoricalDistribution] for categorical credal sets."
             raise TypeError(msg)
-        return cls.from_jax_sample(cast("JaxArraySample[JaxCategoricalDistribution]", jax_sample))
+        return cls.from_jax_sample(cast("JaxSample[JaxCategoricalDistribution]", jax_sample))
 
     @classmethod
     @abstractmethod
     def from_jax_sample(
         cls,
-        sample: JaxArraySample[JaxCategoricalDistribution],
+        sample: JaxSample[JaxCategoricalDistribution],
     ) -> Self:
         """Create a credal set from categorical distribution samples."""
 
@@ -95,7 +95,7 @@ class JaxConvexCredalSet(
     @classmethod
     def from_jax_sample(
         cls,
-        sample: JaxArraySample[JaxCategoricalDistribution],
+        sample: JaxSample[JaxCategoricalDistribution],
     ) -> Self:
         probabilities = _sample_probabilities(sample)
         vertices = jnp.moveaxis(probabilities, 0, -2)
@@ -143,7 +143,7 @@ class JaxDistanceBasedCredalSet(
     @classmethod
     def from_jax_sample(
         cls,
-        sample: JaxArraySample[JaxCategoricalDistribution],
+        sample: JaxSample[JaxCategoricalDistribution],
     ) -> Self:
         probabilities = _sample_probabilities(sample)
         nominal = jnp.mean(probabilities, axis=0)
@@ -220,7 +220,7 @@ class JaxDirichletLevelSetCredalSet(
     @classmethod
     def from_jax_sample(
         cls,
-        sample: JaxArraySample[JaxCategoricalDistribution],
+        sample: JaxSample[JaxCategoricalDistribution],
     ) -> Self:
         """Create from a jax sample (not supported).
 
@@ -347,7 +347,7 @@ class JaxProbabilityIntervalsCredalSet(
     @classmethod
     def from_jax_sample(
         cls,
-        sample: JaxArraySample[JaxCategoricalDistribution],
+        sample: JaxSample[JaxCategoricalDistribution],
     ) -> Self:
         probabilities = _sample_probabilities(sample)
         lower_bounds = jnp.min(probabilities, axis=0)
@@ -402,9 +402,9 @@ class JaxProbabilityIntervalsCredalSet(
 
 
 create_probability_intervals.register(JaxCategoricalDistribution, JaxProbabilityIntervalsCredalSet.from_sample)
-create_probability_intervals.register(JaxArraySample, JaxProbabilityIntervalsCredalSet.from_jax_sample)
-create_convex_credal_set.register(JaxArraySample, JaxConvexCredalSet.from_jax_sample)
-create_distance_based_credal_set.register(JaxArraySample, JaxDistanceBasedCredalSet.from_jax_sample)
+create_probability_intervals.register(JaxSample, JaxProbabilityIntervalsCredalSet.from_jax_sample)
+create_convex_credal_set.register(JaxSample, JaxConvexCredalSet.from_jax_sample)
+create_distance_based_credal_set.register(JaxSample, JaxDistanceBasedCredalSet.from_jax_sample)
 
 
 @create_probability_intervals_from_lower_upper_array.register(jax.Array)

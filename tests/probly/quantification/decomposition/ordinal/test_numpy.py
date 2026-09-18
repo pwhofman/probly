@@ -30,17 +30,17 @@ from probly.quantification.decomposition.ordinal import (
 )
 from probly.quantification.measure.ordinal import labelwise_entropy, labelwise_variance
 from probly.quantification.notion import AleatoricUncertainty, EpistemicUncertainty, TotalUncertainty
-from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistributionSample,
-    ArrayProbabilityCategoricalDistribution,
+from probly.representation.distribution.numpy_categorical import (
+    NumpyCategoricalDistributionSample,
+    NumpyProbabilityCategoricalDistribution,
 )
-from probly.representation.distribution.array_gaussian import (
-    ArrayGaussianDistribution,
-    ArrayGaussianDistributionSample,
+from probly.representation.distribution.numpy_gaussian import (
+    NumpyGaussianDistribution,
+    NumpyGaussianDistributionSample,
 )
 
 
-def _categorical_sample() -> ArrayCategoricalDistributionSample:
+def _categorical_sample() -> NumpyCategoricalDistributionSample:
     """Sample with shape (M=3, N=2, K=3) and sample_axis=0."""
     probs = np.array(
         [
@@ -50,13 +50,13 @@ def _categorical_sample() -> ArrayCategoricalDistributionSample:
         ],
         dtype=float,
     )
-    return ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probs),
+    return NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probs),
         sample_axis=0,
     )
 
 
-def _constant_categorical_sample() -> ArrayCategoricalDistributionSample:
+def _constant_categorical_sample() -> NumpyCategoricalDistributionSample:
     """All three models agree: epistemic uncertainty should be zero."""
     probs = np.array(
         [
@@ -66,22 +66,22 @@ def _constant_categorical_sample() -> ArrayCategoricalDistributionSample:
         ],
         dtype=float,
     )
-    return ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probs),
+    return NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probs),
         sample_axis=0,
     )
 
 
-def _gaussian_sample() -> ArrayGaussianDistributionSample:
+def _gaussian_sample() -> NumpyGaussianDistributionSample:
     """Three Gaussian models with identical variance and different means."""
-    gaussians = [ArrayGaussianDistribution(mean=np.array([m]), var=np.array([0.5])) for m in [1.0, 2.0, 3.0]]
-    return ArrayGaussianDistributionSample.from_iterable(gaussians, sample_axis=0)
+    gaussians = [NumpyGaussianDistribution(mean=np.array([m]), var=np.array([0.5])) for m in [1.0, 2.0, 3.0]]
+    return NumpyGaussianDistributionSample.from_iterable(gaussians, sample_axis=0)
 
 
-def _identical_gaussian_sample() -> ArrayGaussianDistributionSample:
+def _identical_gaussian_sample() -> NumpyGaussianDistributionSample:
     """Three identical Gaussian models: epistemic uncertainty should be zero."""
-    gaussians = [ArrayGaussianDistribution(mean=np.array([2.0]), var=np.array([0.5]))] * 3
-    return ArrayGaussianDistributionSample.from_iterable(gaussians, sample_axis=0)
+    gaussians = [NumpyGaussianDistribution(mean=np.array([2.0]), var=np.array([0.5]))] * 3
+    return NumpyGaussianDistributionSample.from_iterable(gaussians, sample_axis=0)
 
 
 CATEGORICAL_DECOMP_CLASSES = [
@@ -289,7 +289,7 @@ def test_labelwise_variance_vs_manual_formula() -> None:
 
 def test_labelwise_single_distribution_measures() -> None:
     probs = np.array([[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]], dtype=float)
-    dist = ArrayProbabilityCategoricalDistribution(probs)
+    dist = NumpyProbabilityCategoricalDistribution(probs)
     p = dist.probabilities  # (N=2, K=3)
 
     np.testing.assert_allclose(labelwise_entropy(dist), np.sum(_bh(p), axis=-1), rtol=1e-12)

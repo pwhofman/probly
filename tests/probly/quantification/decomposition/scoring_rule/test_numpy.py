@@ -13,9 +13,9 @@ from probly.quantification import (
     SphericalLoss,
     ZeroOneLoss,
 )
-from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistributionSample,
-    ArrayProbabilityCategoricalDistribution,
+from probly.representation.distribution.numpy_categorical import (
+    NumpyCategoricalDistributionSample,
+    NumpyProbabilityCategoricalDistribution,
 )
 
 _PROBS = np.array(
@@ -28,9 +28,9 @@ _PROBS = np.array(
 )
 
 
-def _sample() -> ArrayCategoricalDistributionSample:
-    return ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(_PROBS),
+def _sample() -> NumpyCategoricalDistributionSample:
+    return NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(_PROBS),
         sample_axis=0,
     )
 
@@ -53,7 +53,7 @@ def test_log_loss_matches_entropy_with_zero_probabilities() -> None:
         ],
         dtype=float,
     )
-    sample = ArrayCategoricalDistributionSample(array=ArrayProbabilityCategoricalDistribution(probs), sample_axis=0)
+    sample = NumpyCategoricalDistributionSample(array=NumpyProbabilityCategoricalDistribution(probs), sample_axis=0)
     sr = SecondOrderScoringRuleDecomposition(sample, LogLoss())
     ent = SecondOrderEntropyDecomposition(sample)
     assert np.all(np.isfinite(np.asarray(sr.total)))

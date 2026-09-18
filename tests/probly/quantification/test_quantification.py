@@ -7,16 +7,16 @@ import numpy as np
 from probly.quantification import SecondOrderEntropyDecomposition, decompose, measure, quantify
 from probly.quantification.decomposition.decomposition import ConstantTotalDecomposition
 from probly.quantification.measure.distribution import entropy_of_expected_predictive_distribution
-from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistributionSample,
-    ArrayProbabilityCategoricalDistribution,
+from probly.representation.distribution.numpy_categorical import (
+    NumpyCategoricalDistributionSample,
+    NumpyProbabilityCategoricalDistribution,
 )
-from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
-from probly.representation.sample import ArraySample
+from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
+from probly.representation.sample import NumpySample
 
 
-def _array_sample() -> ArraySample[np.ndarray]:
-    return ArraySample(
+def _array_sample() -> NumpySample[np.ndarray]:
+    return NumpySample(
         array=np.array(
             [
                 [1.0, 2.0],
@@ -29,8 +29,8 @@ def _array_sample() -> ArraySample[np.ndarray]:
     )
 
 
-def _array_dirichlet_distribution() -> ArrayDirichletDistribution:
-    return ArrayDirichletDistribution(
+def _array_dirichlet_distribution() -> NumpyDirichletDistribution:
+    return NumpyDirichletDistribution(
         np.array(
             [
                 [2.0, 3.0, 5.0],
@@ -41,7 +41,7 @@ def _array_dirichlet_distribution() -> ArrayDirichletDistribution:
     )
 
 
-def _array_categorical_sample() -> ArrayCategoricalDistributionSample:
+def _array_categorical_sample() -> NumpyCategoricalDistributionSample:
     probabilities = np.array(
         [
             [[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]],
@@ -50,8 +50,8 @@ def _array_categorical_sample() -> ArrayCategoricalDistributionSample:
         ],
         dtype=float,
     )
-    return ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    return NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 

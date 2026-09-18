@@ -20,12 +20,12 @@ from probly.quantification.measure.distribution import (
     mutual_information,
     vacuity,
 )
-from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistributionSample,
-    ArrayProbabilityCategoricalDistribution,
+from probly.representation.distribution.numpy_categorical import (
+    NumpyCategoricalDistributionSample,
+    NumpyProbabilityCategoricalDistribution,
 )
-from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
-from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution
+from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
+from probly.representation.distribution.numpy_gaussian import NumpyGaussianDistribution
 
 CATEGORICAL_BASES: tuple[None | float | Literal["normalize"], ...] = (None, 2.0, "normalize")
 NUMERIC_BASES: tuple[None | float, ...] = (None, 2.0, 10.0)
@@ -54,7 +54,7 @@ def _change_base_natural_log(values: np.ndarray, base: None | float) -> np.ndarr
 def test_array_categorical_entropy_matches_scipy(
     probabilities: np.ndarray, base: None | float | Literal["normalize"]
 ) -> None:
-    distribution = ArrayProbabilityCategoricalDistribution(probabilities)
+    distribution = NumpyProbabilityCategoricalDistribution(probabilities)
 
     measured = entropy(distribution, base=base)
     expected = scipy_entropy(probabilities, axis=-1, base=_resolve_categorical_base(base, probabilities.shape[-1]))
@@ -71,7 +71,7 @@ def test_array_categorical_entropy_normalize_maps_to_unit_interval() -> None:
         dtype=float,
     )
 
-    measured = entropy(ArrayProbabilityCategoricalDistribution(probabilities), base="normalize")
+    measured = entropy(NumpyProbabilityCategoricalDistribution(probabilities), base="normalize")
 
     np.testing.assert_allclose(measured[0], 1.0, rtol=1e-12, atol=1e-12)
     np.testing.assert_allclose(measured[1], 0.0, rtol=1e-12, atol=1e-12)
@@ -89,7 +89,7 @@ def test_array_dirichlet_entropy_matches_scipy(base: None | float) -> None:
         ],
         dtype=float,
     )
-    distribution = ArrayDirichletDistribution(alphas)
+    distribution = NumpyDirichletDistribution(alphas)
 
     measured = entropy(distribution, base=base)
     expected_natural = np.array([dirichlet(alpha).entropy() for alpha in alphas], dtype=float)
@@ -102,7 +102,7 @@ def test_array_dirichlet_entropy_matches_scipy(base: None | float) -> None:
 def test_array_gaussian_entropy_matches_scipy_norm(base: None | float) -> None:
     mean = np.array([0.0, 3.5, -1.0], dtype=float)
     var = np.array([1.0, 0.25, 2.0], dtype=float)
-    distribution = ArrayGaussianDistribution(mean=mean, var=var)
+    distribution = NumpyGaussianDistribution(mean=mean, var=var)
 
     measured = entropy(distribution, base=base)
     expected_natural = norm(scale=np.sqrt(var)).entropy()
@@ -125,8 +125,8 @@ def test_array_sample_second_order_measures_match_scipy(
         dtype=float,
     )
     probabilities = np.moveaxis(base_probabilities, 0, sample_axis)
-    sample = ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    sample = NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=sample_axis,
     )
 
@@ -164,7 +164,7 @@ def test_array_dirichlet_entropy_of_expected_predictive_distribution_matches_sci
         ],
         dtype=float,
     )
-    distribution = ArrayDirichletDistribution(alphas)
+    distribution = NumpyDirichletDistribution(alphas)
 
     measured = entropy_of_expected_predictive_distribution(distribution, base=base)
     expected_mean = alphas / np.sum(alphas, axis=-1, keepdims=True)
@@ -178,7 +178,7 @@ def test_array_dirichlet_conditional_entropy_and_mutual_information_known_points
     num_classes = 3
     expected_uniform_entropy = _change_base_natural_log(np.asarray(np.log(num_classes), dtype=float), base)
 
-    concentrated = ArrayDirichletDistribution(np.array([1000.0, 1000.0, 1000.0], dtype=float))
+    concentrated = NumpyDirichletDistribution(np.array([1000.0, 1000.0, 1000.0], dtype=float))
     concentrated_conditional = conditional_entropy(concentrated, base=base)
     concentrated_mutual_information = mutual_information(concentrated, base=base)
     concentrated_entropy_of_expected = entropy_of_expected_predictive_distribution(concentrated, base=base)
@@ -188,7 +188,7 @@ def test_array_dirichlet_conditional_entropy_and_mutual_information_known_points
     assert concentrated_mutual_information >= 0.0
     assert concentrated_mutual_information < 1e-3
 
-    corner_like = ArrayDirichletDistribution(np.array([1e-3, 1e-3, 1e-3], dtype=float))
+    corner_like = NumpyDirichletDistribution(np.array([1e-3, 1e-3, 1e-3], dtype=float))
     corner_like_conditional = conditional_entropy(corner_like, base=base)
     corner_like_mutual_information = mutual_information(corner_like, base=base)
     corner_like_entropy_of_expected = entropy_of_expected_predictive_distribution(corner_like, base=base)
@@ -201,8 +201,8 @@ def test_array_dirichlet_conditional_entropy_and_mutual_information_known_points
 
 
 def test_array_normalize_base_unsupported_for_non_categorical_entropies() -> None:
-    dirichlet_distribution = ArrayDirichletDistribution(np.array([2.0, 3.0, 5.0], dtype=float))
-    gaussian_distribution = ArrayGaussianDistribution(
+    dirichlet_distribution = NumpyDirichletDistribution(np.array([2.0, 3.0, 5.0], dtype=float))
+    gaussian_distribution = NumpyGaussianDistribution(
         mean=np.array([0.0], dtype=float), var=np.array([1.0], dtype=float)
     )
 
@@ -229,7 +229,7 @@ def test_identity_holds_for_array_dirichlet(base: None | float) -> None:
         ],
         dtype=float,
     )
-    distribution = ArrayDirichletDistribution(alphas)
+    distribution = NumpyDirichletDistribution(alphas)
 
     expected_entropy = entropy_of_expected_predictive_distribution(distribution, base=base)
     decomposition_sum = conditional_entropy(distribution, base=base) + mutual_information(distribution, base=base)
@@ -249,8 +249,8 @@ def test_identity_holds_for_array_categorical_sample(sample_axis: int, base: Non
         dtype=float,
     )
     probabilities = np.moveaxis(base_probabilities, 0, sample_axis)
-    sample = ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    sample = NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=sample_axis,
     )
 
@@ -271,8 +271,8 @@ def test_array_sample_zero_one_measures_match_manual(sample_axis: int) -> None:
         dtype=float,
     )
     probabilities = np.moveaxis(base_probabilities, 0, sample_axis)
-    sample = ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    sample = NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=sample_axis,
     )
 
@@ -300,8 +300,8 @@ def test_array_sample_zero_one_known_values() -> None:
         ],
         dtype=float,
     )
-    sample = ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    sample = NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 
@@ -321,8 +321,8 @@ def test_zero_one_identity_holds_for_array_categorical_sample(sample_axis: int) 
         dtype=float,
     )
     probabilities = np.moveaxis(base_probabilities, 0, sample_axis)
-    sample = ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    sample = NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=sample_axis,
     )
 
@@ -342,7 +342,7 @@ def test_array_dirichlet_vacuity_known_values() -> None:
         ],
         dtype=float,
     )
-    distribution = ArrayDirichletDistribution(alphas)
+    distribution = NumpyDirichletDistribution(alphas)
 
     measured = vacuity(distribution)
 
@@ -352,7 +352,7 @@ def test_array_dirichlet_vacuity_known_values() -> None:
 def test_array_dirichlet_vacuity_lies_in_unit_interval() -> None:
     rng = np.random.default_rng(seed=0)
     alphas = rng.uniform(low=1.0, high=20.0, size=(50, 4))
-    distribution = ArrayDirichletDistribution(alphas)
+    distribution = NumpyDirichletDistribution(alphas)
 
     measured = vacuity(distribution)
 
@@ -361,8 +361,8 @@ def test_array_dirichlet_vacuity_lies_in_unit_interval() -> None:
 
 
 def test_array_dirichlet_vacuity_decreases_with_evidence() -> None:
-    weak = ArrayDirichletDistribution(np.array([1.0, 1.0, 1.0], dtype=float))
-    strong = ArrayDirichletDistribution(np.array([100.0, 100.0, 100.0], dtype=float))
+    weak = NumpyDirichletDistribution(np.array([1.0, 1.0, 1.0], dtype=float))
+    strong = NumpyDirichletDistribution(np.array([100.0, 100.0, 100.0], dtype=float))
 
     assert vacuity(weak) > vacuity(strong)
 
@@ -376,7 +376,7 @@ def test_array_dirichlet_max_probability_complement_of_expected_known_values() -
         ],
         dtype=float,
     )
-    distribution = ArrayDirichletDistribution(alphas)
+    distribution = NumpyDirichletDistribution(alphas)
 
     measured = max_probability_complement_of_expected(distribution)
 
@@ -387,7 +387,7 @@ def test_array_dirichlet_max_probability_complement_of_expected_known_values() -
 def test_array_dirichlet_max_probability_complement_of_expected_matches_explicit_formula() -> None:
     rng = np.random.default_rng(seed=0)
     alphas = rng.uniform(low=0.5, high=20.0, size=(50, 5))
-    distribution = ArrayDirichletDistribution(alphas)
+    distribution = NumpyDirichletDistribution(alphas)
 
     measured = max_probability_complement_of_expected(distribution)
 
@@ -399,7 +399,7 @@ def test_array_dirichlet_max_probability_complement_of_expected_matches_explicit
 def test_array_dirichlet_max_probability_complement_of_expected_lies_in_unit_interval() -> None:
     rng = np.random.default_rng(seed=1)
     alphas = rng.uniform(low=0.1, high=50.0, size=(50, 6))
-    distribution = ArrayDirichletDistribution(alphas)
+    distribution = NumpyDirichletDistribution(alphas)
 
     measured = max_probability_complement_of_expected(distribution)
 
@@ -410,8 +410,8 @@ def test_array_dirichlet_max_probability_complement_of_expected_lies_in_unit_int
 def test_array_dirichlet_max_probability_complement_of_expected_invariant_to_scaling() -> None:
     """Scaling the alphas by a constant leaves the predictive mean (and thus the score) unchanged."""
     base = np.array([1.0, 2.0, 3.0], dtype=float)
-    weak = ArrayDirichletDistribution(base)
-    strong = ArrayDirichletDistribution(100.0 * base)
+    weak = NumpyDirichletDistribution(base)
+    strong = NumpyDirichletDistribution(100.0 * base)
 
     np.testing.assert_allclose(
         max_probability_complement_of_expected(weak),
@@ -425,7 +425,7 @@ def test_array_gaussian_dempster_shafer_uniform_logits_with_default_factor() -> 
     """Uniform-zero logits should give vacuity = K / (K + K * exp(0)) = 1/2."""
     mean = np.zeros((3, 5), dtype=float)
     var = np.ones_like(mean)
-    distribution = ArrayGaussianDistribution(mean=mean, var=var)
+    distribution = NumpyGaussianDistribution(mean=mean, var=var)
 
     measured = dempster_shafer_uncertainty(distribution)
 
@@ -438,7 +438,7 @@ def test_array_gaussian_dempster_shafer_matches_explicit_formula() -> None:
     rng = np.random.default_rng(seed=0)
     mean = rng.normal(loc=0.0, scale=2.0, size=(20, 5))
     var = rng.uniform(low=0.01, high=4.0, size=(20, 5))
-    distribution = ArrayGaussianDistribution(mean=mean, var=var)
+    distribution = NumpyGaussianDistribution(mean=mean, var=var)
 
     measured = dempster_shafer_uncertainty(distribution)
 
@@ -452,7 +452,7 @@ def test_array_gaussian_dempster_shafer_lies_in_unit_interval() -> None:
     rng = np.random.default_rng(seed=1)
     mean = rng.normal(loc=0.0, scale=5.0, size=(50, 4))
     var = rng.uniform(low=0.01, high=10.0, size=(50, 4))
-    distribution = ArrayGaussianDistribution(mean=mean, var=var)
+    distribution = NumpyGaussianDistribution(mean=mean, var=var)
 
     measured = dempster_shafer_uncertainty(distribution)
 
@@ -466,8 +466,8 @@ def test_array_gaussian_dempster_shafer_high_variance_increases_uncertainty() ->
     low_var = np.full_like(mean, 1e-3)
     high_var = np.full_like(mean, 1000.0)
 
-    low_var_score = dempster_shafer_uncertainty(ArrayGaussianDistribution(mean=mean, var=low_var))
-    high_var_score = dempster_shafer_uncertainty(ArrayGaussianDistribution(mean=mean, var=high_var))
+    low_var_score = dempster_shafer_uncertainty(NumpyGaussianDistribution(mean=mean, var=low_var))
+    high_var_score = dempster_shafer_uncertainty(NumpyGaussianDistribution(mean=mean, var=high_var))
 
     assert high_var_score[0] > low_var_score[0]
 
@@ -476,7 +476,7 @@ def test_array_gaussian_dempster_shafer_zero_factor_disables_mean_field() -> Non
     """``mean_field_factor=0`` should reduce to the variance-free formula K / (K + sum exp(h))."""
     mean = np.array([[1.0, 2.0, 3.0]], dtype=float)
     var = np.array([[100.0, 100.0, 100.0]], dtype=float)
-    distribution = ArrayGaussianDistribution(mean=mean, var=var)
+    distribution = NumpyGaussianDistribution(mean=mean, var=var)
 
     measured = dempster_shafer_uncertainty(distribution, mean_field_factor=0.0)
 
@@ -491,8 +491,8 @@ def test_array_sample_min_expected_total_variation_known_value_binary() -> None:
     while the zero-one epistemic term TU - AU is 0.0.
     """
     probabilities = np.array([[0.90, 0.10], [0.50, 0.50]], dtype=float)
-    sample = ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    sample = NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 
@@ -505,8 +505,8 @@ def test_array_sample_min_expected_total_variation_known_value_ternary_constrain
         [[0.70, 0.20, 0.10], [0.50, 0.40, 0.10], [0.10, 0.10, 0.80]],
         dtype=float,
     )
-    sample = ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    sample = NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 
@@ -516,8 +516,8 @@ def test_array_sample_min_expected_total_variation_known_value_ternary_constrain
 def test_array_sample_min_expected_total_variation_is_zero_for_no_second_order_spread() -> None:
     """A second-order Dirac (all samples identical) has no epistemic uncertainty."""
     probabilities = np.tile(np.array([1 / 3, 1 / 3, 1 / 3], dtype=float), (5, 1))
-    sample = ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    sample = NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 
@@ -527,8 +527,8 @@ def test_array_sample_min_expected_total_variation_is_zero_for_no_second_order_s
 def test_array_sample_min_expected_total_variation_is_maximal_for_uniform_diracs() -> None:
     """EU attains its upper bound (K-1)/K for a uniform mixture of first-order Diracs."""
     probabilities = np.eye(3, dtype=float)  # one-hot samples on each vertex
-    sample = ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    sample = NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 
@@ -538,8 +538,8 @@ def test_array_sample_min_expected_total_variation_is_maximal_for_uniform_diracs
 def test_array_sample_min_expected_total_variation_differs_from_zero_one_epistemic() -> None:
     """The OT epistemic measure is genuinely distinct from the additive zero-one EU (TU - AU)."""
     probabilities = np.array([[0.90, 0.10], [0.50, 0.50]], dtype=float)
-    sample = ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    sample = NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 
@@ -553,7 +553,7 @@ def test_array_sample_min_expected_total_variation_differs_from_zero_one_epistem
 def test_array_dirichlet_min_expected_total_variation_delegates_to_sampling() -> None:
     """The Dirichlet EU draws Monte-Carlo samples and reuses the sample estimator."""
     alphas = np.array([[2.0, 3.0, 5.0], [1.0, 1.0, 1.0]], dtype=float)
-    distribution = ArrayDirichletDistribution(alphas)
+    distribution = NumpyDirichletDistribution(alphas)
 
     measured = min_expected_total_variation(distribution, num_samples=500, generator=np.random.default_rng(0))
     reference_sample = distribution.sample(500, rng=np.random.default_rng(0))
@@ -565,7 +565,7 @@ def test_array_dirichlet_min_expected_total_variation_delegates_to_sampling() ->
 def test_array_dirichlet_expected_max_probability_complement_delegates_to_sampling() -> None:
     """The Dirichlet aleatoric uncertainty draws Monte-Carlo samples and reuses the sample estimator."""
     alphas = np.array([[2.0, 3.0, 5.0], [1.0, 1.0, 1.0]], dtype=float)
-    distribution = ArrayDirichletDistribution(alphas)
+    distribution = NumpyDirichletDistribution(alphas)
 
     measured = expected_max_probability_complement(distribution, num_samples=500, generator=np.random.default_rng(0))
     reference_sample = distribution.sample(500, rng=np.random.default_rng(0))
@@ -576,13 +576,13 @@ def test_array_dirichlet_expected_max_probability_complement_delegates_to_sampli
 
 def test_array_dirichlet_distance_measures_concentrated_limits() -> None:
     """A near-uniform Dirichlet has EU ~ 0 and AU ~ (K-1)/K. A near-vertex one has both near 0."""
-    near_uniform = ArrayDirichletDistribution(np.array([1000.0, 1000.0, 1000.0], dtype=float))
+    near_uniform = NumpyDirichletDistribution(np.array([1000.0, 1000.0, 1000.0], dtype=float))
     eu_uniform = min_expected_total_variation(near_uniform, num_samples=4000, generator=np.random.default_rng(0))
     au_uniform = expected_max_probability_complement(near_uniform, num_samples=4000, generator=np.random.default_rng(1))
     assert eu_uniform == pytest.approx(0.0, abs=2e-2)
     assert au_uniform == pytest.approx(2.0 / 3.0, abs=2e-2)
 
-    near_vertex = ArrayDirichletDistribution(np.array([1000.0, 1.0, 1.0], dtype=float))
+    near_vertex = NumpyDirichletDistribution(np.array([1000.0, 1.0, 1.0], dtype=float))
     eu_vertex = min_expected_total_variation(near_vertex, num_samples=4000, generator=np.random.default_rng(2))
     au_vertex = expected_max_probability_complement(near_vertex, num_samples=4000, generator=np.random.default_rng(3))
     assert eu_vertex == pytest.approx(0.0, abs=2e-2)
@@ -592,7 +592,7 @@ def test_array_dirichlet_distance_measures_concentrated_limits() -> None:
 def test_array_dirichlet_min_expected_total_variation_in_range() -> None:
     rng = np.random.default_rng(seed=0)
     alphas = rng.uniform(low=0.5, high=20.0, size=(8, 4))
-    distribution = ArrayDirichletDistribution(alphas)
+    distribution = NumpyDirichletDistribution(alphas)
 
     measured = min_expected_total_variation(distribution, num_samples=1000, generator=np.random.default_rng(0))
 

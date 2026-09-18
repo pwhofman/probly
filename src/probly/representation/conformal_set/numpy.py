@@ -10,17 +10,17 @@ if TYPE_CHECKING:
 
 import numpy as np
 
-from probly.representation._protected_axis.array import ArrayAxisProtected
+from probly.representation._protected_axis.numpy import NumpyAxisProtected
 from probly.representation.conformal_set._common import (
     IntervalConformalSet,
     OneHotConformalSet,
     create_interval_conformal_set,
     create_onehot_conformal_set,
 )
-from probly.representation.sample.array import ArraySample
+from probly.representation.sample.numpy import NumpySample
 
 
-def _ensure_array_one_hot(value: object) -> np.ndarray:
+def _ensure_numpy_one_hot(value: object) -> np.ndarray:
     if isinstance(value, np.ndarray):
         if value.dtype == bool:
             return value
@@ -31,7 +31,7 @@ def _ensure_array_one_hot(value: object) -> np.ndarray:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayOneHotConformalSet(ArrayAxisProtected[ArraySample], OneHotConformalSet):
+class NumpyOneHotConformalSet(NumpyAxisProtected[NumpySample], OneHotConformalSet):
     """One-hot conformal set backed by a NumPy array."""
 
     array: np.ndarray
@@ -39,10 +39,10 @@ class ArrayOneHotConformalSet(ArrayAxisProtected[ArraySample], OneHotConformalSe
 
     def __post_init__(self) -> None:
         """Validate and coerce the array to a boolean one-hot array."""
-        object.__setattr__(self, "array", _ensure_array_one_hot(self.array))
+        object.__setattr__(self, "array", _ensure_numpy_one_hot(self.array))
 
     @classmethod
-    def from_array_sample(cls, sample: np.ndarray) -> Self:
+    def from_numpy_sample(cls, sample: np.ndarray) -> Self:
         """Create a one-hot conformal set from a raw NumPy array.
 
         Args:
@@ -66,8 +66,8 @@ class ArrayOneHotConformalSet(ArrayAxisProtected[ArraySample], OneHotConformalSe
         Returns:
             The created conformal set.
         """
-        array_sample = ArraySample.from_sample(sample)
-        return cls.from_array_sample(array_sample.array)
+        array_sample = NumpySample.from_sample(sample)
+        return cls.from_numpy_sample(array_sample.array)
 
     @property
     def set_size(self) -> np.ndarray:
@@ -76,14 +76,14 @@ class ArrayOneHotConformalSet(ArrayAxisProtected[ArraySample], OneHotConformalSe
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayIntervalConformalSet(ArrayAxisProtected[ArraySample], IntervalConformalSet):
+class NumpyIntervalConformalSet(NumpyAxisProtected[NumpySample], IntervalConformalSet):
     """Interval conformal set backed by a NumPy array storing lower and upper bounds."""
 
     array: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
 
     @classmethod
-    def from_array_samples(cls, lower: np.ndarray, upper: np.ndarray) -> Self:
+    def from_numpy_samples(cls, lower: np.ndarray, upper: np.ndarray) -> Self:
         """Create an interval conformal set from lower and upper bound arrays.
 
         Args:
@@ -99,8 +99,8 @@ class ArrayIntervalConformalSet(ArrayAxisProtected[ArraySample], IntervalConform
         return cls(array=np.stack([lower, upper], axis=-1))
 
     @classmethod
-    def from_samples(cls, lower: ArraySample, upper: ArraySample) -> Self:
-        """Create an interval conformal set from two ArraySamples.
+    def from_samples(cls, lower: NumpySample, upper: NumpySample) -> Self:
+        """Create an interval conformal set from two NumpySamples.
 
         Args:
             lower: The lower bound sample.
@@ -109,10 +109,10 @@ class ArrayIntervalConformalSet(ArrayAxisProtected[ArraySample], IntervalConform
         Returns:
             The created interval conformal set.
         """
-        if not isinstance(lower, ArraySample) or not isinstance(upper, ArraySample):
-            msg = "Expected ArraySample for interval conformal sets."
+        if not isinstance(lower, NumpySample) or not isinstance(upper, NumpySample):
+            msg = "Expected NumpySample for interval conformal sets."
             raise TypeError(msg)
-        return cls.from_array_samples(lower.array, upper.array)
+        return cls.from_numpy_samples(lower.array, upper.array)
 
     @property
     def set_size(self) -> np.ndarray:
@@ -120,7 +120,7 @@ class ArrayIntervalConformalSet(ArrayAxisProtected[ArraySample], IntervalConform
         return self.array[..., 1] - self.array[..., 0]
 
 
-create_onehot_conformal_set.register(np.ndarray)(ArrayOneHotConformalSet.from_array_sample)
-create_onehot_conformal_set.register(ArraySample)(ArrayOneHotConformalSet.from_sample)
-create_interval_conformal_set.register(np.ndarray)(ArrayIntervalConformalSet.from_array_samples)
-create_interval_conformal_set.register(ArraySample)(ArrayIntervalConformalSet.from_samples)
+create_onehot_conformal_set.register(np.ndarray)(NumpyOneHotConformalSet.from_numpy_sample)
+create_onehot_conformal_set.register(NumpySample)(NumpyOneHotConformalSet.from_sample)
+create_interval_conformal_set.register(np.ndarray)(NumpyIntervalConformalSet.from_numpy_samples)
+create_interval_conformal_set.register(NumpySample)(NumpyIntervalConformalSet.from_samples)

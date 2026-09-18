@@ -1,4 +1,4 @@
-"""Tests for ``array_function`` dispatch over ``ArrayAxisProtected`` objects."""
+"""Tests for ``numpy_function`` dispatch over ``NumpyAxisProtected`` objects."""
 
 from __future__ import annotations
 
@@ -8,11 +8,11 @@ from typing import Any, ClassVar
 import numpy as np
 import pytest
 
-from probly.representation._protected_axis.array import ArrayAxisProtected
+from probly.representation._protected_axis.numpy import NumpyAxisProtected
 
 
 @dataclass(frozen=True, slots=True)
-class SingleArrayProtected(ArrayAxisProtected[np.ndarray]):
+class SingleArrayProtected(NumpyAxisProtected[np.ndarray]):
     """Single-field representation with a 1D protected trailing axis."""
 
     array: np.ndarray
@@ -25,7 +25,7 @@ class SingleArrayProtected(ArrayAxisProtected[np.ndarray]):
 
 
 @dataclass(frozen=True, slots=True)
-class PairArrayProtected(ArrayAxisProtected[np.ndarray]):
+class PairArrayProtected(NumpyAxisProtected[np.ndarray]):
     """Two-field representation with no protected trailing axes."""
 
     first: np.ndarray
@@ -34,7 +34,7 @@ class PairArrayProtected(ArrayAxisProtected[np.ndarray]):
 
 
 @dataclass(frozen=True, slots=True)
-class TwoFieldArrayProtected(ArrayAxisProtected[np.ndarray]):
+class TwoFieldArrayProtected(NumpyAxisProtected[np.ndarray]):
     """Two-field representation with a 1D protected trailing axis each."""
 
     left: np.ndarray

@@ -3,7 +3,7 @@
 Note:
     There is no ``TorchSingletonCredalSet`` or ``TorchDiscreteCredalSet`` in
     :mod:`probly.representation.credal_set.torch`; for those semantics, use
-    the numpy-side ``ArraySingletonCredalSet`` / ``ArrayDiscreteCredalSet``
+    the numpy-side ``NumpySingletonCredalSet`` / ``NumpyDiscreteCredalSet``
     types. The remaining torch credal sets (Convex, DistanceBased,
     ProbabilityIntervals, DirichletLevelSet) all use the interval-dominance
     rule via their ``lower()`` / ``upper()`` envelopes.

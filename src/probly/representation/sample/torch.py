@@ -9,8 +9,8 @@ import torch
 
 from probly.representation.array_like import ArrayLike, ToIndices, to_numpy_array_like
 from probly.representation.sample._common import Sample, SampleAxis, create_sample
-from probly.representation.sample.array import ArraySample
 from probly.representation.sample.axis_tracking import track_axis
+from probly.representation.sample.numpy import NumpySample
 from probly.representation.sample.torch_functions import TorchSampleInternals, torch_function, torch_sample_internals
 from probly.representation.torch_functions import torch_average
 from probly.representation.torch_like import TorchLike, TorchLikeImplementation, to_torch_like
@@ -305,10 +305,10 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
     def __array_namespace__(self, /, *, api_version: str | None = None) -> ModuleType:
         return self.tensor.__array_namespace__(api_version=api_version)  # ty:ignore[invalid-argument-type]
 
-    def __array_like__(self, dtype: npt.DTypeLike | None = None, /, *, copy: bool | None = None) -> ArraySample[Any]:
+    def __array_like__(self, dtype: npt.DTypeLike | None = None, /, *, copy: bool | None = None) -> NumpySample[Any]:
         """Convert to a NumpyArrayLike."""
         array = to_numpy_array_like(self.tensor, dtype=dtype, copy=copy)
-        return ArraySample(array=array, sample_axis=self.sample_dim)
+        return NumpySample(array=array, sample_axis=self.sample_dim)
 
     @override
     def numpy(self, *, force: bool = False) -> NDArray[Any]:

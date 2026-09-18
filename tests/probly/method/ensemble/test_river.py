@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from probly.quantification.decomposition.decomposition import TotalDecomposition
-from probly.representation.sample.array import ArraySample
+from probly.representation.sample.numpy import NumpySample
 
 pytest.importorskip("river")
 
@@ -15,10 +15,10 @@ from river.forest import ARFClassifier, ARFRegressor
 
 from probly.predictor import predict_raw
 from probly.quantification import measure, quantify
-from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistribution,
-    ArrayCategoricalDistributionSample,
-    ArrayProbabilityCategoricalDistribution,
+from probly.representation.distribution.numpy_categorical import (
+    NumpyCategoricalDistribution,
+    NumpyCategoricalDistributionSample,
+    NumpyProbabilityCategoricalDistribution,
 )
 from probly.representation.sample._common import create_sample
 from probly.representer import representer
@@ -44,7 +44,7 @@ class TestPredictRaw:
         assert isinstance(result, list)
         assert len(result) == arf.n_models
         for dist in result:
-            assert isinstance(dist, ArrayCategoricalDistribution)
+            assert isinstance(dist, NumpyCategoricalDistribution)
 
     def test_distributions_are_valid_probabilities(self, trained_arf):
         arf, x = trained_arf
@@ -65,19 +65,19 @@ class TestPredictRaw:
 
 class TestCreateSampleFix:
     def test_create_sample_preserves_distribution_type(self):
-        d1 = ArrayProbabilityCategoricalDistribution(array=np.array([0.3, 0.7]))
-        d2 = ArrayProbabilityCategoricalDistribution(array=np.array([0.6, 0.4]))
-        d3 = ArrayProbabilityCategoricalDistribution(array=np.array([0.5, 0.5]))
+        d1 = NumpyProbabilityCategoricalDistribution(array=np.array([0.3, 0.7]))
+        d2 = NumpyProbabilityCategoricalDistribution(array=np.array([0.6, 0.4]))
+        d3 = NumpyProbabilityCategoricalDistribution(array=np.array([0.5, 0.5]))
 
         sample = create_sample([d1, d2, d3])
 
-        assert isinstance(sample, ArrayCategoricalDistributionSample)
-        assert isinstance(sample.array, ArrayCategoricalDistribution)
+        assert isinstance(sample, NumpyCategoricalDistributionSample)
+        assert isinstance(sample.array, NumpyCategoricalDistribution)
 
     def test_create_sample_shape(self):
         dists = [
-            ArrayProbabilityCategoricalDistribution(array=np.array([0.2, 0.8])),
-            ArrayProbabilityCategoricalDistribution(array=np.array([0.5, 0.5])),
+            NumpyProbabilityCategoricalDistribution(array=np.array([0.2, 0.8])),
+            NumpyProbabilityCategoricalDistribution(array=np.array([0.5, 0.5])),
         ]
         sample = create_sample(dists)
 
@@ -88,8 +88,8 @@ class TestCreateSampleFix:
         assert sample.array.unnormalized_probabilities.shape == (2, 2)
 
     def test_create_sample_values_match(self):
-        d1 = ArrayProbabilityCategoricalDistribution(array=np.array([0.3, 0.7]))
-        d2 = ArrayProbabilityCategoricalDistribution(array=np.array([0.6, 0.4]))
+        d1 = NumpyProbabilityCategoricalDistribution(array=np.array([0.3, 0.7]))
+        d2 = NumpyProbabilityCategoricalDistribution(array=np.array([0.6, 0.4]))
         sample = create_sample([d1, d2])
 
         np.testing.assert_array_equal(
@@ -103,7 +103,7 @@ class TestEndToEnd:
         arf, x = trained_arf
         sample = representer(arf).represent(x)
 
-        assert isinstance(sample, ArrayCategoricalDistributionSample)
+        assert isinstance(sample, NumpyCategoricalDistributionSample)
 
     def test_quantify_produces_decomposition(self, trained_arf):
         arf, x = trained_arf
@@ -142,7 +142,7 @@ class TestRegressorCreateSample:
         result = predict_raw(arf, x)
         sample = create_sample(result)
 
-        assert isinstance(sample, ArraySample)
+        assert isinstance(sample, NumpySample)
 
     def test_sample_shape(self, trained_arf_regressor):
         arf, x = trained_arf_regressor
@@ -158,7 +158,7 @@ class TestRegressorEndToEnd:
         arf, x = trained_arf_regressor
         sample = representer(arf).represent(x)
 
-        assert isinstance(sample, ArraySample)
+        assert isinstance(sample, NumpySample)
 
     def test_measure_produces_variance(self, trained_arf_regressor):
         arf, x = trained_arf_regressor

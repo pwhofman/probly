@@ -10,15 +10,15 @@ from probly.quantification.measure.distribution import (
     entropy_of_expected_predictive_distribution,
     mutual_information,
 )
-from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistributionSample,
-    ArrayProbabilityCategoricalDistribution,
+from probly.representation.distribution.numpy_categorical import (
+    NumpyCategoricalDistributionSample,
+    NumpyProbabilityCategoricalDistribution,
 )
-from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
+from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
 
 
-def _array_dirichlet_distribution() -> ArrayDirichletDistribution:
-    return ArrayDirichletDistribution(
+def _array_dirichlet_distribution() -> NumpyDirichletDistribution:
+    return NumpyDirichletDistribution(
         np.array(
             [
                 [2.0, 3.0, 5.0],
@@ -29,7 +29,7 @@ def _array_dirichlet_distribution() -> ArrayDirichletDistribution:
     )
 
 
-def _array_categorical_sample() -> ArrayCategoricalDistributionSample:
+def _array_categorical_sample() -> NumpyCategoricalDistributionSample:
     probabilities = np.array(
         [
             [[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]],
@@ -38,8 +38,8 @@ def _array_categorical_sample() -> ArrayCategoricalDistributionSample:
         ],
         dtype=float,
     )
-    return ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    return NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 

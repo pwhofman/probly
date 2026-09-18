@@ -9,20 +9,20 @@ from typing import TYPE_CHECKING, Any, ClassVar, override
 import numpy as np
 from scipy.special import logsumexp
 
-from probly.representation._protected_axis.array import ArrayAxisProtected
+from probly.representation._protected_axis.numpy import NumpyAxisProtected
 from probly.representation.distribution._common import (
     CategoricalDistribution,
     CategoricalDistributionSample,
     create_categorical_distribution,
     create_categorical_distribution_from_logits,
 )
-from probly.representation.sample import ArraySample
+from probly.representation.sample import NumpySample
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-class ArrayCategoricalDistribution(CategoricalDistribution, ArrayAxisProtected[np.ndarray], ABC):
+class NumpyCategoricalDistribution(CategoricalDistribution, NumpyAxisProtected[np.ndarray], ABC):
     """A categorical distribution stored as a numpy array.
 
     Shape: (..., num_classes)
@@ -44,10 +44,10 @@ class ArrayCategoricalDistribution(CategoricalDistribution, ArrayAxisProtected[n
     @override
     def with_protected_values(
         self, values: dict[str, Any], func: Callable | None = None
-    ) -> ArrayAxisProtected[np.ndarray]:
+    ) -> NumpyAxisProtected[np.ndarray]:
         """Return a copy with a replaced primary protected value."""
-        if func in (np.mean, np.average) and not isinstance(self, ArrayProbabilityCategoricalDistribution):
-            return ArrayProbabilityCategoricalDistribution(array=values["array"])
+        if func in (np.mean, np.average) and not isinstance(self, NumpyProbabilityCategoricalDistribution):
+            return NumpyProbabilityCategoricalDistribution(array=values["array"])
 
         return super().with_protected_values(values, func)
 
@@ -86,7 +86,7 @@ class ArrayCategoricalDistribution(CategoricalDistribution, ArrayAxisProtected[n
         self,
         num_samples: int = 1,
         rng: np.random.Generator | None = None,
-    ) -> ArraySample[np.ndarray]:
+    ) -> NumpySample[np.ndarray]:
         """Sample from the categorical distribution (NumPy backend)."""
         if rng is None:
             rng = np.random.default_rng()
@@ -98,12 +98,12 @@ class ArrayCategoricalDistribution(CategoricalDistribution, ArrayAxisProtected[n
             flat_samples[:, i] = rng.choice(a=self.num_classes, size=num_samples, p=probabilities)
 
         samples = flat_samples.reshape((num_samples, *self.shape))
-        return ArraySample(array=samples, sample_axis=0)
+        return NumpySample(array=samples, sample_axis=0)
 
 
 @create_categorical_distribution.register(np.ndarray)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayProbabilityCategoricalDistribution(ArrayCategoricalDistribution):
+class NumpyProbabilityCategoricalDistribution(NumpyCategoricalDistribution):
     """A categorical distribution represented by unnormalized probabilities."""
 
     array: np.ndarray
@@ -131,7 +131,7 @@ class ArrayProbabilityCategoricalDistribution(ArrayCategoricalDistribution):
     @override
     def __eq__(self, value: Any) -> np.ndarray:  # ty: ignore[invalid-method-override]  # noqa: PYI032
         """Vectorized equality comparison."""
-        if isinstance(value, ArrayCategoricalDistribution):
+        if isinstance(value, NumpyCategoricalDistribution):
             eq = np.equal(self.probabilities, value.probabilities)
         else:
             eq = np.equal(self.array, value)
@@ -149,7 +149,7 @@ class ArrayProbabilityCategoricalDistribution(ArrayCategoricalDistribution):
 
 @create_categorical_distribution_from_logits.register(np.ndarray)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayLogitCategoricalDistribution(ArrayCategoricalDistribution):
+class NumpyLogitCategoricalDistribution(NumpyCategoricalDistribution):
     """A categorical distribution represented by logits."""
 
     array: np.ndarray
@@ -174,7 +174,7 @@ class ArrayLogitCategoricalDistribution(ArrayCategoricalDistribution):
     @override
     def __eq__(self, value: Any) -> np.ndarray:  # ty: ignore[invalid-method-override]  # noqa: PYI032
         """Vectorized equality comparison."""
-        if isinstance(value, ArrayCategoricalDistribution):
+        if isinstance(value, NumpyCategoricalDistribution):
             eq = np.equal(self.log_probabilities, value.log_probabilities)
         else:
             eq = np.equal(self.array, value)
@@ -190,13 +190,13 @@ class ArrayLogitCategoricalDistribution(ArrayCategoricalDistribution):
         return object.__hash__(self)
 
 
-class ArrayCategoricalDistributionSample(  # ty:ignore[conflicting-metaclass]
-    CategoricalDistributionSample[ArrayCategoricalDistribution],
-    ArraySample[ArrayCategoricalDistribution],
+class NumpyCategoricalDistributionSample(  # ty:ignore[conflicting-metaclass]
+    CategoricalDistributionSample[NumpyCategoricalDistribution],
+    NumpySample[NumpyCategoricalDistribution],
 ):
     """Sample type for empirical second-order categorical distributions."""
 
-    sample_space: ClassVar[type[CategoricalDistribution]] = ArrayCategoricalDistribution
+    sample_space: ClassVar[type[CategoricalDistribution]] = NumpyCategoricalDistribution
 
     @override
     @classmethod
@@ -205,7 +205,7 @@ class ArrayCategoricalDistributionSample(  # ty:ignore[conflicting-metaclass]
 
 
 @create_categorical_distribution.register((list, tuple))
-def _create_array_categorical_distribution_from_sequence(
+def _create_numpy_categorical_distribution_from_sequence(
     data: list[Any] | tuple[Any, ...],
-) -> ArrayCategoricalDistribution:
-    return ArrayProbabilityCategoricalDistribution(np.asarray(data))
+) -> NumpyCategoricalDistribution:
+    return NumpyProbabilityCategoricalDistribution(np.asarray(data))

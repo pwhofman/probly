@@ -10,22 +10,22 @@ from probly.quantification.measure.distribution import (
     max_probability_complement_of_expected,
     min_expected_total_variation,
 )
-from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistributionSample,
-    ArrayProbabilityCategoricalDistribution,
+from probly.representation.distribution.numpy_categorical import (
+    NumpyCategoricalDistributionSample,
+    NumpyProbabilityCategoricalDistribution,
 )
-from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
+from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
 
 
-def _binary_sample() -> ArrayCategoricalDistributionSample:
+def _binary_sample() -> NumpyCategoricalDistributionSample:
     probabilities = np.array([[0.90, 0.10], [0.50, 0.50]], dtype=float)
-    return ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    return NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 
 
-def _batched_sample() -> ArrayCategoricalDistributionSample:
+def _batched_sample() -> NumpyCategoricalDistributionSample:
     probabilities = np.array(
         [
             [[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]],
@@ -34,8 +34,8 @@ def _batched_sample() -> ArrayCategoricalDistributionSample:
         ],
         dtype=float,
     )
-    return ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    return NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 
@@ -68,8 +68,8 @@ def test_array_wasserstein_decomposition_satisfies_axiom_a3_and_ranges() -> None
     rng = np.random.default_rng(seed=0)
     logits = rng.normal(size=(20, 8, 4))  # (batch, samples, classes)
     probabilities = np.exp(logits) / np.sum(np.exp(logits), axis=-1, keepdims=True)
-    sample = ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    sample = NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=1,
     )
     decomposition = SecondOrderWassersteinDecomposition(sample)
@@ -99,7 +99,7 @@ def test_array_wasserstein_decomposition_caches_components() -> None:
 
 
 def test_array_wasserstein_decomposition_dirichlet_total_is_closed_form() -> None:
-    distribution = ArrayDirichletDistribution(np.array([[2.0, 3.0, 5.0]], dtype=float))
+    distribution = NumpyDirichletDistribution(np.array([[2.0, 3.0, 5.0]], dtype=float))
     decomposition = SecondOrderWassersteinDecomposition(
         distribution, num_samples=2000, generator=np.random.default_rng(0)
     )

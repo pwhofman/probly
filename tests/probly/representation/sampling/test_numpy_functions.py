@@ -5,9 +5,9 @@ from __future__ import annotations
 import numpy as np  # noqa: F401
 import pytest
 
-from probly.representation.sample.array import ArraySample  # noqa: F401
-from probly.representation.sample.array_functions import (
-    array_sample_internals,  # noqa: F401
+from probly.representation.sample.numpy import NumpySample  # noqa: F401
+from probly.representation.sample.numpy_functions import (
+    numpy_sample_internals,  # noqa: F401
     track_sample_axis_after_reduction,
 )
 

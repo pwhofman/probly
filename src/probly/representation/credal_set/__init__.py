@@ -19,7 +19,7 @@ from ._common import (
     create_probability_intervals_from_bounds,
     create_probability_intervals_from_lower_upper_array,
 )
-from .array import ArrayCategoricalCredalSet, ArrayDiscreteCredalSet
+from .numpy import NumpyCategoricalCredalSet, NumpyDiscreteCredalSet
 
 
 @create_probability_intervals.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
@@ -45,13 +45,13 @@ def _jax(_: type) -> None:
 
 
 __all__ = [
-    "ArrayCategoricalCredalSet",
-    "ArrayDiscreteCredalSet",
     "CategoricalCredalSet",
     "CredalSet",
     "CredalSetType",
     "DirichletLevelSetCredalSet",
     "DiscreteCredalSet",
+    "NumpyCategoricalCredalSet",
+    "NumpyDiscreteCredalSet",
     "ProbabilityIntervalsCredalSet",
     "create_convex_credal_set",
     "create_dirichlet_level_set_credal_set",

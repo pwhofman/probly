@@ -7,8 +7,8 @@ from typing import ClassVar
 
 import numpy as np
 
-from probly.representation._protected_axis.array import ArrayAxisProtected
-from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
+from probly.representation._protected_axis.numpy import NumpyAxisProtected
+from probly.representation.distribution.numpy_categorical import NumpyCategoricalDistribution
 
 from ._common import (
     MahalanobisRepresentation,
@@ -17,9 +17,9 @@ from ._common import (
 )
 
 
-@create_mahalanobis_representation.register(ArrayCategoricalDistribution)
+@create_mahalanobis_representation.register(NumpyCategoricalDistribution)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class NumpyMahalanobisRepresentation(MahalanobisRepresentation, ArrayAxisProtected[np.ndarray]):
+class NumpyMahalanobisRepresentation(MahalanobisRepresentation, NumpyAxisProtected[np.ndarray]):
     """Mahalanobis representation backed by numpy arrays.
 
     ``weight`` and ``bias`` are shared (non per-sample) combiner parameters and
@@ -27,7 +27,7 @@ class NumpyMahalanobisRepresentation(MahalanobisRepresentation, ArrayAxisProtect
     through indexing and batching.
     """
 
-    softmax: ArrayCategoricalDistribution
+    softmax: NumpyCategoricalDistribution
     layer_scores: np.ndarray
     weight: np.ndarray
     bias: np.ndarray

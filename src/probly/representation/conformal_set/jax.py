@@ -18,10 +18,10 @@ from probly.representation.conformal_set._common import (
     create_interval_conformal_set,
     create_onehot_conformal_set,
 )
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 
 
-def _ensure_array_one_hot(value: object) -> jnp.ndarray:
+def _ensure_numpy_one_hot(value: object) -> jnp.ndarray:
     msg = "Value must be a one-hot encoded array of booleans or integers."
     if isinstance(value, jnp.ndarray):
         if value.dtype == bool:
@@ -33,7 +33,7 @@ def _ensure_array_one_hot(value: object) -> jnp.ndarray:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class JaxArrayOneHotConformalSet(JaxAxisProtected[Any], OneHotConformalSet):
+class JaxOneHotConformalSet(JaxAxisProtected[Any], OneHotConformalSet):
     """One-hot conformal set backed by a JAX array."""
 
     array: jnp.ndarray
@@ -41,10 +41,10 @@ class JaxArrayOneHotConformalSet(JaxAxisProtected[Any], OneHotConformalSet):
 
     def __post_init__(self) -> None:
         """Validate and coerce the array to a boolean one-hot array."""
-        object.__setattr__(self, "array", _ensure_array_one_hot(self.array))
+        object.__setattr__(self, "array", _ensure_numpy_one_hot(self.array))
 
     @classmethod
-    def from_array_sample(cls, sample: jnp.ndarray) -> Self:
+    def from_numpy_sample(cls, sample: jnp.ndarray) -> Self:
         """Create a one-hot conformal set from a raw JAX array.
 
         Args:
@@ -68,8 +68,8 @@ class JaxArrayOneHotConformalSet(JaxAxisProtected[Any], OneHotConformalSet):
         Returns:
             The created conformal set.
         """
-        array_sample = JaxArraySample.from_sample(sample)
-        return cls.from_array_sample(array_sample.array)
+        array_sample = JaxSample.from_sample(sample)
+        return cls.from_numpy_sample(array_sample.array)
 
     @property
     def set_size(self) -> jnp.ndarray:
@@ -78,14 +78,14 @@ class JaxArrayOneHotConformalSet(JaxAxisProtected[Any], OneHotConformalSet):
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class JaxArrayIntervalConformalSet(JaxAxisProtected[Any], IntervalConformalSet):
+class JaxIntervalConformalSet(JaxAxisProtected[Any], IntervalConformalSet):
     """Interval conformal set backed by a JAX array storing lower and upper bounds."""
 
     array: jnp.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
 
     @classmethod
-    def from_array_samples(cls, lower: jnp.ndarray, upper: jnp.ndarray) -> Self:
+    def from_numpy_samples(cls, lower: jnp.ndarray, upper: jnp.ndarray) -> Self:
         """Create an interval conformal set from lower and upper bound arrays.
 
         Args:
@@ -101,7 +101,7 @@ class JaxArrayIntervalConformalSet(JaxAxisProtected[Any], IntervalConformalSet):
         return cls(array=jnp.stack([lower, upper], axis=-1))
 
     @classmethod
-    def from_samples(cls, lower: JaxArraySample, upper: JaxArraySample) -> Self:
+    def from_samples(cls, lower: JaxSample, upper: JaxSample) -> Self:
         """Create an interval conformal set from two JaxSamples.
 
         Args:
@@ -111,10 +111,10 @@ class JaxArrayIntervalConformalSet(JaxAxisProtected[Any], IntervalConformalSet):
         Returns:
             The created interval conformal set.
         """
-        if not isinstance(lower, JaxArraySample) or not isinstance(upper, JaxArraySample):
-            msg = "Expected JaxArraySample for interval conformal sets."
+        if not isinstance(lower, JaxSample) or not isinstance(upper, JaxSample):
+            msg = "Expected JaxSample for interval conformal sets."
             raise TypeError(msg)
-        return cls.from_array_samples(lower.array, upper.array)
+        return cls.from_numpy_samples(lower.array, upper.array)
 
     @property
     def set_size(self) -> jnp.ndarray:
@@ -122,7 +122,7 @@ class JaxArrayIntervalConformalSet(JaxAxisProtected[Any], IntervalConformalSet):
         return self.array[..., 1] - self.array[..., 0]
 
 
-create_onehot_conformal_set.register(jnp.ndarray)(JaxArrayOneHotConformalSet.from_array_sample)
-create_onehot_conformal_set.register(JaxArraySample)(JaxArrayOneHotConformalSet.from_sample)
-create_interval_conformal_set.register(jnp.ndarray)(JaxArrayIntervalConformalSet.from_array_samples)
-create_interval_conformal_set.register(JaxArraySample)(JaxArrayIntervalConformalSet.from_samples)
+create_onehot_conformal_set.register(jnp.ndarray)(JaxOneHotConformalSet.from_numpy_sample)
+create_onehot_conformal_set.register(JaxSample)(JaxOneHotConformalSet.from_sample)
+create_interval_conformal_set.register(jnp.ndarray)(JaxIntervalConformalSet.from_numpy_samples)
+create_interval_conformal_set.register(JaxSample)(JaxIntervalConformalSet.from_samples)

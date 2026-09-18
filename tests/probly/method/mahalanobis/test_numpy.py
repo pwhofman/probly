@@ -11,9 +11,9 @@ from probly.method.mahalanobis import create_mahalanobis_representation
 from probly.method.mahalanobis.numpy import NumpyMahalanobisRepresentation
 from probly.quantification import decompose
 from probly.quantification.notion import AleatoricUncertainty, EpistemicUncertainty
-from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistribution,
-    ArrayProbabilityCategoricalDistribution,
+from probly.representation.distribution.numpy_categorical import (
+    NumpyCategoricalDistribution,
+    NumpyProbabilityCategoricalDistribution,
 )
 
 NUM_CLASSES = 3
@@ -22,13 +22,13 @@ NUM_LAYERS = 2
 
 
 @pytest.fixture
-def softmax() -> ArrayProbabilityCategoricalDistribution:
+def softmax() -> NumpyProbabilityCategoricalDistribution:
     """Softmax probabilities for three samples over two classes."""
-    return ArrayProbabilityCategoricalDistribution(np.array([[0.2, 0.8], [0.5, 0.5], [0.1, 0.9]]))
+    return NumpyProbabilityCategoricalDistribution(np.array([[0.2, 0.8], [0.5, 0.5], [0.1, 0.9]]))
 
 
 @pytest.fixture
-def representation(softmax: ArrayProbabilityCategoricalDistribution) -> NumpyMahalanobisRepresentation:
+def representation(softmax: NumpyProbabilityCategoricalDistribution) -> NumpyMahalanobisRepresentation:
     """A two-layer Mahalanobis representation over three samples."""
     return NumpyMahalanobisRepresentation(
         softmax,
@@ -62,14 +62,14 @@ class TestRepresentation:
     """The NumpyMahalanobisRepresentation dataclass."""
 
     def test_fields_are_preserved(
-        self, representation: NumpyMahalanobisRepresentation, softmax: ArrayProbabilityCategoricalDistribution
+        self, representation: NumpyMahalanobisRepresentation, softmax: NumpyProbabilityCategoricalDistribution
     ) -> None:
         """The dataclass stores the values it was built from unchanged."""
         assert representation.softmax is softmax
         assert representation.layer_scores.shape == (3, NUM_LAYERS)
         assert representation.weight.shape == (NUM_LAYERS,)
 
-    def test_factory_dispatches_to_array_backend(self, softmax: ArrayProbabilityCategoricalDistribution) -> None:
+    def test_factory_dispatches_to_array_backend(self, softmax: NumpyProbabilityCategoricalDistribution) -> None:
         """A numpy-backed softmax selects the numpy representation implementation."""
         created = create_mahalanobis_representation(
             softmax, np.zeros((3, NUM_LAYERS)), -np.ones(NUM_LAYERS), np.zeros(())
@@ -79,7 +79,7 @@ class TestRepresentation:
     def test_categorical_from_mean_returns_softmax(self, representation: NumpyMahalanobisRepresentation) -> None:
         """The categorical mean decider reduces the representation to its softmax."""
         single = categorical_from_mean(representation)
-        assert isinstance(single, ArrayCategoricalDistribution)
+        assert isinstance(single, NumpyCategoricalDistribution)
         assert single is representation.softmax
 
     def test_indexing_preserves_combiner(self, representation: NumpyMahalanobisRepresentation) -> None:

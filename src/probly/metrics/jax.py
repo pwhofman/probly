@@ -3,7 +3,7 @@
 Note:
     There is no ``JaxSingletonCredalSet`` or ``JaxDiscreteCredalSet`` in
     :mod:`probly.representation.credal_set.jax`; for those semantics, use the
-    numpy-side ``ArraySingletonCredalSet`` / ``ArrayDiscreteCredalSet`` types.
+    numpy-side ``NumpySingletonCredalSet`` / ``NumpyDiscreteCredalSet`` types.
     The remaining jax credal sets (Convex, DistanceBased, ProbabilityIntervals,
     DirichletLevelSet) all use the interval-dominance rule via their
     ``lower()`` / ``upper()`` envelopes.
@@ -18,7 +18,7 @@ import jax.numpy as jnp
 
 from probly.metrics._common import CREDAL_ROUND_DECIMALS
 from probly.metrics.numpy import _convex_hull_lp_coverage
-from probly.representation.conformal_set.jax import JaxArrayIntervalConformalSet, JaxArrayOneHotConformalSet
+from probly.representation.conformal_set.jax import JaxIntervalConformalSet, JaxOneHotConformalSet
 from probly.representation.credal_set.jax import (
     JaxConvexCredalSet,
     JaxDirichletLevelSetCredalSet,
@@ -296,8 +296,8 @@ def _envelope_average_interval_width(lower: jax.Array, upper: jax.Array) -> floa
     return float(jnp.mean((upper - lower).astype(jnp.float32)))
 
 
-@coverage.register(JaxArrayOneHotConformalSet)
-def _coverage_jax_onehot(y_pred: JaxArrayOneHotConformalSet, y_true: jax.Array) -> float:
+@coverage.register(JaxOneHotConformalSet)
+def _coverage_jax_onehot(y_pred: JaxOneHotConformalSet, y_true: jax.Array) -> float:
     """Compute coverage for a one-hot conformal set.
 
     Args:
@@ -311,8 +311,8 @@ def _coverage_jax_onehot(y_pred: JaxArrayOneHotConformalSet, y_true: jax.Array) 
     return float(jnp.mean(membership.astype(jnp.float32)))
 
 
-@efficiency.register(JaxArrayOneHotConformalSet)
-def _efficiency_jax_onehot(y_pred: JaxArrayOneHotConformalSet) -> float:
+@efficiency.register(JaxOneHotConformalSet)
+def _efficiency_jax_onehot(y_pred: JaxOneHotConformalSet) -> float:
     """Compute the average cardinality of a one-hot conformal set.
 
     Args:
@@ -324,8 +324,8 @@ def _efficiency_jax_onehot(y_pred: JaxArrayOneHotConformalSet) -> float:
     return float(jnp.mean(jnp.sum(y_pred.array.astype(jnp.float32), axis=-1)))
 
 
-@coverage.register(JaxArrayIntervalConformalSet)
-def _coverage_jax_interval(y_pred: JaxArrayIntervalConformalSet, y_true: jax.Array) -> float:
+@coverage.register(JaxIntervalConformalSet)
+def _coverage_jax_interval(y_pred: JaxIntervalConformalSet, y_true: jax.Array) -> float:
     """Compute coverage for an interval conformal set, including its endpoints.
 
     Args:
@@ -341,8 +341,8 @@ def _coverage_jax_interval(y_pred: JaxArrayIntervalConformalSet, y_true: jax.Arr
     return float(jnp.mean(inside.astype(jnp.float32)))
 
 
-@efficiency.register(JaxArrayIntervalConformalSet)
-def _efficiency_jax_interval(y_pred: JaxArrayIntervalConformalSet) -> float:
+@efficiency.register(JaxIntervalConformalSet)
+def _efficiency_jax_interval(y_pred: JaxIntervalConformalSet) -> float:
     """Compute the average width of an interval conformal set.
 
     Args:

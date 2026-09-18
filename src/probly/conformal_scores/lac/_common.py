@@ -3,8 +3,8 @@ from __future__ import annotations
 from flextype import flexdispatch
 import numpy as np
 
-from probly.representation.distribution import ArrayCategoricalDistribution
-from probly.representation.sample.array import ArraySample
+from probly.representation.distribution import NumpyCategoricalDistribution
+from probly.representation.sample.numpy import NumpySample
 
 
 @flexdispatch
@@ -35,11 +35,11 @@ def compute_lac_score_numpy(probs: np.ndarray, y_cal: np.ndarray | None = None) 
     return scores
 
 
-@lac_score.register(ArrayCategoricalDistribution)
-def compute_lac_score_categorical(probs: ArrayCategoricalDistribution, y_cal: np.ndarray | None = None) -> np.ndarray:
+@lac_score.register(NumpyCategoricalDistribution)
+def compute_lac_score_categorical(probs: NumpyCategoricalDistribution, y_cal: np.ndarray | None = None) -> np.ndarray:
     return compute_lac_score_numpy(probs.probabilities, y_cal)
 
 
-@lac_score.register(ArraySample)
-def compute_lac_score_sample(probs: ArraySample, y_cal: np.ndarray | None = None) -> np.ndarray:
+@lac_score.register(NumpySample)
+def compute_lac_score_sample(probs: NumpySample, y_cal: np.ndarray | None = None) -> np.ndarray:
     return lac_score(probs.array, y_cal)

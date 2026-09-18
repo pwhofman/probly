@@ -8,10 +8,10 @@ import pytest
 from probly.method.evidential.classification import EvidentialClassificationDecomposition
 from probly.quantification import AleatoricUncertainty, EpistemicUncertainty, TotalUncertainty
 from probly.quantification.measure.distribution import vacuity
-from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
+from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
 
 
-def _array_dirichlet() -> ArrayDirichletDistribution:
+def _array_dirichlet() -> NumpyDirichletDistribution:
     alphas = np.array(
         [
             [1.0, 1.0, 1.0],  # uniform: K=3, S=3, vacuity=1.0
@@ -21,7 +21,7 @@ def _array_dirichlet() -> ArrayDirichletDistribution:
         ],
         dtype=float,
     )
-    return ArrayDirichletDistribution(alphas=alphas)
+    return NumpyDirichletDistribution(alphas=alphas)
 
 
 def test_array_decomposition_epistemic_matches_vacuity() -> None:
@@ -95,7 +95,7 @@ def test_array_decomposition_returns_ndarray() -> None:
 
 def test_array_decomposition_uniform_dirichlet_has_max_vacuity() -> None:
     """Sensoy: total uncertainty / vacuity is 1 when there is no evidence beyond the uniform prior."""
-    uniform = ArrayDirichletDistribution(alphas=np.array([1.0, 1.0, 1.0, 1.0], dtype=float))
+    uniform = NumpyDirichletDistribution(alphas=np.array([1.0, 1.0, 1.0, 1.0], dtype=float))
 
     decomposition = EvidentialClassificationDecomposition(uniform)
 

@@ -140,19 +140,19 @@ class TestRAPSFallbacks:
 
     def test_array_categorical_distribution_input(self) -> None:
         from probly.conformal_scores.raps._common import _raps_score_dispatch  # noqa: PLC0415
-        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
-            ArrayProbabilityCategoricalDistribution,
+        from probly.representation.distribution.numpy_categorical import (  # noqa: PLC0415
+            NumpyProbabilityCategoricalDistribution,
         )
 
-        d = ArrayProbabilityCategoricalDistribution(array=np.array([[0.2, 0.5, 0.3]]))
+        d = NumpyProbabilityCategoricalDistribution(array=np.array([[0.2, 0.5, 0.3]]))
         labels = np.array([1])
         out = _raps_score_dispatch(d, labels, randomized=False, lambda_reg=0.0, k_reg=0)
         assert np.isfinite(out).all()
 
     def test_array_sample_input(self) -> None:
         from probly.conformal_scores.raps._common import _raps_score_dispatch  # noqa: PLC0415
-        from probly.representation.sample.array import ArraySample  # noqa: PLC0415
+        from probly.representation.sample.numpy import NumpySample  # noqa: PLC0415
 
-        sample = ArraySample(array=np.array([[0.2, 0.5, 0.3]]), sample_axis=0)
+        sample = NumpySample(array=np.array([[0.2, 0.5, 0.3]]), sample_axis=0)
         out = _raps_score_dispatch(sample, randomized=False, lambda_reg=0.0, k_reg=0)
         assert np.isfinite(out).all()

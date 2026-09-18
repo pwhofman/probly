@@ -7,7 +7,7 @@ import jax.numpy as jnp
 import jax.random
 
 from probly.representation.distribution.jax_categorical import JaxCategoricalDistribution
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 
 from ._common import _saps_score_dispatch
 
@@ -50,9 +50,9 @@ def _(
     return jnp.asarray(scores, dtype=float)
 
 
-@_saps_score_dispatch.register(JaxArraySample)
+@_saps_score_dispatch.register(JaxSample)
 def _(
-    probs: JaxArraySample,
+    probs: JaxSample,
     y_cal: Array | None = None,
     randomized: bool = True,
     lambda_val: float = 0.1,

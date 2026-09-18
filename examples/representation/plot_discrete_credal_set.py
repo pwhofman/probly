@@ -2,7 +2,7 @@
 Discrete credal set
 ========================
 
-An :class:`~probly.representation.credal_set.array.ArrayDiscreteCredalSet`
+An :class:`~probly.representation.credal_set.numpy.NumpyDiscreteCredalSet`
 represents a **finite set** of candidate probability distributions.  Unlike a
 convex credal set, only the listed members are considered part of the set — no
 interpolation between them is implied.
@@ -17,11 +17,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from probly.plot import plot_credal_set
-from probly.representation.credal_set.array import ArrayDiscreteCredalSet
+from probly.representation.credal_set.numpy import NumpyDiscreteCredalSet
 
 # 2 instances, each with 3 member distributions over 3 classes.
 # Shape: (instances, members, classes) = (2, 3, 3)
-discrete = ArrayDiscreteCredalSet(
+discrete = NumpyDiscreteCredalSet(
     array=np.array(
         [
             [[0.6, 0.3, 0.1], [0.2, 0.5, 0.3], [0.4, 0.2, 0.4]],

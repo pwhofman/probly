@@ -8,20 +8,20 @@ from typing import TYPE_CHECKING, Any, ClassVar, Literal, override
 import numpy as np
 from scipy.stats import norm
 
-from probly.representation._protected_axis.array import ArrayAxisProtected
+from probly.representation._protected_axis.numpy import NumpyAxisProtected
 from probly.representation.distribution._common import (
     GaussianDistribution,
     GaussianDistributionSample,
     create_gaussian_distribution,
 )
-from probly.representation.sample.array import ArraySample
+from probly.representation.sample.numpy import NumpySample
 
 if TYPE_CHECKING:
     from numpy.typing import DTypeLike
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayGaussianDistribution(ArrayAxisProtected[np.ndarray], GaussianDistribution[np.ndarray]):
+class NumpyGaussianDistribution(NumpyAxisProtected[np.ndarray], GaussianDistribution[np.ndarray]):
     """Gaussian distribution with array parameters."""
 
     mean: np.ndarray
@@ -70,8 +70,8 @@ class ArrayGaussianDistribution(ArrayAxisProtected[np.ndarray], GaussianDistribu
         self,
         num_samples: int = 1,
         rng: np.random.Generator | None = None,
-    ) -> ArraySample[np.ndarray]:
-        """Draw samples and wrap them in an ArraySample (sample_axis=0)."""
+    ) -> NumpySample[np.ndarray]:
+        """Draw samples and wrap them in an NumpySample (sample_axis=0)."""
         if rng is None:
             rng = np.random.default_rng()
 
@@ -81,7 +81,7 @@ class ArrayGaussianDistribution(ArrayAxisProtected[np.ndarray], GaussianDistribu
             scale=std,
             size=(num_samples, *self.mean.shape),
         )
-        return ArraySample(array=samples, sample_axis=0)
+        return NumpySample(array=samples, sample_axis=0)
 
     @override
     def __array__(
@@ -113,7 +113,7 @@ class ArrayGaussianDistribution(ArrayAxisProtected[np.ndarray], GaussianDistribu
                 return NotImplemented
 
         unpacked: list[np.ndarray | float | int] = []
-        gaussians: list[ArrayGaussianDistribution] = []
+        gaussians: list[NumpyGaussianDistribution] = []
 
         for x in inputs:
             if isinstance(x, type(self)):
@@ -146,7 +146,7 @@ class ArrayGaussianDistribution(ArrayAxisProtected[np.ndarray], GaussianDistribu
     @override
     def __eq__(self, other: Any) -> np.ndarray:  # ty: ignore[invalid-method-override]  # noqa: PYI032
         """Compare two Gaussians by their parameters."""
-        if not isinstance(other, ArrayGaussianDistribution):
+        if not isinstance(other, NumpyGaussianDistribution):
             return NotImplemented
         return np.equal(self.mean, other.mean) & np.equal(self.var, other.var)
 
@@ -161,23 +161,23 @@ class ArrayGaussianDistribution(ArrayAxisProtected[np.ndarray], GaussianDistribu
 
 
 @create_gaussian_distribution.register(np.ndarray)
-def _(mean: np.ndarray, var: np.ndarray | None = None) -> ArrayGaussianDistribution:
-    """Create an ArrayGaussianDistribution from numpy arrays."""
+def _(mean: np.ndarray, var: np.ndarray | None = None) -> NumpyGaussianDistribution:
+    """Create an NumpyGaussianDistribution from numpy arrays."""
     if var is None:
         if mean.shape[-1] != 2:
             msg = "If var is not provided, mean must have shape (..., 2) where the last axis contains [mean, var]"
             raise ValueError(msg)
-        return ArrayGaussianDistribution(mean=mean[..., 0], var=mean[..., 1])
-    return ArrayGaussianDistribution(mean=mean, var=var)
+        return NumpyGaussianDistribution(mean=mean[..., 0], var=mean[..., 1])
+    return NumpyGaussianDistribution(mean=mean, var=var)
 
 
-class ArrayGaussianDistributionSample(  # ty:ignore[conflicting-metaclass]
-    GaussianDistributionSample[ArrayGaussianDistribution],
-    ArraySample[ArrayGaussianDistribution],
+class NumpyGaussianDistributionSample(  # ty:ignore[conflicting-metaclass]
+    GaussianDistributionSample[NumpyGaussianDistribution],
+    NumpySample[NumpyGaussianDistribution],
 ):
     """Sample type for empirical second-order Gaussian distributions."""
 
-    sample_space: ClassVar[type[GaussianDistribution]] = ArrayGaussianDistribution
+    sample_space: ClassVar[type[GaussianDistribution]] = NumpyGaussianDistribution
 
     @override
     @classmethod

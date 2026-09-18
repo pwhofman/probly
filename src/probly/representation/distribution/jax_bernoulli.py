@@ -23,7 +23,7 @@ from probly.representation.distribution.jax_categorical import (
     JaxProbabilityCategoricalDistribution,
 )
 from probly.representation.jax_functions import jax_stack
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 
 
 class JaxBernoulliDistribution(BernoulliDistribution, JaxCategoricalDistribution, ABC):  # ty:ignore[conflicting-metaclass]
@@ -88,7 +88,7 @@ class JaxLogitBernoulliDistribution(JaxLogitCategoricalDistribution, JaxBernoull
 
 class JaxBernoulliDistributionSample(  # ty:ignore[conflicting-metaclass]
     BernoulliDistributionSample[JaxBernoulliDistribution],
-    JaxArraySample[JaxBernoulliDistribution],
+    JaxSample[JaxBernoulliDistribution],
 ):
     """Sample type for jax Bernoulli distributins."""
 

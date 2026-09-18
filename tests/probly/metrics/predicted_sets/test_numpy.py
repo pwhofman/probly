@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from probly.representation.conformal_set.array import ArrayIntervalConformalSet, ArrayOneHotConformalSet
+from probly.representation.conformal_set.numpy import NumpyIntervalConformalSet, NumpyOneHotConformalSet
 
 from ._metrics_suite import MetricsSuite
 
@@ -17,12 +17,12 @@ def array_fn():
 
 @pytest.fixture
 def make_onehot_set():
-    return lambda mask: ArrayOneHotConformalSet(array=np.asarray(mask))
+    return lambda mask: NumpyOneHotConformalSet(array=np.asarray(mask))
 
 
 @pytest.fixture
 def make_interval_set():
-    return lambda intervals: ArrayIntervalConformalSet(array=np.asarray(intervals))
+    return lambda intervals: NumpyIntervalConformalSet(array=np.asarray(intervals))
 
 
 class TestNumpy(MetricsSuite):

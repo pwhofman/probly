@@ -6,7 +6,7 @@ Targets edge cases that aren't naturally exercised by representative use:
 - multi-field assignment with raw value when there is a single field
 - ``out`` mismatched layouts in ``__array_ufunc__``
 - ufunc results that drop or modify protected trailing axes
-- batch reduction errors and ``out`` paths in ``array_function``
+- batch reduction errors and ``out`` paths in ``numpy_function``
 - ``torch.reshape`` and ``torch.gather`` instance methods
 """
 
@@ -22,10 +22,10 @@ import pytest
 pytest.importorskip("torch")
 import torch
 
-from probly.representation._protected_axis.array import ArrayAxisProtected
-from probly.representation._protected_axis.array_functions import (
+from probly.representation._protected_axis.numpy import NumpyAxisProtected
+from probly.representation._protected_axis.numpy_functions import (
     _validate_batch_sync,
-    array_axis_protected_internals,
+    numpy_axis_protected_internals,
 )
 from probly.representation._protected_axis.torch import TorchAxisProtected
 
@@ -37,7 +37,7 @@ from probly.representation._protected_axis.torch import TorchAxisProtected
 def test_abstract_array_subclass_skips_validation() -> None:
     """Abstract subclasses can be defined without ``protected_axes``."""
 
-    class _AbstractArray(ArrayAxisProtected[np.ndarray]):
+    class _AbstractArray(NumpyAxisProtected[np.ndarray]):
         @abstractmethod
         def custom(self) -> None: ...
 
@@ -61,7 +61,7 @@ def test_abstract_torch_subclass_skips_validation() -> None:
 
 
 @dataclass(frozen=True, slots=True)
-class _SingleProtectedRaw(ArrayAxisProtected[np.ndarray]):
+class _SingleProtectedRaw(NumpyAxisProtected[np.ndarray]):
     array: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
 
@@ -92,7 +92,7 @@ def test_torch_setitem_single_field_with_raw_value() -> None:
 
 
 @dataclass(frozen=True, slots=True)
-class _ScalarArray(ArrayAxisProtected[np.ndarray]):
+class _ScalarArray(NumpyAxisProtected[np.ndarray]):
     array: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"array": 0}
 
@@ -112,7 +112,7 @@ def test_scalar_array_getitem_promotes_python_scalar() -> None:
 
 
 @dataclass(frozen=True, slots=True)
-class _SquareInputProtected(ArrayAxisProtected[np.ndarray]):
+class _SquareInputProtected(NumpyAxisProtected[np.ndarray]):
     """Ufunc-tolerant single-field with one protected axis; reduce drops along axis=1."""
 
     array: np.ndarray
@@ -123,27 +123,27 @@ class _SquareInputProtected(ArrayAxisProtected[np.ndarray]):
 
 
 # ---------------------------------------------------------------------------
-# array_axis_protected_internals: handles weird inputs gracefully.
+# numpy_axis_protected_internals: handles weird inputs gracefully.
 # ---------------------------------------------------------------------------
 
 
 def test_internals_returns_none_for_non_protected_object() -> None:
-    """``array_axis_protected_internals`` on plain ndarray returns None."""
-    assert array_axis_protected_internals(np.zeros((2, 3)), None) is None
+    """``numpy_axis_protected_internals`` on plain ndarray returns None."""
+    assert numpy_axis_protected_internals(np.zeros((2, 3)), None) is None
 
 
 def test_internals_returns_none_for_unpermitted_function() -> None:
     """When ``check_is_permitted=True`` and the function is not permitted, returns None."""
 
     @dataclass(frozen=True, slots=True)
-    class _Strict(ArrayAxisProtected[np.ndarray]):
+    class _Strict(NumpyAxisProtected[np.ndarray]):
         array: np.ndarray
         protected_axes: ClassVar[dict[str, int]] = {"array": 1}
         permitted_functions: ClassVar[set[Any]] = {np.sum}
 
     x = _Strict(np.zeros((2, 3)))
     # np.mean is not permitted; with check_is_permitted=True, we get None.
-    assert array_axis_protected_internals(x, np.mean, check_is_permitted=True) is None
+    assert numpy_axis_protected_internals(x, np.mean, check_is_permitted=True) is None
 
 
 # ---------------------------------------------------------------------------
@@ -175,7 +175,7 @@ def test_validate_batch_sync_raises_when_batch_shapes_disagree() -> None:
 
 
 @dataclass(frozen=True, slots=True)
-class _ReshapeProtected(ArrayAxisProtected[np.ndarray]):
+class _ReshapeProtected(NumpyAxisProtected[np.ndarray]):
     array: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
 
@@ -194,7 +194,7 @@ def test_reshape_with_none_shape_falls_through() -> None:
 
 
 @dataclass(frozen=True, slots=True)
-class _ConcatTarget(ArrayAxisProtected[np.ndarray]):
+class _ConcatTarget(NumpyAxisProtected[np.ndarray]):
     array: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
 
@@ -225,7 +225,7 @@ def test_stack_with_protected_out_and_no_protected_input_raises() -> None:
 
 
 @dataclass(frozen=True, slots=True)
-class _OtherTarget(ArrayAxisProtected[np.ndarray]):
+class _OtherTarget(NumpyAxisProtected[np.ndarray]):
     array: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"array": 0}  # different layout
 
@@ -322,7 +322,7 @@ def test_torch_like_dunder_delegates_to_to() -> None:
 
 
 @dataclass(frozen=True, slots=True)
-class _ObjectScalarProtected(ArrayAxisProtected[np.ndarray]):
+class _ObjectScalarProtected(NumpyAxisProtected[np.ndarray]):
     """Object-dtype scalar protected. Indexing yields raw python objects."""
 
     array: np.ndarray
@@ -345,7 +345,7 @@ def test_getitem_scalar_object_array_promotes_to_array() -> None:
 
 
 @dataclass(frozen=True, slots=True)
-class _ReduceProtected(ArrayAxisProtected[np.ndarray]):
+class _ReduceProtected(NumpyAxisProtected[np.ndarray]):
     array: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
     permitted_ufuncs: ClassVar[dict[np.ufunc, list[str]]] = {
@@ -372,7 +372,7 @@ def test_ufunc_reduce_with_raw_tuple_out() -> None:
 
 
 # ---------------------------------------------------------------------------
-# array_axis_protected_internals returns None for malformed protected shapes.
+# numpy_axis_protected_internals returns None for malformed protected shapes.
 # ---------------------------------------------------------------------------
 
 
@@ -395,7 +395,7 @@ class _FakeProtected:
 def test_internals_returns_none_when_field_missing_in_values() -> None:
     """Returns None when protected_values omits a declared field."""
     fake = _FakeProtected({"main": 1})
-    assert array_axis_protected_internals(fake, None) is None
+    assert numpy_axis_protected_internals(fake, None) is None
 
 
 def test_internals_returns_none_when_value_ndim_too_small() -> None:
@@ -414,13 +414,13 @@ def test_internals_returns_none_when_value_ndim_too_small() -> None:
             return self
 
     fake = _BadNdim()
-    assert array_axis_protected_internals(fake, None) is None
+    assert numpy_axis_protected_internals(fake, None) is None
 
 
 def test_internals_returns_none_for_empty_protected_axes() -> None:
     """Returns None when ``protected_axes`` is empty."""
     fake = _FakeProtected({})
-    assert array_axis_protected_internals(fake, None) is None
+    assert numpy_axis_protected_internals(fake, None) is None
 
 
 # ---------------------------------------------------------------------------
@@ -455,23 +455,23 @@ def test_stack_with_only_raw_arrays_falls_through_to_numpy() -> None:
 
 
 def test_array_function_called_with_no_protected_returns_notimplemented() -> None:
-    """Calling ``array_function`` directly with no protected inputs returns NotImplemented."""
-    from probly.representation._protected_axis.array_functions import array_function  # noqa: PLC0415
+    """Calling ``numpy_function`` directly with no protected inputs returns NotImplemented."""
+    from probly.representation._protected_axis.numpy_functions import numpy_function  # noqa: PLC0415
 
     a = np.zeros((2, 3))
     b = np.zeros((2, 3))
     # Pass np.stack through the dispatcher with raw arrays (no protected).
-    result = array_function(np.stack, (np.ndarray,), ((a, b),), {"axis": 0})
+    result = numpy_function(np.stack, (np.ndarray,), ((a, b),), {"axis": 0})
     assert result is NotImplemented
 
 
 def test_array_function_concatenate_no_protected_returns_notimplemented() -> None:
-    """Calling ``array_function(np.concatenate)`` with raw arrays returns NotImplemented."""
-    from probly.representation._protected_axis.array_functions import array_function  # noqa: PLC0415
+    """Calling ``numpy_function(np.concatenate)`` with raw arrays returns NotImplemented."""
+    from probly.representation._protected_axis.numpy_functions import numpy_function  # noqa: PLC0415
 
     a = np.zeros((2, 3))
     b = np.zeros((1, 3))
-    result = array_function(np.concatenate, (np.ndarray,), ((a, b),), {})
+    result = numpy_function(np.concatenate, (np.ndarray,), ((a, b),), {})
     assert result is NotImplemented
 
 
@@ -479,7 +479,7 @@ def test_ufunc_reduceat_without_indices_raises() -> None:
     """``np.add.reduceat`` without an indices argument raises TypeError."""
 
     @dataclass(frozen=True, slots=True)
-    class _ReduceAtProtected(ArrayAxisProtected[np.ndarray]):
+    class _ReduceAtProtected(NumpyAxisProtected[np.ndarray]):
         array: np.ndarray
         protected_axes: ClassVar[dict[str, int]] = {"array": 1}
         permitted_ufuncs: ClassVar[dict[np.ufunc, list[str]]] = {

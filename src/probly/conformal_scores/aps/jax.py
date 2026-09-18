@@ -7,7 +7,7 @@ import jax.numpy as jnp
 import jax.random
 
 from probly.representation.distribution.jax_categorical import JaxCategoricalDistribution
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 
 from ._common import _aps_score_dispatch
 
@@ -51,8 +51,8 @@ def _(probs: Array, y_cal: Array | None = None, randomized: bool = True) -> Arra
     return scores
 
 
-@_aps_score_dispatch.register(JaxArraySample)
-def _(probs: JaxArraySample, y_cal: Array | None = None, randomized: bool = True) -> Array:
+@_aps_score_dispatch.register(JaxSample)
+def _(probs: JaxSample, y_cal: Array | None = None, randomized: bool = True) -> Array:
     """Compute APS scores for JAX samples."""
     return _aps_score_dispatch(probs.array, y_cal, randomized=randomized)
 

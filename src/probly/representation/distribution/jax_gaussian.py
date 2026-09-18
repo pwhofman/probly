@@ -18,7 +18,7 @@ from probly.representation.distribution._common import (
     create_gaussian_distribution,
 )
 from probly.representation.jax_functions import jax_add, jax_stack, jax_subtract
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 from probly.utils.jax import fresh_prng_key
 
 if TYPE_CHECKING:
@@ -85,15 +85,15 @@ class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[
         self,
         num_samples: int = 1,
         prng_key: ArrayLike | None = None,
-    ) -> JaxArraySample[jax.Array]:
-        """Draw samples and wrap them in an JaxArraySample (sample_axis=0)."""
+    ) -> JaxSample[jax.Array]:
+        """Draw samples and wrap them in an JaxSample (sample_axis=0)."""
         if prng_key is None:
             prng_key = fresh_prng_key()
 
         std = self.std
         z = jax.random.normal(prng_key, shape=(num_samples, *self.mean.shape))
         samples = self.mean + std * z
-        return JaxArraySample(array=samples, sample_axis=0)
+        return JaxSample(array=samples, sample_axis=0)
 
     def __array__(
         self,
@@ -136,7 +136,7 @@ def _(mean: jax.Array, var: jax.Array | None = None) -> JaxGaussianDistribution:
 
 class JaxGaussianDistributionSample(  # ty:ignore[conflicting-metaclass]
     GaussianDistributionSample[JaxGaussianDistribution],
-    JaxArraySample[JaxGaussianDistribution],
+    JaxSample[JaxGaussianDistribution],
 ):
     """Sample type for empirical second-order Gaussian distributions."""
 

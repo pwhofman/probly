@@ -7,7 +7,7 @@ import pytest
 pytest.importorskip("jax")
 from jax import numpy as jnp
 
-from probly.representation.conformal_set.jax import JaxArrayIntervalConformalSet, JaxArrayOneHotConformalSet
+from probly.representation.conformal_set.jax import JaxIntervalConformalSet, JaxOneHotConformalSet
 
 from ._metrics_suite import MetricsSuite
 
@@ -19,12 +19,12 @@ def array_fn():
 
 @pytest.fixture
 def make_onehot_set():
-    return lambda mask: JaxArrayOneHotConformalSet(array=jnp.asarray(mask))
+    return lambda mask: JaxOneHotConformalSet(array=jnp.asarray(mask))
 
 
 @pytest.fixture
 def make_interval_set():
-    return lambda intervals: JaxArrayIntervalConformalSet(array=jnp.asarray(intervals))
+    return lambda intervals: JaxIntervalConformalSet(array=jnp.asarray(intervals))
 
 
 class TestJax(MetricsSuite):

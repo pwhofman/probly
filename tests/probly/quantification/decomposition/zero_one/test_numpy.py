@@ -10,13 +10,13 @@ from probly.quantification.measure.distribution import (
     max_disagreement,
     max_probability_complement_of_expected,
 )
-from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistributionSample,
-    ArrayProbabilityCategoricalDistribution,
+from probly.representation.distribution.numpy_categorical import (
+    NumpyCategoricalDistributionSample,
+    NumpyProbabilityCategoricalDistribution,
 )
 
 
-def _array_categorical_sample() -> ArrayCategoricalDistributionSample:
+def _array_categorical_sample() -> NumpyCategoricalDistributionSample:
     probabilities = np.array(
         [
             [[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]],
@@ -25,8 +25,8 @@ def _array_categorical_sample() -> ArrayCategoricalDistributionSample:
         ],
         dtype=float,
     )
-    return ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    return NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 
@@ -56,8 +56,8 @@ def test_array_zero_one_decomposition_known_values() -> None:
         ],
         dtype=float,
     )
-    sample = ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    sample = NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 

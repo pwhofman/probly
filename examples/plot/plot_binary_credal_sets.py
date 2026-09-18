@@ -26,12 +26,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from probly.plot import PlotConfig, plot_credal_set
-from probly.representation.credal_set.array import (
-    ArrayConvexCredalSet,
-    ArrayDiscreteCredalSet,
-    ArrayDistanceBasedCredalSet,
-    ArrayProbabilityIntervalsCredalSet,
-    ArraySingletonCredalSet,
+from probly.representation.credal_set.numpy import (
+    NumpyConvexCredalSet,
+    NumpyDiscreteCredalSet,
+    NumpyDistanceBasedCredalSet,
+    NumpyProbabilityIntervalsCredalSet,
+    NumpySingletonCredalSet,
 )
 
 # %%
@@ -40,7 +40,7 @@ from probly.representation.credal_set.array import (
 # A single probability distribution per instance, shown as a point on the
 # line.
 
-singleton = ArraySingletonCredalSet(
+singleton = NumpySingletonCredalSet(
     array=np.array([[0.3, 0.7], [0.6, 0.4]]),
 )
 plot_credal_set(singleton, title="Singleton (binary)")
@@ -51,7 +51,7 @@ plt.show()
 # ---------------------
 # Per-class lower and upper bounds define a feasible interval on the line.
 
-intervals = ArrayProbabilityIntervalsCredalSet(
+intervals = NumpyProbabilityIntervalsCredalSet(
     lower_bounds=np.array([[0.2, 0.4], [0.5, 0.1]]),
     upper_bounds=np.array([[0.6, 0.8], [0.9, 0.5]]),
 )
@@ -64,7 +64,7 @@ plt.show()
 # A nominal distribution and a radius.  The shaded band covers all
 # distributions within total-variation distance; the marker shows the nominal.
 
-distance_based = ArrayDistanceBasedCredalSet(
+distance_based = NumpyDistanceBasedCredalSet(
     nominal=np.array([[0.4, 0.6], [0.7, 0.3]]),
     radius=np.array([0.15, 0.15]),
 )
@@ -77,7 +77,7 @@ plt.show()
 # Explicit vertex distributions.  The band spans from the minimum to the
 # maximum P(class 2) across vertices, with markers at each vertex.
 
-convex = ArrayConvexCredalSet(
+convex = NumpyConvexCredalSet(
     array=np.array(
         [
             [[0.7, 0.3], [0.2, 0.8], [0.5, 0.5]],
@@ -94,7 +94,7 @@ plt.show()
 # Like the convex case but represents a finite set of distributions rather
 # than their convex hull.
 
-discrete = ArrayDiscreteCredalSet(
+discrete = NumpyDiscreteCredalSet(
     array=np.array(
         [
             [[0.8, 0.2], [0.3, 0.7]],

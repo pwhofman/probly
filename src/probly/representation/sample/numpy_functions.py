@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from probly.representation.array_like import NumpyArrayLike, Order
 
 
-class ArraySampleCreator[D: NumpyArrayLike](Protocol):
+class NumpySampleCreator[D: NumpyArrayLike](Protocol):
     """Protocol for creating sample arrays."""
 
     def __call__(self, array: D, sample_axis: int, weights: np.ndarray | None) -> Any:  # noqa: ANN401
@@ -25,22 +25,22 @@ class ArraySampleCreator[D: NumpyArrayLike](Protocol):
 
 
 @dataclass(frozen=True, slots=True)
-class ArraySampleInternals[D: NumpyArrayLike]:
+class NumpySampleInternals[D: NumpyArrayLike]:
     """Internal information about a sample array."""
 
-    create: ArraySampleCreator[D]
+    create: NumpySampleCreator[D]
     array: D
     sample_axis: int
     weights: np.ndarray | None = None
 
 
 @singledispatch
-def array_sample_internals(_: object) -> ArraySampleInternals | None:
+def numpy_sample_internals(_: object) -> NumpySampleInternals | None:
     """Get the sample dimension of a sample array."""
     return None
 
 
-class _ArrayFunction(Protocol):
+class _NumpyFunction(Protocol):
     def __call__(
         self,
         func: Callable,
@@ -51,7 +51,7 @@ class _ArrayFunction(Protocol):
         ...
 
 
-class _BoundArrayFunction(Protocol):
+class _BoundNumpyFunction(Protocol):
     def __call__(
         self,
         func: Callable,
@@ -60,12 +60,12 @@ class _BoundArrayFunction(Protocol):
         ...
 
 
-class _BoundArrayFunctionWithInternals(Protocol):
+class _BoundNumpyFunctionWithInternals(Protocol):
     def __call__(
         self,
         func: Callable,
         params: BoundArguments,
-        create_sample: ArraySampleCreator,
+        create_sample: NumpySampleCreator,
         array: NumpyArrayLike,
         sample_axis: int,
         weights: np.ndarray | None,
@@ -74,7 +74,7 @@ class _BoundArrayFunctionWithInternals(Protocol):
 
 
 @switchdispatch
-def array_function(
+def numpy_function(
     func: Callable,
     types: tuple[type[Any], ...],  # noqa: ARG001
     args: tuple[Any, ...],
@@ -84,9 +84,9 @@ def array_function(
     return func._implementation(*args, **kwargs)  # ty: ignore[unresolved-attribute]  # noqa: SLF001
 
 
-def array_function_override(
-    array_func: _BoundArrayFunction,
-) -> _ArrayFunction:
+def numpy_function_override(
+    array_func: _BoundNumpyFunction,
+) -> _NumpyFunction:
     """Decorator to convert a bound array function to an array function."""
 
     @wraps(array_func)
@@ -106,21 +106,21 @@ def array_function_override(
 
 
 @overload
-def array_internals_override(
+def numpy_internals_override(
     array_sample_param_name: str,
-) -> Callable[[_BoundArrayFunctionWithInternals], _ArrayFunction]: ...
+) -> Callable[[_BoundNumpyFunctionWithInternals], _NumpyFunction]: ...
 
 
 @overload
-def array_internals_override(
+def numpy_internals_override(
     *,
     array_sample_param_pos: int,
-) -> Callable[[_BoundArrayFunctionWithInternals], _ArrayFunction]: ...
+) -> Callable[[_BoundNumpyFunctionWithInternals], _NumpyFunction]: ...
 
 
-def array_internals_override(
+def numpy_internals_override(
     array_sample_param_name: str | None = None, *, array_sample_param_pos: int | None = None
-) -> Callable[[_BoundArrayFunctionWithInternals], _ArrayFunction]:
+) -> Callable[[_BoundNumpyFunctionWithInternals], _NumpyFunction]:
     """Decorator to convert a function that takes a call with an array-sample ."""
     if array_sample_param_name is None and array_sample_param_pos is None:
         msg = "Either array_sample_param_name or array_sample_param_pos must be provided."
@@ -129,7 +129,7 @@ def array_internals_override(
         msg = "Only one of array_sample_param_name or array_sample_param_pos can be provided."
         raise ValueError(msg)
 
-    def decorator(f: _BoundArrayFunctionWithInternals) -> _ArrayFunction:
+    def decorator(f: _BoundNumpyFunctionWithInternals) -> _NumpyFunction:
         @wraps(f)
         def wrapper(
             func: Callable,
@@ -137,7 +137,7 @@ def array_internals_override(
         ) -> Any:  # noqa: ANN401
             param_name = next(iter(params.arguments)) if array_sample_param_name is None else array_sample_param_name
             array_sample_arg = params.arguments[param_name]
-            internals = array_sample_internals(array_sample_arg)
+            internals = numpy_sample_internals(array_sample_arg)
 
             if internals is None:
                 return NotImplemented
@@ -153,7 +153,7 @@ def array_internals_override(
                 internals.weights,
             )
 
-        return array_function_override(wrapper)
+        return numpy_function_override(wrapper)
 
     return decorator
 
@@ -186,12 +186,12 @@ def track_sample_axis_after_reduction(
     return new_sample_axis
 
 
-@array_function.register(np.copy)
-@array_internals_override("a")
-def array_copy_function(
+@numpy_function.register(np.copy)
+@numpy_internals_override("a")
+def numpy_copy_function(
     func: Callable,
     params: BoundArguments,
-    create_sample: ArraySampleCreator,
+    create_sample: NumpySampleCreator,
     array: NumpyArrayLike,
     sample_axis: int,
     weights: np.ndarray | None,
@@ -208,7 +208,7 @@ def array_copy_function(
     return create_sample(res, sample_axis=sample_axis, weights=weights)
 
 
-@array_function.multi_register(
+@numpy_function.multi_register(
     [
         np.argmax,
         np.argmin,
@@ -229,8 +229,8 @@ def array_copy_function(
         np.var,
     ],
 )
-@array_function_override
-def array_reduction_function(
+@numpy_function_override
+def numpy_reduction_function(
     func: Callable,
     params: BoundArguments,
 ) -> Any:  # noqa: ANN401
@@ -246,8 +246,8 @@ def array_reduction_function(
         keepdims = False
         params.arguments["keepdims"] = keepdims
 
-    a_internals = array_sample_internals(a)
-    out_internals = array_sample_internals(out)
+    a_internals = numpy_sample_internals(a)
+    out_internals = numpy_sample_internals(out)
 
     if a_internals is None and out_internals is None:
         return NotImplemented
@@ -274,12 +274,12 @@ def array_reduction_function(
     return res
 
 
-@array_function.register(np.transpose)
-@array_internals_override("a")
-def array_transpose(
+@numpy_function.register(np.transpose)
+@numpy_internals_override("a")
+def numpy_transpose(
     func: Callable,
     params: BoundArguments,
-    create_sample: ArraySampleCreator,
+    create_sample: NumpySampleCreator,
     array: NumpyArrayLike,
     sample_axis: int,
     weights: np.ndarray | None,
@@ -295,12 +295,12 @@ def array_transpose(
     return create_sample(res, sample_axis=new_sample_axis, weights=weights)
 
 
-@array_function.register(np.matrix_transpose)
-@array_internals_override("x")
-def array_matrix_transpose(
+@numpy_function.register(np.matrix_transpose)
+@numpy_internals_override("x")
+def numpy_matrix_transpose(
     func: Callable,
     params: BoundArguments,  # noqa: ARG001
-    create_sample: ArraySampleCreator,
+    create_sample: NumpySampleCreator,
     array: NumpyArrayLike,
     sample_axis: int,
     weights: np.ndarray | None,
@@ -320,7 +320,7 @@ def array_matrix_transpose(
     return create_sample(res, sample_axis=new_sample_axis, weights=weights)
 
 
-@array_function.multi_register(
+@numpy_function.multi_register(
     [
         np.flip,
         np.fliplr,
@@ -328,11 +328,11 @@ def array_matrix_transpose(
         np.roll,
     ],
 )
-@array_internals_override(array_sample_param_pos=0)
-def array_sample_axis_preserving_function(
+@numpy_internals_override(array_sample_param_pos=0)
+def numpy_sample_axis_preserving_function(
     func: Callable,
     params: BoundArguments,
-    create_sample: ArraySampleCreator,
+    create_sample: NumpySampleCreator,
     array: NumpyArrayLike,  # noqa: ARG001
     sample_axis: int,
     weights: np.ndarray | None,
@@ -343,12 +343,12 @@ def array_sample_axis_preserving_function(
     return create_sample(res, sample_axis=sample_axis, weights=weights)
 
 
-@array_function.register(np.reshape)
-@array_internals_override("a")
-def array_reshape_function(  # noqa: PLR0912
+@numpy_function.register(np.reshape)
+@numpy_internals_override("a")
+def numpy_reshape_function(  # noqa: PLR0912
     func: Callable,
     params: BoundArguments,
-    create_sample: ArraySampleCreator,
+    create_sample: NumpySampleCreator,
     array: NumpyArrayLike,
     sample_axis: int,
     weights: np.ndarray | None,
@@ -405,12 +405,12 @@ def array_reshape_function(  # noqa: PLR0912
     return create_sample(res, sample_axis=new_sample_axis, weights=weights)
 
 
-@array_function.register(np.swapaxes)
-@array_internals_override("a")
-def array_swapaxes_function(
+@numpy_function.register(np.swapaxes)
+@numpy_internals_override("a")
+def numpy_swapaxes_function(
     func: Callable,
     params: BoundArguments,
-    create_sample: ArraySampleCreator,
+    create_sample: NumpySampleCreator,
     array: NumpyArrayLike,
     sample_axis: int,
     weights: np.ndarray | None,
@@ -435,12 +435,12 @@ def array_swapaxes_function(
     return create_sample(res, sample_axis=new_sample_axis, weights=weights)
 
 
-@array_function.register(np.expand_dims)
-@array_internals_override("a")
-def array_expand_dims_function(
+@numpy_function.register(np.expand_dims)
+@numpy_internals_override("a")
+def numpy_expand_dims_function(
     func: Callable,
     params: BoundArguments,
-    create_sample: ArraySampleCreator,
+    create_sample: NumpySampleCreator,
     array: NumpyArrayLike,
     sample_axis: int,
     weights: np.ndarray | None,
@@ -463,12 +463,12 @@ def array_expand_dims_function(
     return create_sample(res, sample_axis=new_sample_axis, weights=weights)
 
 
-@array_function.register(np.squeeze)
-@array_internals_override("a")
-def array_squeeze_function(
+@numpy_function.register(np.squeeze)
+@numpy_internals_override("a")
+def numpy_squeeze_function(
     func: Callable,
     params: BoundArguments,
-    create_sample: ArraySampleCreator,
+    create_sample: NumpySampleCreator,
     array: NumpyArrayLike,
     sample_axis: int,
     weights: np.ndarray | None,
@@ -500,12 +500,12 @@ def array_squeeze_function(
     return create_sample(res, sample_axis=new_sample_axis, weights=weights)
 
 
-@array_function.register(np.apply_along_axis)
-@array_internals_override("arr")
-def array_apply_along_axis_function(
+@numpy_function.register(np.apply_along_axis)
+@numpy_internals_override("arr")
+def numpy_apply_along_axis_function(
     func: Callable,
     params: BoundArguments,
-    create_sample: ArraySampleCreator,
+    create_sample: NumpySampleCreator,
     array: NumpyArrayLike,
     sample_axis: int,
     weights: np.ndarray | None,
@@ -529,17 +529,17 @@ def array_apply_along_axis_function(
 
 def _extract_sample_array_sequence_internals(
     arrays: tuple[NumpyArrayLike, ...],
-) -> tuple[list[NumpyArrayLike], list[np.ndarray | None], bool, ArraySampleCreator | None, int | None, int | None]:
+) -> tuple[list[NumpyArrayLike], list[np.ndarray | None], bool, NumpySampleCreator | None, int | None, int | None]:
     """Extract the internals of a sequence of sample arrays."""
     cast_arrays: list[NumpyArrayLike] = []
     weights: list[np.ndarray | None] = []
     has_sample_arrays = False
     sample_axes: set[int] = set()
-    create_sample: ArraySampleCreator | None = None
+    create_sample: NumpySampleCreator | None = None
     sample_ndim: int | None = None
 
     for array in arrays:
-        internals = array_sample_internals(array)
+        internals = numpy_sample_internals(array)
 
         if internals is None:
             cast_arrays.append(array)
@@ -561,8 +561,8 @@ def _extract_sample_array_sequence_internals(
     return cast_arrays, weights, has_sample_arrays, None, None, None
 
 
-@array_function.register(np.concatenate)
-def array_concatenate_function(
+@numpy_function.register(np.concatenate)
+def numpy_concatenate_function(
     func: Callable,
     types: tuple[type[Any], ...],  # noqa: ARG001
     args: tuple[Any, ...],
@@ -572,7 +572,7 @@ def array_concatenate_function(
     arrays = tuple(args[0])
     axis = kwargs.get("axis", 0)
     out = kwargs.get("out")
-    out_internals = array_sample_internals(out)
+    out_internals = numpy_sample_internals(out)
 
     cast_arrays, weights, has_sample_arrays, create_sample, sample_axis, sample_ndim = (
         _extract_sample_array_sequence_internals(arrays)
@@ -609,9 +609,9 @@ def array_concatenate_function(
     return create_sample(res, sample_axis=sample_axis, weights=weights)
 
 
-@array_function.register(np.stack)
-@array_function_override
-def array_stack_function(
+@numpy_function.register(np.stack)
+@numpy_function_override
+def numpy_stack_function(
     func: Callable,
     params: BoundArguments,
 ) -> Any:  # noqa: ANN401
@@ -619,7 +619,7 @@ def array_stack_function(
     arrays = tuple(params.arguments["arrays"])
     axis = params.arguments.get("axis", 0)
     out = params.arguments.get("out", None)
-    out_internals = array_sample_internals(out)
+    out_internals = numpy_sample_internals(out)
 
     cast_arrays, weights, has_sample_arrays, create_sample, sample_axis, sample_ndim = (
         _extract_sample_array_sequence_internals(arrays)

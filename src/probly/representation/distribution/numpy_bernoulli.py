@@ -15,20 +15,20 @@ from probly.representation.distribution._common import (
     create_bernoulli_distribution,
     create_bernoulli_distribution_from_logits,
 )
-from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistribution,
-    ArrayLogitCategoricalDistribution,
-    ArrayProbabilityCategoricalDistribution,
+from probly.representation.distribution.numpy_categorical import (
+    NumpyCategoricalDistribution,
+    NumpyLogitCategoricalDistribution,
+    NumpyProbabilityCategoricalDistribution,
 )
-from probly.representation.sample.array import ArraySample
+from probly.representation.sample.numpy import NumpySample
 
 
-class ArrayBernoulliDistribution(BernoulliDistribution, ArrayCategoricalDistribution, ABC):  # ty:ignore[conflicting-metaclass]
+class NumpyBernoulliDistribution(BernoulliDistribution, NumpyCategoricalDistribution, ABC):  # ty:ignore[conflicting-metaclass]
     """A Bernoulli distribution represented as a categorical distribution with 2 classes."""
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayProbabilityBernoulliDistribution(ArrayProbabilityCategoricalDistribution, ArrayBernoulliDistribution):
+class NumpyProbabilityBernoulliDistribution(NumpyProbabilityCategoricalDistribution, NumpyBernoulliDistribution):
     """A Bernoulli distribution represented by the probability of class 1."""
 
     array: np.ndarray
@@ -55,12 +55,12 @@ class ArrayProbabilityBernoulliDistribution(ArrayProbabilityCategoricalDistribut
         return np.stack((np.zeros_like(positive), positive), axis=-1)
 
     @override
-    def to_categorical(self) -> ArrayProbabilityCategoricalDistribution:
-        return ArrayProbabilityCategoricalDistribution(self.probabilities)
+    def to_categorical(self) -> NumpyProbabilityCategoricalDistribution:
+        return NumpyProbabilityCategoricalDistribution(self.probabilities)
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayLogitBernoulliDistribution(ArrayLogitCategoricalDistribution, ArrayBernoulliDistribution):
+class NumpyLogitBernoulliDistribution(NumpyLogitCategoricalDistribution, NumpyBernoulliDistribution):
     """A Bernoulli distribution represented by class-1 log-odds."""
 
     array: np.ndarray
@@ -78,35 +78,35 @@ class ArrayLogitBernoulliDistribution(ArrayLogitCategoricalDistribution, ArrayBe
         return np.stack((np.zeros_like(self.array), self.array), axis=-1)
 
     @override
-    def to_categorical(self) -> ArrayLogitCategoricalDistribution:
-        return ArrayLogitCategoricalDistribution(self.logits)
+    def to_categorical(self) -> NumpyLogitCategoricalDistribution:
+        return NumpyLogitCategoricalDistribution(self.logits)
 
 
-class ArrayBernoulliDistributionSample(  # ty:ignore[conflicting-metaclass]
-    BernoulliDistributionSample[ArrayBernoulliDistribution],
-    ArraySample[ArrayBernoulliDistribution],
+class NumpyBernoulliDistributionSample(  # ty:ignore[conflicting-metaclass]
+    BernoulliDistributionSample[NumpyBernoulliDistribution],
+    NumpySample[NumpyBernoulliDistribution],
 ):
     """Sample type for array Bernoulli distributions."""
 
-    sample_space: ClassVar[type[BernoulliDistribution]] = ArrayBernoulliDistribution
+    sample_space: ClassVar[type[BernoulliDistribution]] = NumpyBernoulliDistribution
 
 
 @create_bernoulli_distribution.register((list, tuple))
-def _create_array_bernoulli_distribution_from_sequence(data: list[Any] | tuple[Any, ...]) -> BernoulliDistribution:
-    return _create_array_bernoulli_distribution(np.asarray(data))
+def _create_numpy_bernoulli_distribution_from_sequence(data: list[Any] | tuple[Any, ...]) -> BernoulliDistribution:
+    return _create_numpy_bernoulli_distribution(np.asarray(data))
 
 
 @create_bernoulli_distribution.register(np.ndarray)
-def _create_array_bernoulli_distribution(data: np.ndarray) -> BernoulliDistribution:
+def _create_numpy_bernoulli_distribution(data: np.ndarray) -> BernoulliDistribution:
     if data.ndim >= 2 and data.shape[-1] <= 2:
         data = data[..., -1]
-    return ArrayProbabilityBernoulliDistribution(data)
+    return NumpyProbabilityBernoulliDistribution(data)
 
 
 @create_bernoulli_distribution_from_logits.register(np.ndarray)
-def _create_array_bernoulli_distribution_from_logits(data: np.ndarray) -> BernoulliDistribution:
+def _create_numpy_bernoulli_distribution_from_logits(data: np.ndarray) -> BernoulliDistribution:
     if data.ndim >= 2 and data.shape[-1] == 2:
         data = data[..., -1] - data[..., 0]
     elif data.ndim >= 2 and data.shape[-1] == 1:
         data = data[..., -1]
-    return ArrayLogitBernoulliDistribution(data)
+    return NumpyLogitBernoulliDistribution(data)

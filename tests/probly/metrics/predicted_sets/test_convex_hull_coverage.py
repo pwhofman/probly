@@ -13,28 +13,28 @@ import numpy as np
 import pytest
 
 from probly.metrics import convex_hull_coverage
-from probly.representation.credal_set.array import (
-    ArrayConvexCredalSet,
-    ArrayDiscreteCredalSet,
-    ArraySingletonCredalSet,
+from probly.representation.credal_set.numpy import (
+    NumpyConvexCredalSet,
+    NumpyDiscreteCredalSet,
+    NumpySingletonCredalSet,
 )
-from probly.representation.distribution import ArrayProbabilityCategoricalDistribution
+from probly.representation.distribution import NumpyProbabilityCategoricalDistribution
 
 
-def _convex(probs: np.ndarray) -> ArrayConvexCredalSet:
-    return ArrayConvexCredalSet(array=ArrayProbabilityCategoricalDistribution(probs))
+def _convex(probs: np.ndarray) -> NumpyConvexCredalSet:
+    return NumpyConvexCredalSet(array=NumpyProbabilityCategoricalDistribution(probs))
 
 
-def _discrete(probs: np.ndarray) -> ArrayDiscreteCredalSet:
-    return ArrayDiscreteCredalSet(array=ArrayProbabilityCategoricalDistribution(probs))
+def _discrete(probs: np.ndarray) -> NumpyDiscreteCredalSet:
+    return NumpyDiscreteCredalSet(array=NumpyProbabilityCategoricalDistribution(probs))
 
 
-def _singleton(probs: np.ndarray) -> ArraySingletonCredalSet:
-    return ArraySingletonCredalSet(array=ArrayProbabilityCategoricalDistribution(probs))
+def _singleton(probs: np.ndarray) -> NumpySingletonCredalSet:
+    return NumpySingletonCredalSet(array=NumpyProbabilityCategoricalDistribution(probs))
 
 
-def _dist(probs: np.ndarray) -> ArrayProbabilityCategoricalDistribution:
-    return ArrayProbabilityCategoricalDistribution(probs)
+def _dist(probs: np.ndarray) -> NumpyProbabilityCategoricalDistribution:
+    return NumpyProbabilityCategoricalDistribution(probs)
 
 
 class TestStrict:

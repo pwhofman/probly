@@ -10,8 +10,8 @@ import numpy as np
 
 from probly.conformal_scores import NonConformityScore
 from probly.representation.array_like import ArrayLike
-from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
-from probly.representation.sample.array import ArraySample
+from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
+from probly.representation.sample.numpy import NumpySample
 
 
 @flexdispatch
@@ -40,14 +40,14 @@ def compute_dirichlet_rl_score_numpy(alphas: np.ndarray | ArrayLike, y_true: np.
     return 1.0 - alpha_y / alpha_max
 
 
-@dirichlet_rl_score_func.register(ArrayDirichletDistribution)
-def _(alphas: ArrayDirichletDistribution, y_true: np.ndarray) -> np.ndarray:
+@dirichlet_rl_score_func.register(NumpyDirichletDistribution)
+def _(alphas: NumpyDirichletDistribution, y_true: np.ndarray) -> np.ndarray:
     """Compute relative likelihood from Dirichlet concentrations."""
     return dirichlet_rl_score_func(alphas.alphas, y_true)
 
 
-@dirichlet_rl_score_func.register(ArraySample)
-def _(alphas: ArraySample, y_true: np.ndarray) -> np.ndarray:
+@dirichlet_rl_score_func.register(NumpySample)
+def _(alphas: NumpySample, y_true: np.ndarray) -> np.ndarray:
     """Compute memberwise relative likelihood for NumPy samples."""
     return dirichlet_rl_score_func(alphas.array, y_true)
 

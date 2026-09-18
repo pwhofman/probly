@@ -17,7 +17,7 @@ from probly.representation._protected_axis._common_functions import (
     value_ndim,
     value_shape,
 )
-from probly.representation._protected_axis.array_functions import array_function
+from probly.representation._protected_axis.numpy_functions import numpy_function
 from probly.representation.array_like import ArrayFlagsLike, NumpyArrayLike, NumpyArrayLikeImplementation, ToIndices
 
 if TYPE_CHECKING:
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from numpy.typing import DTypeLike
 
 
-type ArrayProtectedValue = NumpyArrayLike[Any] | np.ndarray
+type NumpyProtectedValue = NumpyArrayLike[Any] | np.ndarray
 
 
 def _validate_field_ndim(name: str, ndim: int, protected_axes: int) -> None:
@@ -36,7 +36,7 @@ def _validate_field_ndim(name: str, ndim: int, protected_axes: int) -> None:
         raise ValueError(msg)
 
 
-class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[T], ABC):
+class NumpyAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[T], ABC):
     """ABC for representations with one or multiple protected array-like fields."""
 
     protected_axes: ClassVar[dict[str, int]] = {}
@@ -46,7 +46,7 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
     def __init_subclass__(cls, **kwargs: object) -> None:
         super().__init_subclass__(**kwargs)
 
-        if cls is ArrayAxisProtected or isabstract(cls):
+        if cls is NumpyAxisProtected or isabstract(cls):
             return
 
         axes = getattr(cls, "protected_axes", None)
@@ -92,7 +92,7 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
         """Return the first protected field (dict order)."""
         return next(iter(cls.protected_axes))
 
-    def _postprocess_protected_values[V: ArrayProtectedValue](
+    def _postprocess_protected_values[V: NumpyProtectedValue](
         self, values: dict[str, V], func: Callable
     ) -> dict[str, V]:
         """Optionally postprocess protected values based on the triggering function."""
@@ -100,17 +100,17 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
         return values
 
     @overload
-    def protected_values(self) -> dict[str, ArrayProtectedValue]: ...
+    def protected_values(self) -> dict[str, NumpyProtectedValue]: ...
 
     @overload
-    def protected_values(self, func: Callable) -> dict[str, ArrayProtectedValue] | None: ...
+    def protected_values(self, func: Callable) -> dict[str, NumpyProtectedValue] | None: ...
 
     @overload
-    def protected_values(self, func: np.ufunc, method: str) -> dict[str, ArrayProtectedValue] | None: ...
+    def protected_values(self, func: np.ufunc, method: str) -> dict[str, NumpyProtectedValue] | None: ...
 
     def protected_values(
         self, func: Callable | None = None, method: str | None = None
-    ) -> dict[str, ArrayProtectedValue] | None:
+    ) -> dict[str, NumpyProtectedValue] | None:
         """Return all protected field values.
 
         The values are preserved as-is and are not coerced to ``np.ndarray``.
@@ -125,12 +125,12 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
             elif func not in type(self).permitted_functions:
                 return None
 
-        values: dict[str, ArrayProtectedValue] = {}
+        values: dict[str, NumpyProtectedValue] = {}
         primary_name = type(self).primary_protected_name()
         primary_batch: tuple[int, ...] | None = None
 
         for name, axes in type(self).protected_axes.items():
-            value = cast("ArrayProtectedValue", getattr(self, name))
+            value = cast("NumpyProtectedValue", getattr(self, name))
             ndim = value_ndim(value)
             shape = value_shape(value)
             _validate_field_ndim(name, ndim, axes)
@@ -149,7 +149,7 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
 
         return values
 
-    def protected_value(self) -> ArrayProtectedValue:
+    def protected_value(self) -> NumpyProtectedValue:
         """Return the primary protected value."""
         primary_name = type(self).primary_protected_name()
         return self.protected_values()[primary_name]
@@ -157,21 +157,21 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
     @overload
     def with_protected_values(
         self,
-        values: dict[str, ArrayProtectedValue],
+        values: dict[str, NumpyProtectedValue],
     ) -> Self: ...
 
     @overload
     def with_protected_values(
         self,
-        values: dict[str, ArrayProtectedValue],
+        values: dict[str, NumpyProtectedValue],
         func: Callable | None,
-    ) -> ArrayAxisProtected[T]: ...
+    ) -> NumpyAxisProtected[T]: ...
 
     def with_protected_values(
         self,
-        values: dict[str, ArrayProtectedValue],
+        values: dict[str, NumpyProtectedValue],
         func: Callable | None = None,  # noqa: ARG002
-    ) -> ArrayAxisProtected[T]:
+    ) -> NumpyAxisProtected[T]:
         """Return a copy with updated protected field values."""
         return replace(self, **values)  # ty:ignore[invalid-argument-type]
 
@@ -281,7 +281,7 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
     @override
     def __getitem__(self, index: ToIndices, /) -> Self:
         values = self.protected_values()
-        indexed: dict[str, ArrayProtectedValue] = {}
+        indexed: dict[str, NumpyProtectedValue] = {}
 
         for name, axes in type(self).protected_axes.items():
             full_index = self._index_with_protected_axes(index, axes)
@@ -334,7 +334,7 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
             return NotImplemented
 
         protected_axes = type(self).protected_axes
-        input_values: list[dict[str, ArrayProtectedValue] | None] = []
+        input_values: list[dict[str, NumpyProtectedValue] | None] = []
         for value in inputs:
             if isinstance(value, type(self)):
                 value_protected_axes = type(value).protected_axes
@@ -354,7 +354,7 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
 
         out = kwargs.get("out")
         out_items = out if isinstance(out, tuple) else ((out,) if out is not None else ())
-        out_values: list[dict[str, ArrayProtectedValue] | None] = []
+        out_values: list[dict[str, NumpyProtectedValue] | None] = []
         for value in out_items:
             if isinstance(value, type(self)):
                 value_protected_axes = type(value).protected_axes
@@ -386,7 +386,7 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
                 raise TypeError(msg)
             return normalize_axis(axis, batch_ndim)
 
-        results: dict[str, ArrayProtectedValue] = {}
+        results: dict[str, NumpyProtectedValue] = {}
         for name, axes_count in protected_axes.items():
             field_kwargs = dict(kwargs)
 
@@ -452,7 +452,7 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
             if isinstance(result, np.ndarray):
                 result = self._postprocess_ufunc_result(result, ufunc=ufunc, method=method)
 
-            results[name] = cast("ArrayProtectedValue", result)
+            results[name] = cast("NumpyProtectedValue", result)
 
         if out is not None:
             if method == "__call__":
@@ -478,7 +478,7 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
         args: tuple[object, ...],
         kwargs: dict[str, object],
     ) -> object:
-        return array_function(func, types, args, kwargs)
+        return numpy_function(func, types, args, kwargs)
 
     def reshape(self, *shape: int | tuple[int, ...], order: str = "C", copy: bool | None = None) -> Self:
         """Return a copy with reshaped protected values."""

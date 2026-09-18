@@ -11,7 +11,7 @@ from scipy.stats import norm
 
 from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
 from probly.representation.distribution.jax_gaussian import JaxGaussianDistribution
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 
 
 def test_sampling_keys() -> None:
@@ -160,7 +160,7 @@ def test_sample_function() -> None:
     n_samples = 4
     samples = dist.sample(n_samples)
 
-    assert isinstance(samples, JaxArraySample)
+    assert isinstance(samples, JaxSample)
     assert samples.array.shape == (n_samples, *shape)
     assert samples.sample_axis == 0
 
