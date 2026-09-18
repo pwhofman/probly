@@ -49,3 +49,5 @@ user calls dropout(model)
 - Do not use special unicode characters where it is not necessary (comments, docstrings, variable names)
 - Tests are split by backend. Put backend-agnostic checks in `test_common.py`, and backend-specific checks in files like `test_array.py`, `test_torch.py`, or `test_jax.py`. In backend-specific test files, call `pytest.importorskip("<backend>")` at the top and avoid per-test skip decorators for missing optional deps.
 - Pickle default-state behavior is subtle: `object.__getstate__()` may return `None` even when an instance has a populated `__dict__`. Do not use `super().__getstate__()` as a drop-in replacement for pickle's default state extraction when implementing cooperative `__getstate__` wrappers.
+## Design Principles:
+- `docs/design/principles.md` holds probly's design principles.
