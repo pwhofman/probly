@@ -204,6 +204,43 @@ or ``Sklearn`` for classes. Private names retain their leading underscore, as in
 ``_torch_transform_linear``. Conversion names such as ``from_numpy_sample``
 describe their inputs and retain that ordering.
 
+Backend naming check
+--------------------
+
+The ``BKN001`` check in ``scripts/check_backend_naming.py`` enforces backend-word
+placement in function, method, nested function, class, and ``type`` alias
+definitions under ``src/probly``. It runs automatically through pre-commit and
+CI. To run it directly:
+
+.. code-block:: bash
+
+    uv run python scripts/check_backend_naming.py
+
+The checker recognizes exactly ``torch``, ``jax``, ``flax``, ``numpy``, ``Torch``,
+``Jax``, ``Flax``, and ``Numpy`` as complete words separated by underscores or
+CamelCase boundaries, including acronym boundaries such as ``HTTP|Torch``.
+Digits stay within words. A backend word must be the first word, optionally
+following one leading underscore. Once a backend prefix is present, additional
+backend words are allowed: ``torch_numpy_predict`` and ``TorchNumpyAdapter`` both
+pass. Names such as ``predict_torch`` and ``MyTorchModel`` fail, while
+``convert_pytorch`` and ``MyFlaxifyModel`` pass because the backend spellings are
+parts of larger words. Names without a recognized backend word are permitted.
+
+Semantic first words ``from``, ``to``, ``is``, ``has``, ``supports``, and
+``Supports`` are also permitted, using the same underscore/CamelCase boundaries
+and optional privacy marker. For example, ``supports_torch`` and ``SupportsTorch``
+both pass, while ``SupportsomethingTorch`` fails. Dunder
+protocol functions/methods such as ``__torch_function__`` are exempt. Variables,
+parameters, imports, and test definitions are outside the automatic check's
+scope. Explicit file or directory arguments can be supplied for a manual check.
+
+For an intentional exception, add ``# noqa: BKN001`` with a reason on the opening
+line containing ``def``, ``class``, or ``type``. This suppresses only that
+definition, including when its signature spans multiple lines. A bare ``# noqa``
+does not suppress this check.
+
+Example backend implementation:
+
 .. code-block:: python
 
     """Torch mymethod implementation."""

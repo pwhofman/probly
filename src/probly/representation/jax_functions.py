@@ -144,7 +144,7 @@ def has_jax_function(relevant_args: Iterable[object]) -> bool:
     return any(arg is not None and hasattr(type(arg), "__jax_function__") for arg in relevant_args)
 
 
-def handle_jax_function(
+def handle_jax_function(  # noqa: BKN001
     public_api: Callable[..., Any],
     relevant_args: Iterable[object],
     *args: object,
@@ -175,7 +175,7 @@ def handle_jax_function(
     raise TypeError(msg)
 
 
-def try_jax_function(
+def try_jax_function(  # noqa: BKN001
     public_api: Callable[..., Any],
     relevant_args: Iterable[object],
     *args: object,

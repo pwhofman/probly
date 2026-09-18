@@ -82,11 +82,11 @@ try:
     from probly.train.calibration.torch import ExpectedCalibrationError
 
     @compute_accuracy.register(torch.Tensor)
-    def _compute_accuracy_torch(y_pred: torch.Tensor, y_true: torch.Tensor) -> float:
+    def _torch_compute_accuracy(y_pred: torch.Tensor, y_true: torch.Tensor) -> float:
         return float((y_pred == y_true).float().mean().item())
 
     @compute_ece.register(torch.Tensor)
-    def _compute_ece_torch(probs: torch.Tensor, y_true: torch.Tensor, n_bins: int = 10) -> float:
+    def _torch_compute_ece(probs: torch.Tensor, y_true: torch.Tensor, n_bins: int = 10) -> float:
         ece_fn = ExpectedCalibrationError(num_bins=n_bins)
         with torch.no_grad():
             loss = ece_fn(probs.float(), y_true.long())
