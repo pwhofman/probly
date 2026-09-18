@@ -13,7 +13,7 @@ import torch
 from torch import nn
 
 from probly.transformation import posterior_network
-from probly.train.evidential.torch import postnet_loss
+from probly.losses.torch import postnet_loss
 from probly_benchmark.data import load_mnist
 
 from examples.utils.model import MLPClassifier

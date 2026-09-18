@@ -1,10 +1,4 @@
-"""Shared VBLL training utilities.
-
-Provides the backend-agnostic :func:`vbll_loss` generic that dispatches to the
-variant-specific negative ELBO based on the layer type. Use
-:func:`probly.method.vbll.find_vbll_layer` to retrieve the VBLL layer from a
-transformed predictor.
-"""
+"""Backend-agnostic training losses."""
 
 from __future__ import annotations
 

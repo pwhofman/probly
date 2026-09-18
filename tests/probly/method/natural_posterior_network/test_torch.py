@@ -12,7 +12,7 @@ torch = pytest.importorskip("torch")
 
 from torch import nn  # noqa: E402
 
-from probly.train.evidential.torch import postnet_loss  # noqa: E402
+from probly.losses.torch import postnet_loss  # noqa: E402
 from probly.transformation.natural_posterior_network.torch import TorchNaturalPosteriorNetwork  # noqa: E402
 
 NUM_CLASSES = 4

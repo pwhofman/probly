@@ -13,7 +13,8 @@ import torch
 
 from probly.representer import representer
 from probly.transformation import bayesian
-from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
+from probly.losses.torch import elbo_loss
+from probly.transformation.bayesian import collect_kl_divergence
 
 from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
@@ -45,21 +46,20 @@ bayesian_model = bayesian(
 # Training
 # --------
 #
-# ELBOLoss(beta) computes: cross_entropy(out, y) + beta * kl.
+# elbo_loss(out, y, kl, kl_penalty=beta) computes: cross_entropy(out, y) + beta * kl.
 # beta = 1/N scales the KL so its magnitude is independent of dataset size.
 # collect_kl_divergence walks the model and sums the KL from every
 # BayesianLinear layer, which must be called after each forward pass because
 # each forward pass draws new weight samples.
 
 opt = torch.optim.Adam(bayesian_model.parameters(), lr=1e-3)
-criterion = ELBOLoss(1.0 / len(X_tensor))
 
 bayesian_model.train()
 for epoch in range(300):
     opt.zero_grad()
     out = bayesian_model(X_tensor)
     kl = collect_kl_divergence(bayesian_model)
-    loss = criterion(out, y_tensor, kl)
+    loss = elbo_loss(out, y_tensor, kl, kl_penalty=1.0 / len(X_tensor))
     loss.backward()
     opt.step()
 

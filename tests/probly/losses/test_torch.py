@@ -1,20 +1,23 @@
+"""Tests for the torch backend of probly.losses."""
+
 from __future__ import annotations
 
 import pytest
 
-from probly.layers.torch import RadialNormalizingFlowStack
-from probly.method.evidential import evidential_regression
-from probly.predictor import Predictor
-from probly.train.evidential.torch import (
+from probly.layers.torch import GVBLLLayer, HetVBLLLayer, TVBLLLayer, VBLLLayer
+from probly.losses import vbll_loss
+from probly.losses.torch import (
     der_loss,
-    dirichlet_entropy,
+    elbo_loss,
     evidential_ce_loss,
     evidential_kl_divergence,
     evidential_log_loss,
     evidential_mse_loss,
     evidential_nignll_loss,
     evidential_regression_regularization,
+    focal_loss,
     ird_loss,
+    label_relaxation_loss,
     lp_fn,
     natpn_loss,
     postnet_loss,
@@ -24,11 +27,194 @@ from probly.train.evidential.torch import (
     rpn_ng_kl,
     rpn_prior,
 )
+from probly.method.bayesian import bayesian
+from probly.method.evidential import evidential_regression
+from probly.predictor import Predictor
+from probly.transformation.bayesian import collect_kl_divergence
 from tests.probly.torch_utils import validate_loss
 
 torch = pytest.importorskip("torch")
 
 from torch import Tensor, nn  # noqa: E402
+
+
+def test_focal_loss(sample_outputs: tuple[Tensor, Tensor]) -> None:
+    outputs, targets = sample_outputs
+    validate_loss(focal_loss(outputs, targets))
+    # TODO(pwhofman): Add tests for different values of alpha and gamma
+    # https://github.com/pwhofman/probly/issues/92
+
+
+def test_label_relaxation_loss(
+    sample_outputs: tuple[Tensor, Tensor],
+) -> None:
+    outputs, targets = sample_outputs
+    validate_loss(label_relaxation_loss(outputs, targets))
+    validate_loss(label_relaxation_loss(outputs, targets, alpha=1.0))
+
+
+def test_elbo_loss(
+    sample_classification_data: tuple[Tensor, Tensor],
+    torch_conv_linear_model: nn.Module,
+) -> None:
+    inputs, targets = sample_classification_data
+    model = bayesian(torch_conv_linear_model)
+    outputs = model(inputs)
+
+    validate_loss(elbo_loss(outputs, targets, collect_kl_divergence(model)))
+    validate_loss(elbo_loss(outputs, targets, collect_kl_divergence(model), kl_penalty=0.0))
+
+
+def _torch_nn():
+    pytest.importorskip("torch")
+    import torch  # noqa: PLC0415
+    from torch import nn  # noqa: PLC0415
+
+    return torch, nn
+
+
+class TestCredalTrainTorch:
+    """Cross-entropy on intersection probability of an interval-valued prediction."""
+
+    def test_collapsed_interval_loss_finite(self) -> None:
+        torch, _ = _torch_nn()
+        from probly.losses.torch import intersection_probability_ce_loss  # noqa: PLC0415
+
+        # When lower == upper, intersection probability matches the point estimate.
+        probs = torch.tensor([[0.7, 0.2, 0.1]])
+        packed = torch.cat([probs, probs], dim=-1)
+        targets = torch.tensor([0])
+        loss = intersection_probability_ce_loss(packed, targets)
+        assert loss.shape == ()
+        assert torch.isfinite(loss)
+        assert loss.item() > 0.0
+
+    def test_loss_decreases_with_more_confident_prediction(self) -> None:
+        torch, _ = _torch_nn()
+        from probly.losses.torch import intersection_probability_ce_loss  # noqa: PLC0415
+
+        confident = torch.tensor([[0.9, 0.05, 0.05]])
+        unconfident = torch.tensor([[0.34, 0.33, 0.33]])
+        packed_conf = torch.cat([confident, confident], dim=-1)
+        packed_unconf = torch.cat([unconfident, unconfident], dim=-1)
+        targets = torch.tensor([0])
+        loss_conf = intersection_probability_ce_loss(packed_conf, targets)
+        loss_unconf = intersection_probability_ce_loss(packed_unconf, targets)
+        assert loss_conf.item() < loss_unconf.item()
+
+
+class TestCvarCeLoss:
+    """Batch-wise top-delta cross-entropy used by credal DRO training."""
+
+    def test_delta_one_equals_mean_ce(self) -> None:
+        torch, _ = _torch_nn()
+        from torch.nn import functional as F  # noqa: PLC0415
+
+        from probly.losses.torch import cvar_ce_loss  # noqa: PLC0415
+
+        torch.manual_seed(0)
+        logits = torch.randn(8, 3)
+        targets = torch.randint(0, 3, (8,))
+        loss = cvar_ce_loss(logits, targets, delta=1.0)
+        assert torch.allclose(loss, F.cross_entropy(logits, targets))
+
+    def test_keeps_only_highest_loss_samples(self) -> None:
+        torch, _ = _torch_nn()
+        from torch.nn import functional as F  # noqa: PLC0415
+
+        from probly.losses.torch import cvar_ce_loss  # noqa: PLC0415
+
+        # Samples 0 and 1 are confidently wrong, samples 2 and 3 confidently right.
+        logits = torch.tensor(
+            [[5.0, 0.0], [5.0, 0.0], [5.0, 0.0], [5.0, 0.0]],
+        )
+        targets = torch.tensor([1, 1, 0, 0])
+        per_sample = F.cross_entropy(logits, targets, reduction="none")
+        loss = cvar_ce_loss(logits, targets, delta=0.5)
+        assert torch.allclose(loss, per_sample[:2].mean())
+
+    def test_gradient_only_flows_to_selected_samples(self) -> None:
+        torch, _ = _torch_nn()
+        from probly.losses.torch import cvar_ce_loss  # noqa: PLC0415
+
+        logits = torch.tensor(
+            [[5.0, 0.0], [5.0, 0.0], [5.0, 0.0], [5.0, 0.0]],
+            requires_grad=True,
+        )
+        targets = torch.tensor([1, 1, 0, 0])
+        cvar_ce_loss(logits, targets, delta=0.5).backward()
+        assert logits.grad is not None
+        assert logits.grad[:2].abs().sum() > 0.0
+        assert torch.allclose(logits.grad[2:], torch.zeros(2, 2))
+
+    def test_tiny_batch_keeps_at_least_one_sample(self) -> None:
+        torch, _ = _torch_nn()
+        from torch.nn import functional as F  # noqa: PLC0415
+
+        from probly.losses.torch import cvar_ce_loss  # noqa: PLC0415
+
+        # floor(0.4 * 2) = 0 is clamped to one sample: the highest-loss one.
+        logits = torch.tensor([[5.0, 0.0], [5.0, 0.0]])
+        targets = torch.tensor([1, 0])
+        per_sample = F.cross_entropy(logits, targets, reduction="none")
+        loss = cvar_ce_loss(logits, targets, delta=0.4)
+        assert torch.allclose(loss, per_sample.max())
+
+    def test_delta_out_of_range_raises(self) -> None:
+        torch, _ = _torch_nn()
+        from probly.losses.torch import cvar_ce_loss  # noqa: PLC0415
+
+        logits = torch.randn(4, 3)
+        targets = torch.tensor([0, 1, 2, 0])
+        with pytest.raises(ValueError, match="delta"):
+            cvar_ce_loss(logits, targets, delta=0.0)
+        with pytest.raises(ValueError, match="delta"):
+            cvar_ce_loss(logits, targets, delta=1.5)
+
+
+def test_vbll_loss_dispatches_to_specific_losses() -> None:
+    from probly.losses.torch import disc_vbll_loss, g_vbll_loss, het_vbll_loss, t_vbll_loss  # noqa: PLC0415
+
+    torch.manual_seed(0)
+    features = torch.randn(16, 8)
+    targets = torch.randint(0, 3, (16,))
+    regularization_weight = 1.0 / 16
+
+    cases = [
+        (VBLLLayer(8, 3), disc_vbll_loss),
+        (TVBLLLayer(8, 3), t_vbll_loss),
+        (HetVBLLLayer(8, 3), het_vbll_loss),
+        (GVBLLLayer(8, 3), g_vbll_loss),
+    ]
+    for layer, specific_loss in cases:
+        generic = vbll_loss(layer, features, targets, regularization_weight)
+        specific = specific_loss(layer, features, targets, regularization_weight)
+        assert torch.allclose(generic, specific)
+
+
+def test_disc_vbll_loss_regularizes_the_noise() -> None:
+    # The Wishart term must enter the loss so the learnable noise cannot collapse.
+    from probly.losses.torch import disc_vbll_loss  # noqa: PLC0415
+
+    torch.manual_seed(0)
+    layer = VBLLLayer(8, 3, wishart_scale=1.0)
+    features = torch.randn(16, 8)
+    targets = torch.randint(0, 3, (16,))
+
+    loss = disc_vbll_loss(layer, features, targets, regularization_weight=1.0 / 16)
+    layer.wishart_scale = 100.0
+    reweighted_loss = disc_vbll_loss(layer, features, targets, regularization_weight=1.0 / 16)
+
+    assert not torch.allclose(loss, reweighted_loss)
+    assert torch.isfinite(reweighted_loss)
+
+
+def test_vbll_loss_raises_for_unsupported_layer() -> None:
+    features = torch.randn(4, 8)
+    targets = torch.randint(0, 3, (4,))
+
+    with pytest.raises(NotImplementedError, match="vbll_loss is not implemented"):
+        vbll_loss(nn.Linear(8, 3), features, targets, 1.0)
 
 
 def test_evidential_log_loss(
@@ -117,7 +303,6 @@ def test_evidential_regression_regularization(
     validate_loss(loss)
 
 
-@pytest.mark.skip
 def test_der_loss(
     torch_regression_model_1d: nn.Module,
     torch_regression_model_2d: nn.Module,
@@ -128,7 +313,7 @@ def test_der_loss(
     model: Predictor = evidential_regression(torch_regression_model_1d)
     outputs = model(inputs)
     criterion = der_loss
-    loss = criterion(targets, *outputs)
+    loss = criterion(targets, outputs["gamma"], outputs["nu"], outputs["alpha"], outputs["beta"])
     validate_loss(loss)
 
     inputs = torch.randn(4, 4)
@@ -136,7 +321,7 @@ def test_der_loss(
 
     model = evidential_regression(torch_regression_model_2d)
     outputs = model(inputs)
-    loss = criterion(targets, *outputs)
+    loss = criterion(targets, outputs["gamma"], outputs["nu"], outputs["alpha"], outputs["beta"])
     validate_loss(loss)
 
 
@@ -179,14 +364,14 @@ def test_rpn_prior_returns_valid_parameters() -> None:
     assert (beta0 >= 0).all()
 
 
-@pytest.mark.skip
 def test_rpn_ng_kl(
     torch_regression_model_1d: nn.Module,
     torch_regression_model_2d: nn.Module,
 ) -> None:
     inputs = torch.randn(4, 2)
     model: Predictor = evidential_regression(torch_regression_model_1d)
-    mu, kappa, alpha, beta = model(inputs)
+    outputs = model(inputs)
+    mu, kappa, alpha, beta = outputs["gamma"], outputs["nu"], outputs["alpha"], outputs["beta"]
 
     mu0, kappa0, alpha0, beta0 = rpn_prior(mu.shape, mu.device)
 
@@ -196,7 +381,8 @@ def test_rpn_ng_kl(
 
     inputs = torch.randn(4, 4)
     model = evidential_regression(torch_regression_model_2d)
-    mu, kappa, alpha, beta = model(inputs)
+    outputs = model(inputs)
+    mu, kappa, alpha, beta = outputs["gamma"], outputs["nu"], outputs["alpha"], outputs["beta"]
 
     mu0, kappa0, alpha0, beta0 = rpn_prior(mu.shape, mu.device)
 
@@ -206,7 +392,6 @@ def test_rpn_ng_kl(
     validate_loss(loss)
 
 
-@pytest.mark.skip
 def test_rpn_loss(
     torch_regression_model_1d: nn.Module,
     torch_regression_model_2d: nn.Module,
@@ -233,40 +418,6 @@ def test_rpn_loss(
     validate_loss(loss)
 
 
-@pytest.mark.skip
-def test_postnet_loss(
-    sample_classification_data: tuple[Tensor, Tensor],
-) -> None:
-    inputs, targets = sample_classification_data
-    batch_size = inputs.size(0)
-    num_classes = 10  # Standard MNIST
-    latent_dim = 16  # Standard latent dimension
-
-    # Create flow density model
-    flow = RadialNormalizingFlowStack(
-        num_classes=num_classes,
-        dim=latent_dim,
-        num_flows=6,
-    )
-
-    # Create simulated network outputs (z): (batch_size, latent_dim)
-    z = torch.randn(batch_size, latent_dim)
-
-    # Create class counts for the batch
-    class_counts = torch.zeros(num_classes)
-    class_counts[targets] = 1  # Count how many times each class appears
-
-    # Compute loss
-    loss, alpha = postnet_loss(z, targets, flow, class_counts)
-
-    # Validate the loss value
-    validate_loss(loss)
-
-    # Validate that alpha has correct shape
-    expected_shape = (batch_size, num_classes)
-    assert alpha.shape == expected_shape, f"Expected {expected_shape}, got {alpha.shape}"
-
-
 def test_lp_fn(
     sample_classification_data: tuple[Tensor, Tensor],
     evidential_classification_model: nn.Module,
@@ -289,18 +440,6 @@ def test_regularization_fn(
     targets_onehot = torch.nn.functional.one_hot(targets, num_classes=outputs.shape[1]).float()
     criterion = regularization_fn
     loss = criterion(outputs, targets_onehot)
-    validate_loss(loss)
-
-
-@pytest.mark.skip
-def test_dirichlet_entropy(
-    sample_classification_data: tuple[Tensor, Tensor],
-    evidential_classification_model: nn.Module,
-) -> None:
-    inputs, _ = sample_classification_data  # targets not needed for dirichlet_entropy
-    outputs = evidential_classification_model(inputs)
-    criterion = dirichlet_entropy
-    loss = criterion(outputs)
     validate_loss(loss)
 
 
@@ -351,7 +490,7 @@ def _torch_modules():
 class TestMakeInDomainTargetAlpha:
     def test_creates_correct_alpha(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import make_in_domain_target_alpha  # noqa: PLC0415
+        from probly.losses.torch import make_in_domain_target_alpha  # noqa: PLC0415
 
         y = torch.tensor([0, 1, 2])
         alpha = make_in_domain_target_alpha(y)
@@ -371,7 +510,7 @@ class TestMakeInDomainTargetAlpha:
 
     def test_handles_skipped_classes(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import make_in_domain_target_alpha  # noqa: PLC0415
+        from probly.losses.torch import make_in_domain_target_alpha  # noqa: PLC0415
 
         # max(y) = 4 -> 5 classes.
         y = torch.tensor([0, 4])
@@ -384,7 +523,7 @@ class TestMakeInDomainTargetAlpha:
 class TestMakeOodTargetAlpha:
     def test_default_args(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import make_ood_target_alpha  # noqa: PLC0415
+        from probly.losses.torch import make_ood_target_alpha  # noqa: PLC0415
 
         out = make_ood_target_alpha(batch_size=4)
         # Defaults: num_classes=10, alpha0=10
@@ -396,49 +535,17 @@ class TestMakeOodTargetAlpha:
 
     def test_custom_args(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import make_ood_target_alpha  # noqa: PLC0415
+        from probly.losses.torch import make_ood_target_alpha  # noqa: PLC0415
 
         out = make_ood_target_alpha(batch_size=2, num_classes=5, alpha0=20.0)
         assert out.shape == (2, 5)
         torch.testing.assert_close(out.sum(dim=-1), torch.full((2,), 20.0))
 
 
-class TestPredictiveProbs:
-    def test_normalises_alpha(self) -> None:
-        torch = _torch_modules()
-        from probly.train.evidential.torch import predictive_probs  # noqa: PLC0415
-
-        alpha = torch.tensor([[1.0, 2.0, 3.0], [10.0, 0.0, 0.0]])
-        probs = predictive_probs(alpha)
-        torch.testing.assert_close(probs, alpha / alpha.sum(dim=-1, keepdim=True))
-        torch.testing.assert_close(probs.sum(dim=-1), torch.tensor([1.0, 1.0]))
-
-
-class TestKLDirichlet:
-    def test_zero_divergence_for_identical(self) -> None:
-        torch = _torch_modules()
-        from probly.train.evidential.torch import kl_dirichlet  # noqa: PLC0415
-
-        a = torch.tensor([[2.0, 3.0]])
-        kl = kl_dirichlet(a, a)
-        # KL(p || p) = 0
-        torch.testing.assert_close(kl.squeeze(), torch.tensor(0.0), atol=1e-5, rtol=1e-5)
-
-    def test_positive_divergence_for_different(self) -> None:
-        torch = _torch_modules()
-        from probly.train.evidential.torch import kl_dirichlet  # noqa: PLC0415
-
-        prior = torch.tensor([[2.0, 3.0]])
-        posterior = torch.tensor([[5.0, 5.0]])
-        kl = kl_dirichlet(prior, posterior)
-        # KL(p, q) >= 0 and != 0 when p != q.
-        assert kl.item() > 0
-
-
 class TestEvidentialLogLoss:
     def test_smaller_for_correct_class(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import evidential_log_loss  # noqa: PLC0415
+        from probly.losses.torch import evidential_log_loss  # noqa: PLC0415
 
         # alphas with high concentration on target -> small log loss.
         alphas_sharp = torch.tensor([[10.0, 1.0, 1.0]])
@@ -452,7 +559,7 @@ class TestEvidentialLogLoss:
 class TestEvidentialCELoss:
     def test_smaller_for_correct_class(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import evidential_ce_loss  # noqa: PLC0415
+        from probly.losses.torch import evidential_ce_loss  # noqa: PLC0415
 
         alphas_sharp = torch.tensor([[10.0, 1.0, 1.0]])
         alphas_flat = torch.tensor([[1.0, 1.0, 1.0]])
@@ -465,7 +572,7 @@ class TestEvidentialCELoss:
 class TestEvidentialMSELoss:
     def test_returns_scalar(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import evidential_mse_loss  # noqa: PLC0415
+        from probly.losses.torch import evidential_mse_loss  # noqa: PLC0415
 
         alphas = torch.tensor([[10.0, 1.0, 1.0]])
         targets = torch.tensor([0])
@@ -477,7 +584,7 @@ class TestEvidentialMSELoss:
 class TestEvidentialKLDivergence:
     def test_returns_scalar(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import evidential_kl_divergence  # noqa: PLC0415
+        from probly.losses.torch import evidential_kl_divergence  # noqa: PLC0415
 
         alphas = torch.tensor([[2.0, 1.0, 1.0]])
         targets = torch.tensor([0])
@@ -489,7 +596,7 @@ class TestEvidentialKLDivergence:
 class TestLpFn:
     def test_finite(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import lp_fn  # noqa: PLC0415
+        from probly.losses.torch import lp_fn  # noqa: PLC0415
 
         alphas = torch.tensor([[2.0, 3.0, 1.0]])
         y_onehot = torch.tensor([[1.0, 0.0, 0.0]])  # class 0 one-hot
@@ -498,7 +605,7 @@ class TestLpFn:
 
     def test_smaller_for_correct_class(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import lp_fn  # noqa: PLC0415
+        from probly.losses.torch import lp_fn  # noqa: PLC0415
 
         sharp = torch.tensor([[10.0, 1.0, 1.0]])
         flat = torch.tensor([[1.0, 1.0, 1.0]])
@@ -509,7 +616,7 @@ class TestLpFn:
 
     def test_non_positive_alpha_raises(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import lp_fn  # noqa: PLC0415
+        from probly.losses.torch import lp_fn  # noqa: PLC0415
 
         alphas = torch.tensor([[0.0, 1.0, 1.0]])
         y_onehot = torch.tensor([[1.0, 0.0, 0.0]])
@@ -518,7 +625,7 @@ class TestLpFn:
 
     def test_shape_mismatch_raises(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import lp_fn  # noqa: PLC0415
+        from probly.losses.torch import lp_fn  # noqa: PLC0415
 
         with pytest.raises(ValueError, match="shape mismatch"):
             lp_fn(torch.tensor([[1.0, 1.0]]), torch.tensor([0]))
@@ -527,7 +634,7 @@ class TestLpFn:
 class TestRegularizationFn:
     def test_finite(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import regularization_fn  # noqa: PLC0415
+        from probly.losses.torch import regularization_fn  # noqa: PLC0415
 
         alphas = torch.tensor([[2.0, 3.0, 1.0]])
         y_onehot = torch.tensor([[1.0, 0.0, 0.0]])
@@ -535,23 +642,10 @@ class TestRegularizationFn:
         assert torch.isfinite(reg)
 
 
-class TestDirichletEntropy:
-    def test_higher_entropy_for_uniform(self) -> None:
-        torch = _torch_modules()
-        from probly.train.evidential.torch import dirichlet_entropy  # noqa: PLC0415
-
-        sharp = torch.tensor([[10.0, 1.0, 1.0]])
-        flat = torch.tensor([[1.0, 1.0, 1.0]])
-        h_sharp = dirichlet_entropy(sharp).sum()
-        h_flat = dirichlet_entropy(flat).sum()
-        # Uniform Dirichlet has higher entropy than peaked Dirichlet.
-        assert h_flat.item() > h_sharp.item()
-
-
 class TestEvidentialNigNllLoss:
     def test_finite_scalar(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import evidential_nignll_loss  # noqa: PLC0415
+        from probly.losses.torch import evidential_nignll_loss  # noqa: PLC0415
 
         # Inputs is a dict with gamma, nu, alpha, beta keys.
         gamma = torch.tensor([[1.0]])
@@ -567,7 +661,7 @@ class TestEvidentialNigNllLoss:
 class TestEvidentialRegressionRegularization:
     def test_finite_scalar(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import evidential_regression_regularization  # noqa: PLC0415
+        from probly.losses.torch import evidential_regression_regularization  # noqa: PLC0415
 
         gamma = torch.tensor([[1.0]])
         nu = torch.tensor([[1.0]])
@@ -585,22 +679,11 @@ class TestEvidentialRegressionRegularization:
 # ---------------------------------------------------------------------------
 
 
-class TestComputeLossDispatch:
-    """The compute_loss switchdispatch fallback raises on unknown modes."""
-
-    def test_unknown_mode_raises(self) -> None:
-        from probly.train.evidential.torch import compute_loss  # noqa: PLC0415
-
-        with pytest.raises(ValueError, match="Enter a valid mode"):
-            compute_loss("not_a_known_mode")
-
-
 class TestPostNetLoss:
     """postnet_loss supports both 'mean' and 'sum' reductions."""
 
     def test_default_sum_returns_scalar(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import postnet_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0], [1.0, 3.0, 1.0]])
         y = torch.tensor([0, 1])
@@ -610,7 +693,6 @@ class TestPostNetLoss:
 
     def test_mean_reduction(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import postnet_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0], [1.0, 3.0, 1.0]])
         y = torch.tensor([0, 1])
@@ -627,7 +709,7 @@ class TestMixtureUceLoss:
 
     def test_sum_returns_scalar(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import mixture_uce_loss  # noqa: PLC0415
+        from probly.losses.torch import mixture_uce_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0], [1.0, 2.0, 1.0]])  # (N=2, C=3)
         mixture_weights = torch.tensor([[0.5, 0.5], [0.2, 0.8]])  # (B=2, N=2)
@@ -638,7 +720,7 @@ class TestMixtureUceLoss:
 
     def test_mean_returns_scalar(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import mixture_uce_loss  # noqa: PLC0415
+        from probly.losses.torch import mixture_uce_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0], [1.0, 2.0, 1.0]])
         mixture_weights = torch.tensor([[0.5, 0.5], [0.2, 0.8]])
@@ -649,7 +731,7 @@ class TestMixtureUceLoss:
 
     def test_none_returns_per_sample(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import mixture_uce_loss  # noqa: PLC0415
+        from probly.losses.torch import mixture_uce_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0], [1.0, 2.0, 1.0]])
         mixture_weights = torch.tensor([[0.5, 0.5], [0.2, 0.8]])
@@ -661,7 +743,7 @@ class TestMixtureUceLoss:
 
     def test_unsupported_reduction_raises(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import mixture_uce_loss  # noqa: PLC0415
+        from probly.losses.torch import mixture_uce_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0]])
         mixture_weights = torch.tensor([[1.0]])
@@ -675,7 +757,7 @@ class TestLopGpnLoss:
 
     def test_no_regularization_returns_uce(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import lop_gpn_loss, mixture_uce_loss  # noqa: PLC0415
+        from probly.losses.torch import lop_gpn_loss, mixture_uce_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0], [1.0, 2.0, 1.0]])
         mixture_weights = torch.tensor([[0.5, 0.5], [0.2, 0.8]])
@@ -687,7 +769,7 @@ class TestLopGpnLoss:
 
     def test_entropy_zero_weight_returns_uce(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import lop_gpn_loss, mixture_uce_loss  # noqa: PLC0415
+        from probly.losses.torch import lop_gpn_loss, mixture_uce_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0], [1.0, 2.0, 1.0]])
         mixture_weights = torch.tensor([[0.5, 0.5], [0.2, 0.8]])
@@ -707,7 +789,7 @@ class TestLopGpnLoss:
 
     def test_with_entropy_sum_reduction(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import lop_gpn_loss, mixture_uce_loss  # noqa: PLC0415
+        from probly.losses.torch import lop_gpn_loss, mixture_uce_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0], [1.0, 2.0, 1.0]])
         mixture_weights = torch.tensor([[0.5, 0.5], [0.2, 0.8]])
@@ -727,7 +809,7 @@ class TestLopGpnLoss:
 
     def test_with_entropy_mean_reduction(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import lop_gpn_loss, mixture_uce_loss  # noqa: PLC0415
+        from probly.losses.torch import lop_gpn_loss, mixture_uce_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0], [1.0, 2.0, 1.0]])
         mixture_weights = torch.tensor([[0.5, 0.5], [0.2, 0.8]])
@@ -746,7 +828,7 @@ class TestLopGpnLoss:
 
     def test_with_entropy_none_reduction(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import lop_gpn_loss, mixture_uce_loss  # noqa: PLC0415
+        from probly.losses.torch import lop_gpn_loss, mixture_uce_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0], [1.0, 2.0, 1.0]])
         mixture_weights = torch.tensor([[0.5, 0.5], [0.2, 0.8]])
@@ -767,7 +849,7 @@ class TestLopGpnLoss:
 
     def test_unsupported_reduction_with_entropy_raises(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import lop_gpn_loss  # noqa: PLC0415
+        from probly.losses.torch import lop_gpn_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0]])
         mixture_weights = torch.tensor([[1.0]])
@@ -797,7 +879,7 @@ class TestRegularizationFnValidation:
 
     def test_shape_mismatch_raises(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import regularization_fn  # noqa: PLC0415
+        from probly.losses.torch import regularization_fn  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0]])  # (1, 3)
         y = torch.tensor([[1.0, 0.0]])  # (1, 2) -> mismatch
@@ -805,23 +887,12 @@ class TestRegularizationFnValidation:
             regularization_fn(alpha, y)
 
 
-class TestDirichletEntropyValidation:
-    """dirichlet_entropy validates positivity of alpha."""
-
-    def test_non_positive_alpha_raises(self) -> None:
-        torch = _torch_modules()
-        from probly.train.evidential.torch import dirichlet_entropy  # noqa: PLC0415
-
-        with pytest.raises(ValueError, match=r"alpha values must be > 0"):
-            dirichlet_entropy(torch.tensor([[0.0, 1.0, 1.0]]))
-
-
 class TestIRDValidation:
     """ird_loss checks input shapes and adversarial alpha shapes."""
 
     def test_alpha_must_be_2d(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import ird_loss  # noqa: PLC0415
+        from probly.losses.torch import ird_loss  # noqa: PLC0415
 
         # alpha 1D -> error.
         alpha = torch.tensor([2.0, 1.0, 1.0])
@@ -831,7 +902,7 @@ class TestIRDValidation:
 
     def test_y_must_be_2d(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import ird_loss  # noqa: PLC0415
+        from probly.losses.torch import ird_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0]])
         # y 1D -> error.
@@ -841,7 +912,7 @@ class TestIRDValidation:
 
     def test_shape_mismatch_raises(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import ird_loss  # noqa: PLC0415
+        from probly.losses.torch import ird_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0]])
         y = torch.tensor([[1.0, 0.0]])  # mismatched class dim
@@ -850,7 +921,7 @@ class TestIRDValidation:
 
     def test_non_positive_alpha_raises(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import ird_loss  # noqa: PLC0415
+        from probly.losses.torch import ird_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[0.0, 1.0, 1.0]])
         y = torch.tensor([[1.0, 0.0, 0.0]])
@@ -859,7 +930,7 @@ class TestIRDValidation:
 
     def test_adversarial_alpha_must_be_2d(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import ird_loss  # noqa: PLC0415
+        from probly.losses.torch import ird_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0]])
         y = torch.tensor([[1.0, 0.0, 0.0]])
@@ -869,7 +940,7 @@ class TestIRDValidation:
 
     def test_adversarial_alpha_class_count_mismatch_raises(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import ird_loss  # noqa: PLC0415
+        from probly.losses.torch import ird_loss  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0]])
         y = torch.tensor([[1.0, 0.0, 0.0]])
@@ -883,7 +954,7 @@ class TestLpFnDimensionMismatchVariant:
 
     def test_2d_shape_mismatch_raises(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import lp_fn  # noqa: PLC0415
+        from probly.losses.torch import lp_fn  # noqa: PLC0415
 
         alpha = torch.tensor([[2.0, 1.0, 1.0]])  # (1,3)
         y = torch.tensor([[1.0, 0.0]])  # (1,2)
@@ -896,7 +967,7 @@ class TestDerLoss:
 
     def test_returns_finite_scalar(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import der_loss  # noqa: PLC0415
+        from probly.losses.torch import der_loss  # noqa: PLC0415
 
         y = torch.tensor([1.0, 2.0])
         mu = torch.tensor([1.1, 1.9])
@@ -913,22 +984,23 @@ class TestRpnLoss:
 
     def test_rpn_loss_finite(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import rpn_loss  # noqa: PLC0415
+        from probly.losses.torch import rpn_loss  # noqa: PLC0415
 
-        # Lightweight stand-in for a NIG regressor: returns (mu, kappa, alpha, beta).
+        # Lightweight stand-in for a NIG regressor: returns the evidential_regression output dict.
         class _TinyNIG(nn.Module):
             def __init__(self) -> None:
                 super().__init__()
                 self.lin = nn.Linear(2, 4)
 
-            def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+            def forward(self, x: torch.Tensor) -> dict[str, torch.Tensor]:
                 out = self.lin(x)
-                mu = out[:, 0]
                 # softplus to keep positive parameters strictly positive.
-                kappa = torch.nn.functional.softplus(out[:, 1]) + 1e-3
-                alpha = torch.nn.functional.softplus(out[:, 2]) + 1.0
-                beta = torch.nn.functional.softplus(out[:, 3]) + 1e-3
-                return mu, kappa, alpha, beta
+                return {
+                    "gamma": out[:, 0],
+                    "nu": torch.nn.functional.softplus(out[:, 1]) + 1e-3,
+                    "alpha": torch.nn.functional.softplus(out[:, 2]) + 1.0,
+                    "beta": torch.nn.functional.softplus(out[:, 3]) + 1e-3,
+                }
 
         model = _TinyNIG()
         x_id = torch.randn(4, 2)
@@ -944,7 +1016,7 @@ class TestRpnNgKl:
 
     def test_returns_finite_scalar(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import rpn_ng_kl, rpn_prior  # noqa: PLC0415
+        from probly.losses.torch import rpn_ng_kl, rpn_prior  # noqa: PLC0415
 
         mu = torch.tensor([0.5, -0.5])
         kappa = torch.tensor([1.0, 2.0])
@@ -961,7 +1033,7 @@ class TestPnLoss:
 
     def test_pn_loss_finite(self) -> None:
         torch = _torch_modules()
-        from probly.train.evidential.torch import pn_loss  # noqa: PLC0415
+        from probly.losses.torch import pn_loss  # noqa: PLC0415
 
         # Tiny model that returns positive Dirichlet alphas.
         # Note: pn_loss internally uses make_ood_target_alpha which defaults
@@ -983,3 +1055,11 @@ class TestPnLoss:
         loss = pn_loss(model, x_in, y_in, x_ood)
         assert loss.shape == ()
         assert torch.isfinite(loss).all()
+
+
+class TestIRDAdversarialAlphaValidation:
+    def test_non_positive_adversarial_alpha_raises(self) -> None:
+        alpha = torch.tensor([[2.0, 1.0, 1.0]])
+        y = torch.tensor([[1.0, 0.0, 0.0]])
+        with pytest.raises(ValueError, match=r"alpha values must be > 0"):
+            ird_loss(alpha, y, adversarial_alpha=torch.tensor([[0.0, 1.0, 1.0]]))

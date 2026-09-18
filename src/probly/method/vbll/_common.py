@@ -61,7 +61,7 @@ def find_vbll_layer(model: object) -> Any:  # noqa: ANN401, the concrete layer t
 
     Convenience wrapper around :func:`probly.traverse_nn.find_layer` that matches
     any discriminative VBLL layer variant (standard, Student-t, or
-    heteroscedastic), e.g. to pass the layer to :func:`probly.train.vbll.vbll_loss`
+    heteroscedastic), e.g. to pass the layer to :func:`probly.losses.vbll_loss`
     or to attach hooks to it. For generative VBLL models use
     :func:`probly.method.g_vbll.find_g_vbll_layer`.
 
