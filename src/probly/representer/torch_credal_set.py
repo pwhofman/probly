@@ -1,6 +1,8 @@
-"""Torch functionality for generic credal-set representers."""
+"""Torch implementations for generic credal-set representers."""
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import torch
 
@@ -9,11 +11,13 @@ from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistributionSample,
     TorchProbabilityCategoricalDistribution,
 )
-from probly.representation.sample.torch import TorchSample
 from probly.representer.credal_set import compute_representative_sample
 
+if TYPE_CHECKING:
+    from probly.representation.sample.torch import TorchSample
 
-@compute_representative_sample.register(TorchSample)
+
+@compute_representative_sample.register(TorchCategoricalDistribution)
 def torch_compute_representative_sample(
     sample: TorchSample[TorchCategoricalDistribution],
     alpha: float,

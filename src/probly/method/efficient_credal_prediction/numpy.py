@@ -52,7 +52,7 @@ def _numpy_compute_bounds(
     _validate_alpha(alpha)
 
     if _is_torch_available():
-        import torch  # noqa: PLC0415
+        import torch  # noqa: PLC0415, BKN002 - Optional lazy accelerator for NumPy calibration inputs.
 
         logits_t = torch.from_numpy(logits_train)
         targets_t = torch.from_numpy(targets_train)

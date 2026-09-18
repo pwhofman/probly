@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-import importlib
 from typing import TYPE_CHECKING, Any, override
 
 from flextype import flexdispatch
@@ -149,7 +148,7 @@ class SampleMeanConvexCredalSetRepresenter[**In, Out: CategoricalDistribution, C
 
 @compute_representative_sample.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 def _(_: type) -> None:
-    importlib.import_module("probly.representer.credal_set_torch")
+    from . import torch_credal_set  # noqa: F401, PLC0415
 
 
 __all__ = [

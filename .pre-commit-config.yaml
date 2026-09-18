@@ -36,7 +36,7 @@ repos:
   - repo: local
     hooks:
     -   id: backend-naming
-        name: backend naming (BKN001)
+        name: backend naming and imports (BKN001, BKN002)
         language: system
         entry: uv run python scripts/check_backend_naming.py
         pass_filenames: false

@@ -201,7 +201,7 @@ exclude = [
 [tool.ruff.lint]
 select = ["ALL"]
 # Preserve explicit suppressions for scripts/check_backend_naming.py.
-external = ["BKN001"]
+external = ["BKN001", "BKN002"]
 ignore = [
     "N812",    # Checks for lowercase imports that are aliased to non-lowercase names (e.g. torch.nn.functional as F)
     "RET504",  # Unnecessary assignment to {name} before return statement

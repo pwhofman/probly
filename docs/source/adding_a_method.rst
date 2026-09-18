@@ -204,13 +204,14 @@ or ``Sklearn`` for classes. Private names retain their leading underscore, as in
 ``_torch_transform_linear``. Conversion names such as ``from_numpy_sample``
 describe their inputs and retain that ordering.
 
-Backend naming check
---------------------
+Backend checks
+--------------
 
 The ``BKN001`` check in ``scripts/check_backend_naming.py`` enforces backend-word
 placement in function, method, nested function, class, and ``type`` alias
-definitions under ``src/probly``. It runs automatically through pre-commit and
-CI. To run it directly:
+definitions under ``src/probly``. The same script checks backend import placement
+with ``BKN002``. Both rules run automatically through pre-commit and CI. To run
+them directly:
 
 .. code-block:: bash
 
@@ -231,13 +232,50 @@ Semantic first words ``from``, ``to``, ``is``, ``has``, ``supports``, and
 and optional privacy marker. For example, ``supports_torch`` and ``SupportsTorch``
 both pass, while ``SupportsomethingTorch`` fails. Dunder
 protocol functions/methods such as ``__torch_function__`` are exempt. Variables,
-parameters, imports, and test definitions are outside the automatic check's
-scope. Explicit file or directory arguments can be supplied for a manual check.
+parameters, and imported identifiers are outside BKN001's scope. Tests are outside
+both rules' default scope. Explicit file or directory arguments can be supplied
+for a manual check.
 
 For an intentional exception, add ``# noqa: BKN001`` with a reason on the opening
 line containing ``def``, ``class``, or ``type``. This suppresses only that
 definition, including when its signature spans multiple lines. A bare ``# noqa``
 does not suppress this check.
+
+**Backend imports (BKN002).** Runtime ``import`` and ``from ... import ...``
+statements must be in appropriately named modules:
+
+.. list-table:: Allowed module prefixes
+   :header-rows: 1
+
+   * - Imported package
+     - Module prefixes
+   * - ``torch``
+     - ``torch``, ``transformers``, ``huggingface``, ``peft``
+   * - ``jax``
+     - ``jax``, ``flax``
+   * - ``flax``
+     - ``flax``
+
+The rule checks the actual imported package, including submodules such as
+``torch.nn`` or ``jax.numpy``, independently of import aliases. The first word of
+the filename stem determines the module prefix, using the same word boundaries
+and optional leading underscore as BKN001. For ``__init__.py``, the containing
+package's name is used. Thus ``torch_metrics.py`` and ``torch/__init__.py`` permit
+Torch imports; ``metrics_torch.py`` and ``torch/shared.py`` do not. An enclosing
+backend package does not exempt a differently named module.
+
+Function-local imports and imports inside ``try/except`` blocks are checked.
+Type-only branches guarded by ``typing.TYPE_CHECKING`` or an explicitly imported
+``TYPE_CHECKING`` are exempt, including import aliases and equivalent
+``typing_extensions`` guards. Negated guards are supported, and runtime branches
+remain checked. Relative project imports such as ``from . import torch`` are
+not imports of the external Torch package. This is a check of Python import
+statements, not a transitive dependency or dynamic-import analysis.
+
+An intentional runtime bridge can use ``# noqa: BKN002`` with a reason on the
+import's opening line. Suppressions are rule-specific: BKN001 does not suppress
+BKN002, or vice versa. Prefer a backend-specific module and ``delayed_register``
+for backend implementations used by a shared API.
 
 Example backend implementation:
 

@@ -28,7 +28,7 @@ uv run prek run --all-files
 ```bash
 ty check <path-to-file-or-directory>
 ```
-### Only Run backend naming checks
+### Only Run backend naming and import checks
 ```bash
 uv run python scripts/check_backend_naming.py
 ```
@@ -54,4 +54,5 @@ user calls dropout(model)
 - Tests are split by backend. Put backend-agnostic checks in `test_common.py`, and backend-specific checks in files like `test_numpy.py`, `test_torch.py`, or `test_jax.py`. In backend-specific test files, call `pytest.importorskip("<backend>")` at the top and avoid per-test skip decorators for missing optional deps.
 - Put backend qualifiers at the beginning of implementation names: `numpy_`, `jax_`, `torch_`, `flax_`, or `sklearn_` for functions and `Numpy`, `Jax`, `Torch`, `Flax`, or `Sklearn` for classes. Private names keep their leading underscore. Conversion methods such as `from_numpy_sample` describe their inputs rather than an implementation backend.
 - The `BKN001` pre-commit check enforces whole-word NumPy/JAX/Torch/Flax prefixes on definitions in `src/probly`. Backend-prefixed names may contain further backend words. Semantic first words `from`, `to`, `is`, `has`, `supports`, and `Supports` use the same underscore/CamelCase boundaries and optional privacy marker; dunder methods are exempt. Intentional exceptions use `# noqa: BKN001` with a reason on the definition's opening line.
+- `BKN002` restricts runtime imports in `src/probly`: Torch requires a `torch`, `transformers`, `huggingface`, or `peft` module prefix; JAX requires `jax` or `flax`; Flax requires `flax`. Check the filename stem (parent package name for `__init__.py`), with whole-word boundaries and an optional leading underscore. Recognized `TYPE_CHECKING` branches are exempt, but function-local and `try/except` imports are checked. Intentional bridges use `# noqa: BKN002` with a reason on the import's opening line.
 - Pickle default-state behavior is subtle: `object.__getstate__()` may return `None` even when an instance has a populated `__dict__`. Do not use `super().__getstate__()` as a drop-in replacement for pickle's default state extraction when implementing cooperative `__getstate__` wrappers.

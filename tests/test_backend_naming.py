@@ -1,4 +1,4 @@
-"""Tests for the standalone backend-prefix checker."""
+"""Tests for the standalone backend naming and import checker."""
 
 from __future__ import annotations
 
@@ -247,3 +247,209 @@ def test_standalone_entry_point(tmp_path: Path, name: str, returncode: int) -> N
     )
     assert result.returncode == returncode
     assert ("BKN001" in result.stderr) == bool(returncode)
+
+
+@pytest.mark.parametrize(
+    ("filename", "source"),
+    [
+        ("torch.py", "import torch"),
+        ("torch_metrics.py", "from torch.nn import Module"),
+        ("_torch_helpers.py", "import torch.nn.functional as F"),
+        ("transformers.py", "import torch"),
+        ("transformers_utils.py", "from torch import Tensor"),
+        ("huggingface.py", "import torch"),
+        ("peft_helpers.py", "import torch"),
+        ("jax.py", "import jax.numpy as jnp"),
+        ("_jax_functions.py", "from jax import Array"),
+        ("flax.py", "import jax, flax"),
+        ("flax_layers.py", "from flax.nnx import Module"),
+        ("probly/torch/__init__.py", "import torch"),
+        ("probly/_flax_helpers/__init__.py", "import flax, jax"),
+    ],
+)
+def test_imports_in_approved_modules(filename: str, source: str) -> None:
+    assert checker.check_source(source, filename) == []
+
+
+@pytest.mark.parametrize(
+    ("filename", "source", "backend"),
+    [
+        ("numpy.py", "import torch", "torch"),
+        ("torch.py", "import jax", "jax"),
+        ("jax.py", "import flax", "flax"),
+        ("flax.py", "import torch", "torch"),
+        ("transformers.py", "import flax", "flax"),
+        ("huggingface.py", "import jax", "jax"),
+        ("peft.py", "import flax", "flax"),
+        ("my_torch.py", "from torch.nn import Module", "torch"),
+        ("pytorch.py", "import torch", "torch"),
+        ("torchvision.py", "import torch", "torch"),
+        ("flaxify.py", "import flax", "flax"),
+        ("__torch_helpers.py", "import torch", "torch"),
+        ("probly/torch/shared.py", "import torch", "torch"),
+        ("probly/common/__init__.py", "import torch", "torch"),
+        ("jax.py", "import torch as jax", "torch"),
+        ("common.py", "from flax.nnx import Module as TorchModule", "flax"),
+    ],
+)
+def test_imports_in_unapproved_modules(filename: str, source: str, backend: str) -> None:
+    diagnostics = checker.check_source(source, filename)
+    assert len(diagnostics) == 1
+    assert diagnostics[0].startswith(f"{filename}:1:1: BKN002 Import of '{backend}'")
+
+
+def test_import_roots_are_checked_independently_of_aliases_and_substrings() -> None:
+    source = """import torch.nn as nn, jax.numpy as np, torch.utils
+import nottorch as torch
+from torch_tools import helper
+from . import torch
+from .torch import helper
+from ..jax import helper
+from probly.layers.torch import Layer
+"""
+    diagnostics = checker.check_source(source, "common.py")
+    assert len(diagnostics) == 2
+    assert "Import of 'jax'" in diagnostics[0]
+    assert "Import of 'torch'" in diagnostics[1]
+
+
+def test_runtime_imports_inside_functions_classes_and_try_blocks() -> None:
+    source = """def predict():
+    import torch
+    async def inner():
+        from jax import Array
+class Model:
+    try:
+        import flax
+    except ImportError:
+        pass
+"""
+    diagnostics = checker.check_source(source, "common.py")
+    assert len(diagnostics) == 3
+    assert diagnostics[0].startswith("common.py:2:5: BKN002")
+    assert diagnostics[1].startswith("common.py:4:9: BKN002")
+    assert diagnostics[2].startswith("common.py:7:9: BKN002")
+
+
+@pytest.mark.parametrize(
+    ("imports", "guard"),
+    [
+        ("from typing import TYPE_CHECKING", "TYPE_CHECKING"),
+        ("from typing import TYPE_CHECKING as TC", "TC"),
+        ("import typing", "typing.TYPE_CHECKING"),
+        ("import typing as t", "t.TYPE_CHECKING"),
+        ("from typing_extensions import TYPE_CHECKING as TC", "TC"),
+    ],
+)
+@pytest.mark.parametrize("negated", [False, True])
+def test_type_only_branches_are_exempt_but_runtime_branches_are_checked(
+    imports: str, guard: str, negated: bool
+) -> None:
+    condition = f"not {guard}" if negated else guard
+    type_only = "import torch, jax, flax"
+    runtime = "import torch"
+    body, otherwise = (runtime, type_only) if negated else (type_only, runtime)
+    source = f"{imports}\nif {condition}:\n    {body}\nelse:\n    {otherwise}\n"
+    diagnostics = checker.check_source(source, "common.py")
+    assert len(diagnostics) == 1
+    runtime_line = 3 if negated else 5
+    assert diagnostics[0].startswith(f"common.py:{runtime_line}:5: BKN002")
+
+
+def test_type_only_import_exemption_does_not_suppress_definition_naming() -> None:
+    source = """from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import torch
+    class BadTorch: pass
+"""
+    diagnostics = checker.check_source(source, "common.py")
+    assert len(diagnostics) == 1
+    assert "BKN001" in diagnostics[0]
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "TYPE_CHECKING = True\nif TYPE_CHECKING:\n    import torch\n",
+        "import other as typing\nif typing.TYPE_CHECKING:\n    import torch\n",
+        "from .typing import TYPE_CHECKING\nif TYPE_CHECKING:\n    import torch\n",
+        "from typing import TYPE_CHECKING\nTYPE_CHECKING = True\nif TYPE_CHECKING:\n    import torch\n",
+        "from typing import TYPE_CHECKING\ndef f(TYPE_CHECKING):\n    if TYPE_CHECKING:\n        import torch\n",
+        "from typing import TYPE_CHECKING\nimport other as TYPE_CHECKING\nif TYPE_CHECKING:\n    import torch\n",
+    ],
+)
+def test_unrecognized_or_shadowed_type_checking_guards_are_not_exempt(source: str) -> None:
+    diagnostics = checker.check_source(source, "common.py")
+    assert len(diagnostics) == 1
+    assert "BKN002" in diagnostics[0]
+
+
+def test_type_checking_aliases_stay_in_their_scope() -> None:
+    source = """def helper():
+    from typing import TYPE_CHECKING as TC
+    if TC:
+        import torch
+if TC:
+    import jax
+"""
+    diagnostics = checker.check_source(source, "common.py")
+    assert len(diagnostics) == 1
+    assert diagnostics[0].startswith("common.py:6:5: BKN002 Import of 'jax'")
+
+
+def test_conditional_aliases_do_not_exempt_runtime_imports_in_other_branches() -> None:
+    source = """TC = True
+if flag:
+    from typing import TYPE_CHECKING as TC
+else:
+    if TC:
+        import torch
+if TC:
+    import jax
+"""
+    diagnostics = checker.check_source(source, "common.py")
+    assert len(diagnostics) == 2
+    assert diagnostics[0].startswith("common.py:6:9: BKN002 Import of 'torch'")
+    assert diagnostics[1].startswith("common.py:8:5: BKN002 Import of 'jax'")
+
+
+def test_import_suppression_uses_the_opening_line_and_only_its_rule() -> None:
+    source = """from torch import (  # noqa: BKN002 - Intentional bridge.
+    Tensor,
+)
+def bad_jax(): pass  # noqa: BKN002
+import jax  # noqa: BKN001
+import flax  # noqa: BKN001, BKN002
+"""
+    diagnostics = checker.check_source(source, "common.py")
+    assert len(diagnostics) == 2
+    assert diagnostics[0].startswith("common.py:4:1: BKN001")
+    assert diagnostics[1].startswith("common.py:5:1: BKN002 Import of 'jax'")
+
+
+@pytest.mark.parametrize("comment", ["# noqa", "# noqa: BKN001", "# noqa: BKN0020", "# noqa: BKN002extra"])
+def test_import_suppression_requires_the_exact_rule(comment: str) -> None:
+    diagnostics = checker.check_source(f"import torch  {comment}", "common.py")
+    assert len(diagnostics) == 1
+    assert "BKN002" in diagnostics[0]
+
+
+def test_import_strings_and_comments_do_not_count_as_imports_or_suppressions() -> None:
+    source = '''"import torch"
+# from jax import Array
+"""# noqa: BKN002"""
+import flax
+'''
+    diagnostics = checker.check_source(source, "common.py")
+    assert len(diagnostics) == 1
+    assert diagnostics[0].startswith("common.py:4:1: BKN002 Import of 'flax'")
+
+
+def test_cli_reports_backend_import_violations(tmp_path: Path) -> None:
+    source = tmp_path / "common.py"
+    source.write_text("import torch\n")
+    result = subprocess.run(  # noqa: S603
+        [sys.executable, str(SCRIPT), str(source)], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 1
+    assert "BKN002" in result.stderr

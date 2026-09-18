@@ -148,7 +148,7 @@ class TestRepresentativeConvexCredalSetRepresenter:
             TorchProbabilityCategoricalDistribution,
         )
         from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
-        from probly.representer.credal_set_torch import torch_compute_representative_sample  # noqa: PLC0415
+        from probly.representer.torch_credal_set import torch_compute_representative_sample  # noqa: PLC0415
 
         dist = TorchProbabilityCategoricalDistribution(tensor=torch.tensor([[[0.5, 0.5]], [[0.3, 0.7]]]))
         sample = TorchSample(tensor=dist, sample_dim=0)
@@ -162,7 +162,7 @@ class TestLazyTorchRegistration:
     def test_torch_handler_registered(self) -> None:
         """Importing the torch sub-module exposes the torch dispatcher to the registry."""
         pytest.importorskip("torch")
-        import probly.representer.credal_set_torch as _torch_mod  # noqa: PLC0415
+        import probly.representer.torch_credal_set as _torch_mod  # noqa: PLC0415
 
         # The module wires the torch dispatch into ``compute_representative_sample``.
         assert _torch_mod.torch_compute_representative_sample is not None
@@ -174,7 +174,7 @@ class TestLazyTorchRegistration:
             TorchProbabilityCategoricalDistribution,
         )
         from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
-        from probly.representer.credal_set_torch import torch_compute_representative_sample  # noqa: PLC0415
+        from probly.representer.torch_credal_set import torch_compute_representative_sample  # noqa: PLC0415
 
         dist = TorchProbabilityCategoricalDistribution(tensor=torch.tensor([[[0.4, 0.4, 0.2]], [[0.6, 0.3, 0.1]]]))
         sample = TorchSample(tensor=dist, sample_dim=0)
