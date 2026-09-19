@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
-from typing import Protocol, override
+from typing import Protocol, overload, override
 
 from probly.quantification._quantification import Quantifier
 from probly.quantification.notion import (
@@ -13,7 +13,6 @@ from probly.quantification.notion import (
     EpistemicUncertainty,
     Notion,
     NotionKey,
-    NotionName,
     TotalUncertainty,
     notion_registry,
 )
@@ -49,8 +48,14 @@ class Decomposition(Mapping[NotionKey, Notion], ABC):
 
         return self.get_notion(self.canonical_notion)
 
+    @overload
+    def __getitem__[N: Notion](self, key: type[N]) -> N: ...
+
+    @overload
+    def __getitem__(self, key: NotionKey) -> Notion: ...
+
     @override
-    def __getitem__[N: Notion](self, key: NotionName | type[N]) -> N:
+    def __getitem__(self, key: NotionKey) -> Notion:
         """Return the component corresponding to the given key."""
         notion_cls = key if isinstance(key, type) else notion_registry[key]
         if notion_cls not in self.components:
@@ -104,7 +109,8 @@ class AleatoricDecomposition[AU: AleatoricUncertainty](Decomposition, ABC):  # t
     def _get_notion[N: Notion](self, notion: type[N]) -> N:
         """Return the component corresponding to the given notion."""
         if notion is AleatoricUncertainty:
-            return self._aleatoric  # ty:ignore[invalid-return-type]
+            # The identity check establishes N; ty does not narrow TypeVars here.
+            return self._aleatoric  # ty: ignore[invalid-return-type]
         return super()._get_notion(notion)
 
     @property
@@ -133,7 +139,8 @@ class EpistemicDecomposition[EU: EpistemicUncertainty](Decomposition, ABC):  # t
     def _get_notion[N: Notion](self, notion: type[N]) -> N:
         """Return the component corresponding to the given notion."""
         if notion is EpistemicUncertainty:
-            return self._epistemic  # ty:ignore[invalid-return-type]
+            # The identity check establishes N; ty does not narrow TypeVars here.
+            return self._epistemic  # ty: ignore[invalid-return-type]
         return super()._get_notion(notion)
 
     @property
@@ -162,7 +169,8 @@ class TotalDecomposition[TU: TotalUncertainty](Decomposition, ABC):  # ty:ignore
     def _get_notion[N: Notion](self, notion: type[N]) -> N:
         """Return the component corresponding to the given notion."""
         if notion is TotalUncertainty:
-            return self._total  # ty:ignore[invalid-return-type]
+            # The identity check establishes N; ty does not narrow TypeVars here.
+            return self._total  # ty: ignore[invalid-return-type]
         return super()._get_notion(notion)
 
     @property
@@ -205,19 +213,21 @@ class AleatoricTotalDecomposition[AU: AleatoricUncertainty, TU: TotalUncertainty
 
     At least one of the two components (_aleatoric, _total) must be implemented,
     the other is then defined to be the same as the implemented component.
+    Subclasses using an aliasing default must use the same payload type for AU
+    and TU. Subclasses with distinct payload types must implement both components.
     """
 
     @override
     @property
     def _total(self) -> TU:
         """The total uncertainty of the decomposition."""
-        return self.aleatoric  # ty:ignore[invalid-return-type]
+        return self.aleatoric  # ty: ignore[invalid-return-type]  # Same-payload aliasing contract above.
 
     @override
     @property
     def _aleatoric(self) -> AU:
         """The aleatoric uncertainty of the decomposition."""
-        return self.total  # ty:ignore[invalid-return-type]
+        return self.total  # ty: ignore[invalid-return-type]  # Same-payload aliasing contract above.
 
 
 class EpistemicTotalDecomposition[EU: EpistemicUncertainty, TU: TotalUncertainty](
@@ -227,19 +237,21 @@ class EpistemicTotalDecomposition[EU: EpistemicUncertainty, TU: TotalUncertainty
 
     At least one of the two components (_epistemic, _total) must be implemented,
     the other is then defined to be the same as the implemented component.
+    Subclasses using an aliasing default must use the same payload type for EU
+    and TU. Subclasses with distinct payload types must implement both components.
     """
 
     @override
     @property
     def _total(self) -> TU:
         """The total uncertainty of the decomposition."""
-        return self.epistemic  # ty:ignore[invalid-return-type]
+        return self.epistemic  # ty: ignore[invalid-return-type]  # Same-payload aliasing contract above.
 
     @override
     @property
     def _epistemic(self) -> EU:
         """The epistemic uncertainty of the decomposition."""
-        return self.total  # ty:ignore[invalid-return-type]
+        return self.total  # ty: ignore[invalid-return-type]  # Same-payload aliasing contract above.
 
 
 class AleatoricEpistemicTotalDecomposition[AU: AleatoricUncertainty, EU: EpistemicUncertainty, TU: TotalUncertainty](
@@ -255,25 +267,27 @@ class AdditiveDecomposition[AU: AleatoricUncertainty, EU: EpistemicUncertainty, 
 
     At least two of the three components (_total, _aleatoric, _epistemic) must be implemented,
     the third is then computed as the difference or sum of the other components.
+    Payloads must support these backend arithmetic operations and produce the
+    corresponding component types. The notion markers alone do not express this contract.
     """
 
     @override
     @property
     def _total(self) -> TU:
         """The total uncertainty of the decomposition."""
-        return self.aleatoric + self.epistemic  # ty:ignore[unsupported-operator]
+        return self.aleatoric + self.epistemic  # ty: ignore[unsupported-operator]  # Backend arithmetic contract above.
 
     @override
     @property
     def _aleatoric(self) -> AU:
         """The aleatoric uncertainty of the decomposition."""
-        return self.total - self.epistemic  # ty:ignore[unsupported-operator]
+        return self.total - self.epistemic  # ty: ignore[unsupported-operator]  # Backend arithmetic contract above.
 
     @override
     @property
     def _epistemic(self) -> EU:
         """The epistemic uncertainty of the decomposition."""
-        return self.total - self.aleatoric  # ty:ignore[unsupported-operator]
+        return self.total - self.aleatoric  # ty: ignore[unsupported-operator]  # Backend arithmetic contract above.
 
 
 class Decomposer[R: Representation, D: Decomposition](Quantifier[R, D], Protocol):

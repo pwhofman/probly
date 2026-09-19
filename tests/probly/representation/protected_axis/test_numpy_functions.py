@@ -81,16 +81,25 @@ def test_copy_with_default_subok_rejects_multi_field() -> None:
 
 
 def test_astype_changes_dtype_per_field() -> None:
-    """``np.astype`` is dispatched to the protected wrapper.
-
-    The implementation forwards ``dtype`` as a keyword which is incompatible with
-    NumPy's positional-only signature; we assert that the dispatch is reached and
-    the resulting TypeError surfaces through the override path.
-    """
+    """``np.astype`` changes each protected field's dtype and preserves its layout."""
     x = SingleArrayProtected(np.ones((2, 3), dtype=np.float64))
+    result = np.astype(x, np.float32)
+    assert isinstance(result, SingleArrayProtected)
+    assert result.array.dtype == np.float32
+    assert result.shape == x.shape
+    np.testing.assert_array_equal(result.array, x.array)
 
-    with pytest.raises(TypeError, match="positional-only"):
-        _ = np.astype(x, np.float32)
+
+def test_method_astype_supports_layout_casting_and_copy() -> None:
+    x = PairArrayProtected(np.ones((2, 3)), np.zeros((2, 3)))
+    assert x.astype(np.float64, copy=False) is x
+    converted = x.astype(np.float32, order="F")
+    assert converted.first.dtype == converted.second.dtype == np.float32
+    assert converted.first.flags.f_contiguous
+    assert converted.second.flags.f_contiguous
+    assert not np.shares_memory(converted.first, x.first)
+    with pytest.raises(TypeError):
+        x.astype(np.int32, casting="safe")
 
 
 # ---------------------------------------------------------------------------

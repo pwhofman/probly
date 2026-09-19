@@ -5,7 +5,6 @@ from __future__ import annotations
 from abc import ABC
 from dataclasses import dataclass, replace
 from inspect import isabstract
-import math
 from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, overload, override
 
 import jax
@@ -29,7 +28,7 @@ from probly.representation.jax_like import JaxLike, JaxLikeImplementation
 from probly.representation.jax_operators import JaxOperatorsMixin
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator, Sequence
+    from collections.abc import Callable, Iterator, Mapping, Sequence
     from types import ModuleType
 
     from jax.sharding import Sharding
@@ -154,6 +153,14 @@ class JaxAxisProtected[J: JaxLike | jax.Array | np.ndarray](JaxOperatorsMixin, J
         msg = "No jax-like protected values available."
         raise TypeError(msg)
 
+    @overload
+    def with_protected_values(self, values: dict[str, JaxProtectedValue]) -> Self: ...
+
+    @overload
+    def with_protected_values(
+        self, values: dict[str, JaxProtectedValue], func: Callable | None
+    ) -> JaxAxisProtected[J]: ...
+
     def with_protected_values(
         self,
         values: dict[str, JaxProtectedValue],
@@ -224,23 +231,10 @@ class JaxAxisProtected[J: JaxLike | jax.Array | np.ndarray](JaxOperatorsMixin, J
         axes = type(self).protected_axes[primary_name]
         return protected_shape(value_shape(self.protected_value()), axes)
 
-    @overload
-    def size(self, dim: int) -> int: ...
-
-    @overload
-    def size(self, dim: None = ...) -> int: ...
-
     @override
-    def size(self, dim: int | None = None) -> int:
-        if dim is None:
-            return math.prod(self.shape)
-
-        normalized_dim = dim + self.ndim if dim < 0 else dim
-        if normalized_dim < 0 or normalized_dim >= self.ndim:
-            msg = f"dim {dim} out of bounds for batch dimensions with ndim {self.ndim}."
-            raise IndexError(msg)
-
-        return self.shape[normalized_dim]
+    @property
+    def size(self) -> int:
+        return int(np.prod(self.shape)) if self.shape else 1
 
     @override
     @property
@@ -262,11 +256,11 @@ class JaxAxisProtected[J: JaxLike | jax.Array | np.ndarray](JaxOperatorsMixin, J
         index_tuple = index if isinstance(index, tuple) else (index,)
         return (*index_tuple, *(slice(None),) * protected_axes_count)
 
-    def _coerce_assignment_value(self, value: object, *, validate_shape: bool = True) -> dict[str, object]:
+    def _coerce_assignment_value(self, value: object, *, validate_shape: bool = True) -> Mapping[str, object]:
         field_names = tuple(type(self).protected_axes.keys())
 
         if isinstance(value, type(self)):
-            candidate_values: dict[str, object] = value.protected_values()  # ty:ignore[invalid-assignment]
+            candidate_values: Mapping[str, object] = value.protected_values()
         elif isinstance(value, tuple):
             if len(value) != len(field_names):
                 msg = f"Expected tuple with {len(field_names)} values for assignment."
@@ -395,7 +389,7 @@ class JaxAxisProtected[J: JaxLike | jax.Array | np.ndarray](JaxOperatorsMixin, J
         if not changed:
             return self
 
-        return self.with_protected_values(updates)  # ty:ignore[invalid-return-type]
+        return self.with_protected_values(updates)
 
     def __jax_like__(
         self,

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, override
 
 import torch
@@ -34,7 +34,7 @@ class TorchDirichletDistribution(
     The last axis represents the category dimension.
     """
 
-    alphas: torch.Tensor
+    alphas: torch.Tensor = field()
     protected_axes: ClassVar[dict[str, int]] = {"alphas": 1}
     permitted_functions: ClassVar[set[Callable]] = {torch.mean, torch.sum, torch_average}
 

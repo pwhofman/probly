@@ -334,14 +334,10 @@ class NumpyArrayLikeImplementation[DT: NumpyArrayLike | np.ndarray](
         copy: bool = True,
     ) -> Self:
         """Copy of the array, cast to a specified type."""
-        return np.astype(
-            self,
-            dtype,
-            order=order,
-            casting=casting,
-            subok=subok,
-            copy=copy,
-        )  # ty:ignore[no-matching-overload]
+        if order != "K" or casting != "unsafe" or not subok:
+            msg = "Non-default ndarray.astype options require a representation-specific implementation."
+            raise NotImplementedError(msg)
+        return np.astype(self, dtype, copy=copy)  # ty: ignore[no-matching-overload]
 
     def __index__(self) -> int:
         """Converts 0d integer array to a Python integer."""

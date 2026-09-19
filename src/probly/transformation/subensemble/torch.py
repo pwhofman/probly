@@ -74,5 +74,6 @@ def torch_generate_subensemble(
         # which uses `with torch.no_grad()`, creating a graph break. Recompiling the
         # same shared frozen backbone for each of the N members can corrupt CUDA state,
         # surfacing as DataLoader worker SIGABRT during validation. Skip compilation.
-        m._probly_skip_compile = True  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+        # nn.Module supports ordinary metadata despite its narrow __setattr__ annotation.
+        m._probly_skip_compile = True  # noqa: SLF001  # ty: ignore[invalid-assignment]
     return nn.ModuleList(members)

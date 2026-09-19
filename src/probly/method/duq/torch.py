@@ -10,6 +10,7 @@ from torch import nn
 
 from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.traverse_nn import nn_compose, nn_traverser
+from probly.utils.torch import torch_head_dimension
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, singledispatch_traverser, traverse_with_state
 
 from ._common import (
@@ -204,15 +205,17 @@ class TorchDUQPredictor(nn.Module, DUQPredictor[[torch.Tensor], TorchDUQRepresen
             nn_compose(torch_duq_traverser, nn_traverser=nn_traverser),
             init={TRAVERSE_REVERSED: True, HEAD_MODULE: None},
         )
-        head: nn.Linear | None = state[HEAD_MODULE]  # ty: ignore[invalid-assignment]
+        head = state[HEAD_MODULE]
         if head is None:
             msg = "No nn.Linear layer found in the model; cannot identify a classification head."
             raise ValueError(msg)
 
         self.encoder = encoder
+        in_features = torch_head_dimension(head, "in_features")
+        out_features = torch_head_dimension(head, "out_features")
         self.centroid_head = RBFCentroidHead(
-            feature_dim=head.in_features,
-            num_classes=head.out_features,
+            feature_dim=in_features,
+            num_classes=out_features,
             centroid_size=centroid_size,
             length_scale=length_scale,
             gamma=gamma,

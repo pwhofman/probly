@@ -65,6 +65,26 @@ class TestArchitecture:
         assert head.centroids_sum.shape == (CENTROID_SIZE, NUM_CLASSES)
         assert head.centroid_counts.shape == (NUM_CLASSES,)
 
+    def test_custom_head_registration_is_not_restricted_to_linear(self) -> None:
+        from probly.method.duq.torch import HEAD_MODULE, torch_duq_traverser  # noqa: PLC0415
+
+        class CustomHead(nn.Module):
+            in_features = IN_FEATURES
+            out_features = NUM_CLASSES
+
+            def forward(self, x: torch.Tensor) -> torch.Tensor:
+                return x[..., : self.out_features]
+
+        @torch_duq_traverser.register(CustomHead)
+        def strip_head(obj, state):
+            state[HEAD_MODULE] = obj
+            return nn.Identity(), state
+
+        transformed = duq(nn.Sequential(CustomHead()), centroid_size=CENTROID_SIZE)
+        assert transformed.centroid_head.feature_dim == IN_FEATURES
+        assert transformed.centroid_head.num_classes == NUM_CLASSES
+        assert transformed(torch.randn(5, IN_FEATURES)).shape == (5, NUM_CLASSES)
+
 
 class TestForward:
     """The forward pass should produce per-class kernel values in [0, 1]."""

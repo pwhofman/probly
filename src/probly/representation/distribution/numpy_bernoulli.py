@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, ClassVar, override
 
 import numpy as np
@@ -31,7 +31,7 @@ class NumpyBernoulliDistribution(BernoulliDistribution, NumpyCategoricalDistribu
 class NumpyProbabilityBernoulliDistribution(NumpyProbabilityCategoricalDistribution, NumpyBernoulliDistribution):
     """A Bernoulli distribution represented by the probability of class 1."""
 
-    array: np.ndarray
+    array: np.ndarray = field()
     protected_axes: ClassVar[dict[str, int]] = {"array": 0}
 
     def __post_init__(self) -> None:
@@ -63,7 +63,7 @@ class NumpyProbabilityBernoulliDistribution(NumpyProbabilityCategoricalDistribut
 class NumpyLogitBernoulliDistribution(NumpyLogitCategoricalDistribution, NumpyBernoulliDistribution):
     """A Bernoulli distribution represented by class-1 log-odds."""
 
-    array: np.ndarray
+    array: np.ndarray = field()
     protected_axes: ClassVar[dict[str, int]] = {"array": 0}
 
     def __post_init__(self) -> None:

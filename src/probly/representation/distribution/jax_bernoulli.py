@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import ClassVar, override
 
 import jax
@@ -34,7 +34,7 @@ class JaxBernoulliDistribution(BernoulliDistribution, JaxCategoricalDistribution
 class JaxProbabilityBernoulliDistribution(JaxProbabilityCategoricalDistribution, JaxBernoulliDistribution):
     """A Bernoulli distribution represented by the probability of class 1."""
 
-    array: jax.Array
+    array: jax.Array = field()
     protected_axes: ClassVar[dict[str, int]] = {"array": 0}
 
     def __post_init__(self) -> None:
@@ -67,7 +67,7 @@ class JaxProbabilityBernoulliDistribution(JaxProbabilityCategoricalDistribution,
 class JaxLogitBernoulliDistribution(JaxLogitCategoricalDistribution, JaxBernoulliDistribution):
     """A Bernoulli distribution represented by class-1 log-odds."""
 
-    array: jax.Array
+    array: jax.Array = field()
     protected_axes: ClassVar[dict[str, int]] = {"array": 0}
 
     def __post_init__(self) -> None:

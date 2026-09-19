@@ -49,14 +49,15 @@ class NumpySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
 
     def __post_init__(self) -> None:
         """Validate the sample_axis."""
-        if self.sample_axis >= self.array.ndim:
-            msg = f"sample_axis {self.sample_axis} out of bounds for array with ndim {self.array.ndim}."
+        ndim = self.ndim
+        if self.sample_axis >= ndim:
+            msg = f"sample_axis {self.sample_axis} out of bounds for array with ndim {ndim}."
             raise ValueError(msg)
         if self.sample_axis < 0:
-            if self.sample_axis < -self.array.ndim:
-                msg = f"sample_axis {self.sample_axis} out of bounds for array with ndim {self.array.ndim}."
+            if self.sample_axis < -ndim:
+                msg = f"sample_axis {self.sample_axis} out of bounds for array with ndim {ndim}."
                 raise ValueError(msg)
-            super(type(self), self).__setattr__("sample_axis", self.array.ndim + self.sample_axis)
+            object.__setattr__(self, "sample_axis", ndim + self.sample_axis)
 
         if not isinstance(self.array, NumpyArrayLike):
             msg = "array must be a NumpyArrayLike (or ndarray)."
@@ -94,19 +95,24 @@ class NumpySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
                     raise ValueError(msg)
                 sample_axis = -1
             if sample_axis != 0:
-                samples = np.moveaxis(sample_array, 0, sample_axis)  # ty:ignore[invalid-argument-type]
+                sample_array = np.moveaxis(sample_array, 0, sample_axis)  # ty:ignore[invalid-argument-type]
         else:
             # Preserve NumpyArrayLike subtypes (e.g. NumpyGaussianDistribution) so np.stack
             # can use their __array_function__; to_numpy_array_like would flatten them to ndarray.
-            samples = [s if isinstance(s, NumpyArrayLike) else to_numpy_array_like(s, dtype=dtype) for s in samples]  # ty:ignore[invalid-assignment]
+            converted_samples = [
+                s if isinstance(s, NumpyArrayLike) else to_numpy_array_like(s, dtype=dtype) for s in samples
+            ]
             if sample_axis == "auto":
-                if len(samples) == 0:  # ty:ignore[invalid-argument-type]
+                if not converted_samples:
                     msg = "Cannot infer sample_axis for empty samples."
                     raise ValueError(msg)
                 sample_axis = -1
-            samples = np.stack(samples, axis=sample_axis, dtype=dtype)  # ty:ignore[no-matching-overload]
+            sample_array = np.stack(converted_samples, axis=sample_axis, dtype=dtype)
 
-        return cls(array=samples, sample_axis=sample_axis, weights=np.asarray(weights) if weights is not None else None)
+        # Conversion can produce a native array or retain a custom dispatch representation.
+        return cls(
+            array=sample_array, sample_axis=sample_axis, weights=np.asarray(weights) if weights is not None else None
+        )
 
     @override
     @classmethod
@@ -119,7 +125,7 @@ class NumpySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
             sample = array_sample
 
         if isinstance(sample, NumpySample):
-            sample_array: D = sample.array  # ty:ignore[invalid-assignment]
+            sample_array: D = sample.array
             sample_weights: np.ndarray | None = sample.weights
 
             if dtype is not None:
@@ -144,40 +150,42 @@ class NumpySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
         """Get the array namespace of the underlying array."""
         return cast("Any", self.array).__array_namespace__(api_version=api_version)
 
+    # ty 0.0.82 cannot bind protocol properties through a union-bounded TypeVar.
+    # Keep suppressions local so unused-ignore-comment flags them once fixed.
     @property
-    def dtype(self) -> DTypeLike:
+    def dtype(self) -> np.dtype:
         """The data type of the underlying array."""
-        return self.array.dtype
+        return self.array.dtype  # ty: ignore[invalid-attribute-access]
 
     @property
     def device(self) -> str:
         """The device of the underlying array."""
-        return self.array.device
+        return self.array.device  # ty: ignore[invalid-attribute-access]
 
     @property
     def ndim(self) -> int:
         """The number of dimensions of the underlying array."""
-        return self.array.ndim
+        return self.array.ndim  # ty: ignore[invalid-attribute-access]
 
     @property
     def shape(self) -> tuple[int, ...]:
         """The shape of the underlying array."""
-        return self.array.shape
+        return self.array.shape  # ty: ignore[invalid-attribute-access]
 
     @property
     def size(self) -> int:
         """The total number of elements in the underlying array."""
-        return self.array.size
+        return self.array.size  # ty: ignore[invalid-attribute-access]
 
     @override
     @property
     def flags(self) -> ArrayFlagsLike:
-        return self.array.flags
+        return self.array.flags  # ty: ignore[invalid-attribute-access]
 
     @property
     def sample_size(self) -> int:
         """Return the number of samples."""
-        return self.array.shape[self.sample_axis]
+        return self.shape[self.sample_axis]
 
     @property
     def samples(self) -> D:
@@ -219,9 +227,9 @@ class NumpySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
     @override
     def concat(self, other: Sample[D]) -> Self:
         if isinstance(other, NumpySample):
-            other_array = np.moveaxis(other.array, other.sample_axis, self.sample_axis)  # ty:ignore[invalid-argument-type]
+            other_array = np.moveaxis(other.array, other.sample_axis, self.sample_axis)
         else:
-            other_array = np.stack(list(other.samples), axis=self.sample_axis, dtype=self.array.dtype)
+            other_array = np.stack(list(other.samples), axis=self.sample_axis, dtype=self.dtype)
 
         concatenated = np.concatenate((self.array, other_array), axis=self.sample_axis)
 
@@ -262,7 +270,7 @@ class NumpySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
         if not hasattr(new_array, "ndim"):
             return new_array
 
-        track_result = track_axis(index, self.sample_axis, self.array.ndim)
+        track_result = track_axis(index, self.sample_axis, self.ndim)
 
         if track_result is None:
             return new_array
@@ -368,7 +376,23 @@ class NumpySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
         )
 
     @override
-    def copy(self, order: Order = "C") -> NumpySample[D]:
+    def astype(
+        self,
+        dtype: DTypeLike,
+        order: Order = "K",
+        casting: Literal["no", "equiv", "safe", "same_kind", "unsafe"] = "unsafe",
+        subok: bool = True,
+        copy: bool = True,
+    ) -> Self:
+        """Cast the stored array while preserving the sample axis and weights."""
+        # The union-bound Self binding has the same ty limitation as metadata access.
+        array = self.array.astype(dtype, order=order, casting=casting, subok=subok, copy=copy)  # ty: ignore[invalid-argument-type, no-matching-overload]
+        if array is self.array:
+            return self
+        return type(self)(array=array, sample_axis=self.sample_axis, weights=self.weights)
+
+    @override
+    def copy(self, order: Order = "C") -> Self:
         """Create a copy of the NumpySample.
 
         Returns:

@@ -18,10 +18,16 @@ from probly.representation._protected_axis._common_functions import (
     value_shape,
 )
 from probly.representation._protected_axis.numpy_functions import numpy_function
-from probly.representation.array_like import ArrayFlagsLike, NumpyArrayLike, NumpyArrayLikeImplementation, ToIndices
+from probly.representation.array_like import (
+    ArrayFlagsLike,
+    NumpyArrayLike,
+    NumpyArrayLikeImplementation,
+    Order,
+    ToIndices,
+)
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Iterator, Mapping
     from types import ModuleType
 
     from numpy.typing import DTypeLike
@@ -119,7 +125,7 @@ class NumpyAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
         """
         if func is not None:
             if method is not None:
-                permitted_methods = type(self).permitted_ufuncs.get(func)  # ty:ignore[invalid-argument-type]
+                permitted_methods = type(self).permitted_ufuncs.get(func)
                 if permitted_methods is None or method not in permitted_methods:
                     return None
             elif func not in type(self).permitted_functions:
@@ -174,6 +180,25 @@ class NumpyAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
     ) -> NumpyAxisProtected[T]:
         """Return a copy with updated protected field values."""
         return replace(self, **values)  # ty:ignore[invalid-argument-type]
+
+    @override
+    def astype(
+        self,
+        dtype: DTypeLike,
+        order: Order = "K",
+        casting: Literal["no", "equiv", "safe", "same_kind", "unsafe"] = "unsafe",
+        subok: bool = True,
+        copy: bool = True,
+    ) -> Self:
+        """Cast each protected field using ndarray.astype's casting and layout options."""
+        values = self.protected_values()
+        updates = {
+            name: value.astype(dtype, order=order, casting=casting, subok=subok, copy=copy)
+            for name, value in values.items()
+        }
+        if all(updates[name] is value for name, value in values.items()):
+            return self
+        return self.with_protected_values(updates)
 
     @override
     def __len__(self) -> int:
@@ -245,11 +270,11 @@ class NumpyAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
         index_tuple = index if isinstance(index, tuple) else (index,)
         return (*index_tuple, *(slice(None),) * protected_axes_count)
 
-    def _coerce_assignment_value(self, value: object) -> dict[str, object]:
+    def _coerce_assignment_value(self, value: object) -> Mapping[str, object]:
         field_names = tuple(type(self).protected_axes.keys())
 
         if isinstance(value, type(self)):
-            candidate_values: dict[str, object] = value.protected_values()  # ty:ignore[invalid-assignment]
+            candidate_values: Mapping[str, object] = value.protected_values()
         elif isinstance(value, tuple):
             if len(value) != len(field_names):
                 msg = f"Expected tuple with {len(field_names)} values for assignment."

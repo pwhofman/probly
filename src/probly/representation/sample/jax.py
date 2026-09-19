@@ -46,16 +46,17 @@ class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
 
     def __post_init__(self) -> None:
         """Validate the sample_axis."""
-        if self.sample_axis >= self.array.ndim:
-            msg = f"sample_axis {self.sample_axis} out of bounds for array with ndim {self.array.ndim}."
+        ndim = self.ndim
+        if self.sample_axis >= ndim:
+            msg = f"sample_axis {self.sample_axis} out of bounds for array with ndim {ndim}."
             raise ValueError(msg)
         if self.sample_axis < 0:
-            if self.sample_axis < -self.array.ndim:
-                msg = f"sample_axis {self.sample_axis} out of bounds for array with ndim {self.array.ndim}."
+            if self.sample_axis < -ndim:
+                msg = f"sample_axis {self.sample_axis} out of bounds for array with ndim {ndim}."
                 raise ValueError(msg)
             # ``object.__setattr__`` instead of ``super()``: for a subclass the latter resolves
             # to the frozen dataclass ``__setattr__`` of this class and raises.
-            object.__setattr__(self, "sample_axis", self.array.ndim + self.sample_axis)
+            object.__setattr__(self, "sample_axis", ndim + self.sample_axis)
 
         if not isinstance(self.array, (jax.Array, JaxLikeImplementation)):
             msg = "array must be a JAX array."
@@ -123,7 +124,7 @@ class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
         dtype: DTypeLike | None = None,
     ) -> Self:
         if isinstance(sample, JaxSample):
-            sample_array: D = sample.array  # ty: ignore[invalid-assignment]
+            sample_array: D = sample.array
             sample_weights = sample.weights
 
             if dtype is not None:
@@ -160,35 +161,37 @@ class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
         del api_version
         return cast("Any", self.array).__array_namespace__()
 
+    # ty 0.0.82 cannot bind protocol properties through a union-bounded TypeVar.
+    # Keep suppressions local so unused-ignore-comment flags them once fixed.
     @property
     def dtype(self) -> DTypeLike:
         """The data type of the underlying array."""
-        return self.array.dtype
+        return self.array.dtype  # ty: ignore[invalid-attribute-access]
 
     @property
     def device(self) -> Any:  # noqa: ANN401
         """The device of the underlying array."""
-        return self.array.device
+        return self.array.device  # ty: ignore[invalid-attribute-access]
 
     @property
     def ndim(self) -> int:
         """The number of dimensions of the underlying array."""
-        return self.array.ndim
+        return self.array.ndim  # ty: ignore[invalid-attribute-access]
 
     @property
     def shape(self) -> tuple[int, ...]:
         """The shape of the underlying array."""
-        return self.array.shape
+        return self.array.shape  # ty: ignore[invalid-attribute-access]
 
     @property
     def size(self) -> int:
         """The total number of elements in the underlying array."""
-        return self.array.size
+        return self.array.size  # ty: ignore[invalid-attribute-access]
 
     @property
     def at(self) -> Any:  # noqa: ANN401
         """The indexed update helper of the underlying array."""
-        return self.array.at
+        return self.array.at  # ty: ignore[invalid-attribute-access]
 
     @override
     def block_until_ready(self) -> Self:
@@ -228,7 +231,7 @@ class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
     @property
     def sample_size(self) -> int:
         """Return the number of samples."""
-        return self.array.shape[self.sample_axis]
+        return self.shape[self.sample_axis]
 
     @property
     def samples(self) -> D:
@@ -317,7 +320,7 @@ class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
         if not hasattr(new_array, "ndim"):
             return new_array
 
-        track_result = track_axis(index, self.sample_axis, self.array.ndim, torch_indexing=False)
+        track_result = track_axis(index, self.sample_axis, self.ndim, torch_indexing=False)
 
         if track_result is None:
             return new_array

@@ -24,14 +24,14 @@ def _numpy_ensure_one_hot(value: object) -> np.ndarray:
     if isinstance(value, np.ndarray):
         if value.dtype == bool:
             return value
-        if value.dtype == int and np.array_equal(value, value.astype(np.bool_)):  # ty: ignore[no-matching-overload]
-            return value.astype(bool)  # ty: ignore[no-matching-overload]
+        if value.dtype == int and np.array_equal(value, value.astype(np.bool_)):
+            return value.astype(bool)
     msg = "Value must be a one-hot encoded array of booleans or integers."
     raise ValueError(msg)
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class NumpyOneHotConformalSet(NumpyAxisProtected[NumpySample], OneHotConformalSet):
+class NumpyOneHotConformalSet(NumpyAxisProtected[np.ndarray], OneHotConformalSet):
     """One-hot conformal set backed by a NumPy array."""
 
     array: np.ndarray
@@ -76,7 +76,7 @@ class NumpyOneHotConformalSet(NumpyAxisProtected[NumpySample], OneHotConformalSe
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class NumpyIntervalConformalSet(NumpyAxisProtected[NumpySample], IntervalConformalSet):
+class NumpyIntervalConformalSet(NumpyAxisProtected[np.ndarray], IntervalConformalSet):
     """Interval conformal set backed by a NumPy array storing lower and upper bounds."""
 
     array: np.ndarray

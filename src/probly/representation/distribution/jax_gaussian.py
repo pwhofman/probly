@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, override
 
 import jax
@@ -32,8 +32,8 @@ if TYPE_CHECKING:
 class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[jax.Array]):
     """Gaussian distribution with array parameters."""
 
-    mean: jax.Array
-    var: jax.Array
+    mean: jax.Array = field()
+    var: jax.Array = field()
 
     type: Literal["gaussian"] = "gaussian"
     protected_axes: ClassVar[dict[str, int]] = {"mean": 0, "var": 0}

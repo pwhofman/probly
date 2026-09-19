@@ -16,6 +16,7 @@ from probly.representation.distribution.torch_categorical import (
     TorchProbabilityCategoricalDistribution,
 )
 from probly.traverse_nn import nn_compose, nn_traverser
+from probly.utils.torch import torch_head_dimension
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, singledispatch_traverser, traverse_with_state
 
 from ._common import (
@@ -111,7 +112,7 @@ class TorchMahalanobisPredictor(nn.Module, MahalanobisPredictor[[torch.Tensor], 
     """
 
     encoder: nn.Module
-    classification_head: nn.Linear
+    classification_head: nn.Module
     mahalanobis_heads: nn.ModuleList
     combiner_weight: torch.Tensor
     combiner_bias: torch.Tensor
@@ -138,7 +139,7 @@ class TorchMahalanobisPredictor(nn.Module, MahalanobisPredictor[[torch.Tensor], 
             nn_compose(head_strip_traverser, nn_traverser=nn_traverser),
             init={HEAD_MODULE: None, TRAVERSE_REVERSED: True},
         )
-        head: nn.Linear | None = state[HEAD_MODULE]  # ty:ignore[invalid-assignment]
+        head = state[HEAD_MODULE]
         if head is None:
             msg = "No nn.Linear layer found in the model; cannot identify a classification head."
             raise ValueError(msg)
@@ -146,7 +147,7 @@ class TorchMahalanobisPredictor(nn.Module, MahalanobisPredictor[[torch.Tensor], 
         self.encoder = encoder
         self.classification_head = head
         self.input_preprocessing_eps = input_preprocessing_eps
-        self._num_classes = head.out_features
+        self._num_classes = torch_head_dimension(head, "out_features")
 
         self._feature_nodes = list(feature_nodes) if feature_nodes is not None else []
         self.mahalanobis_heads = nn.ModuleList()
