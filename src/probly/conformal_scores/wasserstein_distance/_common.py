@@ -11,8 +11,8 @@ import numpy as np
 from probly.conformal_scores import NonConformityScore
 from probly.representation.array_like import ArrayLike
 from probly.representation.distribution import CategoricalDistribution
-from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
-from probly.representation.sample.array import ArraySample
+from probly.representation.distribution.numpy_categorical import NumpyCategoricalDistribution
+from probly.representation.sample.numpy import NumpySample
 
 
 @flexdispatch
@@ -34,7 +34,7 @@ def wasserstein_distance_score_func[T](y_pred: T, y_true: T | None = None) -> T:
 
 
 @wasserstein_distance_score_func.register(np.ndarray | ArrayLike)
-def compute_wasserstein_distance_score_numpy(
+def numpy_compute_wasserstein_distance_score(
     y_pred: np.ndarray | ArrayLike, y_true: np.ndarray | ArrayLike
 ) -> np.ndarray:
     """Computes the Wasserstein distance score using NumPy Arrays.
@@ -65,14 +65,14 @@ def compute_wasserstein_distance_score_numpy(
     return np.sum(np.abs(np.cumsum(y_pred_np, axis=-1) - np.cumsum(y_true_np, axis=-1)), axis=-1)
 
 
-@wasserstein_distance_score_func.register(ArrayCategoricalDistribution)
-def _(y_pred: ArrayCategoricalDistribution, y_true: np.ndarray) -> np.ndarray:
+@wasserstein_distance_score_func.register(NumpyCategoricalDistribution)
+def _(y_pred: NumpyCategoricalDistribution, y_true: np.ndarray) -> np.ndarray:
     """Compute Wasserstein distance from normalized categorical probabilities."""
     return wasserstein_distance_score_func(y_pred.probabilities, y_true)
 
 
-@wasserstein_distance_score_func.register(ArraySample)
-def _(y_pred: ArraySample, y_true: np.ndarray) -> np.ndarray:
+@wasserstein_distance_score_func.register(NumpySample)
+def _(y_pred: NumpySample, y_true: np.ndarray) -> np.ndarray:
     """Compute memberwise Wasserstein distance scores for NumPy samples."""
     return wasserstein_distance_score_func(y_pred.array, y_true)
 

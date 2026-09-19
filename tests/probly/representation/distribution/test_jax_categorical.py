@@ -14,7 +14,7 @@ from probly.representation.distribution.jax_categorical import (
     JaxProbabilityCategoricalDistribution,
 )
 from probly.representation.jax_functions import jax_average, jax_concatenate, jax_expand_dims, jax_mean, jax_stack
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 
 
 def test_accepts_relative_non_negative_probabilities() -> None:
@@ -64,7 +64,7 @@ def test_sampling_relative_probabilities_matches_normalized_distribution() -> No
 
     sample = dist.sample(num_samples=30_000, prng_key=jax.random.key(1))
 
-    assert isinstance(sample, JaxArraySample)
+    assert isinstance(sample, JaxSample)
     assert sample.sample_axis == 0
     assert sample.array.shape == (30_000, 1)
     assert sample.array.dtype == jnp.int32
@@ -196,7 +196,7 @@ def test_hash_is_identity_based_and_distinguished_instances() -> None:
     assert hash(dist_a) != hash(dist_b)
 
 
-class TestArrayCategoricalDistributionPostprocessing:
+class TestNumpyCategoricalDistributionPostprocessing:
     """Ensure protected-axis processing rebuilds a ProbabilityCategoricalDistribution after jnp.mean."""
 
     def test_mean_returns_probability_distribution(self) -> None:
@@ -212,7 +212,7 @@ class TestArrayCategoricalDistributionPostprocessing:
         assert isinstance(result, JaxProbabilityCategoricalDistribution)
 
 
-class TestArrayCategoricalDistribution:
+class TestNumpyCategoricalDistribution:
     """Validation, equality and sampling for the jax categorical distribution."""
 
     def test_negative_probabilites_raise(self) -> None:

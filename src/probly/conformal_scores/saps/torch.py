@@ -11,7 +11,7 @@ from ._common import _saps_score_dispatch
 
 
 @_saps_score_dispatch.register(torch.Tensor)
-def compute_saps_score_torch(
+def torch_compute_saps_score(
     probs: torch.Tensor,
     y_cal: torch.Tensor | None = None,
     randomized: bool = True,
@@ -72,7 +72,7 @@ def _(
     lambda_val: float = 0.1,
 ) -> torch.Tensor:
     """SAPS Nonconformity-Scores for TorchCategoricalDistributions."""
-    return compute_saps_score_torch(
+    return torch_compute_saps_score(
         probs.probabilities,
         y_cal,
         randomized=randomized,

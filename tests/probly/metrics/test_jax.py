@@ -72,15 +72,15 @@ class TestDistributionInput:
         import numpy as np  # noqa: PLC0415
 
         from probly.metrics import accuracy, classwise_ece, expected_calibration_error  # noqa: PLC0415
-        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
-            ArrayProbabilityCategoricalDistribution,
+        from probly.representation.distribution.numpy_categorical import (  # noqa: PLC0415
+            NumpyProbabilityCategoricalDistribution,
         )
 
         y_true = jnp.array([0, 1, 0])
         probs = jnp.array([[0.7, 0.3], [0.2, 0.8], [0.4, 0.6]])
 
         # Numpy-backed distributions are what flax prediction pipelines produce.
-        dist = ArrayProbabilityCategoricalDistribution(array=np.asarray(probs))
+        dist = NumpyProbabilityCategoricalDistribution(array=np.asarray(probs))
         assert float(accuracy(dist, y_true)) == pytest.approx(float(accuracy(probs, y_true)))
         assert float(expected_calibration_error(dist, y_true)) == pytest.approx(
             float(expected_calibration_error(probs, y_true)), abs=1e-6

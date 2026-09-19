@@ -12,7 +12,7 @@ from ._common import tv_score_func
 
 
 @tv_score_func.register(torch.Tensor)
-def compute_tv_score_torch(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+def torch_compute_tv_score(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
     """Computes the Total Variation score using Torch Tensor."""
     y_pred_t = torch.as_tensor(y_pred)
     distribution_target = isinstance(y_true, CategoricalDistribution)

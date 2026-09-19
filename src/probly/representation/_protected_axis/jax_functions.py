@@ -65,7 +65,7 @@ type JaxProtectedValue = JaxLike[Any] | jax.Array | np.ndarray
 
 type JaxAxisProtectedCreator = AxisProtectedCreator[JaxProtectedValue, Any]
 type JaxAxisProtectedInternals = AxisProtectedInternals[JaxProtectedValue, Any]
-type _BoundJaxFunctionWithInternals = BoundFunctionWithInternals[JaxProtectedValue, Any]
+type _JaxBoundFunctionWithInternals = BoundFunctionWithInternals[JaxProtectedValue, Any]
 
 
 def jax_axis_protected_internals(
@@ -124,7 +124,7 @@ def jax_function(
 def _jax_internals_override(
     jax_param_name: str,
     check_is_permitted: bool = False,
-) -> Callable[[_BoundJaxFunctionWithInternals], FunctionOverride]:
+) -> Callable[[_JaxBoundFunctionWithInternals], FunctionOverride]:
     """Decorator to convert a function taking a protected-axis argument."""
     return internals_override(jax_param_name, check_is_permitted, extract=jax_axis_protected_internals)
 

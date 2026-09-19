@@ -9,7 +9,7 @@ import jax
 from jax.experimental import checkify
 import jax.numpy as jnp
 
-from probly.representation.conformal_set.jax import JaxArrayOneHotConformalSet
+from probly.representation.conformal_set.jax import JaxOneHotConformalSet
 from probly.representation.distribution.jax_bernoulli import JaxProbabilityBernoulliDistribution
 from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
 from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
@@ -30,8 +30,8 @@ from probly.representation.jax_functions import jax_mean
             [0.0, 2.0],
             "Variance must be positive",
         ),
-        (JaxArrayOneHotConformalSet, [1, 1, 0], [2, 1, 0], "one-hot encoded"),
-        (JaxArrayOneHotConformalSet, [1, 1, 0], [-1, 1, 0], "one-hot encoded"),
+        (JaxOneHotConformalSet, [1, 1, 0], [2, 1, 0], "one-hot encoded"),
+        (JaxOneHotConformalSet, [1, 1, 0], [-1, 1, 0], "one-hot encoded"),
     ],
 )
 def test_constructor_checks_eagerly_and_on_reused_compiled_calls(constructor, valid, invalid, message):

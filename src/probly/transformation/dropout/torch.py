@@ -11,7 +11,7 @@ from probly.layers.torch import SharedMaskDropout
 from ._common import register
 
 
-def prepend_torch_dropout(
+def torch_prepend_dropout(
     obj: nn.Module,
     p: float,
     rng_collection: Any = None,  # noqa: ANN401, ARG001
@@ -28,4 +28,4 @@ def prepend_torch_dropout(
     return nn.Sequential(layer, obj)
 
 
-register(nn.Linear, prepend_torch_dropout)
+register(nn.Linear, torch_prepend_dropout)

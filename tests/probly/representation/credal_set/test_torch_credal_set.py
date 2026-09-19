@@ -262,24 +262,24 @@ class TestTorchProbabilityIntervalsCredalSet:
 
 
 class TestEnsureTorchCategoricalDistribution:
-    """The internal _ensure_torch_categorical_distribution coerces inputs."""
+    """The internal _torch_ensure_categorical_distribution coerces inputs."""
 
     def test_passthrough(self) -> None:
         torch = _torch_modules()
-        from probly.representation.credal_set.torch import _ensure_torch_categorical_distribution  # noqa: PLC0415
+        from probly.representation.credal_set.torch import _torch_ensure_categorical_distribution  # noqa: PLC0415
         from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
             TorchProbabilityCategoricalDistribution,
         )
 
         d = TorchProbabilityCategoricalDistribution(torch.tensor([[0.5, 0.5]]))
-        assert _ensure_torch_categorical_distribution(d) is d
+        assert _torch_ensure_categorical_distribution(d) is d
 
     def test_wraps_tensor(self) -> None:
         torch = _torch_modules()
-        from probly.representation.credal_set.torch import _ensure_torch_categorical_distribution  # noqa: PLC0415
+        from probly.representation.credal_set.torch import _torch_ensure_categorical_distribution  # noqa: PLC0415
         from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution  # noqa: PLC0415
 
-        d = _ensure_torch_categorical_distribution(torch.tensor([[0.5, 0.5]]))
+        d = _torch_ensure_categorical_distribution(torch.tensor([[0.5, 0.5]]))
         assert isinstance(d, TorchCategoricalDistribution)
 
 

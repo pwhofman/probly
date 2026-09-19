@@ -93,7 +93,7 @@ class TestInnerProductJaxImplementation:
         from probly.conformal_scores.inner_product import jax as inner_product_jax  # noqa: PLC0415
 
         expected = inner_product_score_func(Y_PRED, Y_TRUE_LABELS)
-        result = inner_product_jax.compute_inner_product_score_jax(
+        result = inner_product_jax.jax_compute_inner_product_score(
             jnp.asarray(Y_PRED),
             jnp.asarray(Y_TRUE_LABELS),
         )
@@ -107,7 +107,7 @@ class TestInnerProductJaxImplementation:
         y_pred = np.array([[0.2, 0.8]])
         y_true = np.array([[1.0, 0.0]])
         expected = inner_product_score_func(y_pred, y_true)
-        result = inner_product_jax.compute_inner_product_score_jax(jnp.asarray(y_pred), jnp.asarray(y_true))
+        result = inner_product_jax.jax_compute_inner_product_score(jnp.asarray(y_pred), jnp.asarray(y_true))
         np.testing.assert_allclose(np.asarray(result), expected, atol=1e-5)
 
 

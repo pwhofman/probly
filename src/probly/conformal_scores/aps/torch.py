@@ -11,7 +11,7 @@ from ._common import _aps_score_dispatch
 
 
 @_aps_score_dispatch.register(torch.Tensor)
-def compute_aps_score_torch(
+def torch_compute_aps_score(
     probs: torch.Tensor, y_cal: torch.Tensor | None = None, randomized: bool = True
 ) -> torch.Tensor:
     """APS Nonconformity-Scores for PyTorch tensors."""
@@ -63,4 +63,4 @@ def _(probs: TorchSample, y_cal: torch.Tensor | None = None, randomized: bool = 
 @_aps_score_dispatch.register(TorchCategoricalDistribution)
 def _(probs: TorchCategoricalDistribution, y_cal: torch.Tensor | None = None, randomized: bool = True) -> torch.Tensor:
     """APS Nonconformity-Scores for PyTorch tensors."""
-    return compute_aps_score_torch(probs.probabilities, y_cal, randomized=randomized)
+    return torch_compute_aps_score(probs.probabilities, y_cal, randomized=randomized)

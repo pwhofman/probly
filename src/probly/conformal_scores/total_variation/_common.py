@@ -11,8 +11,8 @@ import numpy as np
 from probly.conformal_scores import NonConformityScore
 from probly.representation.array_like import ArrayLike
 from probly.representation.distribution import CategoricalDistribution
-from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
-from probly.representation.sample.array import ArraySample
+from probly.representation.distribution.numpy_categorical import NumpyCategoricalDistribution
+from probly.representation.sample.numpy import NumpySample
 
 
 @flexdispatch
@@ -34,7 +34,7 @@ def tv_score_func[T](y_pred: T, y_true: T | None = None) -> T:
 
 
 @tv_score_func.register(np.ndarray | ArrayLike)
-def compute_tv_score_numpy(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray | ArrayLike) -> np.ndarray:
+def numpy_compute_tv_score(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray | ArrayLike) -> np.ndarray:
     """Computes the Total Variation score using NumPy Arrays.
 
     Args:
@@ -66,14 +66,14 @@ def compute_tv_score_numpy(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray | 
     return 0.5 * np.sum(np.abs(y_pred_np - y_true_np), axis=-1)
 
 
-@tv_score_func.register(ArrayCategoricalDistribution)
-def _(y_pred: ArrayCategoricalDistribution, y_true: np.ndarray) -> np.ndarray:
+@tv_score_func.register(NumpyCategoricalDistribution)
+def _(y_pred: NumpyCategoricalDistribution, y_true: np.ndarray) -> np.ndarray:
     """Compute total variation from normalized categorical probabilities."""
     return tv_score_func(y_pred.probabilities, y_true)
 
 
-@tv_score_func.register(ArraySample)
-def _(y_pred: ArraySample, y_true: np.ndarray) -> np.ndarray:
+@tv_score_func.register(NumpySample)
+def _(y_pred: NumpySample, y_true: np.ndarray) -> np.ndarray:
     """Compute memberwise total variation scores for NumPy samples."""
     return tv_score_func(y_pred.array, y_true)
 

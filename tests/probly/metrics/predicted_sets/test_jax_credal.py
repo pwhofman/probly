@@ -18,19 +18,19 @@ pytest.importorskip("jax")
 import jax.numpy as jnp
 
 from probly.metrics import average_interval_width, convex_hull_coverage, coverage, efficiency
-from probly.representation.credal_set.array import (
-    ArrayConvexCredalSet,
-    ArrayDistanceBasedCredalSet,
-    ArrayProbabilityIntervalsCredalSet,
-)
 from probly.representation.credal_set.jax import (
     JaxConvexCredalSet,
     JaxDirichletLevelSetCredalSet,
     JaxDistanceBasedCredalSet,
     JaxProbabilityIntervalsCredalSet,
 )
-from probly.representation.distribution.array_categorical import ArrayProbabilityCategoricalDistribution
+from probly.representation.credal_set.numpy import (
+    NumpyConvexCredalSet,
+    NumpyDistanceBasedCredalSet,
+    NumpyProbabilityIntervalsCredalSet,
+)
 from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
+from probly.representation.distribution.numpy_categorical import NumpyProbabilityCategoricalDistribution
 
 from ._credal_suite import CredalSuite
 
@@ -74,7 +74,7 @@ class TestJax(CredalSuite):
 )
 def test_convex_numpy_jax_parity(probs: np.ndarray) -> None:
     """Convex coverage and efficiency agree across backends on identical inputs."""
-    np_cs = ArrayConvexCredalSet(array=ArrayProbabilityCategoricalDistribution(probs))
+    np_cs = NumpyConvexCredalSet(array=NumpyProbabilityCategoricalDistribution(probs))
     jx_cs = JaxConvexCredalSet(tensor=JaxProbabilityCategoricalDistribution(jnp.asarray(probs)))
     y = np.array([1])
     assert coverage(np_cs, y) == pytest.approx(coverage(jx_cs, jnp.asarray(y)))
@@ -84,8 +84,8 @@ def test_convex_numpy_jax_parity(probs: np.ndarray) -> None:
 def test_distance_numpy_jax_parity() -> None:
     nominal = np.array([[0.5, 0.3, 0.2]])
     radius = np.array([0.1])
-    np_cs = ArrayDistanceBasedCredalSet(
-        nominal=ArrayProbabilityCategoricalDistribution(nominal),
+    np_cs = NumpyDistanceBasedCredalSet(
+        nominal=NumpyProbabilityCategoricalDistribution(nominal),
         radius=radius,
     )
     jx_cs = JaxDistanceBasedCredalSet(
@@ -101,7 +101,7 @@ def test_distance_numpy_jax_parity() -> None:
 def test_probability_intervals_numpy_jax_parity() -> None:
     lower = np.array([[0.1, 0.4, 0.05], [0.2, 0.2, 0.2]])
     upper = np.array([[0.5, 0.6, 0.2], [0.4, 0.4, 0.4]])
-    np_cs = ArrayProbabilityIntervalsCredalSet(lower_bounds=lower, upper_bounds=upper)
+    np_cs = NumpyProbabilityIntervalsCredalSet(lower_bounds=lower, upper_bounds=upper)
     jx_cs = JaxProbabilityIntervalsCredalSet(
         lower_bounds=jnp.asarray(lower),
         upper_bounds=jnp.asarray(upper),

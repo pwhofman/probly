@@ -32,9 +32,15 @@ repos:
       - id: ruff-format
         args: [--verbose]
 
-# Local hook for ty until it's available in pre-commit
+# Project-specific checks and local tool wrappers
   - repo: local
     hooks:
+    -   id: backend-naming
+        name: backend naming and imports (BKN001, BKN002)
+        language: system
+        entry: uv run python scripts/check_backend_naming.py
+        pass_filenames: false
+        always_run: true
     -   id: sigx-generate
         name: sigx-generate
         language: system

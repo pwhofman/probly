@@ -24,14 +24,14 @@ from probly.conformal_scores import (
     uacqr_score,
     wasserstein_distance_score_func,
 )
-from probly.conformal_scores.inner_product.jax import compute_inner_product_score_jax
-from probly.conformal_scores.kullback_leibler.jax import compute_kl_divergence_score_jax
+from probly.conformal_scores.inner_product.jax import jax_compute_inner_product_score
+from probly.conformal_scores.kullback_leibler.jax import jax_compute_kl_divergence_score
 from probly.representation.distribution.jax_categorical import (
     JaxLogitCategoricalDistribution,
     JaxProbabilityCategoricalDistribution,
 )
 from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 
 from ._classification_target_suite import PREDICTIONS, SCORES, ClassificationTargetSuite, expected_score
 
@@ -83,11 +83,11 @@ def test_classification_representations(score, wrapper: str) -> None:
     labels = jnp.array([1, 2])
     distribution = JaxLogitCategoricalDistribution(jnp.log(probabilities))
     if wrapper == "sample":
-        prediction = JaxArraySample(probabilities, sample_axis=0)
+        prediction = JaxSample(probabilities, sample_axis=0)
     elif wrapper == "categorical":
         prediction = distribution
     else:
-        prediction = JaxArraySample(distribution, sample_axis=0)
+        prediction = JaxSample(distribution, sample_axis=0)
     # Call the wrapper first to exercise lazy backend registration.
     result = score(prediction, labels)
     assert isinstance(result, jax.Array)
@@ -100,7 +100,7 @@ def test_regression_samples(score) -> None:
     labels = jnp.array([3.0, 0.0])
     if score is absolute_error_score:
         predictions = predictions[..., 0]
-    result = score(JaxArraySample(predictions, sample_axis=0), labels)
+    result = score(JaxSample(predictions, sample_axis=0), labels)
     assert isinstance(result, jax.Array)
     np.testing.assert_allclose(result, score(predictions, labels), atol=1e-6)
 
@@ -111,7 +111,7 @@ def test_dirichlet_relative_likelihood_samples(nested: bool, sample_axis: int) -
     alphas = jnp.array([[[1.0, 2.0, 4.0], [3.0, 6.0, 2.0]], [[2.0, 4.0, 8.0], [6.0, 12.0, 4.0]]])
     labels = jnp.array([[1, 0], [2, 1]])
     values = JaxDirichletDistribution(alphas) if nested else alphas
-    sample = JaxArraySample(values, sample_axis=sample_axis, weights=jnp.array([0.25, 0.75]))
+    sample = JaxSample(values, sample_axis=sample_axis, weights=jnp.array([0.25, 0.75]))
     result = dirichlet_rl_score_func(sample, labels)
     assert isinstance(result, jax.Array)
     np.testing.assert_allclose(result, [[0.5, 0.5], [0.0, 0.0]])
@@ -126,5 +126,5 @@ def test_label_and_distribution_batching(score, batch_shape: tuple[int, ...]) ->
     expected = np.full(batch_shape, 0.5 if score is inner_product_score_func else -np.log(0.5))
     np.testing.assert_allclose(score(probabilities, labels), expected, atol=1e-6)
     np.testing.assert_allclose(score(probabilities, one_hot), expected, atol=1e-6)
-    handler = compute_inner_product_score_jax if score is inner_product_score_func else compute_kl_divergence_score_jax
+    handler = jax_compute_inner_product_score if score is inner_product_score_func else jax_compute_kl_divergence_score
     np.testing.assert_allclose(jax.jit(handler)(probabilities, labels), expected, atol=1e-6)

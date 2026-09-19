@@ -23,9 +23,9 @@ from probly.representation.jax_functions import (
 )
 from probly.representation.jax_like import JaxLike, JaxLikeImplementation, to_jax_like
 from probly.representation.sample._common import Sample, SampleAxis, create_sample
-from probly.representation.sample.array import ArraySample
 from probly.representation.sample.axis_tracking import track_axis
 from probly.representation.sample.jax_functions import JaxSampleInternals, jax_function, jax_sample_internals
+from probly.representation.sample.numpy import NumpySample
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
+class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
     """A sample implementation for JAX arrays."""
 
     array: D
@@ -74,7 +74,7 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
         sample_axis: SampleAxis = "auto",
         dtype: DTypeLike | None = None,
     ) -> Self:
-        """Create an JaxArraySample from a sequence of samples.
+        """Create an JaxSample from a sequence of samples.
 
         Args:
             samples: The predictions to create the sample from.
@@ -83,7 +83,7 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
             dtype: Desired data type of the array.
 
         Returns:
-            The created JaxArraySample.
+            The created JaxSample.
         """
         # ``jax.Array`` covers tracers, which do not satisfy the ``JaxLike`` protocol; without
         # it a traced array would be treated as an iterable of rows and unrolled.
@@ -122,7 +122,7 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
         sample_axis: SampleAxis = "auto",
         dtype: DTypeLike | None = None,
     ) -> Self:
-        if isinstance(sample, JaxArraySample):
+        if isinstance(sample, JaxSample):
             sample_array: D = sample.array  # ty: ignore[invalid-assignment]
             sample_weights = sample.weights
 
@@ -217,7 +217,7 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
             device: The device the result should live on.
 
         Returns:
-            A new JaxArraySample with the cast array.
+            A new JaxSample with the cast array.
         """
         return type(self)(
             array=cast("D", cast("Any", self.array).astype(dtype, copy=copy, device=device)),
@@ -267,7 +267,7 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
 
     @override
     def concat(self, other: Sample[D]) -> Self:
-        if isinstance(other, JaxArraySample):
+        if isinstance(other, JaxSample):
             other_array = jax_moveaxis(cast("Any", other.array), other.sample_axis, self.sample_axis)
         else:
             other_array = jax_stack(
@@ -287,14 +287,14 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
 
         return type(self)(array=cast("D", concatenated), sample_axis=self.sample_axis, weights=weights)
 
-    def move_sample_axis(self, new_sample_axis: int) -> JaxArraySample[D]:
-        """Return a new JaxArraySample with the sample dimension moved to new_sample_axis.
+    def move_sample_axis(self, new_sample_axis: int) -> JaxSample[D]:
+        """Return a new JaxSample with the sample dimension moved to new_sample_axis.
 
         Args:
             new_sample_axis: The new sample dimension.
 
         Returns:
-            A new ArraySample with the sample dimension moved.
+            A new JaxSample with the sample dimension moved.
         """
         moved_array = jax_moveaxis(cast("Any", self.array), self.sample_axis, new_sample_axis)
         return type(self)(array=cast("D", moved_array), sample_axis=new_sample_axis, weights=self.weights)
@@ -306,7 +306,7 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
             index: The index to select with.
 
         Returns:
-            A new JaxArraySample if the sample axis survives the indexing operation, otherwise
+            A new JaxSample if the sample axis survives the indexing operation, otherwise
             the plain indexed array.
 
         Raises:
@@ -365,7 +365,7 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
 
         This is the jax counterpart of :meth:`__array__`: it lets plain ``jax.numpy`` functions
         and the arithmetic operators of ``jax.Array`` accept a sample directly, the same way
-        the numpy backend's :class:`~probly.representation.sample.array.ArraySample` works with
+        the numpy backend's :class:`~probly.representation.sample.numpy.NumpySample` works with
         plain numpy.
 
         Returns:
@@ -374,10 +374,10 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
         return jnp.asarray(self.array)
 
     def copy(self) -> Self:
-        """Create a copy of the JaxArraySample.
+        """Create a copy of the JaxSample.
 
         Returns:
-            A copy of the JaxArraySample.
+            A copy of the JaxSample.
         """
         return type(self)(
             array=cast("D", cast("Any", self.array).copy()),
@@ -400,7 +400,7 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
             stream: not implemented, passing a non-None value will lead to an error.
 
         Returns:
-            A new JaxArraySample on the specified device.
+            A new JaxSample on the specified device.
 
         Raises:
             NotImplementedError: If a stream is given.
@@ -457,7 +457,7 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
             copy: Whether to always return a copy.
 
         Returns:
-            A JaxArraySample with the requested data type and device.
+            A JaxSample with the requested data type and device.
         """
         if dtype is None and device is None and not copy:
             return self
@@ -468,7 +468,7 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
             weights=jnp.asarray(self.weights, device=device, copy=copy) if self.weights is not None else None,
         )
 
-    def __array_like__(self, dtype: npt.DTypeLike | None = None, /, *, copy: bool | None = None) -> ArraySample[Any]:
+    def __array_like__(self, dtype: npt.DTypeLike | None = None, /, *, copy: bool | None = None) -> NumpySample[Any]:
         """Convert to a NumpyArrayLike.
 
         Args:
@@ -476,20 +476,20 @@ class JaxArraySample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]
             copy: Whether to return a copy of the underlying array.
 
         Returns:
-            An ArraySample wrapping the converted array.
+            An NumpySample wrapping the converted array.
         """
         array = to_numpy_array_like(self.array, dtype=dtype, copy=copy)
 
-        return ArraySample(
+        return NumpySample(
             cast("Any", array),
             sample_axis=self.sample_axis,
             weights=np.asarray(self.weights) if self.weights is not None else None,
         )
 
 
-@jax_sample_internals.register(JaxArraySample)
-def _(sample: JaxArraySample) -> JaxSampleInternals[jax.Array]:
-    """Get internals for a JaxArraySample."""
+@jax_sample_internals.register(JaxSample)
+def _(sample: JaxSample) -> JaxSampleInternals[jax.Array]:
+    """Get internals for a JaxSample."""
     return JaxSampleInternals[jax.Array](
         create=type(sample),
         array=sample.array,
@@ -500,5 +500,5 @@ def _(sample: JaxArraySample) -> JaxSampleInternals[jax.Array]:
 
 create_sample.register(
     jax.Array | JaxLikeImplementation,
-    JaxArraySample.from_iterable,
+    JaxSample.from_iterable,
 )

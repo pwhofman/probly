@@ -539,7 +539,7 @@ class TorchIsotonicCalibrationPredictor[**In](_TorchCalibrationPredictorBase[In]
 
 
 @calibration_generator.register(nn.Module)
-def generate_torch_scaling_calibrator(
+def torch_generate_scaling_calibrator(
     base: nn.Module, config: CalibrationMethodConfig
 ) -> _TorchCalibrationPredictorBase:
     """Create torch calibration wrappers from method configuration."""

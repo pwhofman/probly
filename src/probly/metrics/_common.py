@@ -182,16 +182,16 @@ def false_negative_rate(y_pred: object, y_true: object) -> object:
 # Concrete semantics depend on the dispatched type. Conformal sets follow the
 # classical conformal-prediction definitions (cardinality of a one-hot set,
 # width of an interval). Credal-set semantics specialize per subtype; see the
-# implementations in :mod:`probly.metrics.array` and :mod:`probly.metrics.torch`.
+# implementations in :mod:`probly.metrics.numpy` and :mod:`probly.metrics.torch`.
 #
 # Currently registered types
 # --------------------------
-# * Conformal: ``ArrayOneHotConformalSet``, ``ArrayIntervalConformalSet``,
+# * Conformal: ``NumpyOneHotConformalSet``, ``NumpyIntervalConformalSet``,
 #   ``TorchOneHotConformalSet``, ``TorchIntervalConformalSet``,
-#   ``JaxArrayOneHotConformalSet``, ``JaxArrayIntervalConformalSet``.
-# * Credal (numpy): ``ArraySingletonCredalSet``, ``ArrayDiscreteCredalSet``,
-#   ``ArrayConvexCredalSet``, ``ArrayDistanceBasedCredalSet``,
-#   ``ArrayProbabilityIntervalsCredalSet``.
+#   ``JaxOneHotConformalSet``, ``JaxIntervalConformalSet``.
+# * Credal (numpy): ``NumpySingletonCredalSet``, ``NumpyDiscreteCredalSet``,
+#   ``NumpyConvexCredalSet``, ``NumpyDistanceBasedCredalSet``,
+#   ``NumpyProbabilityIntervalsCredalSet``.
 # * Credal (torch): ``TorchConvexCredalSet``, ``TorchDistanceBasedCredalSet``,
 #   ``TorchProbabilityIntervalsCredalSet``, ``TorchDirichletLevelSetCredalSet``.
 #   Singleton and Discrete torch counterparts do not yet exist; constructing
@@ -346,10 +346,10 @@ def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.000
 
     Args:
         y_pred: A vertex-based credal-set representation
-            (``ArrayConvexCredalSet`` / ``ArrayDiscreteCredalSet`` /
-            ``ArraySingletonCredalSet`` / ``TorchConvexCredalSet``).
+            (``NumpyConvexCredalSet`` / ``NumpyDiscreteCredalSet`` /
+            ``NumpySingletonCredalSet`` / ``TorchConvexCredalSet``).
         y_true: A wrapped categorical distribution per instance (shape
-            ``(N, K)``). ``ArrayCategoricalDistribution`` for the numpy
+            ``(N, K)``). ``NumpyCategoricalDistribution`` for the numpy
             handlers, ``TorchCategoricalDistribution`` for the torch handler.
         epsilon: L1-distance tolerance for relaxed coverage. ``epsilon=0.0``
             (the default) runs the strict feasibility LP, which is faster
@@ -368,7 +368,7 @@ def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.000
 
     Note:
         Only vertex-based credal sets are registered. For
-        ``ArrayProbabilityIntervalsCredalSet`` and
+        ``NumpyProbabilityIntervalsCredalSet`` and
         ``TorchProbabilityIntervalsCredalSet``, use the type's own
         :meth:`contains` method to check whether a target distribution lies
         inside the (axis-aligned) credal set; that is a tighter and cheaper

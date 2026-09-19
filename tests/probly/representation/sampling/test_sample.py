@@ -10,8 +10,8 @@ from jax import numpy as jnp
 import numpy as np
 import torch
 
-from probly.representation.sample import ArraySample, ListSample, create_sample
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample import ListSample, NumpySample, create_sample
+from probly.representation.sample.jax import JaxSample
 from probly.representation.sample.torch import TorchSample
 
 
@@ -19,14 +19,14 @@ class TestSampleDispatching:
     def test_create_array_sample_numpy(self) -> None:
         x = np.arange(12).reshape((3, 4))
         sample = create_sample(x)
-        assert isinstance(sample, ArraySample)
+        assert isinstance(sample, NumpySample)
         assert sample.shape == (4, 3)
         assert sample.sample_axis == 1
 
     def test_create_array_sample_jax(self) -> None:
         x = jnp.arange(12).reshape((3, 4))
         sample = create_sample(x, sample_axis=1)
-        assert isinstance(sample, JaxArraySample)
+        assert isinstance(sample, JaxSample)
         assert sample.shape == (4, 3)
         assert sample.sample_axis == 1
 
@@ -44,7 +44,7 @@ class TestSampleDispatching:
 
         sample = create_sample(x, sample_axis=0, weights=weights)
 
-        assert isinstance(sample, ArraySample)
+        assert isinstance(sample, NumpySample)
         assert np.array_equal(sample.weights, weights)
 
     def test_create_array_sample_jax_preserves_weights(self) -> None:
@@ -53,7 +53,7 @@ class TestSampleDispatching:
 
         sample = create_sample(x, sample_axis=0, weights=weights)
 
-        assert isinstance(sample, JaxArraySample)
+        assert isinstance(sample, JaxSample)
         assert np.array_equal(np.asarray(sample.weights), np.asarray(weights))
 
     def test_create_array_sample_torch_preserves_weights(self) -> None:

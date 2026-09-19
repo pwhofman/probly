@@ -56,7 +56,7 @@ def _change_base_natural_log(values: jax.Array, base: None | float) -> jax.Array
     ],
 )
 @pytest.mark.parametrize("base", CATEGORICAL_BASES)
-def test_array_categorical_entropy_matches_scipy(
+def test_jax_categorical_entropy_matches_scipy(
     probabilities: jax.Array, base: None | float | Literal["normalize"]
 ) -> None:
     distribution = JaxProbabilityCategoricalDistribution(probabilities)
@@ -567,7 +567,7 @@ def test_jax_sample_min_expected_total_variation_is_maximal_for_uniform_diracs()
     assert jnp.allclose(min_expected_total_variation(sample), 2.0 / 3.0, rtol=1e-7, atol=1e-7)
 
 
-def test_array_sample_min_expected_total_variation_differs_from_zero_one_epistemic() -> None:
+def test_jax_sample_min_expected_total_variation_differs_from_zero_one_epistemic() -> None:
     """The OT epistemic measure is genuinely distinct from the additive zero-one EU (TU - AU)."""
     probabilities = jnp.array([[0.90, 0.10], [0.50, 0.50]], dtype=float)
     sample = JaxCategoricalDistributionSample(

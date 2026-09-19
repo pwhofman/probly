@@ -10,7 +10,7 @@ from jax import numpy as jnp
 
 from probly.quantification.scoring_rule import BrierLoss, LogLoss, SphericalLoss, ZeroOneLoss
 from probly.representation.distribution.jax_categorical import JaxLogitCategoricalDistribution
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 
 
 @pytest.mark.parametrize("rule", [LogLoss(), BrierLoss(), ZeroOneLoss(), SphericalLoss()])
@@ -24,9 +24,9 @@ def test_representation_loss(rule, sample_axis: int) -> None:
     assert jnp.allclose(result, expected, atol=1e-6)
     weights = jnp.arange(1, probabilities.shape[sample_axis] + 1, dtype=float)
     for values in (probabilities, distribution):
-        sample = JaxArraySample(values, sample_axis=sample_axis, weights=weights)
+        sample = JaxSample(values, sample_axis=sample_axis, weights=weights)
         result = rule.loss(sample)
-        assert isinstance(result, JaxArraySample)
+        assert isinstance(result, JaxSample)
         assert result.sample_axis == sample_axis
         assert result.weights is weights
         assert jnp.allclose(result.array, expected, atol=1e-6)

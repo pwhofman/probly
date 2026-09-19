@@ -28,7 +28,7 @@ from probly.representation.jax_functions import (
     jax_transpose,
     jax_var,
 )
-from probly.representation.sample.array_functions import track_sample_axis_after_reduction
+from probly.representation.sample.numpy_functions import track_sample_axis_after_reduction
 from probly.utils import switchdispatch
 
 if TYPE_CHECKING:
@@ -73,7 +73,7 @@ class _JaxFunction(Protocol):
         ...
 
 
-class _BoundJaxFunction(Protocol):
+class _JaxBoundFunction(Protocol):
     def __call__(
         self,
         func: Callable,
@@ -83,7 +83,7 @@ class _BoundJaxFunction(Protocol):
         ...
 
 
-class _BoundJaxFunctionWithInternals[D: JaxLike | jax.Array](Protocol):
+class _JaxBoundFunctionWithInternals[D: JaxLike | jax.Array](Protocol):
     def __call__(
         self,
         func: Callable,
@@ -110,7 +110,7 @@ def jax_function(
 
 
 def jax_function_override(
-    jax_func: _BoundJaxFunction,
+    jax_func: _JaxBoundFunction,
 ) -> _JaxFunction:
     """Decorator to convert a bound jax function to a jax function."""
 
@@ -129,19 +129,19 @@ def jax_function_override(
 @overload
 def jax_internals_override(
     jax_sample_param_name: str,
-) -> Callable[[_BoundJaxFunctionWithInternals], _JaxFunction]: ...
+) -> Callable[[_JaxBoundFunctionWithInternals], _JaxFunction]: ...
 
 
 @overload
 def jax_internals_override(
     *,
     jax_sample_param_pos: int,
-) -> Callable[[_BoundJaxFunctionWithInternals], _JaxFunction]: ...
+) -> Callable[[_JaxBoundFunctionWithInternals], _JaxFunction]: ...
 
 
 def jax_internals_override(
     jax_sample_param_name: str | None = None, *, jax_sample_param_pos: int | None = None
-) -> Callable[[_BoundJaxFunctionWithInternals], _JaxFunction]:
+) -> Callable[[_JaxBoundFunctionWithInternals], _JaxFunction]:
     """Decorator to convert a function taking a sample array argument."""
     if jax_sample_param_name is None and jax_sample_param_pos is None:
         msg = "Either jax_sample_param_name or jax_sample_param_pos must be provided."
@@ -150,7 +150,7 @@ def jax_internals_override(
         msg = "Only one of jax_sample_param_name or jax_sample_param_pos can be provided."
         raise ValueError(msg)
 
-    def decorator(f: _BoundJaxFunctionWithInternals) -> _JaxFunction:
+    def decorator(f: _JaxBoundFunctionWithInternals) -> _JaxFunction:
         @wraps(f)
         def wrapper(
             func: Callable,
@@ -354,7 +354,7 @@ def jax_reduction_function(
 
     Mirroring the numpy backend, the sample weights are never injected into ``jax_average``:
     they only apply to a reduction over the sample axis, which the caller expresses through
-    :meth:`~probly.representation.sample.jax.JaxArraySample.sample_mean` instead.
+    :meth:`~probly.representation.sample.jax.JaxSample.sample_mean` instead.
     """
     if len(args) == 0:
         return NotImplemented

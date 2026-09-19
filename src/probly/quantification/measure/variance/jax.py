@@ -8,7 +8,7 @@ from probly.representation.distribution.jax_gaussian import (
     JaxGaussianDistribution,
     JaxGaussianDistributionSample,
 )
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 
 from ._common import (
     LogBase,
@@ -57,27 +57,27 @@ def jax_gaussian_sample_variance_of_expected_predictive_distribution(
     return jax_gaussian_sample_conditional_variance(sample) + jax_gaussian_sample_mutual_information(sample)
 
 
-@variance_of_expected_predictive_distribution.register(JaxArraySample)
+@variance_of_expected_predictive_distribution.register(JaxSample)
 def jax_sample_variance_of_expected_predictive_distribution(
-    sample: JaxArraySample,
+    sample: JaxSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
     """Compute the total predictive variance of a raw jax array sample."""
     return jnp.var(sample.array, axis=sample.sample_axis, ddof=0)
 
 
-@conditional_variance.register(JaxArraySample)
+@conditional_variance.register(JaxSample)
 def jax_sample_conditional_variance(
-    sample: JaxArraySample,
+    sample: JaxSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
     """Compute the conditional variance of a raw jax array sample (zero for point predictions)."""
     return jnp.zeros_like(jnp.mean(sample.array, axis=sample.sample_axis))
 
 
-@mutual_information_variance.register(JaxArraySample)
+@mutual_information_variance.register(JaxSample)
 def jax_sample_mutual_information(
-    sample: JaxArraySample,
+    sample: JaxSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
     """Compute the epistemic variance of a raw jax array sample."""

@@ -36,7 +36,7 @@ def uacqr_score[T](y_pred: T, y_true: T) -> T:
 
 
 @uacqr_score.register(np.ndarray | ArrayLike)
-def compute_uacqr_score_func_numpy(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray) -> np.ndarray:
+def numpy_compute_uacqr_score_func(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray) -> np.ndarray:
     """UACQR nonconformity scores for numpy arrays."""
     y_true_np = np.asarray(y_true, dtype=float)
     y_pred_np = np.asarray(y_pred, dtype=float)

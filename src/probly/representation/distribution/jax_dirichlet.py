@@ -16,7 +16,7 @@ from probly.representation.distribution.jax_categorical import (
     JaxProbabilityCategoricalDistribution,
 )
 from probly.representation.jax_functions import jax_add, jax_average, jax_mean, jax_subtract, jax_sum
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 from probly.utils.jax import fresh_prng_key
 
 if TYPE_CHECKING:
@@ -73,7 +73,7 @@ class JaxDirichletDistribution(
         self,
         num_samples: int = 1,
         prng_key: ArrayLike | None = None,
-    ) -> JaxArraySample[JaxCategoricalDistribution]:
+    ) -> JaxSample[JaxCategoricalDistribution]:
         """Sample from the Dirichlet distribution (Jax backend)."""
         if prng_key is None:
             prng_key = fresh_prng_key()
@@ -83,7 +83,7 @@ class JaxDirichletDistribution(
             self.alphas,
             shape=(num_samples, *self.alphas.shape),
         )
-        return JaxArraySample(array=JaxProbabilityCategoricalDistribution(gammas), sample_axis=0)
+        return JaxSample(array=JaxProbabilityCategoricalDistribution(gammas), sample_axis=0)
 
     @override
     def _postprocess_elementwise_result(

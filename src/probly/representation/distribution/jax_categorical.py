@@ -18,7 +18,7 @@ from probly.representation.distribution._common import (
     create_categorical_distribution_from_logits,
 )
 from probly.representation.jax_functions import jax_average, jax_mean
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 from probly.utils.jax import fresh_prng_key
 
 if TYPE_CHECKING:
@@ -90,7 +90,7 @@ class JaxCategoricalDistribution(CategoricalDistribution, JaxAxisProtected[jax.A
         self,
         num_samples: int = 1,
         prng_key: ArrayLike | None = None,
-    ) -> JaxArraySample[jax.Array]:
+    ) -> JaxSample[jax.Array]:
         """Sample from the categorical distribution (Jax backend).
 
         Args:
@@ -105,7 +105,7 @@ class JaxCategoricalDistribution(CategoricalDistribution, JaxAxisProtected[jax.A
             prng_key = fresh_prng_key()
 
         samples = jax.random.categorical(prng_key, self.logits, axis=-1, shape=(num_samples, *self.shape))
-        return JaxArraySample(array=samples, sample_axis=0)
+        return JaxSample(array=samples, sample_axis=0)
 
 
 @create_categorical_distribution.register(jax.Array)
@@ -197,7 +197,7 @@ class JaxLogitCategoricalDistribution(JaxCategoricalDistribution):
 
 class JaxCategoricalDistributionSample(  # ty:ignore[conflicting-metaclass]
     CategoricalDistributionSample[JaxCategoricalDistribution],
-    JaxArraySample[JaxCategoricalDistribution],
+    JaxSample[JaxCategoricalDistribution],
 ):
     """Sample type for empirical second-order categorical distributions."""
 

@@ -33,7 +33,7 @@ def cqr_r_score[T](y_pred: T, y_true: T) -> T:
 
 
 @cqr_r_score.register(np.ndarray | ArrayLike)
-def compute_cqr_r_score_numpy(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray) -> np.ndarray:
+def numpy_compute_cqr_r_score(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray) -> np.ndarray:
     """CQR-r nonconformity scores for numpy arrays."""
     y_np = np.asarray(y_true, dtype=float)
     pred_np = np.asarray(y_pred, dtype=float)

@@ -8,19 +8,19 @@ from flextype import flexdispatch
 import numpy as np
 
 from probly.plot.credal._data import _get_probabilities, _to_numpy
-from probly.representation.credal_set.array import (
-    ArrayConvexCredalSet,
-    ArrayDiscreteCredalSet,
-    ArrayDistanceBasedCredalSet,
-    ArrayProbabilityIntervalsCredalSet,
-    ArraySingletonCredalSet,
+from probly.representation.credal_set.numpy import (
+    NumpyConvexCredalSet,
+    NumpyDiscreteCredalSet,
+    NumpyDistanceBasedCredalSet,
+    NumpyProbabilityIntervalsCredalSet,
+    NumpySingletonCredalSet,
 )
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
     from probly.plot.config import PlotConfig
-    from probly.representation.credal_set.array import ArrayCategoricalCredalSet
+    from probly.representation.credal_set.numpy import NumpyCategoricalCredalSet
     from probly.representation.credal_set.torch import (
         TorchCategoricalCredalSet,
         TorchConvexCredalSet,
@@ -338,7 +338,7 @@ def _draw_intervals_on_spokes(
 
 @flexdispatch
 def _draw_credal_set_spider(
-    data: ArrayCategoricalCredalSet | TorchCategoricalCredalSet,
+    data: NumpyCategoricalCredalSet | TorchCategoricalCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None,
@@ -358,9 +358,9 @@ def _draw_credal_set_spider(
     raise NotImplementedError(msg)
 
 
-@_draw_credal_set_spider.register(ArraySingletonCredalSet)
+@_draw_credal_set_spider.register(NumpySingletonCredalSet)
 def _draw_singleton_spider(
-    data: ArraySingletonCredalSet,
+    data: NumpySingletonCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None,
@@ -376,9 +376,9 @@ def _draw_singleton_spider(
         ax.scatter(theta, values, color=color, s=config.marker_size, zorder=4)
 
 
-@_draw_credal_set_spider.register(ArrayProbabilityIntervalsCredalSet)
+@_draw_credal_set_spider.register(NumpyProbabilityIntervalsCredalSet)
 def _draw_intervals_spider(
-    data: ArrayProbabilityIntervalsCredalSet | TorchProbabilityIntervalsCredalSet,
+    data: NumpyProbabilityIntervalsCredalSet | TorchProbabilityIntervalsCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None,
@@ -405,9 +405,9 @@ def _draw_intervals_spider(
             _draw_intervals_on_spokes(ax, theta, lower, upper, color, config, label=label)
 
 
-@_draw_credal_set_spider.register(ArrayDistanceBasedCredalSet)
+@_draw_credal_set_spider.register(NumpyDistanceBasedCredalSet)
 def _draw_distance_based_spider(
-    data: ArrayDistanceBasedCredalSet | TorchDistanceBasedCredalSet,
+    data: NumpyDistanceBasedCredalSet | TorchDistanceBasedCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None,
@@ -424,9 +424,9 @@ def _draw_distance_based_spider(
         ax.scatter(theta, nominal_all[idx], color=color, s=config.marker_size, zorder=4)
 
 
-@_draw_credal_set_spider.register(ArrayConvexCredalSet)
+@_draw_credal_set_spider.register(NumpyConvexCredalSet)
 def _draw_convex_set_spider(
-    data: ArrayConvexCredalSet | TorchConvexCredalSet,
+    data: NumpyConvexCredalSet | TorchConvexCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None,
@@ -448,9 +448,9 @@ def _draw_convex_set_spider(
             ax.fill([], [], facecolor=color, alpha=config.fill_alpha, label=label)
 
 
-@_draw_credal_set_spider.register(ArrayDiscreteCredalSet)
+@_draw_credal_set_spider.register(NumpyDiscreteCredalSet)
 def _draw_discrete_set_spider(
-    data: ArrayDiscreteCredalSet,
+    data: NumpyDiscreteCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None,
