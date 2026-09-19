@@ -41,7 +41,7 @@ Here are some guidelines to follow when contributing to probly.
 ### General
 If you use code from other sources, make sure to carefully look at the license and give credit to the original author(s).
 If the feature you are implementing is based on a paper, make sure to include a reference
-in the docstring.
+in the docstring. Please make sure to follow the [design principles](../docs/design/principles.md).
 
 ### Code style
 We use [Ruff](https://docs.astral.sh/ruff/) for linting and formatting, the rules of which can be found in the [pyproject.toml](https://github.com/pwhofman/probly/blob/main/pyproject.toml) file.
