@@ -87,6 +87,20 @@ class TestCvarCeLoss:
         assert logits.grad[:2].abs().sum() > 0.0
         assert torch.allclose(logits.grad[2:], torch.zeros(2, 2))
 
+    def test_integer_products_select_exact_floor(self) -> None:
+        torch, _ = _torch_nn()
+        from torch.nn import functional as F  # noqa: PLC0415
+
+        from probly.train.credal.torch import cvar_ce_loss  # noqa: PLC0415
+
+        # 0.29 * 100 is exactly 29, but the bare float product truncates to 28.
+        torch.manual_seed(0)
+        logits = torch.randn(100, 3)
+        targets = torch.randint(0, 3, (100,))
+        per_sample = F.cross_entropy(logits, targets, reduction="none")
+        loss = cvar_ce_loss(logits, targets, delta=0.29)
+        assert torch.allclose(loss, per_sample.topk(29).values.mean())
+
     def test_tiny_batch_keeps_at_least_one_sample(self) -> None:
         torch, _ = _torch_nn()
         from torch.nn import functional as F  # noqa: PLC0415
