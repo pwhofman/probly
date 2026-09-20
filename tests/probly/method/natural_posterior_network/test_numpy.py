@@ -14,7 +14,7 @@ from probly.quantification.measure.distribution import (
 )
 from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
 
-NUMERIC_BASES: tuple[None | float, ...] = (None, 2.0, 10.0)
+NUMERIC_BASES: tuple[float | None, ...] = (None, 2.0, 10.0)
 
 
 def _numpy_dirichlet() -> NumpyDirichletDistribution:
@@ -30,7 +30,7 @@ def _numpy_dirichlet() -> NumpyDirichletDistribution:
 
 
 @pytest.mark.parametrize("base", NUMERIC_BASES)
-def test_numpy_decomposition_components_match_measure_functions(base: None | float) -> None:
+def test_numpy_decomposition_components_match_measure_functions(base: float | None) -> None:
     distribution = _numpy_dirichlet()
 
     decomposition = NaturalPosteriorDecomposition(distribution, base=base)

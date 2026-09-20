@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from sklearn.base import BaseEstimator
@@ -22,6 +22,9 @@ from ._common import (
     predict_raw,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 GaussianDistributionPredictor.register(GaussianProcessRegressor)
 LogitDistributionPredictor.register(GaussianProcessClassifier)
 
@@ -36,7 +39,7 @@ _SAFE_DECISION_FUNCTION_TYPES = (
 )
 
 
-def _callable_attribute(obj: object, name: str) -> Any | None:  # noqa: ANN401
+def _callable_attribute(obj: object, name: str) -> Callable[..., Any] | None:
     try:
         attr = getattr(obj, name)
     except AttributeError:
@@ -86,8 +89,8 @@ def _sklearn_logit_prediction[**In](predictor: BaseEstimator, *args: In.args, **
 
 def _sklearn_binary_logit_prediction[**In](predictor: BaseEstimator, *args: In.args, **kwargs: In.kwargs) -> np.ndarray:
     logits = _sklearn_logit_prediction(predictor, *args, **kwargs)
-    if logits.ndim >= 1 and logits.shape[-1] <= 2:
-        return logits[..., 1] - logits[..., -1]
+    if logits.ndim >= 2 and logits.shape[-1] == 2:
+        return logits[..., 1] - logits[..., 0]
     return logits
 
 
@@ -96,8 +99,10 @@ def sklearn_predict[**In](predictor: BaseEstimator, /, *args: In.args, **kwargs:
     """Predict for sklearn estimators."""
     # Representation predictors take priority over their distribution/label surfaces,
     # matching the branch order of the generic predict_raw fallback in _common.py.
-    if isinstance(predictor, RepresentationPredictor) and hasattr(predictor, "predict_representation"):
-        return predictor.predict_representation(*args, **kwargs)  # ty:ignore[call-non-callable]
+    if isinstance(predictor, RepresentationPredictor):
+        predict_representation = _callable_attribute(predictor, "predict_representation")
+        if predict_representation is not None:
+            return predict_representation(*args, **kwargs)
 
     if isinstance(predictor, BernoulliLogitDistributionPredictor):
         return _sklearn_binary_logit_prediction(predictor, *args, **kwargs)
@@ -116,8 +121,10 @@ def sklearn_predict[**In](predictor: BaseEstimator, /, *args: In.args, **kwargs:
             return predict_proba(*args, **kwargs)
 
     if isinstance(predictor, GaussianDistributionPredictor) and hasattr(predictor, "predict"):
-        mean, std = predictor.predict(*args, return_std=True, **kwargs)
-        return mean, np.square(std)
+        predict = _callable_attribute(predictor, "predict")
+        if predict is not None:
+            mean, std = predict(*args, return_std=True, **kwargs)
+            return mean, np.square(std)
 
     predict = _callable_attribute(predictor, "predict")
     if predict is not None:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self, override
 
 import numpy as np
@@ -32,7 +32,7 @@ class NumpyDirichletDistribution(
     The last axis represents the category dimension.
     """
 
-    alphas: np.ndarray
+    alphas: np.ndarray = field()
     protected_axes: ClassVar[dict[str, int]] = {"alphas": 1}
     permitted_functions: ClassVar[set[Callable]] = {np.mean, np.sum, np.average}
     permitted_ufuncs: ClassVar[dict[np.ufunc, list[str]]] = {

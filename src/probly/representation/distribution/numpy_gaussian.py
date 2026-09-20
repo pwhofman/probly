@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, override
 
 import numpy as np
@@ -24,8 +24,8 @@ if TYPE_CHECKING:
 class NumpyGaussianDistribution(NumpyAxisProtected[np.ndarray], GaussianDistribution[np.ndarray]):
     """Gaussian distribution with array parameters."""
 
-    mean: np.ndarray
-    var: np.ndarray
+    mean: np.ndarray = field()
+    var: np.ndarray = field()
 
     type: Literal["gaussian"] = "gaussian"
     protected_axes: ClassVar[dict[str, int]] = {"mean": 0, "var": 0}

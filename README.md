@@ -297,7 +297,7 @@ clusterer = HFGreedySemanticClusterer.from_model_name("microsoft/deberta-base-mn
 questions = ["What is the capital of France?", "Who was the first person to walk on Mars?"]
 
 answers = sampler(clarifier(questions))  # sample answers per clarified question
-semantic = clusterer(answers)            # cluster answers by meaning (NLI)
+semantic = clusterer(answers)  # cluster answers by meaning (NLI)
 
 # densify the semantic clusters and decompose the semantic entropy
 dense = TorchCategoricalDistributionSample(tensor=semantic.tensor.to_dense(), sample_dim=semantic.sample_dim)
@@ -353,7 +353,7 @@ out = representer(ens).predict(grid)
 unc = SecondOrderVarianceDecomposition(out)
 
 mean = out.tensor.mean(dim=out.sample_axis)  # ensemble mean
-std = unc.epistemic.sqrt()                   # wide where members disagree, i.e. away from data
+std = unc.epistemic.sqrt()  # wide where members disagree, i.e. away from data
 # plot mean ± 2 * std to reproduce the band above
 ```
 

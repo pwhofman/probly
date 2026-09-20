@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, Self, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 import torch
 
@@ -55,7 +55,7 @@ class TorchOneHotConformalSet(TorchAxisProtected[Any], OneHotConformalSet):
         if not isinstance(sample, TorchSample):
             msg = "Expected TorchSample for one-hot conformal sets."
             raise TypeError(msg)
-        return cls.from_tensor(cast("torch.Tensor", sample.tensor))
+        return cls.from_tensor(sample.tensor)
 
     @property
     def set_size(self) -> torch.Tensor:

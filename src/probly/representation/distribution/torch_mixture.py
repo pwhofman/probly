@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from inspect import signature
 from typing import Any, ClassVar, Literal, cast, override
 
@@ -34,8 +34,8 @@ class TorchMixtureDistribution[D: Distribution, T: TorchLike](
     that component axis.
     """
 
-    components: D
-    mixture_weights: torch.Tensor
+    components: D = field()
+    mixture_weights: torch.Tensor = field()
 
     type: Literal["mixture"] = "mixture"
     protected_axes: ClassVar[dict[str, int]] = {"components": 1, "mixture_weights": 1}

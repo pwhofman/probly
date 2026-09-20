@@ -43,7 +43,7 @@ def test_jax_dirichlet_initialization_valid() -> None:
     assert dist.alphas.shape == (3,)
     assert dist.shape == ()
     assert dist.ndim == 0
-    assert dist.size() == 1
+    assert dist.size == 1
 
 
 def test_from_array_basic() -> None:
@@ -95,7 +95,7 @@ def test_jax_properties_batched() -> None:
 
     assert dist.shape == (2, 3)
     assert dist.ndim == 2
-    assert dist.size() == 6
+    assert dist.size == 6
 
 
 def test_len_behaviour() -> None:

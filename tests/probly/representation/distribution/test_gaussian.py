@@ -5,8 +5,18 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from probly.representation.distribution.numpy_gaussian import NumpyGaussianDistribution
+from probly.representation.distribution.numpy_gaussian import NumpyGaussianDistribution, NumpyGaussianDistributionSample
 from probly.representation.sample import NumpySample
+
+
+def test_numpy_distribution_sample_negative_axis_and_copy_preserve_subclass() -> None:
+    distribution = NumpyGaussianDistribution(np.zeros((2, 3)), np.ones((2, 3)))
+    sample = NumpyGaussianDistributionSample(distribution, sample_axis=-1)
+    copied = sample.copy()
+    assert sample.sample_axis == 1
+    assert type(copied) is NumpyGaussianDistributionSample
+    assert copied.array is not distribution
+    np.testing.assert_array_equal(copied.array.mean, distribution.mean)
 
 
 def test_numpy_gaussian_initialization_valid() -> None:

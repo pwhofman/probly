@@ -213,14 +213,20 @@ class FakeEncoderDecoderModel(FakeModel):
     config = SimpleNamespace(is_encoder_decoder=True)
 
 
-class FakeHFTokenizer(FakeTokenizer, PreTrainedTokenizerBase):
-    """Fake tokenizer that satisfies Hugging Face tokenizer isinstance checks."""
+class FakeHFTokenizer(PreTrainedTokenizerBase):
+    """Loader-only tokenizer with real HF configuration and no tokenization overrides."""
 
     def __init__(self, padding_side: str = "left", pad_token: str | None = "<pad>") -> None:  # noqa: S107
         """Initialize Hugging Face-compatible fake tokenizer internals."""
-        object.__setattr__(self, "verbose", False)
-        object.__setattr__(self, "_special_tokens_map", {"eos_token": FakeTokenizer.eos_token})
-        super().__init__(padding_side=padding_side, pad_token=pad_token)
+        super().__init__(padding_side=padding_side, pad_token=pad_token, eos_token=FakeTokenizer.eos_token)
+
+    @property
+    def pad_token_id(self) -> int | None:
+        return 0 if self.pad_token is not None else None
+
+    @property
+    def eos_token_id(self) -> int:
+        return 0
 
 
 class FakeHFModel(FakeModel, PreTrainedModel):

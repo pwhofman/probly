@@ -78,7 +78,7 @@ def test_jax_properties() -> None:
 
     assert dist.shape == shape
     assert dist.ndim == 2
-    assert dist.size() == 6
+    assert dist.size == 6
     assert dist.__array_namespace__() is jnp
 
 

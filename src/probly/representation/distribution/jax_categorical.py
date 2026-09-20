@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, override
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, ClassVar, Self, overload, override
 
 import jax
 from jax.experimental import checkify
@@ -45,6 +45,12 @@ class JaxCategoricalDistribution(CategoricalDistribution, JaxAxisProtected[jax.A
             values["array"] = self.probabilities
 
         return values
+
+    @overload
+    def with_protected_values(self, values: dict[str, Any]) -> Self: ...
+
+    @overload
+    def with_protected_values(self, values: dict[str, Any], func: Callable | None) -> JaxAxisProtected[jax.Array]: ...
 
     @override
     def with_protected_values(
@@ -113,7 +119,7 @@ class JaxCategoricalDistribution(CategoricalDistribution, JaxAxisProtected[jax.A
 class JaxProbabilityCategoricalDistribution(JaxCategoricalDistribution):
     """A categorical distribution represented by unnormalized probabilities."""
 
-    array: jax.Array
+    array: jax.Array = field()
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
     permitted_functions: ClassVar[set[Callable]] = {jax_mean, jax_average}
 
@@ -157,7 +163,7 @@ class JaxProbabilityCategoricalDistribution(JaxCategoricalDistribution):
 class JaxLogitCategoricalDistribution(JaxCategoricalDistribution):
     """A categorical distribution represented by logits."""
 
-    array: jax.Array
+    array: jax.Array = field()
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
     permitted_functions: ClassVar[set[Callable]] = {jax_mean, jax_average}
 

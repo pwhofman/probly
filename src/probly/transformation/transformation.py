@@ -7,6 +7,8 @@ from contextvars import ContextVar
 import functools
 from typing import Any, Protocol, cast, overload
 
+from flextype import RegistryMeta
+
 from probly.predictor import Predictor, PredictorName, predictor_registry
 
 try:
@@ -129,17 +131,21 @@ def predictor_transformation(
                     msg += f"{predictor.__name__}, "
                 raise ValueError(msg)
             if predictor_type is not None:
+                if not isinstance(predictor_type, RegistryMeta):
+                    msg = f"Predictor type {predictor_type} must support flextype instance registration."
+                    raise TypeError(msg)
                 base = predictor_type.register_instance(base)
 
             tok = current_predictor_type.set((base, predictor_type))
-            res = func(base, *args, **kwargs)
+            try:
+                res = func(base, *args, **kwargs)
 
-            if post_transform is not None:
-                res = post_transform(res, predictor_type)
-            elif predictor_type is not None and preserve_predictor_type:
-                res = predictor_type.register_instance(res)
-
-            current_predictor_type.reset(tok)
+                if post_transform is not None:
+                    res = post_transform(res, predictor_type)
+                elif predictor_type is not None and preserve_predictor_type:
+                    res = predictor_type.register_instance(res)
+            finally:
+                current_predictor_type.reset(tok)
 
             return res
 

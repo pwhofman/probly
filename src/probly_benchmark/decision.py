@@ -95,7 +95,7 @@ def _decide_subensemble(
 ) -> CategoricalDistribution:
     """Average softmax probabilities across all subensemble members."""
     member_dists = [create_categorical_distribution_from_logits(predict(member, x)) for member in model]
-    avg_probs = sum(d.probabilities for d in member_dists) / len(member_dists)
+    avg_probs = sum(d.probabilities for d in member_dists) / len(member_dists)  # ty: ignore[no-matching-overload]
     return create_categorical_distribution(avg_probs)
 
 
@@ -108,5 +108,5 @@ def _decide_batchensemble(
     """Average softmax probabilities across all batchensemble members."""
     sample = predict(model, x)
     member_dists = [create_categorical_distribution_from_logits(logits) for logits in sample.samples]
-    avg_probs = sum(d.probabilities for d in member_dists) / len(member_dists)
+    avg_probs = sum(d.probabilities for d in member_dists) / len(member_dists)  # ty: ignore[no-matching-overload]
     return create_categorical_distribution(avg_probs)

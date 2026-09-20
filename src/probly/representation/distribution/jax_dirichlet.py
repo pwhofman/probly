@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self, override
 
 import jax
@@ -38,7 +38,7 @@ class JaxDirichletDistribution(
     The last axis represents the category dimension.
     """
 
-    alphas: jax.Array
+    alphas: jax.Array = field()
     protected_axes: ClassVar[dict[str, int]] = {"alphas": 1}
     permitted_functions: ClassVar[set[Callable]] = {jax_mean, jax_sum, jax_average, jax_add, jax_subtract}
 

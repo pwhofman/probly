@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Self, cast, overload, override
 
 import torch
 
-from probly.representation.array_like import ArrayLike, ToIndices, to_numpy_array_like
+from probly.representation.array_like import ToIndices, to_numpy_array_like
 from probly.representation.sample._common import Sample, SampleAxis, create_sample
 from probly.representation.sample.axis_tracking import track_axis
 from probly.representation.sample.numpy import NumpySample
@@ -33,14 +33,15 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
 
     def __post_init__(self) -> None:
         """Validate the sample_dim."""
-        if self.sample_dim >= self.tensor.ndim:
-            msg = f"sample_dim {self.sample_dim} out of bounds for tensor with ndim {self.tensor.ndim}."
+        ndim = self.ndim
+        if self.sample_dim >= ndim:
+            msg = f"sample_dim {self.sample_dim} out of bounds for tensor with ndim {ndim}."
             raise ValueError(msg)
         if self.sample_dim < 0:
-            if self.sample_dim < -self.tensor.ndim:
-                msg = f"sample_dim {self.sample_dim} out of bounds for tensor with ndim {self.tensor.ndim}."
+            if self.sample_dim < -ndim:
+                msg = f"sample_dim {self.sample_dim} out of bounds for tensor with ndim {ndim}."
                 raise ValueError(msg)
-            super(type(self), self).__setattr__("sample_dim", self.tensor.ndim + self.sample_dim)
+            object.__setattr__(self, "sample_dim", ndim + self.sample_dim)
 
         if not isinstance(self.tensor, TorchLikeImplementation):
             msg = "tensor must be a TorchLike object."
@@ -54,12 +55,12 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
     @classmethod
     def from_iterable(
         cls,
-        samples: Iterable[ArrayLike[D]],
+        samples: Iterable[D],
         weights: Iterable[float] | None = None,
         sample_dim: SampleAxis | None = None,
         sample_axis: SampleAxis | None = "auto",
         dtype: torch.dtype | None = None,
-    ) -> Self:  # ty: ignore[invalid-method-override]
+    ) -> Self:
         """Create an TorchSample from a sequence of samples.
 
         Args:
@@ -102,7 +103,7 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
             samples = samples.to(dtype=dtype)
 
         return cls(
-            tensor=samples,  # ty:ignore[invalid-argument-type]
+            tensor=samples,
             sample_dim=sample_dim,
             weights=torch.as_tensor(weights, device=samples.device) if weights is not None else None,
         )
@@ -121,25 +122,27 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
         """The axis along which samples are organized."""
         return self.sample_dim
 
+    # ty 0.0.82 cannot bind protocol properties through a union-bounded TypeVar.
+    # Keep suppressions local so unused-ignore-comment flags them once fixed.
     @property
     def dtype(self) -> torch.dtype:
         """The data type of the underlying array."""
-        return self.tensor.dtype
+        return self.tensor.dtype  # ty: ignore[invalid-attribute-access]
 
     @property
     def device(self) -> Any:  # noqa: ANN401
         """The device of the underlying array."""
-        return self.tensor.device
+        return self.tensor.device  # ty: ignore[invalid-attribute-access]
 
     @property
     def ndim(self) -> int:
         """The number of dimensions of the underlying array."""
-        return self.tensor.ndim
+        return self.tensor.ndim  # ty: ignore[invalid-attribute-access]
 
     @property
     def shape(self) -> tuple[int, ...]:
         """The shape of the underlying array."""
-        return self.tensor.shape
+        return self.tensor.shape  # ty: ignore[invalid-attribute-access]
 
     @overload
     def size(self, dim: int) -> int: ...
@@ -237,7 +240,7 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
     @override
     def concat(self, other: Sample[D]) -> Self:
         if isinstance(other, TorchSample):
-            other_tensor = torch.moveaxis(other.tensor, other.sample_dim, self.sample_dim)  # ty:ignore[no-matching-overload]
+            other_tensor = torch.moveaxis(other.tensor, other.sample_dim, self.sample_dim)
         else:
             other_tensor = torch.stack(list(other.samples), dim=self.sample_dim)  # ty:ignore[invalid-argument-type]
 
@@ -248,7 +251,7 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
 
         if weights is not None or other_weights is not None:
             if weights is None:
-                weights = torch.ones(self.sample_size, device=self.tensor.device)
+                weights = torch.ones(self.sample_size, device=self.device)
             other_weights = (
                 torch.ones(other.sample_size, device=other_tensor.device)
                 if other_weights is None
@@ -281,7 +284,7 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
         if not hasattr(new_tensor, "ndim"):
             return new_tensor
 
-        track_result = track_axis(index, self.sample_dim, self.tensor.ndim, torch_indexing=True)
+        track_result = track_axis(index, self.sample_dim, self.ndim, torch_indexing=True)
 
         if track_result is None:
             return new_tensor  # ty:ignore[invalid-return-type]
@@ -303,7 +306,11 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
 
     @override
     def __array_namespace__(self, /, *, api_version: str | None = None) -> ModuleType:
-        return self.tensor.__array_namespace__(api_version=api_version)  # ty:ignore[invalid-argument-type]
+        namespace = getattr(self.tensor, "__array_namespace__", None)
+        if not callable(namespace):
+            msg = "Underlying tensor does not support __array_namespace__."
+            raise NotImplementedError(msg)
+        return namespace(api_version=api_version)
 
     def __array_like__(self, dtype: npt.DTypeLike | None = None, /, *, copy: bool | None = None) -> NumpySample[Any]:
         """Convert to a NumpyArrayLike."""

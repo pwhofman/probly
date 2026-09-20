@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, override
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, ClassVar, Self, overload, override
 
 import numpy as np
 from scipy.special import logsumexp
@@ -40,6 +40,14 @@ class NumpyCategoricalDistribution(CategoricalDistribution, NumpyAxisProtected[n
             values["array"] = self.probabilities
 
         return values
+
+    @overload
+    def with_protected_values(self, values: dict[str, Any]) -> Self: ...
+
+    @overload
+    def with_protected_values(
+        self, values: dict[str, Any], func: Callable | None
+    ) -> NumpyAxisProtected[np.ndarray]: ...
 
     @override
     def with_protected_values(
@@ -106,7 +114,7 @@ class NumpyCategoricalDistribution(CategoricalDistribution, NumpyAxisProtected[n
 class NumpyProbabilityCategoricalDistribution(NumpyCategoricalDistribution):
     """A categorical distribution represented by unnormalized probabilities."""
 
-    array: np.ndarray
+    array: np.ndarray = field()
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
     permitted_functions: ClassVar[set[Callable]] = {np.mean, np.average}
 
@@ -152,7 +160,7 @@ class NumpyProbabilityCategoricalDistribution(NumpyCategoricalDistribution):
 class NumpyLogitCategoricalDistribution(NumpyCategoricalDistribution):
     """A categorical distribution represented by logits."""
 
-    array: np.ndarray
+    array: np.ndarray = field()
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
     permitted_functions: ClassVar[set[Callable]] = {np.mean, np.average}
 

@@ -118,9 +118,9 @@ test = [
     { include-group = "river" },
 ]
 lint = [
-    "ruff>=0.15.11",                                         # for linting
+    "ruff>=0.16.8",                                         # for linting
     "prek>=0.3.8",                                          # for running the linters pre-commit hooks
-    "ty>=0.0.32",                                           # for static type checking
+    "ty>=0.0.82",                                           # for static type checking
     "sigx @ git+https://github.com/Cortys/sigx.git@master",
 ]
 docs = [
@@ -208,7 +208,9 @@ ignore = [
     "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
     "FBT",     # enforce keyword for bool
     "PLR0913", # too many arguments (>5)
+    "PLR0917", # too many positional arguments (>5)
     "FIX002",  # TODOs are fine in code
+    "CPY001",  # no copyright headers
     "COM812",
 ]
 

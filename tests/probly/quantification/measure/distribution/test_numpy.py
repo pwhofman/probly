@@ -27,17 +27,17 @@ from probly.representation.distribution.numpy_categorical import (
 from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
 from probly.representation.distribution.numpy_gaussian import NumpyGaussianDistribution
 
-CATEGORICAL_BASES: tuple[None | float | Literal["normalize"], ...] = (None, 2.0, "normalize")
-NUMERIC_BASES: tuple[None | float, ...] = (None, 2.0, 10.0)
+CATEGORICAL_BASES: tuple[float | Literal["normalize"] | None, ...] = (None, 2.0, "normalize")
+NUMERIC_BASES: tuple[float | None, ...] = (None, 2.0, 10.0)
 
 
-def _resolve_categorical_base(base: None | float | Literal["normalize"], num_classes: int) -> None | float:
+def _resolve_categorical_base(base: float | Literal["normalize"] | None, num_classes: int) -> float | None:
     if base == "normalize":
         return float(num_classes)
     return base
 
 
-def _change_base_natural_log(values: np.ndarray, base: None | float) -> np.ndarray:
+def _change_base_natural_log(values: np.ndarray, base: float | None) -> np.ndarray:
     if base is None or base == np.e:
         return values
     return values / np.log(base)
@@ -52,7 +52,7 @@ def _change_base_natural_log(values: np.ndarray, base: None | float) -> np.ndarr
 )
 @pytest.mark.parametrize("base", CATEGORICAL_BASES)
 def test_numpy_categorical_entropy_matches_scipy(
-    probabilities: np.ndarray, base: None | float | Literal["normalize"]
+    probabilities: np.ndarray, base: float | Literal["normalize"] | None
 ) -> None:
     distribution = NumpyProbabilityCategoricalDistribution(probabilities)
 
@@ -80,7 +80,7 @@ def test_numpy_categorical_entropy_normalize_maps_to_unit_interval() -> None:
 
 
 @pytest.mark.parametrize("base", NUMERIC_BASES)
-def test_numpy_dirichlet_entropy_matches_scipy(base: None | float) -> None:
+def test_numpy_dirichlet_entropy_matches_scipy(base: float | None) -> None:
     alphas = np.array(
         [
             [1.0, 1.0, 1.0],
@@ -99,7 +99,7 @@ def test_numpy_dirichlet_entropy_matches_scipy(base: None | float) -> None:
 
 
 @pytest.mark.parametrize("base", NUMERIC_BASES)
-def test_numpy_gaussian_entropy_matches_scipy_norm(base: None | float) -> None:
+def test_numpy_gaussian_entropy_matches_scipy_norm(base: float | None) -> None:
     mean = np.array([0.0, 3.5, -1.0], dtype=float)
     var = np.array([1.0, 0.25, 2.0], dtype=float)
     distribution = NumpyGaussianDistribution(mean=mean, var=var)
@@ -114,7 +114,7 @@ def test_numpy_gaussian_entropy_matches_scipy_norm(base: None | float) -> None:
 @pytest.mark.parametrize("base", CATEGORICAL_BASES)
 @pytest.mark.parametrize("sample_axis", [0, 1])
 def test_numpy_sample_second_order_measures_match_scipy(
-    sample_axis: int, base: None | float | Literal["normalize"]
+    sample_axis: int, base: float | Literal["normalize"] | None
 ) -> None:
     base_probabilities = np.array(
         [
@@ -155,7 +155,7 @@ def test_numpy_sample_second_order_measures_match_scipy(
 
 @pytest.mark.parametrize("base", CATEGORICAL_BASES)
 def test_numpy_dirichlet_entropy_of_expected_predictive_distribution_matches_scipy(
-    base: None | float | Literal["normalize"],
+    base: float | Literal["normalize"] | None,
 ) -> None:
     alphas = np.array(
         [
@@ -174,7 +174,7 @@ def test_numpy_dirichlet_entropy_of_expected_predictive_distribution_matches_sci
 
 
 @pytest.mark.parametrize("base", NUMERIC_BASES)
-def test_numpy_dirichlet_conditional_entropy_and_mutual_information_known_points(base: None | float) -> None:
+def test_numpy_dirichlet_conditional_entropy_and_mutual_information_known_points(base: float | None) -> None:
     num_classes = 3
     expected_uniform_entropy = _change_base_natural_log(np.asarray(np.log(num_classes), dtype=float), base)
 
@@ -220,7 +220,7 @@ def test_numpy_normalize_base_unsupported_for_non_categorical_entropies() -> Non
 
 
 @pytest.mark.parametrize("base", NUMERIC_BASES)
-def test_identity_holds_for_array_dirichlet(base: None | float) -> None:
+def test_identity_holds_for_array_dirichlet(base: float | None) -> None:
     alphas = np.array(
         [
             [1.5, 2.0, 3.5],
@@ -239,7 +239,7 @@ def test_identity_holds_for_array_dirichlet(base: None | float) -> None:
 
 @pytest.mark.parametrize("base", CATEGORICAL_BASES)
 @pytest.mark.parametrize("sample_axis", [0, 1])
-def test_identity_holds_for_array_categorical_sample(sample_axis: int, base: None | float | str) -> None:
+def test_identity_holds_for_array_categorical_sample(sample_axis: int, base: float | str | None) -> None:
     base_probabilities = np.array(
         [
             [[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]],

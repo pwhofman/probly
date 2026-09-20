@@ -216,24 +216,24 @@ def test_device_property_delegates_to_jax_value() -> None:
 
 
 # ---------------------------------------------------------------------------
-# size with int dim.
+# Array-style size and batch shape.
 # ---------------------------------------------------------------------------
 
 
-def test_size_int_dim_return_batch_size() -> None:
-    """``size(int)`` returns the batch size at that dim."""
+def test_size_and_shape_describe_batch_dimensions() -> None:
+    """The size property counts batch elements, excluding protected axes."""
     x = _SingleArray(jnp.arange(24.0).reshape(2, 3, 4))
-    assert x.size(0) == 2
-    assert x.size(1) == 3
-    assert x.size(-1) == 3
-    assert x.size() == 6
+    assert x.shape[0] == 2
+    assert x.shape[1] == 3
+    assert x.shape[-1] == 3
+    assert x.size == 6
 
 
-def test_size_int_dim_out_of_bounds_raises() -> None:
-    """``size(dim)`` with out-of-range dim raises IndexError."""
+def test_shape_out_of_bounds_raises() -> None:
+    """Accessing a nonexistent batch dimension raises IndexError."""
     x = _SingleArray(jnp.arange(24.0).reshape(2, 3, 4))
-    with pytest.raises(IndexError, match="out of bounds"):
-        _ = x.size(5)
+    with pytest.raises(IndexError):
+        _ = x.shape[5]
 
 
 # ---------------------------------------------------------------------------

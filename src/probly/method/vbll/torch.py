@@ -37,7 +37,7 @@ def _build_vbll_layer(obj: nn.Linear, state: State) -> nn.Module:
         return TVBLLLayer(
             in_features=obj.in_features,
             num_classes=obj.out_features,
-            parameterization=parameterization,  # ty:ignore[invalid-argument-type]
+            parameterization=parameterization,
             prior_scale=state[PRIOR_SCALE],
             wishart_scale=state[WISHART_SCALE],
             dof=state[DOF],
@@ -46,14 +46,14 @@ def _build_vbll_layer(obj: nn.Linear, state: State) -> nn.Module:
         return HetVBLLLayer(
             in_features=obj.in_features,
             num_classes=obj.out_features,
-            parameterization=parameterization,  # ty:ignore[invalid-argument-type]
+            parameterization=parameterization,
             prior_scale=state[PRIOR_SCALE],
             noise_prior_scale=state[NOISE_PRIOR_SCALE],
         )
     return VBLLLayer(
         in_features=obj.in_features,
         num_outputs=obj.out_features,
-        parameterization=parameterization,  # ty:ignore[invalid-argument-type]
+        parameterization=parameterization,
         prior_scale=state[PRIOR_SCALE],
         noise_init=state[NOISE_INIT],
         cov_rank=state[COV_RANK],

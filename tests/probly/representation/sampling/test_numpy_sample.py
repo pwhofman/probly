@@ -19,6 +19,26 @@ def assert_weights_equal(sample: NumpySample, expected: object) -> None:
 
 
 class TestNumpySample:
+    def test_from_iterable_axis_zero_applies_requested_dtype(self) -> None:
+        values = np.arange(6, dtype=np.int64).reshape(2, 3)
+        sample = NumpySample.from_iterable(values, sample_axis=0, dtype=np.float32)
+        assert sample.array.dtype == np.float32
+        assert sample.sample_axis == 0
+        np.testing.assert_array_equal(sample.array, values)
+
+    def test_astype_preserves_axis_weights_and_copy_semantics(self) -> None:
+        weights = np.array([0.2, 0.3, 0.5])
+        sample = NumpySample(np.arange(6.0).reshape(2, 3), sample_axis=1, weights=weights)
+        assert sample.astype(np.float64, copy=False) is sample
+        result = sample.astype(np.float32, order="F")
+        assert result.array.dtype == np.float32
+        assert result.array.flags.f_contiguous
+        assert result.sample_axis == 1
+        assert result.weights is weights
+        assert not np.shares_memory(result.array, sample.array)
+        with pytest.raises(TypeError):
+            sample.astype(np.int32, casting="safe")
+
     def test_sample_internal_array(self, array_sample_2d: NumpySample[int]) -> None:
         assert isinstance(array_sample_2d.array, np.ndarray)
 

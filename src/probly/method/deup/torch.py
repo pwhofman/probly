@@ -31,6 +31,7 @@ from probly.representation.distribution.torch_categorical import (
     TorchProbabilityCategoricalDistribution,
 )
 from probly.traverse_nn import nn_compose, nn_traverser
+from probly.utils.torch import torch_head_dimension
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, singledispatch_traverser, traverse_with_state
 
 if TYPE_CHECKING:
@@ -788,7 +789,7 @@ class TorchDEUPPredictor(nn.Module, DEUPPredictor[[torch.Tensor], TorchDEUPRepre
     """
 
     encoder: nn.Module
-    classification_head: nn.Linear
+    classification_head: nn.Module
     error_head: ErrorPredictionHead
 
     def __init__(
@@ -830,12 +831,14 @@ class TorchDEUPPredictor(nn.Module, DEUPPredictor[[torch.Tensor], TorchDEUPRepre
             nn_compose(torch_deup_traverser, nn_traverser=nn_traverser),
             init={TRAVERSE_REVERSED: True, HEAD_MODULE: None},
         )
-        head: nn.Linear | None = state[HEAD_MODULE]  # ty: ignore[invalid-assignment]
+        head = state[HEAD_MODULE]
         if head is None:
             msg = "No nn.Linear layer found in the model; cannot identify a classification head."
             raise ValueError(msg)
 
-        providers = _build_providers(stationarizing_features, head.out_features, head.in_features)
+        in_features = torch_head_dimension(head, "in_features")
+        out_features = torch_head_dimension(head, "out_features")
+        providers = _build_providers(stationarizing_features, out_features, in_features)
         if not providers:
             msg = (
                 "TorchDEUPPredictor requires at least one stationarizing feature provider. "

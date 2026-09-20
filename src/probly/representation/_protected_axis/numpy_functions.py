@@ -112,7 +112,7 @@ def protected_astype_function(
 ) -> Any:  # noqa: ANN401
     dtype = params.arguments["dtype"]
     copy = params.arguments.get("copy", True)
-    return _apply_unary(internals, lambda _name, value, _axes: func(value, dtype=dtype, copy=copy))
+    return _apply_unary(internals, lambda _name, value, _axes: func(value, dtype, copy=copy))
 
 
 @numpy_function.multi_register([np.mean, np.sum, np.average])

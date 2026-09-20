@@ -18,6 +18,7 @@ from probly.representation.distribution.torch_categorical import (
     TorchProbabilityCategoricalDistribution,
 )
 from probly.traverse_nn import nn_compose, nn_traverser
+from probly.utils.torch import torch_head_dimension
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, singledispatch_traverser, traverse_with_state
 
 from ._common import (
@@ -155,7 +156,7 @@ class TorchDDUPredictor(nn.Module, DDUPredictor[[torch.Tensor], TorchDDURepresen
     """
 
     encoder: nn.Module
-    classification_head: nn.Linear
+    classification_head: nn.Module
     density_head: GaussianMixtureHead
 
     def __init__(self, model: nn.Module, sn_coeff: float = 3.0) -> None:
@@ -171,7 +172,7 @@ class TorchDDUPredictor(nn.Module, DDUPredictor[[torch.Tensor], TorchDDURepresen
             nn_compose(residual_detection_traverser, torch_ddu_traverser, nn_traverser=nn_traverser),
             init={HAS_RESIDUAL: False, TRAVERSE_REVERSED: True, SN_COEFF: sn_coeff, HEAD_MODULE: None},
         )
-        head: nn.Linear | None = state[HEAD_MODULE]  # ty: ignore[invalid-assignment]
+        head = state[HEAD_MODULE]
         if head is None:
             msg = "No nn.Linear layer found in the model; cannot identify a classification head."
             raise ValueError(msg)
@@ -188,7 +189,9 @@ class TorchDDUPredictor(nn.Module, DDUPredictor[[torch.Tensor], TorchDDURepresen
 
         self.encoder = encoder
         self.classification_head = head
-        self.density_head = GaussianMixtureHead(head.out_features, head.in_features)
+        in_features = torch_head_dimension(head, "in_features")
+        out_features = torch_head_dimension(head, "out_features")
+        self.density_head = GaussianMixtureHead(out_features, in_features)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Encode features, classify, and score density.
