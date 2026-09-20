@@ -72,7 +72,6 @@ __all__ = [
     "BrierLoss",
     "CachingDecomposition",
     "CategoricalVarianceDecomposition",
-    "CategoricalVarianceDecomposition",
     "CredalSetEntropyDecomposition",
     "Decomposition",
     "EpistemicDecomposition",

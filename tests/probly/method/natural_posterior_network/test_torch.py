@@ -135,7 +135,7 @@ from probly.quantification.measure.distribution import (  # noqa: E402
 )
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: E402
 
-NUMERIC_BASES: tuple[None | float, ...] = (None, 2.0, 10.0)
+NUMERIC_BASES: tuple[float | None, ...] = (None, 2.0, 10.0)
 
 
 def _torch_dirichlet() -> TorchDirichletDistribution:
@@ -151,7 +151,7 @@ def _torch_dirichlet() -> TorchDirichletDistribution:
 
 
 @pytest.mark.parametrize("base", NUMERIC_BASES)
-def test_torch_decomposition_components_match_measure_functions(base: None | float) -> None:
+def test_torch_decomposition_components_match_measure_functions(base: float | None) -> None:
     distribution = _torch_dirichlet()
 
     decomposition = NaturalPosteriorDecomposition(distribution, base=base)

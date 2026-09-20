@@ -43,7 +43,6 @@ __all__ = [
     "AleatoricTotalDecomposition",
     "CachingDecomposition",
     "CategoricalVarianceDecomposition",
-    "CategoricalVarianceDecomposition",
     "CredalSetEntropyDecomposition",
     "Decomposition",
     "EpistemicDecomposition",

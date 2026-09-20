@@ -28,11 +28,11 @@ from probly.representation.distribution.torch_categorical import (
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
 from probly.representation.distribution.torch_mixture import TorchMixtureDistribution
 
-CATEGORICAL_BASES: tuple[None | float | str, ...] = (None, 2.0, "normalize")
+CATEGORICAL_BASES: tuple[float | str | None, ...] = (None, 2.0, "normalize")
 
 
 def _base_divisor(
-    base: None | float | str, num_classes: int, *, dtype: torch.dtype, device: torch.device
+    base: float | str | None, num_classes: int, *, dtype: torch.dtype, device: torch.device
 ) -> torch.Tensor:
     if base is None or base == torch.e:
         return torch.tensor(1.0, dtype=dtype, device=device)
@@ -40,14 +40,14 @@ def _base_divisor(
     return torch.log(torch.tensor(resolved_base, dtype=dtype, device=device))
 
 
-def _tol(base: None | float | str) -> tuple[float, float]:
+def _tol(base: float | str | None) -> tuple[float, float]:
     if base is None:
         return 1e-12, 1e-12
     return 1e-7, 1e-7
 
 
 @pytest.mark.parametrize("base", CATEGORICAL_BASES)
-def test_torch_categorical_entropy_matches_torch_distribution(base: None | float | str) -> None:
+def test_torch_categorical_entropy_matches_torch_distribution(base: float | str | None) -> None:
     probabilities = torch.tensor(
         [[0.25, 0.25, 0.5], [0.1, 0.2, 0.7]],
         dtype=torch.float64,
@@ -85,7 +85,7 @@ def test_torch_categorical_entropy_normalize_maps_to_unit_interval() -> None:
 
 
 @pytest.mark.parametrize("base", [None, 2.0])
-def test_torch_dirichlet_entropy_matches_torch_distribution(base: None | float) -> None:
+def test_torch_dirichlet_entropy_matches_torch_distribution(base: float | None) -> None:
     alphas = torch.tensor([[1.0, 2.0, 3.0], [2.0, 3.0, 4.0]], dtype=torch.float64)
     distribution = TorchDirichletDistribution(alphas)
 
@@ -98,7 +98,7 @@ def test_torch_dirichlet_entropy_matches_torch_distribution(base: None | float) 
 
 
 @pytest.mark.parametrize("base", CATEGORICAL_BASES)
-def test_torch_dirichlet_second_order_measures(base: None | float | str) -> None:
+def test_torch_dirichlet_second_order_measures(base: float | str | None) -> None:
     alphas = torch.tensor([[1.0, 2.0, 3.0], [10.0, 5.0, 1.0]], dtype=torch.float64)
     distribution = TorchDirichletDistribution(alphas)
 
@@ -136,7 +136,7 @@ def test_torch_dirichlet_second_order_measures(base: None | float | str) -> None
 
 
 @pytest.mark.parametrize("base", [None, 2.0])
-def test_torch_dirichlet_mixture_second_order_measures(base: None | float) -> None:
+def test_torch_dirichlet_mixture_second_order_measures(base: float | None) -> None:
     alphas = torch.tensor(
         [
             [[2.0, 1.0], [1.0, 3.0], [3.0, 1.0]],
@@ -172,7 +172,7 @@ def test_torch_dirichlet_mixture_second_order_measures(base: None | float) -> No
 
 @pytest.mark.parametrize("base", CATEGORICAL_BASES)
 @pytest.mark.parametrize("sample_axis", [0, 1])
-def test_torch_categorical_second_order_measures_match_torch(sample_axis: int, base: None | float | str) -> None:
+def test_torch_categorical_second_order_measures_match_torch(sample_axis: int, base: float | str | None) -> None:
     base_probabilities = torch.tensor(
         [
             [[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]],
@@ -217,7 +217,7 @@ def test_torch_categorical_second_order_measures_match_torch(sample_axis: int, b
 
 @pytest.mark.parametrize("base", CATEGORICAL_BASES)
 @pytest.mark.parametrize("sample_axis", [0, 1])
-def test_identity_holds_for_torch_categorical_sample(sample_axis: int, base: None | float | str) -> None:
+def test_identity_holds_for_torch_categorical_sample(sample_axis: int, base: float | str | None) -> None:
     base_probabilities = torch.tensor(
         [
             [[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]],
