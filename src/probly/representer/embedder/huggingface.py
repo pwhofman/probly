@@ -29,7 +29,16 @@ type TextEmbedOutput = TorchEmbedding | TorchEmbeddingSample | TorchEmbeddingSam
 class SentenceTransformerLike(Protocol):
     """Protocol for sentence-transformer compatible embedding models."""
 
-    def encode(self, sentences: list[str], **kwargs: object) -> object:
+    def encode(
+        self,
+        sentences: list[str],
+        /,
+        *,
+        batch_size: int = 32,
+        normalize_embeddings: bool = False,
+        convert_to_tensor: bool = False,
+        **kwargs: Any,  # noqa: ANN401  # Backend-specific encode options have heterogeneous types.
+    ) -> object:
         """Embed a list of sentences."""
 
 
@@ -56,6 +65,10 @@ class HFTextEmbedder(Representer[Any, Any, torch.Tensor, TextEmbedOutput]):
             batch_size: Number of texts to embed in one model call.
             normalize_embeddings: Whether sentence-transformers should L2-normalize embeddings.
             encode_kwargs: Additional keyword arguments forwarded to ``model.encode``.
+                Must not override the text input, batch_size, normalize_embeddings, or convert_to_tensor.
+
+        Raises:
+            ValueError: If batch_size is nonpositive or encode_kwargs contains reserved arguments.
         """
         if batch_size <= 0:
             msg = "batch_size must be positive."
@@ -65,6 +78,11 @@ class HFTextEmbedder(Representer[Any, Any, torch.Tensor, TextEmbedOutput]):
         self.batch_size = batch_size
         self.normalize_embeddings = normalize_embeddings
         self.encode_kwargs = dict(encode_kwargs or {})
+        reserved_keys = {"batch_size", "normalize_embeddings", "convert_to_tensor", "sentences", "inputs"}
+        duplicates = reserved_keys.intersection(self.encode_kwargs)
+        if duplicates:
+            msg = f"encode_kwargs cannot override reserved arguments: {', '.join(sorted(duplicates))}."
+            raise ValueError(msg)
 
     @classmethod
     def from_model_name(

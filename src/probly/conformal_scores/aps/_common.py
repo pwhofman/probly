@@ -9,6 +9,8 @@ from flextype import flexdispatch
 import numpy as np
 
 from probly.representation.array_like import ArrayLike
+from probly.representation.distribution.numpy_categorical import NumpyCategoricalDistribution
+from probly.representation.sample.numpy import NumpySample
 
 
 @flexdispatch
@@ -19,7 +21,7 @@ def _aps_score_dispatch[T](probs: T, y_cal: T | None = None, randomized: bool = 
 
 
 @_aps_score_dispatch.register(np.ndarray | ArrayLike)
-def compute_aps_score_numpy(
+def numpy_compute_aps_score(
     probs: np.ndarray | ArrayLike, y_cal: np.ndarray | ArrayLike | None = None, randomized: bool = True
 ) -> np.ndarray:
     """APS Nonconformity-Scores for numpy arrays."""
@@ -57,6 +59,18 @@ def compute_aps_score_numpy(
         scores = np.take_along_axis(scores, y_cal_np[..., np.newaxis], axis=-1)
         scores = np.squeeze(scores, axis=-1)
     return scores
+
+
+@_aps_score_dispatch.register(NumpyCategoricalDistribution)
+def _(probs: NumpyCategoricalDistribution, y_cal: np.ndarray | None = None, randomized: bool = True) -> np.ndarray:
+    """Compute APS scores from normalized categorical probabilities."""
+    return _aps_score_dispatch(probs.probabilities, y_cal, randomized=randomized)
+
+
+@_aps_score_dispatch.register(NumpySample)
+def _(probs: NumpySample, y_cal: np.ndarray | None = None, randomized: bool = True) -> np.ndarray:
+    """Compute memberwise APS scores for NumPy samples."""
+    return _aps_score_dispatch(probs.array, y_cal, randomized=randomized)
 
 
 @dataclass(frozen=True, slots=True)

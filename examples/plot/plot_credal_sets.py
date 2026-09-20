@@ -6,14 +6,14 @@ The :func:`~probly.plot.plot_credal_set` function visualises 3-class credal
 sets on a ternary simplex.  It automatically picks the right renderer for each
 credal set type:
 
-- :class:`~probly.representation.credal_set.array.ArraySingletonCredalSet` --
+- :class:`~probly.representation.credal_set.numpy.NumpySingletonCredalSet` --
   a single point per instance.
-- :class:`~probly.representation.credal_set.array.ArrayProbabilityIntervalsCredalSet` --
+- :class:`~probly.representation.credal_set.numpy.NumpyProbabilityIntervalsCredalSet` --
   a filled feasibility polygon derived from per-class lower/upper bounds.
-- :class:`~probly.representation.credal_set.array.ArrayDistanceBasedCredalSet` --
+- :class:`~probly.representation.credal_set.numpy.NumpyDistanceBasedCredalSet` --
   the same polygon style, plus a marker at the nominal distribution.
-- :class:`~probly.representation.credal_set.array.ArrayConvexCredalSet` /
-  :class:`~probly.representation.credal_set.array.ArrayDiscreteCredalSet` --
+- :class:`~probly.representation.credal_set.numpy.NumpyConvexCredalSet` /
+  :class:`~probly.representation.credal_set.numpy.NumpyDiscreteCredalSet` --
   the convex hull of the member distributions, with scatter markers at each vertex.
 
 Each batch element is drawn in a distinct colour so that multiple sets can be
@@ -26,12 +26,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from probly.plot import PlotConfig, plot_credal_set
-from probly.representation.credal_set.array import (
-    ArrayConvexCredalSet,
-    ArrayDiscreteCredalSet,
-    ArrayDistanceBasedCredalSet,
-    ArrayProbabilityIntervalsCredalSet,
-    ArraySingletonCredalSet,
+from probly.representation.credal_set.numpy import (
+    NumpyConvexCredalSet,
+    NumpyDiscreteCredalSet,
+    NumpyDistanceBasedCredalSet,
+    NumpyProbabilityIntervalsCredalSet,
+    NumpySingletonCredalSet,
 )
 
 # %%
@@ -39,7 +39,7 @@ from probly.representation.credal_set.array import (
 # --------------------
 # The simplest case: each instance is a single probability distribution.
 
-singleton = ArraySingletonCredalSet(
+singleton = NumpySingletonCredalSet(
     array=np.array([[0.5, 0.3, 0.2], [0.2, 0.5, 0.3], [0.1, 0.2, 0.7]]),
 )
 plot_credal_set(singleton, title="Singleton")
@@ -51,7 +51,7 @@ plt.show()
 # Each class has independent lower and upper probability bounds.  The feasible
 # region on the simplex is the set of all distributions that respect every bound.
 
-intervals = ArrayProbabilityIntervalsCredalSet(
+intervals = NumpyProbabilityIntervalsCredalSet(
     lower_bounds=np.array([[0.1, 0.2, 0.3], [0.3, 0.1, 0.1]]),
     upper_bounds=np.array([[0.4, 0.5, 0.6], [0.6, 0.3, 0.7]]),
 )
@@ -65,7 +65,7 @@ plt.show()
 # The filled polygon shows all distributions within that distance; the marker
 # highlights the nominal.
 
-distance_based = ArrayDistanceBasedCredalSet(
+distance_based = NumpyDistanceBasedCredalSet(
     nominal=np.array([[0.5, 0.3, 0.2], [0.2, 0.6, 0.2]]),
     radius=np.array([0.1, 0.1]),
 )
@@ -78,7 +78,7 @@ plt.show()
 # Given explicitly as a set of vertex distributions.  The convex hull is drawn
 # as a filled polygon with markers at each vertex.
 
-convex = ArrayConvexCredalSet(
+convex = NumpyConvexCredalSet(
     array=np.array(
         [
             [[0.7, 0.2, 0.1], [0.1, 0.7, 0.2], [0.1, 0.1, 0.8]],
@@ -95,7 +95,7 @@ plt.show()
 # Identical representation to the convex case but semantically represents a
 # finite set of distributions rather than their convex hull.
 
-discrete = ArrayDiscreteCredalSet(
+discrete = NumpyDiscreteCredalSet(
     array=np.array(
         [
             [[0.6, 0.3, 0.1], [0.2, 0.5, 0.3]],

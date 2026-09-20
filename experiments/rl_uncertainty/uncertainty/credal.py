@@ -14,9 +14,9 @@ import torch
 from probly.method.credal_relative_likelihood import credal_relative_likelihood
 from probly.predictor import predict_raw
 from probly.quantification import quantify
-from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistribution,
-    ArrayCategoricalDistributionSample,
+from probly.representation.distribution.numpy_categorical import (
+    NumpyCategoricalDistributionSample,
+    NumpyProbabilityCategoricalDistribution,
 )
 
 from . import _softmax
@@ -75,7 +75,7 @@ class CredalEstimator:
         """Per-state uncertainty via probly's decomposition pipeline.
 
         Converts Q-values to softmax probabilities per credal member, then uses
-        ArrayCategoricalDistributionSample + quantify to get
+        NumpyCategoricalDistributionSample + quantify to get
         aleatoric/epistemic/total decomposition per state.
         """
         stacked_q = self._stacked_q(states)
@@ -88,8 +88,8 @@ class CredalEstimator:
 
         for i in range(batch_size):
             probs_i = stacked_probs[:, i, :]
-            sample = ArrayCategoricalDistributionSample(
-                array=ArrayCategoricalDistribution(unnormalized_probabilities=probs_i),
+            sample = NumpyCategoricalDistributionSample(
+                array=NumpyProbabilityCategoricalDistribution(array=probs_i),
                 sample_axis=0,
             )
             decomp = cast("AleatoricEpistemicTotalDecomposition", quantify(sample))

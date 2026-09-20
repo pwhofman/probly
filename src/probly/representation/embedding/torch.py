@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, override
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, ClassVar, Self, override
 
 import torch
 
@@ -11,9 +11,12 @@ from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.embedding._common import Embedding, EmbeddingSample, EmbeddingSampleSample, create_embedding
 from probly.representation.sample.torch import TorchSample
 from probly.representation.torch_functions import torch_average
+from probly.representation.torch_like import TorchLikeImplementation
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterable
+
+    from probly.representation.sample._common import SampleAxis
 
 
 @create_embedding.register(torch.Tensor)
@@ -25,7 +28,7 @@ class TorchEmbedding(TorchAxisProtected[torch.Tensor], Embedding[torch.Tensor]):
     ``(*batch_shape, embedding_dim)``.
     """
 
-    embeddings: torch.Tensor
+    embeddings: torch.Tensor = field()
     protected_axes: ClassVar[dict[str, int]] = {"embeddings": 1}
     permitted_functions: ClassVar[set[Callable[..., Any]]] = {torch.mean, torch.sum, torch_average}
 
@@ -63,6 +66,42 @@ class TorchEmbeddingSampleSample(  # ty:ignore[conflicting-metaclass]
     """A torch sample of embedding samples."""
 
     sample_space: ClassVar[type[TorchEmbeddingSample]] = TorchEmbeddingSample
+
+    @classmethod
+    @override
+    def from_iterable(
+        cls,
+        samples: Iterable[Any],
+        weights: Iterable[float] | None = None,
+        sample_dim: SampleAxis | None = None,
+        sample_axis: SampleAxis | None = "auto",
+        dtype: torch.dtype | None = None,
+    ) -> Self:
+        """Create a nested sample, converting generic inner embedding samples.
+
+        Inner samples follow TorchSample's stacking rules, which reject weighted
+        inner samples. Outer sample weights are supported.
+
+        Args:
+            samples: Inner embedding samples or an already stacked Torch-like value.
+            weights: Optional outer sample weights.
+            sample_dim: Dimension for the outer sample axis.
+            sample_axis: Alias for sample_dim.
+            dtype: Desired embedding data type.
+
+        Returns:
+            A nested Torch embedding sample preserving outer weights.
+        """
+        if not isinstance(samples, TorchLikeImplementation):
+            samples = [
+                TorchEmbeddingSample.from_iterable(sample.samples, weights=sample.weights, sample_axis=0, dtype=dtype)
+                if isinstance(sample, EmbeddingSample) and not isinstance(sample, TorchLikeImplementation)
+                else sample
+                for sample in samples
+            ]
+        return super().from_iterable(
+            samples, weights=weights, sample_dim=sample_dim, sample_axis=sample_axis, dtype=dtype
+        )
 
     @override
     @classmethod

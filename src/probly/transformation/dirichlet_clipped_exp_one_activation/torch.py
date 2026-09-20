@@ -35,9 +35,9 @@ class _AddOne(nn.Module):
         return x + 1
 
 
-def append_activation_torch(obj: nn.Module) -> nn.Sequential:
+def torch_append_activation(obj: nn.Module) -> nn.Sequential:
     """Append clipped exp + 1 so the model outputs Dirichlet alpha = exp(clip(z)) + 1."""
     return nn.Sequential(obj, _ClippedExp(), _AddOne())
 
 
-register(nn.Module, append_activation_torch)
+register(nn.Module, torch_append_activation)

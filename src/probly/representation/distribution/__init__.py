@@ -1,6 +1,6 @@
 """Distribution subpackage."""
 
-from probly.lazy_types import TORCH_TENSOR
+from probly.lazy_types import JAX_ARRAY, TORCH_TENSOR
 
 from ._common import (
     BernoulliDistribution,
@@ -24,20 +24,20 @@ from ._common import (
     create_dirichlet_mixture_distribution_from_alphas_and_weights,
     create_gaussian_distribution,
 )
-from .array_bernoulli import (
-    ArrayBernoulliDistribution,
-    ArrayBernoulliDistributionSample,
-    ArrayLogitBernoulliDistribution,
-    ArrayProbabilityBernoulliDistribution,
+from .numpy_bernoulli import (
+    NumpyBernoulliDistribution,
+    NumpyBernoulliDistributionSample,
+    NumpyLogitBernoulliDistribution,
+    NumpyProbabilityBernoulliDistribution,
 )
-from .array_categorical import (
-    ArrayCategoricalDistribution,
-    ArrayCategoricalDistributionSample,
-    ArrayLogitCategoricalDistribution,
-    ArrayProbabilityCategoricalDistribution,
+from .numpy_categorical import (
+    NumpyCategoricalDistribution,
+    NumpyCategoricalDistributionSample,
+    NumpyLogitCategoricalDistribution,
+    NumpyProbabilityCategoricalDistribution,
 )
-from .array_dirichlet import ArrayDirichletDistribution
-from .array_gaussian import ArrayGaussianDistribution, ArrayGaussianDistributionSample
+from .numpy_dirichlet import NumpyDirichletDistribution
+from .numpy_gaussian import NumpyGaussianDistribution, NumpyGaussianDistributionSample
 
 
 ## Torch
@@ -68,18 +68,30 @@ def _(_: type) -> None:
     from . import torch_mixture as torch_mixture  # noqa: PLC0415
 
 
+## Jax
+@create_categorical_distribution.delayed_register(JAX_ARRAY)
+@create_categorical_distribution_from_logits.delayed_register(JAX_ARRAY)
+def _(_: type) -> None:
+    from . import jax_categorical as jax_categorical  # noqa: PLC0415
+
+
+@create_bernoulli_distribution.delayed_register(JAX_ARRAY)
+@create_bernoulli_distribution_from_logits.delayed_register(JAX_ARRAY)
+def _(_: type) -> None:
+    from . import jax_bernoulli as jax_bernoulli  # noqa: PLC0415
+
+
+@create_dirichlet_distribution_from_alphas.delayed_register(JAX_ARRAY)
+def _(_: type) -> None:
+    from . import jax_dirichlet as jax_dirichlet  # noqa: PLC0415
+
+
+@create_gaussian_distribution.delayed_register(JAX_ARRAY)
+def _(_: type) -> None:
+    from . import jax_gaussian as jax_gaussian  # noqa: PLC0415
+
+
 __all__ = [
-    "ArrayBernoulliDistribution",
-    "ArrayBernoulliDistributionSample",
-    "ArrayCategoricalDistribution",
-    "ArrayCategoricalDistributionSample",
-    "ArrayDirichletDistribution",
-    "ArrayGaussianDistribution",
-    "ArrayGaussianDistributionSample",
-    "ArrayLogitBernoulliDistribution",
-    "ArrayLogitCategoricalDistribution",
-    "ArrayProbabilityBernoulliDistribution",
-    "ArrayProbabilityCategoricalDistribution",
     "BernoulliDistribution",
     "BernoulliDistributionSample",
     "CategoricalDistribution",
@@ -92,6 +104,17 @@ __all__ = [
     "GaussianDistribution",
     "GaussianDistributionSample",
     "MixtureDistribution",
+    "NumpyBernoulliDistribution",
+    "NumpyBernoulliDistributionSample",
+    "NumpyCategoricalDistribution",
+    "NumpyCategoricalDistributionSample",
+    "NumpyDirichletDistribution",
+    "NumpyGaussianDistribution",
+    "NumpyGaussianDistributionSample",
+    "NumpyLogitBernoulliDistribution",
+    "NumpyLogitCategoricalDistribution",
+    "NumpyProbabilityBernoulliDistribution",
+    "NumpyProbabilityCategoricalDistribution",
     "SecondOrderDistribution",
     "create_bernoulli_distribution",
     "create_bernoulli_distribution_from_logits",

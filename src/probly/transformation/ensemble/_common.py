@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Protocol, runtime_checkable
 
-from flextype import flexdispatch
+from flextype import RegistryMeta, flexdispatch
 
 from probly.predictor import (
     CategoricalDistributionPredictor,
@@ -69,6 +69,9 @@ def register_ensemble_members(ensemble: EnsemblePredictor, t: type[Predictor] | 
     """Register the members of an ensemble predictor."""
     if t is None:
         return ensemble
+    if not isinstance(t, RegistryMeta):
+        msg = f"Predictor type {t} must support flextype instance registration."
+        raise TypeError(msg)
     for member in ensemble:
         t.register_instance(member)
 

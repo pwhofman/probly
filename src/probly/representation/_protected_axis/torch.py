@@ -20,10 +20,8 @@ from probly.representation._protected_axis.torch_functions import torch_function
 from probly.representation.torch_like import TorchLike, TorchLikeImplementation
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Iterator, Mapping
     from types import ModuleType
-
-    from numpy.typing import DTypeLike, NDArray
 
     from probly.representation.array_like import ToIndices
 
@@ -136,6 +134,14 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor | np.ndarray](TorchLikeImpl
         msg = "No torch-like protected value is available."
         raise TypeError(msg)
 
+    @overload
+    def with_protected_values(self, values: dict[str, TorchProtectedValue]) -> Self: ...
+
+    @overload
+    def with_protected_values(
+        self, values: dict[str, TorchProtectedValue], func: Callable | None
+    ) -> TorchAxisProtected[T]: ...
+
     def with_protected_values(
         self,
         values: dict[str, TorchProtectedValue],
@@ -164,7 +170,12 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor | np.ndarray](TorchLikeImpl
 
     @override
     def __array_namespace__(self, /, *, api_version: str | None = None) -> ModuleType:
-        return cast("Any", self._torch_protected_value()).__array_namespace__(api_version=api_version)
+        value = self._torch_protected_value()
+        namespace = getattr(value, "__array_namespace__", None)
+        if not callable(namespace):
+            msg = "Underlying tensor does not support __array_namespace__."
+            raise NotImplementedError(msg)
+        return namespace(api_version=api_version)
 
     @override
     @property
@@ -235,11 +246,11 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor | np.ndarray](TorchLikeImpl
         index_tuple = index if isinstance(index, tuple) else (index,)
         return (*index_tuple, *(slice(None),) * protected_axes_count)
 
-    def _coerce_assignment_value(self, value: object) -> dict[str, object]:
+    def _coerce_assignment_value(self, value: object) -> Mapping[str, object]:
         field_names = tuple(type(self).protected_axes.keys())
 
         if isinstance(value, type(self)):
-            candidate_values: dict[str, object] = value.protected_values()  # ty:ignore[invalid-assignment]
+            candidate_values: Mapping[str, object] = value.protected_values()
         elif isinstance(value, tuple):
             if len(value) != len(field_names):
                 msg = f"Expected tuple with {len(field_names)} values for assignment."
@@ -323,7 +334,7 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor | np.ndarray](TorchLikeImpl
         if not changed:
             return self
 
-        return self.with_protected_values(updates)  # ty:ignore[invalid-return-type]
+        return self.with_protected_values(updates)
 
     def __torch_like__(
         self,
@@ -354,15 +365,7 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor | np.ndarray](TorchLikeImpl
         value = self.protected_value()
         if isinstance(value, np.ndarray):
             return value.copy() if force else value
-        return cast("Any", value).numpy(force=force)
-
-    def __array__(self, dtype: DTypeLike | None = None, /, *, copy: bool | None = None) -> NDArray[Any]:  # ty: ignore[invalid-method-override]
-        array = self.numpy(force=dtype is not None or bool(copy))
-        if dtype is not None:
-            return array.astype(dtype, copy=bool(copy))
-        if copy:
-            return array.copy()
-        return array
+        return value.numpy(force=force)
 
     @override
     def detach(self) -> Self:
@@ -370,7 +373,7 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor | np.ndarray](TorchLikeImpl
             name: value if isinstance(value, np.ndarray) else cast("TorchProtectedValue", cast("Any", value).detach())
             for name, value in self.protected_values().items()
         }
-        return self.with_protected_values(values)  # ty:ignore[invalid-return-type]
+        return self.with_protected_values(values)
 
     def reshape(self, *shape: int | tuple[int, ...]) -> Self:
         """Return a copy with reshaped protected values."""

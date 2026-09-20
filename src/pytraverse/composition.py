@@ -17,6 +17,7 @@ from typing import (
     Concatenate,
     NotRequired,
     Protocol,
+    TypeGuard,
     Union,
     Unpack,
     get_args,
@@ -229,7 +230,7 @@ class _AbstractSingledispatchTraverser[T: object, D](abc.ABC):
     ) -> ExtensibleTraverser[T]: ...
 
     @abc.abstractmethod
-    def _is_valid_dispatch_type(self, cls: Any) -> bool: ...  # noqa: ANN401
+    def _is_valid_dispatch_type(self, cls: Any) -> TypeGuard[D]: ...  # noqa: ANN401
 
     def __call__(
         self,
@@ -310,11 +311,12 @@ class _AbstractSingledispatchTraverser[T: object, D](abc.ABC):
         if cls is not None:
             if self._is_valid_dispatch_type(cls):
                 if traverser is None:
+                    dispatch_type = cls
 
                     def partial_register(
                         traverser: RegisteredLooseTraverser[T, Any],
                     ) -> Traverser[T]:
-                        return self.register(cls, traverser, **kwargs)
+                        return self.register(dispatch_type, traverser, **kwargs)
 
                     return partial_register
             else:
@@ -371,7 +373,7 @@ class SingledispatchTraverser[T](_AbstractSingledispatchTraverser[T, type | type
     ) -> ExtensibleTraverser[T]:
         return singledispatch(identity_traverser)  # ty:ignore[invalid-return-type]
 
-    def _is_valid_dispatch_type(self, cls: Any) -> bool:  # noqa: ANN401
+    def _is_valid_dispatch_type(self, cls: Any) -> TypeGuard[type | types.UnionType]:  # noqa: ANN401
         return _is_valid_dispatch_type(cls)
 
 
@@ -391,7 +393,7 @@ class FlexdispatchTraverser[T](_AbstractSingledispatchTraverser[T, flextype.Lazy
     ) -> ExtensibleTraverser[T]:
         return flextype.flexdispatch(identity_traverser)  # ty:ignore[invalid-return-type]
 
-    def _is_valid_dispatch_type(self, cls: Any) -> bool:  # noqa: ANN401
+    def _is_valid_dispatch_type(self, cls: Any) -> TypeGuard[flextype.LazyType]:  # noqa: ANN401
         return flextype.is_valid_dispatch_type(cls)
 
     @overload

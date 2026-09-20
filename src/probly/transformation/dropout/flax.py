@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-def prepend_flax_dropout(
+def flax_prepend_dropout(
     obj: Callable,
     p: float,
     rng_collection: str = "dropout",
@@ -28,4 +28,4 @@ def prepend_flax_dropout(
     return Sequential(Dropout(p, rng_collection=rng_collection, rngs=rngs), obj)
 
 
-register(Linear, prepend_flax_dropout)
+register(Linear, flax_prepend_dropout)

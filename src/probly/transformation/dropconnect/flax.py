@@ -9,7 +9,7 @@ from probly.layers.flax import DropConnectLinear
 from ._common import register
 
 
-def replace_flax_dropconnect(
+def flax_replace_dropconnect(
     obj: Linear, p: float, rng_collection: str, rngs: rnglib.Rngs | rnglib.RngStream | int
 ) -> DropConnectLinear:
     """Replace a given layer by a DropConnectLinear layer based on :cite:`mobinyDropConnectEffective2021`."""
@@ -18,4 +18,4 @@ def replace_flax_dropconnect(
     return DropConnectLinear(obj, rate=p, rng_collection=rng_collection, rngs=rngs)
 
 
-register(Linear, replace_flax_dropconnect)
+register(Linear, flax_replace_dropconnect)

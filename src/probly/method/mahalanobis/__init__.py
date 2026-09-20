@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from probly.lazy_types import SKLEARN_MODULE, TORCH_MODULE, TORCH_TENSOR, TORCH_TENSOR_LIKE
 
-from . import array as array
+from . import numpy as numpy
 from ._common import (
     MahalanobisDecomposition,
     MahalanobisPredictor,

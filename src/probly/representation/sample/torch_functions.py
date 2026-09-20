@@ -51,7 +51,7 @@ class _TorchFunction(Protocol):
         ...
 
 
-class _BoundTorchFunction(Protocol):
+class _TorchBoundFunction(Protocol):
     def __call__(
         self,
         func: Callable,
@@ -61,7 +61,7 @@ class _BoundTorchFunction(Protocol):
         ...
 
 
-class _BoundTorchFunctionWithInternals[D: TorchLike](Protocol):
+class _TorchBoundFunctionWithInternals[D: TorchLike](Protocol):
     def __call__(
         self,
         func: Callable,
@@ -88,7 +88,7 @@ def torch_function(
 
 
 def torch_function_override(
-    torch_func: _BoundTorchFunction,
+    torch_func: _TorchBoundFunction,
 ) -> _TorchFunction:
     """Decorator to convert a bound torch function to a torch function."""
 
@@ -107,19 +107,19 @@ def torch_function_override(
 @overload
 def torch_internals_override(
     torch_sample_param_name: str,
-) -> Callable[[_BoundTorchFunctionWithInternals], _TorchFunction]: ...
+) -> Callable[[_TorchBoundFunctionWithInternals], _TorchFunction]: ...
 
 
 @overload
 def torch_internals_override(
     *,
     torch_sample_param_pos: int,
-) -> Callable[[_BoundTorchFunctionWithInternals], _TorchFunction]: ...
+) -> Callable[[_TorchBoundFunctionWithInternals], _TorchFunction]: ...
 
 
 def torch_internals_override(
     torch_sample_param_name: str | None = None, *, torch_sample_param_pos: int | None = None
-) -> Callable[[_BoundTorchFunctionWithInternals], _TorchFunction]:
+) -> Callable[[_TorchBoundFunctionWithInternals], _TorchFunction]:
     """Decorator to convert a function taking a sample tensor argument."""
     if torch_sample_param_name is None and torch_sample_param_pos is None:
         msg = "Either torch_sample_param_name or torch_sample_param_pos must be provided."
@@ -128,7 +128,7 @@ def torch_internals_override(
         msg = "Only one of torch_sample_param_name or torch_sample_param_pos can be provided."
         raise ValueError(msg)
 
-    def decorator(f: _BoundTorchFunctionWithInternals) -> _TorchFunction:
+    def decorator(f: _TorchBoundFunctionWithInternals) -> _TorchFunction:
         @wraps(f)
         def wrapper(
             func: Callable,

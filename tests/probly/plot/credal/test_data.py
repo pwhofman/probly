@@ -10,7 +10,7 @@ from probly.plot.credal._data import (
     _get_probabilities,
     _to_numpy,
 )
-from probly.representation.credal_set.array import ArraySingletonCredalSet
+from probly.representation.credal_set.numpy import NumpySingletonCredalSet
 
 
 class _FakeTensor:
@@ -47,7 +47,7 @@ class TestDataHelpers:
         np.testing.assert_array_equal(_to_numpy(_FakeTensor(arr)), arr)
 
     def test_get_probabilities_dispatches_array_set(self) -> None:
-        data = ArraySingletonCredalSet(array=np.array([[0.3, 0.7]]))
+        data = NumpySingletonCredalSet(array=np.array([[0.3, 0.7]]))
         np.testing.assert_allclose(_get_probabilities(data), [[0.3, 0.7]])
 
     def test_get_probabilities_unregistered_type_raises(self) -> None:

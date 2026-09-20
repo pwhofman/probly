@@ -9,7 +9,7 @@ from probly.representation.sample.axis_tracking import ArrayIndex, convert_idx
 
 
 @convert_idx.register(jax.Array)
-def _convert_jax_array_idx(idx: jax.Array) -> ArrayIndex | bool | int:
+def _jax_convert_array_idx(idx: jax.Array) -> ArrayIndex | bool | int:
     if idx.ndim == 0:
         if idx.dtype == jnp.bool_:
             return bool(idx)

@@ -1366,7 +1366,8 @@ def _maybe_reset_sngp_precision_for_new_epoch(model: nn.Module, epoch: int) -> N
     for layer in model.modules():
         if isinstance(layer, SNGPLayer) and getattr(layer, "_last_reset_epoch", -1) != epoch:
             layer.reset_precision_matrix()
-            layer._last_reset_epoch = epoch  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+            # Benchmark metadata is valid; nn.Module's __setattr__ annotation is too narrow.
+            layer._last_reset_epoch = epoch  # noqa: SLF001  # ty: ignore[invalid-assignment]
 
 
 @train_epoch.register(SNGPPredictor)

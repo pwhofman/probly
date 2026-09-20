@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import numpy as np
+import pytest
+
+pytest.importorskip("torch")
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
@@ -9,6 +13,7 @@ from probly.utils.torch import (
     dirichlet_entropy,
     temperature_softmax,
     torch_collect_outputs,
+    torch_head_dimension,
     torch_reset_all_parameters,
 )
 
@@ -48,3 +53,20 @@ def test_dirichlet_entropy() -> None:
     entropy = dirichlet_entropy(alphas)
     torch.testing.assert_close(entropy, torch.distributions.Dirichlet(alphas).entropy())
     assert entropy[1] > entropy[0]
+
+
+def test_head_dimension_accepts_custom_module_and_integer_like_values() -> None:
+    class CustomHead(torch.nn.Module):
+        out_features = np.int64(7)
+
+    head = CustomHead()
+    assert torch_head_dimension(head, "out_features") == 7
+    with pytest.raises(TypeError, match="in_features"):
+        torch_head_dimension(head, "in_features")
+
+
+def test_reset_skips_non_callable_reset_parameters() -> None:
+    class CustomModule(torch.nn.Module):
+        reset_parameters = None
+
+    torch_reset_all_parameters(CustomModule())

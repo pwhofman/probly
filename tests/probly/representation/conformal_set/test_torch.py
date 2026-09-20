@@ -39,18 +39,18 @@ class TestTorchOneHotConformalSet:
         with pytest.raises(ValueError, match="one-hot encoded"):
             TorchOneHotConformalSet(tensor=torch.tensor([[2, 1]], dtype=torch.int64))
 
-    def test_from_tensor_sample_factory(self) -> None:
+    def test_from_tensor_factory(self) -> None:
         torch = _torch_modules()
         from probly.representation.conformal_set.torch import TorchOneHotConformalSet  # noqa: PLC0415
 
-        s = TorchOneHotConformalSet.from_tensor_sample(torch.tensor([[True, False]]))
+        s = TorchOneHotConformalSet.from_tensor(torch.tensor([[True, False]]))
         assert isinstance(s, TorchOneHotConformalSet)
 
-    def test_from_tensor_sample_with_non_tensor_raises(self) -> None:
+    def test_from_tensor_with_non_tensor_raises(self) -> None:
         from probly.representation.conformal_set.torch import TorchOneHotConformalSet  # noqa: PLC0415
 
         with pytest.raises(TypeError, match=r"torch\.Tensor"):
-            TorchOneHotConformalSet.from_tensor_sample([[True, False]])  # type: ignore[arg-type]
+            TorchOneHotConformalSet.from_tensor([[True, False]])  # type: ignore[arg-type]
 
     def test_from_sample_factory(self) -> None:
         torch = _torch_modules()
@@ -71,21 +71,21 @@ class TestTorchOneHotConformalSet:
 class TestTorchIntervalConformalSet:
     """Interval conformal sets backed by torch tensors."""
 
-    def test_from_tensor_samples(self) -> None:
+    def test_from_tensors(self) -> None:
         torch = _torch_modules()
         from probly.representation.conformal_set.torch import TorchIntervalConformalSet  # noqa: PLC0415
 
         lower = torch.tensor([1.0, 2.0])
         upper = torch.tensor([2.0, 3.0])
-        s = TorchIntervalConformalSet.from_tensor_samples(lower, upper)
+        s = TorchIntervalConformalSet.from_tensors(lower, upper)
         torch.testing.assert_close(s.set_size, torch.tensor([1.0, 1.0]))
 
-    def test_from_tensor_samples_non_tensor_raises(self) -> None:
+    def test_from_tensors_non_tensor_raises(self) -> None:
         torch = _torch_modules()
         from probly.representation.conformal_set.torch import TorchIntervalConformalSet  # noqa: PLC0415
 
         with pytest.raises(TypeError, match=r"torch\.Tensor"):
-            TorchIntervalConformalSet.from_tensor_samples([1.0, 2.0], torch.tensor([3.0, 4.0]))  # type: ignore[arg-type]
+            TorchIntervalConformalSet.from_tensors([1.0, 2.0], torch.tensor([3.0, 4.0]))  # type: ignore[arg-type]
 
     def test_from_samples_factory(self) -> None:
         torch = _torch_modules()

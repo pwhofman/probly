@@ -8,7 +8,7 @@ from probly.representation.sample.axis_tracking import ArrayIndex, convert_idx
 
 
 @convert_idx.register(torch.Tensor)
-def _convert_torch_tensor_idx(idx: torch.Tensor) -> ArrayIndex | bool | int:
+def _torch_convert_tensor_idx(idx: torch.Tensor) -> ArrayIndex | bool | int:
     if idx.ndim == 0:
         if idx.dtype == torch.bool:
             return bool(idx)

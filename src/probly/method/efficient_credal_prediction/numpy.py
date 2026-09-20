@@ -20,7 +20,7 @@ def _is_torch_available() -> bool:
 
 
 @compute_efficient_credal_prediction_bounds.register(np.ndarray)
-def _compute_bounds_numpy(
+def _numpy_compute_bounds(
     logits_train: np.ndarray,
     targets_train: np.ndarray,
     num_classes: int,
@@ -52,7 +52,7 @@ def _compute_bounds_numpy(
     _validate_alpha(alpha)
 
     if _is_torch_available():
-        import torch  # noqa: PLC0415
+        import torch  # noqa: PLC0415, BKN002 - Optional lazy accelerator for NumPy calibration inputs.
 
         logits_t = torch.from_numpy(logits_train)
         targets_t = torch.from_numpy(targets_train)

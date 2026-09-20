@@ -40,6 +40,19 @@ class RocAucScoreSuite:
         result = roc_auc_score(y_true, y_score)
         assert float(result) == pytest.approx(0.0)
 
+    def test_all_tied_scores(self, array_fn):
+        """All scores equal means nothing can be ranked, so the score is chance level, 0.5."""
+        y_true = array_fn([0, 0, 0, 1, 1, 1], dtype=float)
+        y_score = array_fn([0.5] * 6, dtype=float)
+        assert float(roc_auc_score(y_true, y_score)) == pytest.approx(0.5)
+
+    def test_ties_count_half(self, array_fn):
+        """AUROC is the probability that a positive outscores a negative, with a tie counting as one half."""
+        y_true = array_fn([0, 1, 0, 1, 0, 1, 0, 1], dtype=float)
+        y_score = array_fn([0.5, 0.5, 0.2, 0.5, 0.5, 0.9, 0.5, 0.2], dtype=float)
+        # Of the 4 x 4 = 16 (positive, negative) pairs, the positive scores higher in 6 and ties in 7.
+        assert float(roc_auc_score(y_true, y_score)) == pytest.approx((6 + 0.5 * 7) / 16)
+
     def test_random_classifier(self, array_fn):
         """A random classifier scores approximately 0.5."""
         rng = np.random.default_rng(42)

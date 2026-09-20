@@ -160,10 +160,10 @@ def test_swag_wrapper_end_to_end(model: BertForSequenceClassification, input_ids
     swag_model = swag(model, max_rank=3, predictor_type="logit_classifier")
     for _ in range(3):
         with torch.no_grad():
-            for param in swag_model.model.parameters():  # ty: ignore[unresolved-attribute]
+            for param in swag_model.model.parameters():
                 param.add_(torch.randn_like(param) * 0.01)
         collect_swag(swag_model)
-    swag_model.eval()  # ty: ignore[call-non-callable]
+    swag_model.eval()
 
     with torch.no_grad():
         sample = representer(swag_model, num_samples=3).represent(input_ids)
