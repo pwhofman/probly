@@ -14,10 +14,11 @@ from .distribution import (
     vacuity,
 )
 from .sample import mean_squared_distance_to_scaled_one_hot, sample_variance, total_logit_sample_variance
-from .spectral import spectral_entropy
+from .spectral import conditional_spectral_entropy, spectral_entropy
 
 __all__ = [
     "conditional_entropy",
+    "conditional_spectral_entropy",
     "conformal_set_size",
     "dempster_shafer_uncertainty",
     "entropy",

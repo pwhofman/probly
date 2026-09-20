@@ -38,11 +38,6 @@ def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-@ensemble_generator.delayed_register(TORCH_MODULE)
-def _(_: type) -> None:
-    from . import torch as torch  # noqa: PLC0415
-
-
 ## Flax
 @ensemble_generator.delayed_register(FLAX_MODULE)
 def _(_: type) -> None:

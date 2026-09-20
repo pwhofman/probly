@@ -16,10 +16,6 @@ from ._common import (
 
 ## Torch
 @vbll_traverser.delayed_register(TORCH_MODULE)
-def _(_: type) -> None:
-    from . import torch as torch  # noqa: PLC0415
-
-
 @compute_vbll_categorical_sample.delayed_register((TORCH_TENSOR_LIKE, TORCH_TENSOR))
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415

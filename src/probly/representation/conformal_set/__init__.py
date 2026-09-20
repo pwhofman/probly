@@ -9,20 +9,12 @@ from .numpy import NumpyIntervalConformalSet, NumpyOneHotConformalSet
 
 
 @create_onehot_conformal_set.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-def _(_: type) -> None:
-    from . import torch as torch  # noqa: PLC0415
-
-
 @create_interval_conformal_set.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
 @create_onehot_conformal_set.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-def _(_: type) -> None:
-    from . import jax as jax  # noqa: PLC0415
-
-
 @create_interval_conformal_set.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 def _(_: type) -> None:
     from . import jax as jax  # noqa: PLC0415
