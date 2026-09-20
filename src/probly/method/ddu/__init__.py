@@ -16,15 +16,7 @@ from ._common import (
 
 
 @ddu_generator.delayed_register(TORCH_MODULE)
-def _(_: type) -> None:
-    from . import torch as torch  # noqa: PLC0415
-
-
 @create_ddu_representation.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-def _(_: type) -> None:
-    from . import torch as torch  # noqa: PLC0415
-
-
 @negative_log_density.delayed_register(TORCH_TENSOR)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415

@@ -19,15 +19,7 @@ from ._common import (
 
 
 @graph_posterior_network_generator.delayed_register(TORCH_MODULE)
-def _(_: type) -> None:
-    from . import torch as torch  # noqa: PLC0415
-
-
 @lop_graph_posterior_network_generator.delayed_register(TORCH_MODULE)
-def _(_: type) -> None:
-    from . import torch as torch  # noqa: PLC0415
-
-
 @cuq_graph_neural_network_generator.delayed_register(TORCH_MODULE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
