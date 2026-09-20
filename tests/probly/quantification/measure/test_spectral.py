@@ -7,8 +7,9 @@ import pytest
 pytest.importorskip("torch")
 import torch
 
+from probly.quantification.measure.spectral import conditional_spectral_entropy
 from probly.quantification.measure.spectral.torch import rbf_kernel, spectral_entropy, von_neumann_entropy
-from probly.representation.embedding.torch import TorchEmbedding
+from probly.representation.embedding.torch import TorchEmbedding, TorchEmbeddingSample, TorchEmbeddingSampleSample
 
 
 def test_rbf_kernel_uses_normalized_distance_identity_case() -> None:
@@ -49,3 +50,25 @@ def test_spectral_entropy_reduces_sample_axes_and_keeps_batch_shape() -> None:
 
     assert entropy.shape == (2,)
     assert torch.all(entropy >= 0)
+
+
+def test_spectral_entropy_flattens_groups_of_nested_samples() -> None:
+    tensor = torch.randn(2, 3, 4, 5)
+    inner = TorchEmbeddingSample(tensor=TorchEmbedding(tensor), sample_dim=2)
+    outer = TorchEmbeddingSampleSample(tensor=inner, sample_dim=1)
+
+    entropy = spectral_entropy(outer)
+
+    assert torch.allclose(entropy, spectral_entropy(TorchEmbedding(tensor), sample_dim=(1, 2)))
+
+
+def test_conditional_spectral_entropy_averages_group_entropies() -> None:
+    tensor = torch.randn(2, 3, 4, 5)
+    inner = TorchEmbeddingSample(tensor=TorchEmbedding(tensor), sample_dim=2)
+    outer = TorchEmbeddingSampleSample(tensor=inner, sample_dim=1)
+
+    entropy = conditional_spectral_entropy(outer)
+
+    expected = spectral_entropy(TorchEmbedding(tensor), sample_dim=2).mean(dim=1)
+    assert entropy.shape == (2,)
+    assert torch.allclose(entropy, expected)

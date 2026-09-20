@@ -31,6 +31,7 @@ from .decomposition import (
 )
 from .measure import (
     conditional_entropy,
+    conditional_spectral_entropy,
     conformal_set_size,
     dempster_shafer_uncertainty,
     entropy,
@@ -95,6 +96,7 @@ __all__ = [
     "TotalUncertainty",
     "ZeroOneLoss",
     "conditional_entropy",
+    "conditional_spectral_entropy",
     "conformal_set_size",
     "decompose",
     "dempster_shafer_uncertainty",

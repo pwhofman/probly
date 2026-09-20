@@ -1,6 +1,5 @@
 """Uncertainty decomposition methods."""
 
-from . import spectral as spectral
 from .decomposition import (
     AdditiveDecomposition,
     AleatoricDecomposition,
@@ -21,19 +20,13 @@ from .ordinal import (
     OrdinalVarianceDecomposition,
 )
 from .scoring_rule import SecondOrderScoringRuleDecomposition
+from .spectral import SpectralDecomposition
 from .variance import (
     CategoricalVarianceDecomposition,
     SecondOrderVarianceDecomposition,
 )
 from .wasserstein import SecondOrderWassersteinDecomposition
 from .zero_one import SecondOrderZeroOneDecomposition
-
-
-def __getattr__(name: str) -> object:
-    if name in {"SpectralDecomposition", "spectral_decomposition"}:
-        return getattr(spectral, name)
-    raise AttributeError(name)
-
 
 __all__ = [
     "AdditiveDecomposition",
@@ -47,7 +40,6 @@ __all__ = [
     "Decomposition",
     "EpistemicDecomposition",
     "EpistemicTotalDecomposition",
-    "GaussianVarianceDecomposition",
     "LabelwiseBinaryEntropyDecomposition",
     "LabelwiseBinaryVarianceDecomposition",
     "OrdinalEntropyDecomposition",
@@ -59,5 +51,4 @@ __all__ = [
     "SecondOrderZeroOneDecomposition",
     "SpectralDecomposition",
     "TotalDecomposition",
-    "spectral_decomposition",
 ]
