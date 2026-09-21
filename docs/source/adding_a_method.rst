@@ -446,7 +446,28 @@ example that trains a model gets the same result on every build and cannot fail 
 docs build only some of the time. Call ``torch.manual_seed`` yourself only when the
 example needs a specific seed; it then takes precedence.
 
-Step 8: Quality checks
+Step 8: List the method in the README
+=====================================
+
+The method tables in `README.md <https://github.com/pwhofman/probly/blob/main/README.md>`_
+are maintained by hand, so a new method is only visible to users once it is added there.
+Add one row to the table of the category your method belongs to (second-order
+distributions, credal sets, conformal prediction, or calibration):
+
+.. code-block:: text
+
+    | Mymethod (`mymethod`) | [Author et al., 2026](https://arxiv.org/abs/2601.00000) | torch · flax |
+
+The ``Backends`` column lists exactly the backends you implemented in Step 2,
+separated by ``·``, in the order ``torch · flax · sklearn · river``. If you later add
+another backend to an existing method -- for example a ``flax.py`` next to an existing
+``torch.py`` -- update that row as well; the table is the only place that records
+backend support.
+
+Also bump the method count in the ``<summary>Show all N methods</summary>`` line above
+the table, and make sure the ``| :--- | :--- | :--- |`` column layout stays intact.
+
+Step 9: Quality checks
 ======================
 
 Before opening a pull request:
@@ -492,3 +513,5 @@ Checklist
      - ``tests/probly/method/mymethod/``
    * - Gallery example
      - ``examples/method/plot_mymethod.py``
+   * - README table row (with the supported backends) and method count
+     - ``README.md``
