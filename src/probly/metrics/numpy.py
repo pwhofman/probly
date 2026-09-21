@@ -60,7 +60,7 @@ def numpy_accuracy(y_pred: np.ndarray, y_true: np.ndarray) -> np.floating:
 
 
 @accuracy.register(CategoricalDistribution)
-def accuracy_categorical_distribution(y_pred: CategoricalDistribution, y_true: object) -> object:
+def numpy_categorical_accuracy(y_pred: CategoricalDistribution, y_true: object) -> object:
     """Compute accuracy for a categorical distribution via its class probabilities."""
     return accuracy(y_pred.probabilities, y_true)
 
@@ -169,9 +169,7 @@ def numpy_classwise_ece(y_prob: np.ndarray, y_true: np.ndarray, *, num_bins: int
 
 
 @classwise_ece.register(CategoricalDistribution)
-def classwise_ece_categorical_distribution(
-    y_prob: CategoricalDistribution, y_true: object, *, num_bins: int = 15
-) -> object:
+def numpy_categorical_classwise_ece(y_prob: CategoricalDistribution, y_true: object, *, num_bins: int = 15) -> object:
     """Compute the classwise ECE for a categorical distribution via its class probabilities."""
     return classwise_ece(y_prob.probabilities, y_true, num_bins=num_bins)
 
@@ -211,7 +209,7 @@ def numpy_expected_calibration_error(y_prob: np.ndarray, y_true: np.ndarray, *, 
 
 
 @expected_calibration_error.register(CategoricalDistribution)
-def expected_calibration_error_categorical_distribution(
+def numpy_categorical_expected_calibration_error(
     y_prob: CategoricalDistribution, y_true: object, *, num_bins: int = 15
 ) -> object:
     """Compute the confidence ECE for a categorical distribution via its class probabilities."""

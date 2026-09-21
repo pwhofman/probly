@@ -40,7 +40,7 @@ def jax_gaussian_sample_conditional_variance(
 
 
 @mutual_information_variance.register(JaxGaussianDistributionSample)
-def jax_gaussian_sample_mutual_information(
+def jax_gaussian_sample_mutual_information_variance(
     sample: JaxGaussianDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
@@ -54,7 +54,7 @@ def jax_gaussian_sample_variance_of_expected_predictive_distribution(
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
     """Compute the total predictive variance of a Gaussian sample via the law of total variance."""
-    return jax_gaussian_sample_conditional_variance(sample) + jax_gaussian_sample_mutual_information(sample)
+    return jax_gaussian_sample_conditional_variance(sample) + jax_gaussian_sample_mutual_information_variance(sample)
 
 
 @variance_of_expected_predictive_distribution.register(JaxSample)
@@ -76,7 +76,7 @@ def jax_sample_conditional_variance(
 
 
 @mutual_information_variance.register(JaxSample)
-def jax_sample_mutual_information(
+def jax_sample_mutual_information_variance(
     sample: JaxSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
