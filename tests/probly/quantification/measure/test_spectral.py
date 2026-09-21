@@ -8,14 +8,14 @@ pytest.importorskip("torch")
 import torch
 
 from probly.quantification.measure.spectral import conditional_spectral_entropy
-from probly.quantification.measure.spectral.torch import rbf_kernel, spectral_entropy, von_neumann_entropy
+from probly.quantification.measure.spectral.torch import spectral_entropy, torch_rbf_kernel, torch_von_neumann_entropy
 from probly.representation.embedding.torch import TorchEmbedding, TorchEmbeddingSample, TorchEmbeddingSampleSample
 
 
 def test_rbf_kernel_uses_normalized_distance_identity_case() -> None:
     embeddings = torch.eye(2)
 
-    kernel = rbf_kernel(embeddings, gamma=0.5, sample_dim=0)
+    kernel = torch_rbf_kernel(embeddings, gamma=0.5, sample_dim=0)
 
     assert torch.allclose(
         kernel, torch.tensor([[1.0, torch.exp(torch.tensor(-1.0))], [torch.exp(torch.tensor(-1.0)), 1.0]])
@@ -25,13 +25,13 @@ def test_rbf_kernel_uses_normalized_distance_identity_case() -> None:
 def test_von_neumann_entropy_handles_identity_kernel() -> None:
     kernel = torch.eye(2)
 
-    entropy = von_neumann_entropy(kernel)
+    entropy = torch_von_neumann_entropy(kernel)
 
     assert torch.allclose(entropy, torch.log(torch.tensor(2.0)))
 
 
 def test_von_neumann_entropy_handles_singleton_kernel() -> None:
-    entropy = von_neumann_entropy(torch.ones(3, 1, 1))
+    entropy = torch_von_neumann_entropy(torch.ones(3, 1, 1))
 
     assert torch.equal(entropy, torch.zeros(3))
 
@@ -77,7 +77,7 @@ def test_conditional_spectral_entropy_averages_group_entropies() -> None:
 def test_rbf_kernel_unnormalized_matches_pairwise_distances() -> None:
     embeddings = torch.randn(5, 3)
 
-    kernel = rbf_kernel(embeddings, gamma=0.7, sample_dim=0, normalized=False)
+    kernel = torch_rbf_kernel(embeddings, gamma=0.7, sample_dim=0, normalized=False)
 
     expected = torch.exp(-0.7 * torch.cdist(embeddings, embeddings) ** 2)
     assert torch.allclose(kernel, expected, atol=1e-6)
@@ -85,23 +85,23 @@ def test_rbf_kernel_unnormalized_matches_pairwise_distances() -> None:
 
 def test_rbf_kernel_rejects_non_positive_gamma() -> None:
     with pytest.raises(ValueError, match="gamma"):
-        rbf_kernel(torch.eye(2), gamma=0.0, sample_dim=0)
+        torch_rbf_kernel(torch.eye(2), gamma=0.0, sample_dim=0)
 
 
 def test_rbf_kernel_rejects_non_tensor_embeddings() -> None:
     with pytest.raises(TypeError, match="TorchEmbedding"):
-        rbf_kernel([[1.0, 0.0], [0.0, 1.0]], sample_dim=0)
+        torch_rbf_kernel([[1.0, 0.0], [0.0, 1.0]], sample_dim=0)
 
 
 def test_von_neumann_entropy_is_zero_for_identical_samples() -> None:
     # Identical unit vectors give an all-ones kernel, a rank-one density matrix and hence a pure state.
-    entropy = von_neumann_entropy(torch.ones(3, 3))
+    entropy = torch_von_neumann_entropy(torch.ones(3, 3))
 
     assert torch.allclose(entropy, torch.zeros(()), atol=1e-5)
 
 
 def test_von_neumann_entropy_is_zero_for_vanishing_trace() -> None:
-    entropy = von_neumann_entropy(torch.zeros(2, 2))
+    entropy = torch_von_neumann_entropy(torch.zeros(2, 2))
 
     assert torch.equal(entropy, torch.zeros(()))
 
@@ -117,7 +117,7 @@ def test_von_neumann_entropy_is_zero_for_vanishing_trace() -> None:
 )
 def test_von_neumann_entropy_validates_inputs(kernel: object, eps: float, error: type[Exception]) -> None:
     with pytest.raises(error):
-        von_neumann_entropy(kernel, eps=eps)
+        torch_von_neumann_entropy(kernel, eps=eps)
 
 
 def test_spectral_entropy_uses_sample_axis_of_embedding_samples() -> None:

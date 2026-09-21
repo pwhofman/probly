@@ -47,7 +47,7 @@ from probly.metrics import expected_calibration_error
 from probly.predictor import predict_raw
 from probly.transformation.batchensemble.torch import tile_inputs as tile_be_inputs
 from probly.transformation.bayesian import collect_kl_divergence
-from probly.utils.torch import intersection_probability
+from probly.utils.torch import torch_intersection_probability
 from probly_benchmark.base import BasePredictor
 
 if TYPE_CHECKING:
@@ -822,7 +822,7 @@ def _(
             output = predict_raw(model, inputs)
             batch_loss = intersection_probability_ce_loss(output, targets)
             n_classes = output.shape[-1] // 2
-            q_int = intersection_probability(output[..., :n_classes], output[..., n_classes:])
+            q_int = torch_intersection_probability(output[..., :n_classes], output[..., n_classes:])
         val_loss += batch_loss.item()
         val_acc += _accuracy(q_int, targets) * inputs.shape[0]
         num_instances += inputs.shape[0]
@@ -1125,7 +1125,7 @@ def _(
         with autocast(device.type, enabled=amp_enabled):
             output = predict_raw(model, inputs)
             n_classes = output.shape[-1] // 2
-            q_int = intersection_probability(output[..., :n_classes], output[..., n_classes:])
+            q_int = torch_intersection_probability(output[..., :n_classes], output[..., n_classes:])
         all_probs.append(q_int)
         all_labels.append(targets)
 

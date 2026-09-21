@@ -28,7 +28,7 @@ from probly.representation.distribution.torch_categorical import (
     TorchProbabilityCategoricalDistribution,
 )
 from probly.representation.sample.torch import TorchSample
-from probly.utils.torch import intersection_probability
+from probly.utils.torch import torch_intersection_probability
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -388,7 +388,9 @@ class TorchProbabilityIntervalsCredalSet(
     @override
     @property
     def barycenter(self) -> TorchCategoricalDistribution:
-        return TorchProbabilityCategoricalDistribution(intersection_probability(self.lower_bounds, self.upper_bounds))
+        return TorchProbabilityCategoricalDistribution(
+            torch_intersection_probability(self.lower_bounds, self.upper_bounds)
+        )
 
 
 create_probability_intervals.register(TorchCategoricalDistribution, TorchProbabilityIntervalsCredalSet.from_sample)

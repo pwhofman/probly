@@ -196,3 +196,12 @@ def test_registration_types(tmp_path: Path):
         timeout=60,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_utils_dispatchers_reject_unsupported_types() -> None:
+    from probly.utils import entropy, intersection_probability  # noqa: PLC0415
+
+    with pytest.raises(NotImplementedError, match="No entropy implementation"):
+        entropy([0.5, 0.5])
+    with pytest.raises(NotImplementedError, match="No intersection probability implementation"):
+        intersection_probability([0.1], [0.9])

@@ -346,12 +346,12 @@ class TestCreateFromBounds:
 
 
 def test_jax_no_gradient_or_jit_import_side_effects() -> None:
-    """Sanity check that jax_entropy / intersection_probability import cleanly (jit/grad-safe helpers)."""
-    from probly.utils.jax import intersection_probability, jax_entropy  # noqa: PLC0415
+    """Sanity check that jax_entropy / jax_intersection_probability import cleanly (jit/grad-safe helpers)."""
+    from probly.utils.jax import jax_entropy, jax_intersection_probability  # noqa: PLC0415
 
     p = jnp.array([0.5, 0.5])
     assert jnp.isclose(jax.jit(jax_entropy)(p), jax_entropy(p))
 
     lower = jnp.array([0.1, 0.2])
     upper = jnp.array([0.5, 0.6])
-    assert jnp.allclose(jax.jit(intersection_probability)(lower, upper), intersection_probability(lower, upper))
+    assert jnp.allclose(jax.jit(jax_intersection_probability)(lower, upper), jax_intersection_probability(lower, upper))

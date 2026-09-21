@@ -19,7 +19,7 @@ from probly.representation.distribution._common import (
 )
 from probly.representation.jax_functions import jax_add, jax_stack, jax_subtract
 from probly.representation.sample.jax import JaxSample
-from probly.utils.jax import fresh_prng_key
+from probly.utils.jax import jax_fresh_prng_key
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -88,7 +88,7 @@ class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[
     ) -> JaxSample[jax.Array]:
         """Draw samples and wrap them in an JaxSample (sample_axis=0)."""
         if prng_key is None:
-            prng_key = fresh_prng_key()
+            prng_key = jax_fresh_prng_key()
 
         std = self.std
         z = jax.random.normal(prng_key, shape=(num_samples, *self.mean.shape))
