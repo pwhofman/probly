@@ -15,11 +15,11 @@ from ._common import (
 )
 from .numpy import (  # noqa: F401  (registers numpy implementations)
     numpy_gaussian_sample_conditional_variance,
-    numpy_gaussian_sample_mutual_information,
+    numpy_gaussian_sample_mutual_information_variance,
     numpy_gaussian_sample_variance_of_expected_predictive_distribution,
     numpy_gaussian_variance,
     numpy_sample_conditional_variance,
-    numpy_sample_mutual_information,
+    numpy_sample_mutual_information_variance,
     numpy_sample_variance_of_expected_predictive_distribution,
 )
 

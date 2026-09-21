@@ -34,7 +34,7 @@ def _extract_calibration_inputs(
 
 
 @calibrate.register(CalibratedClassifierCV)
-def sklearn_calibrate_calibrated_classifier_cv(
+def sklearn_calibrated_classifier_cv_calibrate(
     predictor: CalibratedClassifierCV,
     y_calib: object,
     *calib_args: object,
@@ -284,7 +284,7 @@ class SklearnVectorScalingPredictor(BaseEstimator, CalibrationPredictor):
 
 
 @calibration_generator.register(BaseEstimator)
-def sklearn_generate_scaling_calibrator(
+def sklearn_calibration_generator(
     base: BaseEstimator,
     config: CalibrationMethodConfig,
 ) -> BaseEstimator:
