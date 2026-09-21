@@ -18,7 +18,7 @@ from probly.method.credal_net import credal_net
 from probly.predictor import predict_raw
 from probly.quantification import quantify
 from probly.representer import representer
-from probly.train.credal.torch import intersection_probability_ce_loss
+from probly.losses.torch import intersection_probability_ce_loss
 from probly.utils.torch import intersection_probability
 from probly_benchmark.data import load_mnist
 

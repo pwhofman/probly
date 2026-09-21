@@ -256,7 +256,7 @@ Post-hoc methods that ensure that a model’s predicted probabilities match the 
 
 </details>
 
-Calibration-aware training losses ship too: label smoothing, [label relaxation](https://doi.org/10.1609/aaai.v35i10.17041), and [focal loss](https://doi.org/10.1109/ICCV.2017.324) in `probly.train.calibration.torch`.
+Calibration-aware training losses ship too: [label relaxation](https://doi.org/10.1609/aaai.v35i10.17041) and [focal loss](https://doi.org/10.1109/ICCV.2017.324) are available as `label_relaxation_loss` and `focal_loss` in `probly.losses.torch`. For label smoothing, use `torch.nn.functional.cross_entropy(..., label_smoothing=epsilon)`.
 
 #### 📐 Uncertainty quantification
 

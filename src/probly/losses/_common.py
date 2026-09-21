@@ -1,10 +1,4 @@
-"""Shared VBLL training utilities.
-
-Provides the backend-agnostic :func:`vbll_loss` generic that dispatches to the
-variant-specific negative ELBO based on the layer type. Use
-:func:`probly.method.vbll.find_vbll_layer` to retrieve the VBLL layer from a
-transformed predictor.
-"""
+"""Backend-agnostic training losses."""
 
 from __future__ import annotations
 
@@ -13,10 +7,9 @@ from flextype import flexdispatch
 
 @flexdispatch
 def vbll_loss[T](layer: object, features: T, targets: T, regularization_weight: float) -> T:
-    """Compute the negative ELBO of a VBLL layer, dispatching on the layer type.
+    """Compute the negative VBLL ELBO from :cite:`harrisonVariationalBayesian2024`.
 
-    Routes to the variant-specific training objective of
-    :cite:`harrisonVariationalBayesian2024` based on the type of ``layer``
+    Routes to the variant-specific training objective based on the type of ``layer``
     (e.g. the double-Jensen bound for a
     :class:`~probly.layers.torch.VBLLLayer` or the generative Jensen bound for
     a :class:`~probly.layers.torch.GVBLLLayer`). Use

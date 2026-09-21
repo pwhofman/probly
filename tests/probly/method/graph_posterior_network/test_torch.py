@@ -11,6 +11,7 @@ from torch import nn  # noqa: E402
 from torch_geometric.data import Data  # noqa: E402
 from torch_geometric.utils import add_remaining_self_loops  # noqa: E402
 
+from probly.losses.torch import mixture_uce_loss, postnet_loss  # noqa: E402
 from probly.method.graph_posterior_network import (  # noqa: E402
     CUQGraphNeuralNetworkPredictor,
     GraphPosteriorNetworkPredictor,
@@ -21,7 +22,6 @@ from probly.method.graph_posterior_network import (  # noqa: E402
 )
 from probly.predictor import predict  # noqa: E402
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: E402
-from probly.train.evidential.torch import mixture_uce_loss, postnet_loss  # noqa: E402
 
 
 def _tiny_graph() -> Data:

@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from probly.method.evidential import evidential_classification
 from probly.quantification import quantify
 from probly.representer import representer
-from probly.train.evidential.torch import evidential_log_loss, evidential_kl_divergence
+from probly.losses.torch import evidential_log_loss, evidential_kl_divergence
 from probly_benchmark.data import load_mnist
 
 from examples.utils.model import MLPClassifier

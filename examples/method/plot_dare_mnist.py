@@ -15,7 +15,7 @@ import torch
 from torch import nn
 
 from probly.method.dare import dare
-from probly.train.dare.torch import dare_regularizer
+from probly.method.dare import dare_anti_regularization
 from probly_benchmark.data import load_mnist
 
 from examples.utils.model import MLPClassifier
@@ -68,7 +68,7 @@ for member in dare_model:
             opt.zero_grad()
             out = member(X_flat)
             loss = nn.functional.cross_entropy(out, y_batch)
-            reg = dare_regularizer(member, device="cpu", loss=loss.detach(), threshold=threshold)
+            reg = dare_anti_regularization(member, device="cpu", loss=loss.detach(), threshold=threshold)
             (loss - reg).backward()
             opt.step()
             correct += (out.detach().argmax(-1) == y_batch).sum().item()

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import partial
 from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 from flextype import flexdispatch
@@ -12,13 +13,23 @@ from torch.amp import GradScaler, autocast
 import torch.nn.functional as F
 
 from probly.layers.torch import HeteroscedasticLayer, SNGPLayer
+from probly.losses.torch import (
+    elbo_loss,
+    evidential_ce_loss,
+    evidential_kl_divergence,
+    evidential_log_loss,
+    evidential_mse_loss,
+    intersection_probability_ce_loss,
+    label_relaxation_loss,
+    postnet_loss,
+)
 from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_net import CredalNetPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.credal_wrapper import CredalWrapperPredictor
-from probly.method.dare import DarePredictor
+from probly.method.dare import DarePredictor, dare_anti_regularization
 from probly.method.ddu import DDUPredictor
 from probly.method.deup import DEUPPredictor
 from probly.method.dropconnect import DropConnectPredictor
@@ -32,23 +43,16 @@ from probly.method.natural_posterior_network import NaturalPosteriorNetworkPredi
 from probly.method.posterior_network import PosteriorNetworkPredictor
 from probly.method.sngp import SNGPPredictor
 from probly.method.subensemble import SubensemblePredictor
+from probly.metrics import expected_calibration_error
 from probly.predictor import predict_raw
-from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
-from probly.train.calibration.torch import ExpectedCalibrationError, LabelRelaxationLoss, LabelSmoothingLoss
-from probly.train.credal.torch import intersection_probability_ce_loss
-from probly.train.dare.torch import dare_regularizer
-from probly.train.evidential.torch import (
-    evidential_ce_loss,
-    evidential_kl_divergence,
-    evidential_log_loss,
-    evidential_mse_loss,
-    postnet_loss,
-)
 from probly.transformation.batchensemble.torch import tile_inputs as tile_be_inputs
+from probly.transformation.bayesian import collect_kl_divergence
 from probly.utils.torch import intersection_probability
 from probly_benchmark.base import BasePredictor
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from torch.utils.data import DataLoader
 
     from probly.predictor import Predictor
@@ -61,7 +65,9 @@ EVIDENTIAL_LOSSES = {
 }
 
 
-def _get_supervised_criterion(supervised_loss: dict[str, Any] | None = None) -> nn.Module:
+def _get_supervised_criterion(
+    supervised_loss: dict[str, Any] | None = None,
+) -> Callable[[torch.Tensor, torch.Tensor], torch.Tensor]:
     """Build the training criterion for CE-compatible supervised classifiers."""
     if supervised_loss is None:
         return nn.CrossEntropyLoss()
@@ -72,9 +78,9 @@ def _get_supervised_criterion(supervised_loss: dict[str, Any] | None = None) -> 
             params.pop("alpha", None)
             return nn.CrossEntropyLoss(**params)
         case "label_relaxation":
-            return LabelRelaxationLoss(**params)
+            return partial(label_relaxation_loss, **params)
         case "label_smoothing":
-            return LabelSmoothingLoss(**params)
+            return partial(F.cross_entropy, label_smoothing=params.pop("epsilon", 0.1), **params)
         case _:
             msg = f"Unknown supervised loss: {name}"
             raise ValueError(msg)
@@ -112,12 +118,12 @@ def _(
     **kwargs: Any,  # noqa: ANN401
 ) -> torch.Tensor | float:
     """Train a Bayesian predictor for one epoch."""
-    criterion = ELBOLoss(kl_penalty=kwargs.get("kl_penalty", 1e-5))
+    criterion = partial(elbo_loss, kl_penalty=kwargs.get("kl_penalty", 1e-5))
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
         outputs = model(inputs)
         kl = collect_kl_divergence(model)
-        loss = criterion(outputs, targets, kl)
+        loss = criterion(outputs, targets, kl)  # ty: ignore[invalid-argument-type]
     if scaler is not None:
         scaler.scale(loss).backward()
         if grad_clip_norm is not None:
@@ -263,7 +269,7 @@ def train_epoch_dare(
 ) -> float:
     """Train a DARE ensemble member for one step with cross-entropy minus the anti-regularizer.
 
-    Backward target is ``CE(outputs, targets) - dare_regularizer(model, ..., threshold)``;
+    Backward target is ``CE(outputs, targets) - dare_anti_regularization(model, ..., threshold)``;
     the regularizer activates only when the current CE is at or below ``threshold``
     (Algorithm 1 of arXiv:2304.04042). Returns raw CE so logged training loss is
     comparable across methods.
@@ -273,7 +279,7 @@ def train_epoch_dare(
     with autocast(inputs.device.type, enabled=amp_enabled):
         outputs = model(inputs)
         loss = criterion(outputs, targets)
-        reg = dare_regularizer(model, inputs.device, loss.detach(), threshold)
+        reg = dare_anti_regularization(model, inputs.device, loss.detach(), threshold)
         total = loss - reg
     if scaler is not None:
         scaler.scale(total).backward()
@@ -654,7 +660,7 @@ def _(
             val_loss += F.cross_entropy(outputs, targets).item()
             val_acc += _accuracy(outputs, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
-    kl_value = collect_kl_divergence(model).item()
+    kl_value = collect_kl_divergence(model).item()  # ty: ignore[unresolved-attribute]
     return {  # ty: ignore[invalid-return-type]
         "loss": val_loss / len(val_loader),
         "acc": val_acc / num_instances,
@@ -1459,7 +1465,7 @@ def _compute_metrics(probs: torch.Tensor, labels: torch.Tensor, n_bins: int) -> 
     eps = torch.finfo(probs.dtype).eps
     logprobs = torch.log(probs.clamp(min=eps))
     nll = F.nll_loss(logprobs, labels).item()
-    ece = ExpectedCalibrationError(num_bins=n_bins)(probs, labels).item()
+    ece = expected_calibration_error(probs, labels, num_bins=n_bins).item()  # ty: ignore[unresolved-attribute]
 
     return {"accuracy": accuracy, "nll": nll, "ece": ece}
 

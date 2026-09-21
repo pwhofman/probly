@@ -10,6 +10,7 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 
 from probly.utils.torch import (
+    dirichlet_entropy,
     temperature_softmax,
     torch_collect_outputs,
     torch_head_dimension,
@@ -45,6 +46,13 @@ def test_temperature_softmax() -> None:
     x = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
     assert torch.equal(temperature_softmax(x, 2.0), torch.softmax(x / 2.0, dim=1))
     assert torch.equal(temperature_softmax(x, torch.tensor(1.0)), torch.softmax(x, dim=1))
+
+
+def test_dirichlet_entropy() -> None:
+    alphas = torch.tensor([[10.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
+    entropy = dirichlet_entropy(alphas)
+    torch.testing.assert_close(entropy, torch.distributions.Dirichlet(alphas).entropy())
+    assert entropy[1] > entropy[0]
 
 
 def test_head_dimension_accepts_custom_module_and_integer_like_values() -> None:
