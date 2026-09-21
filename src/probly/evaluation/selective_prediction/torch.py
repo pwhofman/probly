@@ -8,7 +8,7 @@ from ._common import selective_prediction
 
 
 @selective_prediction.register(torch.Tensor)
-def selective_prediction_torch(
+def torch_selective_prediction(
     criterion: torch.Tensor, losses: torch.Tensor, n_bins: int = 50
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Perform selective prediction for PyTorch tensors."""

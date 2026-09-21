@@ -1,0 +1,686 @@
+"""NumPy implementation of Metrics."""
+
+from __future__ import annotations
+
+import math
+from typing import TYPE_CHECKING
+
+import numpy as np
+from scipy.optimize import linprog
+
+from probly.representation.conformal_set.numpy import NumpyIntervalConformalSet, NumpyOneHotConformalSet
+from probly.representation.credal_set.numpy import (
+    NumpyConvexCredalSet,
+    NumpyDiscreteCredalSet,
+    NumpyDistanceBasedCredalSet,
+    NumpyProbabilityIntervalsCredalSet,
+    NumpySingletonCredalSet,
+)
+from probly.representation.distribution._common import CategoricalDistribution
+
+from ._common import (
+    CREDAL_ROUND_DECIMALS,
+    accuracy,
+    auc,
+    average_interval_width,
+    average_precision_score,
+    classwise_ece,
+    convex_hull_coverage,
+    coverage,
+    efficiency,
+    expected_calibration_error,
+    false_negative_rate,
+    false_positive_rate,
+    precision_recall_curve,
+    roc_auc_score,
+    roc_curve,
+)
+
+if TYPE_CHECKING:
+    from probly.representation.distribution import NumpyCategoricalDistribution
+
+
+@accuracy.register(np.ndarray)
+def numpy_accuracy(y_pred: np.ndarray, y_true: np.ndarray) -> np.floating:
+    """Compute top-1 classification accuracy for NumPy arrays."""
+    predicted = np.asarray(y_pred)
+    labels = np.asarray(y_true).reshape(-1)
+    if predicted.ndim == 2:
+        predicted = np.argmax(predicted, axis=-1)
+    elif predicted.ndim != 1:
+        msg = f"accuracy expects predictions of shape (n,) or (n, k), got shape {predicted.shape}."
+        raise ValueError(msg)
+    if predicted.shape[0] != labels.shape[0]:
+        msg = (
+            "accuracy labels must match predictions batch size. "
+            f"Got {labels.shape[0]} labels for {predicted.shape[0]} predictions."
+        )
+        raise ValueError(msg)
+    return np.mean(predicted == labels)
+
+
+@accuracy.register(CategoricalDistribution)
+def numpy_categorical_accuracy(y_pred: CategoricalDistribution, y_true: object) -> object:
+    """Compute accuracy for a categorical distribution via its class probabilities."""
+    return accuracy(y_pred.probabilities, y_true)
+
+
+@auc.register(np.ndarray)
+def numpy_auc(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """Compute area under a curve using the trapezoid rule."""
+    return np.trapezoid(y, x, axis=-1)
+
+
+@average_precision_score.register(np.ndarray)
+def numpy_average_precision_score(y_true: np.ndarray, y_score: np.ndarray) -> np.ndarray:
+    """Compute average precision for NumPy arrays."""
+    precision, recall, _ = precision_recall_curve(y_true, y_score)
+    return -np.sum(np.diff(recall, axis=-1) * precision[..., :-1], axis=-1)  # ty:ignore[no-matching-overload, not-subscriptable]
+
+
+def _binary_clf_curve(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Count false and true positives at every score threshold, along the last axis.
+
+    Adapted from scikit-learn's ``sklearn.metrics._ranking._binary_clf_curve`` (BSD-3-Clause). Samples are
+    ranked by decreasing score and the counts after accepting each sample are recorded. Equal scores form a
+    single threshold: sklearn keeps only the last index of every run of equal scores, which makes the number
+    of thresholds depend on the data, whereas this batched version maps every sample to the last index of its
+    run and keeps the ``(..., n)`` shape. For scores ``[0.9, 0.5, 0.5, 0.5, 0.2]`` the threshold indices are
+    ``[0, 3, 3, 3, 4]``. Reading the counts per sample instead would let the sort order among tied samples
+    decide the curve, and identical scores could then yield an AUROC of 1.0 or 0.0 instead of 0.5.
+
+    Args:
+        y_true: Binary labels of shape ``(..., n)``.
+        y_score: Scores of shape ``(..., n)``.
+
+    Returns:
+        fps: False positives after each threshold, shape ``(..., n)``.
+        tps: True positives after each threshold, shape ``(..., n)``.
+        thresholds: Scores in decreasing order, shape ``(..., n)``.
+    """
+    n = y_score.shape[-1]
+    # Sort scores and corresponding truth values.
+    desc_score_indices = np.flip(np.argsort(y_score, axis=-1, kind="mergesort"), axis=-1)
+    y_score = np.take_along_axis(y_score, desc_score_indices, axis=-1)
+    y_true = np.take_along_axis(y_true, desc_score_indices, axis=-1)
+
+    # y_score typically has many tied values. A distinct value ends where the next score differs, and the end
+    # of the curve is always a threshold. The running minimum from the right turns these ends into the
+    # threshold index of every position.
+    end = np.ones((*y_score.shape[:-1], 1), dtype=bool)
+    is_distinct_value = np.concatenate([y_score[..., 1:] != y_score[..., :-1], end], axis=-1)
+    threshold_idxs = np.where(is_distinct_value, np.arange(n), n - 1)
+    threshold_idxs = np.flip(np.minimum.accumulate(np.flip(threshold_idxs, axis=-1), axis=-1), axis=-1)
+
+    # Accumulate the true positives with decreasing threshold.
+    tps = np.take_along_axis(np.cumsum(y_true, axis=-1), threshold_idxs, axis=-1)
+    fps = 1 + threshold_idxs - tps
+    return fps, tps, y_score
+
+
+@precision_recall_curve.register(np.ndarray)
+def numpy_precision_recall_curve(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Compute precision-recall curve along the last axis."""
+    y_true = np.asarray(y_true, dtype=float)
+    y_score = np.asarray(y_score, dtype=float)
+
+    fps, tps, thresholds = _binary_clf_curve(y_true, y_score)
+    total_pos = tps[..., -1:]
+
+    precision = tps / (tps + fps)
+    recall = np.where(total_pos > 0, tps / np.where(total_pos > 0, total_pos, 1.0), 0.0)
+
+    ones = np.ones((*y_score.shape[:-1], 1))
+    zeros = np.zeros((*y_score.shape[:-1], 1))
+    precision = np.concatenate([np.flip(precision, axis=-1), ones], axis=-1)
+    recall = np.concatenate([np.flip(recall, axis=-1), zeros], axis=-1)
+
+    return precision, recall, thresholds
+
+
+@classwise_ece.register(np.ndarray)
+def numpy_classwise_ece(y_prob: np.ndarray, y_true: np.ndarray, *, num_bins: int = 15) -> np.floating:
+    """Compute the classwise expected calibration error for NumPy arrays."""
+    probs = np.asarray(y_prob, dtype=float)
+    if probs.ndim != 2:
+        msg = f"classwise_ece expects probabilities of shape (n, k), got shape {probs.shape}."
+        raise ValueError(msg)
+    labels = np.asarray(y_true).reshape(-1)
+    n, k = probs.shape
+    if labels.shape[0] != n:
+        msg = f"classwise_ece labels must match probabilities batch size. Got {labels.shape[0]} labels for {n} rows."
+        raise ValueError(msg)
+    if num_bins < 1:
+        msg = f"classwise_ece expects num_bins >= 1, got {num_bins}."
+        raise ValueError(msg)
+
+    one_hot = (labels[:, None] == np.arange(k)[None, :]).astype(float)
+    bin_idx = np.minimum((probs * num_bins).astype(int), num_bins - 1)
+
+    total = np.float64(0.0)
+    for b in range(num_bins):
+        mask = (bin_idx == b).astype(float)
+        count = mask.sum(axis=0)
+        safe_count = np.where(count > 0, count, 1.0)
+        mean_prob = (probs * mask).sum(axis=0) / safe_count
+        freq = (one_hot * mask).sum(axis=0) / safe_count
+        total += (count / n * np.abs(freq - mean_prob)).sum()
+    return total / k
+
+
+@classwise_ece.register(CategoricalDistribution)
+def numpy_categorical_classwise_ece(y_prob: CategoricalDistribution, y_true: object, *, num_bins: int = 15) -> object:
+    """Compute the classwise ECE for a categorical distribution via its class probabilities."""
+    return classwise_ece(y_prob.probabilities, y_true, num_bins=num_bins)
+
+
+@expected_calibration_error.register(np.ndarray)
+def numpy_expected_calibration_error(y_prob: np.ndarray, y_true: np.ndarray, *, num_bins: int = 15) -> np.floating:
+    """Compute the confidence expected calibration error for NumPy arrays."""
+    probs = np.asarray(y_prob, dtype=float)
+    if probs.ndim != 2:
+        msg = f"expected_calibration_error expects probabilities of shape (n, k), got shape {probs.shape}."
+        raise ValueError(msg)
+    labels = np.asarray(y_true).reshape(-1)
+    n = probs.shape[0]
+    if labels.shape[0] != n:
+        msg = (
+            "expected_calibration_error labels must match probabilities batch size. "
+            f"Got {labels.shape[0]} labels for {n} rows."
+        )
+        raise ValueError(msg)
+    if num_bins < 1:
+        msg = f"expected_calibration_error expects num_bins >= 1, got {num_bins}."
+        raise ValueError(msg)
+
+    conf = probs.max(axis=-1)
+    correct = (probs.argmax(axis=-1) == labels).astype(float)
+    bin_idx = np.minimum((conf * num_bins).astype(int), num_bins - 1)
+
+    total = np.float64(0.0)
+    for b in range(num_bins):
+        mask = (bin_idx == b).astype(float)
+        count = mask.sum()
+        safe_count = np.where(count > 0, count, 1.0)
+        acc_bin = (correct * mask).sum() / safe_count
+        conf_bin = (conf * mask).sum() / safe_count
+        total += count / n * np.abs(acc_bin - conf_bin)
+    return total
+
+
+@expected_calibration_error.register(CategoricalDistribution)
+def numpy_categorical_expected_calibration_error(
+    y_prob: CategoricalDistribution, y_true: object, *, num_bins: int = 15
+) -> object:
+    """Compute the confidence ECE for a categorical distribution via its class probabilities."""
+    return expected_calibration_error(y_prob.probabilities, y_true, num_bins=num_bins)
+
+
+@false_positive_rate.register(np.ndarray)
+def numpy_false_positive_rate(y_pred: np.ndarray, y_true: np.ndarray) -> np.floating:
+    """Compute the false positive rate for NumPy arrays."""
+    y = np.asarray(y_true).reshape(-1)
+    p = np.asarray(y_pred).reshape(-1)
+    if p.shape[0] != y.shape[0]:
+        msg = f"false_positive_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
+        raise ValueError(msg)
+    negatives = (y == 0).sum()
+    if negatives == 0:
+        return np.float64("nan")
+    false_positives = ((p == 1) & (y == 0)).sum()
+    return np.float64(false_positives / negatives)
+
+
+@false_negative_rate.register(np.ndarray)
+def numpy_false_negative_rate(y_pred: np.ndarray, y_true: np.ndarray) -> np.floating:
+    """Compute the false negative rate for NumPy arrays."""
+    y = np.asarray(y_true).reshape(-1)
+    p = np.asarray(y_pred).reshape(-1)
+    if p.shape[0] != y.shape[0]:
+        msg = f"false_negative_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
+        raise ValueError(msg)
+    positives = (y == 1).sum()
+    if positives == 0:
+        return np.float64("nan")
+    false_negatives = ((p == 0) & (y == 1)).sum()
+    return np.float64(false_negatives / positives)
+
+
+@roc_auc_score.register(np.ndarray)
+def numpy_roc_auc_score(y_true: np.ndarray, y_score: np.ndarray) -> np.ndarray:
+    """Compute area under the ROC curve for NumPy arrays."""
+    fpr, tpr, _ = roc_curve(y_true, y_score)
+    return auc(fpr, tpr)  # ty:ignore[invalid-return-type]
+
+
+@roc_curve.register(np.ndarray)
+def numpy_roc_curve(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Compute ROC curve along the last axis."""
+    y_true = np.asarray(y_true, dtype=float)
+    y_score = np.asarray(y_score, dtype=float)
+
+    fps, tps, thresholds = _binary_clf_curve(y_true, y_score)
+    total_pos = tps[..., -1:]
+    total_neg = fps[..., -1:]
+
+    tpr = np.where(total_pos > 0, tps / np.where(total_pos > 0, total_pos, 1.0), 0.0)
+    fpr = np.where(total_neg > 0, fps / np.where(total_neg > 0, total_neg, 1.0), 0.0)
+
+    zeros = np.zeros((*y_score.shape[:-1], 1))
+    tpr = np.concatenate([zeros, tpr], axis=-1)
+    fpr = np.concatenate([zeros, fpr], axis=-1)
+    thresholds = np.concatenate([thresholds[..., :1] + 1, thresholds], axis=-1)
+
+    return fpr, tpr, thresholds
+
+
+# --- Predicted-set metrics ----------------------------------------------------
+
+
+def _interval_dominance_mask(lower: np.ndarray, upper: np.ndarray) -> np.ndarray:
+    """Return the boolean mask of classes selected by the interval-dominance rule.
+
+    A class ``y`` is selected when its upper probability is at least the
+    maximum lower probability across all classes; equivalently, when no other
+    class strictly dominates it under the credal set's lower/upper envelope.
+
+    Args:
+        lower: Lower probability envelope of shape ``(..., C)``.
+        upper: Upper probability envelope of shape ``(..., C)``.
+
+    Returns:
+        Boolean array of shape ``(..., C)`` indicating selected classes.
+    """
+    threshold = np.max(lower, axis=-1, keepdims=True)
+    return upper >= threshold
+
+
+def _onehot_membership(mask: np.ndarray, y_true: np.ndarray) -> np.ndarray:
+    """Look up the membership flag for the true class along the last axis.
+
+    Args:
+        mask: Boolean class-membership mask of shape ``(..., C)``.
+        y_true: Integer class labels of shape ``(...,)``.
+
+    Returns:
+        Boolean array of shape ``(...,)`` with ``True`` where the true class
+        is in the predicted set.
+    """
+    indices = np.asarray(y_true, dtype=np.int64)[..., None]
+    return np.take_along_axis(mask, indices, axis=-1).squeeze(-1)
+
+
+def _envelope_coverage(lower: np.ndarray, upper: np.ndarray, y_true: np.ndarray) -> np.floating:
+    mask = _interval_dominance_mask(lower, upper)
+    return np.mean(_onehot_membership(mask, np.asarray(y_true)))
+
+
+def _envelope_efficiency(lower: np.ndarray, upper: np.ndarray) -> np.floating:
+    mask = _interval_dominance_mask(lower, upper)
+    return np.mean(mask.sum(axis=-1))
+
+
+def _envelope_average_interval_width(lower: np.ndarray, upper: np.ndarray) -> np.floating:
+    return np.mean(np.asarray(upper) - np.asarray(lower))
+
+
+@coverage.register(NumpyOneHotConformalSet)
+def _numpy_onehot_coverage(y_pred: NumpyOneHotConformalSet, y_true: np.ndarray) -> np.floating:
+    """Coverage for a one-hot conformal set."""
+    return np.mean(_onehot_membership(np.asarray(y_pred.array), np.asarray(y_true)))
+
+
+@efficiency.register(NumpyOneHotConformalSet)
+def _numpy_onehot_efficiency(y_pred: NumpyOneHotConformalSet) -> np.floating:
+    """Average cardinality of a one-hot conformal set."""
+    return np.mean(np.asarray(y_pred.array).sum(axis=-1))
+
+
+@coverage.register(NumpyIntervalConformalSet)
+def _numpy_interval_coverage(y_pred: NumpyIntervalConformalSet, y_true: np.ndarray) -> np.floating:
+    """Coverage for an interval conformal set."""
+    arr = np.asarray(y_pred.array)
+    y = np.asarray(y_true)
+    return np.mean((y >= arr[..., 0]) & (y <= arr[..., 1]))
+
+
+@efficiency.register(NumpyIntervalConformalSet)
+def _numpy_interval_efficiency(y_pred: NumpyIntervalConformalSet) -> np.floating:
+    """Average width of an interval conformal set."""
+    arr = np.asarray(y_pred.array)
+    return np.mean(arr[..., 1] - arr[..., 0])
+
+
+@coverage.register(NumpySingletonCredalSet)
+def _numpy_singleton_coverage(y_pred: NumpySingletonCredalSet, y_true: np.ndarray) -> np.floating:
+    """Top-1 coverage for a singleton credal set (degenerate to argmax accuracy)."""
+    probs = np.asarray(y_pred.array.probabilities)
+    predicted = np.argmax(probs, axis=-1)
+    return np.mean(predicted == np.asarray(y_true))
+
+
+@efficiency.register(NumpySingletonCredalSet)
+def _numpy_singleton_efficiency(_: NumpySingletonCredalSet) -> np.floating:
+    """A singleton credal set always yields a single predicted class."""
+    return np.float64(1.0)
+
+
+@coverage.register(NumpyDiscreteCredalSet)
+def _numpy_discrete_coverage(y_pred: NumpyDiscreteCredalSet, y_true: np.ndarray) -> np.floating:
+    """Coverage for a discrete credal set: any vertex's argmax matches the true class."""
+    probs = np.asarray(y_pred.array.probabilities)
+    argmax_per_vertex = np.argmax(probs, axis=-1)
+    y = np.asarray(y_true)[..., None]
+    return np.mean(np.any(argmax_per_vertex == y, axis=-1))
+
+
+@efficiency.register(NumpyDiscreteCredalSet)
+def _numpy_discrete_efficiency(y_pred: NumpyDiscreteCredalSet) -> np.floating:
+    """Average number of distinct argmax classes across the vertex set."""
+    probs = np.asarray(y_pred.array.probabilities)
+    num_classes = probs.shape[-1]
+    argmax_per_vertex = np.argmax(probs, axis=-1)
+    classes_picked = (argmax_per_vertex[..., None] == np.arange(num_classes)).any(axis=-2)
+    return np.mean(classes_picked.sum(axis=-1))
+
+
+def _numpy_credal_containment_coverage(lower: np.ndarray, upper: np.ndarray, y_true: np.ndarray) -> np.floating:
+    """Fraction of instances whose target lies inside the credal set's envelope.
+
+    Dispatches on the shape of ``y_true``:
+
+    * **Integer class labels** (``y_true.ndim == lower.ndim - 1``): covered when
+      the true class is selected by the interval-dominance rule, i.e.
+      ``upper[y] >= max_k lower[k]``.
+    * **Probability vectors** (``y_true.ndim == lower.ndim``): covered when
+      ``lower[k] <= y_true[k] <= upper[k]`` for all classes ``k``.
+
+    Args:
+        lower: Lower probability envelope of shape ``(..., C)``.
+        upper: Upper probability envelope of shape ``(..., C)``.
+        y_true: Integer class labels of shape ``(...)`` or target probability
+            vectors of shape ``(..., C)``.
+
+    Returns:
+        Mean containment indicator as a scalar float.
+    """
+    y = np.asarray(y_true)
+    if y.ndim < lower.ndim:
+        # Integer class labels: interval-dominance rule.
+        threshold = np.max(lower, axis=-1, keepdims=True)
+        mask = upper >= threshold
+        indices = y.astype(np.int64)[..., np.newaxis]
+        covered = np.take_along_axis(mask, indices, axis=-1).squeeze(-1)
+    else:
+        # Probability vectors: containment in [lower, upper] for all classes.
+        # Round before comparing so that tiny floating-point residuals in the
+        # lower envelope (softmax is never exactly 0) do not incorrectly
+        # exclude a target probability of 0.
+        lower_r = np.round(lower, decimals=CREDAL_ROUND_DECIMALS)
+        upper_r = np.round(upper, decimals=CREDAL_ROUND_DECIMALS)
+        covered = np.all((lower_r <= y) & (y <= upper_r), axis=-1)
+    return np.mean(covered)
+
+
+def _numpy_credal_interval_efficiency(lower: np.ndarray, upper: np.ndarray) -> np.floating:
+    """Efficiency of a credal set as ``1 - mean(upper - lower)``.
+
+    Bounds are rounded to ``CREDAL_ROUND_DECIMALS`` decimals before subtracting
+    so floating-point residuals (e.g. softmax outputs near 0) do not perturb
+    the width.
+
+    Args:
+        lower: Lower probability envelope of shape ``(N, C)``.
+        upper: Upper probability envelope of shape ``(N, C)``.
+
+    Returns:
+        Scalar in ``(-inf, 1]``; higher means a tighter (more efficient) credal set.
+    """
+    lower_r = np.round(np.asarray(lower), decimals=CREDAL_ROUND_DECIMALS)
+    upper_r = np.round(np.asarray(upper), decimals=CREDAL_ROUND_DECIMALS)
+    return np.float64(1.0 - float(np.mean(upper_r - lower_r)))
+
+
+@coverage.register(NumpyConvexCredalSet)
+def _numpy_convex_coverage(y_pred: NumpyConvexCredalSet, y_true: np.ndarray) -> np.floating:
+    """Containment coverage for a convex credal set.
+
+    Args:
+        y_pred: Convex credal set.
+        y_true: Target probability vectors of shape ``(N, C)``.
+
+    Returns:
+        Fraction of instances where the target lies in ``[lower, upper]`` for all classes.
+    """
+    return _numpy_credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
+
+
+@efficiency.register(NumpyConvexCredalSet)
+def _numpy_convex_efficiency(y_pred: NumpyConvexCredalSet) -> np.floating:
+    """Interval-width efficiency for a convex credal set: ``1 - mean(upper - lower)``.
+
+    Returns:
+        Scalar efficiency; higher means a tighter credal set.
+    """
+    return _numpy_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
+
+
+@coverage.register(NumpyDistanceBasedCredalSet)
+def _numpy_distance_coverage(y_pred: NumpyDistanceBasedCredalSet, y_true: np.ndarray) -> np.floating:
+    """Coverage for a distance-based (TV-ball) credal set.
+
+    With class-index targets: interval-dominance coverage on the envelope.
+
+    With first-order targets ``y_true`` of shape ``(..., C)``: distribution
+    membership ``mean(lambda_i in Q_i)`` via ``mean(TV(nominal_i, lambda_i) <= radius_i)``.
+    """
+    y_true_arr = np.asarray(y_true)
+    if y_true_arr.ndim >= 2 and y_true_arr.shape[-1] == y_pred.num_classes:
+        nominal = np.asarray(y_pred.nominal.probabilities)
+        target = y_true_arr.astype(nominal.dtype, copy=False)
+        tv = 0.5 * np.sum(np.abs(nominal - target), axis=-1)
+        radius = np.asarray(y_pred.radius, dtype=nominal.dtype)
+        return np.asarray(tv <= radius, dtype=np.float64).mean()
+    return _envelope_coverage(y_pred.lower(), y_pred.upper(), y_true)
+
+
+@efficiency.register(NumpyDistanceBasedCredalSet)
+def _numpy_distance_efficiency(y_pred: NumpyDistanceBasedCredalSet) -> np.floating:
+    """Interval-width efficiency for a distance-based credal set: ``1 - mean(upper - lower)``.
+
+    Same semantic as ``ConvexCredalSet`` and ``ProbabilityIntervalsCredalSet``:
+    higher = tighter credal set.
+    """
+    return _numpy_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
+
+
+@coverage.register(NumpyProbabilityIntervalsCredalSet)
+def _numpy_probability_intervals_coverage(
+    y_pred: NumpyProbabilityIntervalsCredalSet, y_true: np.ndarray
+) -> np.floating:
+    """Containment coverage for a probability-intervals credal set.
+
+    Args:
+        y_pred: Probability-intervals credal set.
+        y_true: Target probability vectors of shape ``(N, C)``.
+
+    Returns:
+        Fraction of instances where the target lies in ``[lower, upper]`` for all classes.
+    """
+    return _numpy_credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
+
+
+@efficiency.register(NumpyProbabilityIntervalsCredalSet)
+def _numpy_probability_intervals_efficiency(y_pred: NumpyProbabilityIntervalsCredalSet) -> np.floating:
+    """Interval-width efficiency for a probability-intervals credal set: ``1 - mean(upper - lower)``.
+
+    Returns:
+        Scalar efficiency; higher means a tighter credal set.
+    """
+    return _numpy_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
+
+
+@average_interval_width.register(NumpyConvexCredalSet)
+def _numpy_convex_average_interval_width(y_pred: NumpyConvexCredalSet) -> np.floating:
+    """Mean per-class width of the vertex-derived envelope of a convex credal set."""
+    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
+
+
+@average_interval_width.register(NumpyDiscreteCredalSet)
+def _numpy_discrete_average_interval_width(y_pred: NumpyDiscreteCredalSet) -> np.floating:
+    """Mean per-class width of the vertex-min/vertex-max envelope of a discrete credal set."""
+    probs = np.asarray(y_pred.array.probabilities)
+    return _envelope_average_interval_width(np.min(probs, axis=-2), np.max(probs, axis=-2))
+
+
+@average_interval_width.register(NumpyDistanceBasedCredalSet)
+def _numpy_distance_average_interval_width(y_pred: NumpyDistanceBasedCredalSet) -> np.floating:
+    """Mean per-class width of the L1-clip envelope of a distance-based credal set."""
+    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
+
+
+@average_interval_width.register(NumpyProbabilityIntervalsCredalSet)
+def _numpy_probability_intervals_average_interval_width(y_pred: NumpyProbabilityIntervalsCredalSet) -> np.floating:
+    """Mean per-class interval width of a probability-intervals credal set."""
+    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
+
+
+# --- Convex-hull coverage ----------------------------------------------------
+
+
+def _validate_epsilon(epsilon: float) -> None:
+    if not math.isfinite(epsilon) or epsilon < 0.0:
+        msg = f"epsilon must be a non-negative finite float, got {epsilon!r}."
+        raise ValueError(msg)
+
+
+def _numpy_convex_hull_lp_coverage(
+    vertices: np.ndarray,
+    targets: np.ndarray,
+    epsilon: float,
+    **linprog_kwargs: object,
+) -> np.floating:
+    """Convex-hull membership coverage via per-instance LP feasibility.
+
+    Solves one linear program per instance. The strict variant
+    (``epsilon == 0``) tests feasibility of
+    ``V^T lambda = t, sum(lambda) = 1, lambda in [0, 1]``. The relaxed
+    variant (``epsilon > 0``) introduces L1 slack variables ``s+`` and
+    ``s-`` and minimizes their sum; an instance counts as covered iff the
+    LP is feasible and the optimal slack sum is at most ``epsilon``.
+
+    Args:
+        vertices: Array of shape ``(N, V, K)`` holding ``V`` vertex
+            distributions over ``K`` classes for each of ``N`` instances.
+        targets: Array of shape ``(N, K)`` holding the target distribution
+            for each instance.
+        epsilon: L1 tolerance. ``0.0`` selects the strict LP.
+        **linprog_kwargs: Forwarded to :func:`scipy.optimize.linprog`
+            (e.g. ``method`` or solver tolerances).
+
+    Returns:
+        Fraction of instances whose target lies in (or within ``epsilon`` of)
+        the hull, as ``np.float64``.
+    """
+    _validate_epsilon(epsilon)
+    if vertices.ndim != 3:
+        msg = f"vertices must be 3D (N, V, K); got shape {vertices.shape}."
+        raise ValueError(msg)
+    if targets.ndim != 2:
+        msg = f"targets must be 2D (N, K); got shape {targets.shape}."
+        raise ValueError(msg)
+    if vertices.shape[0] != targets.shape[0]:
+        msg = f"vertices and targets must agree on N; got {vertices.shape[0]} and {targets.shape[0]}."
+        raise ValueError(msg)
+    if vertices.shape[2] != targets.shape[1]:
+        msg = f"vertices and targets must agree on K; got {vertices.shape[2]} and {targets.shape[1]}."
+        raise ValueError(msg)
+
+    n_instances, n_vertices, n_classes = vertices.shape
+    relaxed = epsilon > 0.0
+
+    if relaxed:
+        c = np.concatenate([np.zeros(n_vertices), np.ones(2 * n_classes)])
+        bounds: list[tuple[float, float | None]] = [(0.0, 1.0)] * n_vertices + [(0.0, None)] * (2 * n_classes)
+    else:
+        c = np.zeros(n_vertices)
+        bounds = [(0.0, 1.0)] * n_vertices
+
+    covered = 0
+    # Per-instance LP loop (Python-level). For very large N (~10^6) consider
+    # joblib.Parallel; not implemented here to keep the dependency surface small.
+    for i in range(n_instances):
+        v = vertices[i]
+        t = targets[i]
+        if relaxed:
+            a_eq_top = np.hstack([v.T, np.eye(n_classes), -np.eye(n_classes)])
+            a_eq_bot = np.concatenate([np.ones(n_vertices), np.zeros(2 * n_classes)])
+            a_eq = np.vstack([a_eq_top, a_eq_bot])
+            b_eq = np.concatenate([t, [1.0]])
+        else:
+            a_eq = np.vstack([v.T, np.ones(n_vertices)])
+            b_eq = np.concatenate([t, [1.0]])
+
+        res = linprog(c=c, A_eq=a_eq, b_eq=b_eq, bounds=bounds, **linprog_kwargs)
+        if relaxed:
+            covered += int(bool(res.success) and float(res.fun) <= epsilon)
+        else:
+            covered += int(bool(res.success))
+
+    return np.float64(covered / n_instances) if n_instances > 0 else np.float64("nan")
+
+
+@convex_hull_coverage.register(NumpyConvexCredalSet)
+def _numpy_convex_convex_hull_coverage(
+    y_pred: NumpyConvexCredalSet,
+    y_true: NumpyCategoricalDistribution,
+    *,
+    epsilon: float = 0.0,
+    **linprog_kwargs: object,
+) -> np.floating:
+    """LP-based hull coverage for a convex credal set."""
+    return _numpy_convex_hull_lp_coverage(
+        np.asarray(y_pred.array.probabilities),
+        np.asarray(y_true.probabilities),
+        epsilon,
+        **linprog_kwargs,
+    )
+
+
+@convex_hull_coverage.register(NumpyDiscreteCredalSet)
+def _numpy_discrete_convex_hull_coverage(
+    y_pred: NumpyDiscreteCredalSet,
+    y_true: NumpyCategoricalDistribution,
+    *,
+    epsilon: float = 0.0,
+    **linprog_kwargs: object,
+) -> np.floating:
+    """LP-based hull coverage for a discrete credal set (same vertex structure as Convex)."""
+    return _numpy_convex_hull_lp_coverage(
+        np.asarray(y_pred.array.probabilities),
+        np.asarray(y_true.probabilities),
+        epsilon,
+        **linprog_kwargs,
+    )
+
+
+@convex_hull_coverage.register(NumpySingletonCredalSet)
+def _numpy_singleton_convex_hull_coverage(
+    y_pred: NumpySingletonCredalSet,
+    y_true: NumpyCategoricalDistribution,
+    *,
+    epsilon: float = 0.0,
+    **_linprog_kwargs: object,
+) -> np.floating:
+    """Hull degenerates to a point; coverage is closed-form L1 distance test.
+
+    The singleton handler does not call ``linprog`` and is therefore unaffected
+    by solver tolerances. ``epsilon=0.0`` performs strict element-wise equality
+    of ``predicted == target`` (subject to float arithmetic), which can produce
+    slightly different verdicts than the LP path on numerically-tight inputs.
+    """
+    _validate_epsilon(epsilon)
+    predicted = np.asarray(y_pred.array.probabilities)
+    targets = np.asarray(y_true.probabilities)
+    l1_dist = np.abs(predicted - targets).sum(axis=-1)
+    return np.mean(l1_dist <= epsilon)

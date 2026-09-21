@@ -11,7 +11,7 @@ from ._common import _raps_score_dispatch
 
 
 @_raps_score_dispatch.register(torch.Tensor)
-def compute_raps_score_torch(
+def torch_compute_raps_score(
     probs: torch.Tensor,
     y_cal: torch.Tensor | None = None,
     randomized: bool = True,
@@ -91,7 +91,7 @@ def _(
     k_reg: int = 0,
 ) -> torch.Tensor:
     """RAPS Nonconformity-Scores for TorchCategoricalDistributions."""
-    return compute_raps_score_torch(
+    return torch_compute_raps_score(
         probs.probabilities,
         y_cal,
         randomized=randomized,

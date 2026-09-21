@@ -1278,7 +1278,8 @@ def _(
     # Extract model from BaseLaplace, if we do last layer mode, model.model is a FeatureExtractor, so unwrap it
     inner_model = model.model.model if isinstance(model.model, FeatureExtractor) else model.model
     # Problems with cuda + triton + compile if we compile this model, so we set a flag to skip it.
-    inner_model._probly_skip_compile = True  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+    # nn.Module supports ordinary metadata despite its narrow __setattr__ annotation.
+    inner_model._probly_skip_compile = True  # noqa: SLF001  # ty: ignore[invalid-assignment]
     load_from = train_kwargs.get("load_from")
     if load_from == "base":
         base_artifact_name = f"base_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"

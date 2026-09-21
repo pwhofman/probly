@@ -264,37 +264,37 @@ wheels = [
 
 [package.optional-dependencies]
 cublas = [
-    { name = "nvidia-cublas", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-cublas" },
 ]
 cudart = [
-    { name = "nvidia-cuda-runtime", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-cuda-runtime" },
 ]
 cufft = [
-    { name = "nvidia-cufft", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-cufft" },
 ]
 cufile = [
-    { name = "nvidia-cufile", marker = "sys_platform == 'linux'" },
+    { name = "nvidia-cufile" },
 ]
 cupti = [
-    { name = "nvidia-cuda-cupti", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-cuda-cupti" },
 ]
 curand = [
-    { name = "nvidia-curand", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-curand" },
 ]
 cusolver = [
-    { name = "nvidia-cusolver", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-cusolver" },
 ]
 cusparse = [
-    { name = "nvidia-cusparse", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-cusparse" },
 ]
 nvjitlink = [
-    { name = "nvidia-nvjitlink", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-nvjitlink" },
 ]
 nvrtc = [
-    { name = "nvidia-cuda-nvrtc", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-cuda-nvrtc" },
 ]
 nvtx = [
-    { name = "nvidia-nvtx", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-nvtx" },
 ]
 
 [[package]]
@@ -313,6 +313,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/b5/fe/997687a931ab51049acce6fa1f23e8f01216374ea81374ddee763c493db5/filelock-3.29.0.tar.gz", hash = "sha256:69974355e960702e789734cb4871f884ea6fe50bd8404051a3530bc07809cf90", size = 57571, upload-time = "2026-04-19T15:39:10.068Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/81/47/dd9a212ef6e343a6857485ffe25bba537304f1913bdbed446a23f7f592e1/filelock-3.29.0-py3-none-any.whl", hash = "sha256:96f5f6344709aa1572bbf631c640e4ebeeb519e08da902c39a001882f30ac258", size = 39812, upload-time = "2026-04-19T15:39:08.752Z" },
+]
+
+[[package]]
+name = "flextype"
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bb/7f/83466b8152e8e9689b426a8f01126e59831aa9624f29e49576b754c4f4c0/flextype-0.1.2.tar.gz", hash = "sha256:d0c671ef1fb33e1f60e1afc0b386132e84d977bbda63dc46b8021b3eef32e8c6", size = 21026, upload-time = "2026-07-31T09:44:54.391Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3c/da/56c3fe7f241cfd3f0a2e758b8c1169eef46bd70fae31c0fc6594fc69cc57/flextype-0.1.2-py3-none-any.whl", hash = "sha256:a61ff10dd063c2d7fcd72418e45d80e730088ea9c217a79b091024d8b9987aa7", size = 20526, upload-time = "2026-07-31T09:44:52.923Z" },
 ]
 
 [[package]]
@@ -489,15 +498,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/df/bf/f7da0350254c0ed7c72f3e33cef02e048281fec7ecec5f032d4aac52226b/jinja2-3.1.6.tar.gz", hash = "sha256:0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d", size = 245115, upload-time = "2025-03-05T20:05:02.478Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/62/a1/3d680cbfd5f4b8f15abc1d571870c5fc3e594bb582bc3b64ea099db13e56/jinja2-3.1.6-py3-none-any.whl", hash = "sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67", size = 134899, upload-time = "2025-03-05T20:05:00.369Z" },
-]
-
-[[package]]
-name = "joblib"
-version = "1.5.3"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/41/f2/d34e8b3a08a9cc79a50b2208a93dce981fe615b64d5a4d4abee421d898df/joblib-1.5.3.tar.gz", hash = "sha256:8561a3269e6801106863fd0d6d84bb737be9e7631e33aaed3fb9ce5953688da3", size = 331603, upload-time = "2025-12-15T08:41:46.427Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7b/91/984aca2ec129e2757d1e4e3c81c3fcda9d0f85b74670a094cc443d9ee949/joblib-1.5.3-py3-none-any.whl", hash = "sha256:5fc3c5039fc5ca8c0276333a188bbd59d6b7ab37fe6632daa76bc7f9ec18e713", size = 309071, upload-time = "2025-12-15T08:41:44.973Z" },
 ]
 
 [[package]]
@@ -1056,7 +1056,7 @@ wheels = [
 name = "probly"
 source = { editable = "../../" }
 dependencies = [
-    { name = "joblib" },
+    { name = "flextype" },
     { name = "matplotlib" },
     { name = "mpltern" },
     { name = "numpy" },
@@ -1066,7 +1066,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "joblib", specifier = ">=1.1.0" },
+    { name = "flextype", specifier = ">=0.1.2" },
     { name = "matplotlib", specifier = ">=3.9.2" },
     { name = "mpltern", specifier = ">=0.6.0" },
     { name = "numpy", specifier = ">=2.1.0" },
@@ -1078,10 +1078,11 @@ requires-dist = [
 all-ml = [
     { name = "accelerate", specifier = ">=0.24.1" },
     { name = "curvlinops-for-pytorch", specifier = ">=2.0,<3.0" },
-    { name = "flax", specifier = ">=0.12.4" },
+    { name = "flax", specifier = ">=0.12.5" },
     { name = "jax", specifier = ">=0.8.1" },
     { name = "laplace-torch", specifier = ">=0.2.0" },
     { name = "lightning", specifier = ">=2.6.0" },
+    { name = "peft", specifier = ">=0.14.0" },
     { name = "river", specifier = ">=0.21" },
     { name = "scikit-learn", specifier = ">=1.6.0" },
     { name = "sentence-transformers", specifier = ">=2.3.0" },
@@ -1104,53 +1105,56 @@ benchmark = [
     { name = "webdataset", specifier = ">=1.0.2" },
 ]
 dev = [
-    { name = "accelerate", specifier = ">=0.24.1" },
-    { name = "curvlinops-for-pytorch", specifier = ">=2.0,<3.0" },
-    { name = "datasets", specifier = ">=3.0.0" },
-    { name = "flax", specifier = ">=0.12.4" },
-    { name = "furo" },
-    { name = "gpytorch", specifier = ">=1.11" },
-    { name = "hydra-core", specifier = ">=1.3.1" },
-    { name = "jax", specifier = ">=0.8.1" },
-    { name = "laplace-torch", specifier = ">=0.2.0" },
-    { name = "lightning", specifier = ">=2.6.0" },
-    { name = "nflows", specifier = ">=0.14" },
-    { name = "nvidia-ml-py", specifier = "==13.595.45" },
-    { name = "packaging" },
-    { name = "prek", specifier = ">=0.3.8" },
-    { name = "pytest", specifier = ">=8.3.5" },
-    { name = "pytest-cov", specifier = ">=6.0.0" },
-    { name = "pytest-xdist", specifier = ">=3.6.1" },
-    { name = "pytorch-optimizer", specifier = ">=3.0" },
-    { name = "river", specifier = ">=0.21" },
-    { name = "ruff", specifier = ">=0.15.11" },
-    { name = "scikit-learn", specifier = ">=1.6.0" },
-    { name = "sentence-transformers", specifier = ">=2.3.0" },
-    { name = "sigx", git = "https://github.com/Cortys/sigx.git?rev=master" },
-    { name = "sphinx", specifier = ">=9.0.0" },
-    { name = "sphinx-copybutton" },
-    { name = "sphinx-gallery" },
-    { name = "sphinxcontrib-bibtex", specifier = ">=2.0.0" },
-    { name = "torch", specifier = "<2.11.0" },
-    { name = "torch", specifier = ">=2.6.0" },
-    { name = "torch-geometric", specifier = ">=2.6.0" },
-    { name = "torch-uncertainty", specifier = ">=0.11.0" },
-    { name = "torchvision", specifier = "<0.26.0" },
-    { name = "torchvision", specifier = ">=0.21.0" },
-    { name = "transformers", specifier = ">=4.33.2" },
-    { name = "ty", specifier = ">=0.0.32" },
-    { name = "wandb", specifier = ">=0.25.1" },
-    { name = "webdataset", specifier = ">=1.0.2" },
+    { name = "accelerate", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=0.24.1" },
+    { name = "curvlinops-for-pytorch", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=2.0,<3.0" },
+    { name = "datasets", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=3.0.0" },
+    { name = "flax", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=0.12.5" },
+    { name = "furo", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
+    { name = "gpytorch", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=1.11" },
+    { name = "hydra-core", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=1.3.1" },
+    { name = "jax", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=0.8.1" },
+    { name = "joblib", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
+    { name = "laplace-torch", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=0.2.0" },
+    { name = "lightning", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=2.6.0" },
+    { name = "nflows", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=0.14" },
+    { name = "nvidia-ml-py", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = "==13.595.45" },
+    { name = "packaging", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
+    { name = "peft", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=0.14.0" },
+    { name = "prek", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=0.3.8" },
+    { name = "pytest", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=8.3.5" },
+    { name = "pytest-cov", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=6.0.0" },
+    { name = "pytest-xdist", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=3.6.1" },
+    { name = "pytorch-optimizer", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=3.0" },
+    { name = "river", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=0.21" },
+    { name = "ruff", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=0.16.8" },
+    { name = "scikit-learn", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=1.6.0" },
+    { name = "sentence-transformers", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=2.3.0" },
+    { name = "sigx", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", git = "https://github.com/Cortys/sigx.git?rev=master" },
+    { name = "sphinx", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=9.0.0" },
+    { name = "sphinx-copybutton", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
+    { name = "sphinx-gallery", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
+    { name = "sphinxcontrib-bibtex", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=2.0.0" },
+    { name = "torch", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = "<2.11.0" },
+    { name = "torch", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=2.6.0" },
+    { name = "torch-geometric", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=2.6.0" },
+    { name = "torch-uncertainty", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=0.11.0" },
+    { name = "torchvision", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = "<0.26.0" },
+    { name = "torchvision", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=0.21.0" },
+    { name = "transformers", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=4.33.2" },
+    { name = "ty", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=0.0.82" },
+    { name = "wandb", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=0.25.1" },
+    { name = "webdataset", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=1.0.2" },
 ]
 docs = [
-    { name = "furo" },
-    { name = "sphinx", specifier = ">=9.0.0" },
-    { name = "sphinx-copybutton" },
-    { name = "sphinx-gallery" },
-    { name = "sphinxcontrib-bibtex", specifier = ">=2.0.0" },
+    { name = "furo", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
+    { name = "joblib", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
+    { name = "sphinx", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=9.0.0" },
+    { name = "sphinx-copybutton", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
+    { name = "sphinx-gallery", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
+    { name = "sphinxcontrib-bibtex", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=2.0.0" },
 ]
 jax = [
-    { name = "flax", specifier = ">=0.12.4" },
+    { name = "flax", specifier = ">=0.12.5" },
     { name = "jax", specifier = ">=0.8.1" },
 ]
 laplace = [
@@ -1159,9 +1163,9 @@ laplace = [
 ]
 lint = [
     { name = "prek", specifier = ">=0.3.8" },
-    { name = "ruff", specifier = ">=0.15.11" },
+    { name = "ruff", specifier = ">=0.16.8" },
     { name = "sigx", git = "https://github.com/Cortys/sigx.git?rev=master" },
-    { name = "ty", specifier = ">=0.0.32" },
+    { name = "ty", specifier = ">=0.0.82" },
 ]
 river = [{ name = "river", specifier = ">=0.21" }]
 sklearn = [{ name = "scikit-learn", specifier = ">=1.6.0" }]
@@ -1190,6 +1194,7 @@ torch-uncertainty = [
 ]
 transformers = [
     { name = "accelerate", specifier = ">=0.24.1" },
+    { name = "peft", specifier = ">=0.14.0" },
     { name = "sentence-transformers", specifier = ">=2.3.0" },
     { name = "torch", specifier = ">=2.6.0" },
     { name = "torchvision", specifier = ">=0.21.0" },

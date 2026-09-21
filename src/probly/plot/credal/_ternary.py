@@ -8,12 +8,12 @@ from flextype import flexdispatch
 import numpy as np
 
 from probly.plot.credal._data import _get_probabilities, _to_numpy
-from probly.representation.credal_set.array import (
-    ArrayConvexCredalSet,
-    ArrayDiscreteCredalSet,
-    ArrayDistanceBasedCredalSet,
-    ArrayProbabilityIntervalsCredalSet,
-    ArraySingletonCredalSet,
+from probly.representation.credal_set.numpy import (
+    NumpyConvexCredalSet,
+    NumpyDiscreteCredalSet,
+    NumpyDistanceBasedCredalSet,
+    NumpyProbabilityIntervalsCredalSet,
+    NumpySingletonCredalSet,
 )
 
 from ._geometry import _compute_convex_hull_vertices, _compute_interval_vertices
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from mpltern import TernaryAxes
 
     from probly.plot.config import PlotConfig
-    from probly.representation.credal_set.array import ArrayCategoricalCredalSet
+    from probly.representation.credal_set.numpy import NumpyCategoricalCredalSet
     from probly.representation.credal_set.torch import (
         TorchCategoricalCredalSet,
         TorchConvexCredalSet,
@@ -57,7 +57,7 @@ def _draw_polygon(
 
 @flexdispatch
 def _draw_credal_set_ternary(
-    data: TorchCategoricalCredalSet | ArrayCategoricalCredalSet,
+    data: TorchCategoricalCredalSet | NumpyCategoricalCredalSet,
     ternary_ax: TernaryAxes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
@@ -77,9 +77,9 @@ def _draw_credal_set_ternary(
     raise NotImplementedError(msg)
 
 
-@_draw_credal_set_ternary.register(ArraySingletonCredalSet)
+@_draw_credal_set_ternary.register(NumpySingletonCredalSet)
 def _draw_singleton(
-    data: ArraySingletonCredalSet,
+    data: NumpySingletonCredalSet,
     ternary_ax: TernaryAxes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
@@ -94,9 +94,9 @@ def _draw_singleton(
         ternary_ax.scatter(p[0:1], p[1:2], p[2:3], color=color, s=config.marker_size, zorder=3, label=label)
 
 
-@_draw_credal_set_ternary.register(ArrayProbabilityIntervalsCredalSet)
+@_draw_credal_set_ternary.register(NumpyProbabilityIntervalsCredalSet)
 def _draw_intervals(
-    data: ArrayProbabilityIntervalsCredalSet | TorchProbabilityIntervalsCredalSet,
+    data: NumpyProbabilityIntervalsCredalSet | TorchProbabilityIntervalsCredalSet,
     ternary_ax: TernaryAxes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
@@ -126,9 +126,9 @@ def _draw_intervals(
         _draw_polygon(ternary_ax, vertices, color, config, label=label)
 
 
-@_draw_credal_set_ternary.register(ArrayDistanceBasedCredalSet)
+@_draw_credal_set_ternary.register(NumpyDistanceBasedCredalSet)
 def _draw_distance_based(
-    data: ArrayDistanceBasedCredalSet | TorchDistanceBasedCredalSet,
+    data: NumpyDistanceBasedCredalSet | TorchDistanceBasedCredalSet,
     ternary_ax: TernaryAxes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
@@ -154,9 +154,9 @@ def _draw_distance_based(
         ternary_ax.scatter(nom[0:1], nom[1:2], nom[2:3], color=color, s=config.marker_size, zorder=3)
 
 
-@_draw_credal_set_ternary.register(ArrayDiscreteCredalSet)
+@_draw_credal_set_ternary.register(NumpyDiscreteCredalSet)
 def _draw_discrete_set(
-    data: ArrayDiscreteCredalSet,
+    data: NumpyDiscreteCredalSet,
     ternary_ax: TernaryAxes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
@@ -171,9 +171,9 @@ def _draw_discrete_set(
         ternary_ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2], color=color, s=config.marker_size, zorder=3, label=label)
 
 
-@_draw_credal_set_ternary.register(ArrayConvexCredalSet)
+@_draw_credal_set_ternary.register(NumpyConvexCredalSet)
 def _draw_convex_set(
-    data: ArrayConvexCredalSet | TorchConvexCredalSet,
+    data: NumpyConvexCredalSet | TorchConvexCredalSet,
     ternary_ax: TernaryAxes,
     config: PlotConfig,
     series_labels: list[str] | None = None,

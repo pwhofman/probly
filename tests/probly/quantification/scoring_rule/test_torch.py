@@ -8,6 +8,27 @@ pytest.importorskip("torch")
 import torch
 
 from probly.quantification.scoring_rule import BrierLoss, LogLoss, SphericalLoss, ZeroOneLoss
+from probly.representation.distribution.torch_categorical import TorchLogitCategoricalDistribution
+from probly.representation.sample.torch import TorchSample
+
+
+@pytest.mark.parametrize("rule", [LogLoss(), BrierLoss(), ZeroOneLoss(), SphericalLoss()])
+@pytest.mark.parametrize("sample_dim", [0, 1])
+def test_representation_loss(rule, sample_dim: int) -> None:
+    probabilities = torch.tensor([0.2, 0.3, 0.1, 0.4]).expand(2, 3, 4)
+    distribution = TorchLogitCategoricalDistribution(torch.log(probabilities) + 3.0)
+    expected = rule.loss(probabilities)
+    result = rule.loss(distribution)
+    assert isinstance(result, torch.Tensor)
+    torch.testing.assert_close(result, expected)
+    weights = torch.arange(1, probabilities.shape[sample_dim] + 1, dtype=torch.float)
+    for values in (probabilities, distribution):
+        sample = TorchSample(values, sample_dim=sample_dim, weights=weights)
+        result = rule.loss(sample)
+        assert isinstance(result, TorchSample)
+        assert result.sample_dim == sample_dim
+        assert result.weights is weights
+        torch.testing.assert_close(result.tensor, expected)
 
 
 def test_torch_log_loss_vector() -> None:

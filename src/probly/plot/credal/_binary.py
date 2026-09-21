@@ -8,19 +8,19 @@ from flextype import flexdispatch
 import numpy as np
 
 from probly.plot.credal._data import _get_probabilities, _to_numpy
-from probly.representation.credal_set.array import (
-    ArrayConvexCredalSet,
-    ArrayDiscreteCredalSet,
-    ArrayDistanceBasedCredalSet,
-    ArrayProbabilityIntervalsCredalSet,
-    ArraySingletonCredalSet,
+from probly.representation.credal_set.numpy import (
+    NumpyConvexCredalSet,
+    NumpyDiscreteCredalSet,
+    NumpyDistanceBasedCredalSet,
+    NumpyProbabilityIntervalsCredalSet,
+    NumpySingletonCredalSet,
 )
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
     from probly.plot.config import PlotConfig
-    from probly.representation.credal_set.array import ArrayCategoricalCredalSet
+    from probly.representation.credal_set.numpy import NumpyCategoricalCredalSet
     from probly.representation.credal_set.torch import (
         TorchCategoricalCredalSet,
         TorchConvexCredalSet,
@@ -87,7 +87,7 @@ def _draw_binary_interval(
 
 @flexdispatch
 def _draw_credal_set_binary(
-    data: TorchCategoricalCredalSet | ArrayCategoricalCredalSet,
+    data: TorchCategoricalCredalSet | NumpyCategoricalCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
@@ -107,9 +107,9 @@ def _draw_credal_set_binary(
     raise NotImplementedError(msg)
 
 
-@_draw_credal_set_binary.register(ArraySingletonCredalSet)
+@_draw_credal_set_binary.register(NumpySingletonCredalSet)
 def _draw_singleton_binary(
-    data: ArraySingletonCredalSet,
+    data: NumpySingletonCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
@@ -122,9 +122,9 @@ def _draw_singleton_binary(
         ax.scatter(arr[idx, 1], 0, color=color, s=config.marker_size, zorder=3, label=label)
 
 
-@_draw_credal_set_binary.register(ArrayProbabilityIntervalsCredalSet)
+@_draw_credal_set_binary.register(NumpyProbabilityIntervalsCredalSet)
 def _draw_intervals_binary(
-    data: ArrayProbabilityIntervalsCredalSet | TorchProbabilityIntervalsCredalSet,
+    data: NumpyProbabilityIntervalsCredalSet | TorchProbabilityIntervalsCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
@@ -147,9 +147,9 @@ def _draw_intervals_binary(
             _draw_binary_interval(ax, low, high, color, config, label=label)
 
 
-@_draw_credal_set_binary.register(ArrayDistanceBasedCredalSet)
+@_draw_credal_set_binary.register(NumpyDistanceBasedCredalSet)
 def _draw_distance_based_binary(
-    data: ArrayDistanceBasedCredalSet | TorchDistanceBasedCredalSet,
+    data: NumpyDistanceBasedCredalSet | TorchDistanceBasedCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
@@ -165,9 +165,9 @@ def _draw_distance_based_binary(
         ax.scatter(nominal_all[idx, 1], 0, color=color, s=config.marker_size, zorder=3)
 
 
-@_draw_credal_set_binary.register(ArrayDiscreteCredalSet | ArrayConvexCredalSet)
+@_draw_credal_set_binary.register(NumpyDiscreteCredalSet | NumpyConvexCredalSet)
 def _draw_vertex_set_binary(
-    data: ArrayDiscreteCredalSet | ArrayConvexCredalSet | TorchConvexCredalSet,
+    data: NumpyDiscreteCredalSet | NumpyConvexCredalSet | TorchConvexCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None = None,

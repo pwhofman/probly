@@ -2,7 +2,7 @@
 Probability-intervals credal set
 ====================================
 
-An :class:`~probly.representation.credal_set.array.ArrayProbabilityIntervalsCredalSet`
+An :class:`~probly.representation.credal_set.numpy.NumpyProbabilityIntervalsCredalSet`
 specifies independent **lower and upper bounds** on the probability of each
 class.  The credal set contains every distribution that satisfies all bounds
 simultaneously (and sums to one).
@@ -18,10 +18,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from probly.plot import plot_credal_set
-from probly.representation.credal_set.array import ArrayProbabilityIntervalsCredalSet
+from probly.representation.credal_set.numpy import NumpyProbabilityIntervalsCredalSet
 
 # 2 instances over 3 classes.
-intervals = ArrayProbabilityIntervalsCredalSet(
+intervals = NumpyProbabilityIntervalsCredalSet(
     lower_bounds=np.array(
         [
             [0.1, 0.2, 0.3],

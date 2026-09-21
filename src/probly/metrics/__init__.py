@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
 
-from . import array as array
+from . import numpy as numpy
 
 # eagerly register numpy (always available)
 from ._common import (
@@ -45,8 +45,12 @@ def _(_: type) -> None:
 
 @accuracy.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @auc.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@average_interval_width.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @average_precision_score.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @classwise_ece.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@convex_hull_coverage.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@coverage.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@efficiency.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @expected_calibration_error.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @false_negative_rate.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @false_positive_rate.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))

@@ -131,14 +131,14 @@ def test_iter_yields_objects() -> None:
 
 
 def test_array_namespace_delegates_to_underlying_tensor() -> None:
-    """``__array_namespace__`` delegates to the underlying tensor's implementation.
-
-    Torch tensors do not implement ``__array_namespace__`` directly, so we only
-    assert that the call reaches the delegated path (raising ``AttributeError``).
-    """
+    """Namespace access delegates when supported and otherwise fails explicitly."""
     x = _SingleTensor(torch.arange(6.0).reshape(2, 3))
-    with pytest.raises(AttributeError):
-        _ = x.__array_namespace__()
+    namespace = getattr(x.tensor, "__array_namespace__", None)
+    if callable(namespace):
+        assert x.__array_namespace__() is namespace()
+    else:
+        with pytest.raises(NotImplementedError, match="__array_namespace__"):
+            x.__array_namespace__()
 
 
 def test_dtype_property_delegates_to_torch_value() -> None:
@@ -306,6 +306,19 @@ def test_numpy_returns_array_for_single_field() -> None:
     arr = x.numpy()
     assert isinstance(arr, np.ndarray)
     np.testing.assert_array_equal(arr, x.tensor.numpy())
+
+
+def test_array_conversion_honors_copy_policy() -> None:
+    tensor = torch.arange(6.0).reshape(2, 3)
+    x = _SingleTensor(tensor)
+    view = np.asarray(x, copy=False)
+    copied = np.asarray(x, copy=True)
+    converted = np.asarray(x, dtype=np.float64)
+    assert np.shares_memory(view, tensor.numpy())
+    assert not np.shares_memory(copied, tensor.numpy())
+    assert converted.dtype == np.float64
+    with pytest.raises(ValueError, match="copy"):
+        np.asarray(x, dtype=np.float64, copy=False)
 
 
 def test_numpy_force_copies_data() -> None:

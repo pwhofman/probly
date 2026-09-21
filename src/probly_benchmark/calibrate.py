@@ -13,7 +13,7 @@ from torch.nn import functional as F
 import wandb
 import wandb.util
 
-from probly.train.calibration.torch import ExpectedCalibrationError
+from probly.metrics import expected_calibration_error
 from probly_benchmark import calibration, conformal, data, utils
 from probly_benchmark.paths import CHECKPOINT_PATH
 
@@ -31,7 +31,7 @@ def _classification_metrics(logits: torch.Tensor, targets: torch.Tensor) -> dict
     probs = torch.softmax(logits, dim=1)
     return {
         "val_nll": float(F.cross_entropy(logits, targets).item()),
-        "val_ece": float(ExpectedCalibrationError()(probs, targets).item()),
+        "val_ece": float(expected_calibration_error(probs, targets).item()),  # ty: ignore[unresolved-attribute]
     }
 
 

@@ -71,7 +71,7 @@ torch_geometric = [
 ]
 jax = [
     "jax>=0.8.1",
-    "flax>=0.12.4"
+    "flax>=0.12.5"
 ]
 sklearn = [
     "scikit-learn>=1.6.0"  # first cp313 wheels + FrozenEstimator support
@@ -88,6 +88,7 @@ transformers = [
     "transformers>=4.33.2",  # first cp313 wheels
     "sentence-transformers>=2.3.0",
     "accelerate>=0.24.1",
+    "peft>=0.14.0",
 ]
 torch-uncertainty = [
     { include-group = "torch" },
@@ -117,9 +118,9 @@ test = [
     { include-group = "river" },
 ]
 lint = [
-    "ruff>=0.15.11",                                         # for linting
+    "ruff>=0.16.8",                                         # for linting
     "prek>=0.3.8",                                          # for running the linters pre-commit hooks
-    "ty>=0.0.32",                                           # for static type checking
+    "ty>=0.0.82",                                           # for static type checking
     "sigx @ git+https://github.com/Cortys/sigx.git@master",
 ]
 docs = [
@@ -199,13 +200,17 @@ exclude = [
 
 [tool.ruff.lint]
 select = ["ALL"]
+# Preserve explicit suppressions for scripts/check_backend_naming.py.
+external = ["BKN001", "BKN002"]
 ignore = [
     "N812",    # Checks for lowercase imports that are aliased to non-lowercase names (e.g. torch.nn.functional as F)
     "RET504",  # Unnecessary assignment to {name} before return statement
     "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
     "FBT",     # enforce keyword for bool
     "PLR0913", # too many arguments (>5)
+    "PLR0917", # too many positional arguments (>5)
     "FIX002",  # TODOs are fine in code
+    "CPY001",  # no copyright headers
     "COM812",
 ]
 

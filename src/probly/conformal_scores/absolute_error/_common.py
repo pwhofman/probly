@@ -20,7 +20,7 @@ def absolute_error_score[T](
 
 
 @absolute_error_score.register(np.ndarray | ArrayLike)
-def compute_absolute_error_score_numpy(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray | ArrayLike) -> np.ndarray:
+def numpy_compute_absolute_error_score(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray | ArrayLike) -> np.ndarray:
     """Absolute error for numpy arrays."""
     y_true_np = np.asarray(y_true, dtype=float)
     y_pred_np = np.asarray(y_pred, dtype=float)

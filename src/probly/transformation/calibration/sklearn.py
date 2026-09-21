@@ -34,7 +34,7 @@ def _extract_calibration_inputs(
 
 
 @calibrate.register(CalibratedClassifierCV)
-def calibrate_sklearn_calibrated_classifier_cv(
+def sklearn_calibrated_classifier_cv_calibrate(
     predictor: CalibratedClassifierCV,
     y_calib: object,
     *calib_args: object,
@@ -52,8 +52,6 @@ class _VectorScalingState:
     bias: np.ndarray
 
 
-@LogitClassifier.register
-@BinaryLogitClassifier.register
 class SklearnIdentityLogitEstimator(ClassifierMixin, BaseEstimator):
     """Pass-through sklearn estimator returning provided logits unchanged."""
 
@@ -103,6 +101,11 @@ class SklearnIdentityLogitEstimator(ClassifierMixin, BaseEstimator):
             return (logits > 0).astype(int)
         indices = np.argmax(logits, axis=-1)
         return self.classes_[indices]
+
+
+# Flextype's register returns the same class, but its annotation widens to type.
+BinaryLogitClassifier.register(SklearnIdentityLogitEstimator)
+LogitClassifier.register(SklearnIdentityLogitEstimator)
 
 
 class SklearnVectorScalingPredictor(BaseEstimator, CalibrationPredictor):
@@ -281,7 +284,7 @@ class SklearnVectorScalingPredictor(BaseEstimator, CalibrationPredictor):
 
 
 @calibration_generator.register(BaseEstimator)
-def generate_sklearn_scaling_calibrator(
+def sklearn_calibration_generator(
     base: BaseEstimator,
     config: CalibrationMethodConfig,
 ) -> BaseEstimator:

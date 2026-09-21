@@ -62,20 +62,20 @@ class TestDistributionFactoryFallbacks:
     def test_create_categorical_passthrough(self) -> None:
         """Passing in an existing CategoricalDistribution returns it unchanged."""
         from probly.representation.distribution._common import create_categorical_distribution  # noqa: PLC0415
-        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
-            ArrayProbabilityCategoricalDistribution,
+        from probly.representation.distribution.numpy_categorical import (  # noqa: PLC0415
+            NumpyProbabilityCategoricalDistribution,
         )
 
-        d = ArrayProbabilityCategoricalDistribution(array=np.array([[0.5, 0.5]]))
+        d = NumpyProbabilityCategoricalDistribution(array=np.array([[0.5, 0.5]]))
         assert create_categorical_distribution(d) is d
 
     def test_create_categorical_from_logits_passthrough(self) -> None:
         from probly.representation.distribution._common import (  # noqa: PLC0415
             create_categorical_distribution_from_logits,
         )
-        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
-            ArrayLogitCategoricalDistribution,
+        from probly.representation.distribution.numpy_categorical import (  # noqa: PLC0415
+            NumpyLogitCategoricalDistribution,
         )
 
-        d = ArrayLogitCategoricalDistribution(array=np.array([[0.0, 0.0]]))
+        d = NumpyLogitCategoricalDistribution(array=np.array([[0.0, 0.0]]))
         assert create_categorical_distribution_from_logits(d) is d

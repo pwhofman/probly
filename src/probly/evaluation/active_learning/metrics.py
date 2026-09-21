@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 from flextype import flexdispatch
 import numpy as np
 
+from probly.lazy_types import TORCH_TENSOR
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -48,12 +50,12 @@ def compute_ece(probs: object, y_true: object, n_bins: int = 10) -> float:
 
 
 @compute_accuracy.register(np.ndarray)
-def _compute_accuracy_numpy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
+def _numpy_compute_accuracy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
     return float(np.mean(y_pred == y_true))
 
 
 @compute_ece.register(np.ndarray)
-def _compute_ece_numpy(probs: np.ndarray, y_true: np.ndarray, n_bins: int = 10) -> float:
+def _numpy_compute_ece(probs: np.ndarray, y_true: np.ndarray, n_bins: int = 10) -> float:
     confs = probs.max(axis=1)
     preds = probs.argmax(axis=1)
     bins = np.linspace(0, 1, n_bins + 1)
@@ -76,24 +78,11 @@ def _compute_ece_numpy(probs: np.ndarray, y_true: np.ndarray, n_bins: int = 10) 
 # PyTorch registrations (lazy)
 # ---------------------------------------------------------------------------
 
-try:
-    import torch
 
-    from probly.train.calibration.torch import ExpectedCalibrationError
-
-    @compute_accuracy.register(torch.Tensor)
-    def _compute_accuracy_torch(y_pred: torch.Tensor, y_true: torch.Tensor) -> float:
-        return float((y_pred == y_true).float().mean().item())
-
-    @compute_ece.register(torch.Tensor)
-    def _compute_ece_torch(probs: torch.Tensor, y_true: torch.Tensor, n_bins: int = 10) -> float:
-        ece_fn = ExpectedCalibrationError(num_bins=n_bins)
-        with torch.no_grad():
-            loss = ece_fn(probs.float(), y_true.long())
-        return float(loss.item())
-
-except ImportError:
-    pass
+@compute_accuracy.delayed_register(TORCH_TENSOR)
+@compute_ece.delayed_register(TORCH_TENSOR)
+def _(_: type) -> None:
+    from . import torch_metrics  # noqa: F401, PLC0415
 
 
 # ---------------------------------------------------------------------------

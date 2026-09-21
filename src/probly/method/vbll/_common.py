@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
+from typing import TYPE_CHECKING, Any, Literal, Protocol, override, runtime_checkable
 import warnings
 
 from flextype import flexdispatch
@@ -30,7 +30,9 @@ if TYPE_CHECKING:
 vbll_traverser = flexdispatch_traverser[object](name="vbll_traverser")
 
 LAST_LAYER = GlobalVariable[bool]("LAST_LAYER", "Whether the current layer is the last layer of the model.")
-PARAMETERIZATION = GlobalVariable[str](
+type Parameterization = Literal["diagonal", "dense", "lowrank"]
+
+PARAMETERIZATION = GlobalVariable[Parameterization](
     "PARAMETERIZATION", "The posterior covariance parametrization ('diagonal', 'dense' or 'lowrank')."
 )
 PRIOR_SCALE = GlobalVariable[float]("PRIOR_SCALE", "The scale of the isotropic prior covariance.")
@@ -61,7 +63,7 @@ def find_vbll_layer(model: object) -> Any:  # noqa: ANN401, the concrete layer t
 
     Convenience wrapper around :func:`probly.traverse_nn.find_layer` that matches
     any discriminative VBLL layer variant (standard, Student-t, or
-    heteroscedastic), e.g. to pass the layer to :func:`probly.train.vbll.vbll_loss`
+    heteroscedastic), e.g. to pass the layer to :func:`probly.losses.vbll_loss`
     or to attach hooks to it. For generative VBLL models use
     :func:`probly.method.g_vbll.find_g_vbll_layer`.
 
@@ -87,7 +89,7 @@ def compute_vbll_categorical_sample(sample: Sample[Any]) -> CategoricalDistribut
 
 
 @representer.register(VBLLPredictor)
-class VBLLRepresenter[**In, Out](Representer[Any, In, Out, CategoricalDistributionSample[Any]]):
+class VBLLRepresenter[**In, Out: GaussianDistribution](Representer[Any, In, Out, CategoricalDistributionSample[Any]]):
     """Representer that turns the VBLL logit Gaussian into categorical samples.
 
     A single network forward yields the closed-form Gaussian over logits;
@@ -128,7 +130,7 @@ class VBLLRepresenter[**In, Out](Representer[Any, In, Out, CategoricalDistributi
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> CategoricalDistributionSample[Any]:
         """Sample logits from the predictive Gaussian and softmax them into categoricals."""
         distribution = self._predict(*args, **kwargs)
-        sampled_logits = distribution.sample(self.num_samples)  # ty:ignore[unresolved-attribute]
+        sampled_logits = distribution.sample(self.num_samples)
         return compute_vbll_categorical_sample(sampled_logits)
 
 

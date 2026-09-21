@@ -16,9 +16,9 @@ from probly.quantification import (  # noqa: E402
     SecondOrderVarianceDecomposition,
 )
 from probly.quantification.measure.ordinal import labelwise_entropy, labelwise_variance  # noqa: E402
-from probly.representation.distribution.array_categorical import (  # noqa: E402
-    ArrayCategoricalDistributionSample,
-    ArrayProbabilityCategoricalDistribution,
+from probly.representation.distribution.numpy_categorical import (  # noqa: E402
+    NumpyCategoricalDistributionSample,
+    NumpyProbabilityCategoricalDistribution,
 )
 from probly.representation.distribution.torch_categorical import (  # noqa: E402
     TorchCategoricalDistributionSample,
@@ -130,8 +130,8 @@ def test_torch_results_match_numpy(cls) -> None:
         ],
         dtype=float,
     )
-    np_sample = ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(np_sample_probs),
+    np_sample = NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(np_sample_probs),
         sample_axis=0,
     )
     torch_sample = _categorical_sample()

@@ -6,8 +6,8 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Protocol, Self, overload, override, runtime_checkable
 
 from flextype import flexdispatch
+import numpy as np
 import torch
-from torch.overrides import handle_torch_function, has_torch_function_unary
 
 from probly.representation.array_like import ArrayLike
 
@@ -113,7 +113,7 @@ class TorchLikeImplementation[DT](ArrayLike[DT], ABC):
     @property
     def T(self) -> Self:  # noqa: N802
         """Inverts the order of the dimensions of the underlying array."""
-        return self.permute(*reversed(range(self.ndim)))  # type: ignore[no-any-return]
+        return self.permute(*reversed(range(self.ndim)))
 
     @overload
     def size(self, dim: int) -> int: ...
@@ -177,6 +177,25 @@ class TorchLikeImplementation[DT](ArrayLike[DT], ABC):
             memory_format=memory_format,
         )
 
+    @override
+    def to_device(self, device: torch.device | str | None = None, /, *, stream: int | Any | None = None) -> Self:
+        """Move the array to the given device.
+
+        Args:
+            device: Target device, or None to retain the current device.
+            stream: Unsupported; must be None.
+
+        Returns:
+            The moved array representation.
+
+        Raises:
+            NotImplementedError: If a stream is provided.
+        """
+        if stream is not None:
+            msg = "stream argument of array.to_device() is not supported."
+            raise NotImplementedError(msg)
+        return self.to(device=device)
+
     def clone(self, *, memory_format: torch.memory_format = torch.preserve_format) -> Self:
         """Return a copy of the array."""
         return torch.clone(self, memory_format=memory_format)  # ty:ignore[invalid-return-type, invalid-argument-type]
@@ -212,22 +231,11 @@ class TorchLikeImplementation[DT](ArrayLike[DT], ABC):
     def numpy(self, *, force: bool = False) -> NDArray[Any]:
         """Convert to a numpy array."""
 
-    @overload
-    def __array__(self) -> NDArray[Any]: ...
-
-    @overload
-    def __array__(self, dtype: DTypeLike) -> NDArray[Any]: ...
-
     @override
-    def __array__(  # ty: ignore[invalid-method-override]
-        self, dtype: DTypeLike | None = None, /, *, copy: bool | None = None
-    ) -> NDArray[Any]:
+    def __array__(self, dtype: DTypeLike | None = None, /, *, copy: bool | None = None) -> NDArray[Any]:
         """Convert to a numpy array."""
-        if has_torch_function_unary(self):
-            return handle_torch_function(torch.Tensor.__array__, (type(self),), self, dtype=dtype)  # type: ignore[no-any-return]
-        if dtype is None:
-            return self.numpy()
-        return self.numpy(force=True).astype(dtype, copy=copy)  # ty:ignore[no-matching-overload]
+        force = copy is not False and (dtype is not None or copy is True)
+        return np.asarray(self.numpy(force=force), dtype=dtype, copy=copy)
 
     @abstractmethod
     def detach(self) -> Self:

@@ -9,14 +9,14 @@ import pytest
 
 from probly.plot import plot_credal_set
 from probly.plot.credal._spider import _ray_segment_r, _segment_intersection
-from probly.representation.credal_set.array import (
-    ArrayConvexCredalSet,
-    ArrayDiscreteCredalSet,
-    ArrayDistanceBasedCredalSet,
-    ArrayProbabilityIntervalsCredalSet,
-    ArraySingletonCredalSet,
+from probly.representation.credal_set.numpy import (
+    NumpyConvexCredalSet,
+    NumpyDiscreteCredalSet,
+    NumpyDistanceBasedCredalSet,
+    NumpyProbabilityIntervalsCredalSet,
+    NumpySingletonCredalSet,
 )
-from probly.representation.distribution.array_categorical import ArrayProbabilityCategoricalDistribution
+from probly.representation.distribution.numpy_categorical import NumpyProbabilityCategoricalDistribution
 
 mpl.use("Agg")
 
@@ -32,14 +32,14 @@ def _close_figures():
 @pytest.mark.usefixtures("_close_figures")
 class TestSpiderPlot:
     def test_singleton(self):
-        data = ArraySingletonCredalSet(
-            array=ArrayProbabilityCategoricalDistribution(np.array([[0.3, 0.2, 0.1, 0.15, 0.25]])),
+        data = NumpySingletonCredalSet(
+            array=NumpyProbabilityCategoricalDistribution(np.array([[0.3, 0.2, 0.1, 0.15, 0.25]])),
         )
         ax = plot_credal_set(data, title="Singleton Spider")
         assert f"radar_{NUM_CLASSES}" in ax.name
 
     def test_probability_intervals(self):
-        data = ArrayProbabilityIntervalsCredalSet(
+        data = NumpyProbabilityIntervalsCredalSet(
             lower_bounds=np.array([[0.05, 0.05, 0.05, 0.05, 0.05]]),
             upper_bounds=np.array([[0.4, 0.3, 0.3, 0.3, 0.5]]),
         )
@@ -47,7 +47,7 @@ class TestSpiderPlot:
         assert f"radar_{NUM_CLASSES}" in ax.name
 
     def test_distance_based(self):
-        data = ArrayDistanceBasedCredalSet(
+        data = NumpyDistanceBasedCredalSet(
             nominal=np.array([[0.3, 0.2, 0.2, 0.15, 0.15]]),
             radius=np.array([0.05]),
         )
@@ -55,7 +55,7 @@ class TestSpiderPlot:
         assert f"radar_{NUM_CLASSES}" in ax.name
 
     def test_convex(self):
-        data = ArrayConvexCredalSet(
+        data = NumpyConvexCredalSet(
             array=np.array(
                 [
                     [
@@ -70,7 +70,7 @@ class TestSpiderPlot:
         assert f"radar_{NUM_CLASSES}" in ax.name
 
     def test_discrete(self):
-        data = ArrayDiscreteCredalSet(
+        data = NumpyDiscreteCredalSet(
             array=np.array(
                 [
                     [
@@ -84,7 +84,7 @@ class TestSpiderPlot:
         assert f"radar_{NUM_CLASSES}" in ax.name
 
     def test_batched_input(self):
-        data = ArrayProbabilityIntervalsCredalSet(
+        data = NumpyProbabilityIntervalsCredalSet(
             lower_bounds=np.array(
                 [
                     [0.05, 0.05, 0.05, 0.05, 0.05],
@@ -106,21 +106,21 @@ class TestSpiderPlot:
         assert f"radar_{NUM_CLASSES}" in ax.name
 
     def test_labels_mismatch_raises(self):
-        data = ArraySingletonCredalSet(
+        data = NumpySingletonCredalSet(
             array=np.array([[0.3, 0.2, 0.1, 0.15, 0.25]]),
         )
         with pytest.raises(ValueError, match="Expected 5 labels"):
             plot_credal_set(data, labels=["A", "B", "C"])
 
     def test_gridlines_off(self):
-        data = ArraySingletonCredalSet(
+        data = NumpySingletonCredalSet(
             array=np.array([[0.3, 0.2, 0.1, 0.15, 0.25]]),
         )
         ax = plot_credal_set(data, gridlines=False)
         assert f"radar_{NUM_CLASSES}" in ax.name
 
     def test_custom_labels(self):
-        data = ArraySingletonCredalSet(
+        data = NumpySingletonCredalSet(
             array=np.array([[0.3, 0.2, 0.1, 0.15, 0.25]]),
         )
         labels = ["Cat", "Dog", "Bird", "Fish", "Frog"]
@@ -129,7 +129,7 @@ class TestSpiderPlot:
 
     def test_eight_classes(self):
         nc = 8
-        data = ArrayProbabilityIntervalsCredalSet(
+        data = NumpyProbabilityIntervalsCredalSet(
             lower_bounds=np.full((1, nc), 0.05),
             upper_bounds=np.full((1, nc), 0.3),
         )
@@ -139,13 +139,13 @@ class TestSpiderPlot:
     def test_intervals_zero_width_draws_line(self):
         # When all lower == upper the spider draws a line instead of bars.
         v = np.array([[0.2, 0.2, 0.2, 0.2, 0.2]])
-        data = ArrayProbabilityIntervalsCredalSet(lower_bounds=v, upper_bounds=v)
+        data = NumpyProbabilityIntervalsCredalSet(lower_bounds=v, upper_bounds=v)
         ax = plot_credal_set(data)
         assert f"radar_{NUM_CLASSES}" in ax.name
 
     def test_intervals_tiny_width_draws_marker(self):
         # When max(upper - lower) < 0.02 a midpoint line/scatter is drawn in addition to bars.
-        data = ArrayProbabilityIntervalsCredalSet(
+        data = NumpyProbabilityIntervalsCredalSet(
             lower_bounds=np.array([[0.195, 0.195, 0.195, 0.195, 0.195]]),
             upper_bounds=np.array([[0.205, 0.205, 0.205, 0.205, 0.205]]),
         )
@@ -156,31 +156,31 @@ class TestSpiderPlot:
 @pytest.mark.usefixtures("_close_figures")
 class TestGroundTruthOverlay:
     def test_ground_truth_spider(self):
-        data = ArraySingletonCredalSet(
+        data = NumpySingletonCredalSet(
             array=np.array([[0.3, 0.2, 0.1, 0.15, 0.25]]),
         )
-        gt = ArraySingletonCredalSet(array=np.array([[0.0, 0.0, 1.0, 0.0, 0.0]]))
+        gt = NumpySingletonCredalSet(array=np.array([[0.0, 0.0, 1.0, 0.0, 0.0]]))
         ax = plot_credal_set(data, ground_truth=gt)
         assert f"radar_{NUM_CLASSES}" in ax.name
 
     def test_ground_truth_with_intervals(self):
-        data = ArrayProbabilityIntervalsCredalSet(
+        data = NumpyProbabilityIntervalsCredalSet(
             lower_bounds=np.array([[0.05, 0.05, 0.05, 0.05, 0.05]]),
             upper_bounds=np.array([[0.4, 0.3, 0.3, 0.3, 0.5]]),
         )
-        gt = ArraySingletonCredalSet(array=np.array([[0.3, 0.2, 0.2, 0.15, 0.15]]))
+        gt = NumpySingletonCredalSet(array=np.array([[0.3, 0.2, 0.2, 0.15, 0.15]]))
         ax = plot_credal_set(data, ground_truth=gt)
         assert f"radar_{NUM_CLASSES}" in ax.name
 
     def test_ground_truth_binary(self):
-        data = ArraySingletonCredalSet(array=np.array([[0.3, 0.7]]))
-        gt = ArraySingletonCredalSet(array=np.array([[0.0, 1.0]]))
+        data = NumpySingletonCredalSet(array=np.array([[0.3, 0.7]]))
+        gt = NumpySingletonCredalSet(array=np.array([[0.0, 1.0]]))
         ax = plot_credal_set(data, ground_truth=gt)
         assert ax is not None
 
     def test_ground_truth_ternary(self):
-        data = ArraySingletonCredalSet(array=np.array([[0.5, 0.3, 0.2]]))
-        gt = ArraySingletonCredalSet(array=np.array([0.0, 1.0, 0.0]))
+        data = NumpySingletonCredalSet(array=np.array([[0.5, 0.3, 0.2]]))
+        gt = NumpySingletonCredalSet(array=np.array([0.0, 1.0, 0.0]))
         ax = plot_credal_set(data, ground_truth=gt)
         assert ax is not None
 
@@ -255,7 +255,7 @@ class TestEnvelopeGeometry:
 
     def test_envelope_with_known_crossing(self):
         # Two members on 4 spokes where member lines cross between spokes
-        data = ArrayConvexCredalSet(
+        data = NumpyConvexCredalSet(
             array=np.array(
                 [
                     [

@@ -21,8 +21,8 @@ if TYPE_CHECKING:
     from mpltern import TernaryAxes
 
     from probly.representation.credal_set._common import SingletonCredalSet
-    from probly.representation.credal_set.array import (
-        ArrayCategoricalCredalSet,
+    from probly.representation.credal_set.numpy import (
+        NumpyCategoricalCredalSet,
     )
     from probly.representation.credal_set.torch import (
         TorchCategoricalCredalSet,
@@ -121,7 +121,7 @@ def _has_legend(
 
 
 def _plot_binary(
-    data: ArrayCategoricalCredalSet | TorchCategoricalCredalSet,
+    data: NumpyCategoricalCredalSet | TorchCategoricalCredalSet,
     labels: list[str],
     config: PlotConfig,
     series_labels: list[str] | None,
@@ -142,7 +142,7 @@ def _plot_binary(
 
 
 def _plot_ternary(
-    data: ArrayCategoricalCredalSet | TorchCategoricalCredalSet,
+    data: NumpyCategoricalCredalSet | TorchCategoricalCredalSet,
     labels: list[str],
     config: PlotConfig,
     series_labels: list[str] | None,
@@ -175,7 +175,7 @@ def _plot_ternary(
 
 
 def _plot_spider(
-    data: ArrayCategoricalCredalSet | TorchCategoricalCredalSet,
+    data: NumpyCategoricalCredalSet | TorchCategoricalCredalSet,
     labels: list[str],
     config: PlotConfig,
     series_labels: list[str] | None,
@@ -202,7 +202,7 @@ def _plot_spider(
 
 
 def plot_credal_set(
-    data: ArrayCategoricalCredalSet | TorchCategoricalCredalSet,
+    data: NumpyCategoricalCredalSet | TorchCategoricalCredalSet,
     *,
     title: str | None = None,
     labels: list[str] | None = None,

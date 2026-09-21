@@ -15,7 +15,7 @@ class _Exp(nn.Module):
         return torch.exp(x)
 
 
-def append_activation_torch(obj: nn.Module) -> nn.Sequential:
+def torch_append_activation(obj: nn.Module) -> nn.Sequential:
     """Append exp so the model outputs Dirichlet alpha based on :cite:`malininPredictiveUncertaintyEstimation2018`.
 
     Unlike Sensoy's softplus + 1 parameterization, exp allows alpha values below 1,
@@ -24,4 +24,4 @@ def append_activation_torch(obj: nn.Module) -> nn.Sequential:
     return nn.Sequential(obj, _Exp())
 
 
-register(nn.Module, append_activation_torch)
+register(nn.Module, torch_append_activation)

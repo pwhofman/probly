@@ -19,13 +19,13 @@ from ._selection import random_select, topk_select
 
 
 @least_confident_score.register(torch.Tensor)
-def _least_confident_score_torch(probs: torch.Tensor) -> torch.Tensor:
+def _torch_least_confident_score(probs: torch.Tensor) -> torch.Tensor:
     """Torch implementation of least confident scoring."""
     return 1.0 - probs.max(dim=1).values
 
 
 @margin_score.register(torch.Tensor)
-def _margin_score_torch(probs: torch.Tensor) -> torch.Tensor:
+def _torch_margin_score(probs: torch.Tensor) -> torch.Tensor:
     """Torch implementation of margin scoring (negative margin: higher = smaller margin)."""
     sorted_probs = probs.sort(dim=1).values
     return -(sorted_probs[:, -1] - sorted_probs[:, -2])
@@ -37,7 +37,7 @@ def _margin_score_torch(probs: torch.Tensor) -> torch.Tensor:
 
 
 @topk_select.register(torch.Tensor)
-def _topk_select_torch(scores: torch.Tensor, n: int) -> torch.Tensor:
+def _torch_topk_select(scores: torch.Tensor, n: int) -> torch.Tensor:
     """Torch implementation of top-k selection (highest scores)."""
     return torch.topk(scores, n, largest=True).indices
 
@@ -48,7 +48,7 @@ def _topk_select_torch(scores: torch.Tensor, n: int) -> torch.Tensor:
 
 
 @badge_select.register(torch.Tensor)
-def _badge_select_torch(
+def _torch_badge_select(
     embeddings: torch.Tensor,
     probs: torch.Tensor,
     n: int,
@@ -91,7 +91,7 @@ def _badge_select_torch(
 
 
 @random_select.register(torch.Tensor)
-def _random_select_torch(
+def _torch_random_select(
     x_ref: torch.Tensor,
     n_pool: int,
     n: int,

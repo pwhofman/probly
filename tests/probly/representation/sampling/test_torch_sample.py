@@ -13,7 +13,7 @@ from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistribution,
     TorchProbabilityCategoricalDistribution,
 )
-from probly.representation.sample.array import ArraySample
+from probly.representation.sample.numpy import NumpySample
 from probly.representation.sample.torch import TorchSample
 from probly.representation.torch_functions import torch_average
 
@@ -240,7 +240,7 @@ class TestTorchSample:
     def test_array_like_conversion(self, torch_tensor_sample_2d: TorchSample) -> None:
         converted = torch_tensor_sample_2d.__array_like__()
 
-        assert isinstance(converted, ArraySample)
+        assert isinstance(converted, NumpySample)
         assert converted.sample_axis == torch_tensor_sample_2d.sample_dim
         assert np.array_equal(np.asarray(converted.array), np.asarray(torch_tensor_sample_2d.tensor))
 
@@ -339,7 +339,7 @@ class TestTorchSample:
     def test_to_numpy_array_like_uses_array_like(self, torch_tensor_sample_2d: TorchSample) -> None:
         converted = to_numpy_array_like(torch_tensor_sample_2d)
 
-        assert isinstance(converted, ArraySample)
+        assert isinstance(converted, NumpySample)
         assert converted.sample_axis == torch_tensor_sample_2d.sample_dim
 
     def test_torch_function_is_not_implemented(self, torch_tensor_sample_2d: TorchSample) -> None:
@@ -686,10 +686,10 @@ class TestTorchSampleEdgeCases:
 
         s = TorchSample(torch.arange(6, dtype=torch.float32).reshape(2, 3), sample_dim=0)
         arr_like = s.__array_like__()
-        # Should produce an ArraySample
-        from probly.representation.sample.array import ArraySample  # noqa: PLC0415
+        # Should produce an NumpySample
+        from probly.representation.sample.numpy import NumpySample  # noqa: PLC0415
 
-        assert isinstance(arr_like, ArraySample)
+        assert isinstance(arr_like, NumpySample)
 
 
 def _torch_modules():

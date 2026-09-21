@@ -5,6 +5,8 @@ from __future__ import annotations
 from jax import Array
 import jax.numpy as jnp
 
+from probly.representation.sample.jax import JaxSample
+
 from ._common import cqr_score
 
 
@@ -32,3 +34,9 @@ def _(y_pred: Array, y_true: Array) -> Array:
     upper = pred[..., 1]
 
     return jnp.maximum(lower - y, y - upper)
+
+
+@cqr_score.register(JaxSample)
+def _(y_pred: JaxSample, y_true: Array) -> Array:
+    """Compute CQR scores for JAX samples."""
+    return cqr_score(y_pred.array, y_true)

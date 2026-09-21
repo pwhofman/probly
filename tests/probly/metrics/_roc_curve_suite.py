@@ -133,6 +133,23 @@ class RocCurveSuite:
         fpr = np.asarray(fpr)
         np.testing.assert_allclose(fpr, 0.0)
 
+    def test_tied_scores_share_one_threshold(self, array_fn):
+        """All scores equal means one threshold, so the curve jumps straight from (0, 0) to (1, 1)."""
+        y_true = array_fn([0, 0, 0, 1, 1, 1], dtype=float)
+        y_score = array_fn([0.5] * 6, dtype=float)
+        fpr, tpr, _ = roc_curve(y_true, y_score)
+        np.testing.assert_allclose(np.asarray(fpr)[1:], 1.0)
+        np.testing.assert_allclose(np.asarray(tpr)[1:], 1.0)
+
+    def test_tie_order_independence(self, array_fn):
+        """Reordering samples that share a score leaves the curve unchanged."""
+        y_true = [0, 1, 0, 1, 0, 1, 0, 1]
+        y_score = [0.5, 0.5, 0.2, 0.5, 0.5, 0.9, 0.5, 0.2]
+        fpr, tpr, _ = roc_curve(array_fn(y_true, dtype=float), array_fn(y_score, dtype=float))
+        fpr_rev, tpr_rev, _ = roc_curve(array_fn(y_true[::-1], dtype=float), array_fn(y_score[::-1], dtype=float))
+        np.testing.assert_allclose(np.asarray(fpr), np.asarray(fpr_rev))
+        np.testing.assert_allclose(np.asarray(tpr), np.asarray(tpr_rev))
+
     def test_higher_rank_equivalence(self, array_fn):
         """Higher-rank inputs are treated as additional leading batch dims.
 

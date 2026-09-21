@@ -2,9 +2,37 @@
 
 from __future__ import annotations
 
+from operator import index
+from typing import Literal, SupportsIndex
+
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
+
+from ._common import entropy, intersection_probability
+
+
+def torch_head_dimension(head: torch.nn.Module, name: Literal["in_features", "out_features"]) -> int:
+    """Read an integer feature dimension from a registered classification head.
+
+    Custom heads may use any module class with the requested attribute. Integer-like
+    values implementing ``__index__`` are supported, including NumPy integers.
+
+    Args:
+        head: Classification head selected by a traversal registration.
+        name: Feature dimension needed by the consumer.
+
+    Returns:
+        The requested feature dimension.
+
+    Raises:
+        TypeError: If the head does not expose the requested integer dimension.
+    """
+    value = getattr(head, name, None)
+    if not isinstance(value, SupportsIndex):
+        msg = f"Classification head must expose an integer {name} attribute."
+        raise TypeError(msg)
+    return index(value)
 
 
 @torch.no_grad()
@@ -41,14 +69,16 @@ def torch_reset_all_parameters(module: torch.nn.Module) -> None:
         module: Module to reset parameters.
 
     """
-    if hasattr(module, "reset_parameters"):
-        module.reset_parameters()  # ty: ignore[call-non-callable]
+    reset = getattr(module, "reset_parameters", None)
+    if callable(reset):
+        reset()
     for child in module.children():
-        if hasattr(child, "reset_parameters"):
-            child.reset_parameters()  # ty: ignore[call-non-callable]
+        reset = getattr(child, "reset_parameters", None)
+        if callable(reset):
+            reset()
 
 
-def temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor) -> torch.Tensor:
+def torch_temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor) -> torch.Tensor:
     """Compute the softmax of logits with temperature scaling applied.
 
     Computes the softmax based on the logits divided by the temperature. Assumes that the last dimension
@@ -66,6 +96,7 @@ def temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor)
     return ts
 
 
+@entropy.register(torch.Tensor)
 def torch_entropy(p: torch.Tensor) -> torch.Tensor:
     """Shannon entropy H(p) computed in torch along the last dim; 0*log(0) treated as 0.
 
@@ -80,7 +111,8 @@ def torch_entropy(p: torch.Tensor) -> torch.Tensor:
     return torch.clamp_min(result, 0.0) + 0.0  # Ensure non-negativity
 
 
-def intersection_probability(lower: torch.Tensor, upper: torch.Tensor) -> torch.Tensor:
+@intersection_probability.register(torch.Tensor)
+def torch_intersection_probability(lower: torch.Tensor, upper: torch.Tensor) -> torch.Tensor:
     """Intersection probability of a probability interval, per :cite:`wangCredalDeepEnsembles2024` Section 3.4.
 
     Reduces an interval credal set ``[lower, upper]`` to a single probability

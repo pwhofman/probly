@@ -2,7 +2,7 @@
 
 from probly.lazy_types import TORCH_TENSOR
 
-from . import array as array
+from . import numpy as numpy
 from ._badge import BADGEQuery, badge_embed, badge_select
 from ._protocols import BadgeEstimator, Estimator, QueryStrategy, UncertaintyEstimator
 from ._scores import entropy_score, least_confident_score, margin_score

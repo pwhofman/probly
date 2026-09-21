@@ -34,6 +34,13 @@ class ExpectedCalibrationErrorSuite:
         result = expected_calibration_error(y_prob, y_true)
         assert float(result) == pytest.approx(0.3)
 
+    def test_saturated_wrong_predictions_give_one(self, array_fn):
+        """Confidence of exactly one lands in the last bin."""
+        y_true = array_fn([1, 1, 1, 1])
+        y_prob = array_fn([[1.0, 0.0, 0.0]] * 4)
+        result = expected_calibration_error(y_prob, y_true, num_bins=10)
+        assert float(result) == pytest.approx(1.0)
+
     def test_returns_backend_type(self, array_fn, array_type):
         """Result is an instance of the input backend's type."""
         y_true = array_fn([0, 1])

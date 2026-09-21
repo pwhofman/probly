@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, ClassVar, Literal, override
 
 import torch
@@ -21,8 +21,8 @@ from probly.representation.sample.torch import TorchSample
 class TorchGaussianDistribution(TorchAxisProtected[Any], GaussianDistribution[torch.Tensor]):
     """Gaussian distribution with torch tensor parameters."""
 
-    mean: torch.Tensor
-    var: torch.Tensor
+    mean: torch.Tensor = field()
+    var: torch.Tensor = field()
 
     type: Literal["gaussian"] = "gaussian"
     protected_axes: ClassVar[dict[str, int]] = {"mean": 0, "var": 0}

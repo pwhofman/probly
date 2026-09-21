@@ -302,7 +302,7 @@ class NumpyArrayLikeImplementation[DT: NumpyArrayLike | np.ndarray](
         return np.transpose(self)  # ty: ignore[invalid-return-type]
 
     def transpose(self, *axes: int | None) -> Self:
-        """Return a transposed version of the ArraySample.
+        """Return a transposed version of the NumpySample.
 
         This method implicitly also provides full axis tracking support for
         - `np.moveaxis`
@@ -313,7 +313,7 @@ class NumpyArrayLikeImplementation[DT: NumpyArrayLike | np.ndarray](
             axes: The axes to transpose.
 
         Returns:
-            A transposed version of the ArraySample.
+            A transposed version of the NumpySample.
         """
         if len(axes) == 0:
             return np.transpose(self)  # ty:ignore[invalid-return-type]
@@ -334,14 +334,10 @@ class NumpyArrayLikeImplementation[DT: NumpyArrayLike | np.ndarray](
         copy: bool = True,
     ) -> Self:
         """Copy of the array, cast to a specified type."""
-        return np.astype(
-            self,
-            dtype,
-            order=order,
-            casting=casting,
-            subok=subok,
-            copy=copy,
-        )  # ty:ignore[no-matching-overload]
+        if order != "K" or casting != "unsafe" or not subok:
+            msg = "Non-default ndarray.astype options require a representation-specific implementation."
+            raise NotImplementedError(msg)
+        return np.astype(self, dtype, copy=copy)  # ty: ignore[no-matching-overload]
 
     def __index__(self) -> int:
         """Converts 0d integer array to a Python integer."""

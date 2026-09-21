@@ -85,13 +85,7 @@ def torch_dirichlet_entropy(
     else:
         alphas = distribution
 
-    alpha_0 = torch.sum(alphas, dim=-1)
-    num_classes = alphas.shape[-1]
-
-    log_beta = torch.sum(torch.lgamma(alphas), dim=-1) - torch.lgamma(alpha_0)
-    digamma_sum = (alpha_0 - num_classes) * torch.digamma(alpha_0)
-    digamma_individual = torch.sum((alphas - 1) * torch.digamma(alphas), dim=-1)
-    result = log_beta + digamma_sum - digamma_individual
+    result = torch.distributions.Dirichlet(alphas, validate_args=False).entropy()
 
     if base is None or base == torch.e:
         return result

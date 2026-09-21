@@ -2,32 +2,57 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, overload
+from typing import TYPE_CHECKING, Any, Literal, overload, override
 
-from flextype import flexdispatch
+from flextype import Flexdispatch, flexdispatch
 
 if TYPE_CHECKING:
     from probly.representation.array_like import ArrayLike
     from probly.representation.credal_set._common import CredalSet
 
 type LogBase = float | Literal["normalize"] | None
+type _EntropyResult = ArrayLike | tuple[ArrayLike, ArrayLike]
 
 
-@overload
-def upper_entropy(
-    credal_set: CredalSet,
-    base: LogBase = None,
-    *,
-    return_distribution: Literal[False] = False,
-) -> ArrayLike: ...
-@overload
-def upper_entropy(
-    credal_set: CredalSet,
-    base: LogBase = None,
-    *,
-    return_distribution: Literal[True],
-) -> tuple[ArrayLike, ArrayLike]: ...
-@flexdispatch
+class _EntropyDispatcher(Flexdispatch[..., _EntropyResult]):
+    """A flexdispatcher whose result type depends on ``return_distribution``."""
+
+    # Keep the overloads on the callable object so its inherited registration
+    # API remains visible alongside the precise return types.
+    @overload
+    def __call__(
+        self,
+        credal_set: CredalSet,
+        base: LogBase = None,
+        *,
+        return_distribution: Literal[False] = False,
+    ) -> ArrayLike: ...
+
+    @overload
+    def __call__(
+        self,
+        credal_set: CredalSet,
+        base: LogBase = None,
+        *,
+        return_distribution: Literal[True],
+    ) -> tuple[ArrayLike, ArrayLike]: ...
+
+    @overload
+    def __call__(
+        self,
+        credal_set: CredalSet,
+        base: LogBase = None,
+        *,
+        return_distribution: bool,
+    ) -> _EntropyResult: ...
+
+    @override
+    def __call__(self, *args: Any, **kwargs: Any) -> _EntropyResult:
+        """Forward arguments unchanged to the registered implementation."""
+        return super().__call__(*args, **kwargs)
+
+
+@_EntropyDispatcher
 def upper_entropy(
     credal_set: CredalSet,
     base: LogBase = None,
@@ -43,21 +68,7 @@ def upper_entropy(
     raise NotImplementedError(msg)
 
 
-@overload
-def lower_entropy(
-    credal_set: CredalSet,
-    base: LogBase = None,
-    *,
-    return_distribution: Literal[False] = False,
-) -> ArrayLike: ...
-@overload
-def lower_entropy(
-    credal_set: CredalSet,
-    base: LogBase = None,
-    *,
-    return_distribution: Literal[True],
-) -> tuple[ArrayLike, ArrayLike]: ...
-@flexdispatch
+@_EntropyDispatcher
 def lower_entropy(
     credal_set: CredalSet,
     base: LogBase = None,

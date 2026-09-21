@@ -24,7 +24,7 @@ import networkx as nx
 from probly.evaluation.selective_prediction import selective_prediction
 from probly.predictor import predict
 from probly.quantification import quantify
-from probly.train.evidential.torch import mixture_uce_loss, postnet_loss
+from probly.losses.torch import mixture_uce_loss, postnet_loss
 from probly.method.graph_posterior_network import (
     cuq_graph_neural_network,
     graph_posterior_network,

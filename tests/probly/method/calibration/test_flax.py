@@ -313,10 +313,41 @@ def test_calibration_supports_arbitrary_batch_dims() -> None:
     assert binary_logits.shape == (3, 6)
 
 
-def test_dirichlet_calibration_raises_not_implemented() -> None:
-    """Dirichlet calibration has no flax implementation and must fail fast instead of silently degrading."""
-    with pytest.raises(NotImplementedError, match="not implemented for the flax backend"):
-        dirichlet_calibration(flax_identity_logit_model(), num_classes=3)
+def test_dirichlet_calibration_improves_multiclass_nll() -> None:
+    """Dirichlet calibration should improve held-out multiclass NLL on distorted logits."""
+    key_calib, key_calib_labels, key_test, key_test_labels = jax.random.split(jax.random.PRNGKey(21), 4)
+    true_calib_logits = jax.random.normal(key_calib, (4096, 3))
+    y_calib = jax.random.categorical(key_calib_labels, true_calib_logits, axis=-1)
+    true_test_logits = jax.random.normal(key_test, (2048, 3))
+    y_test = jax.random.categorical(key_test_labels, true_test_logits, axis=-1)
+
+    shift = jnp.array([0.8, -0.4, -0.4])
+    distorted_calib_logits = 3.0 * true_calib_logits + shift
+    distorted_test_logits = 3.0 * true_test_logits + shift
+
+    model = dirichlet_calibration(flax_identity_logit_model(), num_classes=3, reg_lambda=1e-4)
+    calibrate(model, y_calib, distorted_calib_logits)
+    calibrated_test_logits = predict_raw(model, distorted_test_logits)
+
+    assert _multiclass_nll(calibrated_test_logits, y_test) < _multiclass_nll(distorted_test_logits, y_test)
+
+
+def test_dirichlet_state_roundtrips_via_nnx_update() -> None:
+    """Dirichlet calibration parameters are serialized via nnx state."""
+    logits, labels = _sample_multiclass_logits(seed=22, num_samples=256, num_classes=3)
+
+    model = dirichlet_calibration(flax_identity_logit_model(), num_classes=3)
+    calibrate(model, labels, logits)
+    state = nnx.state(model)
+    assert "_dirichlet_weight" in state
+    assert "_dirichlet_bias" in state
+    assert "_is_calibrated" in state
+
+    fresh = dirichlet_calibration(flax_identity_logit_model(), num_classes=3)
+    nnx.update(fresh, state)
+
+    assert fresh.is_calibrated is True
+    assert jnp.allclose(predict_raw(fresh, logits), predict_raw(model, logits), atol=1e-6)
 
 
 def test_isotonic_regression_rejects_multiclass_logits() -> None:

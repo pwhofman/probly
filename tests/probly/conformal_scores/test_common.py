@@ -16,10 +16,10 @@ from probly.conformal_scores import (
     raps_score,
     saps_score,
 )
-from probly.conformal_scores.aps._common import compute_aps_score_numpy
-from probly.conformal_scores.raps._common import compute_raps_score_numpy
-from probly.conformal_scores.saps._common import compute_saps_score_func_numpy
-from probly.conformal_scores.uacqr._common import compute_uacqr_score_func_numpy
+from probly.conformal_scores.aps._common import numpy_compute_aps_score
+from probly.conformal_scores.raps._common import numpy_compute_raps_score
+from probly.conformal_scores.saps._common import numpy_compute_saps_score_func
+from probly.conformal_scores.uacqr._common import numpy_compute_uacqr_score_func
 
 
 def test_non_conformity_score_protocol_accepts_functions_and_callables() -> None:
@@ -33,7 +33,7 @@ def test_aps_score_class_curries_configuration() -> None:
     labels = np.array([1, 2], dtype=int)
 
     score = APSScore(randomized=False)
-    expected = compute_aps_score_numpy(probs, labels, randomized=False)
+    expected = numpy_compute_aps_score(probs, labels, randomized=False)
     np.testing.assert_allclose(score(probs, labels), expected)
 
     with pytest.raises(TypeError):
@@ -45,7 +45,7 @@ def test_saps_score_class_curries_configuration() -> None:
     labels = np.array([0, 2], dtype=int)
 
     score = SAPSScore(randomized=False, lambda_val=0.3)
-    expected = compute_saps_score_func_numpy(probs, labels, randomized=False, lambda_val=0.3)
+    expected = numpy_compute_saps_score_func(probs, labels, randomized=False, lambda_val=0.3)
     np.testing.assert_allclose(score(probs, labels), expected)
 
     with pytest.raises(TypeError):
@@ -57,7 +57,7 @@ def test_raps_score_class_curries_configuration() -> None:
     labels = np.array([0, 1], dtype=int)
 
     score = RAPSScore(randomized=False, lambda_reg=0.2, k_reg=1)
-    expected = compute_raps_score_numpy(
+    expected = numpy_compute_raps_score(
         probs,
         labels,
         randomized=False,
@@ -83,28 +83,28 @@ def test_classification_scores_support_multi_axis_batch_shapes() -> None:
     flat_probs = probs.reshape(-1, probs.shape[-1])
     flat_labels = labels.reshape(-1)
 
-    aps_scores = compute_aps_score_numpy(probs, labels, randomized=False)
-    aps_flat = compute_aps_score_numpy(flat_probs, flat_labels, randomized=False).reshape(labels.shape)
+    aps_scores = numpy_compute_aps_score(probs, labels, randomized=False)
+    aps_flat = numpy_compute_aps_score(flat_probs, flat_labels, randomized=False).reshape(labels.shape)
     np.testing.assert_allclose(aps_scores, aps_flat)
 
     lac_scores = lac_score(probs, labels)
     lac_flat = lac_score(flat_probs, flat_labels).reshape(labels.shape)
     np.testing.assert_allclose(lac_scores, lac_flat)
 
-    saps_scores = compute_saps_score_func_numpy(probs, labels, randomized=False, lambda_val=0.3)
-    saps_flat = compute_saps_score_func_numpy(flat_probs, flat_labels, randomized=False, lambda_val=0.3).reshape(
+    saps_scores = numpy_compute_saps_score_func(probs, labels, randomized=False, lambda_val=0.3)
+    saps_flat = numpy_compute_saps_score_func(flat_probs, flat_labels, randomized=False, lambda_val=0.3).reshape(
         labels.shape
     )
     np.testing.assert_allclose(saps_scores, saps_flat)
 
-    raps_scores = compute_raps_score_numpy(
+    raps_scores = numpy_compute_raps_score(
         probs,
         labels,
         randomized=False,
         lambda_reg=0.2,
         k_reg=1,
     )
-    raps_flat = compute_raps_score_numpy(
+    raps_flat = numpy_compute_raps_score(
         flat_probs,
         flat_labels,
         randomized=False,
@@ -125,8 +125,8 @@ def test_uacqr_score_supports_multi_axis_batch_shapes() -> None:
         dtype=float,
     )
 
-    scores = compute_uacqr_score_func_numpy(y_pred, y_true)
-    flat_scores = compute_uacqr_score_func_numpy(
+    scores = numpy_compute_uacqr_score_func(y_pred, y_true)
+    flat_scores = numpy_compute_uacqr_score_func(
         y_pred.reshape(y_pred.shape[0], -1, y_pred.shape[-1]),
         y_true.reshape(-1),
     ).reshape(y_true.shape)

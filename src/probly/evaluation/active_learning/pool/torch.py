@@ -41,7 +41,7 @@ class TorchActiveLearningPool:
 
 
 @from_dataset.register(torch.Tensor)
-def _from_dataset_torch(
+def _torch_from_dataset(
     x: torch.Tensor,
     y: torch.Tensor,
     x_test: torch.Tensor,
@@ -65,7 +65,7 @@ def _from_dataset_torch(
 
 
 @query.register(TorchActiveLearningPool)
-def _query_torch(pool: TorchActiveLearningPool, indices: torch.Tensor) -> None:
+def _torch_query(pool: TorchActiveLearningPool, indices: torch.Tensor) -> None:
     idx = indices.long()
     pool.x_labeled = torch.cat([pool.x_labeled, pool.x_unlabeled[idx]], dim=0)
     pool.y_labeled = torch.cat([pool.y_labeled, pool.y_unlabeled[idx]], dim=0)

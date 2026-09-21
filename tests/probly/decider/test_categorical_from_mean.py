@@ -6,28 +6,28 @@ import numpy as np
 import pytest
 
 from probly.decider import categorical_from_mean, mean_field_categorical
-from probly.representation.conformal_set.array import ArrayOneHotConformalSet
-from probly.representation.credal_set.array import (
-    ArrayDistanceBasedCredalSet,
-    ArrayProbabilityIntervalsCredalSet,
+from probly.representation.conformal_set.numpy import NumpyOneHotConformalSet
+from probly.representation.credal_set.numpy import (
+    NumpyDistanceBasedCredalSet,
+    NumpyProbabilityIntervalsCredalSet,
 )
-from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistribution,
-    ArrayCategoricalDistributionSample,
-    ArrayProbabilityCategoricalDistribution,
+from probly.representation.distribution.numpy_categorical import (
+    NumpyCategoricalDistribution,
+    NumpyCategoricalDistributionSample,
+    NumpyProbabilityCategoricalDistribution,
 )
-from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
+from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
 
 
 def test_categorical_from_mean_returns_categorical_distribution_unchanged() -> None:
-    distribution = ArrayProbabilityCategoricalDistribution(np.array([[0.2, 0.3, 0.5]]))
+    distribution = NumpyProbabilityCategoricalDistribution(np.array([[0.2, 0.3, 0.5]]))
 
     assert categorical_from_mean(distribution) is distribution
 
 
 def test_categorical_from_mean_reduces_categorical_sample_to_mean_distribution() -> None:
-    sample = ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(
+    sample = NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(
             np.array(
                 [
                     [[2.0, 2.0, 0.0], [1.0, 3.0, 0.0]],
@@ -40,40 +40,40 @@ def test_categorical_from_mean_reduces_categorical_sample_to_mean_distribution()
 
     single = categorical_from_mean(sample)
 
-    assert isinstance(single, ArrayCategoricalDistribution)
+    assert isinstance(single, NumpyCategoricalDistribution)
     np.testing.assert_allclose(single.probabilities, np.array([[0.375, 0.375, 0.25], [0.5, 0.5, 0.0]]))
 
 
 def test_categorical_from_mean_reduces_dirichlet_to_expected_categorical_distribution() -> None:
-    distribution = ArrayDirichletDistribution(np.array([[1.0, 2.0, 3.0], [2.0, 2.0, 4.0]]))
+    distribution = NumpyDirichletDistribution(np.array([[1.0, 2.0, 3.0], [2.0, 2.0, 4.0]]))
 
     single = categorical_from_mean(distribution)
 
-    assert isinstance(single, ArrayCategoricalDistribution)
+    assert isinstance(single, NumpyCategoricalDistribution)
     np.testing.assert_allclose(single.probabilities, np.array([[1 / 6, 2 / 6, 3 / 6], [2 / 8, 2 / 8, 4 / 8]]))
 
 
 def test_categorical_from_mean_reduces_probability_intervals_to_center_distribution() -> None:
-    credal_set = ArrayProbabilityIntervalsCredalSet(
+    credal_set = NumpyProbabilityIntervalsCredalSet(
         lower_bounds=np.array([[0.1, 0.2, 0.3]]),
         upper_bounds=np.array([[0.3, 0.4, 0.5]]),
     )
 
     single = categorical_from_mean(credal_set)
 
-    assert isinstance(single, ArrayCategoricalDistribution)
+    assert isinstance(single, NumpyCategoricalDistribution)
     np.testing.assert_allclose(single.probabilities, np.array([[7 / 30, 1 / 3, 13 / 30]]))
 
 
 def test_categorical_from_mean_reduces_distance_based_credal_set_to_nominal_distribution() -> None:
-    nominal = ArrayProbabilityCategoricalDistribution(np.array([[0.2, 0.3, 0.5]]))
-    credal_set = ArrayDistanceBasedCredalSet(nominal=nominal, radius=np.array([0.1]))
+    nominal = NumpyProbabilityCategoricalDistribution(np.array([[0.2, 0.3, 0.5]]))
+    credal_set = NumpyDistanceBasedCredalSet(nominal=nominal, radius=np.array([0.1]))
 
     assert categorical_from_mean(credal_set) is nominal
 
 
 def test_categorical_from_mean_reduces_one_hot_conformal_set_to_dense() -> None:
-    conformal_set = ArrayOneHotConformalSet(
+    conformal_set = NumpyOneHotConformalSet(
         np.array(
             [
                 [True, False, False],
@@ -84,7 +84,7 @@ def test_categorical_from_mean_reduces_one_hot_conformal_set_to_dense() -> None:
 
     single = categorical_from_mean(conformal_set)
 
-    assert isinstance(single, ArrayCategoricalDistribution)
+    assert isinstance(single, NumpyCategoricalDistribution)
     np.testing.assert_allclose(single.probabilities, np.array([[1.0, 0.0, 0.0], [0.5, 0.0, 0.5]]))
 
 

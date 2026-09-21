@@ -1,6 +1,6 @@
 """Measures for distributions."""
 
-from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
+from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
 
 from ._common import (
     DEFAULT_MEAN_FIELD_FACTOR,
@@ -20,14 +20,14 @@ from ._common import (
     mutual_information,
     vacuity,
 )
-from .array import (
-    array_categorical_entropy,
-    array_categorical_sample_min_expected_total_variation,
-    array_dirichlet_entropy,
-    array_dirichlet_max_probability_complement_of_expected,
-    array_dirichlet_vacuity,
-    array_gaussian_dempster_shafer_uncertainty,
-    array_gaussian_entropy,
+from .numpy import (
+    numpy_categorical_entropy,
+    numpy_categorical_sample_min_expected_total_variation,
+    numpy_dirichlet_entropy,
+    numpy_dirichlet_max_probability_complement_of_expected,
+    numpy_dirichlet_vacuity,
+    numpy_gaussian_dempster_shafer_uncertainty,
+    numpy_gaussian_entropy,
 )
 
 
@@ -47,18 +47,27 @@ def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
+@entropy.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@entropy_of_expected_predictive_distribution.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@conditional_entropy.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@mutual_information.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@generalized_entropy_of_expected.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@expected_generalized_entropy.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@max_probability_complement_of_expected.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@expected_max_probability_complement.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@max_disagreement.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@min_expected_total_variation.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@vacuity.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@dempster_shafer_uncertainty.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+def _(_: type) -> None:
+    from . import jax as jax  # noqa: PLC0415
+
+
 __all__ = [
     "DEFAULT_MEAN_FIELD_FACTOR",
     "DEFAULT_NUM_SAMPLES",
     "LogBase",
     "SecondOrderDistributionLike",
-    "array_categorical_entropy",
-    "array_categorical_sample_min_expected_total_variation",
-    "array_dirichlet_entropy",
-    "array_dirichlet_max_probability_complement_of_expected",
-    "array_dirichlet_vacuity",
-    "array_gaussian_dempster_shafer_uncertainty",
-    "array_gaussian_entropy",
     "conditional_entropy",
     "dempster_shafer_uncertainty",
     "entropy",
@@ -70,5 +79,12 @@ __all__ = [
     "max_probability_complement_of_expected",
     "min_expected_total_variation",
     "mutual_information",
+    "numpy_categorical_entropy",
+    "numpy_categorical_sample_min_expected_total_variation",
+    "numpy_dirichlet_entropy",
+    "numpy_dirichlet_max_probability_complement_of_expected",
+    "numpy_dirichlet_vacuity",
+    "numpy_gaussian_dempster_shafer_uncertainty",
+    "numpy_gaussian_entropy",
     "vacuity",
 ]
