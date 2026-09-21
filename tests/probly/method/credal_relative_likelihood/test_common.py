@@ -4,10 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method.credal_relative_likelihood import (
-    relative_likelihood_thresholds,
-    train_credal_relative_likelihood,
-)
+from probly.method.credal_relative_likelihood import relative_likelihood_thresholds
 
 
 class TestRelativeLikelihoodThresholds:
@@ -34,11 +31,3 @@ class TestRelativeLikelihoodThresholds:
     def test_num_members_below_one_raises(self) -> None:
         with pytest.raises(ValueError, match="num_members"):
             relative_likelihood_thresholds(0.5, 0)
-
-
-class TestTrainCredalRelativeLikelihoodDispatch:
-    """Backend dispatch of the training facade."""
-
-    def test_unregistered_predictor_raises(self) -> None:
-        with pytest.raises(NotImplementedError, match="No credal relative likelihood trainer"):
-            train_credal_relative_likelihood(object(), None)

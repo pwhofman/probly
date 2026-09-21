@@ -4,21 +4,19 @@ from __future__ import annotations
 
 from functools import partial
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import torch
 from torch import nn
 from torch.nn import functional as F
 
-from probly.method.credal_relative_likelihood._common import (
-    relative_likelihood_thresholds,
-    train_credal_relative_likelihood,
-)
+from probly.method.credal_relative_likelihood._common import relative_likelihood_thresholds
 from probly.train.torch import train_model
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
+    from probly.method.credal_relative_likelihood._common import CredalRelativeLikelihoodPredictor
     from probly.train.torch import EpochHook, OptimizerFactory, SchedulerFactory
 
 # The probly_benchmark CIFAR-10 recipe.
@@ -42,9 +40,8 @@ def _mean_log_likelihood(model: nn.Module, loader: DataLoader, device: torch.dev
     return total / max(count, 1)
 
 
-@train_credal_relative_likelihood.register((nn.ModuleList, list))
-def torch_train_credal_relative_likelihood(
-    predictor: nn.ModuleList | list[nn.Module],
+def train_credal_relative_likelihood[**In, Out](
+    predictor: CredalRelativeLikelihoodPredictor[In, Out],
     train_loader: DataLoader,
     *,
     val_loader: DataLoader | None = None,
@@ -54,7 +51,7 @@ def torch_train_credal_relative_likelihood(
     scheduler_factory: SchedulerFactory | None = None,
     device: torch.device | str | None = None,
     on_epoch: EpochHook | None = None,
-) -> nn.ModuleList | list[nn.Module]:
+) -> CredalRelativeLikelihoodPredictor[In, Out]:
     """Train a credal relative likelihood ensemble based on :cite:`lohrCredalPrediction2025`.
 
     Member 0 is the maximum-likelihood reference; each remaining member trains with cross-entropy only until its
@@ -81,7 +78,7 @@ def torch_train_credal_relative_likelihood(
     Raises:
         ValueError: If alpha is outside (0, 1].
     """
-    members = list(predictor)
+    members = [cast("nn.Module", member) for member in predictor]
     thresholds = relative_likelihood_thresholds(alpha, len(members))
 
     reference = members[0]
@@ -121,4 +118,4 @@ def torch_train_credal_relative_likelihood(
     return predictor
 
 
-__all__ = ["torch_train_credal_relative_likelihood"]
+__all__ = ["train_credal_relative_likelihood"]
