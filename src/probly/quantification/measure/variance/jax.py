@@ -12,9 +12,9 @@ from probly.representation.sample.jax import JaxSample
 
 from ._common import (
     LogBase,
-    conditional_variance,
-    mutual_information_variance,
+    expected_conditional_variance,
     variance,
+    variance_of_conditional_mean,
     variance_of_expected_predictive_distribution,
 )
 
@@ -30,8 +30,8 @@ def jax_gaussian_variance(
     return distribution
 
 
-@conditional_variance.register(JaxGaussianDistributionSample)
-def jax_gaussian_sample_conditional_variance(
+@expected_conditional_variance.register(JaxGaussianDistributionSample)
+def jax_gaussian_sample_expected_conditional_variance(
     sample: JaxGaussianDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
@@ -39,8 +39,8 @@ def jax_gaussian_sample_conditional_variance(
     return jnp.mean(sample.array.var, axis=sample.sample_axis)
 
 
-@mutual_information_variance.register(JaxGaussianDistributionSample)
-def jax_gaussian_sample_mutual_information_variance(
+@variance_of_conditional_mean.register(JaxGaussianDistributionSample)
+def jax_gaussian_sample_variance_of_conditional_mean(
     sample: JaxGaussianDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
@@ -54,7 +54,9 @@ def jax_gaussian_sample_variance_of_expected_predictive_distribution(
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
     """Compute the total predictive variance of a Gaussian sample via the law of total variance."""
-    return jax_gaussian_sample_conditional_variance(sample) + jax_gaussian_sample_mutual_information_variance(sample)
+    aleatoric = jax_gaussian_sample_expected_conditional_variance(sample)
+    epistemic = jax_gaussian_sample_variance_of_conditional_mean(sample)
+    return aleatoric + epistemic
 
 
 @variance_of_expected_predictive_distribution.register(JaxSample)
@@ -66,17 +68,17 @@ def jax_sample_variance_of_expected_predictive_distribution(
     return jnp.var(sample.array, axis=sample.sample_axis, ddof=0)
 
 
-@conditional_variance.register(JaxSample)
-def jax_sample_conditional_variance(
+@expected_conditional_variance.register(JaxSample)
+def jax_sample_expected_conditional_variance(
     sample: JaxSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
-    """Compute the conditional variance of a raw jax array sample (zero for point predictions)."""
+    """Compute the expected conditional variance of a raw jax array sample (zero for point predictions)."""
     return jnp.zeros_like(jnp.mean(sample.array, axis=sample.sample_axis))
 
 
-@mutual_information_variance.register(JaxSample)
-def jax_sample_mutual_information_variance(
+@variance_of_conditional_mean.register(JaxSample)
+def jax_sample_variance_of_conditional_mean(
     sample: JaxSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:

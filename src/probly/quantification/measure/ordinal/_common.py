@@ -39,16 +39,16 @@ def ordinal_variance_of_expected_predictive_distribution(
 
 
 @flexdispatch
-def ordinal_conditional_variance(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
-    """Compute the conditional variance of a distribution."""
-    msg = f"Conditional variance is not supported for distributions of type {type(distribution)}."
+def ordinal_expected_conditional_variance(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
+    """Compute the ordinal expected conditional variance of a distribution."""
+    msg = f"Ordinal expected conditional variance is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)
 
 
 @flexdispatch
-def ordinal_mutual_information_variance(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
-    """Compute the mutual information of a distribution."""
-    msg = f"Mutual information is not supported for distributions of type {type(distribution)}."
+def ordinal_variance_of_conditional_mean(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
+    """Compute the ordinal variance of the conditional mean of a distribution."""
+    msg = f"Ordinal variance of conditional mean is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)
 
 
@@ -136,14 +136,18 @@ def labelwise_variance_of_expected_predictive_distribution(
 
 
 @flexdispatch
-def labelwise_conditional_variance(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
-    """Compute the label-wise conditional variance of a distribution."""
-    msg = f"Label-wise conditional variance is not supported for distributions of type {type(distribution)}."
+def labelwise_expected_conditional_variance(
+    distribution: SecondOrderDistributionLike, base: LogBase = None
+) -> ArrayLike:
+    """Compute the label-wise expected conditional variance of a distribution."""
+    msg = f"Label-wise expected conditional variance is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)
 
 
 @flexdispatch
-def labelwise_mutual_information_variance(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
-    """Compute the label-wise variance-based mutual information of a distribution."""
-    msg = f"Label-wise mutual information (variance) is not supported for distributions of type {type(distribution)}."
+def labelwise_variance_of_conditional_mean(
+    distribution: SecondOrderDistributionLike, base: LogBase = None
+) -> ArrayLike:
+    """Compute the label-wise variance of the conditional mean of a distribution."""
+    msg = f"Label-wise variance of conditional mean is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)

@@ -12,9 +12,9 @@ from probly.representation.sample.numpy import NumpySample
 
 from ._common import (
     LogBase,
-    conditional_variance,
-    mutual_information_variance,
+    expected_conditional_variance,
     variance,
+    variance_of_conditional_mean,
     variance_of_expected_predictive_distribution,
 )
 
@@ -30,8 +30,8 @@ def numpy_gaussian_variance(
     return distribution
 
 
-@conditional_variance.register(NumpyGaussianDistributionSample)
-def numpy_gaussian_sample_conditional_variance(
+@expected_conditional_variance.register(NumpyGaussianDistributionSample)
+def numpy_gaussian_sample_expected_conditional_variance(
     sample: NumpyGaussianDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> np.ndarray:
@@ -39,8 +39,8 @@ def numpy_gaussian_sample_conditional_variance(
     return np.mean(sample.array.var, axis=sample.sample_axis)
 
 
-@mutual_information_variance.register(NumpyGaussianDistributionSample)
-def numpy_gaussian_sample_mutual_information_variance(
+@variance_of_conditional_mean.register(NumpyGaussianDistributionSample)
+def numpy_gaussian_sample_variance_of_conditional_mean(
     sample: NumpyGaussianDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> np.ndarray:
@@ -54,9 +54,9 @@ def numpy_gaussian_sample_variance_of_expected_predictive_distribution(
     base: LogBase = None,  # noqa: ARG001
 ) -> np.ndarray:
     """Compute the total predictive variance of a Gaussian sample via the law of total variance."""
-    return numpy_gaussian_sample_conditional_variance(sample) + numpy_gaussian_sample_mutual_information_variance(
-        sample
-    )
+    aleatoric = numpy_gaussian_sample_expected_conditional_variance(sample)
+    epistemic = numpy_gaussian_sample_variance_of_conditional_mean(sample)
+    return aleatoric + epistemic
 
 
 @variance_of_expected_predictive_distribution.register(NumpySample)
@@ -68,17 +68,17 @@ def numpy_sample_variance_of_expected_predictive_distribution(
     return np.var(sample.array, axis=sample.sample_axis, ddof=0)
 
 
-@conditional_variance.register(NumpySample)
-def numpy_sample_conditional_variance(
+@expected_conditional_variance.register(NumpySample)
+def numpy_sample_expected_conditional_variance(
     sample: NumpySample,
     base: LogBase = None,  # noqa: ARG001
 ) -> np.ndarray:
-    """Compute the conditional variance of a raw numpy array sample (zero for point predictions)."""
+    """Compute the expected conditional variance of a raw numpy array sample (zero for point predictions)."""
     return np.zeros_like(np.mean(sample.array, axis=sample.sample_axis))
 
 
-@mutual_information_variance.register(NumpySample)
-def numpy_sample_mutual_information_variance(
+@variance_of_conditional_mean.register(NumpySample)
+def numpy_sample_variance_of_conditional_mean(
     sample: NumpySample,
     base: LogBase = None,  # noqa: ARG001
 ) -> np.ndarray:
