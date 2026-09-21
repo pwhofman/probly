@@ -154,6 +154,10 @@ def graph_posterior_network[**In, Out: DirichletDistribution](
 ) -> GraphPosteriorNetworkPredictor[In, Out]:
     """Create a Graph Posterior Network predictor.
 
+    Based on :cite:`stadlerGraphPosteriorNetwork2021`. Class-conditional
+    normalizing flows produce feature-level evidence, which is propagated
+    through the graph to form node-level Dirichlet predictions.
+
     Args:
         input_encoder: Predictor applied to ``data.x`` before density modeling.
         latent_dim: Latent dimensionality used by the normalizing flow.
@@ -200,7 +204,12 @@ def lop_graph_posterior_network[**In, Out: DirichletMixtureDistribution](
     cache_propagation_weights: bool = True,
     propagation_weight_cache_size: int = 1,
 ) -> LOPGraphPosteriorNetworkPredictor[In, Out]:
-    """Create a LOP-GPN predictor with approximate pooled Dirichlet outputs.
+    """Create a linear opinion pooled Graph Posterior Network (LOP-GPN) predictor.
+
+    Extends Graph Posterior Networks :cite:`stadlerGraphPosteriorNetwork2021`
+    with the linear opinion pooling approach of :cite:`damkeLinearOpinionPooling2024`.
+    Feature-level Dirichlet distributions are combined into mixtures using
+    graph propagation weights.
 
     Args:
         input_encoder: Predictor applied to ``data.x`` before density modeling.
@@ -217,7 +226,7 @@ def lop_graph_posterior_network[**In, Out: DirichletMixtureDistribution](
         propagation_weight_cache_size: Maximum number of ``edge_index`` tensors to cache.
 
     Returns:
-        A LOP-GPN predictor returning approximate Dirichlet alphas.
+        A LOP-GPN predictor representing node predictions as Dirichlet mixtures.
     """
     return lop_graph_posterior_network_generator(
         input_encoder,
@@ -252,6 +261,11 @@ def cuq_graph_neural_network[**In, Out: DirichletDistribution](
     convolution_name: Literal["appnp", "gcn"] = "appnp",
 ) -> CUQGraphNeuralNetworkPredictor[In, Out]:
     """Create a CUQ-GNN predictor with graph-refined node features.
+
+    Based on the committee-based graph uncertainty quantification approach of
+    :cite:`damkeCUQGNN2024`, building on Graph Posterior Networks
+    :cite:`stadlerGraphPosteriorNetwork2021`. Graph convolutions refine node
+    features before normalizing flows estimate class-conditional densities.
 
     Args:
         input_encoder: Predictor applied to ``data.x`` before graph refinement.

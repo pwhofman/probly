@@ -563,7 +563,7 @@ class State[T]:
         Returns:
             The new child state containing the pushed object.
         """
-        return State[T](obj=obj, meta=meta, traverser=traverser, parent=self)  # ty:ignore[invalid-return-type]
+        return State[T](obj=obj, meta=meta, traverser=traverser, parent=self)
 
     def pop(self) -> State[T]:
         """Pop the current state and return its parent.

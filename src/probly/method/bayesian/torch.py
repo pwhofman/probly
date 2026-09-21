@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING, cast
 
 import torch
 
-from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
+from probly.losses.torch import elbo_loss
 from probly.train.torch import train_model
+from probly.transformation.bayesian import collect_kl_divergence
 
 if TYPE_CHECKING:
     from torch import Tensor, nn
@@ -72,11 +73,12 @@ def train_bayesian[**In, Out](
     elif dataset_size < 1:
         msg = f"dataset_size must be >= 1, got {dataset_size}."
         raise ValueError(msg)
-    elbo = ELBOLoss(kl_penalty=kl_scale / dataset_size)
+    kl_penalty = kl_scale / dataset_size
     module = cast("nn.Module", predictor)
 
     def loss_fn(output: Tensor, targets: Tensor) -> Tensor:
-        return elbo(output, targets, collect_kl_divergence(module))
+        kl = cast("Tensor", collect_kl_divergence(module))
+        return elbo_loss(output, targets, kl, kl_penalty=kl_penalty)
 
     train_model(
         module,

@@ -16,7 +16,7 @@ import torch
 from probly.method.vbll import find_vbll_layer, vbll
 from probly.quantification import quantify
 from probly.representer import representer
-from probly.train.vbll import vbll_loss
+from probly.losses import vbll_loss
 from probly_benchmark.data import load_mnist
 
 from examples.utils.model import MLPClassifier

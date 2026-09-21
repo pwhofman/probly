@@ -21,7 +21,7 @@ def _clone_reset(obj: nnx.Module) -> nnx.Module:
 
 
 @ensemble_generator.register(nnx.Module)
-def generate_flax_ensemble(
+def flax_generate_ensemble(
     obj: nnx.Module,
     num_members: int,
     reset_params: bool,

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, Self, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 import torch
 
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from probly.representation.sample._common import Sample
 
 
-def _ensure_torch_one_hot(value: object) -> torch.Tensor:
+def _torch_ensure_one_hot(value: object) -> torch.Tensor:
     if isinstance(value, torch.Tensor):
         if value.dtype == torch.bool:
             return value
@@ -39,15 +39,15 @@ class TorchOneHotConformalSet(TorchAxisProtected[Any], OneHotConformalSet):
 
     def __post_init__(self) -> None:
         """Validate that the tensor is a one-hot encoded tensor."""
-        object.__setattr__(self, "tensor", _ensure_torch_one_hot(self.tensor))
+        object.__setattr__(self, "tensor", _torch_ensure_one_hot(self.tensor))
 
     @classmethod
-    def from_tensor_sample(cls, sample: torch.Tensor) -> Self:
+    def from_tensor(cls, tensor: torch.Tensor) -> Self:
         """Create a one-hot conformal set from a raw torch tensor."""
-        if not isinstance(sample, torch.Tensor):
+        if not isinstance(tensor, torch.Tensor):
             msg = "Expected torch.Tensor for one-hot conformal sets."
             raise TypeError(msg)
-        return cls(tensor=sample)
+        return cls(tensor=tensor)
 
     @classmethod
     def from_sample(cls, sample: Sample[torch.Tensor]) -> Self:
@@ -55,7 +55,7 @@ class TorchOneHotConformalSet(TorchAxisProtected[Any], OneHotConformalSet):
         if not isinstance(sample, TorchSample):
             msg = "Expected TorchSample for one-hot conformal sets."
             raise TypeError(msg)
-        return cls.from_tensor_sample(cast("torch.Tensor", sample.tensor))
+        return cls.from_tensor(sample.tensor)
 
     @property
     def set_size(self) -> torch.Tensor:
@@ -71,7 +71,7 @@ class TorchIntervalConformalSet(TorchAxisProtected[Any], IntervalConformalSet):
     protected_axes: ClassVar[dict[str, int]] = {"tensor": 1}
 
     @classmethod
-    def from_tensor_samples(cls, lower: torch.Tensor, upper: torch.Tensor) -> Self:
+    def from_tensors(cls, lower: torch.Tensor, upper: torch.Tensor) -> Self:
         """Create an interval conformal set from lower and upper bound tensors.
 
         Args:
@@ -100,7 +100,7 @@ class TorchIntervalConformalSet(TorchAxisProtected[Any], IntervalConformalSet):
         if not isinstance(lower, TorchSample) or not isinstance(upper, TorchSample):
             msg = "Expected TorchSample for interval conformal sets."
             raise TypeError(msg)
-        return cls.from_tensor_samples(lower.tensor, upper.tensor)
+        return cls.from_tensors(lower.tensor, upper.tensor)
 
     @property
     def set_size(self) -> torch.Tensor:
@@ -108,7 +108,7 @@ class TorchIntervalConformalSet(TorchAxisProtected[Any], IntervalConformalSet):
         return self.tensor[..., 1] - self.tensor[..., 0]
 
 
-create_onehot_conformal_set.register(torch.Tensor)(TorchOneHotConformalSet.from_tensor_sample)
+create_onehot_conformal_set.register(torch.Tensor)(TorchOneHotConformalSet.from_tensor)
 create_onehot_conformal_set.register(TorchSample)(TorchOneHotConformalSet.from_sample)
-create_interval_conformal_set.register(torch.Tensor)(TorchIntervalConformalSet.from_tensor_samples)
+create_interval_conformal_set.register(torch.Tensor)(TorchIntervalConformalSet.from_tensors)
 create_interval_conformal_set.register(TorchSample)(TorchIntervalConformalSet.from_samples)

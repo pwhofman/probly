@@ -5,7 +5,8 @@ from __future__ import annotations
 import copy
 from typing import TYPE_CHECKING
 
-from flax.nnx.helpers import Sequential
+from flax import nnx
+from flax.nnx.helpers import List, Sequential
 from flax.nnx.module import Module
 
 import pytraverse as t
@@ -17,12 +18,12 @@ from . import _common as tnn
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
-# Torch traversal variables
+# Flax traversal variables
 
 ROOT = t.StackVariable[Module | None]("ROOT", "A reference to the outermost module.")
 CLONE = t.StackVariable[bool](
     "CLONE",
-    "Whether to clone torch modules before making changes.",
+    "Whether to clone flax modules before making changes.",
     default=generic.CLONE,
 )
 TRAVERSE_REVERSED = t.StackVariable[bool](
@@ -36,7 +37,7 @@ FLATTEN_SEQUENTIAL = t.StackVariable[bool](
     default=tnn.FLATTEN_SEQUENTIAL,
 )
 
-# Torch model cloning
+# Flax model cloning
 
 
 @traverser(type=Module)
@@ -85,16 +86,16 @@ def _sequential_counter(obj: Sequential) -> Sequential:
 
 # Flax model traverser
 
-_torch_traverser = t.singledispatch_traverser[Module](name="_torch_traverser")
+_flax_traverser = t.singledispatch_traverser[Module](name="_flax_traverser")
 
 
-@_torch_traverser.register
+@_flax_traverser.register
 def _module_traverser(
     obj: Module,
     state: t.State[Module],
     traverse: t.TraverserCallback[Module],
 ) -> t.TraverserResult[Module]:
-    children: Iterator[tuple[str, Module]] = obj.iter_children()  # ty: ignore[invalid-assignment]
+    children: Iterator[tuple[str, Module]] = nnx.iter_children(obj)  # ty: ignore[invalid-assignment]
     if state[TRAVERSE_REVERSED]:
         children = reversed(list(children))
     for name, module in children:
@@ -104,7 +105,25 @@ def _module_traverser(
     return obj, state
 
 
-@_torch_traverser.register
+@_flax_traverser.register
+def _list_traverser(
+    obj: List,
+    state: t.State[Module],
+    traverse: t.TraverserCallback[Module],
+) -> t.TraverserResult[Module]:
+    # nnx.List children carry integer keys, so they cannot be reassigned via setattr like other
+    # module children; index them directly instead.
+    indices: Iterable[int] = range(len(obj))
+    if state[TRAVERSE_REVERSED]:
+        indices = reversed(list(indices))
+    for i in indices:
+        new_module, state = traverse(obj[i], state, str(i))
+        obj[i] = new_module
+
+    return obj, state
+
+
+@_flax_traverser.register
 def _sequential_traverser(
     obj: Sequential,
     state: t.State[Module],
@@ -136,12 +155,12 @@ def _sequential_traverser(
 
 # Public API combining cloning, root tracking, and module traversing
 
-torch_traverser: t.Traverser[Module] = t.sequential(
+flax_traverser: t.Traverser[Module] = t.sequential(
     _clone_traverser,
     _root_traverser,
-    _torch_traverser,
-    name="torch_traverser",
+    _flax_traverser,
+    name="flax_traverser",
 )
-torch_traverser.register = _torch_traverser.register  # ty: ignore[unresolved-attribute]
+flax_traverser.register = _flax_traverser.register  # ty: ignore[unresolved-attribute]
 
-tnn.nn_traverser.register(Module, torch_traverser)
+tnn.nn_traverser.register(Module, flax_traverser)

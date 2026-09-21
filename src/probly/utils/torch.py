@@ -2,9 +2,35 @@
 
 from __future__ import annotations
 
+from operator import index
+from typing import Literal, SupportsIndex
+
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
+
+
+def torch_head_dimension(head: torch.nn.Module, name: Literal["in_features", "out_features"]) -> int:
+    """Read an integer feature dimension from a registered classification head.
+
+    Custom heads may use any module class with the requested attribute. Integer-like
+    values implementing ``__index__`` are supported, including NumPy integers.
+
+    Args:
+        head: Classification head selected by a traversal registration.
+        name: Feature dimension needed by the consumer.
+
+    Returns:
+        The requested feature dimension.
+
+    Raises:
+        TypeError: If the head does not expose the requested integer dimension.
+    """
+    value = getattr(head, name, None)
+    if not isinstance(value, SupportsIndex):
+        msg = f"Classification head must expose an integer {name} attribute."
+        raise TypeError(msg)
+    return index(value)
 
 
 @torch.no_grad()
@@ -41,11 +67,13 @@ def torch_reset_all_parameters(module: torch.nn.Module) -> None:
         module: Module to reset parameters.
 
     """
-    if hasattr(module, "reset_parameters"):
-        module.reset_parameters()  # ty: ignore[call-non-callable]
+    reset = getattr(module, "reset_parameters", None)
+    if callable(reset):
+        reset()
     for child in module.children():
-        if hasattr(child, "reset_parameters"):
-            child.reset_parameters()  # ty: ignore[call-non-callable]
+        reset = getattr(child, "reset_parameters", None)
+        if callable(reset):
+            reset()
 
 
 def temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor) -> torch.Tensor:
@@ -106,3 +134,14 @@ def intersection_probability(lower: torch.Tensor, upper: torch.Tensor) -> torch.
     denominator = torch.where(slack_sum != 0, slack_sum, torch.ones_like(slack_sum))
     weights = torch.where(slack_sum != 0, slack / denominator, torch.zeros_like(slack))
     return lower + remaining * weights
+
+
+def dirichlet_entropy(alphas: torch.Tensor) -> torch.Tensor:
+    """Compute the differential entropy of Dirichlet distributions with concentrations of shape ``(..., K)``."""
+    alpha_0 = torch.sum(alphas, dim=-1)
+    num_classes = alphas.shape[-1]
+
+    log_beta = torch.sum(torch.lgamma(alphas), dim=-1) - torch.lgamma(alpha_0)
+    digamma_sum = (alpha_0 - num_classes) * torch.digamma(alpha_0)
+    digamma_individual = torch.sum((alphas - 1) * torch.digamma(alphas), dim=-1)
+    return log_beta + digamma_sum - digamma_individual

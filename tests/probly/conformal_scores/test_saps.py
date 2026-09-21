@@ -33,12 +33,12 @@ class TestSAPSBackends:
         torch = _torch()
         from probly.conformal_scores.saps._common import (  # noqa: PLC0415
             _saps_score_dispatch as dispatch,
-            compute_saps_score_func_numpy,
+            numpy_compute_saps_score_func,
         )
 
         probs_np = np.array([[0.05, 0.85, 0.10], [0.40, 0.35, 0.25]])
         labels_np = np.array([0, 2])
-        expected = compute_saps_score_func_numpy(probs_np, labels_np, randomized=False, lambda_val=0.25)
+        expected = numpy_compute_saps_score_func(probs_np, labels_np, randomized=False, lambda_val=0.25)
         scores = dispatch(
             torch.tensor(probs_np),
             torch.tensor(labels_np),
@@ -66,12 +66,12 @@ class TestSAPSBackends:
         _, jnp = _jax_modules()
         from probly.conformal_scores.saps._common import (  # noqa: PLC0415
             _saps_score_dispatch as dispatch,
-            compute_saps_score_func_numpy,
+            numpy_compute_saps_score_func,
         )
 
         probs_np = np.array([[0.05, 0.85, 0.10], [0.40, 0.35, 0.25]])
         labels_np = np.array([0, 2])
-        expected = compute_saps_score_func_numpy(probs_np, labels_np, randomized=False, lambda_val=0.25)
+        expected = numpy_compute_saps_score_func(probs_np, labels_np, randomized=False, lambda_val=0.25)
         scores = dispatch(jnp.asarray(probs_np), jnp.asarray(labels_np), randomized=False, lambda_val=0.25)
         np.testing.assert_allclose(np.asarray(scores), expected, atol=1e-6)
 

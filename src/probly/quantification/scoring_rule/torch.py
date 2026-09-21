@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import torch
 
+from probly.representation.sample.torch import TorchSample
+
 from ._common import _brier_loss_vector, _log_loss_vector, _spherical_loss_vector, _zero_one_loss_vector
 
 
@@ -34,3 +36,27 @@ def torch_spherical_loss_vector(probabilities: torch.Tensor) -> torch.Tensor:
     """Compute the per-label spherical loss vector for a torch tensor."""
     norm = torch.sqrt(torch.sum(probabilities**2, dim=-1, keepdim=True))
     return 1.0 - probabilities / norm
+
+
+@_log_loss_vector.register(TorchSample)
+def _(probabilities: TorchSample) -> TorchSample:
+    """Compute memberwise log loss, preserving sample metadata."""
+    return TorchSample(_log_loss_vector(probabilities.tensor), probabilities.sample_dim, probabilities.weights)
+
+
+@_brier_loss_vector.register(TorchSample)
+def _(probabilities: TorchSample) -> TorchSample:
+    """Compute memberwise Brier loss, preserving sample metadata."""
+    return TorchSample(_brier_loss_vector(probabilities.tensor), probabilities.sample_dim, probabilities.weights)
+
+
+@_zero_one_loss_vector.register(TorchSample)
+def _(probabilities: TorchSample) -> TorchSample:
+    """Compute memberwise zero-one loss, preserving sample metadata."""
+    return TorchSample(_zero_one_loss_vector(probabilities.tensor), probabilities.sample_dim, probabilities.weights)
+
+
+@_spherical_loss_vector.register(TorchSample)
+def _(probabilities: TorchSample) -> TorchSample:
+    """Compute memberwise spherical loss, preserving sample metadata."""
+    return TorchSample(_spherical_loss_vector(probabilities.tensor), probabilities.sample_dim, probabilities.weights)

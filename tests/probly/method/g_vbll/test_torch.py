@@ -71,7 +71,7 @@ def test_find_g_vbll_layer_returns_the_swapped_layer() -> None:
 
 def test_g_vbll_layer_train_loss_and_kl_are_finite() -> None:
     from probly.layers.torch import GVBLLLayer  # noqa: PLC0415
-    from probly.train.vbll.torch import g_vbll_loss  # noqa: PLC0415
+    from probly.losses.torch import g_vbll_loss  # noqa: PLC0415
 
     layer = GVBLLLayer(8, 3)
     features = torch.randn(16, 8)

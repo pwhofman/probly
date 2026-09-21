@@ -12,7 +12,7 @@ import torch
 import wandb
 import wandb.util
 
-from probly.evaluation import coverage as compute_coverage, efficiency as compute_efficiency
+from probly.metrics import coverage as compute_coverage, efficiency as compute_efficiency
 from probly_benchmark import calibration, conformal, data, utils
 from probly_benchmark.paths import CHECKPOINT_PATH
 

@@ -3,7 +3,7 @@
 Note:
     There is no ``TorchSingletonCredalSet`` or ``TorchDiscreteCredalSet`` in
     :mod:`probly.representation.credal_set.torch`; for those semantics, use
-    the numpy-side ``ArraySingletonCredalSet`` / ``ArrayDiscreteCredalSet``
+    the numpy-side ``NumpySingletonCredalSet`` / ``NumpyDiscreteCredalSet``
     types. The remaining torch credal sets (Convex, DistanceBased,
     ProbabilityIntervals, DirichletLevelSet) all use the interval-dominance
     rule via their ``lower()`` / ``upper()`` envelopes.
@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 import torch
 
 from probly.metrics import (
+    accuracy,
     auc,
     average_interval_width,
     average_precision_score,
@@ -23,12 +24,15 @@ from probly.metrics import (
     convex_hull_coverage,
     coverage,
     efficiency,
+    expected_calibration_error,
+    false_negative_rate,
+    false_positive_rate,
     precision_recall_curve,
     roc_auc_score,
     roc_curve,
 )
 from probly.metrics._common import CREDAL_ROUND_DECIMALS
-from probly.metrics.array import _convex_hull_lp_coverage
+from probly.metrics.numpy import _numpy_convex_hull_lp_coverage
 from probly.representation.conformal_set.torch import TorchIntervalConformalSet, TorchOneHotConformalSet
 from probly.representation.credal_set.torch import (
     TorchConvexCredalSet,
@@ -41,37 +45,90 @@ if TYPE_CHECKING:
     from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 
 
+@accuracy.register(torch.Tensor)
+def torch_accuracy(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+    """Compute top-1 classification accuracy for PyTorch tensors."""
+    labels = y_true.reshape(-1)
+    predicted = y_pred
+    if predicted.ndim == 2:
+        predicted = torch.argmax(predicted, dim=-1)
+    elif predicted.ndim != 1:
+        msg = f"accuracy expects predictions of shape (n,) or (n, k), got shape {tuple(predicted.shape)}."
+        raise ValueError(msg)
+    if predicted.shape[0] != labels.shape[0]:
+        msg = (
+            "accuracy labels must match predictions batch size. "
+            f"Got {labels.shape[0]} labels for {predicted.shape[0]} predictions."
+        )
+        raise ValueError(msg)
+    return (predicted == labels).float().mean()
+
+
 @auc.register(torch.Tensor)
-def auc_torch(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+def torch_auc(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """Compute area under a curve using the trapezoid rule."""
     return torch.trapezoid(y, x, dim=-1)
 
 
 @average_precision_score.register(torch.Tensor)
-def average_precision_score_torch(y_true: torch.Tensor, y_score: torch.Tensor) -> torch.Tensor:
+def torch_average_precision_score(y_true: torch.Tensor, y_score: torch.Tensor) -> torch.Tensor:
     """Compute average precision for PyTorch tensors."""
     precision, recall, _ = precision_recall_curve(y_true, y_score)
     return -torch.sum(torch.diff(recall, dim=-1) * precision[..., :-1], dim=-1)  # ty:ignore[invalid-argument-type, not-subscriptable]
 
 
+def _binary_clf_curve(y_true: torch.Tensor, y_score: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Count false and true positives at every score threshold, along the last axis.
+
+    Adapted from scikit-learn's ``sklearn.metrics._ranking._binary_clf_curve`` (BSD-3-Clause). Samples are
+    ranked by decreasing score and the counts after accepting each sample are recorded. Equal scores form a
+    single threshold: sklearn keeps only the last index of every run of equal scores, which makes the number
+    of thresholds depend on the data, whereas this batched version maps every sample to the last index of its
+    run and keeps the ``(..., n)`` shape. For scores ``[0.9, 0.5, 0.5, 0.5, 0.2]`` the threshold indices are
+    ``[0, 3, 3, 3, 4]``. Reading the counts per sample instead would let the sort order among tied samples
+    decide the curve, and identical scores could then yield an AUROC of 1.0 or 0.0 instead of 0.5.
+
+    Args:
+        y_true: Binary labels of shape ``(..., n)``.
+        y_score: Scores of shape ``(..., n)``.
+
+    Returns:
+        fps: False positives after each threshold, shape ``(..., n)``.
+        tps: True positives after each threshold, shape ``(..., n)``.
+        thresholds: Scores in decreasing order, shape ``(..., n)``.
+    """
+    n = y_score.shape[-1]
+    # Sort scores and corresponding truth values.
+    desc_score_indices = torch.argsort(y_score, dim=-1, stable=True, descending=True)
+    y_score = torch.take_along_dim(y_score, desc_score_indices, dim=-1)
+    y_true = torch.take_along_dim(y_true, desc_score_indices, dim=-1)
+
+    # y_score typically has many tied values. A distinct value ends where the next score differs, and the end
+    # of the curve is always a threshold. The running minimum from the right turns these ends into the
+    # threshold index of every position.
+    end = torch.ones((*y_score.shape[:-1], 1), dtype=torch.bool, device=y_score.device)
+    is_distinct_value = torch.cat([y_score[..., 1:] != y_score[..., :-1], end], dim=-1)
+    threshold_idxs = torch.where(is_distinct_value, torch.arange(n, device=y_score.device), n - 1)
+    threshold_idxs = torch.cummin(threshold_idxs.flip(-1), dim=-1).values.flip(-1)
+
+    # Accumulate the true positives with decreasing threshold.
+    tps = torch.take_along_dim(torch.cumsum(y_true, dim=-1), threshold_idxs, dim=-1)
+    fps = 1 + threshold_idxs - tps
+    return fps, tps, y_score
+
+
 @precision_recall_curve.register(torch.Tensor)
-def precision_recall_curve_torch(
+def torch_precision_recall_curve(
     y_true: torch.Tensor, y_score: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute precision-recall curve along the last axis."""
     y_true = y_true.float()
     y_score = y_score.float()
-    n = y_score.shape[-1]
 
-    desc_idx = torch.argsort(y_score, dim=-1, stable=True, descending=True)
-    y_score_sorted = torch.take_along_dim(y_score, desc_idx, dim=-1)
-    y_true_sorted = torch.take_along_dim(y_true, desc_idx, dim=-1)
-
-    tps = torch.cumsum(y_true_sorted, dim=-1)
-    predicted_pos = torch.arange(1, n + 1, device=y_true.device, dtype=y_true.dtype)
+    fps, tps, thresholds = _binary_clf_curve(y_true, y_score)
     total_pos = tps[..., -1:]
 
-    precision = tps / predicted_pos
+    precision = tps / (tps + fps)
     recall = torch.where(
         total_pos > 0, tps / torch.where(total_pos > 0, total_pos, torch.ones_like(total_pos)), torch.zeros_like(tps)
     )
@@ -81,11 +138,11 @@ def precision_recall_curve_torch(
     precision = torch.cat([precision.flip(-1), ones], dim=-1)
     recall = torch.cat([recall.flip(-1), zeros], dim=-1)
 
-    return precision, recall, y_score_sorted
+    return precision, recall, thresholds
 
 
 @classwise_ece.register(torch.Tensor)
-def classwise_ece_torch(y_true: torch.Tensor, y_prob: torch.Tensor, *, num_bins: int = 15) -> torch.Tensor:
+def torch_classwise_ece(y_prob: torch.Tensor, y_true: torch.Tensor, *, num_bins: int = 15) -> torch.Tensor:
     """Compute the classwise expected calibration error for PyTorch tensors."""
     probs = y_prob.float()
     if probs.ndim != 2:
@@ -114,27 +171,82 @@ def classwise_ece_torch(y_true: torch.Tensor, y_prob: torch.Tensor, *, num_bins:
     return total / k
 
 
+@expected_calibration_error.register(torch.Tensor)
+def torch_expected_calibration_error(y_prob: torch.Tensor, y_true: torch.Tensor, *, num_bins: int = 15) -> torch.Tensor:
+    """Compute the confidence expected calibration error for PyTorch tensors."""
+    probs = y_prob.float()
+    if probs.ndim != 2:
+        msg = f"expected_calibration_error expects probabilities of shape (n, k), got shape {tuple(probs.shape)}."
+        raise ValueError(msg)
+    labels = y_true.reshape(-1)
+    n = probs.shape[0]
+    if labels.shape[0] != n:
+        msg = (
+            "expected_calibration_error labels must match probabilities batch size. "
+            f"Got {labels.shape[0]} labels for {n} rows."
+        )
+        raise ValueError(msg)
+    if num_bins < 1:
+        msg = f"expected_calibration_error expects num_bins >= 1, got {num_bins}."
+        raise ValueError(msg)
+
+    conf, predicted = torch.max(probs, dim=-1)
+    correct = (predicted == labels).float()
+    bin_idx = torch.clamp((conf * num_bins).long(), max=num_bins - 1)
+
+    total = probs.new_zeros(())
+    for b in range(num_bins):
+        mask = (bin_idx == b).float()
+        count = mask.sum()
+        safe_count = torch.where(count > 0, count, torch.ones_like(count))
+        acc_bin = (correct * mask).sum() / safe_count
+        conf_bin = (conf * mask).sum() / safe_count
+        total = total + count / n * (acc_bin - conf_bin).abs()
+    return total
+
+
+@false_positive_rate.register(torch.Tensor)
+def torch_false_positive_rate(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+    """Compute the false positive rate for PyTorch tensors."""
+    y = y_true.reshape(-1)
+    p = y_pred.reshape(-1)
+    if p.shape[0] != y.shape[0]:
+        msg = f"false_positive_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
+        raise ValueError(msg)
+    negatives = (y == 0).float()
+    false_positives = (p == 1).float() * negatives
+    # 0/0 yields NaN when there are no negative samples.
+    return false_positives.sum() / negatives.sum()
+
+
+@false_negative_rate.register(torch.Tensor)
+def torch_false_negative_rate(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+    """Compute the false negative rate for PyTorch tensors."""
+    y = y_true.reshape(-1)
+    p = y_pred.reshape(-1)
+    if p.shape[0] != y.shape[0]:
+        msg = f"false_negative_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
+        raise ValueError(msg)
+    positives = (y == 1).float()
+    false_negatives = (p == 0).float() * positives
+    # 0/0 yields NaN when there are no positive samples.
+    return false_negatives.sum() / positives.sum()
+
+
 @roc_auc_score.register(torch.Tensor)
-def roc_auc_score_torch(y_true: torch.Tensor, y_score: torch.Tensor) -> torch.Tensor:
+def torch_roc_auc_score(y_true: torch.Tensor, y_score: torch.Tensor) -> torch.Tensor:
     """Compute area under the ROC curve for PyTorch tensors."""
     fpr, tpr, _ = roc_curve(y_true, y_score)
     return auc(fpr, tpr)  # ty:ignore[invalid-return-type]
 
 
 @roc_curve.register(torch.Tensor)
-def roc_curve_torch(y_true: torch.Tensor, y_score: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+def torch_roc_curve(y_true: torch.Tensor, y_score: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute ROC curve along the last axis."""
     y_true = y_true.float()
     y_score = y_score.float()
-    n = y_score.shape[-1]
 
-    desc_idx = torch.argsort(y_score, dim=-1, stable=True, descending=True)
-    y_score_sorted = torch.take_along_dim(y_score, desc_idx, dim=-1)
-    y_true_sorted = torch.take_along_dim(y_true, desc_idx, dim=-1)
-
-    tps = torch.cumsum(y_true_sorted, dim=-1)
-    fps = torch.arange(1, n + 1, device=y_true.device, dtype=y_true.dtype) - tps
-
+    fps, tps, thresholds = _binary_clf_curve(y_true, y_score)
     total_pos = tps[..., -1:]
     total_neg = fps[..., -1:]
 
@@ -148,7 +260,7 @@ def roc_curve_torch(y_true: torch.Tensor, y_score: torch.Tensor) -> tuple[torch.
     zeros = torch.zeros((*y_score.shape[:-1], 1), device=y_true.device, dtype=y_true.dtype)
     tpr = torch.cat([zeros, tpr], dim=-1)
     fpr = torch.cat([zeros, fpr], dim=-1)
-    thresholds = torch.cat([y_score_sorted[..., :1] + 1, y_score_sorted], dim=-1)
+    thresholds = torch.cat([thresholds[..., :1] + 1, thresholds], dim=-1)
 
     return fpr, tpr, thresholds
 
@@ -201,20 +313,20 @@ def _envelope_average_interval_width(lower: torch.Tensor, upper: torch.Tensor) -
 
 
 @coverage.register(TorchOneHotConformalSet)
-def _coverage_torch_onehot(y_pred: TorchOneHotConformalSet, y_true: torch.Tensor) -> float:
+def _torch_onehot_coverage(y_pred: TorchOneHotConformalSet, y_true: torch.Tensor) -> float:
     """Coverage for a one-hot conformal set."""
     membership = _onehot_membership(y_pred.tensor, y_true)
     return float(membership.float().mean().item())
 
 
 @efficiency.register(TorchOneHotConformalSet)
-def _efficiency_torch_onehot(y_pred: TorchOneHotConformalSet) -> float:
+def _torch_onehot_efficiency(y_pred: TorchOneHotConformalSet) -> float:
     """Average cardinality of a one-hot conformal set."""
     return float(y_pred.tensor.float().sum(dim=-1).mean().item())
 
 
 @coverage.register(TorchIntervalConformalSet)
-def _coverage_torch_interval(y_pred: TorchIntervalConformalSet, y_true: torch.Tensor) -> float:
+def _torch_interval_coverage(y_pred: TorchIntervalConformalSet, y_true: torch.Tensor) -> float:
     """Coverage for an interval conformal set."""
     arr = y_pred.tensor
     y = torch.as_tensor(y_true, device=arr.device)
@@ -223,12 +335,12 @@ def _coverage_torch_interval(y_pred: TorchIntervalConformalSet, y_true: torch.Te
 
 
 @efficiency.register(TorchIntervalConformalSet)
-def _efficiency_torch_interval(y_pred: TorchIntervalConformalSet) -> float:
+def _torch_interval_efficiency(y_pred: TorchIntervalConformalSet) -> float:
     """Average width of an interval conformal set."""
     return float((y_pred.tensor[..., 1] - y_pred.tensor[..., 0]).float().mean().item())
 
 
-def _credal_containment_coverage_torch(lower: torch.Tensor, upper: torch.Tensor, y_true: torch.Tensor) -> float:
+def _torch_credal_containment_coverage(lower: torch.Tensor, upper: torch.Tensor, y_true: torch.Tensor) -> float:
     """Fraction of instances whose target lies inside the credal set's envelope.
 
     Dispatches on the shape of ``y_true``:
@@ -268,7 +380,7 @@ def _credal_containment_coverage_torch(lower: torch.Tensor, upper: torch.Tensor,
     return float(covered.float().mean().item())
 
 
-def _credal_interval_efficiency_torch(lower: torch.Tensor, upper: torch.Tensor) -> float:
+def _torch_credal_interval_efficiency(lower: torch.Tensor, upper: torch.Tensor) -> float:
     """Efficiency of a credal set as ``1 - mean(upper - lower)``.
 
     Bounds are rounded to ``CREDAL_ROUND_DECIMALS`` decimals before subtracting
@@ -289,7 +401,7 @@ def _credal_interval_efficiency_torch(lower: torch.Tensor, upper: torch.Tensor) 
 
 
 @coverage.register(TorchConvexCredalSet)
-def _coverage_torch_convex(y_pred: TorchConvexCredalSet, y_true: torch.Tensor) -> float:
+def _torch_convex_coverage(y_pred: TorchConvexCredalSet, y_true: torch.Tensor) -> float:
     """Containment coverage for a convex credal set.
 
     Args:
@@ -299,21 +411,21 @@ def _coverage_torch_convex(y_pred: TorchConvexCredalSet, y_true: torch.Tensor) -
     Returns:
         Fraction of instances where the target lies in ``[lower, upper]`` for all classes.
     """
-    return _credal_containment_coverage_torch(y_pred.lower(), y_pred.upper(), y_true)
+    return _torch_credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
 
 
 @efficiency.register(TorchConvexCredalSet)
-def _efficiency_torch_convex(y_pred: TorchConvexCredalSet) -> float:
+def _torch_convex_efficiency(y_pred: TorchConvexCredalSet) -> float:
     """Interval-width efficiency for a convex credal set: ``1 - mean(upper - lower)``.
 
     Returns:
         Scalar efficiency; higher means a tighter credal set.
     """
-    return _credal_interval_efficiency_torch(y_pred.lower(), y_pred.upper())
+    return _torch_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
 
 
 @coverage.register(TorchDistanceBasedCredalSet)
-def _coverage_torch_distance(y_pred: TorchDistanceBasedCredalSet, y_true: torch.Tensor) -> float:
+def _torch_distance_coverage(y_pred: TorchDistanceBasedCredalSet, y_true: torch.Tensor) -> float:
     """Coverage for a distance-based (TV-ball) credal set.
 
     With class-index targets: interval-dominance coverage on the envelope.
@@ -332,7 +444,7 @@ def _coverage_torch_distance(y_pred: TorchDistanceBasedCredalSet, y_true: torch.
 
 
 @efficiency.register(TorchDistanceBasedCredalSet)
-def _efficiency_torch_distance(y_pred: TorchDistanceBasedCredalSet) -> float:
+def _torch_distance_efficiency(y_pred: TorchDistanceBasedCredalSet) -> float:
     """Interval-width efficiency for a distance-based credal set: ``1 - mean(upper - lower)``.
 
     Same semantic as ``ConvexCredalSet`` and ``ProbabilityIntervalsCredalSet``:
@@ -341,11 +453,11 @@ def _efficiency_torch_distance(y_pred: TorchDistanceBasedCredalSet) -> float:
     (no optimization needed; the simplex constraint is automatically satisfied
     for each individual class).
     """
-    return _credal_interval_efficiency_torch(y_pred.lower(), y_pred.upper())
+    return _torch_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
 
 
 @coverage.register(TorchProbabilityIntervalsCredalSet)
-def _coverage_torch_probability_intervals(y_pred: TorchProbabilityIntervalsCredalSet, y_true: torch.Tensor) -> float:
+def _torch_probability_intervals_coverage(y_pred: TorchProbabilityIntervalsCredalSet, y_true: torch.Tensor) -> float:
     """Containment coverage for a probability-intervals credal set.
 
     Args:
@@ -355,21 +467,21 @@ def _coverage_torch_probability_intervals(y_pred: TorchProbabilityIntervalsCreda
     Returns:
         Fraction of instances where the target lies in ``[lower, upper]`` for all classes.
     """
-    return _credal_containment_coverage_torch(y_pred.lower(), y_pred.upper(), y_true)
+    return _torch_credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
 
 
 @efficiency.register(TorchProbabilityIntervalsCredalSet)
-def _efficiency_torch_probability_intervals(y_pred: TorchProbabilityIntervalsCredalSet) -> float:
+def _torch_probability_intervals_efficiency(y_pred: TorchProbabilityIntervalsCredalSet) -> float:
     """Interval-width efficiency for a probability-intervals credal set: ``1 - mean(upper - lower)``.
 
     Returns:
         Scalar efficiency; higher means a tighter credal set.
     """
-    return _credal_interval_efficiency_torch(y_pred.lower(), y_pred.upper())
+    return _torch_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
 
 
 @coverage.register(TorchDirichletLevelSetCredalSet)
-def _coverage_torch_dirichlet_level_set(y_pred: TorchDirichletLevelSetCredalSet, y_true: torch.Tensor) -> float:
+def _torch_dirichlet_level_set_coverage(y_pred: TorchDirichletLevelSetCredalSet, y_true: torch.Tensor) -> float:
     """Interval-dominance coverage for a Dirichlet-level-set credal set.
 
     The lower/upper envelopes are estimated by Monte-Carlo sampling, so the
@@ -379,7 +491,7 @@ def _coverage_torch_dirichlet_level_set(y_pred: TorchDirichletLevelSetCredalSet,
 
 
 @efficiency.register(TorchDirichletLevelSetCredalSet)
-def _efficiency_torch_dirichlet_level_set(y_pred: TorchDirichletLevelSetCredalSet) -> float:
+def _torch_dirichlet_level_set_efficiency(y_pred: TorchDirichletLevelSetCredalSet) -> float:
     """Interval-dominance prediction-set cardinality for a Dirichlet-level-set credal set.
 
     The lower/upper envelopes are estimated by Monte-Carlo sampling, so the
@@ -389,31 +501,31 @@ def _efficiency_torch_dirichlet_level_set(y_pred: TorchDirichletLevelSetCredalSe
 
 
 @average_interval_width.register(TorchConvexCredalSet)
-def _average_interval_width_torch_convex(y_pred: TorchConvexCredalSet) -> float:
+def _torch_convex_average_interval_width(y_pred: TorchConvexCredalSet) -> float:
     """Mean per-class width of the vertex-derived envelope of a convex credal set."""
     return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
 
 
 @average_interval_width.register(TorchDistanceBasedCredalSet)
-def _average_interval_width_torch_distance(y_pred: TorchDistanceBasedCredalSet) -> float:
+def _torch_distance_average_interval_width(y_pred: TorchDistanceBasedCredalSet) -> float:
     """Mean per-class width of the L1-clip envelope of a distance-based credal set."""
     return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
 
 
 @average_interval_width.register(TorchProbabilityIntervalsCredalSet)
-def _average_interval_width_torch_probability_intervals(y_pred: TorchProbabilityIntervalsCredalSet) -> float:
+def _torch_probability_intervals_average_interval_width(y_pred: TorchProbabilityIntervalsCredalSet) -> float:
     """Mean per-class interval width of a probability-intervals credal set."""
     return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
 
 
 @average_interval_width.register(TorchDirichletLevelSetCredalSet)
-def _average_interval_width_torch_dirichlet_level_set(y_pred: TorchDirichletLevelSetCredalSet) -> float:
+def _torch_dirichlet_level_set_average_interval_width(y_pred: TorchDirichletLevelSetCredalSet) -> float:
     """Mean per-class width of the MC-sampled envelope of a Dirichlet-level-set credal set."""
     return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
 
 
 @convex_hull_coverage.register(TorchConvexCredalSet)
-def _convex_hull_coverage_torch_convex(
+def _torch_convex_convex_hull_coverage(
     y_pred: TorchConvexCredalSet,
     y_true: TorchCategoricalDistribution,
     *,
@@ -427,4 +539,4 @@ def _convex_hull_coverage_torch_convex(
     """
     vertices = y_pred.tensor.probabilities.detach().cpu().numpy()
     targets = y_true.probabilities.detach().cpu().numpy()
-    return _convex_hull_lp_coverage(vertices, targets, epsilon, **linprog_kwargs)
+    return _numpy_convex_hull_lp_coverage(vertices, targets, epsilon, **linprog_kwargs)

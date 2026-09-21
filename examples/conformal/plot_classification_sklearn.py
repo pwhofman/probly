@@ -25,7 +25,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold, train_test_split
 
 from probly.calibrator import calibrate
-from probly.evaluation import coverage, efficiency
+from probly.metrics import coverage, efficiency
 from probly.method.conformal import conformal_aps, conformal_lac, conformal_raps, conformal_saps
 from probly.representer import representer
 

@@ -38,6 +38,30 @@ class TestMetricFallbacks:
         with pytest.raises(NotImplementedError, match="average_precision_score"):
             average_precision_score(object(), object())
 
+    def test_accuracy_raises(self) -> None:
+        from probly.metrics._common import accuracy  # noqa: PLC0415
+
+        with pytest.raises(NotImplementedError, match="accuracy"):
+            accuracy(object(), object())
+
+    def test_expected_calibration_error_raises(self) -> None:
+        from probly.metrics._common import expected_calibration_error  # noqa: PLC0415
+
+        with pytest.raises(NotImplementedError, match="expected_calibration_error"):
+            expected_calibration_error(object(), object())
+
+    def test_false_positive_rate_raises(self) -> None:
+        from probly.metrics._common import false_positive_rate  # noqa: PLC0415
+
+        with pytest.raises(NotImplementedError, match="false_positive_rate"):
+            false_positive_rate(object(), object())
+
+    def test_false_negative_rate_raises(self) -> None:
+        from probly.metrics._common import false_negative_rate  # noqa: PLC0415
+
+        with pytest.raises(NotImplementedError, match="false_negative_rate"):
+            false_negative_rate(object(), object())
+
     def test_coverage_raises(self) -> None:
         from probly.metrics._common import coverage  # noqa: PLC0415
 

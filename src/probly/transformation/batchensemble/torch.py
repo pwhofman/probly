@@ -65,7 +65,7 @@ def _torch_wrap_batchensemble_logits(sample: TorchSample[Any]) -> TorchCategoric
     return TorchCategoricalDistributionSample(tensor=distribution, sample_dim=sample_dim)  # ty: ignore[invalid-argument-type]
 
 
-def replace_torch_batchensemble_linear(
+def torch_replace_batchensemble_linear(
     obj: nn.Linear,
     num_members: int,
     use_base_weights: bool,
@@ -89,7 +89,7 @@ def replace_torch_batchensemble_linear(
     )
 
 
-def replace_torch_batchensemble_conv2d(
+def torch_replace_batchensemble_conv2d(
     obj: nn.Conv2d,
     num_members: int,
     use_base_weights: bool,
@@ -113,5 +113,5 @@ def replace_torch_batchensemble_conv2d(
     )
 
 
-register(nn.Linear, replace_torch_batchensemble_linear)
-register(nn.Conv2d, replace_torch_batchensemble_conv2d)
+register(nn.Linear, torch_replace_batchensemble_linear)
+register(nn.Conv2d, torch_replace_batchensemble_conv2d)

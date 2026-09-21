@@ -17,7 +17,7 @@ from torch import nn
 
 from probly.representer import IterableSampler
 from probly.method.dare import dare
-from probly.train.dare.torch import dare_regularizer
+from probly.method.dare import dare_anti_regularization
 
 from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty
@@ -62,7 +62,7 @@ for member in dare_model:
         opt.zero_grad()
         out = member(X_tensor)
         loss = nn.functional.cross_entropy(out, y_tensor)
-        reg = dare_regularizer(member, device="cpu", loss=loss.detach(), threshold=threshold)
+        reg = dare_anti_regularization(member, device="cpu", loss=loss.detach(), threshold=threshold)
         total = loss - reg
         total.backward()
         opt.step()

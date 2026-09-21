@@ -28,7 +28,7 @@ def credal_dro[**In, Out](
 
     Structurally identical to ``credal_wrapper``; the methods differ only in training.
     Member ``i`` is trained on the CVaR cross-entropy at level ``credal_dro_deltas(delta_g,
-    num_members)[i]`` (see ``probly.train.credal.torch.cvar_ce_loss``).
+    num_members)[i]`` (see ``probly.losses.torch.cvar_ce_loss``).
 
     Args:
         base: The base classifier to replicate into an ensemble.

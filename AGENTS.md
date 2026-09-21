@@ -3,6 +3,7 @@
 - If you are creating new files add them to git via `git add <file>`. If you forget to do this, your changes will not be committed and may be lost. Do not add bloat files like `__pycache__` or `*.pyc` files or auto-generated files to git.
 - Always run pre-commit checks with `uv run prek run --all-files` before committing to ensure that your code adheres to the project's style and quality standards.
 - When adding public-facing features add docstrings in Google-Style format and American english.
+- When adding a new uncertainty quantification method, follow `docs/source/adding_a_method.rst`. It has the file layout, the dispatch and lazy-registration wiring, and the checklist of everything a method has to touch (exports, reference, tests, example, and the README method table with its backend list).
 ## Useful Commands:
 ### Build Docs (only use these commands verbatim from the project root)
 Incremental build (only changed examples and pages re-run):
@@ -28,6 +29,10 @@ uv run prek run --all-files
 ```bash
 ty check <path-to-file-or-directory>
 ```
+### Only Run backend naming and import checks
+```bash
+uv run python scripts/check_backend_naming.py
+```
 ## Example files to look at:
 Examples of how to use probly lives in the examples directory. You can find tutorials on how to use the pytraverser flexdispatch and so forth.
 ## How Dispatch Works (short version):
@@ -45,10 +50,13 @@ user calls dropout(model)
 ```
 **Lazy backend loading**: backends register via `delayed_register` in `__init__.py` files using fully-qualified type strings from `probly/lazy_types.py` (e.g. `TORCH_MODULE = "torch.nn.modules.module.Module"`). This means torch/flax/sklearn are only imported when actually needed.
 ## API Conventions:
-- Backend-agnostic facades live in `_common.py` files (`flexdispatch` functions, with `delayed_register` backend triggers in `__init__.py`); backend files (`torch.py`, `flax.py`, `sklearn.py`, ...) register the implementations. Registered implementations append the backend as a suffix, e.g. `train_credal_relative_likelihood_torch`. Standalone backend utilities (losses, helpers) carry no backend marker; their module path does.
+- Backend-agnostic facades live in `_common.py` files (`flexdispatch` functions, with `delayed_register` backend triggers in `__init__.py`); backend files (`torch.py`, `flax.py`, `sklearn.py`, ...) register the implementations. Registered implementations carry the backend as a prefix, e.g. `torch_train_credal_relative_likelihood`. Standalone backend utilities (losses, helpers) carry no backend marker; their module path does.
 - A facade declares only the parameters that are meaningful for every backend (typically the method's hyperparameters, e.g. `alpha`); backend-specific arguments (`epochs`, `on_epoch`, `optimizer_factory`, ...) pass through `**kwargs`. Facade keyword names must match implementation parameter names exactly, since dispatch forwards the call verbatim.
 ## Common Mistakes to do right:
 - `ty` may still fail to treat `np.ndarray` as a structural subtype of our `ArrayLike` protocol even after relaxing method requirements. Keep bounds as `ArrayLike | np.ndarray` where needed and use local `cast("Any", ...)` when dispatching ndarray-specific dunder methods.
 - Do not use special unicode characters where it is not necessary (comments, docstrings, variable names)
-- Tests are split by backend. Put backend-agnostic checks in `test_common.py`, and backend-specific checks in files like `test_array.py`, `test_torch.py`, or `test_jax.py`. In backend-specific test files, call `pytest.importorskip("<backend>")` at the top and avoid per-test skip decorators for missing optional deps.
+- Tests are split by backend. Put backend-agnostic checks in `test_common.py`, and backend-specific checks in files like `test_numpy.py`, `test_torch.py`, or `test_jax.py`. In backend-specific test files, call `pytest.importorskip("<backend>")` at the top and avoid per-test skip decorators for missing optional deps.
+- Put backend qualifiers at the beginning of implementation names: `numpy_`, `jax_`, `torch_`, `flax_`, or `sklearn_` for functions and `Numpy`, `Jax`, `Torch`, `Flax`, or `Sklearn` for classes. Private names keep their leading underscore. Conversion methods such as `from_numpy_sample` describe their inputs rather than an implementation backend.
+- The `BKN001` pre-commit check enforces whole-word NumPy/JAX/Torch/Flax prefixes on definitions in `src/probly`. Backend-prefixed names may contain further backend words. Semantic first words `from`, `to`, `is`, `has`, `supports`, and `Supports` use the same underscore/CamelCase boundaries and optional privacy marker; dunder methods are exempt. Intentional exceptions use `# noqa: BKN001` with a reason on the definition's opening line.
+- `BKN002` restricts runtime imports in `src/probly`: Torch requires a `torch`, `transformers`, `huggingface`, or `peft` module prefix; JAX requires `jax` or `flax`; Flax requires `flax`. Check the filename stem (parent package name for `__init__.py`), with whole-word boundaries and an optional leading underscore. Recognized `TYPE_CHECKING` branches are exempt, but function-local and `try/except` imports are checked. Intentional bridges use `# noqa: BKN002` with a reason on the import's opening line.
 - Pickle default-state behavior is subtle: `object.__getstate__()` may return `None` even when an instance has a populated `__dict__`. Do not use `super().__getstate__()` as a drop-in replacement for pickle's default state extraction when implementing cooperative `__getstate__` wrappers.

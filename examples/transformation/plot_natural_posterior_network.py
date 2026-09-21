@@ -17,7 +17,7 @@ from torch import nn
 
 from probly.method.natural_posterior_network import natural_posterior_network
 from probly.representer import representer
-from probly.train.evidential.torch import postnet_loss
+from probly.losses.torch import postnet_loss
 
 from examples.utils.model import MLPClassifier
 from examples.utils.plotting import plot_example_uncertainty

@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, cast
 
 import torch
 
+from probly.losses.torch import cvar_ce_loss
 from probly.method.credal_dro._common import credal_dro_deltas
-from probly.train.credal.torch import cvar_ce_loss
 from probly.train.torch import train_model
 
 if TYPE_CHECKING:

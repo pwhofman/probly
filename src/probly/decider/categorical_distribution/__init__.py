@@ -2,7 +2,7 @@
 
 from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
 
-from . import array as array
+from . import numpy as numpy
 from ._common import categorical_from_maximin, categorical_from_mean, mean_field_categorical
 
 

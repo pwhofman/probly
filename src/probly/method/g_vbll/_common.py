@@ -45,7 +45,7 @@ def find_g_vbll_layer(model: object) -> Any:  # noqa: ANN401, avoids importing t
 
     Convenience wrapper around :func:`probly.traverse_nn.find_layer` that matches
     the :class:`~probly.layers.torch.GVBLLLayer`, e.g. to pass the layer to
-    :func:`probly.train.vbll.vbll_loss` or to attach hooks to it. For
+    :func:`probly.losses.vbll_loss` or to attach hooks to it. For
     discriminative VBLL models use :func:`probly.method.vbll.find_vbll_layer`.
 
     Args:
@@ -83,7 +83,7 @@ def g_vbll[**In, Out: CategoricalDistribution](
     :class:`CategoricalDistribution`.  Because each class density decays
     quadratically away from its mean, the predictive is distance-aware -- a useful
     property for out-of-distribution detection.  The layer is fit with the
-    generative ELBO exposed by :func:`probly.train.vbll.torch.g_vbll_loss`.
+    generative ELBO exposed by :func:`probly.losses.torch.g_vbll_loss`.
 
     Args:
         base: The model to wrap.

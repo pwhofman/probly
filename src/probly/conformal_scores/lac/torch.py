@@ -11,7 +11,7 @@ from ._common import lac_score
 
 
 @lac_score.register(torch.Tensor)
-def compute_lac_score_torch(probs: torch.Tensor, y_cal: torch.Tensor | None = None) -> torch.Tensor:
+def torch_compute_lac_score(probs: torch.Tensor, y_cal: torch.Tensor | None = None) -> torch.Tensor:
     """Compute the LAC score."""
     probs_torch = torch.as_tensor(probs, dtype=torch.float)
     if probs_torch.ndim < 1:
@@ -36,14 +36,14 @@ def compute_lac_score_torch(probs: torch.Tensor, y_cal: torch.Tensor | None = No
 
 
 @lac_score.register(TorchSample)
-def compute_lac_score_torch_sample(probs: TorchSample, y_cal: torch.Tensor | None = None) -> torch.Tensor:
+def torch_compute_lac_score_sample(probs: TorchSample, y_cal: torch.Tensor | None = None) -> torch.Tensor:
     """Compute the LAC score for torch samples."""
     return lac_score(probs.tensor, y_cal)
 
 
 @lac_score.register(TorchCategoricalDistribution)
-def compute_lac_score_torch_categorical(
+def torch_compute_lac_score_categorical(
     probs: TorchCategoricalDistribution, y_cal: torch.Tensor | None = None
 ) -> torch.Tensor:
     """Compute the LAC score for torch categorical distributions."""
-    return compute_lac_score_torch(probs.probabilities, y_cal)
+    return torch_compute_lac_score(probs.probabilities, y_cal)

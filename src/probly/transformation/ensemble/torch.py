@@ -26,7 +26,7 @@ def _copy(module: nn.Module) -> nn.Module:
 
 
 @ensemble_generator.register(nn.Module)
-def generate_torch_ensemble(
+def torch_generate_ensemble(
     obj: nn.Module,
     num_members: int,
     reset_params: bool = True,

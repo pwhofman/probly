@@ -16,7 +16,7 @@ from probly.representation.distribution.torch_gaussian import TorchGaussianDistr
 from probly.representation.distribution.torch_mixture import TorchDirichletMixtureDistribution
 from probly.representation.distribution.torch_sparse_log_categorical import TorchSparseLogCategoricalDistribution
 from probly.representation.torch_functions import torch_average
-from probly.utils.torch import torch_entropy
+from probly.utils.torch import dirichlet_entropy, torch_entropy
 
 from ._common import (
     DEFAULT_MEAN_FIELD_FACTOR,
@@ -85,13 +85,7 @@ def torch_dirichlet_entropy(
     else:
         alphas = distribution
 
-    alpha_0 = torch.sum(alphas, dim=-1)
-    num_classes = alphas.shape[-1]
-
-    log_beta = torch.sum(torch.lgamma(alphas), dim=-1) - torch.lgamma(alpha_0)
-    digamma_sum = (alpha_0 - num_classes) * torch.digamma(alpha_0)
-    digamma_individual = torch.sum((alphas - 1) * torch.digamma(alphas), dim=-1)
-    result = log_beta + digamma_sum - digamma_individual
+    result = dirichlet_entropy(alphas)
 
     if base is None or base == torch.e:
         return result

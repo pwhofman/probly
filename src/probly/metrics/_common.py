@@ -89,6 +89,84 @@ def average_precision_score(y_true: object, y_score: object) -> object:
     raise NotImplementedError(msg)
 
 
+@flexdispatch
+def accuracy(y_pred: object, y_true: object) -> object:
+    """Compute top-1 classification accuracy.
+
+    Args:
+        y_pred: Predicted class labels of shape ``(n,)``, class probabilities of shape ``(n, k)``, or a
+            categorical distribution; probabilities and distributions are reduced to labels via argmax.
+        y_true: Integer ground-truth class labels of shape ``(n,)``.
+
+    Returns:
+        The fraction of correct predictions in ``[0, 1]``.
+
+    Raises:
+        NotImplementedError: If no implementation is registered for the type of ``y_pred``.
+    """
+    msg = f"No accuracy implementation registered for type {type(y_pred)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def expected_calibration_error(y_prob: object, y_true: object, *, num_bins: int = 15) -> object:
+    """Compute the confidence expected calibration error (ECE) :cite:`guoOnCalibration2017`.
+
+    Predictions are grouped into ``num_bins`` equal-width bins by confidence, i.e. the maximum predicted
+    probability, and the ECE is the frequency-weighted mean absolute gap between accuracy and mean confidence
+    across bins. In contrast to :func:`classwise_ece`, only the winning class probability enters.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(n, k)``, or a categorical distribution.
+        y_true: Integer ground-truth class labels of shape ``(n,)``.
+        num_bins: Number of equal-width confidence bins.
+
+    Returns:
+        The expected calibration error in ``[0, 1]``.
+
+    Raises:
+        NotImplementedError: If no implementation is registered for the type of ``y_prob``.
+    """
+    msg = f"No expected_calibration_error implementation registered for type {type(y_prob)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def false_positive_rate(y_pred: object, y_true: object) -> object:
+    """Compute the false positive rate ``FP / (FP + TN)`` of binary predictions.
+
+    Args:
+        y_pred: Predicted binary labels (0 or 1) of shape ``(n,)``.
+        y_true: Ground-truth binary labels (0 or 1) of shape ``(n,)``.
+
+    Returns:
+        The fraction of true negatives that are predicted positive, or NaN if there are no negative samples.
+
+    Raises:
+        NotImplementedError: If no implementation is registered for the type of ``y_pred``.
+    """
+    msg = f"No false_positive_rate implementation registered for type {type(y_pred)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def false_negative_rate(y_pred: object, y_true: object) -> object:
+    """Compute the false negative rate ``FN / (FN + TP)`` of binary predictions.
+
+    Args:
+        y_pred: Predicted binary labels (0 or 1) of shape ``(n,)``.
+        y_true: Ground-truth binary labels (0 or 1) of shape ``(n,)``.
+
+    Returns:
+        The fraction of true positives that are predicted negative, or NaN if there are no positive samples.
+
+    Raises:
+        NotImplementedError: If no implementation is registered for the type of ``y_pred``.
+    """
+    msg = f"No false_negative_rate implementation registered for type {type(y_pred)}"
+    raise NotImplementedError(msg)
+
+
 # --- Predicted-set metrics ----------------------------------------------------
 #
 # Three top-level dispatched functions used to evaluate predicted-set
@@ -104,15 +182,16 @@ def average_precision_score(y_true: object, y_score: object) -> object:
 # Concrete semantics depend on the dispatched type. Conformal sets follow the
 # classical conformal-prediction definitions (cardinality of a one-hot set,
 # width of an interval). Credal-set semantics specialize per subtype; see the
-# implementations in :mod:`probly.metrics.array` and :mod:`probly.metrics.torch`.
+# implementations in :mod:`probly.metrics.numpy` and :mod:`probly.metrics.torch`.
 #
 # Currently registered types
 # --------------------------
-# * Conformal: ``ArrayOneHotConformalSet``, ``ArrayIntervalConformalSet``,
-#   ``TorchOneHotConformalSet``, ``TorchIntervalConformalSet``.
-# * Credal (numpy): ``ArraySingletonCredalSet``, ``ArrayDiscreteCredalSet``,
-#   ``ArrayConvexCredalSet``, ``ArrayDistanceBasedCredalSet``,
-#   ``ArrayProbabilityIntervalsCredalSet``.
+# * Conformal: ``NumpyOneHotConformalSet``, ``NumpyIntervalConformalSet``,
+#   ``TorchOneHotConformalSet``, ``TorchIntervalConformalSet``,
+#   ``JaxOneHotConformalSet``, ``JaxIntervalConformalSet``.
+# * Credal (numpy): ``NumpySingletonCredalSet``, ``NumpyDiscreteCredalSet``,
+#   ``NumpyConvexCredalSet``, ``NumpyDistanceBasedCredalSet``,
+#   ``NumpyProbabilityIntervalsCredalSet``.
 # * Credal (torch): ``TorchConvexCredalSet``, ``TorchDistanceBasedCredalSet``,
 #   ``TorchProbabilityIntervalsCredalSet``, ``TorchDirichletLevelSetCredalSet``.
 #   Singleton and Discrete torch counterparts do not yet exist; constructing
@@ -120,31 +199,27 @@ def average_precision_score(y_true: object, y_score: object) -> object:
 
 
 @flexdispatch
-def classwise_ece(y_true: object, y_prob: object, *, num_bins: int = 15) -> object:
-    """Compute the classwise expected calibration error (classwise-ECE).
+def classwise_ece(y_prob: object, y_true: object, *, num_bins: int = 15) -> object:
+    """Compute the classwise expected calibration error (classwise-ECE) :cite:`kullBeyondTemperatureScaling2019`.
 
-    Introduced by :cite:`kullBeyondTemperatureScaling2019`. For every class
-    ``j`` the predicted probabilities ``p_j`` are grouped into ``num_bins``
-    equal-width bins; the per-class calibration error is the bin-size-weighted
-    mean absolute difference between the empirical frequency of class ``j``
-    and the mean predicted probability of class ``j`` within each bin. The
-    classwise-ECE is the average of these errors over all classes. Unlike the
-    confidence-based ECE, which only inspects the winning class, it is
+    For every class ``j``, the predicted probabilities ``p_j`` are grouped into ``num_bins`` equal-width bins;
+    the per-class error is the bin-size-weighted mean absolute difference between the empirical frequency of
+    class ``j`` and its mean predicted probability within each bin, and the classwise-ECE averages these errors
+    over all classes. In contrast to the confidence-based :func:`expected_calibration_error`, it is also
     sensitive to miscalibration on non-maximal class probabilities.
 
     Args:
+        y_prob: Predicted class probabilities of shape ``(n, k)``, or a categorical distribution.
         y_true: Integer ground-truth class labels of shape ``(n,)``.
-        y_prob: Predicted class probabilities of shape ``(n, k)``.
         num_bins: Number of equal-width probability bins per class.
 
     Returns:
         The classwise expected calibration error in ``[0, 1]``.
 
     Raises:
-        NotImplementedError: If no implementation is registered for the type
-            of ``y_true``.
+        NotImplementedError: If no implementation is registered for the type of ``y_prob``.
     """
-    msg = f"No classwise_ece implementation registered for type {type(y_true)}"
+    msg = f"No classwise_ece implementation registered for type {type(y_prob)}"
     raise NotImplementedError(msg)
 
 
@@ -271,10 +346,10 @@ def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.000
 
     Args:
         y_pred: A vertex-based credal-set representation
-            (``ArrayConvexCredalSet`` / ``ArrayDiscreteCredalSet`` /
-            ``ArraySingletonCredalSet`` / ``TorchConvexCredalSet``).
+            (``NumpyConvexCredalSet`` / ``NumpyDiscreteCredalSet`` /
+            ``NumpySingletonCredalSet`` / ``TorchConvexCredalSet``).
         y_true: A wrapped categorical distribution per instance (shape
-            ``(N, K)``). ``ArrayCategoricalDistribution`` for the numpy
+            ``(N, K)``). ``NumpyCategoricalDistribution`` for the numpy
             handlers, ``TorchCategoricalDistribution`` for the torch handler.
         epsilon: L1-distance tolerance for relaxed coverage. ``epsilon=0.0``
             (the default) runs the strict feasibility LP, which is faster
@@ -293,7 +368,7 @@ def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.000
 
     Note:
         Only vertex-based credal sets are registered. For
-        ``ArrayProbabilityIntervalsCredalSet`` and
+        ``NumpyProbabilityIntervalsCredalSet`` and
         ``TorchProbabilityIntervalsCredalSet``, use the type's own
         :meth:`contains` method to check whether a target distribution lies
         inside the (axis-aligned) credal set; that is a tighter and cheaper

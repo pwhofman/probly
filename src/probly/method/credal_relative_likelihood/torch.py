@@ -43,7 +43,7 @@ def _mean_log_likelihood(model: nn.Module, loader: DataLoader, device: torch.dev
 
 
 @train_credal_relative_likelihood.register((nn.ModuleList, list))
-def train_credal_relative_likelihood_torch(
+def torch_train_credal_relative_likelihood(
     predictor: nn.ModuleList | list[nn.Module],
     train_loader: DataLoader,
     *,
@@ -121,4 +121,4 @@ def train_credal_relative_likelihood_torch(
     return predictor
 
 
-__all__ = ["train_credal_relative_likelihood_torch"]
+__all__ = ["torch_train_credal_relative_likelihood"]

@@ -358,6 +358,30 @@ class TestPrivateLogitHelpers:
 
 
 class TestBinaryLogit:
+    @pytest.mark.parametrize("batch_size", [1, 2, 4])
+    def test_binary_margins_preserve_batch_axis(self, batch_size: int) -> None:
+        from sklearn.linear_model import LogisticRegression  # noqa: PLC0415
+
+        from probly.predictor.sklearn import _sklearn_binary_logit_prediction  # noqa: PLC0415
+
+        x = np.array([[-2.0], [-1.0], [1.0], [2.0]])
+        model = LogisticRegression().fit(x, [0, 0, 1, 1])
+        result = _sklearn_binary_logit_prediction(model, x[:batch_size])
+        np.testing.assert_allclose(result, model.decision_function(x[:batch_size]))
+        assert result.shape == (batch_size,)
+
+    def test_two_column_probabilities_produce_positive_class_log_odds(self) -> None:
+        from sklearn.base import BaseEstimator  # noqa: PLC0415
+
+        from probly.predictor.sklearn import _sklearn_binary_logit_prediction  # noqa: PLC0415
+
+        class ProbabilityEstimator(BaseEstimator):
+            def predict_proba(self, _x):
+                return np.array([[0.2, 0.8], [0.75, 0.25]])
+
+        result = _sklearn_binary_logit_prediction(ProbabilityEstimator(), np.zeros((2, 1)))
+        np.testing.assert_allclose(result, [np.log(4.0), np.log(1.0 / 3.0)])
+
     def test_binary_logit_difference(self) -> None:
         from sklearn.linear_model import LogisticRegression  # noqa: PLC0415
 
@@ -369,3 +393,17 @@ class TestBinaryLogit:
         out = _sklearn_binary_logit_prediction(clf, X)
         # For binary classifiers with a 1-D decision function, returns it directly.
         assert out.ndim == 1
+
+
+def test_gaussian_predict_rejects_non_callable_predict() -> None:
+    from sklearn.base import BaseEstimator  # noqa: PLC0415
+
+    from probly.predictor import GaussianDistributionPredictor, predict_raw  # noqa: PLC0415
+
+    class InvalidEstimator(BaseEstimator):
+        predict = 42
+
+    model = InvalidEstimator()
+    GaussianDistributionPredictor.register_instance(model)
+    with pytest.raises(NotImplementedError, match="No predict function"):
+        predict_raw(model, np.zeros((1, 1)))

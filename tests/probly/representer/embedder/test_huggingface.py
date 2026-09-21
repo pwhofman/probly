@@ -143,6 +143,12 @@ def test_embedder_rejects_empty_generation() -> None:
         HFTextEmbedder(FakeEmbeddingModel())(generation)
 
 
+@pytest.mark.parametrize("keyword", ["batch_size", "normalize_embeddings", "convert_to_tensor", "sentences", "inputs"])
+def test_embedder_rejects_reserved_encode_kwargs(keyword: str) -> None:
+    with pytest.raises(ValueError, match="reserved arguments"):
+        HFTextEmbedder(FakeEmbeddingModel(), encode_kwargs={keyword: True})
+
+
 def test_embedder_rejects_embedding_shape_mismatch() -> None:
     class BadEmbeddingModel:
         def encode(self, sentences: list[str], **kwargs: object) -> torch.Tensor:

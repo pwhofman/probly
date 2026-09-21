@@ -7,7 +7,7 @@ calibration step in the middle is selected via ``--calibration``:
     none              plain CE training, no post-hoc layer
     temperature       CE training, post-hoc temperature scaling
     isotonic          CE training, post-hoc per-class isotonic
-    label_relaxation  LabelRelaxationLoss (Lienen & Huellermeier 2021)
+    label_relaxation  label_relaxation_loss (Lienen & Huellermeier 2021)
                       at training time, no post-hoc layer
 
 The conformal RAPS layer always runs at the requested ``--alpha`` and
@@ -58,7 +58,7 @@ def _train_member(
     """Train one ensemble member with full-batch ``loss_fn`` + Adam.
 
     Optional global gradient clipping is helpful when the loss is
-    LabelRelaxationLoss on differently-scaled embedding spaces (DINOv2
+    label_relaxation_loss on differently-scaled embedding spaces (DINOv2
     in particular collapses with the default lr that works for SigLIP2).
     """
     member.train()
@@ -131,13 +131,13 @@ def _parse_args() -> argparse.Namespace:
         "--grad-clip",
         type=float,
         default=0.0,
-        help="Global gradient-clip norm; <=0 disables. Recommended >0 with LabelRelaxationLoss on DINOv2.",
+        help="Global gradient-clip norm; <=0 disables. Recommended >0 with label relaxation on DINOv2.",
     )
     parser.add_argument(
         "--lr-alpha",
         type=float,
         default=0.1,
-        help="LabelRelaxationLoss alpha; only consulted when --calibration label_relaxation.",
+        help="Label relaxation alpha; only consulted when --calibration label_relaxation.",
     )
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--device", default="auto")

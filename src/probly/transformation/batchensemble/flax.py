@@ -10,7 +10,7 @@ import jax.numpy as jnp
 
 from probly.layers.flax import BatchEnsembleConv, BatchEnsembleLinear
 from probly.predictor import predict
-from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.jax import JaxSample
 
 from ._common import BatchEnsemblePredictor, _attach_num_members, register
 
@@ -30,8 +30,8 @@ def _(model: nnx.Module, num_members: int) -> None:
 def predict_batchensemble(
     predictor: BatchEnsemblePredictor,
     x: jax.Array,
-) -> JaxArraySample:
-    """Run a BatchEnsemble predictor and return a :class:`JaxArraySample` over members.
+) -> JaxSample:
+    """Run a BatchEnsemble predictor and return a :class:`JaxSample` over members.
 
     Tiles the user's ``[B, ...]`` input by ``num_members``, runs the model on the
     ``[E*B, ...]`` array, and reshapes the output to ``[E, B, ...]`` with
@@ -41,10 +41,10 @@ def predict_batchensemble(
     b = x.shape[0]
     raw = predictor(tile_inputs(x, num_members))
     out = raw.reshape(num_members, b, *raw.shape[1:])
-    return JaxArraySample(array=out, sample_axis=0)
+    return JaxSample(array=out, sample_axis=0)
 
 
-def replace_flax_batchensemble_linear(
+def flax_replace_batchensemble_linear(
     obj: nnx.Linear,
     num_members: int,
     use_base_weights: bool,
@@ -69,7 +69,7 @@ def replace_flax_batchensemble_linear(
     )
 
 
-def replace_flax_batchensemble_conv(
+def flax_replace_batchensemble_conv(
     obj: nnx.Conv,
     num_members: int,
     use_base_weights: bool,
@@ -94,5 +94,5 @@ def replace_flax_batchensemble_conv(
     )
 
 
-register(nnx.Linear, replace_flax_batchensemble_linear)
-register(nnx.Conv, replace_flax_batchensemble_conv)
+register(nnx.Linear, flax_replace_batchensemble_linear)
+register(nnx.Conv, flax_replace_batchensemble_conv)

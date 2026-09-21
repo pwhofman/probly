@@ -13,11 +13,11 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from probly.evaluation import average_interval_width, coverage, efficiency  # noqa: E402
-from probly.representation.credal_set.array import (  # noqa: E402
-    ArrayConvexCredalSet,
-    ArrayDistanceBasedCredalSet,
-    ArrayProbabilityIntervalsCredalSet,
+from probly.metrics import average_interval_width, coverage, efficiency  # noqa: E402
+from probly.representation.credal_set.numpy import (  # noqa: E402
+    NumpyConvexCredalSet,
+    NumpyDistanceBasedCredalSet,
+    NumpyProbabilityIntervalsCredalSet,
 )
 from probly.representation.credal_set.torch import (  # noqa: E402
     TorchConvexCredalSet,
@@ -25,7 +25,7 @@ from probly.representation.credal_set.torch import (  # noqa: E402
     TorchDistanceBasedCredalSet,
     TorchProbabilityIntervalsCredalSet,
 )
-from probly.representation.distribution.array_categorical import ArrayProbabilityCategoricalDistribution  # noqa: E402
+from probly.representation.distribution.numpy_categorical import NumpyProbabilityCategoricalDistribution  # noqa: E402
 from probly.representation.distribution.torch_categorical import TorchProbabilityCategoricalDistribution  # noqa: E402
 
 from ._credal_suite import CredalSuite  # noqa: E402
@@ -70,7 +70,7 @@ class TestTorch(CredalSuite):
 )
 def test_convex_numpy_torch_parity(probs: np.ndarray) -> None:
     """Convex coverage and efficiency agree across backends on identical inputs."""
-    np_cs = ArrayConvexCredalSet(array=ArrayProbabilityCategoricalDistribution(probs))
+    np_cs = NumpyConvexCredalSet(array=NumpyProbabilityCategoricalDistribution(probs))
     tc_cs = TorchConvexCredalSet(tensor=TorchProbabilityCategoricalDistribution(torch.as_tensor(probs)))
     y = np.array([1])
     assert coverage(np_cs, y) == pytest.approx(coverage(tc_cs, torch.as_tensor(y)))
@@ -80,8 +80,8 @@ def test_convex_numpy_torch_parity(probs: np.ndarray) -> None:
 def test_distance_numpy_torch_parity() -> None:
     nominal = np.array([[0.5, 0.3, 0.2]])
     radius = np.array([0.1])
-    np_cs = ArrayDistanceBasedCredalSet(
-        nominal=ArrayProbabilityCategoricalDistribution(nominal),
+    np_cs = NumpyDistanceBasedCredalSet(
+        nominal=NumpyProbabilityCategoricalDistribution(nominal),
         radius=radius,
     )
     tc_cs = TorchDistanceBasedCredalSet(
@@ -97,7 +97,7 @@ def test_distance_numpy_torch_parity() -> None:
 def test_probability_intervals_numpy_torch_parity() -> None:
     lower = np.array([[0.1, 0.4, 0.05], [0.2, 0.2, 0.2]])
     upper = np.array([[0.5, 0.6, 0.2], [0.4, 0.4, 0.4]])
-    np_cs = ArrayProbabilityIntervalsCredalSet(lower_bounds=lower, upper_bounds=upper)
+    np_cs = NumpyProbabilityIntervalsCredalSet(lower_bounds=lower, upper_bounds=upper)
     tc_cs = TorchProbabilityIntervalsCredalSet(
         lower_bounds=torch.as_tensor(lower),
         upper_bounds=torch.as_tensor(upper),

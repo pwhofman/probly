@@ -8,8 +8,8 @@ from typing import Any
 from flextype import flexdispatch
 import numpy as np
 
-from probly.representation.distribution import ArrayCategoricalDistribution
-from probly.representation.sample.array import ArraySample
+from probly.representation.distribution import NumpyCategoricalDistribution
+from probly.representation.sample.numpy import NumpySample
 
 
 @flexdispatch
@@ -26,7 +26,7 @@ def _raps_score_dispatch[T](
 
 
 @_raps_score_dispatch.register(np.ndarray)
-def compute_raps_score_numpy(
+def numpy_compute_raps_score(
     probs: np.ndarray,
     y_cal: np.ndarray | None = None,
     randomized: bool = True,
@@ -75,16 +75,16 @@ def compute_raps_score_numpy(
     return scores
 
 
-@_raps_score_dispatch.register(ArrayCategoricalDistribution)
+@_raps_score_dispatch.register(NumpyCategoricalDistribution)
 def _(
-    probs: ArrayCategoricalDistribution,
+    probs: NumpyCategoricalDistribution,
     y_cal: np.ndarray | None = None,
     randomized: bool = True,
     lambda_reg: float = 0.1,
     k_reg: int = 0,
 ) -> np.ndarray:
-    """RAPS Nonconformity-Scores for ArrayCategoricalDistributions."""
-    return compute_raps_score_numpy(
+    """RAPS Nonconformity-Scores for NumpyCategoricalDistributions."""
+    return numpy_compute_raps_score(
         probs.probabilities,
         y_cal,
         randomized=randomized,
@@ -93,15 +93,15 @@ def _(
     )
 
 
-@_raps_score_dispatch.register(ArraySample)
+@_raps_score_dispatch.register(NumpySample)
 def _(
-    probs: ArraySample,
+    probs: NumpySample,
     y_cal: np.ndarray | None = None,
     randomized: bool = True,
     lambda_reg: float = 0.1,
     k_reg: int = 0,
 ) -> np.ndarray:
-    """RAPS Nonconformity-Scores for ArraySamples."""
+    """RAPS Nonconformity-Scores for NumpySamples."""
     return _raps_score_dispatch(
         probs.array,
         y_cal,

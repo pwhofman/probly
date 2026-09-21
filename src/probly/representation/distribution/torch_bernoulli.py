@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import ClassVar, override
 
 import torch
@@ -30,7 +30,7 @@ class TorchBernoulliDistribution(BernoulliDistribution, TorchCategoricalDistribu
 class TorchProbabilityBernoulliDistribution(TorchProbabilityCategoricalDistribution, TorchBernoulliDistribution):
     """A Bernoulli distribution represented by the probability of class 1."""
 
-    tensor: torch.Tensor
+    tensor: torch.Tensor = field()
     protected_axes: ClassVar[dict[str, int]] = {"tensor": 0}
 
     def __post_init__(self) -> None:
@@ -62,7 +62,7 @@ class TorchProbabilityBernoulliDistribution(TorchProbabilityCategoricalDistribut
 class TorchLogitBernoulliDistribution(TorchLogitCategoricalDistribution, TorchBernoulliDistribution):
     """A Bernoulli distribution represented by class-1 log-odds."""
 
-    tensor: torch.Tensor
+    tensor: torch.Tensor = field()
     protected_axes: ClassVar[dict[str, int]] = {"tensor": 0}
 
     def __post_init__(self) -> None:
@@ -91,14 +91,14 @@ class TorchBernoulliDistributionSample(  # ty:ignore[conflicting-metaclass]
 
 
 @create_bernoulli_distribution.register(torch.Tensor)
-def _create_torch_bernoulli_distribution(data: torch.Tensor) -> BernoulliDistribution:
+def _torch_create_bernoulli_distribution(data: torch.Tensor) -> BernoulliDistribution:
     if data.ndim >= 2 and data.shape[-1] <= 2:
         data = data[..., -1]
     return TorchProbabilityBernoulliDistribution(data)
 
 
 @create_bernoulli_distribution_from_logits.register(torch.Tensor)
-def _create_torch_bernoulli_distribution_from_logits(data: torch.Tensor) -> BernoulliDistribution:
+def _torch_create_bernoulli_distribution_from_logits(data: torch.Tensor) -> BernoulliDistribution:
     if data.ndim >= 2 and data.shape[-1] == 2:
         data = data[..., -1] - data[..., 0]
     elif data.ndim >= 2 and data.shape[-1] == 1:

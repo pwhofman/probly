@@ -5,6 +5,7 @@ from __future__ import annotations
 from probly.transformation.calibration import (
     CalibrationPredictor,
     dirichlet_calibration,
+    flax_identity_logit_model,
     isotonic_regression,
     platt_scaling,
     sklearn_identity_logit_estimator,
@@ -16,6 +17,7 @@ from probly.transformation.calibration import (
 __all__ = [
     "CalibrationPredictor",
     "dirichlet_calibration",
+    "flax_identity_logit_model",
     "isotonic_regression",
     "platt_scaling",
     "sklearn_identity_logit_estimator",

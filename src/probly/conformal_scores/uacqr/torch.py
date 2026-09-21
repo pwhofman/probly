@@ -10,7 +10,7 @@ from ._common import uacqr_score
 
 
 @uacqr_score.register(torch.Tensor)
-def compute_uacqr_score_func_torch(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+def torch_compute_uacqr_score_func(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
     """UACQR nonconformity scores for PyTorch tensors."""
     y = y_true.to(dtype=torch.float)
     pred = y_pred.to(dtype=torch.float)
@@ -36,4 +36,4 @@ def compute_uacqr_score_func_torch(y_pred: torch.Tensor, y_true: torch.Tensor) -
 @uacqr_score.register(TorchSample)
 def _(y_pred: TorchSample, y_true: torch.Tensor) -> torch.Tensor:
     """UACQR nonconformity scores for TorchSample."""
-    return compute_uacqr_score_func_torch(y_pred.tensor, y_true)
+    return torch_compute_uacqr_score_func(y_pred.tensor, y_true)

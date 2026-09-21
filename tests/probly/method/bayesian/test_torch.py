@@ -8,6 +8,7 @@ import pytest
 
 from probly.layers.torch import BayesConv2d, BayesLinear
 from probly.method.bayesian import bayesian
+from probly.transformation.bayesian import collect_kl_divergence
 from tests.probly.torch_utils import count_layers
 
 torch = pytest.importorskip("torch")
@@ -100,6 +101,21 @@ class TestNetworkArchitectures:
         # check if model type is correct
         assert isinstance(model, type(torch_custom_model))
         assert not isinstance(model, nn.Sequential)
+
+
+class TestCollectKLDivergence:
+    """Test class for the KL divergence collector."""
+
+    def test_gradients_reach_variational_parameters(self, torch_conv_linear_model: nn.Module) -> None:
+        model = bayesian(torch_conv_linear_model)
+
+        kl = collect_kl_divergence(model)
+        kl.backward()  # ty: ignore[unresolved-attribute]
+
+        variational_params = {name: p for name, p in model.named_parameters() if name.endswith(("_mu", "_rho"))}
+        assert variational_params
+        for name, param in variational_params.items():
+            assert param.grad is not None, f"kl.backward() left no gradient on {name}"
 
 
 def _separable_data() -> tuple[torch.Tensor, torch.Tensor]:

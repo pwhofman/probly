@@ -196,14 +196,19 @@ def predict_raw[**In, Out](predictor: Predictor[In, Out], /, *args: In.args, **k
     without any conversion to a specific type. For most use cases, the `predict` function should be used instead,
     which will attempt to convert the output to the correct type using registered conversion functions.
     """
-    if isinstance(predictor, RepresentationPredictor) and hasattr(predictor, "predict_representation"):
-        return predictor.predict_representation(*args, **kwargs)  # ty:ignore[call-non-callable]
-    if isinstance(predictor, CategoricalDistributionPredictor) and hasattr(predictor, "predict_proba"):
-        return predictor.predict_proba(*args, **kwargs)  # ty:ignore[call-non-callable]
-    if hasattr(predictor, "predict"):
-        return predictor.predict(*args, **kwargs)  # ty: ignore[call-non-callable]
+    if isinstance(predictor, RepresentationPredictor):
+        method = getattr(predictor, "predict_representation", None)
+        if callable(method):
+            return method(*args, **kwargs)
+    if isinstance(predictor, CategoricalDistributionPredictor):
+        method = getattr(predictor, "predict_proba", None)
+        if callable(method):
+            return method(*args, **kwargs)
+    method = getattr(predictor, "predict", None)
+    if callable(method):
+        return method(*args, **kwargs)
     if callable(predictor):
-        return predictor(*args, **kwargs)  # ty:ignore[call-top-callable]
+        return predictor(*args, **kwargs)
     msg = f"No predict function registered for type {type(predictor)}"
     raise NotImplementedError(msg)
 

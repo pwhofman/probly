@@ -32,12 +32,12 @@ class TestAPSBackends:
         torch = _torch()
         from probly.conformal_scores.aps._common import (  # noqa: PLC0415
             _aps_score_dispatch as dispatch,
-            compute_aps_score_numpy,
+            numpy_compute_aps_score,
         )
 
         probs_np = np.array([[0.1, 0.6, 0.3], [0.4, 0.4, 0.2]])
         labels_np = np.array([1, 0])
-        expected = compute_aps_score_numpy(probs_np, labels_np, randomized=False)
+        expected = numpy_compute_aps_score(probs_np, labels_np, randomized=False)
 
         scores = dispatch(torch.tensor(probs_np), torch.tensor(labels_np), randomized=False)
         assert isinstance(scores, torch.Tensor)
@@ -75,12 +75,12 @@ class TestAPSBackends:
         _, jnp = _jax_modules()
         from probly.conformal_scores.aps._common import (  # noqa: PLC0415
             _aps_score_dispatch as dispatch,
-            compute_aps_score_numpy,
+            numpy_compute_aps_score,
         )
 
         probs_np = np.array([[0.2, 0.5, 0.3], [0.7, 0.2, 0.1]])
         labels_np = np.array([1, 0])
-        expected = compute_aps_score_numpy(probs_np, labels_np, randomized=False)
+        expected = numpy_compute_aps_score(probs_np, labels_np, randomized=False)
 
         scores = dispatch(jnp.asarray(probs_np), jnp.asarray(labels_np), randomized=False)
         np.testing.assert_allclose(np.asarray(scores), expected, atol=1e-6)
@@ -104,7 +104,7 @@ class TestAPSBackends:
         torch = _torch()
         from probly.conformal_scores.aps._common import (  # noqa: PLC0415
             _aps_score_dispatch as dispatch,
-            compute_aps_score_numpy,
+            numpy_compute_aps_score,
         )
         from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
             TorchProbabilityCategoricalDistribution,
@@ -113,7 +113,7 @@ class TestAPSBackends:
         probs = torch.tensor([[0.2, 0.5, 0.3]])
         dist = TorchProbabilityCategoricalDistribution(probs)
         labels = torch.tensor([2])
-        expected = compute_aps_score_numpy(probs.numpy(), labels.numpy(), randomized=False)
+        expected = numpy_compute_aps_score(probs.numpy(), labels.numpy(), randomized=False)
         result = dispatch(dist, labels, randomized=False)
         np.testing.assert_allclose(result.numpy(), expected, atol=1e-6)
 

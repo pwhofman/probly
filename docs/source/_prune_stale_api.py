@@ -19,7 +19,7 @@ def resolves(qualified_name: str) -> bool:
     Args:
         qualified_name: Dotted name of a module or of an attribute reachable
             from a module, e.g. ``probly.calibrator`` or
-            ``probly.conformal_scores.lac.torch.compute_lac_score_torch``.
+            ``probly.conformal_scores.lac.torch.torch_compute_lac_score``.
 
     Returns:
         True if the name resolves to a module or module attribute.

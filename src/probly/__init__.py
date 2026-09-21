@@ -12,6 +12,7 @@ from probly import (
     evaluation as evaluation,
     integrations as integrations,
     layers as layers,
+    losses as losses,
     method as method,
     metrics as metrics,
     plot as plot,
