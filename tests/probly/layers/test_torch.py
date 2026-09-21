@@ -925,3 +925,33 @@ class TestSharedMaskDropout:
 
         with pytest.raises(ValueError, match="between 0 and 1"):
             SharedMaskDropout(p=1.5)
+
+
+def test_inverse_softplus_is_stable_for_extreme_inputs() -> None:
+    torch, _ = _torch_modules()
+    from torch.nn.functional import softplus  # noqa: PLC0415
+
+    from probly.layers.torch import _inverse_softplus  # noqa: PLC0415
+
+    x = torch.tensor([1e-6, 1e-3, 100.0, 1000.0])
+    y = _inverse_softplus(x)
+    assert torch.isfinite(y).all()
+    torch.testing.assert_close(softplus(y), x, atol=1e-6, rtol=1e-6)
+    # For large x, softplus is the identity up to exponentially small terms.
+    torch.testing.assert_close(y[2:], x[2:])
+
+
+def test_bayes_layers_stay_finite_for_large_rho() -> None:
+    torch, nn = _torch_modules()
+    from probly.layers.torch import BayesConv2d, BayesLinear  # noqa: PLC0415
+
+    linear = BayesLinear(nn.Linear(4, 3))
+    conv = BayesConv2d(nn.Conv2d(2, 3, kernel_size=3))
+    for layer in (linear, conv):
+        with torch.no_grad():
+            layer.weight_rho.fill_(200.0)
+            layer.bias_rho.fill_(200.0)
+    assert torch.isfinite(linear(torch.ones(2, 4))).all()
+    assert torch.isfinite(conv(torch.ones(2, 2, 5, 5))).all()
+    assert torch.isfinite(linear.kl_divergence)
+    assert torch.isfinite(conv.kl_divergence)

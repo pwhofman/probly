@@ -20,7 +20,8 @@ _ISOTONIC_MAX_KNOTS = 4096
 
 
 def _inverse_softplus(value: torch.Tensor) -> torch.Tensor:
-    return torch.log(torch.expm1(value))
+    # log(exp(x) - 1) rewritten as x + log(1 - exp(-x)): no overflow for large x, accurate for small x.
+    return value + torch.log(-torch.expm1(-value))
 
 
 def _reshape_binary_preds(preds: torch.Tensor) -> torch.Tensor:
