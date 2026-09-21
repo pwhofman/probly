@@ -191,7 +191,7 @@ class TorchGraphPosteriorNetwork(
     TorchGraphPosteriorNetworkBase[TorchDirichletDistribution, torch.Tensor],
     GraphPosteriorNetworkPredictor[[Data], TorchDirichletDistribution],
 ):
-    """Torch Geometric Graph Posterior Network."""
+    """Torch Geometric Graph Posterior Network based on :cite:`stadlerGraphPosteriorNetwork2021`."""
 
     def predict_representation(self, data: Data) -> TorchDirichletDistribution:
         """Compute the predictive distribution parameters (Dirichlet alphas) for all nodes."""
@@ -209,7 +209,7 @@ class TorchLOPGraphPosteriorNetwork(
         [Data], DirichletMixtureDistribution[TorchDirichletDistribution, TorchCategoricalDistribution]
     ],
 ):
-    """Torch Geometric LOP-GPN with approximate pooled Dirichlet outputs."""
+    """Torch Geometric LOP-GPN with Dirichlet mixture outputs based on :cite:`damkeLinearOpinionPooling2024`."""
 
     def __init__(
         self,
@@ -383,7 +383,7 @@ class TorchCUQGraphNeuralNetwork(
     TorchGraphPosteriorNetworkBase[TorchDirichletDistribution, torch.Tensor],
     CUQGraphNeuralNetworkPredictor[[Data], TorchDirichletDistribution],
 ):
-    """Torch Geometric CUQ-GNN using graph-refined hidden features."""
+    """Torch Geometric CUQ-GNN using graph-refined hidden features based on :cite:`damkeCUQGNN2024`."""
 
     def __init__(
         self,

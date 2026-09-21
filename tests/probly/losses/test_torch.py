@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
+
 import pytest
 
 from probly.layers.torch import GVBLLLayer, HetVBLLLayer, TVBLLLayer, VBLLLayer
@@ -170,6 +173,44 @@ class TestCvarCeLoss:
             cvar_ce_loss(logits, targets, delta=0.0)
         with pytest.raises(ValueError, match="delta"):
             cvar_ce_loss(logits, targets, delta=1.5)
+
+
+@pytest.mark.parametrize("layer_name", ["VBLLLayer", "TVBLLLayer", "HetVBLLLayer", "GVBLLLayer"])
+def test_vbll_loss_lazily_loads_torch_backend(layer_name: str) -> None:
+    """Exercise each layer's first loss call without prior backend registration."""
+    program = """
+import sys
+
+from probly.losses import vbll_loss
+
+assert "torch" not in sys.modules, "generic loss import eagerly loaded torch"
+
+import torch
+from probly.layers import torch as layers
+
+layer = getattr(layers, sys.argv[1])(8, 3)
+features = torch.randn(4, 8, requires_grad=True)
+targets = torch.tensor([0, 1, 2, 0])
+assert "probly.losses.torch" not in sys.modules, "loss backend was preloaded"
+
+loss = vbll_loss(layer, features, targets, regularization_weight=0.25)
+
+assert "probly.losses.torch" in sys.modules, "loss backend was not lazy-loaded"
+assert loss.shape == ()
+assert torch.isfinite(loss)
+loss.backward()
+assert features.grad is not None
+assert torch.isfinite(features.grad).all()
+assert features.grad.abs().sum() > 0
+"""
+    result = subprocess.run(  # noqa: S603
+        [sys.executable, "-c", program, layer_name],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+    assert result.returncode == 0, f"stdout={result.stdout!r} stderr={result.stderr!r}"
 
 
 def test_vbll_loss_dispatches_to_specific_losses() -> None:
