@@ -30,7 +30,7 @@ from probly.representation.distribution.jax_categorical import (
 )
 from probly.representation.jax_functions import jax_mean
 from probly.representation.sample.jax import JaxSample
-from probly.utils.jax import intersection_probability
+from probly.utils.jax import jax_intersection_probability
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -398,7 +398,7 @@ class JaxProbabilityIntervalsCredalSet(
     @override
     @property
     def barycenter(self) -> JaxCategoricalDistribution:
-        return JaxProbabilityCategoricalDistribution(intersection_probability(self.lower_bounds, self.upper_bounds))
+        return JaxProbabilityCategoricalDistribution(jax_intersection_probability(self.lower_bounds, self.upper_bounds))
 
 
 create_probability_intervals.register(JaxCategoricalDistribution, JaxProbabilityIntervalsCredalSet.from_sample)

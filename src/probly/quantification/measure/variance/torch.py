@@ -32,7 +32,7 @@ def torch_gaussian_sample_variance_of_expected_predictive_distribution(
     sample: TorchGaussianDistributionSample, base: LogBase = None
 ) -> torch.Tensor:
     """Compute the total variance of the expected value of a second-order distribution."""
-    return torch_gaussian_sample_conditional_variance(sample, base) + torch_gaussian_sample_mutual_information(
+    return torch_gaussian_sample_conditional_variance(sample, base) + torch_gaussian_sample_mutual_information_variance(
         sample, base
     )
 
@@ -47,7 +47,7 @@ def torch_gaussian_sample_conditional_variance(
 
 
 @mutual_information_variance.register(TorchGaussianDistributionSample)
-def torch_gaussian_sample_mutual_information(
+def torch_gaussian_sample_mutual_information_variance(
     sample: TorchGaussianDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> torch.Tensor:
@@ -74,7 +74,7 @@ def torch_sample_conditional_variance(
 
 
 @mutual_information_variance.register(TorchSample)
-def torch_sample_mutual_information(
+def torch_sample_mutual_information_variance(
     sample: TorchSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> torch.Tensor:

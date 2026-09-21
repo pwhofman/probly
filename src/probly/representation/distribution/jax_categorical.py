@@ -19,7 +19,7 @@ from probly.representation.distribution._common import (
 )
 from probly.representation.jax_functions import jax_average, jax_mean
 from probly.representation.sample.jax import JaxSample
-from probly.utils.jax import fresh_prng_key
+from probly.utils.jax import jax_fresh_prng_key
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -108,7 +108,7 @@ class JaxCategoricalDistribution(CategoricalDistribution, JaxAxisProtected[jax.A
             The drawn class indices with the sample axis first.
         """
         if prng_key is None:
-            prng_key = fresh_prng_key()
+            prng_key = jax_fresh_prng_key()
 
         samples = jax.random.categorical(prng_key, self.logits, axis=-1, shape=(num_samples, *self.shape))
         return JaxSample(array=samples, sample_axis=0)

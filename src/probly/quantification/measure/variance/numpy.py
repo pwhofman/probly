@@ -40,7 +40,7 @@ def numpy_gaussian_sample_conditional_variance(
 
 
 @mutual_information_variance.register(NumpyGaussianDistributionSample)
-def numpy_gaussian_sample_mutual_information(
+def numpy_gaussian_sample_mutual_information_variance(
     sample: NumpyGaussianDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> np.ndarray:
@@ -54,7 +54,9 @@ def numpy_gaussian_sample_variance_of_expected_predictive_distribution(
     base: LogBase = None,  # noqa: ARG001
 ) -> np.ndarray:
     """Compute the total predictive variance of a Gaussian sample via the law of total variance."""
-    return numpy_gaussian_sample_conditional_variance(sample) + numpy_gaussian_sample_mutual_information(sample)
+    return numpy_gaussian_sample_conditional_variance(sample) + numpy_gaussian_sample_mutual_information_variance(
+        sample
+    )
 
 
 @variance_of_expected_predictive_distribution.register(NumpySample)
@@ -76,7 +78,7 @@ def numpy_sample_conditional_variance(
 
 
 @mutual_information_variance.register(NumpySample)
-def numpy_sample_mutual_information(
+def numpy_sample_mutual_information_variance(
     sample: NumpySample,
     base: LogBase = None,  # noqa: ARG001
 ) -> np.ndarray:

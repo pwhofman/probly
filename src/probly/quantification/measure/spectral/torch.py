@@ -74,7 +74,7 @@ def _group_axis_after_sample_reduction(group_axis: int, sample_axis: int, ndim: 
     return sum(1 for axis in range(group) if axis not in sample_axes)
 
 
-def rbf_kernel(
+def torch_rbf_kernel(
     embeddings: EmbeddingInput,
     *,
     gamma: float = 1.0,
@@ -107,7 +107,7 @@ def rbf_kernel(
     return torch.exp(-gamma * distance_squared)
 
 
-def von_neumann_entropy(kernel: torch.Tensor, *, eps: float = 1e-12) -> torch.Tensor:
+def torch_von_neumann_entropy(kernel: torch.Tensor, *, eps: float = 1e-12) -> torch.Tensor:
     """Compute Von Neumann entropy from positive semidefinite kernel matrices.
 
     Args:
@@ -173,8 +173,8 @@ def torch_spectral_entropy(
     if isinstance(embeddings, TorchEmbedding):
         embeddings = embeddings.embeddings
 
-    kernel = rbf_kernel(embeddings, gamma=gamma, sample_dim=sample_dim, normalized=normalized)
-    return von_neumann_entropy(kernel, eps=eps)
+    kernel = torch_rbf_kernel(embeddings, gamma=gamma, sample_dim=sample_dim, normalized=normalized)
+    return torch_von_neumann_entropy(kernel, eps=eps)
 
 
 @conditional_spectral_entropy.register(TorchEmbeddingSampleSample)

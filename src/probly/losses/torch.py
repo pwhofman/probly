@@ -18,7 +18,7 @@ from probly.layers.torch import (
     VBLLLayer,
     VBLLParameterization,
 )
-from probly.utils.torch import dirichlet_entropy, intersection_probability
+from probly.utils.torch import torch_intersection_probability
 
 from ._common import vbll_loss
 
@@ -124,7 +124,7 @@ def intersection_probability_ce_loss(output: Tensor, targets: Tensor) -> Tensor:
         Scalar cross-entropy loss averaged over the batch.
     """
     n_classes = output.shape[-1] // 2
-    q_int = intersection_probability(output[..., :n_classes], output[..., n_classes:])
+    q_int = torch_intersection_probability(output[..., :n_classes], output[..., n_classes:])
     eps = torch.finfo(q_int.dtype).eps
     return F.nll_loss(torch.log(q_int.clamp(min=eps)), targets)
 
@@ -821,7 +821,7 @@ def ird_loss(
             msg = f"All alpha values must be > 0, got min={adversarial_alpha.min().item()}"
             raise ValueError(msg)
 
-        entropy_term = dirichlet_entropy(adversarial_alpha).sum()
+        entropy_term = Dirichlet(adversarial_alpha, validate_args=False).entropy().sum()
     else:
         entropy_term = 0.0
 

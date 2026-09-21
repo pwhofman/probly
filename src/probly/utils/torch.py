@@ -9,6 +9,8 @@ import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
+from ._common import entropy, intersection_probability
+
 
 def torch_head_dimension(head: torch.nn.Module, name: Literal["in_features", "out_features"]) -> int:
     """Read an integer feature dimension from a registered classification head.
@@ -76,7 +78,7 @@ def torch_reset_all_parameters(module: torch.nn.Module) -> None:
             reset()
 
 
-def temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor) -> torch.Tensor:
+def torch_temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor) -> torch.Tensor:
     """Compute the softmax of logits with temperature scaling applied.
 
     Computes the softmax based on the logits divided by the temperature. Assumes that the last dimension
@@ -94,6 +96,7 @@ def temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor)
     return ts
 
 
+@entropy.register(torch.Tensor)
 def torch_entropy(p: torch.Tensor) -> torch.Tensor:
     """Shannon entropy H(p) computed in torch along the last dim; 0*log(0) treated as 0.
 
@@ -108,7 +111,8 @@ def torch_entropy(p: torch.Tensor) -> torch.Tensor:
     return torch.clamp_min(result, 0.0) + 0.0  # Ensure non-negativity
 
 
-def intersection_probability(lower: torch.Tensor, upper: torch.Tensor) -> torch.Tensor:
+@intersection_probability.register(torch.Tensor)
+def torch_intersection_probability(lower: torch.Tensor, upper: torch.Tensor) -> torch.Tensor:
     """Intersection probability of a probability interval, per :cite:`wangCredalDeepEnsembles2024` Section 3.4.
 
     Reduces an interval credal set ``[lower, upper]`` to a single probability
@@ -134,14 +138,3 @@ def intersection_probability(lower: torch.Tensor, upper: torch.Tensor) -> torch.
     denominator = torch.where(slack_sum != 0, slack_sum, torch.ones_like(slack_sum))
     weights = torch.where(slack_sum != 0, slack / denominator, torch.zeros_like(slack))
     return lower + remaining * weights
-
-
-def dirichlet_entropy(alphas: torch.Tensor) -> torch.Tensor:
-    """Compute the differential entropy of Dirichlet distributions with concentrations of shape ``(..., K)``."""
-    alpha_0 = torch.sum(alphas, dim=-1)
-    num_classes = alphas.shape[-1]
-
-    log_beta = torch.sum(torch.lgamma(alphas), dim=-1) - torch.lgamma(alpha_0)
-    digamma_sum = (alpha_0 - num_classes) * torch.digamma(alpha_0)
-    digamma_individual = torch.sum((alphas - 1) * torch.digamma(alphas), dim=-1)
-    return log_beta + digamma_sum - digamma_individual

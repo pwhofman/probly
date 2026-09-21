@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import jax
+from jax.core import Tracer
 import jax.numpy as jnp
 import numpy as np
 
+from ._common import entropy, intersection_probability
 
-def fresh_prng_key() -> jax.Array:
+
+def jax_fresh_prng_key() -> jax.Array:
     """Draw a fresh PRNG key seeded from OS entropy.
 
     Mirrors the numpy backend, where a sampler without an explicit generator falls back to a
@@ -20,6 +23,7 @@ def fresh_prng_key() -> jax.Array:
     return jax.random.key(seed)
 
 
+@entropy.register((jax.Array, Tracer))
 def jax_entropy(p: jnp.ndarray) -> jnp.ndarray:
     """Shannon entropy H(p) computed in jax along the last dim; 0*log(0) treated as 0.
 
@@ -37,7 +41,8 @@ def jax_entropy(p: jnp.ndarray) -> jnp.ndarray:
     return jnp.clip(result, min=0.0) + 0.0
 
 
-def intersection_probability(lower: jnp.ndarray, upper: jnp.ndarray) -> jnp.ndarray:
+@intersection_probability.register((jax.Array, Tracer))
+def jax_intersection_probability(lower: jnp.ndarray, upper: jnp.ndarray) -> jnp.ndarray:
     """Intersection probability of a probability interval, per :cite:`wangCredalDeepEnsembles2024` Section 3.4.
 
     Reduces an interval credal set ``[lower, upper]`` to a single probability
