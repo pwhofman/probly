@@ -13,7 +13,8 @@ def numpy_selective_prediction(criterion: np.ndarray, losses: np.ndarray, n_bins
     if n_bins > len(losses):
         msg = "The number of bins can not be larger than the number of elements criterion"
         raise ValueError(msg)
-    sort_idxs = np.argsort(criterion)[::-1]
+    # Stable descending order: ties are broken by input position, so results are deterministic.
+    sort_idxs = np.argsort(-criterion, kind="stable")
     losses_sorted = losses[sort_idxs]
     bin_len = len(losses) // n_bins
     bin_losses = np.empty(n_bins)

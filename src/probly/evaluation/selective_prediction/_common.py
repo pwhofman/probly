@@ -11,7 +11,8 @@ def selective_prediction(criterion: object, losses: object, n_bins: int = 50) ->
 
     Perform selective prediction based on criterion and losses. The criterion is used to sort the losses.
     In line with uncertainty literature the sorting is done in descending order, i.e. the losses with the
-    largest criterion are rejected first.
+    largest criterion are rejected first. Ties are broken by input position: among equal criterion values,
+    earlier instances are rejected first, so results are deterministic across backends.
 
     Args:
         criterion: Criterion values of shape (n_instances,).
