@@ -35,6 +35,12 @@ def _predictor(num_members: int = 3):
 class TestTrainCredalDro:
     """Per-member CVaR training at the Eq. 8 delta schedule."""
 
+    def test_delta_g_out_of_range_raises(self) -> None:
+        with pytest.raises(ValueError, match="delta_g"):
+            train_credal_dro(_predictor(), _blobs_loader(), delta_g=0.0)
+        with pytest.raises(ValueError, match="delta_g"):
+            train_credal_dro(_predictor(), _blobs_loader(), delta_g=1.5)
+
     def test_members_train_at_schedule_deltas(self) -> None:
         records: list[dict[str, float]] = []
         train_credal_dro(_predictor(), _blobs_loader(), delta_g=0.5, epochs=2, on_epoch=records.append)
@@ -53,7 +59,8 @@ class TestTrainCredalDro:
             assert member_losses[-1] < member_losses[0]
 
     def test_trained_predictor_yields_probability_intervals(self) -> None:
-        predictor = train_credal_dro(_predictor(), _blobs_loader(), epochs=1)
+        predictor = _predictor()
+        train_credal_dro(predictor, _blobs_loader(), epochs=1)
         output = representer(predictor).predict(torch.randn(5, 2))
         assert isinstance(output, ProbabilityIntervalsCredalSet)
 

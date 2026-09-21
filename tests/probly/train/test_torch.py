@@ -12,7 +12,7 @@ from functools import partial  # noqa: E402
 from torch import Tensor, nn  # noqa: E402
 from torch.utils.data import DataLoader, TensorDataset  # noqa: E402
 
-from probly.train.torch import train_model  # noqa: E402
+from probly.train.torch import evaluate_model_mean_loss, train_model  # noqa: E402
 
 
 def _separable_loader(batch_size: int = 16) -> DataLoader:
@@ -43,11 +43,11 @@ def _make_model() -> nn.Module:
 class TestTrainModel:
     """The shared supervised loop: hook contract, metric semantics, and knobs."""
 
-    def test_training_reduces_loss_and_returns_eval_model(self) -> None:
+    def test_training_reduces_loss_and_leaves_eval_mode(self) -> None:
         records: list[dict[str, float]] = []
         model = _make_model()
         loss_fn = nn.functional.cross_entropy
-        trained = train_model(
+        train_model(
             model,
             _separable_loader(),
             loss_fn,
@@ -55,7 +55,6 @@ class TestTrainModel:
             optimizer_factory=partial(torch.optim.SGD, lr=0.5),
             on_epoch=records.append,
         )
-        assert trained is model
         assert not model.training
         assert records[-1]["running_loss"] < records[0]["running_loss"]
 
@@ -111,8 +110,9 @@ class TestTrainModel:
 
     def test_validation_does_not_affect_training(self) -> None:
         loss_fn = nn.functional.cross_entropy
-        plain = train_model(_make_model(), _separable_loader(), loss_fn, epochs=3)
-        validated = train_model(_make_model(), _separable_loader(), loss_fn, val_loader=_separable_loader(), epochs=3)
+        plain, validated = _make_model(), _make_model()
+        train_model(plain, _separable_loader(), loss_fn, epochs=3)
+        train_model(validated, _separable_loader(), loss_fn, val_loader=_separable_loader(), epochs=3)
         for p1, p2 in zip(plain.state_dict().values(), validated.state_dict().values(), strict=True):
             assert torch.equal(p1, p2)
 
@@ -196,7 +196,7 @@ class TestTrainModel:
 
     def test_empty_val_loader_raises(self) -> None:
         empty = DataLoader(TensorDataset(torch.zeros(0, 2), torch.zeros(0, dtype=torch.long)), batch_size=4)
-        with pytest.raises(ValueError, match="validation loader"):
+        with pytest.raises(ValueError, match="no batches"):
             train_model(_make_model(), _separable_loader(), nn.functional.cross_entropy, val_loader=empty)
 
     def test_epochs_zero_is_a_noop(self) -> None:
@@ -207,3 +207,32 @@ class TestTrainModel:
         assert records == []
         assert not model.training
         assert all(torch.equal(p, q) for p, q in zip(model.parameters(), before, strict=True))
+
+
+class TestEvaluateModelMeanLoss:
+    """The sample-weighted mean loss over a loader."""
+
+    def test_weights_batches_by_size(self) -> None:
+        # Batch sizes 3 and 1: (3*3 + 1*1) / 4 = 2.5, whereas a mean of batch means would give 2.0.
+        assert evaluate_model_mean_loss(nn.Linear(2, 2), _ragged_loader(), _batch_size_loss) == pytest.approx(2.5)
+
+    def test_matches_full_batch_loss(self) -> None:
+        model = _make_model()
+        inputs = torch.cat([batch_inputs for batch_inputs, _ in _separable_loader()])
+        targets = torch.cat([batch_targets for _, batch_targets in _separable_loader()])
+        expected = nn.functional.cross_entropy(model(inputs), targets).item()
+        actual = evaluate_model_mean_loss(model, _separable_loader(), nn.functional.cross_entropy)
+        assert actual == pytest.approx(expected)
+
+    def test_restores_train_mode_and_leaves_parameters_untouched(self) -> None:
+        model = _make_model().train()
+        before = [p.clone() for p in model.parameters()]
+        evaluate_model_mean_loss(model, _separable_loader(), nn.functional.cross_entropy)
+        assert model.training
+        assert all(torch.equal(p, q) for p, q in zip(model.parameters(), before, strict=True))
+        assert all(p.grad is None for p in model.parameters())
+
+    def test_empty_loader_raises(self) -> None:
+        empty = DataLoader(TensorDataset(torch.zeros(0, 2), torch.zeros(0, dtype=torch.long)), batch_size=4)
+        with pytest.raises(ValueError, match="no batches"):
+            evaluate_model_mean_loss(_make_model(), empty, nn.functional.cross_entropy)

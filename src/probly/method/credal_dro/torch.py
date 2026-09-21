@@ -33,7 +33,7 @@ def train_credal_dro[**In, Out](
     scheduler_factory: SchedulerFactory | None = None,
     device: torch.device | str | None = None,
     on_epoch: EpochHook | None = None,
-) -> CredalDROPredictor[In, Out]:
+) -> None:
     """Train a credal DRO ensemble following Algorithm 1 of :cite:`wangLearningCredalEnsembles2026`.
 
     Member ``i`` minimizes the CVaR cross-entropy at level ``credal_dro_deltas(delta_g, num_members)[i]``: only
@@ -44,7 +44,7 @@ def train_credal_dro[**In, Out](
         train_loader: Loader yielding ``(inputs, targets)`` batches.
         val_loader: Optional validation loader; adds the member's ``"val_loss"`` (same CVaR objective).
         delta_g: Global worst-case CVaR level in (0, 1]. Default is 0.5.
-        epochs: Number of epochs per member. Default is 10.
+        epochs: Maximum number of epochs per member. Default is 10.
         optimizer_factory: Optimizer factory applied per member. Default follows the probly_benchmark CIFAR-10
             recipe: SGD with learning rate 0.1, momentum 0.9, weight decay 5e-4.
         scheduler_factory: Scheduler factory applied per member, stepped once per epoch.
@@ -52,8 +52,8 @@ def train_credal_dro[**In, Out](
         on_epoch: Per-epoch hook receiving ``{"member": ..., "delta": ..., "epoch": ..., "running_loss": ...}``;
             returning True stops that member early.
 
-    Returns:
-        The trained predictor.
+    Raises:
+        ValueError: If delta_g is outside (0, 1].
     """
     members = list(predictor)
     deltas = credal_dro_deltas(delta_g, len(members))
@@ -70,7 +70,6 @@ def train_credal_dro[**In, Out](
             on_epoch=on_epoch,
             extra_metrics={"member": float(i), "delta": delta},
         )
-    return predictor
 
 
 __all__ = ["train_credal_dro"]

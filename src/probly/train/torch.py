@@ -29,13 +29,30 @@ _DEFAULT_OPTIMIZER_FACTORY: OptimizerFactory = partial(torch.optim.Adam, lr=1e-3
 
 
 @torch.no_grad()
-def _evaluate(
+def evaluate_model_mean_loss(
     model: nn.Module,
     loader: DataLoader,
     loss_fn: Callable[[Tensor, Tensor], Tensor],
-    device: torch.device | str | None,
+    *,
+    device: torch.device | str | None = None,
 ) -> float:
-    """Sample-weighted mean ``loss_fn`` of the model over the loader, without gradients."""
+    """Mean ``loss_fn(model(inputs), targets)`` over the samples of the loader, in eval mode and without gradients.
+
+    Batches are weighted by their size, so ``loss_fn`` must return the batch mean; ``train_model`` reports this
+    value as ``"val_loss"``.
+
+    Args:
+        model: The model to evaluate; its train/eval mode is restored afterwards.
+        loader: Loader yielding ``(inputs, targets)`` batches.
+        loss_fn: Per-batch loss on ``(output, targets)``, returning the batch mean.
+        device: If given, move every batch to this device; the model is expected to be there already.
+
+    Returns:
+        The sample-weighted mean loss.
+
+    Raises:
+        ValueError: If the loader yields no batches.
+    """
     was_training = model.training
     model.eval()
     total = 0.0
@@ -47,7 +64,7 @@ def _evaluate(
         num_samples += inputs.shape[0]
     model.train(was_training)
     if num_samples == 0:
-        msg = "validation loader yielded no batches."
+        msg = "loader yielded no batches."
         raise ValueError(msg)
     return total / num_samples
 
@@ -64,7 +81,7 @@ def train_model(
     device: torch.device | str | None = None,
     on_epoch: EpochHook | None = None,
     extra_metrics: dict[str, float] | None = None,
-) -> nn.Module:
+) -> None:
     """Minimize ``loss_fn(model(inputs), targets)`` over the loader for at most ``epochs`` epochs.
 
     The minimal supervised loop underlying the ``train_*`` method trainers. After every epoch, ``on_epoch``
@@ -73,7 +90,7 @@ def train_model(
     expressed through this single hook (e.g. ``on_epoch=wandb.log``).
 
     Args:
-        model: The model to train in place.
+        model: The model to train in place; left in eval mode afterwards.
         train_loader: Loader yielding ``(inputs, targets)`` batches.
         loss_fn: Per-batch loss on ``(output, targets)``.
         val_loader: Optional validation loader; adds ``"val_loss"``, the mean ``loss_fn`` over it, to the metrics.
@@ -86,13 +103,10 @@ def train_model(
         on_epoch: Optional per-epoch hook; returning True stops training.
         extra_metrics: Constant entries merged into every metrics dict, e.g. the ensemble member index.
 
-    Returns:
-        The trained model, set to eval mode.
-
     Raises:
         ValueError: If the training or validation loader yields no batches.
     """
-    model = model.to(device)
+    model.to(device)
     optimizer = optimizer_factory(model.parameters())
     scheduler = scheduler_factory(optimizer) if scheduler_factory is not None else None
     for epoch in range(epochs):
@@ -119,11 +133,10 @@ def train_model(
             "running_loss": running_loss / num_samples,
         }
         if val_loader is not None:
-            metrics["val_loss"] = _evaluate(model, val_loader, loss_fn, device)
+            metrics["val_loss"] = evaluate_model_mean_loss(model, val_loader, loss_fn, device=device)
         if on_epoch is not None and on_epoch(metrics):
             break
     model.eval()
-    return model
 
 
-__all__ = ["EpochHook", "OptimizerFactory", "SchedulerFactory", "train_model"]
+__all__ = ["EpochHook", "OptimizerFactory", "SchedulerFactory", "evaluate_model_mean_loss", "train_model"]

@@ -35,7 +35,7 @@ def train_bayesian[**In, Out](
     scheduler_factory: SchedulerFactory | None = None,
     device: torch.device | str | None = None,
     on_epoch: EpochHook | None = None,
-) -> BayesianPredictor[In, Out]:
+) -> None:
     """Train a Bayesian predictor on the ELBO of :cite:`blundellWeightUncertainty2015`.
 
     Every forward pass samples weights from the variational posterior, so minimizing cross-entropy plus
@@ -56,9 +56,6 @@ def train_bayesian[**In, Out](
         scheduler_factory: Scheduler factory, stepped once per epoch.
         device: If given, move the predictor and every batch to this device.
         on_epoch: Per-epoch hook receiving ``{"epoch": ..., "running_loss": ...}``; returning True stops early.
-
-    Returns:
-        The trained predictor.
 
     Raises:
         TypeError: If dataset_size is None and the loader's dataset has no length.
@@ -91,7 +88,6 @@ def train_bayesian[**In, Out](
         device=device,
         on_epoch=on_epoch,
     )
-    return predictor
 
 
 __all__ = ["train_bayesian"]
