@@ -8,26 +8,26 @@ from probly.lazy_types import (
 )
 
 from ._common import (
-    conditional_variance,
-    mutual_information_variance,
+    expected_conditional_variance,
     variance,
+    variance_of_conditional_mean,
     variance_of_expected_predictive_distribution,
 )
 from .numpy import (  # noqa: F401  (registers numpy implementations)
-    numpy_gaussian_sample_conditional_variance,
-    numpy_gaussian_sample_mutual_information_variance,
+    numpy_gaussian_sample_expected_conditional_variance,
+    numpy_gaussian_sample_variance_of_conditional_mean,
     numpy_gaussian_sample_variance_of_expected_predictive_distribution,
     numpy_gaussian_variance,
-    numpy_sample_conditional_variance,
-    numpy_sample_mutual_information_variance,
+    numpy_sample_expected_conditional_variance,
+    numpy_sample_variance_of_conditional_mean,
     numpy_sample_variance_of_expected_predictive_distribution,
 )
 
 
 @variance.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @variance_of_expected_predictive_distribution.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@conditional_variance.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@mutual_information_variance.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@expected_conditional_variance.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@variance_of_conditional_mean.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 def _(_: type) -> None:
     """Register delayed implementations for torch tensors."""
     from . import torch as torch  # noqa: PLC0415
@@ -35,16 +35,16 @@ def _(_: type) -> None:
 
 @variance.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @variance_of_expected_predictive_distribution.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@conditional_variance.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@mutual_information_variance.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@expected_conditional_variance.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@variance_of_conditional_mean.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 def _(_: type) -> None:
     """Register delayed implementations for jax arrays."""
     from . import jax as jax  # noqa: PLC0415
 
 
 __all__ = [
-    "conditional_variance",
-    "mutual_information_variance",
+    "expected_conditional_variance",
     "variance",
+    "variance_of_conditional_mean",
     "variance_of_expected_predictive_distribution",
 ]

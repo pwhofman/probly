@@ -15,20 +15,20 @@ from ._common import (
     categorical_variance_aleatoric,
     categorical_variance_total,
     labelwise_conditional_entropy,
-    labelwise_conditional_variance,
     labelwise_entropy,
     labelwise_entropy_of_expected_predictive_distribution,
+    labelwise_expected_conditional_variance,
     labelwise_mutual_information_entropy,
-    labelwise_mutual_information_variance,
     labelwise_variance,
+    labelwise_variance_of_conditional_mean,
     labelwise_variance_of_expected_predictive_distribution,
     ordinal_conditional_entropy,
-    ordinal_conditional_variance,
     ordinal_entropy,
     ordinal_entropy_of_expected_predictive_distribution,
+    ordinal_expected_conditional_variance,
     ordinal_mutual_information_entropy,
-    ordinal_mutual_information_variance,
     ordinal_variance,
+    ordinal_variance_of_conditional_mean,
     ordinal_variance_of_expected_predictive_distribution,
 )
 
@@ -97,12 +97,12 @@ def jax_categorical_sample_ordinal_variance_of_expected_predictive_distribution(
     return jnp.sum(expected_cdf * (1 - expected_cdf), axis=-1)
 
 
-@ordinal_conditional_variance.register(JaxCategoricalDistributionSample)
-def jax_categorical_sample_ordinal_conditional_variance(
+@ordinal_expected_conditional_variance.register(JaxCategoricalDistributionSample)
+def jax_categorical_sample_ordinal_expected_conditional_variance(
     sample: JaxCategoricalDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
-    """Compute the ordinal conditional variance of a categorical sample."""
+    """Compute the ordinal expected conditional variance of a categorical sample."""
     p = sample.array.probabilities
     axis = sample.sample_axis
     cdf = _cdf(p)
@@ -110,12 +110,12 @@ def jax_categorical_sample_ordinal_conditional_variance(
     return jnp.mean(per_sample_variance, axis=axis)
 
 
-@ordinal_mutual_information_variance.register(JaxCategoricalDistributionSample)
-def jax_categorical_sample_ordinal_mutual_information_variance(
+@ordinal_variance_of_conditional_mean.register(JaxCategoricalDistributionSample)
+def jax_categorical_sample_ordinal_variance_of_conditional_mean(
     sample: JaxCategoricalDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
-    """Compute the ordinal mutual information (variance-based) of a categorical sample."""
+    """Compute the ordinal variance of the conditional mean of a categorical sample."""
     p = sample.array.probabilities
     axis = sample.sample_axis
     cdf = _cdf(p)
@@ -259,24 +259,24 @@ def jax_categorical_sample_labelwise_variance_of_expected_predictive_distributio
     return jnp.sum(expected_p * (1 - expected_p), axis=-1)
 
 
-@labelwise_conditional_variance.register(JaxCategoricalDistributionSample)
-def jax_categorical_sample_labelwise_conditional_variance(
+@labelwise_expected_conditional_variance.register(JaxCategoricalDistributionSample)
+def jax_categorical_sample_labelwise_expected_conditional_variance(
     sample: JaxCategoricalDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
-    """Compute the label-wise conditional variance of a categorical sample."""
+    """Compute the label-wise expected conditional variance of a categorical sample."""
     p = sample.array.probabilities
     axis = sample.sample_axis
     per_sample_variance = jnp.sum(p * (1 - p), axis=-1)
     return jnp.mean(per_sample_variance, axis=axis)
 
 
-@labelwise_mutual_information_variance.register(JaxCategoricalDistributionSample)
-def jax_categorical_sample_labelwise_mutual_information_variance(
+@labelwise_variance_of_conditional_mean.register(JaxCategoricalDistributionSample)
+def jax_categorical_sample_labelwise_variance_of_conditional_mean(
     sample: JaxCategoricalDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> jnp.ndarray:
-    """Compute the label-wise variance-based mutual information of a categorical sample."""
+    """Compute the label-wise variance of the conditional mean of a categorical sample."""
     p = sample.array.probabilities
     axis = sample.sample_axis
     return jnp.sum(jnp.var(p, axis=axis, ddof=0), axis=-1)

@@ -8,16 +8,16 @@ from typing import TYPE_CHECKING, override
 from probly.quantification.decomposition.decomposition import AdditiveDecomposition
 from probly.quantification.measure.ordinal._common import (
     labelwise_conditional_entropy,
-    labelwise_conditional_variance,
     labelwise_entropy_of_expected_predictive_distribution,
+    labelwise_expected_conditional_variance,
     labelwise_mutual_information_entropy,
-    labelwise_mutual_information_variance,
+    labelwise_variance_of_conditional_mean,
     labelwise_variance_of_expected_predictive_distribution,
     ordinal_conditional_entropy,
-    ordinal_conditional_variance,
     ordinal_entropy_of_expected_predictive_distribution,
+    ordinal_expected_conditional_variance,
     ordinal_mutual_information_entropy,
-    ordinal_mutual_information_variance,
+    ordinal_variance_of_conditional_mean,
     ordinal_variance_of_expected_predictive_distribution,
 )
 
@@ -67,13 +67,13 @@ class OrdinalVarianceDecomposition[T](AdditiveDecomposition[T, T, T]):
     @property
     def _aleatoric(self) -> T:
         """The aleatoric variance uncertainty of the decomposition."""
-        return ordinal_conditional_variance(self.distribution)  # ty: ignore[invalid-return-type]
+        return ordinal_expected_conditional_variance(self.distribution)  # ty: ignore[invalid-return-type]
 
     @override
     @property
     def _epistemic(self) -> T:
         """The epistemic variance uncertainty of the decomposition."""
-        return ordinal_mutual_information_variance(self.distribution)  # ty: ignore[invalid-return-type]
+        return ordinal_variance_of_conditional_mean(self.distribution)  # ty: ignore[invalid-return-type]
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
@@ -118,10 +118,10 @@ class LabelwiseBinaryVarianceDecomposition[T](AdditiveDecomposition[T, T, T]):
     @property
     def _aleatoric(self) -> T:
         """The aleatoric label-wise binary variance uncertainty."""
-        return labelwise_conditional_variance(self.distribution)  # ty: ignore[invalid-return-type]
+        return labelwise_expected_conditional_variance(self.distribution)  # ty: ignore[invalid-return-type]
 
     @override
     @property
     def _epistemic(self) -> T:
         """The epistemic label-wise binary variance uncertainty."""
-        return labelwise_mutual_information_variance(self.distribution)  # ty: ignore[invalid-return-type]
+        return labelwise_variance_of_conditional_mean(self.distribution)  # ty: ignore[invalid-return-type]

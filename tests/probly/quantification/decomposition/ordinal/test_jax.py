@@ -19,16 +19,16 @@ from probly.quantification import (
 from probly.quantification.decomposition.ordinal import (
     categorical_variance_aleatoric,
     categorical_variance_total,
-    conditional_variance,
+    expected_conditional_variance,
     labelwise_conditional_entropy,
-    labelwise_conditional_variance,
     labelwise_entropy_of_expected_predictive_distribution,
+    labelwise_expected_conditional_variance,
     labelwise_variance_of_expected_predictive_distribution,
-    mutual_information_variance,
     ordinal_conditional_entropy,
-    ordinal_conditional_variance,
     ordinal_entropy_of_expected_predictive_distribution,
+    ordinal_expected_conditional_variance,
     ordinal_variance_of_expected_predictive_distribution,
+    variance_of_conditional_mean,
 )
 from probly.quantification.measure.ordinal import labelwise_entropy, labelwise_variance
 from probly.quantification.notion import AleatoricUncertainty, EpistemicUncertainty, TotalUncertainty
@@ -201,7 +201,7 @@ def test_standalone_measure_functions_match_decomposition() -> None:
 
     d_ord_var = OrdinalVarianceDecomposition(sample)
     assert jnp.allclose(ordinal_variance_of_expected_predictive_distribution(sample), d_ord_var.total)
-    assert jnp.allclose(ordinal_conditional_variance(sample), d_ord_var.aleatoric)
+    assert jnp.allclose(ordinal_expected_conditional_variance(sample), d_ord_var.aleatoric)
 
     d_lw_ent = LabelwiseBinaryEntropyDecomposition(sample)
     assert jnp.allclose(labelwise_entropy_of_expected_predictive_distribution(sample), d_lw_ent.total)
@@ -209,7 +209,7 @@ def test_standalone_measure_functions_match_decomposition() -> None:
 
     d_lw_var = LabelwiseBinaryVarianceDecomposition(sample)
     assert jnp.allclose(labelwise_variance_of_expected_predictive_distribution(sample), d_lw_var.total)
-    assert jnp.allclose(labelwise_conditional_variance(sample), d_lw_var.aleatoric)
+    assert jnp.allclose(labelwise_expected_conditional_variance(sample), d_lw_var.aleatoric)
 
     d_cat_var = CategoricalVarianceDecomposition(sample)
     assert jnp.allclose(categorical_variance_total(sample), d_cat_var.total)
@@ -243,8 +243,8 @@ def test_identical_gaussian_has_zero_epistemic() -> None:
 def test_gaussian_standalone_functions_match_decomposition() -> None:
     sample = _gaussian_sample()
     d = SecondOrderVarianceDecomposition(sample)
-    assert jnp.allclose(conditional_variance(sample), d.aleatoric)
-    assert jnp.allclose(mutual_information_variance(sample), d.epistemic)
+    assert jnp.allclose(expected_conditional_variance(sample), d.aleatoric)
+    assert jnp.allclose(variance_of_conditional_mean(sample), d.epistemic)
 
 
 def test_ordinal_entropy_with_log_base() -> None:
