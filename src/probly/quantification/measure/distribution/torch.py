@@ -104,10 +104,7 @@ def torch_gaussian_entropy(
 ) -> torch.Tensor:
     """Compute the (differential) entropy of a Gaussian distribution.
 
-    Only the variance enters the entropy of a Gaussian, so ``distribution`` may be a
-    `TorchGaussianDistribution` (whose mean is ignored) or a bare torch.Tensor of variances.
-    The bare-tensor form is for internal callers; ``entropy(tensor)`` dispatches to the
-    categorical implementation.
+    Takes either a `TorchGaussianDistribution` or a single torch.Tensor representing the variance.
     """
     if isinstance(distribution, TorchGaussianDistribution):
         var = distribution.var
