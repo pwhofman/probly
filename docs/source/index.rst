@@ -30,6 +30,6 @@ uncertainty into their machine learning workflows.
    user_guide
    examples
    api
-   adding_a_method
+   contributing/index
    references
    faq
