@@ -111,7 +111,7 @@ def torch_gaussian_entropy(
         del distribution  # Avoid keeping a reference to the distribution for memory efficiency
     else:
         var = distribution
-    entropy = 0.5 * torch.log(2 * torch.e * torch.pi * var)
+    entropy = torch.distributions.Normal(torch.zeros_like(var), torch.sqrt(var)).entropy()
     if base is None or base == torch.e:
         return entropy
     if base == "normalize":
