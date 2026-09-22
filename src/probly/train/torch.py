@@ -1,4 +1,10 @@
-"""Generic torch training blocks shared by the method training functions."""
+"""Torch training loop and loss evaluation used by the method training functions.
+
+The loop is plain supervised training without mixed precision, distributed training, or resuming from
+checkpoints. It exists so that a method can be trained without writing a loop. A custom loop can call the losses in
+``probly.losses`` and the method helpers directly. The optimizer and epoch defaults of the method training functions
+are the CIFAR-10 settings of probly_benchmark and are not tuned for other data.
+"""
 
 from __future__ import annotations
 
@@ -92,7 +98,7 @@ def train_model(
     Args:
         model: The model to train in place; left in eval mode afterwards.
         train_loader: Loader yielding ``(inputs, targets)`` batches.
-        loss_fn: Per-batch loss on ``(output, targets)``.
+        loss_fn: Per-batch loss on ``(output, targets)``, returning the batch mean.
         val_loader: Optional validation loader; adds ``"val_loss"``, the mean ``loss_fn`` over it, to the metrics.
         epochs: Maximum number of epochs. Default is 10.
         optimizer_factory: Callable mapping ``model.parameters()`` to an optimizer. Default is Adam with
@@ -129,7 +135,7 @@ def train_model(
             scheduler.step()
         metrics = {
             **(extra_metrics or {}),
-            "epoch": float(epoch),
+            "epoch": epoch,
             "running_loss": running_loss / num_samples,
         }
         if val_loader is not None:

@@ -68,7 +68,7 @@ def train_credal_dro[**In, Out](
             scheduler_factory=scheduler_factory,
             device=device,
             on_epoch=on_epoch,
-            extra_metrics={"member": float(i), "delta": delta},
+            extra_metrics={"member": i, "delta": delta},
         )
 
 

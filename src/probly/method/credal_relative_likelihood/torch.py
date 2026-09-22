@@ -72,7 +72,7 @@ def train_credal_relative_likelihood[**In, Out](
         scheduler_factory=scheduler_factory,
         device=device,
         on_epoch=on_epoch,
-        extra_metrics={"member": 0.0},
+        extra_metrics={"member": 0},
     )
     max_ll = -evaluate_model_mean_loss(reference, train_loader, F.cross_entropy, device=device)
 
@@ -94,7 +94,7 @@ def train_credal_relative_likelihood[**In, Out](
             scheduler_factory=scheduler_factory,
             device=device,
             on_epoch=rl_hook,
-            extra_metrics={"member": float(i), "threshold": threshold},
+            extra_metrics={"member": i, "threshold": threshold},
         )
 
 
