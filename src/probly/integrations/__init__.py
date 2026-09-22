@@ -60,6 +60,7 @@ _GPYTORCH_MODELS = (GPYTORCH_EXACT_GP, GPYTORCH_APPROXIMATE_GP)
 
 
 @predict_raw.delayed_register(_GPYTORCH_MODELS)
+@representer.delayed_register(_GPYTORCH_MODELS)
 def _(_: type[object]) -> None:
     from . import gpytorch as gpytorch  # noqa: PLC0415
 

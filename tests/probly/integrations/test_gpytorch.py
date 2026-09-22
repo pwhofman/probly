@@ -13,16 +13,19 @@ pytest.importorskip("gpytorch")
 
 import gpytorch
 from gpytorch.distributions import MultitaskMultivariateNormal, MultivariateNormal
-from gpytorch.likelihoods import GaussianLikelihood, MultitaskGaussianLikelihood
+from gpytorch.likelihoods import BernoulliLikelihood, GaussianLikelihood, MultitaskGaussianLikelihood, SoftmaxLikelihood
 import torch
 
 from probly.predictor import GaussianDistributionPredictor, predict
-from probly.quantification import SecondOrderVarianceDecomposition
+from probly.quantification import SecondOrderEntropyDecomposition, SecondOrderVarianceDecomposition
 from probly.quantification.measure.variance import variance
+from probly.representation.distribution.torch_bernoulli import TorchBernoulliDistributionSample
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistributionSample
 from probly.representation.distribution.torch_gaussian import (
     TorchGaussianDistribution,
     TorchGaussianDistributionSample,
 )
+from probly.representer import representer
 
 NUM_TRAIN = 24
 NUM_CLASSES = 3
@@ -190,3 +193,124 @@ assert 'gpytorch' not in sys.modules, 'gpytorch was imported eagerly'
 """
     result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=False)  # noqa: S603
     assert result.returncode == 0, result.stderr
+
+
+@pytest.fixture
+def softmax_svgp() -> tuple[_MultitaskSVGP, SoftmaxLikelihood]:
+    torch.manual_seed(0)
+    x = torch.randn(NUM_TRAIN, 2)
+    y = (x[:, 0] > 0).long() + (x[:, 1] > 0).long()  # class labels 0, 1, 2
+    model = _MultitaskSVGP(x[:6], NUM_CLASSES)
+    likelihood = SoftmaxLikelihood(num_features=NUM_CLASSES, num_classes=NUM_CLASSES)
+    mll = gpytorch.mlls.VariationalELBO(likelihood, model, num_data=NUM_TRAIN)
+    optimizer = torch.optim.Adam([*model.parameters(), *likelihood.parameters()], lr=0.05)
+    model.train()
+    likelihood.train()
+    for _ in range(10):
+        optimizer.zero_grad()
+        loss = -mll(model(x), y)  # ty: ignore[unsupported-operator]
+        loss.backward()
+        optimizer.step()
+    return model.eval(), likelihood.eval()
+
+
+def test_softmax_representer_returns_categorical_sample(softmax_svgp: tuple[_MultitaskSVGP, SoftmaxLikelihood]) -> None:
+    model, likelihood = softmax_svgp
+    rep = representer(model, num_samples=8, likelihood=likelihood, sample_axis=0)
+    with torch.no_grad():
+        sample = rep.represent(torch.randn(4, 2))
+
+    assert isinstance(sample, TorchCategoricalDistributionSample)
+    assert sample.sample_dim == 0
+    probabilities = sample.tensor.probabilities
+    assert probabilities.shape == (8, 4, NUM_CLASSES)
+    assert torch.allclose(probabilities.sum(dim=-1), torch.ones(8, 4))
+
+
+def test_softmax_representer_default_sample_axis_is_last_batch_axis(
+    softmax_svgp: tuple[_MultitaskSVGP, SoftmaxLikelihood],
+) -> None:
+    model, likelihood = softmax_svgp
+    with torch.no_grad():
+        sample = representer(model, num_samples=8, likelihood=likelihood).represent(torch.randn(4, 2))
+
+    assert sample.sample_dim == 1
+    assert sample.tensor.probabilities.shape == (4, 8, NUM_CLASSES)
+
+
+def test_softmax_representer_entropy_decomposition(softmax_svgp: tuple[_MultitaskSVGP, SoftmaxLikelihood]) -> None:
+    model, likelihood = softmax_svgp
+    with torch.no_grad():
+        sample = representer(model, num_samples=16, likelihood=likelihood).represent(torch.randn(5, 2))
+
+    decomposition = SecondOrderEntropyDecomposition(sample)
+
+    assert decomposition.total.shape == (5,)
+    assert torch.all(torch.isfinite(decomposition.total))
+    assert torch.all(decomposition.epistemic >= -1e-6)
+
+
+def test_softmax_representer_keeps_input_gradients(softmax_svgp: tuple[_MultitaskSVGP, SoftmaxLikelihood]) -> None:
+    model, likelihood = softmax_svgp
+    x = torch.randn(3, 2, requires_grad=True)
+
+    sample = representer(model, num_samples=8, likelihood=likelihood).represent(x)
+    (gradient,) = torch.autograd.grad(sample.tensor.probabilities.sum(), x)
+
+    assert torch.all(torch.isfinite(gradient))
+
+
+def test_bernoulli_representer_returns_bernoulli_sample() -> None:
+    torch.manual_seed(0)
+    model = _ScalarSVGP(torch.randn(6, 2)).eval()
+    rep = representer(model, num_samples=8, likelihood=BernoulliLikelihood(), sample_axis=0)
+    with torch.no_grad():
+        sample = rep.represent(torch.randn(4, 2))
+
+    assert isinstance(sample, TorchBernoulliDistributionSample)
+    assert sample.sample_dim == 0
+    class_one = sample.tensor.tensor
+    assert class_one.shape == (8, 4)
+    assert torch.all((class_one >= 0.0) & (class_one <= 1.0))
+    assert sample.tensor.probabilities.shape == (8, 4, 2)
+
+
+def test_bernoulli_representer_with_two_draws_keeps_sample_axis() -> None:
+    # Guards against factory heuristics that treat a trailing axis of size <= 2 as a class axis.
+    torch.manual_seed(0)
+    model = _ScalarSVGP(torch.randn(6, 2)).eval()
+    with torch.no_grad():
+        sample = representer(model, num_samples=2, likelihood=BernoulliLikelihood()).represent(torch.randn(4, 2))
+
+    assert sample.sample_dim == 1
+    assert sample.tensor.tensor.shape == (4, 2)
+
+
+def test_representer_predict_lists_one_distribution_per_draw(
+    softmax_svgp: tuple[_MultitaskSVGP, SoftmaxLikelihood],
+) -> None:
+    model, likelihood = softmax_svgp
+    rep = representer(model, num_samples=3, likelihood=likelihood)
+    with torch.no_grad():
+        draws = list(rep._predict(torch.randn(4, 2)))  # noqa: SLF001
+
+    assert len(draws) == 3
+    assert all(draw.probabilities.shape == (4, NUM_CLASSES) for draw in draws)
+
+
+def test_representer_rejects_gaussian_likelihood(exact_gp: _ExactGP) -> None:
+    with pytest.raises(NotImplementedError, match="GaussianLikelihood"):
+        representer(exact_gp, num_samples=4)
+
+
+def test_representer_requires_likelihood_for_approximate_gp() -> None:
+    model = _ScalarSVGP(torch.randn(6, 2)).eval()
+    with pytest.raises(TypeError, match="likelihood"):
+        representer(model, num_samples=4)
+
+
+def test_representer_requires_num_samples(exact_gp: _ExactGP) -> None:
+    # The explicit class registration must win over the DummyRepresenter that the
+    # GaussianDistributionPredictor protocol would otherwise provide.
+    with pytest.raises(TypeError, match="num_samples"):
+        representer(exact_gp)
