@@ -5,7 +5,7 @@ Second order: a parameterized Dirichlet
 The other encoding of the second-order rung: instead of drawing members, state the
 second-order distribution in closed form. Over the simplex the usual choice is a
 Dirichlet, here an
-:class:`~probly.representation.distribution.array_dirichlet.ArrayDirichletDistribution`,
+:class:`~probly.representation.distribution.numpy_dirichlet.NumpyDirichletDistribution`,
 which a single forward pass can produce.
 
 The concentration parameters carry both readings at once: their normalization is the mean
@@ -19,14 +19,14 @@ import numpy as np
 from scipy.stats import dirichlet
 
 from probly.plot import PlotConfig
-from probly.representation.distribution import ArrayDirichletDistribution
+from probly.representation.distribution import NumpyDirichletDistribution
 
 CLASSES = ["cat", "dog", "fox"]
 config = PlotConfig()
 
 # Two inputs with the same mean prediction but very different evidence.
 # Shape: (instances, classes)
-distribution = ArrayDirichletDistribution(alphas=np.array([[18.0, 14.0, 8.0], [0.9, 0.7, 0.4]]))
+distribution = NumpyDirichletDistribution(alphas=np.array([[18.0, 14.0, 8.0], [0.9, 0.7, 0.4]]))
 
 print("Shape (batch dims):", distribution.shape)
 print("Concentration parameters:\n", distribution.alphas)

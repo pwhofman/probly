@@ -7,7 +7,7 @@ The bottom two rungs of the representation ladder, on the same three-class probl
 
 1. a **point prediction**, one outcome and nothing else, and
 2. a **first-order distribution**, one probability distribution over the outcomes, here an
-   :class:`~probly.representation.distribution.array_categorical.ArrayProbabilityCategoricalDistribution`.
+   :class:`~probly.representation.distribution.numpy_categorical.NumpyProbabilityCategoricalDistribution`.
 
 The two distributions below have the same ``argmax``, so they collapse to the same point
 prediction. What separates them is only visible one rung up.
@@ -21,15 +21,15 @@ from scipy.stats import norm
 
 from probly.plot import PlotConfig
 from probly.representation.distribution import (
-    ArrayGaussianDistribution,
-    ArrayProbabilityCategoricalDistribution,
+    NumpyGaussianDistribution,
+    NumpyProbabilityCategoricalDistribution,
 )
 
 CLASSES = ["cat", "dog", "fox"]
 config = PlotConfig()
 
 # Two predictions, one per input. Shape: (instances, classes) = (2, 3)
-distribution = ArrayProbabilityCategoricalDistribution(
+distribution = NumpyProbabilityCategoricalDistribution(
     array=np.array([[0.49, 0.51, 0.00], [0.33, 0.34, 0.33]]),
 )
 
@@ -69,9 +69,9 @@ fig.tight_layout()
 
 # %%
 # For regression the same rung is a distribution over the real line, for instance an
-# :class:`~probly.representation.distribution.array_gaussian.ArrayGaussianDistribution`
+# :class:`~probly.representation.distribution.numpy_gaussian.NumpyGaussianDistribution`
 # holding a mean and a variance per instance.
-gaussian = ArrayGaussianDistribution(mean=np.array([3.2, 3.2]), var=np.array([0.05, 0.9]))
+gaussian = NumpyGaussianDistribution(mean=np.array([3.2, 3.2]), var=np.array([0.05, 0.9]))
 print("Means:", gaussian.mean)
 print("Standard deviations:", gaussian.std)
 

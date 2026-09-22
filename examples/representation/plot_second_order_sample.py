@@ -5,7 +5,7 @@ Second order: a sample of distributions
 A sampled second-order representation is a finite collection of first-order
 distributions -- ensemble members, dropout passes, posterior weight samples. In
 ``probly`` that is an
-:class:`~probly.representation.distribution.array_categorical.ArrayCategoricalDistributionSample`.
+:class:`~probly.representation.distribution.numpy_categorical.NumpyCategoricalDistributionSample`.
 
 Drawn on the 3-simplex, each member is one point. How far the points are apart is the
 epistemic part: tightly clustered members mean the odds are pinned down, scattered
@@ -20,8 +20,8 @@ import numpy as np
 
 from probly.plot import PlotConfig
 from probly.representation.distribution import (
-    ArrayCategoricalDistributionSample,
-    ArrayProbabilityCategoricalDistribution,
+    NumpyCategoricalDistributionSample,
+    NumpyProbabilityCategoricalDistribution,
 )
 
 CLASSES = ["cat", "dog", "fox"]
@@ -34,8 +34,8 @@ spread = np.array([0.01, 0.30])  # input 0 agrees, input 1 does not
 members = np.clip(center + spread[None, :, None] * rng.normal(size=(10, 2, 3)), 1e-6, None)
 members /= members.sum(axis=-1, keepdims=True)
 
-sample = ArrayCategoricalDistributionSample(
-    array=ArrayProbabilityCategoricalDistribution(array=members),
+sample = NumpyCategoricalDistributionSample(
+    array=NumpyProbabilityCategoricalDistribution(array=members),
     sample_axis=0,
 )
 
