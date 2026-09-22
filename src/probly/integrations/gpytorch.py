@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any, cast
+
 from gpytorch.models import ApproximateGP, ExactGP
-import torch  # noqa: BKN002  # GPyTorch models are torch modules; this module is their torch bridge.
 
 from probly.predictor import predict_raw
+
+if TYPE_CHECKING:
+    import torch
 
 
 @predict_raw.register(ExactGP)
@@ -27,7 +31,8 @@ def gpytorch_exact_predict_raw[**In](
     Returns:
         A ``(mean, variance)`` tuple that ``predict`` turns into a ``TorchGaussianDistribution``.
     """
-    predictive = model.likelihood(model(*args, **kwargs))
+    # GPyTorch types ``likelihood`` as optional and ``__call__`` narrowly; ExactGP always stores a likelihood.
+    predictive = cast("Any", model).likelihood(cast("Any", model)(*args, **kwargs))
     return predictive.mean, predictive.variance
 
 
@@ -49,5 +54,5 @@ def gpytorch_approximate_predict_raw[**In](
     Returns:
         A ``(mean, variance)`` tuple that ``predict`` turns into a ``TorchGaussianDistribution``.
     """
-    latent = model(*args, **kwargs)
+    latent = cast("Any", model)(*args, **kwargs)
     return latent.mean, latent.variance
