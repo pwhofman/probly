@@ -2167,8 +2167,7 @@ class GaussianMixtureHead(nn.Module):
                 continue
             z = features[mask]
             mu = z.mean(0)
-            centered = z - mu
-            cov = (centered.T @ centered) / (count - 1)
+            cov = torch.cov(z.T)
             means[c] = mu
             for jitter_eps in self._jitters:
                 try:
