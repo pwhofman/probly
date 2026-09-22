@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from typing import Any, cast
 
 import pytest
 
@@ -96,7 +97,8 @@ def exact_gp(train_data: tuple[torch.Tensor, torch.Tensor]) -> _ExactGP:
     model.train()
     for _ in range(10):
         optimizer.zero_grad()
-        (-mll(model(x), y)).backward()
+        loss = -mll(model(x), y)  # ty: ignore[unsupported-operator]
+        loss.backward()
         optimizer.step()
     return model.eval()
 
@@ -110,7 +112,7 @@ def test_exact_gp_predict_returns_predictive_gaussian(exact_gp: _ExactGP) -> Non
     with torch.no_grad():
         prediction = predict(exact_gp, x)
         latent = exact_gp(x)
-        predictive = exact_gp.likelihood(latent)
+        predictive = cast("Any", exact_gp).likelihood(latent)
 
     assert isinstance(prediction, TorchGaussianDistribution)
     assert torch.allclose(prediction.mean, predictive.mean)
@@ -158,7 +160,7 @@ def test_stacked_exact_gps_form_gaussian_sample(train_data: tuple[torch.Tensor, 
     members = []
     for lengthscale in (0.05, 0.3):
         model = _ExactGP(x, y, GaussianLikelihood()).eval()
-        model.covar_module.base_kernel.lengthscale = lengthscale
+        model.covar_module.base_kernel.lengthscale = torch.tensor(lengthscale)
         members.append(model)
     test_x = torch.tensor([0.5, 1.5])
     with torch.no_grad():
