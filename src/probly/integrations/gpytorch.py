@@ -142,10 +142,19 @@ class GpytorchClassificationRepresenter[**In, S: Sample](Sampler[In, Categorical
         """
         latent = cast("Any", self.predictor)(*args, **kwargs)
         draws = latent.rsample(torch.Size([self.num_samples]))
-        conditional = cast("Any", self.likelihood)(draws)
+        likelihood = cast("Any", self.likelihood)
         if self._is_bernoulli:
-            return conditional.probs
-        return conditional.logits
+            return likelihood(draws).probs
+        # SoftmaxLikelihood.forward treats inputs whose data axis equals num_features as legacy
+        # (num_features x num_data) tensors and silently transposes them. Draws from a multitask
+        # posterior are (num_samples, num_data, num_features), so duplicate one data row to break
+        # the tie and drop it again afterwards.
+        num_data = draws.shape[-2]
+        padded = num_data == likelihood.num_features
+        if padded:
+            draws = torch.cat([draws, draws[..., :1, :]], dim=-2)
+        logits = likelihood(draws).logits
+        return logits[..., :num_data, :] if padded else logits
 
     def _distribution(self, tensor: torch.Tensor) -> CategoricalDistribution:
         if self._is_bernoulli:

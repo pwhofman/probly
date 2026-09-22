@@ -5,6 +5,7 @@ from __future__ import annotations
 import subprocess
 import sys
 from typing import Any, cast
+import warnings
 
 import pytest
 
@@ -251,6 +252,23 @@ def test_softmax_representer_entropy_decomposition(softmax_svgp: tuple[_Multitas
     assert decomposition.total.shape == (5,)
     assert torch.all(torch.isfinite(decomposition.total))
     assert torch.all(decomposition.epistemic >= -1e-6)
+
+
+def test_softmax_representer_handles_batch_size_equal_to_num_classes(
+    softmax_svgp: tuple[_MultitaskSVGP, SoftmaxLikelihood],
+) -> None:
+    # GPyTorch's softmax likelihood misreads a (num_classes, num_classes) input as its legacy layout
+    # and transposes it, emitting a DeprecationWarning. The representer must avoid that path.
+    model, likelihood = softmax_svgp
+    x = torch.randn(NUM_CLASSES, 2)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        with torch.no_grad():
+            sample = representer(model, num_samples=8, likelihood=likelihood, sample_axis=0).represent(x)
+
+    probabilities = sample.tensor.probabilities
+    assert probabilities.shape == (8, NUM_CLASSES, NUM_CLASSES)
+    assert torch.allclose(probabilities.sum(dim=-1), torch.ones(8, NUM_CLASSES))
 
 
 def test_softmax_representer_keeps_input_gradients(softmax_svgp: tuple[_MultitaskSVGP, SoftmaxLikelihood]) -> None:
