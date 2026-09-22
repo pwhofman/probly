@@ -54,6 +54,8 @@ another. In ``probly`` each stage is one import, each stage is swappable
 independently, and the interface between two stages is a
 :ref:`representation <uq-representing>`, never a framework-specific object.
 
+.. include:: /_includes/two_moons_setup.rst
+
 .. _pillars-one-pipeline:
 
 One Pipeline, Four Stages
@@ -114,7 +116,7 @@ attaches a normalizing-flow head.
 The two flavours are one axis; which namespace a name lives in is another. One
 example of each, crossed:
 
-.. code-block:: python
+.. jupyter-execute::
 
     from probly.transformation import dropout   # a primitive, applied per layer
     from probly.method import sngp              # a named method from the literature
@@ -160,7 +162,7 @@ JAX implementation.
 
 The *representer* is the adapter that builds one:
 
-.. code-block:: python
+.. jupyter-execute::
 
     from probly.representer import representer
 
@@ -178,7 +180,7 @@ dispatches on the predictor type and returns the representer *registered* for
 it; naming a representer class instead overrides that choice on the very same
 model:
 
-.. code-block:: python
+.. jupyter-execute::
 
     from probly.representation.credal_set import create_convex_credal_set
     from probly.representer import ConvexCredalSetRepresenter, representer
@@ -225,13 +227,14 @@ Pillar 3: Quantification
 Quantification maps a representation to a number. There are two levels of
 entry point, and the difference between them matters:
 
-.. code-block:: python
+.. jupyter-execute::
 
+    from probly.decider import categorical_from_mean
     from probly.quantification import decompose, entropy, measure
 
-    h = entropy(out)        # a named measure, applied directly
-    m = measure(out)        # the canonical notion for this representation
-    uq = decompose(out)     # -> .total, .aleatoric, .epistemic
+    h = entropy(categorical_from_mean(out))  # a named measure, applied directly
+    m = measure(out)                         # the canonical notion for this representation
+    uq = decompose(out)                      # -> .total, .aleatoric, .epistemic
 
 The named measures --- ``entropy``, ``mutual_information``, ``vacuity``,
 ``sample_variance``, ``spectral_entropy``, and the rest --- are ordinary
@@ -252,7 +255,7 @@ decomposition that does not exist for your representation raises
 for a second-order sample that is ``SecondOrderEntropyDecomposition``.
 Constructing a decomposition directly is how you choose a different one:
 
-.. code-block:: python
+.. jupyter-execute::
 
     from probly.quantification import (
         BrierLoss,
@@ -298,21 +301,32 @@ ships the three downstream tasks that uncertainty is usually justified by:
 :Active learning: use uncertainty to choose the next labels, and compare the
     resulting learning curve against random acquisition.
 
-.. code-block:: python
+.. jupyter-execute::
+    :hide-code:
+
+    # The epistemic scores the evaluation blocks consume, from the MC dropout
+    # model built above: one set per split, plus the 0/1 losses.
+    with torch.no_grad():
+        eu_id = decompose(representer(mc, num_samples=50).represent(data_id)).epistemic
+        eu_ood = decompose(representer(mc, num_samples=50).represent(data_ood)).epistemic
+        # a torch criterion pairs with torch losses: selective_prediction
+        # dispatches on the backend and does not mix the two.
+        losses = (net(data_id).argmax(-1) != labels).float()
+
+.. jupyter-execute::
 
     from probly.evaluation.ood import evaluate_ood
 
-    print(evaluate_ood(eu_id, eu_ood))   # {'auroc': 0.94}
+    print(evaluate_ood(eu_id, eu_ood))
 
 Both entry points return more than the headline number if you ask them to:
 
-.. code-block:: python
+.. jupyter-execute::
 
     from probly.evaluation.selective_prediction import selective_prediction
 
     # the operating point, not just the ranking
-    evaluate_ood(eu_id, eu_ood, metrics=["auroc", "aupr", "fpr@0.95"])
-    # -> {'auroc': 0.998, 'aupr': 0.998, 'fpr@0.95': 0.006}
+    print(evaluate_ood(eu_id, eu_ood, metrics=["auroc", "aupr", "fpr@0.95"]))
 
     # the risk-coverage curve, not just its area
     aurc, risk_curve = selective_prediction(eu_id, losses, n_bins=50)

@@ -77,6 +77,7 @@ extensions = [
     "sphinx.ext.autosectionlabel",  # for auto-generating section labels
     "sphinxcontrib.bibtex",  # for bibliography support
     "sphinx_design",  # grid and card directives used by the methods guide
+    "jupyter_sphinx",  # executes narrative code blocks so their printed output regenerates
 ]
 
 suppress_warnings = []
@@ -125,6 +126,8 @@ exclude_patterns = [
     "../../notebooks/**",
     "../../supporting_files/**",
     "sg_execution_times.rst",
+    # Hidden setup snippets pulled in with ``.. include::``; not pages of their own.
+    "_includes/**",
 ]
 
 
