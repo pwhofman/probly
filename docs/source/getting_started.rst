@@ -3,40 +3,23 @@
 Getting Started
 ================
 
-``probly`` is an open source library giving easy access to uncertainty representation and quantification by allowing
-the transformation of any PyTorch, Flax/JAX or scikit-learn model into an uncertainty aware one with a single line of code.
-It offers an extensive collection of methods, representations as well as their corresponding quantification measures,
-and by simply choosing one of the many methods, your provided model can become uncertainty aware.
+``probly`` turns any PyTorch, Flax/JAX or scikit-learn model into an uncertainty-aware one in a
+single line of code, and offers methods, representations and quantification measures in one place,
+without committing you to a framework or to a particular view of what uncertainty is.
 
-``probly`` aims to to unify what already exists in one easy to use implementation without hard dependencies to only one
-framework or particular approach to modeling uncertainty.
+Machine learning is increasingly deployed in safety-critical settings, where a prediction alone is
+not enough: one also wants to know how far it can be trusted. ``probly`` makes that quantifiable,
+and separates the two sources that matter in practice, aleatoric uncertainty arising from noise in
+the data and epistemic uncertainty arising from a lack of knowledge, which can be reduced with more
+data or a better model.
 
-This section serves as a fundamental overview of the importance of uncertainty as well as the basic functions of ``probly``
-using an easy to follow example. To follow along start with the :ref:`installation` instruction. For a more detailed explanation
-on ``probly``, its component as foundational theories, or additional reading material please refer to the section
-:ref:`next_steps`.
-
-**Uncertainty**
-
-As machine learning is increasingly being used in real-world application, especially in safety-critical fields it becomes
-imperative to represent and quantify uncertainty, as the question poses "How can we trust the predictions of machine learning
-systems?"
-
-At its core uncertainty describes the lack of confidence or precision in a model's prediction, mainly stemming from imperfect or
-incomplete information, for example through noise in observation.
-Using probability provides a way of handling the randomness of predictive modeling by sorting the prediction of an instance into
-a probability distribution.
-Being able to quantify a model is necessary as it gives a measure on how reliable not only the model, but each prediction is.
-Uncertainty can be divided into two categories for an even better interpretation of its reliance: Epistemic and Aleatoric uncertainty.
-Epistemic uncertainty refers to lack of knowledge and therefore can be reduced, whereas aleatoric uncertainty stems from the inherent randomness,
-which cannot be reduced.
-In practice it is worthwhile trying to reduce the epistemic uncertainty by improving or changing model.
-For a more detailed explanation on uncertainty in machine learning and its relevance in practice refer to ~link~.
+To follow the example below, start with the :ref:`installation` instructions; for the theory behind
+it and further reading, see :ref:`next_steps`.
 
 How Probly Works
 -----------------
 
-``probly`` offers all the relevant tools in one place to transform any model into an uncertainty aware one in a four-stage process:
+A model becomes uncertainty-aware in four stages:
 
 .. image:: _static/readme/from_paper/paper_workflow_light.png
 
