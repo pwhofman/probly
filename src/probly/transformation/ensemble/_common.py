@@ -47,11 +47,11 @@ class EnsembleCategoricalDistributionPredictor[**In, Out: CategoricalDistributio
 
 @runtime_checkable
 class EnsembleDirichletDistributionPredictor[**In, Out: DirichletDistribution](EnsemblePredictor[In, Out], Protocol):
-    """Protocol for ensemble predictors that return a categorical distribution."""
+    """Protocol for ensemble predictors that return a Dirichlet distribution."""
 
     @classmethod
     def __instancehook__(cls, instance: object) -> bool:
-        if isinstance(instance, Iterable) and all(isinstance(p, DirichletDistributionPredictor) for p in instance):
+        if isinstance(instance, list | tuple) and all(isinstance(p, DirichletDistributionPredictor) for p in instance):
             return True
         return NotImplemented
 
