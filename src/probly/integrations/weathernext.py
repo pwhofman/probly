@@ -4,7 +4,7 @@ WeatherNext models (https://github.com/google-deepmind/weathernext) are JAX func
 conditions to an xarray forecast and sample one ensemble member per random key. Wrapping such a function in
 :class:`WeatherNextPredictor` makes it a stochastic probly predictor: every call draws a fresh member, and
 ``representer(predictor, num_samples=...)`` collects an ensemble and returns one
-:class:`~probly.representation.sample.array.ArraySample` per forecast variable, ready for quantification.
+:class:`~probly.representation.sample.numpy.NumpySample` per forecast variable, ready for quantification.
 
 Note that only sampling-based consumption is supported: probly's model transformations (e.g. ``dropout``)
 cannot be applied because the wrapped model is an opaque function without a torch or flax module tree, and
@@ -18,7 +18,7 @@ from typing import Any, override
 import numpy as np
 
 from probly.predictor import RandomPredictor
-from probly.representation.sample.array import ArraySample
+from probly.representation.sample.numpy import NumpySample
 from probly.representer._representer import Representer, representer
 
 DEFAULT_NUM_SAMPLES = 8
@@ -76,17 +76,17 @@ class WeatherNextRepresenter(Representer[Any, Any, Any, Any]):
         self.num_samples = num_samples
 
     @override
-    def represent(self, *args: Any, **kwargs: Any) -> dict[str, ArraySample]:
+    def represent(self, *args: Any, **kwargs: Any) -> dict[str, NumpySample]:
         """Forecast ``num_samples`` members and stack them into one sample per variable."""
         if self.predictor.ensemble_fn is not None:
             seeds = [self.predictor.seed + i for i in range(self.num_samples)]
             forecast = self.predictor.ensemble_fn(seeds, *args, **kwargs)
             return {
-                str(name): ArraySample(np.asarray(forecast[name].data), sample_axis=0) for name in forecast.data_vars
+                str(name): NumpySample(np.asarray(forecast[name].data), sample_axis=0) for name in forecast.data_vars
             }
         members = [self.predictor(*args, **kwargs) for _ in range(self.num_samples)]
         return {
-            str(name): ArraySample(
+            str(name): NumpySample(
                 np.stack([np.asarray(member[name].data) for member in members], axis=0), sample_axis=0
             )
             for name in members[0].data_vars

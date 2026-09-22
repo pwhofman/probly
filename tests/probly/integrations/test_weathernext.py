@@ -8,7 +8,7 @@ import pytest
 from probly.integrations.weathernext import WeatherNextPredictor, WeatherNextRepresenter
 from probly.predictor import RandomPredictor
 from probly.quantification import quantify
-from probly.representation.sample.array import ArraySample
+from probly.representation.sample.numpy import NumpySample
 from probly.representer import representer
 
 
@@ -63,7 +63,7 @@ def test_representer_returns_per_variable_samples(predictor: WeatherNextPredicto
     samples = rep.represent(np.zeros((2, 3)))
     assert set(samples) == {"temperature", "wind"}
     for sample in samples.values():
-        assert isinstance(sample, ArraySample)
+        assert isinstance(sample, NumpySample)
         assert sample.array.shape == (5, 2, 3)
         assert sample.sample_axis == 0
 
