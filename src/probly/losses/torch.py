@@ -7,7 +7,7 @@ from typing import cast
 
 import torch
 from torch import Tensor, nn
-from torch.distributions import Dirichlet, kl_divergence
+from torch.distributions import Dirichlet, Gamma, LogNormal, StudentT, kl_divergence
 from torch.nn import functional as F
 from torch.special import digamma
 
@@ -322,7 +322,7 @@ def t_vbll_loss(
     cov = weight_variance + 1.0
 
     expected_cov = torch.exp(layer.noise_log_rate - layer.noise_log_dof + 1.0)
-    expected_prec = torch.exp(layer.noise_log_dof - layer.noise_log_rate)
+    expected_prec = layer.noise.mean
     bound = _reduced_kn_bound(mean, cov, targets, layer.alpha, expected_cov, expected_prec)
 
     gamma_kl = torch.distributions.kl_divergence(layer.noise, layer.noise_prior).sum(dim=-1)
@@ -365,8 +365,9 @@ def het_vbll_loss(
     cov = weight_variance + 1.0
 
     log_noise_mean, log_noise_var = layer.log_noise_moments(features)
-    expected_cov = torch.exp(log_noise_mean + 0.5 * log_noise_var)
-    expected_prec = torch.exp(-log_noise_mean + 0.5 * log_noise_var)
+    log_noise_std = torch.sqrt(log_noise_var)
+    expected_cov = LogNormal(log_noise_mean, log_noise_std).mean
+    expected_prec = LogNormal(-log_noise_mean, log_noise_std).mean
     bound = _reduced_kn_bound(mean, cov, targets, layer.alpha, expected_cov, expected_prec)
 
     weight_kl = _gaussian_weight_kl(
@@ -492,14 +493,12 @@ def evidential_mse_loss(alphas: Tensor, targets: Tensor) -> Tensor:
     Returns:
         Scalar evidential mean squared error loss averaged over the batch.
     """
-    strengths = alphas.sum(dim=1)
+    dirichlet = Dirichlet(alphas, validate_args=False)
     y = F.one_hot(targets, alphas.size(1)).float()
-    p = alphas / strengths[:, None]
 
-    err = (y - p) ** 2
-    var = p * (1 - p) / (strengths[:, None] + 1)
+    err = (y - dirichlet.mean) ** 2
 
-    loss = torch.mean(torch.sum(err + var, dim=1))
+    loss = torch.mean(torch.sum(err + dirichlet.variance, dim=1))
 
     return loss
 
@@ -519,19 +518,29 @@ def evidential_kl_divergence(alphas: Tensor, targets: Tensor) -> Tensor:
     """
     y = F.one_hot(targets, alphas.size(1))
     alphas_tilde = y + (1 - y) * alphas
-    strengths_tilde = alphas_tilde.sum(dim=1)
 
-    k = torch.full((alphas.size(0),), alphas.size(1), device=alphas.device)
+    uniform = Dirichlet(torch.ones_like(alphas_tilde), validate_args=False)
+    return kl_divergence(Dirichlet(alphas_tilde, validate_args=False), uniform).mean()
 
-    first = torch.lgamma(strengths_tilde) - torch.lgamma(k) - torch.sum(torch.lgamma(alphas_tilde), dim=1)
-    second = torch.sum(
-        (alphas_tilde - 1) * (torch.digamma(alphas_tilde) - torch.digamma(strengths_tilde[:, None])),
-        dim=1,
-    )
 
-    loss = torch.mean(first + second)
+def _nig_predictive(gamma: Tensor, nu: Tensor, alpha: Tensor, beta: Tensor) -> StudentT:
+    """Student-t marginal of a Normal-Inverse-Gamma distribution over the target.
 
-    return loss
+    Integrating the Gaussian likelihood against the NIG prior gives a Student-t
+    distribution with ``2 * alpha`` degrees of freedom, location ``gamma``, and
+    scale ``sqrt(beta * (1 + nu) / (nu * alpha))``.
+
+    Args:
+        gamma: NIG location parameters.
+        nu: NIG precision-scaling parameters.
+        alpha: NIG shape parameters.
+        beta: NIG scale parameters.
+
+    Returns:
+        The predictive Student-t distribution with the broadcast shape of the inputs.
+    """
+    scale = torch.sqrt(beta * (1.0 + nu) / (nu * alpha))
+    return StudentT(2.0 * alpha, gamma, scale, validate_args=False)
 
 
 def evidential_nignll_loss(inputs: dict[str, Tensor], targets: Tensor) -> Tensor:
@@ -548,16 +557,8 @@ def evidential_nignll_loss(inputs: dict[str, Tensor], targets: Tensor) -> Tensor
     Returns:
         Scalar NIG negative log-likelihood loss averaged over the batch.
     """
-    omega = 2 * inputs["beta"] * (1 + inputs["nu"])
-    loss = (
-        0.5 * torch.log(torch.pi / inputs["nu"])
-        - inputs["alpha"] * torch.log(omega)
-        + (inputs["alpha"] + 0.5) * torch.log((targets - inputs["gamma"]) ** 2 * inputs["nu"] + omega)
-        + torch.lgamma(inputs["alpha"])
-        - torch.lgamma(inputs["alpha"] + 0.5)
-    ).mean()
-
-    return loss
+    predictive = _nig_predictive(inputs["gamma"], inputs["nu"], inputs["alpha"], inputs["beta"])
+    return -predictive.log_prob(targets).mean()
 
 
 def evidential_regression_regularization(inputs: dict[str, Tensor], targets: Tensor) -> Tensor:
@@ -973,15 +974,7 @@ def der_loss(
         Scalar Deep Evidential Regression loss averaged over the batch.
     """
     eps = 1e-8
-    two_bv = 2.0 * beta * (1.0 + kappa) + eps
-
-    lnll = (
-        0.5 * torch.log(torch.pi / (kappa + eps))
-        - alpha * torch.log(two_bv)
-        + (alpha + 0.5) * torch.log(kappa * (y - mu) ** 2 + two_bv)
-        + torch.lgamma(alpha)
-        - torch.lgamma(alpha + 0.5)
-    )
+    lnll = -_nig_predictive(mu, kappa + eps, alpha, beta + eps).log_prob(y)
 
     evidence = 2.0 * kappa + alpha
     reg = torch.abs(y - mu) * evidence
@@ -1102,13 +1095,7 @@ def rpn_ng_kl(
     ratio_kappa = kappa / kappa0
     term_mu = 0.5 * (alpha / beta) * kappa0 * (mu - mu0).pow(2)
     term_kappa = 0.5 * (ratio_kappa - torch.log(ratio_kappa) - 1.0)
-    term_gamma = (
-        alpha0 * torch.log(beta / beta0)
-        - torch.lgamma(alpha)
-        + torch.lgamma(alpha0)
-        + (alpha - alpha0) * torch.digamma(alpha)
-        - (beta - beta0) * (alpha / beta)
-    )
+    term_gamma = kl_divergence(Gamma(alpha, beta, validate_args=False), Gamma(alpha0, beta0, validate_args=False))
 
     loss = (term_mu + term_kappa + term_gamma).mean()
 
