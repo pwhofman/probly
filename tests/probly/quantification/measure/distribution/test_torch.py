@@ -6,9 +6,10 @@ import pytest
 
 pytest.importorskip("torch")
 import torch
-from torch.distributions import Categorical
+from torch.distributions import Categorical, Normal
 from torch.distributions.kl import kl_divergence
 
+from probly.quantification import SecondOrderEntropyDecomposition
 from probly.quantification.measure.distribution import (
     conditional_entropy,
     dempster_shafer_uncertainty,
@@ -21,11 +22,16 @@ from probly.quantification.measure.distribution import (
     mutual_information,
     vacuity,
 )
+from probly.quantification.measure.distribution.torch import torch_gaussian_entropy
 from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistributionSample,
     TorchProbabilityCategoricalDistribution,
 )
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
+from probly.representation.distribution.torch_gaussian import (
+    TorchGaussianDistribution,
+    TorchGaussianDistributionSample,
+)
 from probly.representation.distribution.torch_mixture import TorchMixtureDistribution
 
 CATEGORICAL_BASES: tuple[float | str | None, ...] = (None, 2.0, "normalize")
@@ -608,3 +614,129 @@ def test_torch_dirichlet_distance_measures_warn_on_generator_but_still_run() -> 
 
     assert torch.isfinite(eu).all()
     assert torch.isfinite(au).all()
+
+
+GAUSSIAN_BASES: tuple[float | None, ...] = (None, 2.0, 10.0)
+
+
+def _gaussian_base_divisor(base: float | None) -> torch.Tensor:
+    if base is None:
+        return torch.tensor(1.0, dtype=torch.float64)
+    return torch.log(torch.tensor(base, dtype=torch.float64))
+
+
+@pytest.mark.parametrize("base", GAUSSIAN_BASES)
+def test_torch_gaussian_entropy_matches_torch_normal(base: float | None) -> None:
+    mean = torch.tensor([0.0, 3.5, -1.0], dtype=torch.float64)
+    var = torch.tensor([1.0, 0.25, 2.0], dtype=torch.float64)
+    distribution = TorchGaussianDistribution(mean=mean, var=var)
+
+    measured = entropy(distribution, base=base)
+    expected = Normal(mean, torch.sqrt(var)).entropy() / _gaussian_base_divisor(base)
+
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_gaussian_entropy_accepts_bare_variance_tensor() -> None:
+    var = torch.tensor([[1.0, 4.0], [0.5, 9.0]], dtype=torch.float64)
+
+    measured = torch_gaussian_entropy(var)
+    expected = Normal(torch.zeros_like(var), torch.sqrt(var)).entropy()
+
+    assert measured.shape == var.shape
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_gaussian_entropy_normalize_raises() -> None:
+    distribution = TorchGaussianDistribution(mean=torch.zeros(2), var=torch.ones(2))
+
+    with pytest.raises(ValueError, match="normalization is not supported"):
+        entropy(distribution, base="normalize")
+
+
+def test_torch_gaussian_entropy_keeps_gradients() -> None:
+    var = torch.tensor([1.0, 2.0], dtype=torch.float64, requires_grad=True)
+    distribution = TorchGaussianDistribution(mean=torch.zeros(2, dtype=torch.float64), var=var)
+
+    entropy(distribution).sum().backward()
+
+    assert var.grad is not None
+    assert torch.allclose(var.grad, 0.5 / var.detach())
+
+
+def _gaussian_sample(num_samples: int = 5, batch: int = 7) -> TorchGaussianDistributionSample:
+    generator = torch.Generator().manual_seed(0)
+    mean = torch.randn(num_samples, batch, generator=generator, dtype=torch.float64)
+    var = torch.rand(num_samples, batch, generator=generator, dtype=torch.float64) + 0.1
+    return TorchGaussianDistributionSample(TorchGaussianDistribution(mean=mean, var=var), sample_dim=0)
+
+
+def _closed_form_gaussian_entropy(var: torch.Tensor) -> torch.Tensor:
+    return 0.5 * torch.log(2 * torch.e * torch.pi * var)
+
+
+@pytest.mark.parametrize("base", GAUSSIAN_BASES)
+def test_torch_gaussian_sample_entropy_of_expected_uses_law_of_total_variance(base: float | None) -> None:
+    sample = _gaussian_sample()
+    mean = sample.tensor.mean
+    var = sample.tensor.var
+
+    measured = entropy_of_expected_predictive_distribution(sample, base=base)
+    moment_matched_var = var.mean(dim=0) + mean.var(dim=0, unbiased=False)
+    expected = _closed_form_gaussian_entropy(moment_matched_var) / _gaussian_base_divisor(base)
+
+    assert measured.shape == (7,)
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+@pytest.mark.parametrize("base", GAUSSIAN_BASES)
+def test_torch_gaussian_sample_conditional_entropy_is_mean_member_entropy(base: float | None) -> None:
+    sample = _gaussian_sample()
+    var = sample.tensor.var
+
+    measured = conditional_entropy(sample, base=base)
+    expected = (_closed_form_gaussian_entropy(var) / _gaussian_base_divisor(base)).mean(dim=0)
+
+    assert measured.shape == (7,)
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_gaussian_sample_mutual_information_is_total_minus_aleatoric() -> None:
+    sample = _gaussian_sample()
+
+    measured = mutual_information(sample)
+    expected = entropy_of_expected_predictive_distribution(sample) - conditional_entropy(sample)
+
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+    assert torch.all(measured >= 0.0)
+
+
+def test_torch_gaussian_sample_identical_members_have_zero_mutual_information() -> None:
+    mean = torch.zeros(4, 3, dtype=torch.float64)
+    var = torch.full((4, 3), 2.0, dtype=torch.float64)
+    sample = TorchGaussianDistributionSample(TorchGaussianDistribution(mean=mean, var=var), sample_dim=0)
+
+    measured = mutual_information(sample)
+
+    assert torch.allclose(measured, torch.zeros(3, dtype=torch.float64), atol=1e-12)
+
+
+def test_torch_gaussian_sample_respects_sample_axis() -> None:
+    generator = torch.Generator().manual_seed(1)
+    mean = torch.randn(6, 5, generator=generator, dtype=torch.float64)
+    var = torch.rand(6, 5, generator=generator, dtype=torch.float64) + 0.1
+    axis0 = TorchGaussianDistributionSample(TorchGaussianDistribution(mean=mean, var=var), sample_dim=0)
+    axis1 = TorchGaussianDistributionSample(TorchGaussianDistribution(mean=mean.T, var=var.T), sample_dim=1)
+
+    assert torch.allclose(mutual_information(axis0), mutual_information(axis1))
+    assert torch.allclose(conditional_entropy(axis0), conditional_entropy(axis1))
+
+
+def test_torch_gaussian_sample_entropy_decomposition() -> None:
+    sample = _gaussian_sample()
+
+    decomposition = SecondOrderEntropyDecomposition(sample)
+
+    assert decomposition.total.shape == (7,)
+    assert torch.all(torch.isfinite(decomposition.total))
+    assert torch.allclose(decomposition.total, decomposition.aleatoric + decomposition.epistemic)
