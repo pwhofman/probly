@@ -95,6 +95,10 @@ torch-uncertainty = [
     "lightning>=2.6.0",
     "torch-uncertainty>=0.11.0",
 ]
+gpytorch = [
+    { include-group = "torch" },
+    "gpytorch>=1.11",
+]
 all_ml = [
     { include-group = "torch" },
     { include-group = "torch_geometric" },
@@ -104,6 +108,7 @@ all_ml = [
     { include-group = "laplace" },
     { include-group = "transformers" },
     { include-group = "torch-uncertainty" },
+    { include-group = "gpytorch" },
 ]
 test = [
     "pytest>=8.3.5",       # for testing
@@ -140,7 +145,7 @@ benchmark = [
     "torchvision<0.26.0",
     "pytorch-optimizer>=3.0",
     "nflows>=0.14",
-    "gpytorch>=1.11",
+    { include-group = "gpytorch" },
     "datasets>=3.0.0",
 ]
 dev = [
