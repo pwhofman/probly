@@ -15,6 +15,7 @@ from probly.conformal_scores import (
     cqr_score,
     lac_score,
 )
+from probly.decider import point_from_mean
 from probly.method.conformal import (
     conformal_absolute_error,
     conformal_aps,
@@ -125,6 +126,11 @@ def test_regression_prediction_set_with_absolute_error_score() -> None:
 
     np.testing.assert_allclose(output.array[:, 0], expected_lower)
     np.testing.assert_allclose(output.array[:, 1], expected_upper)
+
+
+def test_absolute_error_wrapper_uses_point_from_mean_decider() -> None:
+    assert conformal_absolute_error(DummyRegressor()).decider is point_from_mean
+    assert conformal_lac(DummyClassifier()).decider is None
 
 
 def test_regression_prediction_set_with_absolute_error_score_on_gaussian_predictor() -> None:

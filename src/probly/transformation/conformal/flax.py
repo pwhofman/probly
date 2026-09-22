@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from jax import Array
 
     from probly.conformal_scores._common import NonConformityScore
+    from probly.decider import Decider
 
 
 @conformal_generator.register(nnx.Module)
@@ -24,9 +25,14 @@ class FlaxConformalSetPredictor[**In, Out](_ConformalPredictorBase[In, Out], nnx
 
     predictor: nnx.Module
 
-    def __init__(self, predictor: nnx.Module, non_conformity_score: NonConformityScore[Out, Array]) -> None:
+    def __init__(
+        self,
+        predictor: nnx.Module,
+        non_conformity_score: NonConformityScore[Out, Array],
+        decider: Decider[Any, Any] | None = None,
+    ) -> None:
         """Initialize the flax conformal wrapper."""
-        super().__init__(predictor, non_conformity_score)
+        super().__init__(predictor, non_conformity_score, decider)
 
     @property
     def conformal_quantile(self) -> float | None:

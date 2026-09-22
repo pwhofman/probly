@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     import numpy as np
 
     from probly.conformal_scores._common import NonConformityScore
+    from probly.decider import Decider
 
 
 @conformal_generator.register(BaseEstimator)
@@ -23,9 +24,14 @@ class SklearnConformalSetPredictor[**In, Out](_ConformalPredictorBase[In, Out], 
 
     predictor: BaseEstimator
 
-    def __init__(self, predictor: BaseEstimator, non_conformity_score: NonConformityScore[Out, np.ndarray]) -> None:
+    def __init__(
+        self,
+        predictor: BaseEstimator,
+        non_conformity_score: NonConformityScore[Out, np.ndarray],
+        decider: Decider[Any, Any] | None = None,
+    ) -> None:
         """Initialize the sklearn conformal wrapper."""
-        super().__init__(predictor, non_conformity_score)
+        super().__init__(predictor, non_conformity_score, decider)
 
     @property
     def estimator(self) -> BaseEstimator:
