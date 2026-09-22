@@ -16,6 +16,9 @@ from gpytorch.distributions import MultitaskMultivariateNormal, MultivariateNorm
 from gpytorch.likelihoods import BernoulliLikelihood, GaussianLikelihood, MultitaskGaussianLikelihood, SoftmaxLikelihood
 import torch
 
+from probly.calibrator import calibrate
+from probly.method.conformal import conformal_absolute_error
+from probly.metrics import coverage
 from probly.predictor import GaussianDistributionPredictor, predict
 from probly.quantification import SecondOrderEntropyDecomposition, SecondOrderVarianceDecomposition
 from probly.quantification.measure.variance import variance
@@ -314,3 +317,16 @@ def test_representer_requires_num_samples(exact_gp: _ExactGP) -> None:
     # GaussianDistributionPredictor protocol would otherwise provide.
     with pytest.raises(TypeError, match="num_samples"):
         representer(exact_gp)
+
+
+def test_conformal_absolute_error_wraps_exact_gp(
+    exact_gp: _ExactGP, train_data: tuple[torch.Tensor, torch.Tensor]
+) -> None:
+    x, y = train_data
+    with torch.no_grad():
+        calibrated = calibrate(conformal_absolute_error(exact_gp), 0.2, y, x)
+        intervals = representer(calibrated).predict(x)
+
+    assert intervals.tensor.shape == (NUM_TRAIN, 2)
+    assert torch.all(intervals.tensor[:, 0] <= intervals.tensor[:, 1])
+    assert float(coverage(intervals, y)) >= 0.75

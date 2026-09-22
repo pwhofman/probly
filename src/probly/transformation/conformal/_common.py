@@ -33,6 +33,7 @@ from probly.representation.conformal_set._common import (
     create_interval_conformal_set,
     create_onehot_conformal_set,
 )
+from probly.representation.distribution._common import GaussianDistribution
 from probly.representation.sample import create_sample
 from probly.representation.sample._common import Sample
 from probly.transformation.transformation import predictor_transformation
@@ -109,6 +110,13 @@ class AbsoluteErrorConformalSetPredictor[**In, T](RegressionConformalSetPredicto
     """Conformal predictor specialized for absolute error scores."""
 
 
+def _point_prediction(prediction: Any) -> Any:  # noqa: ANN401
+    """Reduce a Gaussian distribution prediction to its mean; pass anything else through."""
+    if isinstance(prediction, GaussianDistribution):
+        return prediction.mean
+    return prediction
+
+
 class _ConformalPredictorBase[**In, Out](ABC):
     """Backend-agnostic conformal predictor behavior."""
 
@@ -143,7 +151,7 @@ class _ConformalPredictorBase[**In, Out](ABC):
     def calibrate(self, alpha: float, y_calib: Out, *calib_args: In.args, **calib_kwargs: In.kwargs) -> Self:
         """Calibrate the predictor using calibration data."""
         score = self._require_score()
-        prediction = predict(self.predictor, *calib_args, **calib_kwargs)
+        prediction = _point_prediction(predict(self.predictor, *calib_args, **calib_kwargs))
         scores = score(prediction, y_calib)
         self.conformal_quantile = calculate_quantile(scores, alpha)
         return self
@@ -183,7 +191,7 @@ def predict_absolute_error_conformal_set[**In, T](
 ) -> IntervalConformalSet:
     """Predict an absolute-error conformal interval."""
     quantile, _score = calibrated_state(predictor)
-    prediction = predict(cast("Any", predictor).predictor, *args, **kwargs)
+    prediction = _point_prediction(predict(cast("Any", predictor).predictor, *args, **kwargs))
     lower = prediction - quantile
     upper = prediction + quantile
     return create_interval_conformal_set(lower, upper)
