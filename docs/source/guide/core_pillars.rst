@@ -102,21 +102,29 @@ Transformations come in two flavours, and the distinction decides how much work
 adopting one costs you:
 
 *Post-hoc* transformations wrap an already-trained model. ``dropout`` re-enables
-existing dropout layers, ``laplace`` fits a curvature approximation around the
-trained weights, ``calibration`` rescales the logits on a held-out split.
-Nothing is retrained.
+existing dropout layers, ``mahalanobis`` fits a class-conditional Gaussian on the
+trained features, ``temperature_scaling`` rescales the logits on a held-out
+split. Nothing is retrained.
 
 *Ante-hoc* transformations change the architecture or the loss, so training has
 to happen afterwards. ``ensemble`` gives you *N* models to fit, ``bayesian``
 replaces deterministic layers with mean-field ones, ``posterior_network``
 attaches a normalizing-flow head.
 
+The two flavours are one axis; which namespace a name lives in is another. One
+example of each, crossed:
+
 .. code-block:: python
 
-    from probly.method import dropout, ensemble
+    from probly.transformation import dropout   # a primitive, applied per layer
+    from probly.method import sngp              # a named method from the literature
 
-    mc = dropout(net, p=0.25, predictor_type="logit_classifier")  # post-hoc
-    ens = ensemble(net, num_members=10, reset_params=True)        # ante-hoc, train after
+    # post-hoc: re-enables the dropout layers the network already has
+    mc = dropout(net, p=0.25, predictor_type="logit_classifier")
+
+    # ante-hoc: swaps the last Linear for a random-feature GP head and
+    # spectral-normalizes the rest, so the returned model has to be trained
+    gp = sngp(net)
 
 Two things make this work across backends. The transformation walks the layer
 tree with ``pytraverse`` and dispatches *per layer type*, so it never needs to
@@ -126,9 +134,18 @@ importing ``probly`` does not import ``torch``, ``flax``, or ``sklearn``.
 
 .. note::
 
-    ``probly.method`` is the catalogue namespace users import from;
-    ``probly.transformation`` holds the implementations. They export the same
-    callables.
+    The two namespaces overlap but are not the same catalogue.
+    ``probly.transformation`` holds the composable primitives, including the
+    layer, head, and activation transforms that methods are built out of ---
+    ``posterior_network``, ``normal_inverse_gamma_head``,
+    ``dirichlet_exp_activation``, ``interval_classifier``.
+    ``probly.method`` holds the named methods from the literature ---
+    ``sngp``, ``swag``, ``ddu``, ``duq``, ``mahalanobis``, the ``credal_*`` and
+    ``evidential_*`` families. The shared building blocks --- ``dropout``,
+    ``ensemble``, ``bayesian``, ``batchensemble``, ``subensemble``,
+    ``dropconnect``, ``masksembles``, ``cast``, and the ``conformal_*`` scores
+    --- are importable from either. Calibration is a subpackage rather than a
+    top-level name: ``probly.transformation.calibration.temperature_scaling``.
 
 .. _pillar-representation:
 
@@ -155,6 +172,38 @@ the results into a ``Sample`` of categorical distributions. For an ensemble it
 runs each member once. For a method that already emits a Dirichlet, the
 representer is the identity. The caller does not need to know which of those
 happened.
+
+The transformation does not fix the representation, though. ``representer``
+dispatches on the predictor type and returns the representer *registered* for
+it; naming a representer class instead overrides that choice on the very same
+model:
+
+.. code-block:: python
+
+    from probly.representation.credal_set import create_convex_credal_set
+    from probly.representer import ConvexCredalSetRepresenter, representer
+    from probly.transformation import ensemble
+
+    ens = ensemble(net, num_members=10, predictor_type="logit_classifier")
+
+    rep = representer(ens)                                 # registered default -> a Sample
+    cset = ConvexCredalSetRepresenter(ens).represent(x)    # same model -> a convex credal set
+
+    # MC dropout is stochastic rather than iterable, so the credal reading
+    # is built from the sample it produces
+    cset_mc = create_convex_credal_set(representer(mc, num_samples=50).represent(x))
+
+The credal representers read an *iterable* predictor, so an ensemble-shaped
+model can be handed to them directly while a stochastic one goes through the
+sample it produces first. ``ProbabilityIntervalsRepresenter`` is the same move
+for probability intervals. The second lever is the factory's own arguments:
+whatever you pass to ``representer`` beyond the model --- ``num_samples``,
+``sample_axis``, ``sample_factory`` --- is forwarded to the constructor of
+whichever representer wins the dispatch.
+
+This is not a hypothetical. The benchmark builds three representations from one
+model for exactly this reason, because interval coverage and convex-hull
+coverage each need the reading their own metric dispatches on.
 
 This is where the library earns the separation. A representation knows its own
 semantics --- which axis is the sample axis, whether it lives on the simplex,
@@ -199,10 +248,36 @@ encodes that in the dispatch rather than in a docstring warning: asking for a
 decomposition that does not exist for your representation raises
 ``NotImplementedError`` instead of returning a quietly meaningless number.
 
+``decompose`` picks the one decomposition registered for the representation ---
+for a second-order sample that is ``SecondOrderEntropyDecomposition``.
+Constructing a decomposition directly is how you choose a different one:
+
+.. code-block:: python
+
+    from probly.quantification import (
+        BrierLoss,
+        EpistemicUncertainty,
+        SecondOrderScoringRuleDecomposition,
+    )
+
+    uq = SecondOrderScoringRuleDecomposition(out, BrierLoss())
+    uq.components              # which notions this split actually provides
+    uq[EpistemicUncertainty]   # or uq["eu"], or uq.epistemic
+
+This is what makes the "pick the scoring rule first" rule of thumb from
+:ref:`uq-quantifying` executable rather than advisory: ``LogLoss`` reproduces
+the Shannon-entropy split exactly --- its epistemic part *is* the mutual
+information --- and ``BrierLoss`` gives the Gini one. The credal counterpart is
+``CredalSetEntropyDecomposition``, whose total is the upper entropy, aleatoric
+the lower, and epistemic the gap between them.
+
 The notions ``TotalUncertainty``, ``AleatoricUncertainty``, and
 ``EpistemicUncertainty`` are first-class, so a downstream stage can ask for
 "the epistemic part" without knowing which decomposition produced it. That is
-what lets the active-learning strategies in stage 4 be written once.
+what lets the active-learning strategies in stage 4 be written once. A
+decomposition is a mapping keyed by those notion types, so a stage can also ask
+``uq.components`` what a given split provides instead of assuming --- a notion
+the decomposition does not define raises ``KeyError`` rather than answering.
 
 :ref:`uq-quantifying` covers the measures themselves and where decomposition is
 undefined.
@@ -229,31 +304,39 @@ ships the three downstream tasks that uncertainty is usually justified by:
 
     print(evaluate_ood(eu_id, eu_ood))   # {'auroc': 0.94}
 
+Both entry points return more than the headline number if you ask them to:
+
+.. code-block:: python
+
+    from probly.evaluation.selective_prediction import selective_prediction
+
+    # the operating point, not just the ranking
+    evaluate_ood(eu_id, eu_ood, metrics=["auroc", "aupr", "fpr@0.95"])
+    # -> {'auroc': 0.998, 'aupr': 0.998, 'fpr@0.95': 0.006}
+
+    # the risk-coverage curve, not just its area
+    aurc, risk_curve = selective_prediction(eu_id, losses, n_bins=50)
+
+``evaluate_ood`` takes ``metrics="all"`` or a list, and understands dynamic
+specs such as ``"fpr@0.95"`` and ``"fnr@90%"``, so the claim can be stated at
+the operating point you would actually run instead of as one AUROC.
+``selective_prediction`` returns the area *and* the per-bin losses, and it is
+that curve which :ref:`uq-evaluating` calls the honest artifact --- the scalar
+alone hides where the gain sits.
+
 Alongside these, ``probly.metrics`` holds the intrinsic scores --- calibration
-error, proper scoring rules, coverage --- which ask a different question:
-whether the predicted distribution is *right*, rather than whether the derived
-score is *useful*. :ref:`uq-evaluating` draws that distinction properly.
-
-.. _pillars-composition:
-
-Why the Stages Compose
-======================
-
-Three dispatch mechanisms hold the pillars apart:
-
-- **Type dispatch** (``flexdispatch``) routes ``predict``, ``representer``, and
-  ``quantify`` to the right backend based on the object handed in.
-- **Traverser dispatch** (``flexdispatch_traverser``) walks a network layer by
-  layer, so a transformation is defined per layer type instead of per model.
-- **Value dispatch** (``switchdispatch``) maps names to implementations, which
-  is what makes the string arguments in the snippets above work.
-
-The practical consequence is the benchmark: one pipeline, 20+ methods, changed
-one line at a time. If you are adding a method, the pillar structure is also the
-checklist --- a new method needs a transformation, must declare which
-representation it produces, and inherits stages 3 and 4 for free.
+error, coverage, set size --- which ask a different question: whether the
+predicted distribution is *right*, rather than whether the derived score is
+*useful*. The proper scoring rules live with the quantifiers instead, in
+``probly.quantification.scoring_rule``, which is what lets a rule chosen for
+evaluation be the same object as the one that generated the decomposition.
+:ref:`uq-evaluating` draws that distinction properly.
 
 .. seealso::
 
-    :ref:`methods` walks the catalogue, grouped by the representation each
-    method produces.
+    Active learning needs a training loop rather than a snippet:
+    :ref:`sphx_glr_auto_examples_active_learning_plot_active_learning_torch.py`
+    compares uncertainty-driven acquisition against the random baseline.
+
+    :ref:`pillars-composition` covers the dispatch mechanisms that keep the four
+    stages independent of each other, and what that means for a new method.
