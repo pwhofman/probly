@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import FLAX_MODULE, LAPLACE_BASE, SKLEARN_MODULE, TORCH_MODULE
+from probly.lazy_types import (
+    FLAX_MODULE,
+    GPYTORCH_APPROXIMATE_GP,
+    GPYTORCH_EXACT_GP,
+    LAPLACE_BASE,
+    SKLEARN_MODULE,
+    TORCH_MODULE,
+)
 
 from ._common import (
     BernoulliDistributionPredictor,
@@ -39,6 +46,10 @@ Predictor.register(
         FLAX_MODULE,
     )
 )
+
+# GPyTorch models return a Gaussian posterior; the tuple-returning predict_raw bindings live in
+# probly.integrations.gpytorch and are loaded lazily on first use.
+GaussianDistributionPredictor.register((GPYTORCH_EXACT_GP, GPYTORCH_APPROXIMATE_GP))
 
 
 @predict_raw.delayed_register(SKLEARN_MODULE)
