@@ -510,6 +510,17 @@ class TestBayesLinear:
         out = layer(torch.randn(2, 4))
         assert out.shape == (2, 3)
 
+    def test_initial_posterior_std_matches_argument(self) -> None:
+        torch, nn = _torch_modules()
+        from torch.nn.functional import softplus  # noqa: PLC0415
+
+        from probly.layers.torch import BayesLinear  # noqa: PLC0415
+
+        layer = BayesLinear(nn.Linear(4, 3), posterior_std=0.05)
+        # The rho parameters store the inverse softplus of the requested standard deviation.
+        torch.testing.assert_close(softplus(layer.weight_rho), torch.full_like(layer.weight_rho, 0.05))
+        torch.testing.assert_close(softplus(layer.bias_rho), torch.full_like(layer.bias_rho, 0.05))
+
     def test_kl_divergence_nonneg(self) -> None:
         torch, nn = _torch_modules()
         from probly.layers.torch import BayesLinear  # noqa: PLC0415
@@ -844,7 +855,7 @@ class TestHeteroscedasticLayer:
 
 
 class TestKLDivergenceHelper:
-    """The private ``_kl_divergence_gaussian`` helper and ``_inverse_softplus``."""
+    """The private ``_kl_divergence_gaussian`` helper."""
 
     def test_kl_zero_when_distributions_equal(self) -> None:
         torch, _ = _torch_modules()
@@ -866,16 +877,6 @@ class TestKLDivergenceHelper:
         kl = _kl_divergence_gaussian(mu1, sigma1, mu2, sigma2)
         # KL(N(0,1) || N(2,1)) = 2.0 (exact).
         torch.testing.assert_close(kl, torch.tensor([2.0]))
-
-    def test_inverse_softplus_round_trip(self) -> None:
-        torch, _ = _torch_modules()
-        from torch.nn.functional import softplus  # noqa: PLC0415
-
-        from probly.layers.torch import _inverse_softplus  # noqa: PLC0415
-
-        x = torch.tensor([0.05, 0.5, 1.0, 2.0])
-        # softplus(_inverse_softplus(x)) == x for x > 0.
-        torch.testing.assert_close(softplus(_inverse_softplus(x)), x, atol=1e-5, rtol=1e-5)
 
 
 class TestSharedMaskDropout:
