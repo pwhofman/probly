@@ -89,9 +89,12 @@ def numpy_dirichlet_entropy(distribution: NumpyDirichletDistribution | np.ndarra
 
 @entropy.register(NumpyGaussianDistribution)
 def numpy_gaussian_entropy(distribution: NumpyGaussianDistribution | np.ndarray, base: LogBase = None) -> np.ndarray:
-    """Compute the (differential) entropy of a Gaussian distribution represented as a numpy array.
+    """Compute the (differential) entropy of a Gaussian distribution.
 
-    Takes either an `NumpyGaussianDistribution` or a single np.ndarray representing the variance.
+    Only the variance enters the entropy of a Gaussian, so ``distribution`` may be a
+    `NumpyGaussianDistribution` (whose mean is ignored) or a bare np.ndarray of variances.
+    The bare-array form is for internal callers; ``entropy(array)`` dispatches to the
+    categorical implementation.
     """
     if isinstance(distribution, NumpyGaussianDistribution):
         var = distribution.var

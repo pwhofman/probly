@@ -101,9 +101,12 @@ def jax_dirichlet_entropy(distribution: JaxDirichletDistribution | jax.Array, ba
 
 @entropy.register(JaxGaussianDistribution)
 def jax_gaussian_entropy(distribution: JaxGaussianDistribution | jax.Array, base: LogBase = None) -> jax.Array:
-    """Compute the (differential) entropy of a Gaussian distribution represented as a jax array.
+    """Compute the (differential) entropy of a Gaussian distribution.
 
-    Takes either a `JaxGaussianDistribution" or a single jax.Array representing the variance.
+    Only the variance enters the entropy of a Gaussian, so ``distribution`` may be a
+    `JaxGaussianDistribution` (whose mean is ignored) or a bare jax.Array of variances.
+    The bare-array form is for internal callers; ``entropy(array)`` dispatches to the
+    categorical implementation.
     """
     if isinstance(distribution, JaxGaussianDistribution):
         var = distribution.var
