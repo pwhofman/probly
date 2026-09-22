@@ -2,15 +2,18 @@
 Point predictions and first-order distributions
 ===============================================
 
-The bottom two rungs of the representation ladder, on the same three-class problem
+Roughly speaking, a representation is the kind of object a prediction is, and
+representations can be ordered by how much they are able to express
+(see :ref:`uq-representing`). Consider the two lowest orders on a three-class problem
 ("cat", "dog", "fox"):
 
-1. a **point prediction**, one outcome and nothing else, and
-2. a **first-order distribution**, one probability distribution over the outcomes, here an
+1. a **point prediction**, a single outcome with nothing attached to it, and
+2. a **first-order distribution**, a probability distribution over the outcomes, here an
    :class:`~probly.representation.distribution.numpy_categorical.NumpyProbabilityCategoricalDistribution`.
 
-The two distributions below have the same ``argmax``, so they collapse to the same point
-prediction. What separates them is only visible one rung up.
+The two inputs below have the same ``argmax`` and hence the same point prediction. Their
+first-order distributions, however, differ, and this difference is precisely what the
+step from zeroth to first order adds.
 """
 
 from __future__ import annotations
@@ -38,8 +41,10 @@ print("Number of classes:", distribution.num_classes)
 print("Probabilities:\n", distribution.probabilities)
 
 # %%
-# The point prediction keeps the ``argmax`` and discards everything else. Both inputs
-# land on the same label, so at this rung the two predictions are indistinguishable.
+# The point prediction retains the ``argmax`` and discards everything else. Both inputs
+# are mapped to "dog", so at zeroth order the two predictions are indistinguishable:
+# nothing in the object records that one was a near-tie between two classes and the
+# other a tie between all three.
 point_prediction = np.argmax(distribution.probabilities, axis=-1)
 print("Point predictions:", [CLASSES[index] for index in point_prediction])
 
@@ -55,9 +60,9 @@ fig.suptitle("Zeroth order: one outcome, no scale")
 fig.tight_layout()
 
 # %%
-# The first-order distribution keeps the odds. Input 0 has two outcomes competing and a
-# third ruled out, input 1 has all three competing -- a difference the rung below has no
-# slot for.
+# The first-order distribution retains the odds, that is, which outcomes compete and by
+# how much. Input 0 has two outcomes competing and the third ruled out, whereas input 1
+# keeps all three in play, a difference the point prediction has no means to express.
 fig, axes = plt.subplots(1, 2, figsize=(7, 2.6), sharey=True)
 for index, ax in enumerate(axes):
     ax.bar(CLASSES, distribution.probabilities[index], color=config.categorical_palette[0])
@@ -68,9 +73,11 @@ fig.suptitle("First order: a distribution over outcomes")
 fig.tight_layout()
 
 # %%
-# For regression the same rung is a distribution over the real line, for instance an
+# For regression, a first-order distribution is a distribution over the real line, for
+# instance a
 # :class:`~probly.representation.distribution.numpy_gaussian.NumpyGaussianDistribution`
-# holding a mean and a variance per instance.
+# with a mean and a variance per input. Both inputs share the mean, which is all a point
+# prediction would report, and differ only in the variance.
 gaussian = NumpyGaussianDistribution(mean=np.array([3.2, 3.2]), var=np.array([0.05, 0.9]))
 print("Means:", gaussian.mean)
 print("Standard deviations:", gaussian.std)
@@ -90,3 +97,13 @@ ax.set_title("Regression: same mean, different spread")
 ax.legend()
 fig.tight_layout()
 plt.show()
+
+# %%
+# Note, however, that a first-order distribution cannot qualify itself. The near-uniform
+# prediction for input 1 may reflect a genuine three-way ambiguity in the data (aleatoric
+# uncertainty) or merely the model's lack of knowledge about this input (epistemic
+# uncertainty), and both readings are encoded by the very same vector. Any number read off
+# this vector, such as its entropy, is therefore a measure of *total* uncertainty.
+# Separating the two sources requires a representation of higher order, either
+# :ref:`sampled <sphx_glr_auto_examples_representation_plot_second_order_sample.py>` or
+# :ref:`parameterized <sphx_glr_auto_examples_representation_plot_dirichlet_distribution.py>`.
