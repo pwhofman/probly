@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 from packaging.version import Version
 from scipy.optimize import minimize
-from scipy.special import expit, logsumexp
+from scipy.special import expit, log_softmax, softmax
 import sklearn
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.calibration import CalibratedClassifierCV
@@ -92,7 +92,7 @@ class SklearnIdentityLogitEstimator(ClassifierMixin, BaseEstimator):
         logits = self.decision_function(x)
         if logits.ndim < 2:
             return np.stack([1.0 - expit(logits), expit(logits)], axis=-1)
-        return np.exp(logits - logsumexp(logits, axis=-1, keepdims=True))
+        return softmax(logits, axis=-1)
 
     def predict(self, x: object) -> np.ndarray:
         """Predict labels by argmax over provided logits."""
@@ -190,13 +190,6 @@ class SklearnVectorScalingPredictor(BaseEstimator, CalibrationPredictor):
         raise AttributeError(msg)
 
     @staticmethod
-    def _softmax(logits: np.ndarray) -> np.ndarray:
-        shifted = logits - np.max(logits, axis=-1, keepdims=True)
-        numerator = np.exp(shifted)
-        denominator = np.sum(numerator, axis=-1, keepdims=True)
-        return numerator / denominator
-
-    @staticmethod
     def _affine_logits(logits: np.ndarray, temperature: np.ndarray, bias: np.ndarray) -> np.ndarray:
         return logits / temperature + bias
 
@@ -240,7 +233,7 @@ class SklearnVectorScalingPredictor(BaseEstimator, CalibrationPredictor):
             bias = params[num_classes:]
             temperature = np.exp(log_temperature)
             affine = self._affine_logits(flat_logits, temperature, bias)
-            log_probs = affine - logsumexp(affine, axis=-1, keepdims=True)
+            log_probs = log_softmax(affine, axis=-1)
             return float(-np.mean(log_probs[np.arange(encoded_y.size), encoded_y]))
 
         initial = np.zeros(2 * num_classes, dtype=float)
@@ -271,7 +264,7 @@ class SklearnVectorScalingPredictor(BaseEstimator, CalibrationPredictor):
 
     def predict_proba(self, x: object) -> np.ndarray:
         """Predict calibrated probabilities for input samples."""
-        return self._softmax(self.predict_logits(x))
+        return softmax(self.predict_logits(x), axis=-1)
 
     def predict(self, x: object) -> np.ndarray:
         """Predict labels based on calibrated probabilities."""

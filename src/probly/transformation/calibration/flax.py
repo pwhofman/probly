@@ -452,15 +452,8 @@ class FlaxIsotonicCalibrationPredictor[**In](_FlaxCalibrationPredictorBase[In]):
         if x_knots.shape[0] == 1:
             probs = jnp.broadcast_to(y_knots[0], flat_preds.shape)
         else:
-            interior = x_knots[1:-1]
-            interval_idx = jnp.searchsorted(interior, flat_preds, side="right")
-            left_x = x_knots[interval_idx]
-            right_x = x_knots[interval_idx + 1]
-            left_y = y_knots[interval_idx]
-            right_y = y_knots[interval_idx + 1]
-            denominator = jnp.clip(right_x - left_x, min=1e-12)
-            weight = jnp.clip((flat_preds - left_x) / denominator, min=0.0, max=1.0)
-            probs = left_y + weight * (right_y - left_y)
+            # Piecewise-linear interpolation between the knots, clipped to the end values outside.
+            probs = jnp.interp(flat_preds, x_knots, y_knots)
 
         calibrated_probs = probs.reshape(_reshape_binary_preds(preds).shape)
         if had_singleton_axis:
