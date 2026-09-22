@@ -6,7 +6,7 @@ import pytest
 
 pytest.importorskip("torch")
 import torch
-from torch.distributions import Categorical
+from torch.distributions import Categorical, Normal
 from torch.distributions.kl import kl_divergence
 
 from probly.quantification.measure.distribution import (
@@ -21,11 +21,13 @@ from probly.quantification.measure.distribution import (
     mutual_information,
     vacuity,
 )
+from probly.quantification.measure.distribution.torch import torch_gaussian_entropy
 from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistributionSample,
     TorchProbabilityCategoricalDistribution,
 )
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
+from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution
 from probly.representation.distribution.torch_mixture import TorchMixtureDistribution
 
 CATEGORICAL_BASES: tuple[float | str | None, ...] = (None, 2.0, "normalize")
@@ -608,3 +610,51 @@ def test_torch_dirichlet_distance_measures_warn_on_generator_but_still_run() -> 
 
     assert torch.isfinite(eu).all()
     assert torch.isfinite(au).all()
+
+
+GAUSSIAN_BASES: tuple[float | None, ...] = (None, 2.0, 10.0)
+
+
+def _gaussian_base_divisor(base: float | None) -> torch.Tensor:
+    if base is None:
+        return torch.tensor(1.0, dtype=torch.float64)
+    return torch.log(torch.tensor(base, dtype=torch.float64))
+
+
+@pytest.mark.parametrize("base", GAUSSIAN_BASES)
+def test_torch_gaussian_entropy_matches_torch_normal(base: float | None) -> None:
+    mean = torch.tensor([0.0, 3.5, -1.0], dtype=torch.float64)
+    var = torch.tensor([1.0, 0.25, 2.0], dtype=torch.float64)
+    distribution = TorchGaussianDistribution(mean=mean, var=var)
+
+    measured = entropy(distribution, base=base)
+    expected = Normal(mean, torch.sqrt(var)).entropy() / _gaussian_base_divisor(base)
+
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_gaussian_entropy_accepts_bare_variance_tensor() -> None:
+    var = torch.tensor([[1.0, 4.0], [0.5, 9.0]], dtype=torch.float64)
+
+    measured = torch_gaussian_entropy(var)
+    expected = Normal(torch.zeros_like(var), torch.sqrt(var)).entropy()
+
+    assert measured.shape == var.shape
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_gaussian_entropy_normalize_raises() -> None:
+    distribution = TorchGaussianDistribution(mean=torch.zeros(2), var=torch.ones(2))
+
+    with pytest.raises(ValueError, match="normalization is not supported"):
+        entropy(distribution, base="normalize")
+
+
+def test_torch_gaussian_entropy_keeps_gradients() -> None:
+    var = torch.tensor([1.0, 2.0], dtype=torch.float64, requires_grad=True)
+    distribution = TorchGaussianDistribution(mean=torch.zeros(2, dtype=torch.float64), var=var)
+
+    entropy(distribution).sum().backward()
+
+    assert var.grad is not None
+    assert torch.allclose(var.grad, 0.5 / var.detach())

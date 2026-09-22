@@ -95,6 +95,28 @@ def torch_dirichlet_entropy(
     return result / torch.log(torch.as_tensor(base, dtype=result.dtype, device=result.device))
 
 
+@entropy.register(TorchGaussianDistribution)
+def torch_gaussian_entropy(
+    distribution: TorchGaussianDistribution | torch.Tensor, base: LogBase = None
+) -> torch.Tensor:
+    """Compute the (differential) entropy of a Gaussian distribution represented as a torch tensor.
+
+    Takes either a `TorchGaussianDistribution` or a single torch.Tensor representing the variance.
+    """
+    if isinstance(distribution, TorchGaussianDistribution):
+        var = distribution.var
+        del distribution  # Avoid keeping a reference to the distribution for memory efficiency
+    else:
+        var = distribution
+    entropy = 0.5 * torch.log(2 * torch.e * torch.pi * var)
+    if base is None or base == torch.e:
+        return entropy
+    if base == "normalize":
+        msg = "Entropy normalization is not supported for Gaussian distributions."
+        raise ValueError(msg)
+    return entropy / torch.log(torch.as_tensor(base, dtype=entropy.dtype, device=entropy.device))
+
+
 # Entropy of expected value
 
 
