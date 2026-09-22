@@ -20,7 +20,7 @@ def _state_scalar(state: nnx.State, key: str) -> Any:  # noqa: ANN401
     """Return a scalar state leaf from an nnx state mapping."""
     value = state[key]
     if isinstance(value, nnx.Variable):
-        return value.value
+        return value[...]
     return value
 
 

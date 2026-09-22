@@ -49,7 +49,7 @@ class TestDropConnectAttributes:
         # simulate rngs, default stream used
         new_rngs = nnx.Rngs(0, params=1)
         dropconnect_rngs = new_rngs["dropconnect"].fork()
-        assert dropconnect_layer.rngs.key.value == dropconnect_rngs.key.value
+        assert dropconnect_layer.rngs.key[...] == dropconnect_rngs.key[...]
 
     def test_dropconnect_rngs(self) -> None:
         rngs = nnx.Rngs(0, params=1)
@@ -60,7 +60,7 @@ class TestDropConnectAttributes:
 
         new_rng_stream = nnx.RngStream(key=1, tag="dropconnect")
         used_rngs = new_rng_stream.fork()
-        assert dropconnect_layer_rng_stream.rngs.key.value == used_rngs.key.value
+        assert dropconnect_layer_rng_stream.rngs.key[...] == used_rngs.key[...]
 
         msg = f"rngs must be a RNGS, RngStream or None, but got {str}"
         with pytest.raises(TypeError, match=msg):
@@ -80,7 +80,7 @@ class TestDropConnectAttributes:
         new_rngs = nnx.Rngs(0, params=1, dropconnect=2)
         dropconnect_rngs = new_rngs["dropconnect"].fork()
         assert dropconnect_layer.rngs.tag == "dropconnect"
-        assert dropconnect_layer.rngs.key.value == dropconnect_rngs.key.value
+        assert dropconnect_layer.rngs.key[...] == dropconnect_rngs.key[...]
 
 
 class TestNetworkArchitectures:
@@ -151,7 +151,7 @@ class TestNetworkArchitectures:
 
         # check p value in dropconnect layer
         if model_fixture != "flax_dropconnect_model":
-            for m in model.iter_modules():
+            for m in nnx.iter_modules(model):
                 if isinstance(m, DropConnectLinear):
                     assert m.rate == p
 
@@ -172,7 +172,7 @@ class TestNetworkArchitectures:
         assert count_linear_modified == count_linear_original - 1
 
         # check p value in dropconnect layer
-        for m in flax_custom_model.iter_modules():
+        for m in nnx.iter_modules(flax_custom_model):
             if isinstance(m, DropConnectLinear):
                 assert m.rate == p
 

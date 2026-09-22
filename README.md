@@ -157,7 +157,7 @@ What differs between each method is how it represents uncertainty. `probly` cove
 These methods transform a point predictor into a model that outputs a distribution over possible distributions. Instead of returning a single prediction, they learn a higher-order probabilistic model where predictions are expressed as probability distributions. This can be achieved by stochastic sampling, ensembling, estimating feature-space distance to training data, or by parameterizing it with an evidential output head.
 
 <details>
-<summary><strong>Show all 21 methods</strong></summary>
+<summary><strong>Show all 23 methods</strong></summary>
 
 <a id="second-order-table"></a>
 
@@ -167,15 +167,17 @@ These methods transform a point predictor into a model that outputs a distributi
 | MC dropconnect (`dropconnect`) | [Mobiny et al., 2021](https://doi.org/10.1038/s41598-021-84854-x) | torch · flax |
 | Mean-field Bayesian networks (`bayesian`) | [Blundell et al., 2015](http://proceedings.mlr.press/v37/blundell15.html) | torch |
 | Laplace approximation (`laplace`) | [Daxberger et al., 2021](https://arxiv.org/abs/2106.14806) | torch |
+| SWAG (`swag`) | [Maddox et al., 2019](https://proceedings.neurips.cc/paper/2019/hash/118921efba23fc329e6560b27861f0c2-Abstract.html) | torch · flax |
 | Deep ensembles (`ensemble`) | [Lakshminarayanan et al., 2017](https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html) | torch · flax · sklearn · river |
 | BatchEnsemble (`batchensemble`) | [Wen et al., 2020](https://openreview.net/forum?id=Sklf1yrYDr) | torch · flax |
 | Sub-ensembles (`subensemble`) | [Valdenegro-Toro, 2019](https://arxiv.org/abs/1910.08168) | torch · flax |
 | Deep anti-regularized ensembles (`dare`)[¹](#fn-so-1) | [de Mathelin et al., 2023](https://doi.org/10.48550/arXiv.2304.04042) | torch |
 | Deterministic uncertainty quantification (`duq`) | [van Amersfoort et al., 2020](http://proceedings.mlr.press/v119/van-amersfoort20a.html) | torch |
 | Deep deterministic uncertainty (`ddu`) | [Mukhoti et al., 2023](https://doi.org/10.1109/CVPR52729.2023.02336) | torch |
-| Mahalanobis distance (`mahalanobis`) | [Lee et al., 2018](https://proceedings.neurips.cc/paper/2018/hash/abdeb6f575ac5c6676b747bca8d09cc2-Abstract.html) | torch |
+| Mahalanobis distance (`mahalanobis`) | [Lee et al., 2018](https://proceedings.neurips.cc/paper/2018/hash/abdeb6f575ac5c6676b747bca8d09cc2-Abstract.html) | torch · sklearn |
 | Direct epistemic uncertainty prediction (`deup`) | [Lahlou et al., 2023](https://openreview.net/forum?id=eGLdVRvvfQ) | torch |
 | Spectral-normalized GP heads (`sngp`) | [Liu et al., 2020](https://proceedings.neurips.cc/paper/2020/hash/543e83748234f7cbab21aa0ade66565f-Abstract.html) | torch |
+| Variational Bayesian last layers (`vbll`, `g_vbll`) | [Harrison et al., 2024](https://openreview.net/forum?id=Sx7BIiPzys) | torch |
 | Evidential classification (`evidential_classification`) | [Sensoy et al., 2018](https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html) | torch |
 | Posterior networks (`posterior_network`) | [Charpentier et al., 2020](https://proceedings.neurips.cc/paper/2020/hash/0eac690d7059a8de4b48e90f14510391-Abstract.html) | torch |
 | Natural posterior networks (`natural_posterior_network`) | [Charpentier et al., 2022](https://openreview.net/forum?id=tV3N0DWMxCg) | torch |

@@ -63,7 +63,7 @@ def torch_categorical_entropy(
     if base == "normalize":
         base = float(p.shape[-1])
 
-    return entropy / torch.log(torch.tensor(base))
+    return entropy / torch.log(torch.as_tensor(base, dtype=entropy.dtype, device=entropy.device))
 
 
 @entropy.register(TorchSparseLogCategoricalDistribution)

@@ -50,16 +50,16 @@ class TestBatchEnsembleLayerAttributes:
         )
 
         assert not jnp.equal(
-            batchensemble_linear.kernel.value, linear_layer.kernel.value
+            batchensemble_linear.kernel[...], linear_layer.kernel[...]
         ).all()  # use_base_weights = False
         # Per-member bias initialized by broadcasting the base layer's bias across members.
         assert batchensemble_linear.bias.shape == (num_members, linear_layer.out_features)
         assert linear_layer.bias is not None
         expected_bias = jnp.broadcast_to(
-            linear_layer.bias.value[None, :],
+            linear_layer.bias[...][None, :],
             (num_members, linear_layer.out_features),
         )
-        assert jnp.equal(batchensemble_linear.bias.value, expected_bias).all()
+        assert jnp.equal(batchensemble_linear.bias[...], expected_bias).all()
         assert batchensemble_linear.in_features == linear_layer.in_features
         assert batchensemble_linear.out_features == linear_layer.out_features
         assert batchensemble_linear.use_bias == linear_layer.use_bias
@@ -84,7 +84,7 @@ class TestBatchEnsembleLayerAttributes:
         kernel = kernel_init(
             kernel_key, (linear_layer.in_features, linear_layer.out_features), linear_layer.param_dtype
         )
-        assert jnp.equal(batchensemble_linear.kernel.value, kernel).all()
+        assert jnp.equal(batchensemble_linear.kernel[...], kernel).all()
 
         # r is drawn before s in the layer __init__.
         r_key = new_rngs.params()
@@ -93,7 +93,7 @@ class TestBatchEnsembleLayerAttributes:
             (num_members, batchensemble_linear.in_features),
             dtype=linear_layer.param_dtype,
         )
-        assert jnp.equal(batchensemble_linear.r.value, expected_r).all()
+        assert jnp.equal(batchensemble_linear.r[...], expected_r).all()
 
         s_key = new_rngs.params()
         expected_s = s_mean + s_std * jax.random.normal(
@@ -101,7 +101,7 @@ class TestBatchEnsembleLayerAttributes:
             (num_members, batchensemble_linear.out_features),
             dtype=linear_layer.param_dtype,
         )
-        assert jnp.equal(batchensemble_linear.s.value, expected_s).all()
+        assert jnp.equal(batchensemble_linear.s[...], expected_s).all()
 
     def test_batchensemble_conv_attributes(self) -> None:
         """Tests BatchEnsembleConv layer attributes."""
@@ -130,7 +130,7 @@ class TestBatchEnsembleLayerAttributes:
         )
 
         assert batchensemble_conv.kernel_shape == conv_layer.kernel_shape
-        assert not jnp.equal(batchensemble_conv.kernel.value, conv_layer.kernel.value).all()  # use_base_weights = False
+        assert not jnp.equal(batchensemble_conv.kernel[...], conv_layer.kernel[...]).all()  # use_base_weights = False
         # Per-member bias initialized by broadcasting the base layer's bias across members.
         assert batchensemble_conv.bias.shape == (num_members, conv_layer.out_features)
         assert batchensemble_conv.in_features == conv_layer.in_features
@@ -162,7 +162,7 @@ class TestBatchEnsembleLayerAttributes:
         kernel_key = new_rngs.params()
         kernel_init = jax.nn.initializers.lecun_normal()
         kernel = kernel_init(kernel_key, batchensemble_conv.kernel_shape, batchensemble_conv.param_dtype)
-        assert jnp.equal(batchensemble_conv.kernel.value, kernel).all()
+        assert jnp.equal(batchensemble_conv.kernel[...], kernel).all()
 
         # r is drawn before s in the layer __init__.
         r_key = new_rngs.params()
@@ -171,7 +171,7 @@ class TestBatchEnsembleLayerAttributes:
             (num_members, batchensemble_conv.in_features),
             dtype=conv_layer.param_dtype,
         )
-        assert jnp.equal(batchensemble_conv.r.value, expected_r).all()
+        assert jnp.equal(batchensemble_conv.r[...], expected_r).all()
 
         s_key = new_rngs.params()
         expected_s = s_mean + s_std * jax.random.normal(
@@ -179,7 +179,7 @@ class TestBatchEnsembleLayerAttributes:
             (num_members, batchensemble_conv.out_features),
             dtype=conv_layer.param_dtype,
         )
-        assert jnp.equal(batchensemble_conv.s.value, expected_s).all()
+        assert jnp.equal(batchensemble_conv.s[...], expected_s).all()
 
     def test_batchensemble_bias_none(self) -> None:
         rngs = nnx.Rngs(0, params=1)

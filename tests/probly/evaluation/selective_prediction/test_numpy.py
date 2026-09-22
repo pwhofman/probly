@@ -35,3 +35,11 @@ def test_selective_prediction_too_many_bins() -> None:
     rng = np.random.default_rng()
     with pytest.raises(ValueError, match="The number of bins can not be larger than the number of elements criterion"):
         selective_prediction(rng.random(5), rng.random(5), n_bins=10)
+
+
+def test_selective_prediction_breaks_ties_by_input_order() -> None:
+    # Equal criteria: earlier elements are rejected first, so the curve is deterministic.
+    criterion = np.array([1.0, 1.0, 1.0, 1.0])
+    losses = np.array([0.0, 10.0, 20.0, 30.0])
+    _, bin_losses = selective_prediction(criterion, losses, n_bins=2)
+    np.testing.assert_allclose(np.asarray(bin_losses), [15.0, 25.0])

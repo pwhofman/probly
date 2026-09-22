@@ -84,7 +84,7 @@ class TestNetworkArchitectures:
 
         # check p value in dropout layer
         if model_fixture != "flax_dropout_model":
-            for m in model.iter_modules():
+            for m in nnx.iter_modules(model):
                 if isinstance(m, nnx.Dropout):
                     assert m.rate == p
 
@@ -105,6 +105,6 @@ class TestNetworkArchitectures:
         assert count_linear_modified == count_linear_original
 
         # check p value in dropconnect layer
-        for m in flax_custom_model.iter_modules():
+        for m in nnx.iter_modules(flax_custom_model):
             if isinstance(m, nnx.Dropout):
                 assert m.rate == p

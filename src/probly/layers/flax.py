@@ -258,7 +258,7 @@ class BatchEnsembleLinear(nnx.Linear):
         self.num_members = num_members
 
         if base_layer.bias is not None:
-            base_bias = base_layer.bias.value
+            base_bias = base_layer.bias[...]
             bias_init = jnp.broadcast_to(base_bias[None, :], (num_members, self.out_features))
             self.bias = nnx.Param(bias_init)
         else:
@@ -411,7 +411,7 @@ class BatchEnsembleConv(nnx.Conv):
         self.num_members = num_members
 
         if base_layer.bias is not None:
-            base_bias = base_layer.bias.value
+            base_bias = base_layer.bias[...]
             bias_init = jnp.broadcast_to(base_bias[None, :], (num_members, self.out_features))
             self.bias = nnx.Param(bias_init)
         else:

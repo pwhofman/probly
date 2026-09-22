@@ -15,7 +15,8 @@ def torch_selective_prediction(
     if n_bins > losses.shape[0]:
         msg = "The number of bins can not be larger than the number of elements criterion"
         raise ValueError(msg)
-    sort_idxs = torch.argsort(criterion, descending=True)
+    # Stable descending order: ties are broken by input position, so results are deterministic.
+    sort_idxs = torch.argsort(criterion, descending=True, stable=True)
     losses_sorted = losses[sort_idxs]
     bin_len = losses.shape[0] // n_bins
     bin_losses = torch.stack([losses_sorted[(i * bin_len) :].mean() for i in range(n_bins)])
