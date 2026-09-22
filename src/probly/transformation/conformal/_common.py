@@ -18,7 +18,6 @@ from probly.conformal_scores import (
     lac_score,
     uacqr_score,
 )
-from probly.decider import Decider, point_from_mean
 from probly.predictor import (
     IterablePredictor,
     LogitClassifier,
@@ -53,7 +52,6 @@ class ConformalSetPredictor[**In, T, Out: ConformalSet](
 
     predictor: Predictor[In, Any]
     non_conformity_score: NonConformityScore[Any, Any] | None
-    decider: Decider[Any, Any] | None
     conformal_quantile: float | None
 
     def calibrate(self, alpha: float, y_calib: Out, *calib_args: In.args, **calib_kwargs: In.kwargs) -> Self:
@@ -116,30 +114,17 @@ class _ConformalPredictorBase[**In, Out](ABC):
 
     predictor: Predictor[In, Out]
     non_conformity_score: NonConformityScore[Out, Out] | None
-    decider: Decider[Any, Any] | None
     conformal_quantile: float | None
 
     def __init__(
         self,
         predictor: Predictor[In, Out],
         non_conformity_score: NonConformityScore[Out, Out],
-        decider: Decider[Any, Any] | None = None,
     ) -> None:
         super().__init__()
         self.predictor = predictor
         self.non_conformity_score = non_conformity_score
-        self.decider = decider
         self.conformal_quantile = None
-
-    def _decide(self, prediction: Any) -> Any:  # noqa: ANN401
-        """Apply the wrapper's decision rule to a base prediction, if it has one.
-
-        Regression wrappers reduce distribution outputs to a point prediction this way;
-        classification wrappers score the distribution itself and carry no decider.
-        """
-        if self.decider is None:
-            return prediction
-        return self.decider(prediction)
 
     def _require_score(self) -> NonConformityScore[Out, Out]:
         if self.non_conformity_score is None:
@@ -158,7 +143,7 @@ class _ConformalPredictorBase[**In, Out](ABC):
     def calibrate(self, alpha: float, y_calib: Out, *calib_args: In.args, **calib_kwargs: In.kwargs) -> Self:
         """Calibrate the predictor using calibration data."""
         score = self._require_score()
-        prediction = self._decide(predict(self.predictor, *calib_args, **calib_kwargs))
+        prediction = predict(self.predictor, *calib_args, **calib_kwargs)
         scores = score(prediction, y_calib)
         self.conformal_quantile = calculate_quantile(scores, alpha)
         return self
@@ -198,8 +183,7 @@ def predict_absolute_error_conformal_set[**In, T](
 ) -> IntervalConformalSet:
     """Predict an absolute-error conformal interval."""
     quantile, _score = calibrated_state(predictor)
-    wrapper = cast("Any", predictor)
-    prediction = wrapper._decide(predict(wrapper.predictor, *args, **kwargs))  # noqa: SLF001
+    prediction = predict(cast("Any", predictor).predictor, *args, **kwargs)
     lower = prediction - quantile
     upper = prediction + quantile
     return create_interval_conformal_set(lower, upper)
@@ -272,16 +256,8 @@ def predict_uacqr_conformal_set[**In, T](
 def conformal_generator[**In, T, Out](
     base: Predictor[In, Out],
     non_conformity_score: NonConformityScore[Out, T],
-    decider: Decider[Any, Any] | None = None,
 ) -> ConformalSetPredictor[In, T, ConformalSet]:
-    """Generate a backend-specific conformal set predictor wrapper.
-
-    Args:
-        base: The predictor to wrap.
-        non_conformity_score: Score used for calibration and set construction.
-        decider: Optional decision rule applied to the base prediction before scoring, for
-            example :func:`~probly.decider.point_from_mean` for regression wrappers.
-    """
+    """Generate a backend-specific conformal set predictor wrapper."""
     msg = f"No conformal generator is registered for type {type(base)}"
     raise NotImplementedError(msg)
 
@@ -347,13 +323,8 @@ def conformal_raps[**In, T, Out](
 @predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
 @AbsoluteErrorConformalSetPredictor.register_factory
 def conformal_absolute_error[**In, T, Out](base: Predictor[In, Out]) -> AbsoluteErrorConformalSetPredictor[In, T]:
-    """Create an absolute-error conformal predictor wrapper.
-
-    The base prediction is reduced to a point prediction with
-    :func:`~probly.decider.point_from_mean`, so distribution predictors such as Gaussian
-    processes are conformalized around their mean.
-    """
-    return conformal_generator(base, absolute_error_score, decider=point_from_mean)  # ty:ignore[invalid-argument-type]
+    """Create an absolute-error conformal predictor wrapper."""
+    return conformal_generator(base, absolute_error_score)  # ty:ignore[invalid-argument-type]
 
 
 @predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)

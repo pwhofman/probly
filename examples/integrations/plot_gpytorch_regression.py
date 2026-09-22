@@ -14,6 +14,7 @@ from __future__ import annotations
 import gpytorch
 import matplotlib.pyplot as plt
 import torch
+from torch import nn
 
 from probly.calibrator import calibrate
 from probly.method.conformal import conformal_absolute_error
@@ -98,11 +99,24 @@ print(f"variance at x=0.5: {predictive_variance[NUM_GRID // 3]:.3f}, at x=1.5: {
 # %%
 # Conformal intervals
 # -------------------
-# The absolute-error conformal wrapper uses the GP mean and calibrates the interval half-width on held-out data.
-# Coverage is checked on the in-range test set; the same intervals are then drawn on the extended grid.
+# probly's absolute-error conformal wrapper expects point predictions, so a thin module exposes the
+# GP mean. The wrapper then calibrates the interval half-width on held-out data. Coverage is checked
+# on the in-range test set; the same intervals are then drawn on the extended grid.
+
+
+class GPMean(nn.Module):
+    """Point predictor that returns the GP's predictive mean."""
+
+    def __init__(self, gp: gpytorch.models.ExactGP) -> None:
+        super().__init__()
+        self.gp = gp
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return predict(self.gp, x).mean
+
 
 with torch.no_grad():
-    calibrated = calibrate(conformal_absolute_error(model), ALPHA, y_calib, x_calib)
+    calibrated = calibrate(conformal_absolute_error(GPMean(model)), ALPHA, y_calib, x_calib)
     test_intervals = representer(calibrated).predict(x_test)
     grid_intervals = representer(calibrated).predict(x_grid)
 

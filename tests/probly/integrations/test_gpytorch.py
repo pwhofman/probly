@@ -17,10 +17,7 @@ from gpytorch.distributions import MultitaskMultivariateNormal, MultivariateNorm
 from gpytorch.likelihoods import BernoulliLikelihood, GaussianLikelihood, MultitaskGaussianLikelihood, SoftmaxLikelihood
 import torch
 
-from probly.calibrator import calibrate
 from probly.integrations.gpytorch import GpytorchClassificationRepresenter, GpytorchGaussianRepresenter
-from probly.method.conformal import conformal_absolute_error
-from probly.metrics import coverage
 from probly.predictor import GaussianDistributionPredictor, predict
 from probly.quantification import SecondOrderEntropyDecomposition, SecondOrderVarianceDecomposition
 from probly.quantification.measure.variance import variance
@@ -370,17 +367,3 @@ def test_representer_rejects_num_samples_for_gaussian_gp(exact_gp: _ExactGP) -> 
 def test_classification_representer_validates_likelihood(exact_gp: _ExactGP) -> None:
     with pytest.raises(NotImplementedError, match="GaussianLikelihood"):
         GpytorchClassificationRepresenter(exact_gp, 4, GaussianLikelihood())
-
-
-def test_conformal_absolute_error_wraps_exact_gp(exact_gp: _ExactGP) -> None:
-    # Fresh calibration points; reusing the training inputs would trigger GPyTorch's GPInputWarning.
-    torch.manual_seed(1)
-    x = torch.rand(NUM_TRAIN)
-    y = torch.sin(2.0 * torch.pi * x) + 0.1 * torch.randn(NUM_TRAIN)
-    with torch.no_grad():
-        calibrated = calibrate(conformal_absolute_error(exact_gp), 0.2, y, x)
-        intervals = representer(calibrated).predict(x)
-
-    assert intervals.tensor.shape == (NUM_TRAIN, 2)
-    assert torch.all(intervals.tensor[:, 0] <= intervals.tensor[:, 1])
-    assert float(coverage(intervals, y)) >= 0.75

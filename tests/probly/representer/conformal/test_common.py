@@ -15,7 +15,6 @@ from probly.conformal_scores import (
     cqr_score,
     lac_score,
 )
-from probly.decider import point_from_mean
 from probly.method.conformal import (
     conformal_absolute_error,
     conformal_aps,
@@ -24,7 +23,6 @@ from probly.method.conformal import (
     conformal_lac,
     conformal_uacqr,
 )
-from probly.predictor import GaussianDistributionPredictor
 from probly.representer import representer
 
 
@@ -44,22 +42,6 @@ class DummyRegressor(BaseEstimator):
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         return 2.0 * x[:, 0] + 1.0
-
-
-class DummyGaussianRegressor(BaseEstimator):
-    """sklearn-style regressor that returns a mean and a standard deviation like GaussianProcessRegressor."""
-
-    def fit(self, x: np.ndarray, y: np.ndarray) -> DummyGaussianRegressor:  # noqa: ARG002
-        return self
-
-    def predict(self, x: np.ndarray, return_std: bool = False) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
-        mean = np.asarray(x, dtype=float)[:, 0] * 2.0
-        if return_std:
-            return mean, np.full_like(mean, 0.5)
-        return mean
-
-
-GaussianDistributionPredictor.register(DummyGaussianRegressor)
 
 
 class DummyQuantileRegressor(BaseEstimator):
@@ -126,25 +108,6 @@ def test_regression_prediction_set_with_absolute_error_score() -> None:
 
     np.testing.assert_allclose(output.array[:, 0], expected_lower)
     np.testing.assert_allclose(output.array[:, 1], expected_upper)
-
-
-def test_absolute_error_wrapper_uses_point_from_mean_decider() -> None:
-    assert conformal_absolute_error(DummyRegressor()).decider is point_from_mean
-    assert conformal_lac(DummyClassifier()).decider is None
-
-
-def test_regression_prediction_set_with_absolute_error_score_on_gaussian_predictor() -> None:
-    x_calib = np.array([[0.0], [1.0], [2.0], [3.0]])
-    y_calib = np.array([0.2, 2.5, 3.6, 6.4])
-    x_test = np.array([[0.5], [1.5]])
-
-    predictor = conformal_absolute_error(DummyGaussianRegressor())
-    calibrated = calibrate(predictor, 0.2, y_calib, x_calib)
-    output = representer(calibrated).predict(x_test)
-
-    mean = DummyGaussianRegressor().predict(x_test)
-    np.testing.assert_allclose(output.array[:, 0], mean - calibrated.conformal_quantile)
-    np.testing.assert_allclose(output.array[:, 1], mean + calibrated.conformal_quantile)
 
 
 @pytest.mark.parametrize(

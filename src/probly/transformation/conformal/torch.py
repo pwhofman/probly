@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import torch
 from torch import nn
@@ -15,7 +15,6 @@ from ._common import (
 
 if TYPE_CHECKING:
     from probly.conformal_scores import NonConformityScore
-    from probly.decider import Decider
 
 
 @conformal_generator.register(nn.Module)
@@ -24,14 +23,9 @@ class TorchConformalSetPredictor[**In, Out](_ConformalPredictorBase[In, Out], nn
 
     predictor: nn.Module
 
-    def __init__(
-        self,
-        predictor: nn.Module,
-        non_conformity_score: NonConformityScore[Out, torch.Tensor],
-        decider: Decider[Any, Any] | None = None,
-    ) -> None:
+    def __init__(self, predictor: nn.Module, non_conformity_score: NonConformityScore[Out, torch.Tensor]) -> None:
         """Initialize the torch conformal wrapper."""
-        super().__init__(predictor, non_conformity_score, decider)
+        super().__init__(predictor, non_conformity_score)
         self.register_buffer("_conformal_quantile", torch.tensor(float("nan"), dtype=torch.float64))
 
     @property
