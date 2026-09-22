@@ -4,23 +4,28 @@
 Uncertainty Methods
 ===================
 
-:ref:`uq-representing` argued that choosing a method is choosing a
-representation. This part makes that concrete: it walks the methods ``probly``
-ships, grouped by the representation they produce.
+As argued in :ref:`uq-representing`, choosing an uncertainty method is to a
+large extent choosing a representation. The methods ``probly`` provides are
+therefore grouped by the representation they produce rather than by the
+mechanism that produces it.
 
-The four families answer four different questions.  A **second-order
-distribution** asks *how much would my predictive distribution move if I had
-trained differently?* A **credal set** refuses to commit to one distribution at
-all and reports a set of admissible ones. **Conformal prediction** gives up on
-describing the distribution and instead returns a set of labels with a coverage
-guarantee. **Calibration** keeps the first-order distribution and only fixes
-how its probabilities are scaled.
+Roughly speaking, the four families answer four different questions about a
+prediction. A **second-order distribution** asks *how much would the
+predictive distribution change had the model been trained differently?* A
+**credal set** asks *which distributions remain compatible with what the model
+has learned?*, and declines to rank them. **Conformal prediction** asks *which
+outcomes must be retained so that the truth is covered with a prescribed
+probability?*, and answers with a set of labels or an interval instead of a
+distribution. **Calibration**, finally, asks *can the predicted probabilities
+be taken at face value?*, and corrects their scale where they cannot.
 
-Each entry names the idea behind the method, the representation it hands back,
-its advantages and disadvantages, and the paper it comes from, and links to the
-worked example in the gallery. The trade-offs run from post-hoc wrappers you can
-put on an already-trained network to methods that change the architecture and
-the loss.
+Within each family, the methods range from post-hoc wrappers around an
+already-trained network to methods that change the architecture, the loss, or
+both. In practice, this is often the more decisive distinction, since it
+determines whether a method is applicable to a model that cannot be retrained.
+Every entry states the idea behind the method, the representation it returns,
+its main advantages and disadvantages, and the paper it originates from, and
+links to a worked example in the gallery.
 
 .. toctree::
     :maxdepth: 2

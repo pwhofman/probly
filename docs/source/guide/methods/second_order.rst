@@ -6,72 +6,78 @@ Second-Order Distributions
 
 .. currentmodule:: probly.method
 
-These methods turn a point predictor into one that outputs a
-:ref:`distribution over distributions <uq-second-order>`. The extra order is
-what makes the :ref:`aleatoric/epistemic split <uq-decomposition>` computable:
-the spread *between* the predicted distributions is the epistemic part, the
-average spread *within* them is the aleatoric part.
+The methods on this page turn a point predictor into one that outputs a
+:ref:`distribution over distributions <uq-second-order>`. This additional
+order is what makes the :ref:`aleatoric/epistemic decomposition
+<uq-decomposition>` computable, at least in its most common form: the spread
+*between* the predicted first-order distributions is attributed to epistemic
+uncertainty, and the average spread *within* them to aleatoric uncertainty.
 
-They differ along one axis above all others, and it is worth naming before the
-catalogue starts:
+The methods differ in many respects, but one distinction cuts deeper than the
+others, since it determines where the computational cost is paid. *Sampled*
+methods represent the second-order distribution implicitly, by a finite set of
+first-order distributions obtained from ``T`` stochastic forward passes, ``N``
+ensemble members, or ``S`` posterior weight samples. The resolution of this
+representation is paid for at every prediction.
 
-*Sampled* methods represent the second-order distribution implicitly, by a
-finite set of first-order distributions you have to draw --- ``T`` forward
-passes, ``N`` ensemble members, ``S`` posterior weight samples. The resolution
-of the representation is paid for at every prediction.
+*Parameterized* methods, on the other hand, output the second-order
+distribution in closed form, typically as a Dirichlet distribution over the
+simplex, from a single forward pass. The cost does not disappear, however; it
+moves to training, where the architecture, the loss, or both have to change.
 
-*Parameterized* methods emit the second-order distribution in closed form,
-typically as a Dirichlet over the simplex, from a single forward pass. They are
-cheap at inference and expensive at training: the architecture, the loss, or
-both have to change.
-
-A third, smaller group is *distance-aware*: instead of a posterior over
-parameters they measure where a point falls relative to the training data in
-feature space. They produce excellent out-of-distribution scores and, by
-construction, say little about aleatoric uncertainty.
-
-Every entry below follows the same fields, so they can be read against each
-other, and links to the worked example in the gallery.
+A third and smaller group is *distance-aware*. Instead of placing a posterior
+over parameters, these methods measure where an input falls relative to the
+training data in feature space. They tend to separate in-distribution from
+out-of-distribution inputs well, but the distance itself carries no
+information about aleatoric uncertainty, which has to come from elsewhere, if
+at all. A few methods fall outside all three groups, most notably
+:ref:`deup <m-deup>`, which learns to predict the model's error, and
+:ref:`het_net <m-het-net>`, which models aleatoric uncertainty only.
 
 .. _m-dropout:
 
 :func:`dropout <probly.transformation.dropout>`
 -----------------------------------------------
 
-Keeps dropout layers active at inference and treats each stochastic forward
-pass as one draw from an approximate posterior. It is the cheapest possible
-retrofit: if the trained network already contains dropout, nothing needs to be
-retrained at all. The transform inserts dropout after linear and convolutional
-layers; the torch backend additionally offers ``shared_mask`` to draw one mask
-per forward pass instead of one per element.
+Dropout layers are kept active at inference, and each stochastic forward pass
+is treated as a draw from an approximate posterior. For a network that was
+trained with dropout, no retraining is required at all, which makes this the
+cheapest retrofit available. The transform inserts a dropout layer in front of
+every linear layer; the torch backend additionally offers ``shared_mask``,
+which draws a single mask per forward pass, shared across the batch, instead
+of an independent mask per sample.
 
-:Idea: Monte Carlo sampling of sub-networks by keeping dropout on at test time.
-:Representation: :ref:`Sampled second order <uq-second-order>` --- a ``Sample``
-    of categorical distributions.
-:Advantages: No retraining when the model already contains dropout; the
+:Idea: Monte Carlo sampling of sub-networks by keeping dropout active at test
+    time.
+:Representation: :ref:`Sampled second order <uq-second-order>`, i.e., a
+    ``Sample`` of categorical distributions.
+:Advantages: No retraining if the model was trained with dropout; the
     cheapest retrofit available.
-:Disadvantages: ``T`` forward passes per prediction; quality depends on where
-    the dropout layers sit, and a network without dropout must be modified.
+:Disadvantages: ``T`` forward passes per prediction; the quality depends on
+    where the dropout layers sit, and a model trained without dropout may have
+    to be retrained once they are inserted.
 :Reference: :cite:`galDropoutBayesian2016`
 
-.. minigallery:: probly.method.dropout
+.. minigallery:: probly.transformation.dropout
 
 .. _m-dropconnect:
 
 :func:`dropconnect <probly.transformation.dropconnect>`
 -------------------------------------------------------
 
-The same Monte Carlo argument applied one level down: DropConnect zeroes
-individual *weights* rather than whole activations, so each forward pass
-samples a different sparse weight matrix. The sub-network space is larger than
-dropout's, which tends to give more diverse samples at the same drop rate.
+The same Monte Carlo argument, applied one level lower: DropConnect sets
+individual *weights* rather than entire activations to zero, so that every
+forward pass samples a different sparse weight matrix. The space of
+sub-networks is thus larger than for dropout, which tends to yield more diverse
+samples at the same drop rate.
 
 :Idea: Monte Carlo sampling over randomly dropped weights.
 :Representation: :ref:`Sampled second order <uq-second-order>`.
-:Advantages: A larger sub-network space than dropout, so more diverse samples
-    at the same drop rate; still no retraining.
-:Disadvantages: ``T`` forward passes per prediction; masking individual weights
-    costs more per pass than masking activations.
+:Advantages: A larger sub-network space than dropout, and hence more diverse
+    samples at the same drop rate; as with dropout, retraining is not strictly
+    required.
+:Disadvantages: ``T`` forward passes per prediction; masking individual
+    weights costs more per pass than masking activations.
 :Reference: :cite:`mobinyDropConnectEffective2021`
 
 .. minigallery:: probly.transformation.dropconnect
@@ -81,18 +87,19 @@ dropout's, which tends to give more diverse samples at the same drop rate.
 :func:`bayesian <probly.transformation.bayesian>`
 -------------------------------------------------
 
-A genuine variational Bayesian neural network: every weight becomes a Gaussian
-with a learned mean and standard deviation, fitted by Bayes-by-Backprop against
-a prior. Unlike dropout, the posterior is explicit and trained for, which is
-also why it cannot be bolted onto a finished model.
+A genuine variational Bayesian neural network: every weight is replaced by a
+Gaussian with learned mean and standard deviation, fitted by Bayes by Backprop
+against a prior. Unlike with dropout, the posterior is explicit and is itself
+the object of training, which is also why it cannot simply be added to a model
+that has already been trained.
 
 :Idea: Mean-field Gaussian variational posterior over the weights.
-:Representation: :ref:`Sampled second order <uq-second-order>`, drawn by
+:Representation: :ref:`Sampled second order <uq-second-order>`, obtained by
     sampling weights.
-:Advantages: An explicit, trained-for posterior rather than an approximation
-    added afterwards.
+:Advantages: An explicit posterior that is trained for, rather than an
+    approximation added afterwards.
 :Disadvantages: Requires training with the ELBO and roughly doubles the
-    parameter count; cannot be applied to a finished model; ``S`` forward
+    parameter count; cannot be applied to a trained model; ``S`` forward
     passes per prediction.
 :Reference: :cite:`blundellWeightUncertainty2015`
 
@@ -103,17 +110,18 @@ also why it cannot be bolted onto a finished model.
 :mod:`laplace <probly.method.laplace>`
 --------------------------------------
 
-A post-hoc Bayesian treatment: fit the network as usual, then place a Gaussian
-around the trained MAP weights whose covariance is the inverse Hessian of the
-loss. ``probly`` integrates the ``laplace-torch`` package and exposes its
-``predictive_samples`` through the standard representer interface
-(classification only).
+A post-hoc Bayesian treatment: the network is trained as usual, and a Gaussian
+is then placed around the resulting MAP weights, with the inverse Hessian of
+the loss, or in practice an approximation of it, as its covariance. ``probly``
+integrates the ``laplace-torch`` package and exposes its
+``predictive_samples`` through the standard representer interface; only
+classification is currently supported.
 
 :Idea: Second-order Taylor expansion of the loss around the MAP estimate.
 :Representation: :ref:`Sampled second order <uq-second-order>`.
-:Advantages: No change to training --- a post-hoc treatment of an
-    already-fitted network.
-:Disadvantages: One Hessian approximation after fitting, then ``S`` forward
+:Advantages: No change to training; a post-hoc treatment of an already
+    trained network.
+:Disadvantages: A Hessian approximation after training, then ``S`` forward
     passes per prediction; classification only.
 :Reference: Wraps the external ``laplace-torch`` package.
 
@@ -124,40 +132,43 @@ loss. ``probly`` integrates the ``laplace-torch`` package and exposes its
 :func:`ensemble <probly.transformation.ensemble>`
 -------------------------------------------------
 
-Train ``N`` copies of the same architecture from different initializations and
-treat their predictions as samples. Deep ensembles remain the strongest and
-most robust baseline in the literature, and the reason is diversity of loss
-basins rather than any Bayesian argument.
+``N`` copies of the same architecture are trained from different
+initializations, and their predictions are treated as samples. Deep ensembles
+have proven hard to beat, and what explains their success appears to be the
+diversity of the loss basins in which the members settle rather than any
+Bayesian argument.
 
-:Idea: Independent retraining; disagreement between members is the epistemic
-    signal.
+:Idea: Independent retraining; the disagreement between members is the
+    epistemic signal.
 :Representation: :ref:`Sampled second order <uq-second-order>` with ``N``
     members.
-:Advantages: The strongest and most robust baseline in the literature; diverse
-    loss basins, no Bayesian assumptions.
-:Disadvantages: ``N`` times the training cost, ``N`` times the memory, ``N``
-    forward passes.
+:Advantages: Consistently among the strongest baselines, without relying on
+    Bayesian assumptions.
+:Disadvantages: ``N`` times the training cost, ``N`` times the memory, and
+    ``N`` forward passes per prediction.
 :Reference: :cite:`lakshminarayananSimpleScalable2017`
 
 .. minigallery:: probly.method.ensemble
+.. minigallery:: probly.transformation.ensemble
 
 .. _m-batchensemble:
 
 :func:`batchensemble <probly.transformation.batchensemble>`
 -----------------------------------------------------------
 
-An ensemble that fits in roughly one model's memory. Each member owns only a
-rank-one factor pair ``(r, s)`` that modulates a shared "slow" weight matrix,
-so ``N`` members cost ``N`` extra vectors per layer rather than ``N`` extra
-matrices. Members are still trained jointly, in one pass over tiled inputs.
+An ensemble that fits into roughly the memory of a single model. Each member
+owns only a pair of rank-one factors ``(r, s)`` that modulate a shared "slow"
+weight matrix, so ``N`` members cost ``N`` additional pairs of vectors per
+layer rather than ``N`` additional matrices. The members are trained jointly,
+in a single pass over inputs that are tiled ``N`` times.
 
-:Idea: Rank-one per-member perturbations of a shared weight matrix.
+:Idea: Rank-one, per-member perturbations of a shared weight matrix.
 :Representation: :ref:`Sampled second order <uq-second-order>` with ``N``
     members.
-:Advantages: Close to one model in memory and a single training run, yet
-    recovers most of a full ensemble's benefit.
-:Disadvantages: Inputs are tiled ``N`` times per batch; diversity is lower than
-    fully independent members.
+:Advantages: Close to a single model in memory, with a single training run,
+    yet recovers much of the benefit of a full ensemble.
+:Disadvantages: Inputs are tiled ``N`` times per batch, and diversity is lower
+    than for fully independent members.
 :Reference: :cite:`wenBatchEnsemble2020`
 
 .. minigallery:: probly.transformation.batchensemble
@@ -167,15 +178,16 @@ matrices. Members are still trained jointly, in one pass over tiled inputs.
 :func:`subensemble <probly.transformation.subensemble>`
 -------------------------------------------------------
 
-Shares the expensive backbone and ensembles only the head. The split is either
-taken from an existing model (the last ``head_layer`` layers become the head)
-or supplied explicitly. Diversity is lower than a full ensemble, since all
-members see the same features, but the cost is close to a single model.
+The expensive backbone is shared, and only the head is ensembled. The split is
+either taken from an existing model, in which case the last ``head_layer``
+layers form the head, or specified explicitly. Since all members see the same
+features, diversity is lower than for a full ensemble, but the cost is close
+to that of a single model.
 
-:Idea: One shared feature extractor, ``N`` independently initialized heads.
+:Idea: One shared feature extractor and ``N`` independently initialized heads.
 :Representation: :ref:`Sampled second order <uq-second-order>` with ``N``
     heads.
-:Advantages: Close to a single model in cost --- one backbone, one training
+:Advantages: Close to a single model in cost: one backbone and one training
     run.
 :Disadvantages: Lower diversity than a full ensemble, since all members share
     the same features.
@@ -188,20 +200,23 @@ members see the same features, but the cost is close to a single model.
 :func:`dare <probly.method.dare>`
 ---------------------------------
 
-An ensemble whose members are actively pushed apart. Anti-regularization
-rewards weight diversity instead of penalizing weight magnitude, which widens
-the ensemble's spread away from the training data --- where a conventional
-ensemble tends to collapse into agreement --- and so improves epistemic
-estimates under shift.
+An ensemble whose members are actively pushed apart. The anti-regularization
+term rewards large weights instead of penalizing them, but is only active as
+long as the training loss stays below a threshold, so that the fit to the
+training data is maintained. Members with large weights tend to disagree away
+from the training data, which is precisely where conventional ensembles tend
+to collapse into agreement; as a result, the epistemic estimates under
+distribution shift improve.
 
-:Idea: Deep anti-regularized ensembling: increase member diversity by
-    regularizing *against* weight shrinkage.
+:Idea: Deep anti-regularized ensembles: increase member diversity by
+    rewarding, rather than penalizing, large weights.
 :Representation: :ref:`Sampled second order <uq-second-order>` with ``N``
     members.
-:Advantages: Wider, better epistemic estimates under distribution shift, where
-    ordinary ensembles collapse into agreement.
+:Advantages: Wider and more informative epistemic estimates under
+    distribution shift, where ordinary ensembles tend to collapse into
+    agreement.
 :Disadvantages: ``N`` times the training cost, plus the anti-regularization
-    term and the hyperparameter it adds.
+    term and the loss threshold it requires.
 :Reference: :cite:`demathelinDeepAntiRegularized2023`
 
 .. minigallery:: probly.method.dare
@@ -211,20 +226,21 @@ estimates under shift.
 :func:`duq <probly.method.duq>`
 -------------------------------
 
-Replaces the linear classification head with a set of learned per-class
-centroids in feature space and scores a point by its RBF distance to them. A
-single deterministic forward pass yields both the prediction and the
-uncertainty; the centroids are updated by an exponential moving average during
-training, and a gradient penalty keeps the feature map from collapsing.
+Replaces the linear classification head by a set of learned per-class
+centroids in feature space and scores an input by its RBF-kernel distance to
+them. A single deterministic forward pass thus yields both the prediction and
+the uncertainty. During training, the centroids are updated by an exponential
+moving average, and a gradient penalty prevents feature collapse, i.e.,
+out-of-distribution inputs being mapped close to the centroids.
 
 :Idea: Distance to learned class centroids in feature space, in place of a
     softmax head.
 :Representation: RBF kernel scores, presented as a
     :ref:`categorical distribution <uq-first-order>`; total uncertainty only.
-:Advantages: A single deterministic forward pass gives both the prediction and
-    the uncertainty.
-:Disadvantages: Requires training with a gradient penalty and a changed head;
-    does not separate aleatoric from epistemic uncertainty.
+:Advantages: A single deterministic forward pass yields both the prediction
+    and the uncertainty.
+:Disadvantages: Requires training with a gradient penalty and a modified
+    head; does not separate aleatoric from epistemic uncertainty.
 :Reference: :cite:`vanAmersfoortUncertaintyEstimation2020`
 
 .. minigallery:: probly.method.duq
@@ -234,20 +250,20 @@ training, and a gradient penalty keeps the feature map from collapsing.
 :func:`ddu <probly.method.ddu>`
 -------------------------------
 
-Also distance-aware, but it separates the two jobs: spectral normalization
-keeps the feature extractor sensitive to input changes (so distances in feature
-space remain meaningful), and a Gaussian mixture density fitted post-hoc on
-those features supplies the epistemic score. The softmax entropy is kept for
-aleatoric uncertainty.
+Also distance-aware, but with a division of labor: spectral normalization
+keeps the feature extractor sensitive to changes in the input, so that
+distances in feature space remain meaningful, and a Gaussian mixture density
+fitted post-hoc on these features provides the epistemic score. The softmax
+entropy is retained as a measure of aleatoric uncertainty.
 
-:Idea: Spectral normalization for a well-behaved feature space plus a Gaussian
-    density estimate over it.
-:Representation: Feature-space density as the epistemic score, softmax as the
-    :ref:`first-order <uq-first-order>` predictive.
-:Advantages: One forward pass, with the density head fitted afterwards; strong
+:Idea: Spectral normalization for a well-behaved feature space, plus a
+    Gaussian density estimate over it.
+:Representation: The feature-space density as epistemic score, and the
+    softmax as :ref:`first-order <uq-first-order>` predictive distribution.
+:Advantages: One forward pass, with the density fitted after training; strong
     out-of-distribution detection.
-:Disadvantages: Spectral normalization must be applied during training, so it
-    is not a pure retrofit.
+:Disadvantages: Spectral normalization must be applied during training, so the
+    method is not a pure retrofit.
 :Reference: :cite:`mukhotiDeepDeterministicUncertainty2023`
 
 .. minigallery:: probly.method.ddu
@@ -258,17 +274,19 @@ aleatoric uncertainty.
 --------------------------------------
 
 Rather than deriving uncertainty from a posterior, DEUP *predicts the model's
-own error*. A second head is trained on held-out data to regress the frozen
-main model's per-sample loss; at inference that predicted loss is the epistemic
-score. Training is explicitly two-phase --- first the classifier, then the
-error head on data the classifier has not seen.
+own error*. A second head is trained on held-out data to regress the
+per-sample loss of the frozen main model, and at inference time this predicted
+loss serves as the epistemic score. Training therefore proceeds in two phases:
+first the classifier, then the error head, on data the classifier has not
+seen.
 
 :Idea: Learn a direct regressor of the main model's generalization error.
-:Representation: A scalar error score; the decomposition assigns it entirely to
-    the epistemic term.
-:Advantages: One forward pass at inference; makes no posterior assumptions.
-:Disadvantages: Needs an extra head and a second training phase on a held-out
-    split.
+:Representation: A scalar error score, which the decomposition assigns
+    entirely to the epistemic term.
+:Advantages: One forward pass at inference, and no assumptions about a
+    posterior.
+:Disadvantages: Requires an additional head and a second training phase on a
+    held-out split.
 :Reference: :cite:`lahlouDirectEpistemic2023`
 
 .. minigallery:: probly.method.deup.deup
@@ -279,19 +297,21 @@ error head on data the classifier has not seen.
 ---------------------------------
 
 Combines the two ingredients that make a single deterministic network
-distance-aware: spectral normalization on the hidden layers to make the
-representation approximately distance-preserving, and a Gaussian process output
-layer (random Fourier features with a Laplace-approximated posterior) that
-widens away from the training data.
+distance-aware: spectral normalization of the hidden layers, which makes the
+representation approximately distance-preserving, and a Gaussian process
+output layer, approximated by random Fourier features with a
+Laplace-approximated posterior, whose uncertainty grows away from the training
+data.
 
-:Idea: Spectral-normalized backbone with a GP output layer approximated by
-    random Fourier features.
-:Representation: Gaussian over logits, giving a
-    :ref:`second-order <uq-second-order>` predictive in closed form.
-:Advantages: Distance-aware uncertainty in a closed-form predictive from a
-    single forward pass.
-:Disadvantages: Changed head, spectral normalization, and a covariance update
-    pass at the end of training.
+:Idea: Spectrally normalized backbone with a Gaussian process output layer
+    approximated by random Fourier features.
+:Representation: A Gaussian over the logits, which yields a
+    :ref:`second-order <uq-second-order>` predictive distribution in closed
+    form.
+:Advantages: Distance-aware uncertainty with a closed-form predictive
+    distribution from a single forward pass.
+:Disadvantages: A modified head, spectral normalization, and an additional
+    covariance update pass at the end of training.
 :Reference: :cite:`liuSimplePrincipled2020`
 
 .. minigallery:: probly.method.sngp
@@ -301,19 +321,22 @@ widens away from the training data.
 :func:`evidential_classification <probly.method.evidential_classification>`
 ---------------------------------------------------------------------------
 
-The first of the parameterized methods: the network outputs the concentration
-parameters of a Dirichlet directly, interpreting them as accumulated
-*evidence* for each class. The whole second-order distribution comes out of one
-forward pass, and total evidence (rather than spread across samples) carries
-the epistemic signal --- low evidence means "I have seen nothing like this".
+Here, the second order is carried by evidence rather than by sampling: the
+network directly outputs the concentration parameters of a Dirichlet
+distribution, which are interpreted as accumulated *evidence* for each class.
+The entire second-order distribution thus results from a single forward pass,
+and the epistemic signal lies in the total amount of evidence rather than in
+the spread across samples; low total evidence means, roughly, "I have not
+seen anything like this". Note, however, that nothing in the training
+objective forces the evidence to decrease away from the training data.
 
 :Idea: Predict Dirichlet concentrations as per-class evidence.
-:Representation: :ref:`Parameterized second order <uq-second-order>` ---
-    a ``DirichletDistribution``.
-:Advantages: The whole second-order distribution from one forward pass; low
-    total evidence flags unfamiliar inputs.
-:Disadvantages: Needs an evidential loss and a positivity activation; nothing
-    forces the evidence to fall off away from the data.
+:Representation: :ref:`Parameterized second order <uq-second-order>`, i.e., a
+    ``DirichletDistribution``.
+:Advantages: The entire second-order distribution from a single forward pass;
+    low total evidence flags unfamiliar inputs.
+:Disadvantages: Requires an evidential loss and a positive activation; nothing
+    forces the evidence to decrease away from the data.
 :Reference: :cite:`sensoyEvidentialDeep2018`
 
 .. minigallery:: probly.method.evidential_classification
@@ -323,21 +346,22 @@ the epistemic signal --- low evidence means "I have seen nothing like this".
 :func:`posterior_network <probly.transformation.posterior_network>`
 -------------------------------------------------------------------
 
-Fixes the main weakness of purely evidential losses --- that nothing forces
-evidence to fall off away from the data --- by making the concentration
-parameters proportional to an estimated *density*. A normalizing flow over a
-low-dimensional latent space provides that density, so regions with little
-training data receive little evidence by construction.
+Addresses the main weakness of purely evidential losses, namely that nothing
+forces the evidence to decrease away from the data, by making the
+concentration parameters proportional to an estimated *density*. This density
+is provided by a normalizing flow over a low-dimensional latent space, so that
+regions with little training data receive little evidence by construction.
 
 :Idea: Density-based Dirichlet concentrations via a normalizing flow in latent
     space.
-:Representation: :ref:`Parameterized second order <uq-second-order>` ---
-    a ``DirichletDistribution``.
-:Advantages: Evidence shrinks by construction where training data is sparse,
-    fixing evidential losses' main weakness; one forward pass.
-:Disadvantages: Requires an encoder, per-class normalizing flows, and a
-    Bayesian-loss training scheme; the per-class flows scale poorly in the
-    number of classes.
+:Representation: :ref:`Parameterized second order <uq-second-order>`, i.e., a
+    ``DirichletDistribution``.
+:Advantages: Evidence decreases by construction where training data is
+    sparse, which removes the main weakness of evidential losses; one forward
+    pass.
+:Disadvantages: Requires an encoder, one normalizing flow per class, and a
+    Bayesian training loss; the per-class flows scale poorly in the number of
+    classes.
 :Reference: :cite:`charpentierPosteriorNetwork2020`
 
 .. minigallery:: probly.transformation.posterior_network
@@ -347,20 +371,21 @@ training data receive little evidence by construction.
 :func:`mahalanobis <probly.method.mahalanobis>`
 -----------------------------------------------
 
-A post-hoc out-of-distribution detector rather than a predictive-uncertainty
-method. Class-conditional Gaussians with a tied covariance are fitted to the
-penultimate (and optionally intermediate) features of a trained network; the
-Mahalanobis distance to the nearest class mean is the score, optionally
-sharpened by a small FGSM-style input perturbation and combined across layers
-by logistic regression.
+Strictly speaking, a post-hoc out-of-distribution detector rather than a
+method for predictive uncertainty. Class-conditional Gaussians with a shared
+covariance matrix are fitted to the penultimate, and optionally intermediate,
+features of a trained network. The score is the Mahalanobis distance to the
+nearest class mean, optionally sharpened by a small FGSM-style perturbation of
+the input and combined across layers by logistic regression.
 
-:Idea: Class-conditional Gaussians in feature space; distance to the nearest
-    one is the OOD score.
-:Representation: A scalar OOD score alongside the base
+:Idea: Class-conditional Gaussians in feature space; the distance to the
+    nearest one is the out-of-distribution score.
+:Representation: A scalar out-of-distribution score alongside the base
     :ref:`first-order <uq-first-order>` prediction.
 :Advantages: No retraining; a single fitting pass over the training features.
-:Disadvantages: An OOD detector, not a predictive-uncertainty method; the
-    multi-layer combiner needs both in- and out-of-distribution data.
+:Disadvantages: An out-of-distribution detector rather than a
+    predictive-uncertainty method; the multi-layer combination requires both
+    in- and out-of-distribution data.
 :Reference: :cite:`leeSimpleUnifiedFramework2018`
 
 .. minigallery:: probly.method.mahalanobis
@@ -370,21 +395,22 @@ by logistic regression.
 :func:`natural_posterior_network <probly.transformation.natural_posterior_network.natural_posterior_network>`
 --------------------------------------------------------------------------------------------------------------
 
-The generalization of :ref:`posterior_network <m-posterior-network>` to
-exponential-family targets, and the version to prefer in practice: a *single*
-shared flow over the latent space provides ``log p(z)``, a linear classifier
-provides the class log-probabilities, and the Dirichlet parameters follow the
-Bayesian update ``alpha = alpha_prior + n(x) * chi(x)``, with ``n(x)`` a
-budget-scaled pseudo-count. Sharing one flow is what makes it scale to many
-classes.
+Generalizes :ref:`posterior_network <m-posterior-network>` to targets from the
+exponential family and is the natural first choice among the density-based
+methods. A *single* shared flow over the latent space provides ``log p(z)``, a
+linear classifier provides the class log-probabilities, and the Dirichlet
+parameters follow the Bayesian update ``alpha = alpha_prior + n(x) * chi(x)``,
+where ``n(x)`` is a pseudo-count derived from the density and scaled by a
+certainty budget. Sharing one flow across classes is what allows the method to
+scale to many classes.
 
 :Idea: A Bayesian posterior update per input, with a density-derived
     pseudo-count as the evidence.
-:Representation: :ref:`Parameterized second order <uq-second-order>` ---
-    a ``DirichletDistribution``.
-:Advantages: A single shared flow scales to many classes; one forward pass;
-    the version to prefer in practice.
-:Disadvantages: Requires an encoder, one shared normalizing flow, and a changed
+:Representation: :ref:`Parameterized second order <uq-second-order>`, i.e., a
+    ``DirichletDistribution``.
+:Advantages: A single shared flow scales to many classes, unlike the per-class
+    flows it replaces; one forward pass.
+:Disadvantages: Requires an encoder, a shared normalizing flow, and a modified
     loss.
 :Reference: :cite:`charpentierNaturalPosteriorNetwork2022`
 
@@ -395,20 +421,21 @@ classes.
 :func:`prior_network <probly.method.prior_network.prior_network>`
 -----------------------------------------------------------------
 
-The simplest way to get a Dirichlet out of an existing classifier: exponentiate
-the logits and read them as concentration parameters. In its original form the
-network is trained to emit a flat Dirichlet on out-of-distribution data and a
-sharp one in-distribution, which requires OOD examples during training; without
-them it is best read as a reparameterization of the logits.
+The simplest way of obtaining a Dirichlet distribution from an existing
+classifier: the logits are exponentiated and interpreted as concentration
+parameters. In its original form, the network is trained to output a flat
+Dirichlet on out-of-distribution data and a sharp one in-distribution, which
+requires out-of-distribution examples during training. Without them, the
+method amounts to little more than a reparameterization of the logits.
 
-:Idea: Exponential activation on the logits turns them into Dirichlet
+:Idea: An exponential activation on the logits turns them into Dirichlet
     concentrations.
-:Representation: :ref:`Parameterized second order <uq-second-order>` ---
-    a ``DirichletDistribution``.
-:Advantages: One forward pass and no architectural change --- the simplest
-    route to a Dirichlet.
-:Disadvantages: The intended training scheme needs out-of-distribution data;
-    without it, it is only a reparameterization of the logits.
+:Representation: :ref:`Parameterized second order <uq-second-order>`, i.e., a
+    ``DirichletDistribution``.
+:Advantages: One forward pass and no architectural change; the simplest route
+    to a Dirichlet distribution.
+:Disadvantages: The intended training scheme requires out-of-distribution
+    data; without it, the method is merely a reparameterization of the logits.
 :Reference: :cite:`malininPredictiveUncertaintyEstimation2018`
 
 .. minigallery:: probly.method.prior_network.prior_network
@@ -418,19 +445,20 @@ them it is best read as a reparameterization of the logits.
 :func:`evidential_regression <probly.method.evidential_regression>`
 -------------------------------------------------------------------
 
-The regression counterpart of evidential classification. The final linear layer
-is replaced by a head emitting the four parameters of a Normal-Inverse-Gamma
-distribution, which is a distribution over the mean *and* the variance of the
-target. One forward pass therefore yields both an aleatoric estimate (the
-expected variance) and an epistemic one (the variance of the mean).
+The regression counterpart of evidential classification. The final linear
+layer is replaced by a head that outputs the four parameters of a
+Normal-Inverse-Gamma distribution, i.e., a distribution over both the mean
+*and* the variance of the target. A single forward pass therefore yields an
+aleatoric estimate, the expected variance, as well as an epistemic one, the
+variance of the mean.
 
-:Idea: Predict a Normal-Inverse-Gamma prior over the target's mean and
-    variance.
+:Idea: Predict a Normal-Inverse-Gamma prior over the mean and variance of the
+    target.
 :Representation: :ref:`Parameterized second order <uq-second-order>` over a
     real-valued target.
-:Advantages: One forward pass yields both an aleatoric (expected variance) and
-    an epistemic (variance of the mean) estimate.
-:Disadvantages: Changed head and an evidential regression loss.
+:Advantages: A single forward pass yields both an aleatoric (expected
+    variance) and an epistemic (variance of the mean) estimate.
+:Disadvantages: A modified head and an evidential regression loss.
 :Reference: :cite:`aminiDeepEvidential2020`
 
 .. minigallery:: probly.method.evidential_regression
@@ -440,17 +468,18 @@ expected variance) and an epistemic one (the variance of the mean).
 :func:`het_net <probly.method.het_net>`
 ---------------------------------------
 
-Aleatoric-only, and included here because it is the honest way to model label
-noise: instead of a single logit vector the network predicts a full
-input-dependent covariance over logits, parameterized in low rank so it stays
-affordable. Useful where labels genuinely disagree; it says nothing about
-whether the model has seen data like this before.
+Models aleatoric uncertainty only, and is included because no other method on
+this page captures correlated label noise. Instead of a single logit vector,
+the network predicts a full input-dependent covariance over the logits,
+parameterized in low rank to keep it affordable. This is useful where labels
+are genuinely ambiguous, but it says nothing about whether the model has seen
+similar data before.
 
 :Idea: Input-dependent, low-rank correlated noise over the logits.
-:Representation: A Gaussian over logits; aleatoric uncertainty only.
-:Advantages: Honestly models correlated label noise; one forward pass plus a
-    few extra output channels.
-:Disadvantages: Says nothing about epistemic uncertainty; uses a sampled
+:Representation: A Gaussian over the logits; aleatoric uncertainty only.
+:Advantages: Models correlated, input-dependent label noise at the cost of one
+    forward pass and a few additional output channels.
+:Disadvantages: Says nothing about epistemic uncertainty; relies on a sampled
     softmax during training.
 :Reference: :cite:`collierCorrelatedInputDependent2021`
 
@@ -459,20 +488,23 @@ whether the model has seen data like this before.
 Choosing Among Them
 -------------------
 
-If the model is already trained and you cannot retrain it, the options are
-:ref:`dropout <m-dropout>`, :ref:`laplace <m-laplace>` and
-:ref:`mahalanobis <m-mahalanobis>`. If you can afford ``N`` training runs,
-:ref:`ensemble <m-ensemble>` is the baseline everything else is measured
-against, and :ref:`batchensemble <m-batchensemble>` or
-:ref:`subensemble <m-subensemble>` recover most of it for a fraction of the
-memory. If inference latency is the binding constraint, use a parameterized
-method --- :ref:`natural_posterior_network <m-natural-posterior-network>` for
-classification, :ref:`evidential_regression <m-evidential-regression>` for
-regression. If the target is out-of-distribution detection specifically, prefer
-the distance-aware group: :ref:`ddu <m-ddu>`, :ref:`sngp <m-sngp>`,
-:ref:`duq <m-duq>`.
+The first question is usually whether the model can be retrained at all. If it
+cannot, the options reduce to :ref:`laplace <m-laplace>`,
+:ref:`mahalanobis <m-mahalanobis>`, and, provided the network was trained with
+dropout, :ref:`dropout <m-dropout>`. If ``N`` training runs are affordable,
+:ref:`ensemble <m-ensemble>` is the baseline against which everything else
+should be measured, and :ref:`batchensemble <m-batchensemble>` or
+:ref:`subensemble <m-subensemble>` recover much of its benefit for a fraction
+of the memory. If inference latency is the binding constraint, a
+parameterized method is the natural choice, such as
+:ref:`natural_posterior_network <m-natural-posterior-network>` for
+classification or :ref:`evidential_regression <m-evidential-regression>` for
+regression. If the goal is specifically out-of-distribution detection, the
+distance-aware methods :ref:`ddu <m-ddu>`, :ref:`sngp <m-sngp>`, and
+:ref:`duq <m-duq>` are preferable.
 
-Whichever you pick, :ref:`uq-evaluating` is what decides whether it worked.
+Whichever method is chosen, whether it actually works can only be decided
+empirically, with the tools described in :ref:`uq-evaluating`.
 
 Full API
 --------
