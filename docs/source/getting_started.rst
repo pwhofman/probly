@@ -22,6 +22,10 @@ How Probly Works
 A model becomes uncertainty-aware in four stages:
 
 .. image:: _static/readme/from_paper/paper_workflow_light.png
+    :class: only-light
+
+.. image:: _static/readme/from_paper/paper_workflow_dark.png
+    :class: only-dark
 
 The example follows the ``probly`` pipeline and applies it to an exemplary model, in this case the Two-Moons Dataset, and applies
 the dropout method to make it uncertainty aware.
