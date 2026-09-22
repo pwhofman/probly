@@ -18,6 +18,7 @@ from gpytorch.likelihoods import BernoulliLikelihood, GaussianLikelihood, Multit
 import torch
 
 from probly.calibrator import calibrate
+from probly.integrations.gpytorch import GpytorchClassificationRepresenter, GpytorchGaussianRepresenter
 from probly.method.conformal import conformal_absolute_error
 from probly.metrics import coverage
 from probly.predictor import GaussianDistributionPredictor, predict
@@ -319,22 +320,56 @@ def test_representer_predict_lists_one_distribution_per_draw(
     assert all(draw.probabilities.shape == (4, NUM_CLASSES) for draw in draws)
 
 
-def test_representer_rejects_gaussian_likelihood(exact_gp: _ExactGP) -> None:
-    with pytest.raises(NotImplementedError, match="GaussianLikelihood"):
+def test_representer_on_gaussian_gp_passes_through_predict(exact_gp: _ExactGP) -> None:
+    x = torch.tensor([0.25, 0.75])
+    rep = representer(exact_gp)
+    with torch.no_grad():
+        represented = rep.predict(x)
+        predicted = predict(exact_gp, x)
+
+    assert isinstance(rep, GpytorchGaussianRepresenter)
+    assert isinstance(represented, TorchGaussianDistribution)
+    assert torch.allclose(represented.mean, predicted.mean)
+    assert torch.allclose(represented.var, predicted.var)
+
+
+def test_predict_applies_explicit_gaussian_likelihood_to_approximate_gp() -> None:
+    torch.manual_seed(0)
+    model = _ScalarSVGP(torch.randn(6, 2)).eval()
+    likelihood = GaussianLikelihood()
+    x = torch.randn(4, 2)
+    with torch.no_grad():
+        latent = predict(model, x)
+        predictive = predict(model, x, likelihood=likelihood)
+        via_representer = representer(model, likelihood=likelihood).predict(x)
+
+    assert torch.all(predictive.var > latent.var)
+    assert torch.allclose(predictive.mean, latent.mean)
+    assert torch.allclose(via_representer.var, predictive.var)
+
+
+def test_predict_rejects_classification_likelihood(softmax_svgp: tuple[_MultitaskSVGP, SoftmaxLikelihood]) -> None:
+    model, likelihood = softmax_svgp
+    with pytest.raises(NotImplementedError, match="representer"):
+        predict(model, torch.randn(4, 2), likelihood=likelihood)
+
+
+def test_representer_requires_num_samples_for_classification(
+    softmax_svgp: tuple[_MultitaskSVGP, SoftmaxLikelihood],
+) -> None:
+    model, likelihood = softmax_svgp
+    with pytest.raises(TypeError, match="num_samples"):
+        representer(model, likelihood=likelihood)
+
+
+def test_representer_rejects_num_samples_for_gaussian_gp(exact_gp: _ExactGP) -> None:
+    with pytest.raises(TypeError, match="num_samples"):
         representer(exact_gp, num_samples=4)
 
 
-def test_representer_requires_likelihood_for_approximate_gp() -> None:
-    model = _ScalarSVGP(torch.randn(6, 2)).eval()
-    with pytest.raises(TypeError, match="likelihood"):
-        representer(model, num_samples=4)
-
-
-def test_representer_requires_num_samples(exact_gp: _ExactGP) -> None:
-    # The explicit class registration must win over the DummyRepresenter that the
-    # GaussianDistributionPredictor protocol would otherwise provide.
-    with pytest.raises(TypeError, match="num_samples"):
-        representer(exact_gp)
+def test_classification_representer_validates_likelihood(exact_gp: _ExactGP) -> None:
+    with pytest.raises(NotImplementedError, match="GaussianLikelihood"):
+        GpytorchClassificationRepresenter(exact_gp, 4, GaussianLikelihood())
 
 
 def test_conformal_absolute_error_wraps_exact_gp(exact_gp: _ExactGP) -> None:

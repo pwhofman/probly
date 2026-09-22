@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast, override
 
+from gpytorch.distributions import MultivariateNormal
 from gpytorch.likelihoods import BernoulliLikelihood, Likelihood, SoftmaxLikelihood
-from gpytorch.models import ApproximateGP, ExactGP
+from gpytorch.models import GP
 import torch  # noqa: BKN002  # GPyTorch models are torch modules; this module is their torch bridge.
 
-from probly.predictor import predict_raw
+from probly.predictor import predict, predict_raw
 from probly.representation.distribution import CategoricalDistribution
 from probly.representation.distribution.torch_bernoulli import (
     TorchBernoulliDistributionSample,
@@ -18,66 +19,99 @@ from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistributionSample,
     TorchLogitCategoricalDistribution,
 )
-from probly.representation.sample import Sample, SampleFactory, create_sample
-from probly.representer._representer import representer
-from probly.representer.sampler._common import Sampler, SamplingStrategy
+from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution
+from probly.representation.sample import Sample, create_sample
+from probly.representer._representer import Representer, representer
+from probly.representer.sampler._common import Sampler
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-
-@predict_raw.register(ExactGP)
-def gpytorch_exact_predict_raw[**In](
-    model: ExactGP, /, *args: In.args, **kwargs: In.kwargs
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return the predictive mean and variance of an exact GP, observation noise included.
-
-    Calls the model and pushes the latent posterior through ``model.likelihood``, which is what
-    GPyTorch users write as ``likelihood(model(x))``. The model must be in evaluation mode;
-    GPyTorch raises its own error otherwise. Shapes pass through unchanged, so multitask models
-    return ``(n, tasks)`` tensors and batched models keep their leading batch dimensions.
-
-    Args:
-        model: An exact GP in evaluation mode.
-        *args: Forwarded to the model call, typically the input tensor.
-        **kwargs: Forwarded to the model call.
-
-    Returns:
-        A ``(mean, variance)`` tuple that ``predict`` turns into a ``TorchGaussianDistribution``.
-    """
-    # GPyTorch types ``likelihood`` as optional and ``__call__`` narrowly; ExactGP always stores a likelihood.
-    predictive = cast("Any", model).likelihood(cast("Any", model)(*args, **kwargs))
-    return predictive.mean, predictive.variance
-
-
-@predict_raw.register(ApproximateGP)
-def gpytorch_approximate_predict_raw[**In](
-    model: ApproximateGP, /, *args: In.args, **kwargs: In.kwargs
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return the latent posterior mean and variance of an approximate GP.
-
-    Approximate GPs hold no likelihood, so observation noise is not included. For a classifier
-    this is a Gaussian over latent logits; use :func:`probly.representer.representer` with a
-    ``likelihood`` argument to obtain class probabilities instead.
-
-    Args:
-        model: An approximate (variational) GP in evaluation mode.
-        *args: Forwarded to the model call, typically the input tensor.
-        **kwargs: Forwarded to the model call.
-
-    Returns:
-        A ``(mean, variance)`` tuple that ``predict`` turns into a ``TorchGaussianDistribution``.
-    """
-    latent = cast("Any", model)(*args, **kwargs)
-    return latent.mean, latent.variance
-
-
 _CLASSIFICATION_LIKELIHOODS = (BernoulliLikelihood, SoftmaxLikelihood)
 
 
-@representer.register((ExactGP, ApproximateGP))
+def _resolve_likelihood(model: GP, likelihood: Likelihood | None) -> Likelihood | None:
+    """Return the explicit likelihood, else the one the model owns, else None.
+
+    Exact GPs store their likelihood; approximate GPs do not.
+    """
+    if likelihood is not None:
+        return likelihood
+    return getattr(model, "likelihood", None)
+
+
+@predict_raw.register(GP)
+def gpytorch_predict_raw(
+    model: GP, /, *args: object, likelihood: Likelihood | None = None, **kwargs: object
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return the predictive mean and variance of a GPyTorch model.
+
+    The posterior is pushed through ``likelihood`` when one is given, else through the
+    likelihood the model owns, which exact GPs always have. Approximate GPs own none, so
+    without the keyword their latent posterior is returned, without observation noise.
+    This is what GPyTorch users write as ``likelihood(model(x))`` or ``model(x)``.
+
+    The model must be in evaluation mode; GPyTorch raises its own error otherwise. Shapes
+    pass through unchanged, so multitask models return ``(n, tasks)`` tensors and batched
+    models keep their leading batch dimensions.
+
+    Args:
+        model: A GPyTorch model in evaluation mode.
+        *args: Forwarded to the model call, typically the input tensor.
+        likelihood: Likelihood applied to the posterior. Only likelihoods with a Gaussian
+            marginal are supported; use :func:`probly.representer.representer` for
+            Bernoulli and softmax likelihoods.
+        **kwargs: Forwarded to the model call.
+
+    Returns:
+        A ``(mean, variance)`` tuple that ``predict`` turns into a ``TorchGaussianDistribution``.
+
+    Raises:
+        NotImplementedError: If the likelihood's marginal is not Gaussian.
+    """
+    # GPyTorch types ``__call__`` narrowly and ``likelihood`` as optional; cast once.
+    gp = cast("Any", model)
+    posterior = gp(*args, **kwargs)
+    resolved = _resolve_likelihood(model, likelihood)
+    if resolved is not None:
+        posterior = cast("Any", resolved)(posterior)
+        if not isinstance(posterior, MultivariateNormal):
+            msg = (
+                f"predict supports likelihoods with a Gaussian marginal, but {type(resolved).__name__} "
+                f"returned {type(posterior).__name__}. Use representer(model, num_samples=..., "
+                "likelihood=...) to obtain class probabilities."
+            )
+            raise NotImplementedError(msg)
+    return posterior.mean, posterior.variance
+
+
+class GpytorchGaussianRepresenter[**In](Representer[Any, In, Any, TorchGaussianDistribution]):
+    """Represent a GP by its predictive Gaussian.
+
+    A thin wrapper around :func:`probly.predictor.predict` that binds the likelihood, so
+    ``representer(model, likelihood=...)`` and ``representer(model)`` follow the same rules
+    as ``predict``.
+
+    Args:
+        predictor: A GPyTorch model in evaluation mode.
+        likelihood: Likelihood forwarded to ``predict``; None uses the model's own, if any.
+    """
+
+    likelihood: Likelihood | None
+
+    def __init__(self, predictor: GP, likelihood: Likelihood | None = None) -> None:
+        """Store the model and the likelihood to apply."""
+        super().__init__(cast("Any", predictor))
+        self.likelihood = likelihood
+
+    @override
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> TorchGaussianDistribution:
+        """Return the predictive Gaussian for the given inputs."""
+        return cast("Any", predict)(self.predictor, *args, likelihood=self.likelihood, **kwargs)
+
+
 class GpytorchClassificationRepresenter[**In, S: Sample](Sampler[In, CategoricalDistribution, S]):
-    """Representer that samples latent functions of a GP classifier into a categorical sample.
+    """Represent a GP classifier by sampling latent functions into a categorical sample.
 
     Draws ``num_samples`` latent functions from the GP posterior with reparameterized sampling,
     maps each draw through the likelihood, and stacks the resulting class distributions into a
@@ -91,43 +125,33 @@ class GpytorchClassificationRepresenter[**In, S: Sample](Sampler[In, Categorical
     expect ``(num_samples, n)``.
 
     Args:
-        predictor: A GPyTorch ``ExactGP`` or ``ApproximateGP`` in evaluation mode.
+        predictor: A GPyTorch model in evaluation mode.
         num_samples: Number of latent function draws.
-        likelihood: A ``SoftmaxLikelihood`` or ``BernoulliLikelihood``. Defaults to
-            ``predictor.likelihood`` when the model owns one, which is the case for exact GPs.
-        sampling_strategy: How repeated predictions are computed. Only ``"sequential"`` exists.
-        sample_factory: Factory used by the inherited iterable path to build a sample.
+        likelihood: A ``SoftmaxLikelihood`` or ``BernoulliLikelihood``.
         sample_axis: Axis along which draws are stacked in the returned sample. Negative values
             count from the last batch axis, so the default ``-1`` puts draws after the inputs.
+
+    Raises:
+        NotImplementedError: If the likelihood is neither Bernoulli nor softmax.
     """
 
     likelihood: Likelihood
 
     def __init__(
         self,
-        predictor: ExactGP | ApproximateGP,
+        predictor: GP,
         num_samples: int,
-        likelihood: Likelihood | None = None,
-        sampling_strategy: SamplingStrategy = "sequential",
-        sample_factory: SampleFactory[CategoricalDistribution, S] = create_sample,  # ty:ignore[invalid-parameter-default]
+        likelihood: Likelihood,
         sample_axis: int = -1,
     ) -> None:
-        """Initialize the representer and validate the likelihood."""
-        super().__init__(cast("Any", predictor), num_samples, sampling_strategy, sample_factory, sample_axis)
-        if likelihood is None:
-            likelihood = getattr(predictor, "likelihood", None)
-        if likelihood is None:
-            msg = (
-                "Approximate GPs hold no likelihood; pass likelihood=SoftmaxLikelihood(...) "
-                "or likelihood=BernoulliLikelihood() to the representer."
-            )
-            raise TypeError(msg)
+        """Validate the likelihood and configure the sampler."""
         if not isinstance(likelihood, _CLASSIFICATION_LIKELIHOODS):
             msg = (
                 f"Only BernoulliLikelihood and SoftmaxLikelihood are supported, got {type(likelihood).__name__}. "
-                "For Gaussian outputs call probly.predictor.predict on the model directly."
+                "Gaussian GPs are represented by their predictive distribution; use representer(model)."
             )
             raise NotImplementedError(msg)
+        super().__init__(cast("Any", predictor), num_samples, "sequential", create_sample, sample_axis)
         self.likelihood = likelihood
 
     @property
@@ -184,3 +208,42 @@ class GpytorchClassificationRepresenter[**In, S: Sample](Sampler[In, Categorical
             tensor=TorchLogitCategoricalDistribution(moved),
             sample_dim=target_dim,
         )
+
+
+@representer.register(GP)
+def gpytorch_representer(
+    predictor: GP,
+    num_samples: int | None = None,
+    likelihood: Likelihood | None = None,
+    sample_axis: int = -1,
+) -> Representer[Any, Any, Any, Any]:
+    """Select the representer that matches the likelihood.
+
+    The likelihood is the explicit one, else the model's own, else none. Bernoulli and softmax
+    likelihoods give a :class:`GpytorchClassificationRepresenter` and require ``num_samples``.
+    Anything else, including no likelihood at all, gives a :class:`GpytorchGaussianRepresenter`.
+
+    Args:
+        predictor: A GPyTorch model in evaluation mode.
+        num_samples: Number of latent draws; required for, and only valid with, classification
+            likelihoods.
+        likelihood: Likelihood to apply; None uses the model's own, if any.
+        sample_axis: Sample axis of the categorical sample; ignored for Gaussian outputs.
+
+    Raises:
+        TypeError: If ``num_samples`` is missing for a classification likelihood or given for a
+            Gaussian one.
+    """
+    resolved = _resolve_likelihood(predictor, likelihood)
+    if isinstance(resolved, _CLASSIFICATION_LIKELIHOODS):
+        if num_samples is None:
+            msg = f"num_samples is required to represent a GP with a {type(resolved).__name__}."
+            raise TypeError(msg)
+        return GpytorchClassificationRepresenter(predictor, num_samples, resolved, sample_axis)
+    if num_samples is not None:
+        msg = (
+            "num_samples only applies to Bernoulli and softmax likelihoods; a GP with a Gaussian "
+            "likelihood is represented by its predictive distribution."
+        )
+        raise TypeError(msg)
+    return GpytorchGaussianRepresenter(predictor, likelihood)

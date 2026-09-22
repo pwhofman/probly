@@ -23,5 +23,3 @@ RIVER_ARF_REGRESSOR = "river.forest.adaptive_random_forest.ARFRegressor"
 LAPLACE_BASE = "laplace.baselaplace.BaseLaplace"
 
 GPYTORCH_GP = "gpytorch.models.gp.GP"
-GPYTORCH_EXACT_GP = "gpytorch.models.exact_gp.ExactGP"
-GPYTORCH_APPROXIMATE_GP = "gpytorch.models.approximate_gp.ApproximateGP"
