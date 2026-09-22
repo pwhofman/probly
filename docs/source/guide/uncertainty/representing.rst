@@ -40,19 +40,6 @@ Zeroth Order: Point Predictions
 - what it buys: cheapest to produce, one unambiguous decision, comparable across models
 - what it costs: no way to abstain, and no slot at all for "no basis for an answer"
 
-.. _uq-sets:
-
-Sets of Outcomes
-----------------
-
-- a sideways move instead of a step up: return a *set* of labels, {dog, cat}, or an interval for regression
-- the size of the set is the uncertainty, and no probability is attached to the members
-- this is what conformal prediction returns, with a finite-sample coverage guarantee under exchangeability of calibration and test data :cite:`angelopoulosGentleIntroduction2021`
-- the guarantee is what makes the rung attractive: it holds whatever the underlying model does
-- but coverage is **marginal**, averaged over the distribution, not conditional on this input
-- a set is closer to a decision than to a description: it says which outcomes are in play, not which of them is more plausible
-- silent about the split, a wide set does not say whether the world or the model made it wide :ref:`methods-conformal`
-
 .. _uq-first-order:
 
 First Order: Probability Distributions
@@ -64,6 +51,8 @@ First Order: Probability Distributions
 - it represents :ref:`aleatoric uncertainty <uq-aleatoric>` well: the entropy of this distribution is the standard total-uncertainty number
 - what it cannot do is the point of :ref:`uq-why`: a distribution has no slot for a claim about itself, so both readings of (0.34, 0.33, 0.33) are literally the same object here
 - consequence for the next part: total uncertainty is all it can report, decomposition on it is undefined :ref:`uq-decomposition`
+- and the number it does report is *total*, not aleatoric: calling it aleatoric imports the assumption that the model is correct
+- some methods land here by construction and target one part only: a heteroscedastic head models label noise, so it yields an aleatoric quantity and no epistemic one :cite:`kendallWhatUncertainties2017, collierCorrelatedInputDependent2021`
 
 .. _uq-second-order:
 
@@ -78,8 +67,25 @@ Second Order: Distributions Over Distributions
 - **sampled**, a finite set of first-order distributions you have to draw, ensemble members, dropout passes, posterior weight samples :cite:`lakshminarayananSimpleScalable2017` :cite:`galDropoutBayesian2016`, resolution is yours to buy with the sample count, and you buy it again at every prediction
 - **parameterized**, the second-order distribution in closed form from a single forward pass, typically a Dirichlet over the simplex :cite:`sensoyEvidentialDeep2018` :cite:`malininPredictiveUncertaintyEstimation2018`, cheap at inference, expensive at training because the architecture or the loss changes
 - a sampled set is an approximation of the object, not the object: measures computed on it are estimates and carry sample-size bias :ref:`uq-measures`
+- the split it supports is only as trustworthy as the collection it is computed over: members trained the same way on the same data agree for reasons that have nothing to do with the input :cite:`fortDeepEnsembles2019`
+- and the collection is a property of the setup, not of the world: :ref:`distribution shift <uq-sources>` moves both parts at once, so numbers from two setups are not comparable even on the same inputs :cite:`snoekCanYouTrust2019`
 - the honest caveat: second-order probabilities are a claim of a new kind, they are not directly checkable against observed frequencies, and which measure to read off one is still contested :cite:`saleSecondOrder2024`
 - the family catalogue: :ref:`methods-second-order`
+
+.. _uq-sets:
+
+Sets of Outcomes
+~~~~~~~~~~~~~~~~
+
+- the same refusal to commit, applied one level down: not "which distribution", but "which outcomes stay in play"
+- return a *set* of labels, {dog, cat}, or an interval for regression
+- the size of the set is the uncertainty, and no probability is attached to the members
+- this is what conformal prediction returns, with a finite-sample coverage guarantee under exchangeability of calibration and test data :cite:`angelopoulosGentleIntroduction2021`
+- the guarantee is what makes the rung attractive: it holds whatever the underlying model does
+- but coverage is **marginal**, averaged over the distribution, not conditional on this input
+- a set is closer to a decision than to a description: it says which outcomes are in play, not which of them is more plausible
+- it is also *derived* rather than produced: a score from a lower rung plus a calibration split, so it is a re-encoding and not a step up the ladder
+- silent about the split, a wide set does not say whether the world or the model made it wide :ref:`methods-conformal`
 
 .. _uq-credal:
 
@@ -123,7 +129,106 @@ Choosing a Representation
       - bounds instead of a number, no forced weighting
       - vertices or bounds to produce, and a decision rule to add
 
-- rules of thumb: only a decision is needed, stay at zeroth; a guarantee is needed, take sets; the odds are the product, first order plus calibration; the response depends on *which* uncertainty, second order; committing to one distribution is the thing you object to, credal
+- what the rows look like as objects, on the same three-class problem, "cat" against "dog" against "fox"
+
+Point Prediction
+~~~~~~~~~~~~~~~~
+
+- the object is an index: "dog"
+- two inputs with predictions (0.49, 0.51, 0.00) and (0.33, 0.34, 0.33) reduce to the *same* point prediction
+- nothing in the object says one of them was a near-tie and the other a three-way tie
+
+.. image:: /auto_examples/representation/images/sphx_glr_plot_first_order_distribution_001.png
+    :alt: Two bar charts, one per input, each with a single full-height bar on
+        the class "dog" and nothing on the other two classes.
+    :width: 100%
+
+Probability Distribution
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+- the object is a vector on the simplex: (0.49, 0.51, 0.00)
+- the two inputs are now different objects, one rules "fox" out and the other keeps all three in play
+- for regression the same rung is a mean and a variance, two predictions can share a mean and differ only in spread
+- in the library: a categorical distribution, or a Gaussian for the real-valued case
+
+.. image:: /auto_examples/representation/images/sphx_glr_plot_first_order_distribution_002.png
+    :alt: Two bar charts, one per input, one showing probabilities 0.49 and
+        0.51 with the third class at zero, the other showing three near-equal
+        bars.
+    :width: 100%
+
+.. image:: /auto_examples/representation/images/sphx_glr_plot_first_order_distribution_003.png
+    :alt: Two Gaussian densities with the same mean, one narrow and one wide.
+    :width: 100%
+
+- the example: :ref:`sphx_glr_auto_examples_representation_plot_first_order_distribution.py`
+
+Second Order, Sampled
+~~~~~~~~~~~~~~~~~~~~~
+
+- the object is a collection: ten vectors, one per ensemble member or dropout pass
+- two inputs can have the *same* mean prediction and still differ, one has its members on top of each other, the other has them scattered across the simplex
+- that spread is the claim about itself the first-order rung had no slot for
+- the count is part of the object: ten members give a coarser picture than a hundred, and measures read off them move with it
+
+.. image:: /auto_examples/representation/images/sphx_glr_plot_second_order_sample_001.png
+    :alt: Two simplex triangles, the left one with ten member points on top of
+        each other, the right one with the same mean prediction but ten points
+        scattered widely.
+    :width: 100%
+
+- the example: :ref:`sphx_glr_auto_examples_representation_plot_second_order_sample.py`
+
+Second Order, Parameterized
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- the object is a density on the simplex, a Dirichlet given by its concentration parameters
+- normalized, they are the mean prediction, summed, they are how much evidence the model claims
+- (18, 14, 8) and (0.9, 0.7, 0.4) have the same mean prediction and nothing else in common
+- one forward pass produces it, so there is no sample count to buy, and no sample-size bias to report
+
+.. image:: /auto_examples/representation/images/sphx_glr_plot_dirichlet_distribution_001.png
+    :alt: Two simplex triangles showing Dirichlet densities, the left one a
+        concentrated blob in the interior, the right one with the mass pushed
+        out to the edges and corners.
+    :width: 100%
+
+- the example: :ref:`sphx_glr_auto_examples_representation_plot_dirichlet_distribution.py`
+
+Set of Outcomes
+~~~~~~~~~~~~~~~
+
+- the object is a subset of the labels, {dog}, {cat, dog}, or all three, and an interval for regression
+- the members carry no odds: inside the set an outcome is simply in play
+- the number to read off it is its size, which is the price paid for the coverage level the calibration step fixed
+
+.. image:: /auto_examples/representation/images/sphx_glr_plot_conformal_prediction_set_001.png
+    :alt: Three bar charts of class scores, with the labels kept in the
+        prediction set colored and the dropped labels in gray, for set sizes
+        one, two and three.
+    :width: 100%
+
+- the example: :ref:`sphx_glr_auto_examples_representation_plot_conformal_prediction_set.py`
+
+Credal Set
+~~~~~~~~~~
+
+- the object is a region of the simplex, given by vertices or by per-class intervals
+- no density inside it, so every query comes back as a lower and an upper probability
+- the region's extent is the epistemic reading, a point is complete knowledge of the odds and the whole triangle is none
+- two members predicting 0.1 and 0.9 and two members both predicting 0.5 share a mean and give very different regions
+
+.. image:: /auto_examples/representation/images/sphx_glr_plot_convex_credal_set_001.png
+    :alt: A simplex triangle with two filled polygons, one per input, each the
+        convex hull of three vertex distributions.
+    :width: 100%
+
+- the examples: :ref:`sphx_glr_auto_examples_representation_plot_convex_credal_set.py` for the vertex encoding, :ref:`sphx_glr_auto_examples_representation_plot_probability_intervals_credal_set.py` for the interval one
+
+Rules of Thumb
+~~~~~~~~~~~~~~
+
+- only a decision is needed, stay at zeroth; a guarantee is needed, take sets; the odds are the product, first order plus calibration; the response depends on *which* uncertainty, second order; committing to one distribution is the thing you object to, credal
 - higher is not better: a rung you cannot estimate reliably is worse than a lower one you can, and the estimate is what :ref:`uq-evaluating` interrogates
 - the choice is a constraint on the method, not just on the output, which is the grouping in :ref:`methods`
 - in the library it is also the stage boundary: the representation is the only object that crosses from transformation to quantification :ref:`pillar-representation`
