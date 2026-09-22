@@ -84,6 +84,9 @@ def jax_dirichlet_entropy(distribution: JaxDirichletDistribution | jax.Array, ba
     alpha_0 = jax_sum(alphas, axis=-1)
     K = alphas.shape[-1]  # noqa: N806
 
+    # Written out because jax.scipy.stats.dirichlet provides only pdf and logpdf, no entropy.
+    # scipy.stats.dirichlet.entropy accepts a single alpha vector, so it cannot replace this
+    # batched form either. The torch backend uses torch.distributions.Dirichlet.entropy.
     log_beta = jax_sum(special.gammaln(alphas), axis=-1) - special.gammaln(alpha_0)
     digamma_sum = (alpha_0 - K) * special.digamma(alpha_0)
     digamma_individual = jax_sum((alphas - 1) * special.digamma(alphas), axis=-1)
@@ -110,6 +113,8 @@ def jax_gaussian_entropy(distribution: JaxGaussianDistribution | jax.Array, base
         del distribution  # Avoid keeping a reference to the distribution for memory efficiency
     else:
         var = distribution
+    # Written out because jax.scipy.stats.norm provides only the density and the
+    # distribution functions, no entropy. The numpy backend uses scipy.stats.norm.entropy.
     entropy = 0.5 * jnp.log(2 * jnp.e * jnp.pi * var)
     if base is None or base == jnp.e:
         return entropy
