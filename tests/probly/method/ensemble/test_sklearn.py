@@ -201,3 +201,33 @@ class TestFitandPredict:
         predictions = [member.predict(X) for member in sklearn_ensemble]
         for pred in predictions:
             assert all(pred == predictions[0])
+
+
+def test_ensemble_does_not_mutate_base_estimator() -> None:
+    """The caller's estimator keeps its random_state; only the members are reset."""
+    from sklearn.linear_model import LogisticRegression  # noqa: PLC0415
+
+    base = LogisticRegression(random_state=42)
+
+    reset_members = ensemble(base, num_members=3, reset_params=True)
+    assert base.random_state == 42
+    assert all(member.random_state is None for member in reset_members)
+
+    kept_members = ensemble(base, num_members=2, reset_params=False)
+    assert base.random_state == 42
+    assert all(member.random_state == 42 for member in kept_members)
+
+
+def test_ensemble_of_unfitted_sklearn_ensemble() -> None:
+    """Sklearn ensembles are only iterable once fitted; wrapping them must not iterate them."""
+    from sklearn.ensemble import RandomForestClassifier  # noqa: PLC0415
+
+    base = RandomForestClassifier(n_estimators=5, random_state=1)
+    members = ensemble(base, num_members=3)
+
+    assert base.random_state == 1
+    assert len(members) == 3
+    assert all(isinstance(member, RandomForestClassifier) for member in members)
+    assert all(member.n_estimators == 5 for member in members)
+    # reset_params=True by default: each member draws its own randomness when fitted.
+    assert all(member.random_state is None for member in members)

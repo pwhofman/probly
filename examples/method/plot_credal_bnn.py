@@ -17,7 +17,8 @@ from torch.utils.data import DataLoader, TensorDataset
 from probly.method.credal_bnn import credal_bnn
 from probly.plot.credal import plot_credal_set
 from probly.representer import representer
-from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
+from probly.losses.torch import elbo_loss
+from probly.transformation.bayesian import collect_kl_divergence
 
 from examples.utils.model import MLPClassifier
 
@@ -57,7 +58,6 @@ credal_model = credal_bnn(base_model, predictor_type="logit_classifier", num_mem
 # Train each member with the ELBO objective: cross-entropy on the logits plus a
 # KL penalty on the variational posterior, mirroring the benchmark recipe.
 
-criterion = ELBOLoss(kl_penalty=1e-5)
 
 for member in credal_model:
     member.train()
@@ -67,7 +67,7 @@ for member in credal_model:
             opt.zero_grad()
             logits = member(inputs)
             kl = collect_kl_divergence(member)
-            loss = criterion(logits, targets, kl)
+            loss = elbo_loss(logits, targets, kl, kl_penalty=1e-5)
             loss.backward()
             opt.step()
     member.eval()

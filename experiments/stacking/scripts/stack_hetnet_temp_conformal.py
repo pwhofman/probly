@@ -7,7 +7,7 @@ inference to form a single ``(B, num_classes)`` predictive
 distribution, and runs the conformal RAPS layer on top.
 
 For ``calibration == "label_relaxation"`` the training loss is
-:class:`probly.train.calibration.torch.LabelRelaxationLoss`, applied
+:func:`probly.losses.torch.label_relaxation_loss`, applied
 per MC sample and averaged across samples (so the recipe stays close
 to the canonical HetNet training but the per-sample objective is the
 relaxation loss). For all other modes the per-step loss is the
@@ -155,7 +155,7 @@ def _parse_args() -> argparse.Namespace:
         "--lr-alpha",
         type=float,
         default=0.1,
-        help="LabelRelaxationLoss alpha; only consulted when --calibration label_relaxation.",
+        help="Label relaxation alpha; only consulted when --calibration label_relaxation.",
     )
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--device", default="auto")

@@ -121,18 +121,16 @@ class TestTorchSampleGetitemEdgeCases:
 
 
 class TestTorchSampleArrayNamespace:
-    """``__array_namespace__`` delegates to the underlying tensor (line 306).
-
-    Older torch versions don't implement ``__array_namespace__``; we only verify
-    the wrapper *forwards* the call rather than asserting the return value.
-    """
+    """Namespace access delegates when supported and otherwise fails explicitly."""
 
     def test_array_namespace_dispatches(self) -> None:
-        import contextlib  # noqa: PLC0415
-
         sample = TorchSample(torch.zeros((2, 3)), sample_dim=0)
-        with contextlib.suppress(AttributeError):
-            sample.__array_namespace__()
+        namespace = getattr(sample.tensor, "__array_namespace__", None)
+        if callable(namespace):
+            assert sample.__array_namespace__() is namespace()
+        else:
+            with pytest.raises(NotImplementedError, match="__array_namespace__"):
+                sample.__array_namespace__()
 
 
 class TestTorchSampleTorchLike:

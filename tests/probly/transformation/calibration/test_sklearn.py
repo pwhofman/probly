@@ -22,7 +22,7 @@ from probly.transformation.calibration.sklearn import (
     SklearnIdentityLogitEstimator,
     SklearnVectorScalingPredictor,
     _extract_calibration_inputs,
-    generate_sklearn_scaling_calibrator,
+    sklearn_calibration_generator,
 )
 
 
@@ -380,11 +380,11 @@ class TestGenerateSklearnScalingCalibrator:
         with patch("probly.transformation.calibration.sklearn.sklearn") as mock_sklearn:
             mock_sklearn.__version__ = "1.7.0"
             with pytest.raises(ValueError, match=r"scikit-learn 1\.8\.0 or later"):
-                generate_sklearn_scaling_calibrator(LogisticRegression(), config)
+                sklearn_calibration_generator(LogisticRegression(), config)
 
     def test_vector_method_returns_vector_predictor(self) -> None:
         """Vector configuration returns the custom ``SklearnVectorScalingPredictor``."""
         config = CalibrationMethodConfig(method="vector", vector_scale=True, use_bias=True, num_classes=3)
-        out = generate_sklearn_scaling_calibrator(LogisticRegression(), config)
+        out = sklearn_calibration_generator(LogisticRegression(), config)
         assert isinstance(out, SklearnVectorScalingPredictor)
         assert out.num_classes == 3

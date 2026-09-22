@@ -10,7 +10,7 @@ from ._common import absolute_error_score
 
 
 @absolute_error_score.register(torch.Tensor)
-def compute_absolute_error_score_torch(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+def torch_compute_absolute_error_score(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
     """Absolute error for PyTorch tensors."""
     y_pred_t = torch.as_tensor(y_pred, dtype=torch.float)
     y_true_t = torch.as_tensor(y_true, dtype=torch.float)
@@ -28,10 +28,10 @@ def compute_absolute_error_score_torch(y_pred: torch.Tensor, y_true: torch.Tenso
 
 
 @absolute_error_score.register(TorchSample)
-def compute_absolute_error_score_torch_sample(
+def torch_compute_absolute_error_score_sample(
     y_pred: TorchSample,
     y_true: torch.Tensor | TorchSample,
 ) -> torch.Tensor:
     """Absolute error for TorchSamples."""
     y_true_t = y_true.tensor if isinstance(y_true, TorchSample) else y_true
-    return compute_absolute_error_score_torch(y_pred.tensor, y_true_t)
+    return torch_compute_absolute_error_score(y_pred.tensor, y_true_t)

@@ -2,7 +2,7 @@
 
 from probly.lazy_types import TORCH_TENSOR
 
-from . import array as array
+from . import numpy as numpy
 from ._common import ActiveLearningPool, from_dataset, query
 
 

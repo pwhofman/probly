@@ -12,11 +12,11 @@ from typing import TYPE_CHECKING
 from flextype import flexdispatch
 import numpy as np
 
-from probly.representation.credal_set.array import (
-    ArrayConvexCredalSet,
-    ArrayDiscreteCredalSet,
-    ArrayDistanceBasedCredalSet,
-    ArraySingletonCredalSet,
+from probly.representation.credal_set.numpy import (
+    NumpyConvexCredalSet,
+    NumpyDiscreteCredalSet,
+    NumpyDistanceBasedCredalSet,
+    NumpySingletonCredalSet,
 )
 
 if TYPE_CHECKING:
@@ -31,14 +31,14 @@ def _to_numpy(val: object) -> np.ndarray:
 
 
 def _flatten_batch[T: CategoricalCredalSet](data: T) -> T:
-    """Flatten batch dimensions if the credal set supports it (Torch or Array)."""
+    """Flatten batch dimensions if the credal set supports it (Torch or NumPy)."""
     reshape_fn = getattr(data, "reshape", None)
     if callable(reshape_fn):
         return reshape_fn(-1)
 
     msg = (
         f"Input of type {type(data).__name__} is not a supported batched credal set. "
-        "Plotting requires credal sets from standard backends (Torch or Array) that implement '.reshape()'."
+        "Plotting requires credal sets from standard backends (Torch or NumPy) that implement '.reshape()'."
     )
     raise TypeError(msg)
 
@@ -64,11 +64,11 @@ def _get_probabilities(data: object) -> np.ndarray:
     raise NotImplementedError(msg)
 
 
-@_get_probabilities.register(ArraySingletonCredalSet | ArrayDiscreteCredalSet | ArrayConvexCredalSet)
-def _array_probabilities(data: ArraySingletonCredalSet | ArrayDiscreteCredalSet | ArrayConvexCredalSet) -> np.ndarray:
+@_get_probabilities.register(NumpySingletonCredalSet | NumpyDiscreteCredalSet | NumpyConvexCredalSet)
+def _array_probabilities(data: NumpySingletonCredalSet | NumpyDiscreteCredalSet | NumpyConvexCredalSet) -> np.ndarray:
     return _to_numpy(data.array.probabilities)
 
 
-@_get_probabilities.register(ArrayDistanceBasedCredalSet)
-def _nominal_probabilities(data: ArrayDistanceBasedCredalSet) -> np.ndarray:
+@_get_probabilities.register(NumpyDistanceBasedCredalSet)
+def _nominal_probabilities(data: NumpyDistanceBasedCredalSet) -> np.ndarray:
     return _to_numpy(data.nominal.probabilities)

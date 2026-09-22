@@ -9,7 +9,14 @@ from ._common import ensemble_generator
 
 @ensemble_generator.register(BaseEstimator)
 def generate_sklearn_ensemble(obj: BaseEstimator, num_members: int, reset_params: bool) -> list[object]:
-    """Generates an ensemble model from a sklearn base estimator."""
+    """Generates an ensemble model from a sklearn base estimator.
+
+    The base estimator is left untouched: every member is a clone, and with ``reset_params`` the clones get an
+    unset ``random_state`` so that each member is fitted with its own randomness.
+    """
+    members = [clone(obj) for _ in range(num_members)]
     if reset_params:
-        obj.__setattr__("random_state", None)
-    return [clone(obj, safe=not reset_params) for _ in range(num_members)]
+        for member in members:
+            if "random_state" in member.get_params():
+                member.set_params(random_state=None)
+    return members

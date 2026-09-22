@@ -122,12 +122,29 @@ class TestEnsembleGeneration:
             count_module_member = count_layers(member, nnx.Module)
             assert count_module_member == count_module_original
 
-    def test_not_implemented_error_with_reset(self, flax_model_small_2d_2d) -> None:
+    def test_reset_gives_each_member_its_own_parameters(self, flax_model_small_2d_2d) -> None:
+        num_members = 3
+
+        ensemble_model = ensemble(flax_model_small_2d_2d, num_members=num_members, reset_params=True)
+
+        assert len(ensemble_model) == num_members
+        kernels = [member.layers[0].kernel[...] for member in ensemble_model]
+        original = flax_model_small_2d_2d.layers[0].kernel[...]
+        assert all(not bool(jnp.array_equal(k, original)) for k in kernels)
+        assert all(
+            not bool(jnp.array_equal(kernels[i], kernels[j]))
+            for i in range(num_members)
+            for j in range(i + 1, num_members)
+        )
+
+    def test_reset_preserves_the_model_structure(self, flax_model_small_2d_2d) -> None:
         num_members = 2
 
-        msg = "resetting parameters of <class .*> models is not supported yet."
-        with pytest.raises(NotImplementedError, match=msg):
-            ensemble(flax_model_small_2d_2d, num_members=num_members, reset_params=True)
+        ensemble_model = ensemble(flax_model_small_2d_2d, num_members=num_members, reset_params=True)
+
+        for member in ensemble_model:
+            assert count_layers(member, nnx.Linear) == count_layers(flax_model_small_2d_2d, nnx.Linear)
+            assert member(jnp.ones((1, 2))).shape == (1, 2)
 
 
 class TestEnsembleCalls:

@@ -15,20 +15,20 @@ from ._common import (
     categorical_variance_aleatoric,
     categorical_variance_total,
     labelwise_conditional_entropy,
-    labelwise_conditional_variance,
     labelwise_entropy,
     labelwise_entropy_of_expected_predictive_distribution,
+    labelwise_expected_conditional_variance,
     labelwise_mutual_information_entropy,
-    labelwise_mutual_information_variance,
     labelwise_variance,
+    labelwise_variance_of_conditional_mean,
     labelwise_variance_of_expected_predictive_distribution,
     ordinal_conditional_entropy,
-    ordinal_conditional_variance,
     ordinal_entropy,
     ordinal_entropy_of_expected_predictive_distribution,
+    ordinal_expected_conditional_variance,
     ordinal_mutual_information_entropy,
-    ordinal_mutual_information_variance,
     ordinal_variance,
+    ordinal_variance_of_conditional_mean,
     ordinal_variance_of_expected_predictive_distribution,
 )
 
@@ -92,12 +92,12 @@ def torch_categorical_sample_ordinal_variance_of_expected_predictive_distributio
     return torch.sum(expected_cdf * (1 - expected_cdf), dim=-1)
 
 
-@ordinal_conditional_variance.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_ordinal_conditional_variance(
+@ordinal_expected_conditional_variance.register(TorchCategoricalDistributionSample)
+def torch_categorical_sample_ordinal_expected_conditional_variance(
     sample: TorchCategoricalDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> torch.Tensor:
-    """Compute the ordinal conditional variance of a categorical sample."""
+    """Compute the ordinal expected conditional variance of a categorical sample."""
     p = sample.tensor.probabilities
     axis = sample.sample_axis
     cdf = _cdf(p)
@@ -105,12 +105,12 @@ def torch_categorical_sample_ordinal_conditional_variance(
     return torch.mean(per_sample_variance, dim=axis)
 
 
-@ordinal_mutual_information_variance.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_ordinal_mutual_information_variance(
+@ordinal_variance_of_conditional_mean.register(TorchCategoricalDistributionSample)
+def torch_categorical_sample_ordinal_variance_of_conditional_mean(
     sample: TorchCategoricalDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> torch.Tensor:
-    """Compute the ordinal mutual information (variance-based) of a categorical sample."""
+    """Compute the ordinal variance of the conditional mean of a categorical sample."""
     p = sample.tensor.probabilities
     axis = sample.sample_axis
     cdf = _cdf(p)
@@ -247,24 +247,24 @@ def torch_categorical_sample_labelwise_variance_of_expected_predictive_distribut
     return torch.sum(expected_p * (1 - expected_p), dim=-1)
 
 
-@labelwise_conditional_variance.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_labelwise_conditional_variance(
+@labelwise_expected_conditional_variance.register(TorchCategoricalDistributionSample)
+def torch_categorical_sample_labelwise_expected_conditional_variance(
     sample: TorchCategoricalDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> torch.Tensor:
-    """Compute the label-wise conditional variance of a categorical sample."""
+    """Compute the label-wise expected conditional variance of a categorical sample."""
     p = sample.tensor.probabilities
     axis = sample.sample_axis
     per_sample_variance = torch.sum(p * (1 - p), dim=-1)
     return torch.mean(per_sample_variance, dim=axis)
 
 
-@labelwise_mutual_information_variance.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_labelwise_mutual_information_variance(
+@labelwise_variance_of_conditional_mean.register(TorchCategoricalDistributionSample)
+def torch_categorical_sample_labelwise_variance_of_conditional_mean(
     sample: TorchCategoricalDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> torch.Tensor:
-    """Compute the label-wise variance-based mutual information of a categorical sample."""
+    """Compute the label-wise variance of the conditional mean of a categorical sample."""
     p = sample.tensor.probabilities
     axis = sample.sample_axis
     return torch.sum(torch.var(p, dim=axis, unbiased=False), dim=-1)

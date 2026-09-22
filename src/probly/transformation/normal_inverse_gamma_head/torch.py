@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from pytraverse import State, TraverserResult
 
 
-def replace_last_torch_nig(obj: nn.Linear, state: State) -> TraverserResult:
+def torch_replace_last_nig(obj: nn.Linear, state: State) -> TraverserResult:
     """Register a class to be replaced by the NormalInverseGammaLinear layer based on :cite:`aminiDeepEvidential2020`.
 
     This layer outputs the parameters of a Normal Inverse Gamma distribution, which is central to evidential
@@ -28,4 +28,4 @@ def replace_last_torch_nig(obj: nn.Linear, state: State) -> TraverserResult:
     ), state
 
 
-register(nn.Linear, replace_last_torch_nig)
+register(nn.Linear, torch_replace_last_nig)

@@ -32,7 +32,7 @@ from probly.evaluation.active_learning.pool import (
     ActiveLearningPool as ActiveLearningPool,
     from_dataset as from_dataset,
 )
-from probly.evaluation.active_learning.pool.array import (
+from probly.evaluation.active_learning.pool.numpy import (
     NumpyActiveLearningPool as NumpyActiveLearningPool,
 )
 from probly.evaluation.active_learning.strategies import (

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 from probly.predictor import RandomPredictor
 from probly.transformation.transformation import predictor_transformation
 from probly.traverse_nn import nn_compose
-from pytraverse import CLONE, GlobalVariable, flexdispatch_traverser, traverse
+from pytraverse import CLONE, GlobalVariable, flexdispatch_traverser, traverse, traverse_with_state
 
 if TYPE_CHECKING:
     from flextype.isinstance import LazyType
@@ -24,8 +24,10 @@ USE_BASE_WEIGHTS = GlobalVariable[bool]("USE_BASE_WEIGHTS", default=False)
 POSTERIOR_STD = GlobalVariable[float]("POSTERIOR_STD", default=0.05)
 PRIOR_MEAN = GlobalVariable[float]("PRIOR_MEAN", default=0.0)
 PRIOR_STD = GlobalVariable[float]("PRIOR_STD", default=1.0)
+KL_DIVERGENCE = GlobalVariable[Any]("KL_DIVERGENCE", default=0.0)
 
 bayesian_traverser = flexdispatch_traverser[object](name="bayesian_traverser")
+kl_divergence_traverser = flexdispatch_traverser[object](name="kl_divergence_traverser")
 
 
 def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
@@ -40,6 +42,16 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
             "prior_std": PRIOR_STD,
         },
     )
+
+
+def collect_kl_divergence(model: Predictor) -> object:
+    """Sum the KL divergence of every Bayesian layer of a predictor created by :func:`bayesian`."""
+    _, state = traverse_with_state(
+        model,
+        nn_compose(kl_divergence_traverser),
+        init={CLONE: False, KL_DIVERGENCE: 0.0},
+    )
+    return state[KL_DIVERGENCE]
 
 
 @predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=True)

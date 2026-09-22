@@ -11,8 +11,8 @@ from probly.quantification.measure.ordinal._common import (
     categorical_variance_total,
 )
 from probly.quantification.measure.variance._common import (
-    conditional_variance,
-    mutual_information_variance,
+    expected_conditional_variance,
+    variance_of_conditional_mean,
     variance_of_expected_predictive_distribution,
 )
 
@@ -41,13 +41,13 @@ class SecondOrderVarianceDecomposition[T](AdditiveDecomposition[T, T, T]):
     @property
     def _aleatoric(self) -> T:
         """The aleatoric variance (expected variance over the ensemble/samples)."""
-        return conditional_variance(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
+        return expected_conditional_variance(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
 
     @override
     @property
     def _epistemic(self) -> T:
         """The epistemic variance (variance of the means over the ensemble/samples)."""
-        return mutual_information_variance(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
+        return variance_of_conditional_mean(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)

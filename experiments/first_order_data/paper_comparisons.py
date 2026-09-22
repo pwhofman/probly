@@ -29,15 +29,15 @@ from torch.utils.data import DataLoader
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-from probly.conformal_scores.aps._common import compute_aps_score_numpy
-from probly.conformal_scores.lac._common import compute_lac_score_numpy
-from probly.conformal_scores.raps._common import compute_raps_score_numpy
-from probly.conformal_scores.saps._common import compute_saps_score_func_numpy
+from probly.conformal_scores.aps._common import numpy_compute_aps_score
+from probly.conformal_scores.lac._common import numpy_compute_lac_score
+from probly.conformal_scores.raps._common import numpy_compute_raps_score
+from probly.conformal_scores.saps._common import numpy_compute_saps_score_func
 from probly.metrics._common import CREDAL_ROUND_DECIMALS
-from probly.metrics.array import (
-    _convex_hull_lp_coverage,
-    _credal_containment_coverage,
-    _credal_interval_efficiency,
+from probly.metrics.numpy import (
+    _numpy_convex_hull_lp_coverage,
+    _numpy_credal_containment_coverage,
+    _numpy_credal_interval_efficiency,
 )
 from probly.plot.config import PlotConfig, _apply_rc_defaults
 from probly.utils.quantile._common import calculate_quantile
@@ -93,10 +93,10 @@ METHOD_DISPLAY: dict[str, str] = {
 }
 
 CP_METHODS: dict[str, Any] = {
-    "LAC": lambda p, y=None: compute_lac_score_numpy(p, y),
-    "APS": lambda p, y=None: compute_aps_score_numpy(p, y, randomized=False),
-    "RAPS": lambda p, y=None: compute_raps_score_numpy(p, y, randomized=False),
-    "SAPS": lambda p, y=None: compute_saps_score_func_numpy(p, y, randomized=False),
+    "LAC": lambda p, y=None: numpy_compute_lac_score(p, y),
+    "APS": lambda p, y=None: numpy_compute_aps_score(p, y, randomized=False),
+    "RAPS": lambda p, y=None: numpy_compute_raps_score(p, y, randomized=False),
+    "SAPS": lambda p, y=None: numpy_compute_saps_score_func(p, y, randomized=False),
 }
 
 _CFG = PlotConfig()
@@ -167,8 +167,8 @@ def load_ensemble_probs(
 def compute_credal_metrics(ensemble_probs: np.ndarray, true_probs: np.ndarray) -> dict[str, Any]:
     """Convex-hull coverage (eps=CH_EPSILON), interval coverage, efficiency.
 
-    Uses probly's _convex_hull_lp_coverage, _credal_containment_coverage,
-    _credal_interval_efficiency.
+    Uses probly's _numpy_convex_hull_lp_coverage, _numpy_credal_containment_coverage,
+    _numpy_credal_interval_efficiency.
 
     Args:
         ensemble_probs: (N, M, K)
@@ -178,18 +178,18 @@ def compute_credal_metrics(ensemble_probs: np.ndarray, true_probs: np.ndarray) -
         Dict with scalar metrics and per-instance arrays.
     """
     print("  Convex hull coverage (LP) ...")
-    ch_cov = float(_convex_hull_lp_coverage(ensemble_probs, true_probs, epsilon=CH_EPSILON))
+    ch_cov = float(_numpy_convex_hull_lp_coverage(ensemble_probs, true_probs, epsilon=CH_EPSILON))
     print(f"    CH coverage (eps={CH_EPSILON}): {ch_cov:.4f}")
 
     lower = ensemble_probs.min(axis=1)  # (N, K)
     upper = ensemble_probs.max(axis=1)  # (N, K)
 
     print("  Interval coverage ...")
-    int_cov = float(_credal_containment_coverage(lower, upper, true_probs))
+    int_cov = float(_numpy_credal_containment_coverage(lower, upper, true_probs))
     print(f"    Interval coverage: {int_cov:.4f}")
 
     print("  Credal efficiency ...")
-    eff = float(_credal_interval_efficiency(lower, upper))
+    eff = float(_numpy_credal_interval_efficiency(lower, upper))
     print(f"    Efficiency (higher=better): {eff:.4f}")
 
     # Per-instance arrays for significance testing

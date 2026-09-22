@@ -24,4 +24,4 @@ def count_layers(model: nnx.Module, layer_type: type[nnx.Module]) -> int:
     Returns:
         The number of layers of the specified type found in the model.
     """
-    return sum(1 for _, m in model.iter_modules() if isinstance(m, layer_type))
+    return sum(1 for _, m in nnx.iter_modules(model) if isinstance(m, layer_type))

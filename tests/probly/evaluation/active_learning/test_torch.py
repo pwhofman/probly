@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
+
 import pytest
 
 torch = pytest.importorskip("torch")
@@ -166,3 +169,26 @@ class TestMetrics(MetricsSuite):
 
 class TestLoop(LoopSuite):
     pass
+
+
+@pytest.mark.parametrize("first_metric", ["compute_accuracy", "compute_ece"])
+def test_metrics_register_on_first_torch_dispatch(first_metric: str) -> None:
+    code = f"""
+import sys
+import torch
+from probly.evaluation.active_learning.metrics import compute_accuracy, compute_ece
+
+module = 'probly.evaluation.active_learning.torch_metrics'
+assert module not in sys.modules
+labels = torch.tensor([0, 1])
+operations = {{
+    'compute_accuracy': lambda: compute_accuracy(labels, labels),
+    'compute_ece': lambda: compute_ece(torch.eye(2), labels),
+}}
+operations[{first_metric!r}]()
+assert module in sys.modules
+assert operations['compute_accuracy']() == 1.0
+assert operations['compute_ece']() == 0.0
+"""
+    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=False)  # noqa: S603
+    assert result.returncode == 0, result.stderr

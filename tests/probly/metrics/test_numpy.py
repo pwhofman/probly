@@ -68,15 +68,15 @@ class TestDistributionInput:
 
     def test_metrics_unwrap_categorical_distributions(self):
         from probly.metrics import accuracy, classwise_ece, expected_calibration_error  # noqa: PLC0415
-        from probly.representation.distribution.array_categorical import (  # noqa: PLC0415
-            ArrayLogitCategoricalDistribution,
-            ArrayProbabilityCategoricalDistribution,
+        from probly.representation.distribution.numpy_categorical import (  # noqa: PLC0415
+            NumpyLogitCategoricalDistribution,
+            NumpyProbabilityCategoricalDistribution,
         )
 
         y_true = np.array([0, 1, 0])
         probs = np.array([[0.7, 0.3], [0.2, 0.8], [0.4, 0.6]])
 
-        dist = ArrayProbabilityCategoricalDistribution(array=probs)
+        dist = NumpyProbabilityCategoricalDistribution(array=probs)
         assert float(accuracy(dist, y_true)) == pytest.approx(float(accuracy(probs, y_true)))
         assert float(expected_calibration_error(dist, y_true)) == pytest.approx(
             float(expected_calibration_error(probs, y_true))
@@ -84,7 +84,7 @@ class TestDistributionInput:
         assert float(classwise_ece(dist, y_true)) == pytest.approx(float(classwise_ece(probs, y_true)))
 
         # Logit-parameterized distributions must be normalized, not used raw.
-        logit_dist = ArrayLogitCategoricalDistribution(array=np.log(probs))
+        logit_dist = NumpyLogitCategoricalDistribution(array=np.log(probs))
         assert float(accuracy(logit_dist, y_true)) == pytest.approx(float(accuracy(probs, y_true)))
         assert float(expected_calibration_error(logit_dist, y_true)) == pytest.approx(
             float(expected_calibration_error(probs, y_true))

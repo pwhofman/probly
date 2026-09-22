@@ -60,7 +60,7 @@ def test_vbll_rejects_unknown_variant() -> None:
 @pytest.mark.parametrize("parameterization", ["diagonal", "dense"])
 def test_vbll_t_and_het_layer_train_loss(parameterization: str) -> None:
     from probly.layers.torch import HetVBLLLayer, TVBLLLayer  # noqa: PLC0415
-    from probly.train.vbll.torch import het_vbll_loss, t_vbll_loss  # noqa: PLC0415
+    from probly.losses.torch import het_vbll_loss, t_vbll_loss  # noqa: PLC0415
 
     features = torch.randn(16, 8)
     targets = torch.randint(0, 3, (16,))
@@ -134,7 +134,7 @@ def test_vbll_layer_kl_divergence_is_finite_scalar(parameterization: str) -> Non
 @pytest.mark.parametrize("parameterization", PARAMETERIZATIONS)
 def test_vbll_layer_train_loss(parameterization: str) -> None:
     from probly.layers.torch import VBLLLayer  # noqa: PLC0415
-    from probly.train.vbll.torch import vbll_loss  # noqa: PLC0415
+    from probly.losses.torch import vbll_loss  # noqa: PLC0415
 
     layer = VBLLLayer(8, 3, parameterization=parameterization)
     features = torch.randn(16, 8)

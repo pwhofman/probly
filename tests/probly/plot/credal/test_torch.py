@@ -1,6 +1,6 @@
 """Torch-backend credal plotting tests (binary and ternary).
 
-The array-backend equivalents live in ``test_binary.py`` and ``test_ternary.py``.
+The NumPy-backend equivalents live in ``test_binary.py`` and ``test_ternary.py``.
 Torch is an optional dependency, so this whole module is skipped when it is not
 installed; the array tests stay backend-free and keep running regardless.
 """

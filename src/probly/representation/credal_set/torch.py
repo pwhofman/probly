@@ -28,7 +28,7 @@ from probly.representation.distribution.torch_categorical import (
     TorchProbabilityCategoricalDistribution,
 )
 from probly.representation.sample.torch import TorchSample
-from probly.utils.torch import intersection_probability
+from probly.utils.torch import torch_intersection_probability
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from probly.representation.sample._common import Sample
 
 
-def _ensure_torch_categorical_distribution(value: object) -> TorchCategoricalDistribution:
+def _torch_ensure_categorical_distribution(value: object) -> TorchCategoricalDistribution:
     if isinstance(value, TorchCategoricalDistribution):
         return value
     return TorchProbabilityCategoricalDistribution(torch.as_tensor(value))
@@ -87,7 +87,7 @@ class TorchConvexCredalSet(
 
     def __post_init__(self) -> None:
         """Validate that the tensor contains valid categorical distributions."""
-        object.__setattr__(self, "tensor", _ensure_torch_categorical_distribution(self.tensor))
+        object.__setattr__(self, "tensor", _torch_ensure_categorical_distribution(self.tensor))
 
     @override
     @classmethod
@@ -134,7 +134,7 @@ class TorchDistanceBasedCredalSet(
 
     def __post_init__(self) -> None:
         """Validate that nominal is a valid categorical distribution and radius is non-negative."""
-        object.__setattr__(self, "nominal", _ensure_torch_categorical_distribution(self.nominal))
+        object.__setattr__(self, "nominal", _torch_ensure_categorical_distribution(self.nominal))
         object.__setattr__(self, "radius", torch.as_tensor(self.radius))
 
     @override
@@ -388,7 +388,9 @@ class TorchProbabilityIntervalsCredalSet(
     @override
     @property
     def barycenter(self) -> TorchCategoricalDistribution:
-        return TorchProbabilityCategoricalDistribution(intersection_probability(self.lower_bounds, self.upper_bounds))
+        return TorchProbabilityCategoricalDistribution(
+            torch_intersection_probability(self.lower_bounds, self.upper_bounds)
+        )
 
 
 create_probability_intervals.register(TorchCategoricalDistribution, TorchProbabilityIntervalsCredalSet.from_sample)

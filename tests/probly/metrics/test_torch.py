@@ -64,18 +64,17 @@ class TestErrorRates(ErrorRateSuite):
     pass
 
 
-class TestExpectedCalibrationErrorConsistency:
-    """The metric agrees with the ExpectedCalibrationError module in probly.train."""
+class TestGradientTransparency:
+    """Metrics neither detach their inputs nor disable autograd."""
 
-    def test_matches_train_calibration_module(self):
+    def test_expected_calibration_error_backward(self):
         from probly.metrics import expected_calibration_error  # noqa: PLC0415
-        from probly.train.calibration.torch import ExpectedCalibrationError  # noqa: PLC0415
 
-        probs = torch.softmax(torch.randn(200, 5), dim=1)
-        labels = torch.randint(0, 5, (200,))
-        expected = float(ExpectedCalibrationError(num_bins=15)(probs, labels))
-        actual = float(expected_calibration_error(probs, labels, num_bins=15))
-        assert actual == pytest.approx(expected, abs=1e-6)
+        probs = torch.softmax(torch.randn(64, 4), dim=1).requires_grad_()
+        labels = torch.randint(0, 4, (64,))
+        expected_calibration_error(probs, labels).backward()
+        assert probs.grad is not None
+        assert probs.grad.abs().sum() > 0
 
 
 class TestDistributionInput:

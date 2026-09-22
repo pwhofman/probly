@@ -18,8 +18,8 @@ from probly.method.credal_net import credal_net
 from probly.predictor import predict_raw
 from probly.quantification import quantify
 from probly.representer import representer
-from probly.train.credal.torch import intersection_probability_ce_loss
-from probly.utils.torch import intersection_probability
+from probly.losses.torch import intersection_probability_ce_loss
+from probly.utils.torch import torch_intersection_probability
 from probly_benchmark.data import load_mnist
 
 from examples.utils.model import MLPClassifier
@@ -99,7 +99,7 @@ if uncertainty.ndim > 1:
 with torch.no_grad():
     raw = predict_raw(credal_model, X_test)
     n_classes = raw.shape[-1] // 2
-    mean_probs = intersection_probability(raw[..., :n_classes], raw[..., n_classes:]).numpy()
+    mean_probs = torch_intersection_probability(raw[..., :n_classes], raw[..., n_classes:]).numpy()
 
 accuracy = (mean_probs.argmax(-1) == y_test.numpy()).mean() * 100
 print(f"Test accuracy: {accuracy:.1f}%")

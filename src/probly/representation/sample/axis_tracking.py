@@ -78,7 +78,7 @@ def _normalize_index(index: ToIndices, ndim: int, torch_indexing: bool = False) 
     if not isinstance(index, tuple):
         normalized_index = (convert_idx(index),)
     else:
-        normalized_index: tuple[_InternalIndexElement, ...] = tuple(convert_idx(idx) for idx in index)  # ty:ignore[invalid-argument-type]
+        normalized_index: tuple[_InternalIndexElement, ...] = tuple(convert_idx(idx) for idx in index)
 
     # Expand ellipsis
     for i, idx in enumerate(normalized_index):

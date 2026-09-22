@@ -12,9 +12,9 @@ from probly.representation.sample.torch import TorchSample
 
 from ._common import (
     LogBase,
-    conditional_variance,
-    mutual_information_variance,
+    expected_conditional_variance,
     variance,
+    variance_of_conditional_mean,
     variance_of_expected_predictive_distribution,
 )
 
@@ -32,26 +32,26 @@ def torch_gaussian_sample_variance_of_expected_predictive_distribution(
     sample: TorchGaussianDistributionSample, base: LogBase = None
 ) -> torch.Tensor:
     """Compute the total variance of the expected value of a second-order distribution."""
-    return torch_gaussian_sample_conditional_variance(sample, base) + torch_gaussian_sample_mutual_information(
-        sample, base
-    )
+    aleatoric = torch_gaussian_sample_expected_conditional_variance(sample, base)
+    epistemic = torch_gaussian_sample_variance_of_conditional_mean(sample, base)
+    return aleatoric + epistemic
 
 
-@conditional_variance.register(TorchGaussianDistributionSample)
-def torch_gaussian_sample_conditional_variance(
+@expected_conditional_variance.register(TorchGaussianDistributionSample)
+def torch_gaussian_sample_expected_conditional_variance(
     sample: TorchGaussianDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> torch.Tensor:
-    """Compute the conditional variance of a distribution."""
+    """Compute the aleatoric variance of a Gaussian sample (mean of per-model variances)."""
     return torch.mean(sample.tensor.var, dim=sample.sample_axis)
 
 
-@mutual_information_variance.register(TorchGaussianDistributionSample)
-def torch_gaussian_sample_mutual_information(
+@variance_of_conditional_mean.register(TorchGaussianDistributionSample)
+def torch_gaussian_sample_variance_of_conditional_mean(
     sample: TorchGaussianDistributionSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> torch.Tensor:
-    """Compute the mutual information of a distribution."""
+    """Compute the epistemic variance of a Gaussian sample (variance of per-model means)."""
     return torch.var(sample.tensor.mean, dim=sample.sample_axis, unbiased=False)
 
 
@@ -64,19 +64,19 @@ def torch_sample_variance_of_expected_predictive_distribution(
     return torch.var(sample.tensor, dim=sample.sample_axis, unbiased=False)
 
 
-@conditional_variance.register(TorchSample)
-def torch_sample_conditional_variance(
+@expected_conditional_variance.register(TorchSample)
+def torch_sample_expected_conditional_variance(
     sample: TorchSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> torch.Tensor:
-    """Compute the conditional variance of a raw tensor sample."""
+    """Compute the expected conditional variance of a raw tensor sample."""
     return torch.zeros_like(torch.mean(sample.tensor, dim=sample.sample_axis))
 
 
-@mutual_information_variance.register(TorchSample)
-def torch_sample_mutual_information(
+@variance_of_conditional_mean.register(TorchSample)
+def torch_sample_variance_of_conditional_mean(
     sample: TorchSample,
     base: LogBase = None,  # noqa: ARG001
 ) -> torch.Tensor:
-    """Compute the mutual information of a raw tensor sample."""
+    """Compute the epistemic variance of a raw tensor sample."""
     return torch.var(sample.tensor, dim=sample.sample_axis, unbiased=False)

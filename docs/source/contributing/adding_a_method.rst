@@ -43,7 +43,7 @@ Depending on what the method needs, it may also touch:
 .. code-block:: text
 
     src/probly/layers/torch.py            # reusable custom layers (e.g. SNGPLayer)
-    src/probly/train/mymethod/            # custom training losses / loops (e.g. vbll)
+    src/probly/losses/torch.py            # training losses the method needs (functions, no new package)
     src/probly/method/__init__.py         # export the new transformation
     docs/source/references.bib            # BibTeX entry for the paper
     examples/method/plot_mymethod.py      # gallery example
@@ -196,7 +196,88 @@ Step 2: Implement the backends (``torch.py``, ``flax.py``, ...)
 
 Each backend module imports its framework at module level (this is safe because the
 module is only imported lazily, see Step 3), defines the per-layer transformation, and
-registers it:
+registers it.
+
+Use backend prefixes for implementation names: ``numpy_``, ``jax_``, ``torch_``,
+``flax_``, or ``sklearn_`` for functions, and ``Numpy``, ``Jax``, ``Torch``, ``Flax``,
+or ``Sklearn`` for classes. Private names retain their leading underscore, as in
+``_torch_transform_linear``. Conversion names such as ``from_numpy_sample``
+describe their inputs and retain that ordering.
+
+Backend checks
+--------------
+
+The ``BKN001`` check in ``scripts/check_backend_naming.py`` enforces backend-word
+placement in function, method, nested function, class, and ``type`` alias
+definitions under ``src/probly``. The same script checks backend import placement
+with ``BKN002``. Both rules run automatically through pre-commit and CI. To run
+them directly:
+
+.. code-block:: bash
+
+    uv run python scripts/check_backend_naming.py
+
+The checker recognizes exactly ``torch``, ``jax``, ``flax``, ``numpy``, ``Torch``,
+``Jax``, ``Flax``, and ``Numpy`` as complete words separated by underscores or
+CamelCase boundaries, including acronym boundaries such as ``HTTP|Torch``.
+Digits stay within words. A backend word must be the first word, optionally
+following one leading underscore. Once a backend prefix is present, additional
+backend words are allowed: ``torch_numpy_predict`` and ``TorchNumpyAdapter`` both
+pass. Names such as ``predict_torch`` and ``MyTorchModel`` fail, while
+``convert_pytorch`` and ``MyFlaxifyModel`` pass because the backend spellings are
+parts of larger words. Names without a recognized backend word are permitted.
+
+Semantic first words ``from``, ``to``, ``is``, ``has``, ``supports``, and
+``Supports`` are also permitted, using the same underscore/CamelCase boundaries
+and optional privacy marker. For example, ``supports_torch`` and ``SupportsTorch``
+both pass, while ``SupportsomethingTorch`` fails. Dunder
+protocol functions/methods such as ``__torch_function__`` are exempt. Variables,
+parameters, and imported identifiers are outside BKN001's scope. Tests are outside
+both rules' default scope. Explicit file or directory arguments can be supplied
+for a manual check.
+
+For an intentional exception, add ``# noqa: BKN001`` with a reason on the opening
+line containing ``def``, ``class``, or ``type``. This suppresses only that
+definition, including when its signature spans multiple lines. A bare ``# noqa``
+does not suppress this check.
+
+**Backend imports (BKN002).** Runtime ``import`` and ``from ... import ...``
+statements must be in appropriately named modules:
+
+.. list-table:: Allowed module prefixes
+   :header-rows: 1
+
+   * - Imported package
+     - Module prefixes
+   * - ``torch``
+     - ``torch``, ``transformers``, ``huggingface``, ``peft``
+   * - ``jax``
+     - ``jax``, ``flax``
+   * - ``flax``
+     - ``flax``
+
+The rule checks the actual imported package, including submodules such as
+``torch.nn`` or ``jax.numpy``, independently of import aliases. The first word of
+the filename stem determines the module prefix, using the same word boundaries
+and optional leading underscore as BKN001. For ``__init__.py``, the containing
+package's name is used. Thus ``torch_metrics.py`` and ``torch/__init__.py`` permit
+Torch imports; ``metrics_torch.py`` and ``torch/shared.py`` do not. An enclosing
+backend package does not exempt a differently named module.
+
+Function-local imports and imports inside ``try/except`` blocks are checked.
+Type-only branches guarded by ``typing.TYPE_CHECKING`` or an explicitly imported
+``TYPE_CHECKING`` are exempt, including import aliases and equivalent
+``typing_extensions`` guards. Negated guards are supported, and runtime branches
+remain checked. Relative project imports such as ``from . import torch`` are
+not imports of the external Torch package. This is a check of Python import
+statements, not a transitive dependency or dynamic-import analysis.
+
+An intentional runtime bridge can use ``# noqa: BKN002`` with a reason on the
+import's opening line. Suppressions are rule-specific: BKN001 does not suppress
+BKN002, or vice versa. Prefer a backend-specific module and ``delayed_register``
+for backend implementations used by a shared API.
+
+Example backend implementation:
 
 .. code-block:: python
 
@@ -209,12 +290,12 @@ registers it:
     from ._common import register
 
 
-    def transform_torch_linear(obj: nn.Linear, strength: float) -> nn.Module:
+    def torch_transform_linear(obj: nn.Linear, strength: float) -> nn.Module:
         """Replace a Linear layer with its mymethod counterpart."""
         return nn.Sequential(MyMethodLayer(strength=strength), obj)
 
 
-    register(nn.Linear, transform_torch_linear)
+    register(nn.Linear, torch_transform_linear)
 
 The keyword arguments of the transformation function (here ``strength``) are filled
 from the global variables declared in the ``register`` helper's ``vars`` mapping.
@@ -294,7 +375,7 @@ Tests live under ``tests/probly/method/mymethod/`` (do not forget the ``__init__
 and are split by backend:
 
 * ``test_common.py`` for backend-agnostic checks,
-* ``test_torch.py``, ``test_flax.py``, ``test_array.py``, ... for backend-specific
+* ``test_torch.py``, ``test_flax.py``, ``test_numpy.py``, ``test_jax.py``, ... for backend-specific
   checks.
 
 Backend-specific test files call ``pytest.importorskip`` once at the top instead of
@@ -365,7 +446,28 @@ example that trains a model gets the same result on every build and cannot fail 
 docs build only some of the time. Call ``torch.manual_seed`` yourself only when the
 example needs a specific seed; it then takes precedence.
 
-Step 8: Quality checks
+Step 8: List the method in the README
+=====================================
+
+The method tables in `README.md <https://github.com/pwhofman/probly/blob/main/README.md>`_
+are maintained by hand, so a new method is only visible to users once it is added there.
+Add one row to the table of the category your method belongs to (second-order
+distributions, credal sets, conformal prediction, or calibration):
+
+.. code-block:: text
+
+    | Mymethod (`mymethod`) | [Author et al., 2026](https://arxiv.org/abs/2601.00000) | torch · flax |
+
+The ``Backends`` column lists exactly the backends you implemented in Step 2,
+separated by ``·``, in the order ``torch · flax · sklearn · river``. If you later add
+another backend to an existing method -- for example a ``flax.py`` next to an existing
+``torch.py`` -- update that row as well; the table is the only place that records
+backend support.
+
+Also bump the method count in the ``<summary>Show all N methods</summary>`` line above
+the table, and make sure the ``| :--- | :--- | :--- |`` column layout stays intact.
+
+Step 9: Quality checks
 ======================
 
 Before opening a pull request:
@@ -411,3 +513,5 @@ Checklist
      - ``tests/probly/method/mymethod/``
    * - Gallery example
      - ``examples/method/plot_mymethod.py``
+   * - README table row (with the supported backends) and method count
+     - ``README.md``

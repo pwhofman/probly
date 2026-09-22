@@ -14,7 +14,7 @@ import jax.numpy as jnp  # noqa: E402
 from probly.layers.flax import BatchEnsembleConv, BatchEnsembleLinear  # noqa: E402
 from probly.method.batchensemble import batchensemble  # noqa: E402
 from probly.predictor import predict  # noqa: E402
-from probly.representation.sample.jax import JaxArraySample  # noqa: E402
+from probly.representation.sample.jax import JaxSample  # noqa: E402
 from tests.probly.flax_utils import count_layers  # noqa: E402
 
 
@@ -50,16 +50,16 @@ class TestBatchEnsembleLayerAttributes:
         )
 
         assert not jnp.equal(
-            batchensemble_linear.kernel.value, linear_layer.kernel.value
+            batchensemble_linear.kernel[...], linear_layer.kernel[...]
         ).all()  # use_base_weights = False
         # Per-member bias initialized by broadcasting the base layer's bias across members.
         assert batchensemble_linear.bias.shape == (num_members, linear_layer.out_features)
         assert linear_layer.bias is not None
         expected_bias = jnp.broadcast_to(
-            linear_layer.bias.value[None, :],
+            linear_layer.bias[...][None, :],
             (num_members, linear_layer.out_features),
         )
-        assert jnp.equal(batchensemble_linear.bias.value, expected_bias).all()
+        assert jnp.equal(batchensemble_linear.bias[...], expected_bias).all()
         assert batchensemble_linear.in_features == linear_layer.in_features
         assert batchensemble_linear.out_features == linear_layer.out_features
         assert batchensemble_linear.use_bias == linear_layer.use_bias
@@ -84,7 +84,7 @@ class TestBatchEnsembleLayerAttributes:
         kernel = kernel_init(
             kernel_key, (linear_layer.in_features, linear_layer.out_features), linear_layer.param_dtype
         )
-        assert jnp.equal(batchensemble_linear.kernel.value, kernel).all()
+        assert jnp.equal(batchensemble_linear.kernel[...], kernel).all()
 
         # r is drawn before s in the layer __init__.
         r_key = new_rngs.params()
@@ -93,7 +93,7 @@ class TestBatchEnsembleLayerAttributes:
             (num_members, batchensemble_linear.in_features),
             dtype=linear_layer.param_dtype,
         )
-        assert jnp.equal(batchensemble_linear.r.value, expected_r).all()
+        assert jnp.equal(batchensemble_linear.r[...], expected_r).all()
 
         s_key = new_rngs.params()
         expected_s = s_mean + s_std * jax.random.normal(
@@ -101,7 +101,7 @@ class TestBatchEnsembleLayerAttributes:
             (num_members, batchensemble_linear.out_features),
             dtype=linear_layer.param_dtype,
         )
-        assert jnp.equal(batchensemble_linear.s.value, expected_s).all()
+        assert jnp.equal(batchensemble_linear.s[...], expected_s).all()
 
     def test_batchensemble_conv_attributes(self) -> None:
         """Tests BatchEnsembleConv layer attributes."""
@@ -130,7 +130,7 @@ class TestBatchEnsembleLayerAttributes:
         )
 
         assert batchensemble_conv.kernel_shape == conv_layer.kernel_shape
-        assert not jnp.equal(batchensemble_conv.kernel.value, conv_layer.kernel.value).all()  # use_base_weights = False
+        assert not jnp.equal(batchensemble_conv.kernel[...], conv_layer.kernel[...]).all()  # use_base_weights = False
         # Per-member bias initialized by broadcasting the base layer's bias across members.
         assert batchensemble_conv.bias.shape == (num_members, conv_layer.out_features)
         assert batchensemble_conv.in_features == conv_layer.in_features
@@ -162,7 +162,7 @@ class TestBatchEnsembleLayerAttributes:
         kernel_key = new_rngs.params()
         kernel_init = jax.nn.initializers.lecun_normal()
         kernel = kernel_init(kernel_key, batchensemble_conv.kernel_shape, batchensemble_conv.param_dtype)
-        assert jnp.equal(batchensemble_conv.kernel.value, kernel).all()
+        assert jnp.equal(batchensemble_conv.kernel[...], kernel).all()
 
         # r is drawn before s in the layer __init__.
         r_key = new_rngs.params()
@@ -171,7 +171,7 @@ class TestBatchEnsembleLayerAttributes:
             (num_members, batchensemble_conv.in_features),
             dtype=conv_layer.param_dtype,
         )
-        assert jnp.equal(batchensemble_conv.r.value, expected_r).all()
+        assert jnp.equal(batchensemble_conv.r[...], expected_r).all()
 
         s_key = new_rngs.params()
         expected_s = s_mean + s_std * jax.random.normal(
@@ -179,7 +179,7 @@ class TestBatchEnsembleLayerAttributes:
             (num_members, batchensemble_conv.out_features),
             dtype=conv_layer.param_dtype,
         )
-        assert jnp.equal(batchensemble_conv.s.value, expected_s).all()
+        assert jnp.equal(batchensemble_conv.s[...], expected_s).all()
 
     def test_batchensemble_bias_none(self) -> None:
         rngs = nnx.Rngs(0, params=1)
@@ -264,7 +264,7 @@ class TestBatchEnsembleCalls:
 
         BatchEnsemble layers expect ``[E*B, ...]`` inputs and return ``[E*B, ...]``
         outputs (the "pure" forward signature). The user-facing ``predict()`` handler
-        wraps these into a :class:`JaxArraySample` with ``sample_axis=0``.
+        wraps these into a :class:`JaxSample` with ``sample_axis=0``.
         """
         rngs = nnx.Rngs(0, params=1)
         batch_size = 1
@@ -298,9 +298,9 @@ class TestBatchEnsembleCalls:
         assert be_conv2d_out.shape == (num_members * batch_size, 1, 1, out_dim)
         assert be_conv3d_out.shape == (num_members * batch_size, 1, 1, 1, out_dim)
 
-        # predict() wraps in a JaxArraySample with sample_axis=0 and shape [E, B, ...].
+        # predict() wraps in a JaxSample with sample_axis=0 and shape [E, B, ...].
         linear_sample = predict(batchensemble_linear, x_linear)
-        assert isinstance(linear_sample, JaxArraySample)
+        assert isinstance(linear_sample, JaxSample)
         assert linear_sample.sample_axis == 0
         assert linear_sample.array.shape == (num_members, batch_size, out_dim)
 
@@ -316,7 +316,7 @@ class TestBatchEnsembleCalls:
         # Sample-wrap are handled for you.
         x = jnp.ones((1, 10))
         sample = predict(batchensemble_model, x)
-        assert isinstance(sample, JaxArraySample)
+        assert isinstance(sample, JaxSample)
         assert sample.sample_axis == 0
         assert sample.array.shape == (num_members, 1, 4)
 

@@ -2,7 +2,7 @@
 Distance-based credal set
 ============================
 
-An :class:`~probly.representation.credal_set.array.ArrayDistanceBasedCredalSet`
+An :class:`~probly.representation.credal_set.numpy.NumpyDistanceBasedCredalSet`
 contains every distribution whose total-variation distance to a **nominal**
 distribution is at most a given **radius**.  The larger the radius, the wider
 the uncertainty around the nominal.
@@ -17,10 +17,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from probly.plot import plot_credal_set
-from probly.representation.credal_set.array import ArrayDistanceBasedCredalSet
+from probly.representation.credal_set.numpy import NumpyDistanceBasedCredalSet
 
 # 2 instances over 3 classes, with a shared radius.
-distance_based = ArrayDistanceBasedCredalSet(
+distance_based = NumpyDistanceBasedCredalSet(
     nominal=np.array(
         [
             [0.5, 0.3, 0.2],

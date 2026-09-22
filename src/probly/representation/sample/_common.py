@@ -49,7 +49,7 @@ class Sample[T](Representation, ABC):
             sample_axis: The dimension along which samples are organized.
 
         Returns:
-            The created ArraySample.
+            The created NumpySample.
         """
         ...
 

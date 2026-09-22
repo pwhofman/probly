@@ -16,10 +16,6 @@ from ._common import (
 
 ## Torch
 @efficient_credal_prediction_generator.delayed_register(TORCH_MODULE)
-def _(_: type) -> None:
-    from . import torch as torch  # noqa: PLC0415
-
-
 @compute_efficient_credal_prediction_bounds.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415

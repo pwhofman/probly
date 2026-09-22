@@ -13,28 +13,28 @@ import numpy as np
 import pytest
 
 from probly.metrics import convex_hull_coverage
-from probly.representation.credal_set.array import (
-    ArrayConvexCredalSet,
-    ArrayDiscreteCredalSet,
-    ArraySingletonCredalSet,
+from probly.representation.credal_set.numpy import (
+    NumpyConvexCredalSet,
+    NumpyDiscreteCredalSet,
+    NumpySingletonCredalSet,
 )
-from probly.representation.distribution import ArrayProbabilityCategoricalDistribution
+from probly.representation.distribution import NumpyProbabilityCategoricalDistribution
 
 
-def _convex(probs: np.ndarray) -> ArrayConvexCredalSet:
-    return ArrayConvexCredalSet(array=ArrayProbabilityCategoricalDistribution(probs))
+def _convex(probs: np.ndarray) -> NumpyConvexCredalSet:
+    return NumpyConvexCredalSet(array=NumpyProbabilityCategoricalDistribution(probs))
 
 
-def _discrete(probs: np.ndarray) -> ArrayDiscreteCredalSet:
-    return ArrayDiscreteCredalSet(array=ArrayProbabilityCategoricalDistribution(probs))
+def _discrete(probs: np.ndarray) -> NumpyDiscreteCredalSet:
+    return NumpyDiscreteCredalSet(array=NumpyProbabilityCategoricalDistribution(probs))
 
 
-def _singleton(probs: np.ndarray) -> ArraySingletonCredalSet:
-    return ArraySingletonCredalSet(array=ArrayProbabilityCategoricalDistribution(probs))
+def _singleton(probs: np.ndarray) -> NumpySingletonCredalSet:
+    return NumpySingletonCredalSet(array=NumpyProbabilityCategoricalDistribution(probs))
 
 
-def _dist(probs: np.ndarray) -> ArrayProbabilityCategoricalDistribution:
-    return ArrayProbabilityCategoricalDistribution(probs)
+def _dist(probs: np.ndarray) -> NumpyProbabilityCategoricalDistribution:
+    return NumpyProbabilityCategoricalDistribution(probs)
 
 
 class TestStrict:
@@ -201,16 +201,16 @@ class TestEpsilonValidation:
 class TestShapeValidation:
     def test_2d_unbatched_vertices_raises(self) -> None:
         # User accidentally passes (V, K) instead of (N, V, K).
-        from probly.metrics.array import _convex_hull_lp_coverage  # noqa: PLC0415
+        from probly.metrics.numpy import _numpy_convex_hull_lp_coverage  # noqa: PLC0415
 
         with pytest.raises(ValueError, match="vertices must be 3D"):
-            _convex_hull_lp_coverage(np.zeros((2, 3)), np.zeros((1, 3)), 0.0)
+            _numpy_convex_hull_lp_coverage(np.zeros((2, 3)), np.zeros((1, 3)), 0.0)
         with pytest.raises(ValueError, match="targets must be 2D"):
-            _convex_hull_lp_coverage(np.zeros((1, 2, 3)), np.zeros((3,)), 0.0)
+            _numpy_convex_hull_lp_coverage(np.zeros((1, 2, 3)), np.zeros((3,)), 0.0)
         with pytest.raises(ValueError, match="vertices and targets must agree on N"):
-            _convex_hull_lp_coverage(np.zeros((2, 2, 3)), np.zeros((1, 3)), 0.0)
+            _numpy_convex_hull_lp_coverage(np.zeros((2, 2, 3)), np.zeros((1, 3)), 0.0)
         with pytest.raises(ValueError, match="vertices and targets must agree on K"):
-            _convex_hull_lp_coverage(np.zeros((1, 2, 3)), np.zeros((1, 4)), 0.0)
+            _numpy_convex_hull_lp_coverage(np.zeros((1, 2, 3)), np.zeros((1, 4)), 0.0)
 
 
 class TestTorchParity:

@@ -18,12 +18,14 @@ Modes
   space so the rest of the pipeline can keep talking in logits. Probly's
   torch isotonic implementation is binary-only, so we use sklearn's
   ``IsotonicRegression`` directly.
-* ``"label_relaxation"`` -- :class:`probly.train.calibration.torch.LabelRelaxationLoss`
+* ``"label_relaxation"`` -- :func:`probly.losses.torch.label_relaxation_loss`
   at train time (Lienen & Huellermeier 2021), no post-hoc step.
 """
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from functools import partial
 from typing import Final
 
 import numpy as np
@@ -32,9 +34,9 @@ import torch
 from torch import nn
 
 from probly.calibrator import calibrate
+from probly.losses.torch import label_relaxation_loss
 from probly.method.calibration import temperature_scaling, torch_identity_logit_model
 from probly.predictor import predict_raw
-from probly.train.calibration.torch import LabelRelaxationLoss
 
 CALIBRATION_MODES: Final[tuple[str, ...]] = (
     "none",
@@ -45,16 +47,16 @@ CALIBRATION_MODES: Final[tuple[str, ...]] = (
 """All supported calibration modes, in stable canonical order."""
 
 
-def make_loss(mode: str, *, lr_alpha: float) -> nn.Module:
+def make_loss(mode: str, *, lr_alpha: float) -> Callable[[torch.Tensor, torch.Tensor], torch.Tensor]:
     """Return the training loss used for the chosen calibration mode.
 
     Args:
         mode: One of :data:`CALIBRATION_MODES`.
-        lr_alpha: Alpha parameter for :class:`LabelRelaxationLoss`. Only
+        lr_alpha: Alpha parameter for :func:`label_relaxation_loss`. Only
             consulted when ``mode == "label_relaxation"``.
 
     Returns:
-        A loss module mapping ``(logits, targets) -> scalar``.
+        A loss callable mapping ``(logits, targets) -> scalar``.
 
     Raises:
         ValueError: If ``mode`` is not a recognised mode.
@@ -63,7 +65,7 @@ def make_loss(mode: str, *, lr_alpha: float) -> nn.Module:
         msg = f"unknown calibration mode: {mode!r}; expected one of {CALIBRATION_MODES}"
         raise ValueError(msg)
     if mode == "label_relaxation":
-        return LabelRelaxationLoss(alpha=lr_alpha)
+        return partial(label_relaxation_loss, alpha=lr_alpha)
     return nn.CrossEntropyLoss()
 
 

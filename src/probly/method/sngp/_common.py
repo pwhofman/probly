@@ -78,7 +78,7 @@ class SNGPRepresentation(Representation, Protocol):
 
 
 @representer.register(SNGPPredictor)
-class SNGPRepresenter[**In, Out](Representer[Any, In, Out, CategoricalDistributionSample[Any]]):
+class SNGPRepresenter[**In, Out: GaussianDistribution](Representer[Any, In, Out, CategoricalDistributionSample[Any]]):
     """Representer that samples SNGP logits and converts them to categorical samples."""
 
     num_samples: int
@@ -101,7 +101,7 @@ class SNGPRepresenter[**In, Out](Representer[Any, In, Out, CategoricalDistributi
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> CategoricalDistributionSample[Any]:
         distribution = self._predict(*args, **kwargs)
-        sampled_logits = distribution.sample(self.num_samples)  # ty:ignore[unresolved-attribute]
+        sampled_logits = distribution.sample(self.num_samples)
 
         return compute_categorical_sample_from_logits(sampled_logits)
 

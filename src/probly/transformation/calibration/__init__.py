@@ -25,11 +25,6 @@ if TYPE_CHECKING:
 CalibrationPredictor.register(SKLEARN_CALIBRATED_CLASSIFIER_CV)
 
 
-@calibrate.delayed_register(SKLEARN_CALIBRATED_CLASSIFIER_CV)
-def _(_: type[object]) -> None:
-    from . import sklearn as sklearn  # noqa: PLC0415
-
-
 @calibration_generator.delayed_register(TORCH_MODULE)
 def _(_: type[object]) -> None:
     from . import torch as torch  # noqa: PLC0415
@@ -40,6 +35,7 @@ def _(_: type[object]) -> None:
     from . import flax as flax  # noqa: PLC0415
 
 
+@calibrate.delayed_register(SKLEARN_CALIBRATED_CLASSIFIER_CV)
 @calibration_generator.delayed_register(SKLEARN_MODULE)
 def _(_: type[object]) -> None:
     from . import sklearn as sklearn  # noqa: PLC0415

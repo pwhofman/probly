@@ -314,7 +314,7 @@ def test_torch_uncertainty_unknown_representer_kind_raises() -> None:
 
 
 def test_torch_uncertainty_conformal_predict_returns_one_hot_set() -> None:
-    """Conformal classifiers route through ``_predict_torch_uncertainty_conformal``."""
+    """Conformal classifiers route through ``_torch_uncertainty_predict_conformal``."""
     from torch_uncertainty.post_processing.conformal.thr import ConformalClsTHR  # noqa: PLC0415
 
     from probly.representation.conformal_set.torch import TorchOneHotConformalSet  # noqa: PLC0415
@@ -326,7 +326,7 @@ def test_torch_uncertainty_conformal_predict_returns_one_hot_set() -> None:
     dl = DataLoader(TensorDataset(x, y), batch_size=16)
     conformal.fit(dl)
 
-    # predict() should bind to _predict_torch_uncertainty_conformal which checks > 0.
+    # predict() should bind to _torch_uncertainty_predict_conformal which checks > 0.
     result = predict(conformal, x[:8])
     assert isinstance(result, TorchOneHotConformalSet)
     assert result.tensor.dtype == torch.bool

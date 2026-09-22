@@ -7,16 +7,16 @@ import numpy as np
 from probly.quantification import SecondOrderEntropyDecomposition, decompose, measure, quantify
 from probly.quantification.decomposition.decomposition import ConstantTotalDecomposition
 from probly.quantification.measure.distribution import entropy_of_expected_predictive_distribution
-from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistributionSample,
-    ArrayProbabilityCategoricalDistribution,
+from probly.representation.distribution.numpy_categorical import (
+    NumpyCategoricalDistributionSample,
+    NumpyProbabilityCategoricalDistribution,
 )
-from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
-from probly.representation.sample import ArraySample
+from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
+from probly.representation.sample import NumpySample
 
 
-def _array_sample() -> ArraySample[np.ndarray]:
-    return ArraySample(
+def _numpy_sample() -> NumpySample[np.ndarray]:
+    return NumpySample(
         array=np.array(
             [
                 [1.0, 2.0],
@@ -29,8 +29,8 @@ def _array_sample() -> ArraySample[np.ndarray]:
     )
 
 
-def _array_dirichlet_distribution() -> ArrayDirichletDistribution:
-    return ArrayDirichletDistribution(
+def _numpy_dirichlet_distribution() -> NumpyDirichletDistribution:
+    return NumpyDirichletDistribution(
         np.array(
             [
                 [2.0, 3.0, 5.0],
@@ -41,7 +41,7 @@ def _array_dirichlet_distribution() -> ArrayDirichletDistribution:
     )
 
 
-def _array_categorical_sample() -> ArrayCategoricalDistributionSample:
+def _numpy_categorical_sample() -> NumpyCategoricalDistributionSample:
     probabilities = np.array(
         [
             [[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]],
@@ -50,14 +50,14 @@ def _array_categorical_sample() -> ArrayCategoricalDistributionSample:
         ],
         dtype=float,
     )
-    return ArrayCategoricalDistributionSample(
-        array=ArrayProbabilityCategoricalDistribution(probabilities),
+    return NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
         sample_axis=0,
     )
 
 
 def test_measure_dispatches_to_registered_sample_measure() -> None:
-    sample = _array_sample()
+    sample = _numpy_sample()
 
     uncertainty = measure(sample)
 
@@ -65,7 +65,7 @@ def test_measure_dispatches_to_registered_sample_measure() -> None:
 
 
 def test_decompose_wraps_registered_measure_as_constant_total_decomposition() -> None:
-    sample = _array_sample()
+    sample = _numpy_sample()
 
     decomposition = decompose(sample)
 
@@ -74,13 +74,13 @@ def test_decompose_wraps_registered_measure_as_constant_total_decomposition() ->
 
 
 def test_decompose_dispatches_to_registered_entropy_decomposition() -> None:
-    decomposition = decompose(_array_categorical_sample())
+    decomposition = decompose(_numpy_categorical_sample())
 
     assert isinstance(decomposition, SecondOrderEntropyDecomposition)
 
 
 def test_measure_falls_back_to_registered_decomposition_total() -> None:
-    distribution = _array_dirichlet_distribution()
+    distribution = _numpy_dirichlet_distribution()
 
     uncertainty = measure(distribution)
 
@@ -90,7 +90,7 @@ def test_measure_falls_back_to_registered_decomposition_total() -> None:
 
 
 def test_measure_prefers_registered_decomposition_for_distribution_sample() -> None:
-    sample = _array_categorical_sample()
+    sample = _numpy_categorical_sample()
 
     uncertainty = measure(sample)
 
@@ -100,13 +100,13 @@ def test_measure_prefers_registered_decomposition_for_distribution_sample() -> N
 
 
 def test_quantify_prefers_registered_decomposition_for_distribution_sample() -> None:
-    quantification = quantify(_array_categorical_sample())
+    quantification = quantify(_numpy_categorical_sample())
 
     assert isinstance(quantification, SecondOrderEntropyDecomposition)
 
 
 def test_quantify_uses_decompose_fallback_for_plain_sample() -> None:
-    sample = _array_sample()
+    sample = _numpy_sample()
 
     quantification = quantify(sample)
 

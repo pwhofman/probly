@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, override, runtime_checkable
 
+from flextype import flexdispatch
+
 from probly.predictor import LogitClassifier
 from probly.quantification._quantification import decompose
 from probly.quantification.decomposition.decomposition import CachingDecomposition, EpistemicDecomposition
@@ -42,6 +44,23 @@ def dare[**In, Out](base: Predictor[In, Out], num_members: int, reset_params: bo
         The DARE predictor.
     """
     return ensemble(base, num_members=num_members, reset_params=reset_params)
+
+
+@flexdispatch
+def dare_anti_regularization(model: object, device: object, loss: object, threshold: object) -> object:
+    """Compute the DARE anti-regularization term following Algorithm 1.
+
+    Args:
+        model: The DARE model.
+        device: The device of the model.
+        loss: The current loss value, used for the switching condition.
+        threshold: The threshold at or below which anti-regularization activates.
+
+    Returns:
+        The anti-regularization term when loss <= threshold, else 0.0.
+    """
+    msg = f"dare_anti_regularization is not implemented for predictors of type {type(model)}"
+    raise NotImplementedError(msg)
 
 
 @runtime_checkable
@@ -104,4 +123,11 @@ class DAREDecomposition[T](CachingDecomposition, EpistemicDecomposition[T]):
         return fit + dispersion
 
 
-__all__ = ["DAREDecomposition", "DARERepresentation", "DARERepresenter", "DarePredictor", "dare"]
+__all__ = [
+    "DAREDecomposition",
+    "DARERepresentation",
+    "DARERepresenter",
+    "DarePredictor",
+    "dare",
+    "dare_anti_regularization",
+]

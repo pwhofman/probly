@@ -8,7 +8,7 @@ from ._common import calculate_quantile, calculate_weighted_quantile
 
 
 @calculate_quantile.register(jnp.ndarray)
-def _compute_quantile_score_jax(scores: jnp.ndarray, alpha: float) -> float:
+def _jax_compute_quantile_score(scores: jnp.ndarray, alpha: float) -> float:
     # Implementation for JAX arrays
     if not 0 <= alpha <= 1:
         msg = f"alpha must be in [0, 1], got {alpha}"
@@ -28,7 +28,7 @@ def _compute_quantile_score_jax(scores: jnp.ndarray, alpha: float) -> float:
 
 
 @calculate_weighted_quantile.register(jnp.ndarray)
-def _compute_weighted_quantile_jax(
+def _jax_compute_weighted_quantile(
     values: jnp.ndarray, quantile: float, sample_weight: jnp.ndarray | None = None
 ) -> float:
     if sample_weight is None:

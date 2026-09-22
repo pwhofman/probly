@@ -1,23 +1,23 @@
 """Uncertainty representations for models."""
 
 from .credal_set import (
-    ArrayCategoricalCredalSet,
-    ArrayDiscreteCredalSet,
     CategoricalCredalSet,
     CredalSet,
     CredalSetType,
     DiscreteCredalSet,
+    NumpyCategoricalCredalSet,
+    NumpyDiscreteCredalSet,
 )
 from .representation import Representation
 from .sample import Sample
 
 __all__ = [
-    "ArrayCategoricalCredalSet",
-    "ArrayDiscreteCredalSet",
     "CategoricalCredalSet",
     "CredalSet",
     "CredalSetType",
     "DiscreteCredalSet",
+    "NumpyCategoricalCredalSet",
+    "NumpyDiscreteCredalSet",
     "Representation",
     "Sample",
     "TorchEmbedding",

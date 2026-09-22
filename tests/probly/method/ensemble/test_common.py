@@ -65,3 +65,19 @@ def test_registered_generator_autocasts_builtin_list_of_non_predictors(dummy_pre
     assert type(result) is not list
     assert isinstance(result, list)
     assert isinstance(result, EnsemblePredictor)
+
+
+def test_dirichlet_ensemble_check_does_not_iterate_arbitrary_iterables() -> None:
+    """The protocol check must only inspect containers, never consume or crash on other iterables."""
+    from probly.method.ensemble import EnsembleDirichletDistributionPredictor  # noqa: PLC0415
+
+    generator = (i for i in range(3))
+    assert not isinstance(generator, EnsembleDirichletDistributionPredictor)
+    assert list(generator) == [0, 1, 2]
+
+    class OnlyIterableOnceFitted:
+        def __iter__(self) -> object:
+            msg = "not fitted"
+            raise AttributeError(msg)
+
+    assert not isinstance(OnlyIterableOnceFitted(), EnsembleDirichletDistributionPredictor)

@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, override
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, ClassVar, Self, overload, override
 
 import torch
 
@@ -47,6 +47,12 @@ class TorchCategoricalDistribution(
             values["tensor"] = self.probabilities
 
         return values
+
+    @overload
+    def with_protected_values(self, values: dict[str, Any]) -> Self: ...
+
+    @overload
+    def with_protected_values(self, values: dict[str, Any], func: Callable | None) -> TorchAxisProtected[Any]: ...
 
     @override
     def with_protected_values(self, values: dict[str, Any], func: Callable | None = None) -> TorchAxisProtected[Any]:
@@ -107,7 +113,7 @@ class TorchCategoricalDistribution(
 class TorchProbabilityCategoricalDistribution(TorchCategoricalDistribution):
     """A categorical distribution represented by unnormalized probabilities."""
 
-    tensor: torch.Tensor
+    tensor: torch.Tensor = field()
     protected_axes: ClassVar[dict[str, int]] = {"tensor": 1}
     permitted_functions: ClassVar[set[Callable]] = {torch.mean, torch_average}
 
@@ -154,7 +160,7 @@ class TorchProbabilityCategoricalDistribution(TorchCategoricalDistribution):
 class TorchLogitCategoricalDistribution(TorchCategoricalDistribution):
     """A categorical distribution represented by logits."""
 
-    tensor: torch.Tensor
+    tensor: torch.Tensor = field()
     protected_axes: ClassVar[dict[str, int]] = {"tensor": 1}
     permitted_functions: ClassVar[set[Callable]] = {torch.mean, torch_average}
 

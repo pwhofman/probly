@@ -12,7 +12,10 @@ from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistributionSample,
 )
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
-from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution
+from probly.representation.distribution.torch_gaussian import (
+    TorchGaussianDistribution,
+    TorchGaussianDistributionSample,
+)
 from probly.representation.distribution.torch_mixture import TorchDirichletMixtureDistribution
 from probly.representation.distribution.torch_sparse_log_categorical import TorchSparseLogCategoricalDistribution
 from probly.representation.torch_functions import torch_average
@@ -63,7 +66,7 @@ def torch_categorical_entropy(
     if base == "normalize":
         base = float(p.shape[-1])
 
-    return entropy / torch.log(torch.tensor(base))
+    return entropy / torch.log(torch.as_tensor(base, dtype=entropy.dtype, device=entropy.device))
 
 
 @entropy.register(TorchSparseLogCategoricalDistribution)
@@ -85,13 +88,7 @@ def torch_dirichlet_entropy(
     else:
         alphas = distribution
 
-    alpha_0 = torch.sum(alphas, dim=-1)
-    num_classes = alphas.shape[-1]
-
-    log_beta = torch.sum(torch.lgamma(alphas), dim=-1) - torch.lgamma(alpha_0)
-    digamma_sum = (alpha_0 - num_classes) * torch.digamma(alpha_0)
-    digamma_individual = torch.sum((alphas - 1) * torch.digamma(alphas), dim=-1)
-    result = log_beta + digamma_sum - digamma_individual
+    result = torch.distributions.Dirichlet(alphas, validate_args=False).entropy()
 
     if base is None or base == torch.e:
         return result
@@ -99,6 +96,28 @@ def torch_dirichlet_entropy(
         msg = "Entropy normalization is not supported for Dirichlet distributions."
         raise ValueError(msg)
     return result / torch.log(torch.as_tensor(base, dtype=result.dtype, device=result.device))
+
+
+@entropy.register(TorchGaussianDistribution)
+def torch_gaussian_entropy(
+    distribution: TorchGaussianDistribution | torch.Tensor, base: LogBase = None
+) -> torch.Tensor:
+    """Compute the (differential) entropy of a Gaussian distribution.
+
+    Takes either a `TorchGaussianDistribution` or a single torch.Tensor representing the variance.
+    """
+    if isinstance(distribution, TorchGaussianDistribution):
+        var = distribution.var
+        del distribution  # Avoid keeping a reference to the distribution for memory efficiency
+    else:
+        var = distribution
+    entropy = torch.distributions.Normal(torch.zeros_like(var), torch.sqrt(var)).entropy()
+    if base is None or base == torch.e:
+        return entropy
+    if base == "normalize":
+        msg = "Entropy normalization is not supported for Gaussian distributions."
+        raise ValueError(msg)
+    return entropy / torch.log(torch.as_tensor(base, dtype=entropy.dtype, device=entropy.device))
 
 
 # Entropy of expected value
@@ -123,6 +142,24 @@ def torch_categorical_sample_entropy_of_expected_predictive_distribution(
     """Compute the entropy of the expected value of a sample from a categorical distribution."""
     expected_distribution = sample.sample_mean()
     return torch_categorical_entropy(expected_distribution, base=base)
+
+
+@entropy_of_expected_predictive_distribution.register(TorchGaussianDistributionSample)
+def torch_gaussian_sample_entropy_of_expected_predictive_distribution(
+    sample: TorchGaussianDistributionSample, base: LogBase = None
+) -> torch.Tensor:
+    """Compute the entropy of the expected Gaussian via the law of total variance."""
+    axis = sample.sample_axis
+    tensor = sample.tensor
+    del sample  # Avoid keeping a reference to the sample for memory efficiency
+
+    # We compute the entropy of the moment-matched Gaussian as an approximation.
+    # This is an overestimate of the true entropy of the expected value,
+    # which would require computing the entropy of a Gaussian mixture.
+    # Interpreting this value as total uncertainty, this means that epistemic uncertainty
+    # may be overestimated as well, while aleatoric uncertainty is computed correctly.
+    var = torch.mean(tensor.var, dim=axis) + torch.var(tensor.mean, dim=axis, unbiased=False)
+    return torch_gaussian_entropy(var, base=base)
 
 
 @entropy_of_expected_predictive_distribution.register(TorchDirichletMixtureDistribution)
@@ -171,6 +208,16 @@ def torch_categorical_sample_conditional_entropy(
     return torch.mean(entropies, dim=axis)
 
 
+@conditional_entropy.register(TorchGaussianDistributionSample)
+def torch_gaussian_sample_conditional_entropy(
+    sample: TorchGaussianDistributionSample, base: LogBase = None
+) -> torch.Tensor:
+    """Compute the mean per-member Gaussian entropy (aleatoric uncertainty)."""
+    axis = sample.sample_axis
+    entropies = torch_gaussian_entropy(sample.tensor, base=base)
+    return torch.mean(entropies, dim=axis)
+
+
 @conditional_entropy.register(TorchDirichletMixtureDistribution)
 def torch_mixture_conditional_entropy(
     distribution: TorchDirichletMixtureDistribution, base: LogBase = None
@@ -204,6 +251,16 @@ def torch_categorical_sample_mutual_information(
     expected_value_entropy = torch_categorical_entropy(torch.mean(p, dim=axis), base=base)
     conditional_entropy_value = torch.mean(torch_categorical_entropy(p, base=base), dim=axis)
     return expected_value_entropy - conditional_entropy_value
+
+
+@mutual_information.register(TorchGaussianDistributionSample)
+def torch_gaussian_sample_mutual_information(
+    sample: TorchGaussianDistributionSample, base: LogBase = None
+) -> torch.Tensor:
+    """Compute the epistemic uncertainty (total entropy minus aleatoric entropy)."""
+    return torch_gaussian_sample_entropy_of_expected_predictive_distribution(
+        sample, base=base
+    ) - torch_gaussian_sample_conditional_entropy(sample, base=base)
 
 
 @mutual_information.register(TorchDirichletMixtureDistribution)

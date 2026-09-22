@@ -57,7 +57,7 @@ class TorchEfficientCredalPredictor(nn.Module):
 
 
 @compute_efficient_credal_prediction_bounds.register(torch.Tensor)
-def _compute_bounds_torch(
+def _torch_compute_bounds(
     logits_train: torch.Tensor,
     targets_train: torch.Tensor,
     num_classes: int,

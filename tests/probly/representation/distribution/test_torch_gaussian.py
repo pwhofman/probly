@@ -53,8 +53,8 @@ def test_from_parameters_creates_instance() -> None:
 
     assert isinstance(dist, TorchGaussianDistribution)
 
-    torch.testing.assert_close(dist.mean, torch.tensor(mean_list, dtype=torch.float32))
-    torch.testing.assert_close(dist.var, torch.tensor(var_list, dtype=torch.float32))
+    torch.testing.assert_close(dist.mean, mean_list.to(torch.float32))
+    torch.testing.assert_close(dist.var, var_list.to(torch.float32))
 
 
 def test_torch_properties() -> None:
@@ -111,7 +111,7 @@ def test_matrix_transpose_property() -> None:
     t_dist = dist.T
 
     assert t_dist.shape == (4, 3, 2)
-    expected_mean = mean.T
+    expected_mean = mean.permute(2, 1, 0)
     torch.testing.assert_close(t_dist.mean, expected_mean)
 
 

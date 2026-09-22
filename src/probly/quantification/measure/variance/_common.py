@@ -35,14 +35,14 @@ def variance_of_expected_predictive_distribution(
 
 
 @flexdispatch
-def conditional_variance(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
-    """Compute the conditional variance of a distribution."""
-    msg = f"Conditional variance is not supported for distributions of type {type(distribution)}."
+def expected_conditional_variance(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
+    """Compute the expected conditional variance of a second-order distribution."""
+    msg = f"Expected conditional variance is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)
 
 
 @flexdispatch
-def mutual_information_variance(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
-    """Compute the mutual information of a distribution."""
-    msg = f"Mutual information is not supported for distributions of type {type(distribution)}."
+def variance_of_conditional_mean(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
+    """Compute the variance of the conditional mean of a second-order distribution."""
+    msg = f"Variance of conditional mean is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)

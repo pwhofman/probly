@@ -5,15 +5,15 @@ from probly.quantification.measure.ordinal import (
     categorical_variance_aleatoric,
     categorical_variance_total,
     labelwise_conditional_entropy,
-    labelwise_conditional_variance,
     labelwise_entropy_of_expected_predictive_distribution,
+    labelwise_expected_conditional_variance,
     labelwise_variance_of_expected_predictive_distribution,
     ordinal_conditional_entropy,
-    ordinal_conditional_variance,
     ordinal_entropy_of_expected_predictive_distribution,
+    ordinal_expected_conditional_variance,
     ordinal_variance_of_expected_predictive_distribution,
 )
-from probly.quantification.measure.variance import conditional_variance, mutual_information_variance
+from probly.quantification.measure.variance import expected_conditional_variance, variance_of_conditional_mean
 
 from ._common import (
     LabelwiseBinaryEntropyDecomposition,
@@ -30,14 +30,14 @@ __all__ = [
     "OrdinalVarianceDecomposition",
     "categorical_variance_aleatoric",
     "categorical_variance_total",
-    "conditional_variance",
+    "expected_conditional_variance",
     "labelwise_conditional_entropy",
-    "labelwise_conditional_variance",
     "labelwise_entropy_of_expected_predictive_distribution",
+    "labelwise_expected_conditional_variance",
     "labelwise_variance_of_expected_predictive_distribution",
-    "mutual_information_variance",
     "ordinal_conditional_entropy",
-    "ordinal_conditional_variance",
     "ordinal_entropy_of_expected_predictive_distribution",
+    "ordinal_expected_conditional_variance",
     "ordinal_variance_of_expected_predictive_distribution",
+    "variance_of_conditional_mean",
 ]

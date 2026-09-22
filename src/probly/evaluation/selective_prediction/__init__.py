@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
 
-from . import array as array
+from . import numpy as numpy
 from ._common import selective_prediction
 
 

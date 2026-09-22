@@ -95,7 +95,8 @@ class TorchGraphPosteriorNetworkBase[T, F](nn.Module, ABC):
         self.latent_encoder = nn.Linear(self.encoder_dim, latent_dim)
         self.batch_norm = nn.BatchNorm1d(latent_dim)
         self.norm_flow = RadialNormalizingFlowStack(dim=latent_dim, num_classes=num_classes, num_flows=num_flows)
-        self.propagation = APPNP(K=propagation_steps, alpha=teleport_probability, add_self_loops=add_self_loops)
+        # PyG marks the optional edge_update hook abstract; APPNP uses propagate instead.
+        self.propagation = APPNP(K=propagation_steps, alpha=teleport_probability, add_self_loops=add_self_loops)  # ty: ignore[call-non-callable]
         self.register_buffer(
             "class_counts",
             None if class_counts is None else torch.as_tensor(class_counts, dtype=torch.float),
@@ -190,7 +191,7 @@ class TorchGraphPosteriorNetwork(
     TorchGraphPosteriorNetworkBase[TorchDirichletDistribution, torch.Tensor],
     GraphPosteriorNetworkPredictor[[Data], TorchDirichletDistribution],
 ):
-    """Torch Geometric Graph Posterior Network."""
+    """Torch Geometric Graph Posterior Network based on :cite:`stadlerGraphPosteriorNetwork2021`."""
 
     def predict_representation(self, data: Data) -> TorchDirichletDistribution:
         """Compute the predictive distribution parameters (Dirichlet alphas) for all nodes."""
@@ -208,7 +209,7 @@ class TorchLOPGraphPosteriorNetwork(
         [Data], DirichletMixtureDistribution[TorchDirichletDistribution, TorchCategoricalDistribution]
     ],
 ):
-    """Torch Geometric LOP-GPN with approximate pooled Dirichlet outputs."""
+    """Torch Geometric LOP-GPN with Dirichlet mixture outputs based on :cite:`damkeLinearOpinionPooling2024`."""
 
     def __init__(
         self,
@@ -382,7 +383,7 @@ class TorchCUQGraphNeuralNetwork(
     TorchGraphPosteriorNetworkBase[TorchDirichletDistribution, torch.Tensor],
     CUQGraphNeuralNetworkPredictor[[Data], TorchDirichletDistribution],
 ):
-    """Torch Geometric CUQ-GNN using graph-refined hidden features."""
+    """Torch Geometric CUQ-GNN using graph-refined hidden features based on :cite:`damkeCUQGNN2024`."""
 
     def __init__(
         self,
@@ -427,9 +428,11 @@ class TorchCUQGraphNeuralNetwork(
             add_self_loops=add_self_loops,
         )
         if convolution_name == "appnp":
-            self.graph_module = APPNP(K=propagation_steps, alpha=teleport_probability, add_self_loops=add_self_loops)
+            # PyG's optional edge_update hook is unused by this propagation layer.
+            self.graph_module = APPNP(K=propagation_steps, alpha=teleport_probability, add_self_loops=add_self_loops)  # ty: ignore[call-non-callable]
         elif convolution_name == "gcn":
-            self.graph_module = GCNConv(self.encoder_dim, self.encoder_dim)
+            # PyG's optional edge_update hook is unused by this convolution layer.
+            self.graph_module = GCNConv(self.encoder_dim, self.encoder_dim)  # ty: ignore[call-non-callable]
         else:
             msg = f"Unsupported CUQ-GNN convolution: {convolution_name!r}."
             raise ValueError(msg)

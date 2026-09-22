@@ -93,6 +93,14 @@ class PRCurveSuite:
         recall = np.asarray(recall)
         np.testing.assert_allclose(recall, 0.0)
 
+    def test_tied_scores_share_one_threshold(self, array_fn):
+        """All scores equal gives one threshold accepting everything: recall 1, precision is the positive rate."""
+        y_true = array_fn([0, 0, 0, 1, 1, 1], dtype=float)
+        y_score = array_fn([0.5] * 6, dtype=float)
+        precision, recall, _ = precision_recall_curve(y_true, y_score)
+        np.testing.assert_allclose(np.asarray(precision)[:-1], 0.5)
+        np.testing.assert_allclose(np.asarray(recall)[:-1], 1.0)
+
     def test_higher_rank_equivalence(self, array_fn):
         """Higher-rank inputs are treated as additional leading batch dims.
 

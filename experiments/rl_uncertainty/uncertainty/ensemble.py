@@ -1,7 +1,7 @@
 """Ensemble-based uncertainty estimator using probly.
 
 Wraps K independently-trained DQN agents. Uses probly's
-ArrayCategoricalDistributionSample + quantify pipeline for proper
+NumpyCategoricalDistributionSample + quantify pipeline for proper
 aleatoric/epistemic decomposition, and raw Q-value statistics for
 action selection.
 """
@@ -13,9 +13,9 @@ from typing import TYPE_CHECKING, cast
 import numpy as np
 
 from probly.quantification import quantify
-from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistribution,
-    ArrayCategoricalDistributionSample,
+from probly.representation.distribution.numpy_categorical import (
+    NumpyCategoricalDistributionSample,
+    NumpyProbabilityCategoricalDistribution,
 )
 
 from . import _softmax
@@ -50,7 +50,7 @@ class EnsembleEstimator:
         """Per-state uncertainty via probly's decomposition pipeline.
 
         Converts Q-values to softmax probabilities, then uses
-        ArrayCategoricalDistributionSample + quantify to get
+        NumpyCategoricalDistributionSample + quantify to get
         aleatoric/epistemic/total decomposition per state.
         """
         stacked_q = self._stacked_q(states)  # (K, batch, n_actions)
@@ -63,8 +63,8 @@ class EnsembleEstimator:
 
         for i in range(batch_size):
             probs_i = stacked_probs[:, i, :]  # (K, n_actions)
-            sample = ArrayCategoricalDistributionSample(
-                array=ArrayCategoricalDistribution(unnormalized_probabilities=probs_i),
+            sample = NumpyCategoricalDistributionSample(
+                array=NumpyProbabilityCategoricalDistribution(array=probs_i),
                 sample_axis=0,
             )
             decomp = cast("AleatoricEpistemicTotalDecomposition", quantify(sample))

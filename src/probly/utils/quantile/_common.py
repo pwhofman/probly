@@ -21,7 +21,7 @@ def calculate_weighted_quantile[In](values: In, quantile: float, sample_weight: 
 
 
 @calculate_quantile.register(np.ndarray)
-def calculate_quantile_numpy(scores: np.ndarray, alpha: float) -> float:
+def numpy_calculate_quantile(scores: np.ndarray, alpha: float) -> float:
     """Calculate the quantile for conformal prediction.
 
     Args:
@@ -48,7 +48,7 @@ def calculate_quantile_numpy(scores: np.ndarray, alpha: float) -> float:
 
 
 @calculate_weighted_quantile.register(np.ndarray)
-def calculate_weighted_quantile_numpy(
+def numpy_calculate_weighted_quantile(
     values: np.ndarray, quantile: float, sample_weight: np.ndarray | None = None
 ) -> float:
     """Calculate a weighted quantile of the values using numpy."""
