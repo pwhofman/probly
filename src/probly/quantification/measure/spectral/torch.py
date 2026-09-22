@@ -135,8 +135,8 @@ def torch_von_neumann_entropy(kernel: torch.Tensor, *, eps: float = 1e-12) -> to
     valid_trace = trace > eps
     density = kernel / trace.clamp_min(eps)[..., None, None]
     eigenvalues = torch.linalg.eigvalsh(density).clamp_min(0.0)
-    terms = torch.where(eigenvalues > eps, eigenvalues * torch.log(eigenvalues), torch.zeros_like(eigenvalues))
-    entropy = -terms.sum(dim=-1)
+    terms = torch.where(eigenvalues > eps, torch.special.entr(eigenvalues), torch.zeros_like(eigenvalues))
+    entropy = terms.sum(dim=-1)
     return torch.where(valid_trace, entropy, torch.zeros_like(entropy))
 
 
