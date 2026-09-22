@@ -851,8 +851,8 @@ class TestKLDivergenceHelper:
         from probly.layers.torch import _kl_divergence_gaussian  # noqa: PLC0415
 
         mu = torch.tensor([0.0, 1.0])
-        var = torch.tensor([1.0, 2.0])
-        kl = _kl_divergence_gaussian(mu, var, mu, var)
+        sigma = torch.tensor([1.0, 2.0])
+        kl = _kl_divergence_gaussian(mu, sigma, mu, sigma)
         torch.testing.assert_close(kl, torch.zeros_like(kl), atol=1e-6, rtol=1e-6)
 
     def test_kl_nonneg_for_different_distributions(self) -> None:
@@ -860,10 +860,10 @@ class TestKLDivergenceHelper:
         from probly.layers.torch import _kl_divergence_gaussian  # noqa: PLC0415
 
         mu1 = torch.tensor([0.0])
-        var1 = torch.tensor([1.0])
+        sigma1 = torch.tensor([1.0])
         mu2 = torch.tensor([2.0])
-        var2 = torch.tensor([1.0])
-        kl = _kl_divergence_gaussian(mu1, var1, mu2, var2)
+        sigma2 = torch.tensor([1.0])
+        kl = _kl_divergence_gaussian(mu1, sigma1, mu2, sigma2)
         # KL(N(0,1) || N(2,1)) = 2.0 (exact).
         torch.testing.assert_close(kl, torch.tensor([2.0]))
 

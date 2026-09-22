@@ -407,18 +407,18 @@ class BayesLinear(nn.Module):
         kl = torch.sum(
             _kl_divergence_gaussian(
                 self.weight_mu,
-                F.softplus(self.weight_rho) ** 2,
+                F.softplus(self.weight_rho),
                 cast("torch.Tensor", self.weight_prior_mu),
-                cast("torch.Tensor", self.weight_prior_sigma) ** 2,
+                cast("torch.Tensor", self.weight_prior_sigma),
             ),
         )
         if self.bias:
             kl += torch.sum(
                 _kl_divergence_gaussian(
                     self.bias_mu,
-                    F.softplus(self.bias_rho) ** 2,
+                    F.softplus(self.bias_rho),
                     cast("torch.Tensor", self.bias_prior_mu),
-                    cast("torch.Tensor", self.bias_prior_sigma) ** 2,
+                    cast("torch.Tensor", self.bias_prior_sigma),
                 ),
             )
         return kl
@@ -595,18 +595,18 @@ class BayesConv2d(nn.Module):
         kl = torch.sum(
             _kl_divergence_gaussian(
                 self.weight_mu,
-                F.softplus(self.weight_rho) ** 2,
+                F.softplus(self.weight_rho),
                 cast("torch.Tensor", self.weight_prior_mu),
-                cast("torch.Tensor", self.weight_prior_sigma) ** 2,
+                cast("torch.Tensor", self.weight_prior_sigma),
             ),
         )
         if self.bias:
             kl += torch.sum(
                 _kl_divergence_gaussian(
                     self.bias_mu,
-                    F.softplus(self.bias_rho) ** 2,
+                    F.softplus(self.bias_rho),
                     cast("torch.Tensor", self.bias_prior_mu),
-                    cast("torch.Tensor", self.bias_prior_sigma) ** 2,
+                    cast("torch.Tensor", self.bias_prior_sigma),
                 ),
             )
         return kl
@@ -614,23 +614,25 @@ class BayesConv2d(nn.Module):
 
 def _kl_divergence_gaussian(
     mu1: torch.Tensor,
-    sigma21: torch.Tensor,
+    sigma1: torch.Tensor,
     mu2: torch.Tensor,
-    sigma22: torch.Tensor,
+    sigma2: torch.Tensor,
 ) -> torch.Tensor:
-    """Compute the KL-divergence between two Gaussian distributions.
+    """Compute the elementwise KL-divergence between two Gaussian distributions.
 
-    https://en.wikipedia.org/wiki/Kullback-Leibler_divergence#Examples
     Args:
-        mu1: torch.Tensor, mean of the first Gaussian distribution
-        sigma21: torch.Tensor, variance of the first Gaussian distribution
-        mu2: torch.Tensor, mean of the second Gaussian distribution
-        sigma22: torch.Tensor, variance of the second Gaussian distribution
+        mu1: Mean of the first Gaussian distribution.
+        sigma1: Standard deviation of the first Gaussian distribution.
+        mu2: Mean of the second Gaussian distribution.
+        sigma2: Standard deviation of the second Gaussian distribution.
+
     Returns:
-        kl_div: float or numpy.ndarray shape (n_instances,), KL-divergence between the two Gaussian distributions
+        The KL-divergence ``KL(N(mu1, sigma1) || N(mu2, sigma2))`` with the broadcast shape of the inputs.
     """
-    kl_div: torch.Tensor = 0.5 * torch.log(sigma22 / sigma21) + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22) - 0.5
-    return kl_div
+    return torch.distributions.kl_divergence(
+        torch.distributions.Normal(mu1, sigma1, validate_args=False),
+        torch.distributions.Normal(mu2, sigma2, validate_args=False),
+    )
 
 
 def _inverse_softplus(x: torch.Tensor) -> torch.Tensor:
@@ -1078,7 +1080,7 @@ class RadialNormalizingFlowStack(nn.Module):
             log_prob: Tensor of shape [B, num_classes], the log-probability of z under the flow for each class.
         """
         z, total_log_det = self.forward(z)
-        log_base = -0.5 * z.shape[-1] * math.log(2 * math.pi) - 0.5 * (z**2).sum(dim=-1)
+        log_base = torch.distributions.Normal(z.new_zeros(()), z.new_ones(())).log_prob(z).sum(dim=-1)
         return log_base + total_log_det
 
 
@@ -2677,10 +2679,11 @@ class GVBLLLayer(nn.Module):
         Returns:
             Logits (class-conditional log-densities) of shape ``(..., num_classes)``.
         """
-        log_var = self._marginal_log_var()
-        var = torch.exp(log_var)
-        diff = x.unsqueeze(-2) - self.mu_mean
-        return -0.5 * ((diff.square() / var) + log_var + math.log(2.0 * math.pi)).sum(dim=-1)
+        scale = torch.exp(0.5 * self._marginal_log_var())
+        class_densities = torch.distributions.Independent(
+            torch.distributions.Normal(self.mu_mean, scale, validate_args=False), 1
+        )
+        return class_densities.log_prob(x.unsqueeze(-2))
 
     @property
     def noise_wishart_term(self) -> torch.Tensor:

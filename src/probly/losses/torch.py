@@ -280,12 +280,13 @@ def g_vbll_loss(
     Returns:
         A scalar tensor with the negative ELBO to minimize.
     """
-    noise_log_var = 2.0 * layer.noise_logdiag
-    noise_var = torch.exp(noise_log_var)
+    noise_var = torch.exp(2.0 * layer.noise_logdiag)
 
     mu_target = layer.mu_mean[targets]
-    diff = features - mu_target
-    linear_term = -0.5 * ((diff.square() / noise_var) + noise_log_var + math.log(2.0 * math.pi)).sum(dim=-1)
+    noise_density = torch.distributions.Independent(
+        torch.distributions.Normal(mu_target, torch.exp(layer.noise_logdiag), validate_args=False), 1
+    )
+    linear_term = noise_density.log_prob(features)
 
     trace_term = (torch.exp(2.0 * layer.mu_logdiag[targets]) / noise_var).sum(dim=-1)
     lse_term = torch.logsumexp(layer(features), dim=-1)
