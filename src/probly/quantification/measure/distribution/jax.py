@@ -448,4 +448,5 @@ def jax_gaussian_dempster_shafer_uncertainty(
 
     num_classes = mean.shape[-1]
     adjusted = mean / jnp.sqrt(1.0 + mean_field_factor * var)
-    return num_classes / (num_classes + jax_sum(jnp.exp(adjusted), axis=-1))
+    # K / (K + sum(exp(h))) == sigmoid(log(K) - logsumexp(h)), which cannot overflow.
+    return jax.nn.sigmoid(jnp.log(num_classes) - jax.nn.logsumexp(adjusted, axis=-1))

@@ -50,7 +50,8 @@ def label_relaxation_loss(inputs: torch.Tensor, targets: torch.Tensor, *, alpha:
         targets_real = alpha * inputs_probs / torch.sum(inv_one_hot * inputs_probs, dim=1, keepdim=True)
         targets_real[torch.arange(targets.shape[0]), targets] = 1 - alpha
 
-    kl_div = torch.sum(F.kl_div(inputs_probs.log(), targets_real, log_target=False, reduction="none"), dim=1)
+    inputs_log_probs = F.log_softmax(inputs, dim=1)
+    kl_div = torch.sum(F.kl_div(inputs_log_probs, targets_real, log_target=False, reduction="none"), dim=1)
     loss = torch.where(torch.sum(inv_one_hot * inputs_probs, dim=1) <= alpha, 0, kl_div)
     return loss.mean()
 
@@ -67,12 +68,9 @@ def focal_loss(inputs: torch.Tensor, targets: torch.Tensor, *, alpha: float = 1,
     Returns:
         The mean loss value.
     """
-    targets_one_hot = F.one_hot(targets, num_classes=inputs.shape[-1])
-    prob = F.softmax(inputs, dim=-1)
-    p_t = torch.sum(prob * targets_one_hot, dim=-1)
-
-    log_prob = torch.log(prob)
-    loss = -alpha * (1 - p_t) ** gamma * torch.sum(log_prob * targets_one_hot, dim=-1)
+    log_p_t = -F.cross_entropy(inputs, targets, reduction="none")
+    p_t = torch.exp(log_p_t)
+    loss = -alpha * (1 - p_t) ** gamma * log_p_t
 
     return torch.mean(loss)
 

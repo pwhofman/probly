@@ -1813,7 +1813,8 @@ class HeteroscedasticLayer(nn.Module):
             v_x_full = self.v_layer(x).view(batch_size, self.num_classes, self.num_factors)
             low_rank_noise = torch.einsum("bkr,sbr->sbk", v_x_full, eps_r)
         utilities = mu + diag_scale * eps_k + low_rank_noise  # [n_samples, B, K]
-        return F.softmax(utilities / self.temperature, dim=-1).mean(0).log()
+        log_probs = F.log_softmax(utilities / self.temperature, dim=-1)
+        return torch.logsumexp(log_probs, dim=0) - math.log(n_samples)
 
 
 _SPECTRAL_NORM_WARMUP_ITERATIONS = 15

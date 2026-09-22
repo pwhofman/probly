@@ -439,4 +439,5 @@ def numpy_gaussian_dempster_shafer_uncertainty(
 
     num_classes = mean.shape[-1]
     adjusted = mean / np.sqrt(1.0 + mean_field_factor * var)
-    return num_classes / (num_classes + np.sum(np.exp(adjusted), axis=-1))
+    # K / (K + sum(exp(h))) == sigmoid(log(K) - logsumexp(h)), which cannot overflow.
+    return special.expit(np.log(num_classes) - special.logsumexp(adjusted, axis=-1))

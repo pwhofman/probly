@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING
 import warnings
 
@@ -415,5 +416,5 @@ def torch_gaussian_dempster_shafer_uncertainty(
 
     num_classes = mean.shape[-1]
     adjusted = mean / torch.sqrt(1.0 + mean_field_factor * var)
-    num_classes_tensor = torch.as_tensor(num_classes, dtype=mean.dtype, device=mean.device)
-    return num_classes_tensor / (num_classes_tensor + torch.sum(torch.exp(adjusted), dim=-1))
+    # K / (K + sum(exp(h))) == sigmoid(log(K) - logsumexp(h)), which cannot overflow.
+    return torch.sigmoid(math.log(num_classes) - torch.logsumexp(adjusted, dim=-1))
