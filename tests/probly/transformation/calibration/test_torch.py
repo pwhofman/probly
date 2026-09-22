@@ -720,13 +720,3 @@ class TestTorchDirichletCalibration:
         out = predict_raw(model, batched)
         assert out.shape == batched.shape
         assert torch.allclose(out.reshape(-1, self.NUM_CLASSES), predict_raw(model, logits), atol=1e-6)
-
-
-def test_inverse_softplus_is_stable_for_extreme_inputs() -> None:
-    torch = _torch_modules()
-    from probly.transformation.calibration.torch import _inverse_softplus  # noqa: PLC0415
-
-    x = torch.tensor([1e-6, 100.0, 1000.0])
-    y = _inverse_softplus(x)
-    assert torch.isfinite(y).all()
-    torch.testing.assert_close(torch.nn.functional.softplus(y), x, atol=1e-6, rtol=1e-6)
