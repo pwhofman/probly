@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy import special
-from scipy.stats import entropy as scipy_entropy
+from scipy.stats import entropy as scipy_entropy, norm
 
 from probly.representation.distribution.numpy_categorical import (
     NumpyCategoricalDistribution,
@@ -98,7 +98,7 @@ def numpy_gaussian_entropy(distribution: NumpyGaussianDistribution | np.ndarray,
         del distribution  # Avoid keeping a reference to the distribution for memory efficiency
     else:
         var = distribution
-    entropy = 0.5 * np.log(2 * np.e * np.pi * var)
+    entropy = norm.entropy(scale=np.sqrt(var))
     if base is None or base == np.e:
         return entropy
     if base == "normalize":
