@@ -377,10 +377,10 @@ class BayesLinear(nn.Module):
             torch.Tensor, layer output
         """
         eps_weight = torch.randn_like(self.weight_mu)
-        weight = self.weight_mu + torch.log1p(torch.exp(self.weight_rho)) * eps_weight
+        weight = self.weight_mu + F.softplus(self.weight_rho) * eps_weight
         if self.bias:
             eps_bias = torch.randn_like(self.bias_mu)
-            bias = self.bias_mu + torch.log1p(torch.exp(self.bias_rho)) * eps_bias
+            bias = self.bias_mu + F.softplus(self.bias_rho) * eps_bias
             x = F.linear(x, weight, bias)
         else:
             x = F.linear(x, weight)
@@ -407,7 +407,7 @@ class BayesLinear(nn.Module):
         kl = torch.sum(
             _kl_divergence_gaussian(
                 self.weight_mu,
-                torch.log1p(torch.exp(self.weight_rho)) ** 2,
+                F.softplus(self.weight_rho) ** 2,
                 cast("torch.Tensor", self.weight_prior_mu),
                 cast("torch.Tensor", self.weight_prior_sigma) ** 2,
             ),
@@ -416,7 +416,7 @@ class BayesLinear(nn.Module):
             kl += torch.sum(
                 _kl_divergence_gaussian(
                     self.bias_mu,
-                    torch.log1p(torch.exp(self.bias_rho)) ** 2,
+                    F.softplus(self.bias_rho) ** 2,
                     cast("torch.Tensor", self.bias_prior_mu),
                     cast("torch.Tensor", self.bias_prior_sigma) ** 2,
                 ),
@@ -549,10 +549,10 @@ class BayesConv2d(nn.Module):
             torch.Tensor, layer output
         """
         eps_weight = torch.randn_like(self.weight_mu)
-        weight = self.weight_mu + torch.log1p(torch.exp(self.weight_rho)) * eps_weight
+        weight = self.weight_mu + F.softplus(self.weight_rho) * eps_weight
         if self.bias:
             eps_bias = torch.randn_like(self.bias_mu)
-            bias = self.bias_mu + torch.log1p(torch.exp(self.bias_rho)) * eps_bias
+            bias = self.bias_mu + F.softplus(self.bias_rho) * eps_bias
             x = F.conv2d(
                 x,
                 weight,
@@ -595,7 +595,7 @@ class BayesConv2d(nn.Module):
         kl = torch.sum(
             _kl_divergence_gaussian(
                 self.weight_mu,
-                torch.log1p(torch.exp(self.weight_rho)) ** 2,
+                F.softplus(self.weight_rho) ** 2,
                 cast("torch.Tensor", self.weight_prior_mu),
                 cast("torch.Tensor", self.weight_prior_sigma) ** 2,
             ),
@@ -604,7 +604,7 @@ class BayesConv2d(nn.Module):
             kl += torch.sum(
                 _kl_divergence_gaussian(
                     self.bias_mu,
-                    torch.log1p(torch.exp(self.bias_rho)) ** 2,
+                    F.softplus(self.bias_rho) ** 2,
                     cast("torch.Tensor", self.bias_prior_mu),
                     cast("torch.Tensor", self.bias_prior_sigma) ** 2,
                 ),
