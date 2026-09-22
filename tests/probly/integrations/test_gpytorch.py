@@ -337,10 +337,11 @@ def test_representer_requires_num_samples(exact_gp: _ExactGP) -> None:
         representer(exact_gp)
 
 
-def test_conformal_absolute_error_wraps_exact_gp(
-    exact_gp: _ExactGP, train_data: tuple[torch.Tensor, torch.Tensor]
-) -> None:
-    x, y = train_data
+def test_conformal_absolute_error_wraps_exact_gp(exact_gp: _ExactGP) -> None:
+    # Fresh calibration points; reusing the training inputs would trigger GPyTorch's GPInputWarning.
+    torch.manual_seed(1)
+    x = torch.rand(NUM_TRAIN)
+    y = torch.sin(2.0 * torch.pi * x) + 0.1 * torch.randn(NUM_TRAIN)
     with torch.no_grad():
         calibrated = calibrate(conformal_absolute_error(exact_gp), 0.2, y, x)
         intervals = representer(calibrated).predict(x)
