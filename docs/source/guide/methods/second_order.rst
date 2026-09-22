@@ -17,8 +17,8 @@ catalogue starts:
 
 *Sampled* methods represent the second-order distribution implicitly, by a
 finite set of first-order distributions you have to draw --- ``T`` forward
-passes, ``N`` ensemble members, ``S`` posterior weight samples. You pay for the
-resolution of the representation at every prediction.
+passes, ``N`` ensemble members, ``S`` posterior weight samples. The resolution
+of the representation is paid for at every prediction.
 
 *Parameterized* methods emit the second-order distribution in closed form,
 typically as a Dirichlet over the simplex, from a single forward pass. They are
@@ -30,13 +30,13 @@ parameters they measure where a point falls relative to the training data in
 feature space. They produce excellent out-of-distribution scores and, by
 construction, say little about aleatoric uncertainty.
 
-Every entry below follows the same four fields, so they can be read against
-each other.
+Every entry below follows the same fields, so they can be read against each
+other, and links to the worked example in the gallery.
 
 .. _m-dropout:
 
-:func:`dropout <probly.method.dropout>`
----------------------------------------
+:func:`dropout <probly.transformation.dropout>`
+-----------------------------------------------
 
 Keeps dropout layers active at inference and treats each stochastic forward
 pass as one draw from an approximate posterior. It is the cheapest possible
@@ -48,13 +48,18 @@ per forward pass instead of one per element.
 :Idea: Monte Carlo sampling of sub-networks by keeping dropout on at test time.
 :Representation: :ref:`Sampled second order <uq-second-order>` --- a ``Sample``
     of categorical distributions.
-:Cost: No retraining. ``T`` forward passes per prediction.
+:Advantages: No retraining when the model already contains dropout; the
+    cheapest retrofit available.
+:Disadvantages: ``T`` forward passes per prediction; quality depends on where
+    the dropout layers sit, and a network without dropout must be modified.
 :Reference: :cite:`galDropoutBayesian2016`
+
+.. minigallery:: probly.method.dropout
 
 .. _m-dropconnect:
 
-:func:`dropconnect <probly.method.dropconnect>`
------------------------------------------------
+:func:`dropconnect <probly.transformation.dropconnect>`
+-------------------------------------------------------
 
 The same Monte Carlo argument applied one level down: DropConnect zeroes
 individual *weights* rather than whole activations, so each forward pass
@@ -63,13 +68,18 @@ dropout's, which tends to give more diverse samples at the same drop rate.
 
 :Idea: Monte Carlo sampling over randomly dropped weights.
 :Representation: :ref:`Sampled second order <uq-second-order>`.
-:Cost: No retraining. ``T`` forward passes per prediction.
+:Advantages: A larger sub-network space than dropout, so more diverse samples
+    at the same drop rate; still no retraining.
+:Disadvantages: ``T`` forward passes per prediction; masking individual weights
+    costs more per pass than masking activations.
 :Reference: :cite:`mobinyDropConnectEffective2021`
+
+.. minigallery:: probly.transformation.dropconnect
 
 .. _m-bayesian:
 
-:func:`bayesian <probly.method.bayesian>`
------------------------------------------
+:func:`bayesian <probly.transformation.bayesian>`
+-------------------------------------------------
 
 A genuine variational Bayesian neural network: every weight becomes a Gaussian
 with a learned mean and standard deviation, fitted by Bayes-by-Backprop against
@@ -79,9 +89,14 @@ also why it cannot be bolted onto a finished model.
 :Idea: Mean-field Gaussian variational posterior over the weights.
 :Representation: :ref:`Sampled second order <uq-second-order>`, drawn by
     sampling weights.
-:Cost: Requires training with the ELBO; roughly doubles the parameter count.
-    ``S`` forward passes per prediction.
+:Advantages: An explicit, trained-for posterior rather than an approximation
+    added afterwards.
+:Disadvantages: Requires training with the ELBO and roughly doubles the
+    parameter count; cannot be applied to a finished model; ``S`` forward
+    passes per prediction.
 :Reference: :cite:`blundellWeightUncertainty2015`
+
+.. minigallery:: probly.transformation.bayesian
 
 .. _m-laplace:
 
@@ -96,14 +111,18 @@ loss. ``probly`` integrates the ``laplace-torch`` package and exposes its
 
 :Idea: Second-order Taylor expansion of the loss around the MAP estimate.
 :Representation: :ref:`Sampled second order <uq-second-order>`.
-:Cost: No change to training. One Hessian approximation after fitting, then
-    ``S`` forward passes per prediction.
+:Advantages: No change to training --- a post-hoc treatment of an
+    already-fitted network.
+:Disadvantages: One Hessian approximation after fitting, then ``S`` forward
+    passes per prediction; classification only.
 :Reference: Wraps the external ``laplace-torch`` package.
+
+.. minigallery:: probly.method.laplace
 
 .. _m-ensemble:
 
-:func:`ensemble <probly.method.ensemble>`
------------------------------------------
+:func:`ensemble <probly.transformation.ensemble>`
+-------------------------------------------------
 
 Train ``N`` copies of the same architecture from different initializations and
 treat their predictions as samples. Deep ensembles remain the strongest and
@@ -114,14 +133,18 @@ basins rather than any Bayesian argument.
     signal.
 :Representation: :ref:`Sampled second order <uq-second-order>` with ``N``
     members.
-:Cost: ``N`` times the training cost, ``N`` times the memory, ``N`` forward
-    passes.
+:Advantages: The strongest and most robust baseline in the literature; diverse
+    loss basins, no Bayesian assumptions.
+:Disadvantages: ``N`` times the training cost, ``N`` times the memory, ``N``
+    forward passes.
 :Reference: :cite:`lakshminarayananSimpleScalable2017`
+
+.. minigallery:: probly.method.ensemble
 
 .. _m-batchensemble:
 
-:func:`batchensemble <probly.method.batchensemble>`
----------------------------------------------------
+:func:`batchensemble <probly.transformation.batchensemble>`
+-----------------------------------------------------------
 
 An ensemble that fits in roughly one model's memory. Each member owns only a
 rank-one factor pair ``(r, s)`` that modulates a shared "slow" weight matrix,
@@ -131,14 +154,18 @@ matrices. Members are still trained jointly, in one pass over tiled inputs.
 :Idea: Rank-one per-member perturbations of a shared weight matrix.
 :Representation: :ref:`Sampled second order <uq-second-order>` with ``N``
     members.
-:Cost: Close to one model in memory; one training run; inputs are tiled ``N``
-    times per batch.
+:Advantages: Close to one model in memory and a single training run, yet
+    recovers most of a full ensemble's benefit.
+:Disadvantages: Inputs are tiled ``N`` times per batch; diversity is lower than
+    fully independent members.
 :Reference: :cite:`wenBatchEnsemble2020`
+
+.. minigallery:: probly.transformation.batchensemble
 
 .. _m-subensemble:
 
-:func:`subensemble <probly.method.subensemble>`
------------------------------------------------
+:func:`subensemble <probly.transformation.subensemble>`
+-------------------------------------------------------
 
 Shares the expensive backbone and ensembles only the head. The split is either
 taken from an existing model (the last ``head_layer`` layers become the head)
@@ -148,8 +175,13 @@ members see the same features, but the cost is close to a single model.
 :Idea: One shared feature extractor, ``N`` independently initialized heads.
 :Representation: :ref:`Sampled second order <uq-second-order>` with ``N``
     heads.
-:Cost: One backbone plus ``N`` heads; one training run.
+:Advantages: Close to a single model in cost --- one backbone, one training
+    run.
+:Disadvantages: Lower diversity than a full ensemble, since all members share
+    the same features.
 :Reference: :cite:`valdenegro-toroDeepSub2019`
+
+.. minigallery:: probly.transformation.subensemble
 
 .. _m-dare:
 
@@ -166,8 +198,13 @@ estimates under shift.
     regularizing *against* weight shrinkage.
 :Representation: :ref:`Sampled second order <uq-second-order>` with ``N``
     members.
-:Cost: ``N`` times the training cost, plus the anti-regularization term.
+:Advantages: Wider, better epistemic estimates under distribution shift, where
+    ordinary ensembles collapse into agreement.
+:Disadvantages: ``N`` times the training cost, plus the anti-regularization
+    term and the hyperparameter it adds.
 :Reference: :cite:`demathelinDeepAntiRegularized2023`
+
+.. minigallery:: probly.method.dare
 
 .. _m-duq:
 
@@ -184,9 +221,13 @@ training, and a gradient penalty keeps the feature map from collapsing.
     softmax head.
 :Representation: RBF kernel scores, presented as a
     :ref:`categorical distribution <uq-first-order>`; total uncertainty only.
-:Cost: One deterministic forward pass. Requires training with a gradient
-    penalty and a changed head.
+:Advantages: A single deterministic forward pass gives both the prediction and
+    the uncertainty.
+:Disadvantages: Requires training with a gradient penalty and a changed head;
+    does not separate aleatoric from epistemic uncertainty.
 :Reference: :cite:`vanAmersfoortUncertaintyEstimation2020`
+
+.. minigallery:: probly.method.duq
 
 .. _m-ddu:
 
@@ -203,9 +244,13 @@ aleatoric uncertainty.
     density estimate over it.
 :Representation: Feature-space density as the epistemic score, softmax as the
     :ref:`first-order <uq-first-order>` predictive.
-:Cost: One forward pass. Spectral normalization during training; the density
-    head is fitted afterwards.
+:Advantages: One forward pass, with the density head fitted afterwards; strong
+    out-of-distribution detection.
+:Disadvantages: Spectral normalization must be applied during training, so it
+    is not a pure retrofit.
 :Reference: :cite:`mukhotiDeepDeterministicUncertainty2023`
+
+.. minigallery:: probly.method.ddu
 
 .. _m-deup:
 
@@ -221,9 +266,12 @@ error head on data the classifier has not seen.
 :Idea: Learn a direct regressor of the main model's generalization error.
 :Representation: A scalar error score; the decomposition assigns it entirely to
     the epistemic term.
-:Cost: One extra head and a second training phase on a held-out split. One
-    forward pass at inference.
+:Advantages: One forward pass at inference; makes no posterior assumptions.
+:Disadvantages: Needs an extra head and a second training phase on a held-out
+    split.
 :Reference: :cite:`lahlouDirectEpistemic2023`
+
+.. minigallery:: probly.method.deup.deup
 
 .. _m-sngp:
 
@@ -240,9 +288,13 @@ widens away from the training data.
     random Fourier features.
 :Representation: Gaussian over logits, giving a
     :ref:`second-order <uq-second-order>` predictive in closed form.
-:Cost: One forward pass. Changed head, spectral normalization, and a covariance
-    update pass at the end of training.
+:Advantages: Distance-aware uncertainty in a closed-form predictive from a
+    single forward pass.
+:Disadvantages: Changed head, spectral normalization, and a covariance update
+    pass at the end of training.
 :Reference: :cite:`liuSimplePrincipled2020`
+
+.. minigallery:: probly.method.sngp
 
 .. _m-evidential-classification:
 
@@ -258,14 +310,18 @@ the epistemic signal --- low evidence means "I have seen nothing like this".
 :Idea: Predict Dirichlet concentrations as per-class evidence.
 :Representation: :ref:`Parameterized second order <uq-second-order>` ---
     a ``DirichletDistribution``.
-:Cost: One forward pass. Needs an evidential loss and an activation that keeps
-    concentrations positive.
+:Advantages: The whole second-order distribution from one forward pass; low
+    total evidence flags unfamiliar inputs.
+:Disadvantages: Needs an evidential loss and a positivity activation; nothing
+    forces the evidence to fall off away from the data.
 :Reference: :cite:`sensoyEvidentialDeep2018`
+
+.. minigallery:: probly.method.evidential_classification
 
 .. _m-posterior-network:
 
-:func:`posterior_network <probly.method.posterior_network.posterior_network>`
------------------------------------------------------------------------------
+:func:`posterior_network <probly.transformation.posterior_network>`
+-------------------------------------------------------------------
 
 Fixes the main weakness of purely evidential losses --- that nothing forces
 evidence to fall off away from the data --- by making the concentration
@@ -277,9 +333,14 @@ training data receive little evidence by construction.
     space.
 :Representation: :ref:`Parameterized second order <uq-second-order>` ---
     a ``DirichletDistribution``.
-:Cost: One forward pass. Requires an encoder, per-class normalizing flows, and
-    a Bayesian-loss training scheme.
+:Advantages: Evidence shrinks by construction where training data is sparse,
+    fixing evidential losses' main weakness; one forward pass.
+:Disadvantages: Requires an encoder, per-class normalizing flows, and a
+    Bayesian-loss training scheme; the per-class flows scale poorly in the
+    number of classes.
 :Reference: :cite:`charpentierPosteriorNetwork2020`
+
+.. minigallery:: probly.transformation.posterior_network
 
 .. _m-mahalanobis:
 
@@ -297,14 +358,17 @@ by logistic regression.
     one is the OOD score.
 :Representation: A scalar OOD score alongside the base
     :ref:`first-order <uq-first-order>` prediction.
-:Cost: No retraining. One fitting pass over the training features; the
-    multi-layer combiner needs in- and out-of-distribution data.
+:Advantages: No retraining; a single fitting pass over the training features.
+:Disadvantages: An OOD detector, not a predictive-uncertainty method; the
+    multi-layer combiner needs both in- and out-of-distribution data.
 :Reference: :cite:`leeSimpleUnifiedFramework2018`
+
+.. minigallery:: probly.method.mahalanobis
 
 .. _m-natural-posterior-network:
 
-:func:`natural_posterior_network <probly.method.natural_posterior_network.natural_posterior_network>`
------------------------------------------------------------------------------------------------------
+:func:`natural_posterior_network <probly.transformation.natural_posterior_network.natural_posterior_network>`
+--------------------------------------------------------------------------------------------------------------
 
 The generalization of :ref:`posterior_network <m-posterior-network>` to
 exponential-family targets, and the version to prefer in practice: a *single*
@@ -318,9 +382,13 @@ classes.
     pseudo-count as the evidence.
 :Representation: :ref:`Parameterized second order <uq-second-order>` ---
     a ``DirichletDistribution``.
-:Cost: One forward pass. Encoder plus one shared normalizing flow; changed
+:Advantages: A single shared flow scales to many classes; one forward pass;
+    the version to prefer in practice.
+:Disadvantages: Requires an encoder, one shared normalizing flow, and a changed
     loss.
 :Reference: :cite:`charpentierNaturalPosteriorNetwork2022`
+
+.. minigallery:: probly.method.natural_posterior_network.natural_posterior_network
 
 .. _m-prior-network:
 
@@ -337,9 +405,13 @@ them it is best read as a reparameterization of the logits.
     concentrations.
 :Representation: :ref:`Parameterized second order <uq-second-order>` ---
     a ``DirichletDistribution``.
-:Cost: One forward pass, no architectural change. The intended training scheme
-    needs out-of-distribution data.
+:Advantages: One forward pass and no architectural change --- the simplest
+    route to a Dirichlet.
+:Disadvantages: The intended training scheme needs out-of-distribution data;
+    without it, it is only a reparameterization of the logits.
 :Reference: :cite:`malininPredictiveUncertaintyEstimation2018`
+
+.. minigallery:: probly.method.prior_network.prior_network
 
 .. _m-evidential-regression:
 
@@ -356,8 +428,12 @@ expected variance) and an epistemic one (the variance of the mean).
     variance.
 :Representation: :ref:`Parameterized second order <uq-second-order>` over a
     real-valued target.
-:Cost: One forward pass. Changed head and an evidential regression loss.
+:Advantages: One forward pass yields both an aleatoric (expected variance) and
+    an epistemic (variance of the mean) estimate.
+:Disadvantages: Changed head and an evidential regression loss.
 :Reference: :cite:`aminiDeepEvidential2020`
+
+.. minigallery:: probly.method.evidential_regression
 
 .. _m-het-net:
 
@@ -372,9 +448,13 @@ whether the model has seen data like this before.
 
 :Idea: Input-dependent, low-rank correlated noise over the logits.
 :Representation: A Gaussian over logits; aleatoric uncertainty only.
-:Cost: One forward pass plus ``num_factors`` extra output channels; sampled
+:Advantages: Honestly models correlated label noise; one forward pass plus a
+    few extra output channels.
+:Disadvantages: Says nothing about epistemic uncertainty; uses a sampled
     softmax during training.
 :Reference: :cite:`collierCorrelatedInputDependent2021`
+
+.. minigallery:: probly.method.het_net
 
 Choosing Among Them
 -------------------
@@ -400,22 +480,22 @@ Full API
 .. autosummary::
     :nosignatures:
 
-    dropout
-    dropconnect
-    bayesian
+    ~probly.transformation.dropout
+    ~probly.transformation.dropconnect
+    ~probly.transformation.bayesian
     laplace
-    ensemble
-    batchensemble
-    subensemble
+    ~probly.transformation.ensemble
+    ~probly.transformation.batchensemble
+    ~probly.transformation.subensemble
     dare
     duq
     ddu
     ~deup.deup
     sngp
     evidential_classification
-    ~posterior_network.posterior_network
+    ~probly.transformation.posterior_network
     mahalanobis
-    ~natural_posterior_network.natural_posterior_network
+    ~probly.transformation.natural_posterior_network.natural_posterior_network
     ~prior_network.prior_network
     evidential_regression
     het_net

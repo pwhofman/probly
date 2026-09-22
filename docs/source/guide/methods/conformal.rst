@@ -22,7 +22,8 @@ prediction time the set is every label whose score falls below that quantile.
 
 The guarantee is therefore free, and the score is where all the design work
 lies: it does not affect *whether* coverage holds, only how large and how
-adaptive the sets are. That is the axis on which the variants below differ.
+adaptive the sets are. That is the axis on which the variants below differ, and
+each entry follows the same fields so they can be read against each other.
 
 .. important::
 
@@ -40,52 +41,82 @@ Classification
 Sets of labels. The scores differ in how much probability mass they require
 before they stop adding classes.
 
-.. grid:: 1 2 2 2
-    :gutter: 3
+.. _m-conformal-lac:
 
-    .. grid-item-card:: :func:`conformal_lac <probly.transformation.conformal.conformal_lac>`
+:func:`conformal_lac <probly.transformation.conformal.conformal_lac>`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        **Least ambiguous set-valued classifier.** The score is simply
-        ``1 - p_y``: a label is in the set if the model gave it enough
-        probability.
+**Least ambiguous set-valued classifier.** The score is simply ``1 - p_y``: a
+label is in the set if the model gave it enough probability.
 
-        Produces the *smallest* average set size of any score here, which is
-        why it is the default choice. The cost is adaptivity --- it hits its
-        marginal target partly by undercovering hard inputs and overcovering
-        easy ones.
+:Idea: Non-conformity score ``1 - p_y`` --- keep a label if it received enough
+    probability.
+:Representation: A :ref:`set of labels <uq-sets>` with marginal coverage.
+:Advantages: The smallest average set size of any score here, which is why it
+    is the default choice.
+:Disadvantages: Little adaptivity --- it hits its marginal target partly by
+    undercovering hard inputs and overcovering easy ones.
+:Reference: :cite:`angelopoulosGentleIntroduction2021`
 
+.. minigallery:: probly.method.conformal.conformal_lac
 
-    .. grid-item-card:: :func:`conformal_aps <probly.transformation.conformal.conformal_aps>`
+.. _m-conformal-aps:
 
-        **Adaptive prediction sets.** Sort the classes by probability and
-        accumulate; the score of a label is the cumulative mass down to it,
-        with a uniform random term breaking the discreteness of the last step.
+:func:`conformal_aps <probly.transformation.conformal.conformal_aps>`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        Sets grow when the distribution is flat and shrink when it is peaked,
-        which gives far better conditional coverage than LAC --- at the price
-        of noticeably larger sets on many-class problems.
+**Adaptive prediction sets.** Sort the classes by probability and accumulate;
+the score of a label is the cumulative mass down to it, with a uniform random
+term breaking the discreteness of the last step.
 
+:Idea: Accumulate sorted class probabilities; the score is the cumulative mass
+    down to a label, with a random tie-break.
+:Representation: A :ref:`set of labels <uq-sets>` with marginal coverage.
+:Advantages: Sets grow when the distribution is flat and shrink when it is
+    peaked, giving far better conditional coverage than LAC.
+:Disadvantages: Noticeably larger sets on many-class problems.
+:Reference: :cite:`angelopoulosGentleIntroduction2021`
 
-    .. grid-item-card:: :func:`conformal_saps <probly.transformation.conformal.conformal_saps>`
+.. minigallery:: probly.method.conformal.conformal_aps
 
-        **Sorted adaptive prediction sets.** Keeps only the top-1 probability
-        as real information and replaces the rest of the tail with a linear
-        penalty in the rank, weighted by ``lambda_val``.
+.. _m-conformal-saps:
 
-        Built on the observation that the ordering of the tail is reliable but
-        its probabilities are not. Retains most of APS's adaptivity while
-        cutting the set sizes that the noisy tail causes.
+:func:`conformal_saps <probly.transformation.conformal.conformal_saps>`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+**Sorted adaptive prediction sets.** Keeps only the top-1 probability as real
+information and replaces the rest of the tail with a linear penalty in the
+rank, weighted by ``lambda_val``.
 
-    .. grid-item-card:: :func:`conformal_raps <probly.transformation.conformal.conformal_raps>`
+:Idea: Keep only the top-1 probability and replace the tail with a rank-linear
+    penalty weighted by ``lambda_val``.
+:Representation: A :ref:`set of labels <uq-sets>` with marginal coverage.
+:Advantages: Retains most of APS's adaptivity while cutting the set sizes the
+    noisy tail causes.
+:Disadvantages: Adds the ``lambda_val`` hyperparameter, and leans on the tail
+    ordering being reliable.
+:Reference: :cite:`angelopoulosGentleIntroduction2021`
 
-        **Regularized adaptive prediction sets.** APS plus an explicit penalty
-        ``lambda_reg`` on every class included beyond rank ``k_reg``.
+.. minigallery:: probly.method.conformal.conformal_saps
 
-        The direct fix for APS's long tail: the regularizer makes including a
-        fifteenth class expensive, so the sets stay small without abandoning
-        adaptivity. Two knobs to tune, and worth tuning.
+.. _m-conformal-raps:
 
+:func:`conformal_raps <probly.transformation.conformal.conformal_raps>`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Regularized adaptive prediction sets.** APS plus an explicit penalty
+``lambda_reg`` on every class included beyond rank ``k_reg``.
+
+:Idea: APS with an explicit penalty ``lambda_reg`` on every class included
+    beyond rank ``k_reg``.
+:Representation: A :ref:`set of labels <uq-sets>` with marginal coverage.
+:Advantages: The direct fix for APS's long tail --- small sets without
+    abandoning adaptivity.
+:Disadvantages: Two knobs to tune (``lambda_reg`` and ``k_reg``), and worth
+    tuning.
+:Reference: :cite:`angelopoulosGentleIntroduction2021`
+
+.. minigallery:: probly.method.conformal.conformal_raps
 
 Regression
 ----------
@@ -93,53 +124,82 @@ Regression
 Intervals rather than label sets. The question becomes whether the interval
 width is allowed to vary with the input.
 
-.. grid:: 1 2 2 2
-    :gutter: 3
+.. _m-conformal-absolute-error:
 
-    .. grid-item-card:: :func:`conformal_absolute_error <probly.transformation.conformal.conformal_absolute_error>`
+:func:`conformal_absolute_error <probly.transformation.conformal.conformal_absolute_error>`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        **Absolute residual.** The score is ``|y - y_hat|``, so the calibrated
-        quantile is added and subtracted around the point prediction.
+**Absolute residual.** The score is ``|y - y_hat|``, so the calibrated quantile
+is added and subtracted around the point prediction.
 
-        The simplest possible conformal regressor, and the one to reach for
-        first. Its interval has *constant width everywhere*: valid on average,
-        but blind to the fact that some inputs are harder than others.
+:Idea: Score ``|y - y_hat|``; add and subtract the calibrated quantile around
+    the point prediction.
+:Representation: An :ref:`interval <uq-sets>` with marginal coverage.
+:Advantages: The simplest possible conformal regressor, and the one to reach
+    for first.
+:Disadvantages: Constant width everywhere --- valid on average, but blind to
+    the fact that some inputs are harder than others.
+:Reference: :cite:`angelopoulosGentleIntroduction2021`
 
+.. minigallery:: probly.method.conformal.conformal_absolute_error
 
-    .. grid-item-card:: :func:`conformal_cqr <probly.transformation.conformal.conformal_cqr>`
+.. _m-conformal-cqr:
 
-        **Conformalized quantile regression.** Requires a model predicting a
-        lower and an upper quantile; the score
-        ``max(q_lo - y, y - q_hi)`` measures how far outside the predicted
-        interval the truth fell.
+:func:`conformal_cqr <probly.transformation.conformal.conformal_cqr>`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        The calibrated quantile then shifts both endpoints outward (or inward)
-        by a constant. Width varies with the input because the *base model*
-        makes it vary --- conformalization only corrects the level.
+**Conformalized quantile regression.** Requires a model predicting a lower and
+an upper quantile; the score ``max(q_lo - y, y - q_hi)`` measures how far
+outside the predicted interval the truth fell, and the calibrated quantile then
+shifts both endpoints outward (or inward) by a constant.
 
+:Idea: Score ``max(q_lo - y, y - q_hi)`` shifts the predicted quantile interval
+    endpoints by a constant.
+:Representation: An :ref:`interval <uq-sets>` with marginal coverage.
+:Advantages: Width varies with the input because the base model makes it vary;
+    conformalization only corrects the level.
+:Disadvantages: Needs a quantile-regression base model; the additive correction
+    cannot rescale a badly-scaled interval.
+:Reference: :cite:`angelopoulosGentleIntroduction2021`
 
-    .. grid-item-card:: :func:`conformal_cqr_r <probly.transformation.conformal.conformal_cqr_r>`
+.. minigallery:: probly.method.conformal.conformal_cqr
 
-        **Normalized CQR.** The same score divided by the predicted interval
-        width, so the correction becomes multiplicative rather than additive.
+.. _m-conformal-cqr-r:
 
-        Wide predicted intervals produce smaller normalized scores, which
-        rewards a base model that admits when it is unsure. Preferable to plain
-        CQR whenever the base quantiles are already roughly right in shape but
-        wrong in scale.
+:func:`conformal_cqr_r <probly.transformation.conformal.conformal_cqr_r>`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+**Normalized CQR.** The same score divided by the predicted interval width, so
+the correction becomes multiplicative rather than additive.
 
-    .. grid-item-card:: :func:`conformal_uacqr <probly.transformation.conformal.conformal_uacqr>`
+:Idea: The CQR score divided by the predicted interval width, making the
+    correction multiplicative.
+:Representation: An :ref:`interval <uq-sets>` with marginal coverage.
+:Advantages: Rewards a base model that admits when it is unsure; preferable to
+    plain CQR when the base quantiles are right in shape but wrong in scale.
+:Disadvantages: Still needs a quantile-regression base model, and degrades when
+    the predicted widths are unreliable.
+:Reference: :cite:`angelopoulosGentleIntroduction2021`
 
-        **Uncertainty-aware CQR.** Takes an *ensemble* of quantile regressors
-        and normalizes the CQR score by the ensemble's standard deviation at
-        each endpoint.
+.. minigallery:: probly.method.conformal.conformal_cqr_r
 
-        The scaling factor is now epistemic: the interval widens where the
-        members disagree about where the quantiles are, not merely where the
-        target is noisy. The most expensive option here --- it needs the
-        ensemble.
+.. _m-conformal-uacqr:
 
+:func:`conformal_uacqr <probly.transformation.conformal.conformal_uacqr>`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Uncertainty-aware CQR.** Takes an *ensemble* of quantile regressors and
+normalizes the CQR score by the ensemble's standard deviation at each endpoint.
+
+:Idea: Normalize the CQR score by an ensemble of quantile regressors' standard
+    deviation at each endpoint.
+:Representation: An :ref:`interval <uq-sets>` with marginal coverage.
+:Advantages: The scaling factor is epistemic --- the interval widens where the
+    members disagree about the quantiles, not merely where the target is noisy.
+:Disadvantages: The most expensive option here --- it needs the ensemble.
+:Reference: :cite:`angelopoulosGentleIntroduction2021`
+
+.. minigallery:: probly.method.conformal.conformal_uacqr
 
 Choosing a Score
 ----------------
@@ -155,3 +215,18 @@ scores.
 
 Related: :ref:`m-conformal-credal-set` applies the same calibration machinery
 to distributions instead of labels.
+
+Full API
+--------
+
+.. autosummary::
+    :nosignatures:
+
+    conformal_lac
+    conformal_aps
+    conformal_saps
+    conformal_raps
+    conformal_absolute_error
+    conformal_cqr
+    conformal_cqr_r
+    conformal_uacqr

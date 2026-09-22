@@ -20,7 +20,8 @@ is their convex hull. **Probability intervals** store a lower and an upper
 bound per class, which is coarser but far cheaper to reason with. The methods
 below differ mostly in how they produce those vertices or bounds.
 
-Each entry links to the worked example in the gallery.
+Every entry follows the same fields, so they can be read against each other,
+and links to the worked example in the gallery.
 
 .. _m-credal-wrapper:
 
@@ -33,7 +34,14 @@ than averaging them. Averaging is exactly the step that destroys the
 information a credal set keeps --- two members predicting 0.1 and 0.9 and two
 members both predicting 0.5 have the same mean and very different credal sets.
 
-:cite:`wangCredalWrapper2024`
+:Idea: Summarize ensemble members as per-class probability intervals instead of
+    averaging them.
+:Representation: :ref:`Probability intervals <uq-credal>` credal set.
+:Advantages: Direct and simple; keeps the disagreement that averaging would
+    discard.
+:Disadvantages: Needs an ensemble; intervals admit class-probability
+    combinations no member actually predicted.
+:Reference: :cite:`wangCredalWrapper2024`
 
 .. minigallery:: probly.method.credal_wrapper
 
@@ -48,7 +56,14 @@ classes: probability intervals allow combinations of class probabilities that
 no member actually predicted, whereas the convex hull only contains mixtures of
 real member predictions.
 
-:cite:`nguyenCredalEnsembling2025`
+:Idea: Keep ensemble members as the vertices of a convex credal set.
+:Representation: :ref:`Convex credal set <uq-credal>` --- member predictions as
+    vertices.
+:Advantages: Preserves the dependence between classes; the hull contains only
+    real mixtures of member predictions.
+:Disadvantages: Needs an ensemble; reasoning over a vertex set is costlier than
+    over intervals.
+:Reference: :cite:`nguyenCredalEnsembling2025`
 
 .. minigallery:: probly.method.credal_ensembling
 
@@ -64,7 +79,14 @@ standard objection to a single BNN: the prior and the variational family are
 themselves choices, and a credal set can carry several of them without
 pretending one is correct.
 
-:cite:`caprioCredalBayesian2024`
+:Idea: Ensemble Bayesian neural networks; their predictive distributions are
+    the vertices.
+:Representation: :ref:`Convex credal set <uq-credal>` from Bayesian members.
+:Advantages: Carries several prior and variational-family choices without
+    pretending one is correct.
+:Disadvantages: Pays the cost of training several BNNs, each with a variational
+    scheme.
+:Reference: :cite:`caprioCredalBayesian2024`
 
 .. minigallery:: probly.method.credal_bnn
 
@@ -79,7 +101,14 @@ propagating those intervals to the output. One network, one forward pass, no
 members to train --- at the price of interval arithmetic's tendency to widen as
 it goes deeper.
 
-:cite:`saleSecondOrder2024`
+:Idea: Replace each layer with an interval-arithmetic counterpart and propagate
+    the weight intervals to the output.
+:Representation: :ref:`Probability intervals <uq-credal>` credal set from one
+    network.
+:Advantages: One network, one forward pass, no members to train.
+:Disadvantages: Interval arithmetic tends to widen with depth, so deep networks
+    give loose bounds.
+:Reference: :cite:`saleSecondOrder2024`
 
 .. minigallery:: probly.method.credal_net
 
@@ -95,7 +124,14 @@ likelihood of those explanations bounds the credal set. It gives a systematic,
 reproducible cover of the simplex instead of relying on random initialization
 for diversity.
 
-:cite:`lohrCredalPrediction2025`
+:Idea: One deliberately class-biased member per class; the relative likelihood
+    of their explanations bounds the set.
+:Representation: Credal set from relative-likelihood level sets.
+:Advantages: A systematic, reproducible cover of the simplex rather than
+    relying on random initialization for diversity.
+:Disadvantages: Trains one member per class, so cost grows with the number of
+    classes.
+:Reference: :cite:`lohrCredalPrediction2025`
 
 .. minigallery:: probly.method.credal_relative_likelihood
 
@@ -111,7 +147,15 @@ held-out split. No ensemble, no interval layers, no retraining --- ask for
 ``predict`` and you get the point distribution, ask the representer and you get
 the credal set.
 
-:cite:`hofmanEfficientCredal2026`
+:Idea: Keep the base classifier's categorical output and build the credal view
+    on demand from calibrated bounds.
+:Representation: Credal set from a :ref:`first-order distribution
+    <uq-first-order>` plus held-out bounds.
+:Advantages: No ensemble, no interval layers, no retraining; ``predict`` still
+    returns the point distribution.
+:Disadvantages: Needs a held-out calibration split, and the set is only as good
+    as the calibrated bounds.
+:Reference: :cite:`hofmanEfficientCredal2026`
 
 .. minigallery:: probly.method.efficient_credal_prediction
 
@@ -130,18 +174,25 @@ relative-likelihood level set. The choice of distance determines the shape of
 the set on the simplex, and therefore which distributions near the boundary
 survive.
 
-:cite:`saleSecondOrder2024`, :cite:`angelopoulosGentleIntroduction2021`
+:Idea: Place a ball around the predicted distribution and calibrate its radius
+    on held-out data.
+:Representation: Credal set carrying a conformal coverage guarantee.
+:Advantages: Inherits conformal prediction's finite-sample coverage guarantee;
+    the distance choice tunes the shape of the set.
+:Disadvantages: Needs a held-out calibration split; coverage is marginal rather
+    than conditional, as for all conformal methods.
+:Reference: :cite:`saleSecondOrder2024`, :cite:`angelopoulosGentleIntroduction2021`
 
 .. autosummary::
     :nosignatures:
 
-    conformal_total_variation
-    conformal_kullback_leibler
-    conformal_wasserstein_distance
-    conformal_inner_product
-    conformal_dirichlet_relative_likelihood
+    ~probly.transformation.conformal_credal_set.conformal_total_variation
+    ~probly.transformation.conformal_credal_set.conformal_kullback_leibler
+    ~probly.transformation.conformal_credal_set.conformal_wasserstein_distance
+    ~probly.transformation.conformal_credal_set.conformal_inner_product
+    ~probly.transformation.conformal_credal_set.conformal_dirichlet_relative_likelihood
 
-.. minigallery:: probly.method.conformal_total_variation probly.method.conformal_kullback_leibler probly.method.conformal_wasserstein_distance probly.method.conformal_inner_product probly.method.conformal_dirichlet_relative_likelihood
+.. minigallery:: probly.transformation.conformal_credal_set.conformal_total_variation probly.transformation.conformal_credal_set.conformal_kullback_leibler probly.transformation.conformal_credal_set.conformal_wasserstein_distance probly.transformation.conformal_credal_set.conformal_inner_product probly.transformation.conformal_credal_set.conformal_dirichlet_relative_likelihood
 
 Full API
 --------

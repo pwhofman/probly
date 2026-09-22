@@ -26,7 +26,8 @@ there and is not.
 
 The methods differ in how much freedom the reparameterization gets, which is
 the usual bias-variance trade: more parameters fit the miscalibration better
-and need more calibration data to do it without overfitting.
+and need more calibration data to do it without overfitting. Each entry below
+follows the same fields, so they can be read against each other.
 
 .. _m-temperature-scaling:
 
@@ -38,11 +39,18 @@ parameter for the entire model: ``T > 1`` softens the distribution, ``T < 1``
 sharpens it, and because a monotone transform of all logits cannot reorder them
 the accuracy is provably unchanged.
 
-Despite being the simplest method available it is usually the best, and it
-should be the default. A few hundred calibration points are enough to fit it,
-and there is essentially nothing to overfit.
+:Idea: Divide the logits by a single learned scalar ``T`` before the softmax.
+:Representation: A :ref:`first-order distribution <uq-first-order>`; the
+    ranking, and therefore the accuracy, is provably unchanged.
+:Advantages: One parameter, essentially nothing to overfit, and a few hundred
+    calibration points suffice; despite being the simplest method it is usually
+    the best, and the default.
+:Disadvantages: A single scalar corrects only the overall sharpness, not a
+    systematic bias, and is too coarse when miscalibration varies across
+    classes.
+:Reference: :cite:`guoOnCalibration2017`
 
-:cite:`guoOnCalibration2017`
+.. minigallery:: probly.method.calibration.temperature_scaling
 
 .. _m-platt-scaling:
 
@@ -54,11 +62,18 @@ The binary ancestor of temperature scaling: fit a logistic regression
 intercept lets it correct a systematic bias as well as the sharpness, which
 temperature scaling cannot do.
 
-Originally introduced to turn SVM margins into probabilities, and still the
-right tool whenever the base model emits an uncalibrated score rather than a
-distribution.
+:Idea: Fit a logistic regression ``sigmoid(a * s + b)`` from the model's score
+    to a probability.
+:Representation: A :ref:`first-order distribution <uq-first-order>` from an
+    uncalibrated score.
+:Advantages: The intercept corrects a systematic bias as well as sharpness;
+    still the right tool when the base model emits a score rather than a
+    distribution.
+:Disadvantages: Binary in origin; two parameters fit only a rigid sigmoid
+    shape.
+:Reference: :cite:`plattProbabilisticOutputs1999`
 
-:cite:`plattProbabilisticOutputs1999`
+.. minigallery:: probly.method.calibration.platt_scaling
 
 .. _m-vector-scaling:
 
@@ -70,11 +85,17 @@ diagonal linear map on the logits. This matters when miscalibration is not
 uniform across classes --- typically under class imbalance, where the rare
 classes are the badly calibrated ones.
 
-Unlike temperature scaling, the per-class bias can reorder logits, so accuracy
-can change. It needs meaningfully more calibration data than a single scalar
-does.
+:Idea: One temperature and one bias per class --- a diagonal linear map on the
+    logits.
+:Representation: A :ref:`first-order distribution <uq-first-order>`; the
+    per-class bias can reorder logits, so accuracy can change.
+:Advantages: Handles miscalibration that is not uniform across classes,
+    typically under class imbalance.
+:Disadvantages: Can change the accuracy, and needs meaningfully more
+    calibration data than a single scalar.
+:Reference: :cite:`guoOnCalibration2017`
 
-:cite:`guoOnCalibration2017`
+.. minigallery:: probly.method.calibration.vector_scaling
 
 .. _m-isotonic-regression:
 
@@ -86,11 +107,18 @@ predicted to true probability. Because it assumes only monotonicity, it can
 correct miscalibration of any shape, including the non-monotone-in-temperature
 kind that no scaling method can reach.
 
-That flexibility is also its failure mode. With little calibration data it
-overfits badly and produces piecewise-constant probabilities with visible
-plateaus. Use it when the calibration split is large.
+:Idea: Fit an arbitrary monotone step function from predicted to true
+    probability.
+:Representation: A :ref:`first-order distribution <uq-first-order>`; monotone,
+    so the ranking and accuracy are preserved.
+:Advantages: Non-parametric, so it corrects miscalibration of any shape,
+    including what no scaling method can reach.
+:Disadvantages: Overfits badly on a small calibration split, producing
+    piecewise-constant probabilities with visible plateaus; use it only when
+    the split is large.
+:Reference: :cite:`zadroznyTransformingClassifier2002`
 
-:cite:`zadroznyTransformingClassifier2002`
+.. minigallery:: probly.method.calibration.isotonic_regression
 
 .. _m-dirichlet-calibration:
 
@@ -103,12 +131,18 @@ The most general of the family: a full multinomial logistic regression on the
 (and, for two classes, beta calibration) and recalibrates probabilities rather
 than logits, which is what separates it from matrix and vector scaling.
 
-``W`` grows quadratically in the number of classes, so the implementation
-exposes two regularizers --- an L2 penalty on the off-diagonal entries and one
-on the intercepts --- that shrink it back towards vector scaling. On
-many-class problems those are not optional.
+:Idea: Multinomial logistic regression on the log-probabilities,
+    ``q = softmax(W ln(p) + b)``.
+:Representation: A recalibrated :ref:`first-order distribution <uq-first-order>`
+    over probabilities rather than logits.
+:Advantages: The most general reparameterization here; generalizes temperature
+    scaling and corrects the confusion structure between classes.
+:Disadvantages: ``W`` grows quadratically in the number of classes, so on
+    many-class problems the two L2 regularizers and extra calibration data are
+    not optional.
+:Reference: :cite:`kullBeyondTemperatureScaling2019`
 
-:cite:`kullBeyondTemperatureScaling2019`
+.. minigallery:: probly.method.calibration.dirichlet_calibration
 
 Choosing a Method
 -----------------
