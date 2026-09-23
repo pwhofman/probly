@@ -76,6 +76,14 @@ class BatchEnsembleLinear(nn.Module):
         self.out_features = base_layer.out_features
         self.num_members = num_members
 
+        # Stored so reset_parameters() can redraw with exactly this construction scheme.
+        self._has_bias = base_layer.bias is not None
+        self._fast_weight_init = init
+        self._r_mean = r_mean
+        self._r_std = r_std
+        self._s_mean = s_mean
+        self._s_std = s_std
+
         if use_base_weights:
             self.weight = nn.Parameter(base_layer.weight.detach().clone())
         else:
@@ -129,6 +137,29 @@ class BatchEnsembleLinear(nn.Module):
         x = x * r_per
         y = F.linear(x, self.weight, bias=None)
         return y * s_per + bias_per
+
+    def reset_parameters(self) -> None:
+        """Reset weight, bias, and the fast weights with the same scheme the constructor used.
+
+        ``weight`` is redrawn with the kaiming-uniform scheme ``nn.Linear`` uses. This applies
+        even if the layer was built with ``use_base_weights=True``: a reset is what gives each
+        ensemble member its own parameters, so leaving the weight untouched would make it
+        identical, and equal to the base model, in every member. ``bias`` is redrawn with
+        ``nn.Linear``'s bias scheme and copied into every member row, matching how the
+        constructor copies one base bias into every member; a layer built without a bias keeps
+        a zero bias. ``r`` and ``s`` are redrawn with the ``init`` scheme given at construction.
+        """
+        init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        with torch.no_grad():
+            if self._has_bias:
+                fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)  # noqa: SLF001
+                bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
+                base_bias = self.bias.new_empty(self.out_features).uniform_(-bound, bound)
+                self.bias.copy_(base_bias.expand(int(self.num_members), -1))
+            else:
+                self.bias.zero_()
+        _init_fast_weight(self.r, self._fast_weight_init, self._r_mean, self._r_std)
+        _init_fast_weight(self.s, self._fast_weight_init, self._s_mean, self._s_std)
 
     def extra_repr(self) -> str:
         """Expose description of in- and out-features, num_members and bias of this layer."""
@@ -198,6 +229,14 @@ class BatchEnsembleConv2d(nn.Module):
 
         self.num_members = num_members
 
+        # Stored so reset_parameters() can redraw with exactly this construction scheme.
+        self._has_bias = base_layer.bias is not None
+        self._fast_weight_init = init
+        self._r_mean = r_mean
+        self._r_std = r_std
+        self._s_mean = s_mean
+        self._s_std = s_std
+
         if use_base_weights:
             self.weight = nn.Parameter(base_layer.weight.detach().clone())
         else:
@@ -258,6 +297,29 @@ class BatchEnsembleConv2d(nn.Module):
             groups=self.groups,
         )
         return y * s_per + bias_per
+
+    def reset_parameters(self) -> None:
+        """Reset weight, bias, and the fast weights with the same scheme the constructor used.
+
+        ``weight`` is redrawn with the kaiming-uniform scheme ``nn.Conv2d`` uses. This applies
+        even if the layer was built with ``use_base_weights=True``: a reset is what gives each
+        ensemble member its own parameters, so leaving the weight untouched would make it
+        identical, and equal to the base model, in every member. ``bias`` is redrawn with
+        ``nn.Conv2d``'s bias scheme and copied into every member row, matching how the
+        constructor copies one base bias into every member; a layer built without a bias keeps
+        a zero bias. ``r`` and ``s`` are redrawn with the ``init`` scheme given at construction.
+        """
+        init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        with torch.no_grad():
+            if self._has_bias:
+                fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)  # noqa: SLF001
+                bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
+                base_bias = self.bias.new_empty(self.out_channels).uniform_(-bound, bound)
+                self.bias.copy_(base_bias.expand(int(self.num_members), -1))
+            else:
+                self.bias.zero_()
+        _init_fast_weight(self.r, self._fast_weight_init, self._r_mean, self._r_std)
+        _init_fast_weight(self.s, self._fast_weight_init, self._s_mean, self._s_std)
 
     def extra_repr(self) -> str:
         """Expose description of in- and out-features, kernel size, stride and num_members of this layer."""
@@ -692,6 +754,19 @@ class DropConnectLinear(nn.Module):
             weight = self.weight * (1 - self.p)  # Scale weights at inference time
 
         return F.linear(x, weight, self.bias)
+
+    def reset_parameters(self) -> None:
+        """Reset weight and bias with the kaiming-uniform scheme ``nn.Linear`` uses.
+
+        The layer copies its weight and bias straight from a linear base layer at
+        construction, without drawing them from a distribution itself, so the reset uses
+        the scheme that base layer's own ``reset_parameters`` would use.
+        """
+        init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        if self.bias is not None:
+            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)  # noqa: SLF001
+            bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
+            init.uniform_(self.bias, -bound, bound)
 
     def extra_repr(self) -> str:
         """Expose description of in- and out-features of this layer."""
