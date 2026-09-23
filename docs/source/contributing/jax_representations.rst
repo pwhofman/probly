@@ -35,7 +35,7 @@ Enabling operations
 Arithmetic is disabled by default. A representation opts in by adding wrapper
 functions to its ``permitted_functions`` set:
 
-.. code-block:: python
+.. jupyter-execute::
 
     from collections.abc import Callable
     from dataclasses import dataclass
@@ -118,7 +118,7 @@ When a compiled function constructs or reconstructs one of these representations
 (including through indexing, reshaping, arithmetic, or sampling), functionalize
 the checks with ``checkify``:
 
-.. code-block:: python
+.. jupyter-execute::
 
     import jax
     import jax.numpy as jnp
@@ -135,6 +135,7 @@ the checks with ``checkify``:
     checked_mean = jax.jit(checkify.checkify(lambda d: jax_mean(d, axis=0)))
     error, result = checked_mean(distribution)
     error.throw()  # Check the error outside the compiled function.
+    print(result)
 
 Plain ``jax.jit`` cannot stage these checks without ``checkify``. Checks run on
 each execution, including calls that reuse compiled code. Checkified functions
