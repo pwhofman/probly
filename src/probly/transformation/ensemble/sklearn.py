@@ -17,6 +17,7 @@ def generate_sklearn_ensemble(obj: BaseEstimator, num_members: int, reset_params
     members = [clone(obj) for _ in range(num_members)]
     if reset_params:
         for member in members:
-            if "random_state" in member.get_params():
-                member.set_params(random_state=None)
+            # Also unset the seeds of nested estimators, such as the steps of a pipeline.
+            random_states = [param for param in member.get_params(deep=True) if param.split("__")[-1] == "random_state"]
+            member.set_params(**dict.fromkeys(random_states))
     return members
