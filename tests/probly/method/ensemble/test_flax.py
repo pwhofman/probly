@@ -174,3 +174,39 @@ class TestEnsembleCalls:
             member_out = member(x)
             assert custom_model_out.shape == member_out.shape
             assert not jnp.equal(custom_model_out, member_out).all()  # parameter reset
+
+
+class TestResetMembersAreIndependent:
+    """With reset_params=True, every member gets its own parameters and its own random streams."""
+
+    def test_members_draw_different_dropout_masks(self) -> None:
+        """nnx.Dropout owns no variables, only a stream; members used to copy it and drop the same units."""
+        model = nnx.Sequential(nnx.Linear(8, 64, rngs=nnx.Rngs(0)), nnx.Dropout(0.5, rngs=nnx.Rngs(dropout=0)))
+        x = jnp.ones((1, 8))
+
+        members = ensemble(model, num_members=3, reset_params=True)
+
+        masks = [member(x) == 0 for member in members]
+        for i in range(len(masks)):
+            for j in range(i + 1, len(masks)):
+                assert not bool(jnp.array_equal(masks[i], masks[j])), (i, j)
+
+    def test_members_keep_tied_layers_tied(self) -> None:
+        class Tied(nnx.Module):
+            def __init__(self, rngs: nnx.Rngs) -> None:
+                self.inp = nnx.Linear(4, 4, rngs=rngs)
+                self.a = nnx.Linear(4, 4, rngs=rngs)
+                self.b = self.a
+
+            def __call__(self, x: jax.Array) -> jax.Array:
+                return self.b(nnx.relu(self.a(nnx.relu(self.inp(x)))))
+
+        model = Tied(nnx.Rngs(0))
+
+        members = ensemble(model, num_members=3, reset_params=True)
+
+        assert all(member.a is member.b for member in members)
+        tied = [model.a.kernel[...], *(member.a.kernel[...] for member in members)]
+        for i in range(len(tied)):
+            for j in range(i + 1, len(tied)):
+                assert not bool(jnp.array_equal(tied[i], tied[j])), (i, j)

@@ -29,6 +29,16 @@ RNGS = GlobalVariable[RNG](
     default=nnx.Rngs(_RESET_SEED),
 )
 
+# Maps the id of every module reset in the current traversal to the module and its reset version, so
+# that a module referenced under several names (tied weights) is reset once and stays one module.
+# Holding on to the original keeps its id from being reused while the traversal runs. The default is
+# ``None`` rather than a dict, since a default would be shared by all traversals.
+_RESET_MODULES = GlobalVariable[dict[int, tuple[nnx.Module, nnx.Module]] | None](
+    "_RESET_MODULES",
+    "The modules reset so far in the current traversal, keyed by the id of the original module.",
+    default=None,
+)
+
 
 def _owns_variables(obj: nnx.Module) -> bool:
     """Whether ``obj`` holds variables itself, rather than only submodules.
@@ -100,17 +110,15 @@ def _refork_rng_stream(obj: nnx.Module, rngs: nnx.Rngs) -> None:
 
     Layers such as :class:`probly.layers.flax.DropConnectLinear` keep their own stream to draw
     masks from. Cloned members would otherwise share it and draw identical masks.
-    Containers retain their stream names and default-stream fallback; individual
-    streams retain their tag unless the module specifies ``rng_collection``.
+    Containers retain their stream names and default-stream fallback; individual streams retain
+    their tag and draw their new key from the module's ``rng_collection``, if it has one.
     """
     stored_rngs = getattr(obj, "rngs", None)
-    if stored_rngs is None:
-        return
     if isinstance(stored_rngs, nnx.Rngs):
         obj.rngs = nnx.Rngs(**{name: rngs[name].fork() for name in stored_rngs})  # ty: ignore[unresolved-attribute]
-        return
-    collection = getattr(obj, "rng_collection", getattr(stored_rngs, "tag", "default"))
-    obj.rngs = rngs[collection].fork()  # ty: ignore[unresolved-attribute]
+    elif isinstance(stored_rngs, nnx.RngStream):
+        collection = getattr(obj, "rng_collection", stored_rngs.tag)
+        obj.rngs = nnx.RngStream(rngs[collection](), tag=stored_rngs.tag)  # ty: ignore[unresolved-attribute]
 
 
 @reset_traverser.register(cls=nnx.Variable)
@@ -119,14 +127,29 @@ def _reset_variable(obj: nnx.Variable) -> nnx.Variable:
     return obj
 
 
-@reset_traverser.register(cls=nnx.Module, vars={"rngs": RNGS}, update_vars=True)
-def _reset_module(obj: nnx.Module, rngs: RNG) -> tuple[nnx.Module, dict[str, RNG]]:
+@reset_traverser.register(cls=nnx.Module, vars={"rngs": RNGS, "reset_modules": _RESET_MODULES}, update_vars=True)
+def _reset_module(
+    obj: nnx.Module,
+    rngs: RNG,
+    reset_modules: dict[int, tuple[nnx.Module, nnx.Module]] | None,
+) -> tuple[nnx.Module, dict[str, Any]]:
     """Re-initialize the parameters a flax module owns."""
     # Normalize a seed to an ``Rngs`` once and write it back, so that every layer of the model
     # draws from the same advancing stream rather than from an identical fresh one.
     if isinstance(rngs, int):
         rngs = nnx.Rngs(rngs)
-    if not _owns_variables(obj):
-        return obj, {"rngs": rngs}
-    new_obj = _reset_variables(obj, rngs)
-    return new_obj, {"rngs": rngs}
+    if reset_modules is None:
+        reset_modules = {}
+    updates = {"rngs": rngs, "reset_modules": reset_modules}
+    # A module the model refers to under several names is reset once; every reference then gets the
+    # same reset module, so tied modules stay tied.
+    if id(obj) in reset_modules:
+        return reset_modules[id(obj)][1], updates
+    if _owns_variables(obj):
+        new_obj = _reset_variables(obj, rngs)
+    else:
+        # Layers such as ``nnx.Dropout`` own no variables, but may draw from a stream of their own.
+        _refork_rng_stream(obj, rngs)
+        new_obj = obj
+    reset_modules[id(obj)] = (obj, new_obj)
+    return new_obj, updates

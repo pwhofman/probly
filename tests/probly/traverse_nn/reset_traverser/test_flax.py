@@ -73,6 +73,60 @@ class ContainerResettableLinear(nnx.Linear):
         self.bias[...] = jax.random.normal(self.rngs.noise(), self.bias.shape)
 
 
+class Tied(nnx.Module):
+    """A model that applies one linear layer under two attribute names, as weight-tied models do."""
+
+    def __init__(self, rngs: nnx.Rngs) -> None:
+        """Create the input layer and the tied layer."""
+        self.inp = nnx.Linear(4, 4, rngs=rngs)
+        self.a = nnx.Linear(4, 4, rngs=rngs)
+        self.b = self.a
+
+    def __call__(self, x: jax.Array) -> jax.Array:
+        return self.b(nnx.relu(self.a(nnx.relu(self.inp(x)))))
+
+
+class NoisyHead(nnx.Module):
+    """A module that owns no variables itself, but keeps an RNG container to draw noise from."""
+
+    def __init__(self, rngs: nnx.Rngs) -> None:
+        """Create the linear layer and the noise stream."""
+        self.linear = nnx.Linear(2, 2, rngs=rngs)
+        self.rngs = nnx.Rngs(noise=5)
+
+    def __call__(self, x: jax.Array) -> jax.Array:
+        return self.linear(x) + jax.random.normal(self.rngs.noise(), x.shape)
+
+
+def dropout_model() -> nnx.Sequential:
+    """Return a linear layer followed by a dropout layer with a stream of its own."""
+    return nnx.Sequential(nnx.Linear(8, 64, rngs=nnx.Rngs(0)), nnx.Dropout(0.5, rngs=nnx.Rngs(dropout=0)))
+
+
+def layer_of[T](model: nnx.Sequential, index: int, cls: type[T]) -> T:
+    """Return the layer at ``index`` of a sequential model, checking its type."""
+    layer = model.layers[index]
+    assert isinstance(layer, cls)
+    return layer
+
+
+def dropout_stream(model: nnx.Sequential) -> nnx.RngStream:
+    """Return the stream of the dropout layer of a :func:`dropout_model`."""
+    stream = layer_of(model, 1, nnx.Dropout).rngs
+    assert isinstance(stream, nnx.RngStream)
+    return stream
+
+
+def stream_key(stream: nnx.RngStream) -> jax.Array:
+    """Return the raw key data of an RNG stream."""
+    return jax.random.key_data(stream.key[...])
+
+
+def dropped(model: nnx.Module, x: jax.Array) -> jax.Array:
+    """Return where the model output was zeroed by dropout."""
+    return model(x) == 0
+
+
 @pytest.mark.parametrize("first_layer", ["activation", "dropout"])
 @pytest.mark.parametrize("entrypoint", ["ensemble", "traverse"])
 def test_reset_lazy_loading_before_first_child(first_layer: str, entrypoint: str) -> None:
@@ -298,6 +352,130 @@ class TestRngs:
 
         assert not bool(jnp.array_equal(first, second))
         assert not bool(jnp.array_equal(second, third))
+
+
+class TestSharedModules:
+    """A module referenced under several names is reset once, and stays one module."""
+
+    def test_tied_layer_stays_tied(self, flax_rngs: nnx.Rngs) -> None:
+        model = Tied(flax_rngs)
+
+        new_model = reset(model)
+
+        assert new_model.a is new_model.b
+        assert not bool(jnp.array_equal(new_model.a.kernel[...], model.a.kernel[...]))
+        # nnx stores a shared module once, so the reset model has as many parameters as the original.
+        assert param_shapes(new_model) == param_shapes(model)
+
+    def test_layer_reused_in_a_sequential_stays_shared(self, flax_rngs: nnx.Rngs) -> None:
+        shared = nnx.Linear(4, 4, rngs=flax_rngs)
+        model = nnx.Sequential(nnx.Linear(4, 4, rngs=flax_rngs), nnx.relu, shared, nnx.relu, shared)
+
+        new_model = reset(model)
+
+        first, reused = layer_of(new_model, 0, nnx.Linear), layer_of(new_model, 2, nnx.Linear)
+        assert layer_of(new_model, 4, nnx.Linear) is reused
+        assert not bool(jnp.array_equal(reused.kernel[...], shared.kernel[...]))
+        x = jnp.ones((1, 4))
+        assert bool(jnp.array_equal(new_model(x), reused(nnx.relu(reused(nnx.relu(first(x)))))))
+
+    def test_shared_layer_is_reset_once(self) -> None:
+        """The number of draws does not depend on how many attributes refer to a layer."""
+        layer = ResettableLinear(2, 2, rngs=nnx.Rngs(0))
+
+        new_model = reset(nnx.Sequential(layer, layer))
+
+        new_layer = layer_of(new_model, 0, ResettableLinear)
+        assert layer_of(new_model, 1, ResettableLinear) is new_layer
+        assert new_layer.reset_count == 1
+
+    def test_distinct_layers_with_equal_weights_stay_distinct(self) -> None:
+        model = nnx.Sequential(nnx.Linear(4, 4, rngs=nnx.Rngs(0)), nnx.Linear(4, 4, rngs=nnx.Rngs(0)))
+
+        new_model = reset(model)
+
+        first, second = layer_of(new_model, 0, nnx.Linear), layer_of(new_model, 1, nnx.Linear)
+        assert first is not second
+        assert not bool(jnp.array_equal(first.kernel[...], second.kernel[...]))
+
+    def test_consecutive_resets_of_a_tied_model_are_independent(self, flax_rngs: nnx.Rngs) -> None:
+        model = Tied(flax_rngs)
+
+        first = reset(model)
+        second = reset(model)
+
+        assert first.a is first.b
+        assert second.a is second.b
+        assert first.a is not second.a
+        assert not bool(jnp.array_equal(first.a.kernel[...], second.a.kernel[...]))
+
+
+class TestRngStreams:
+    """Modules without variables of their own, such as ``nnx.Dropout``, may still keep an RNG stream."""
+
+    def test_dropout_stream_is_reforked(self) -> None:
+        model = dropout_model()
+        stream = dropout_stream(model)
+        key, count = stream_key(stream), stream.count[...]
+
+        new_stream = dropout_stream(reset(model))
+
+        assert not bool(jnp.array_equal(stream_key(new_stream), key))
+        # The stream of the original model is left untouched.
+        assert bool(jnp.array_equal(stream_key(stream), key))
+        assert bool(jnp.array_equal(stream.count[...], count))
+
+    def test_reset_models_draw_different_dropout_masks(self) -> None:
+        model = dropout_model()
+        x = jnp.ones((1, 8))
+
+        masks = [dropped(model, x)] + [dropped(reset(model), x) for _ in range(3)]
+
+        for i in range(len(masks)):
+            for j in range(i + 1, len(masks)):
+                assert not bool(jnp.array_equal(masks[i], masks[j])), (i, j)
+
+    def test_explicit_rngs_make_dropout_streams_reproducible(self) -> None:
+        model = dropout_model()
+
+        first = stream_key(dropout_stream(reset(model, {RNGS: 7})))
+        repeated = stream_key(dropout_stream(reset(model, {RNGS: nnx.Rngs(7)})))
+        other = stream_key(dropout_stream(reset(model, {RNGS: 8})))
+
+        assert bool(jnp.array_equal(first, repeated))
+        assert not bool(jnp.array_equal(first, other))
+
+    def test_reforked_dropout_stream_keeps_its_tag(self) -> None:
+        """``nnx.reseed`` finds streams by tag, so a re-forked stream must still be a ``dropout`` stream."""
+        model = dropout_model()
+        x = jnp.ones((1, 8))
+        first, second = reset(model), reset(model)
+
+        assert dropout_stream(first).tag == "dropout"
+        assert not bool(jnp.array_equal(dropped(first, x), dropped(second, x)))
+        nnx.reseed(first, dropout=3)
+        nnx.reseed(second, dropout=3)
+        assert bool(jnp.array_equal(dropped(first, x), dropped(second, x)))
+
+    def test_dropout_without_a_stream_is_left_alone(self) -> None:
+        model = nnx.Sequential(nnx.Linear(8, 64, rngs=nnx.Rngs(0)), nnx.Dropout(0.5))
+
+        dropout = layer_of(reset(model), 1, nnx.Dropout)
+
+        assert dropout.rngs is None
+        out = dropout(jnp.ones((1, 64)), rngs=nnx.Rngs(dropout=0))
+        assert set(jnp.unique(out).tolist()) <= {0.0, 2.0}
+
+    def test_rng_container_of_a_module_without_variables_is_reforked(self) -> None:
+        model = NoisyHead(nnx.Rngs(0))
+        key = stream_key(model.rngs.noise)
+
+        new_model = reset(model)
+
+        assert isinstance(new_model.rngs, nnx.Rngs)
+        assert set(new_model.rngs) == {"noise"}
+        assert not bool(jnp.array_equal(stream_key(new_model.rngs.noise), key))
+        assert bool(jnp.array_equal(stream_key(model.rngs.noise), key))
 
 
 class TestUnsupportedLayers:
