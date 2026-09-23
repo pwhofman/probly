@@ -28,7 +28,20 @@ the dropout method to make it uncertainty aware.
 
 To make your model uncertainty aware, using a method like ``dropout`` you need the following imports:
 
-.. code-block:: python
+.. jupyter-execute::
+    :hide-code:
+
+    # Seed every RNG the page touches so each build reproduces the same numbers.
+    import random
+
+    import numpy as np
+    import torch
+
+    random.seed(0)
+    np.random.seed(0)
+    torch.manual_seed(0);
+
+.. jupyter-execute::
 
     import torch
     from torch import nn
@@ -43,7 +56,7 @@ For an overview on methods and representer check out the respective chapters in 
 
 As well as your model to transform, we are defining a simple Classifier as follows:
 
-.. code-block:: python
+.. jupyter-execute::
 
     class MLPClassifier(nn.Module):
         def __init__(
@@ -63,7 +76,7 @@ As well as your model to transform, we are defining a simple Classifier as follo
 
 To use the two-moons dataset using PyTorch, we must prepare it as follows:
 
-.. code-block:: python
+.. jupyter-execute::
 
     X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
     X_tensor = torch.from_numpy(X).float()
@@ -82,7 +95,7 @@ the underlying model. This step allows the measuring of uncertainty as well as t
 Aleatoric and Epistemic Uncertainty.
 For this example we use ``dropout``:
 
-.. code-block:: python
+.. jupyter-execute::
 
     base_model = MLPClassifier()
 
@@ -100,7 +113,7 @@ all the transformations.
 Train the wrapped model just like you would train the original one, dropout stays active at inference
 time, which is what enables repeated forward passes to produce a distribution over predictions:
 
-.. code-block:: python
+.. jupyter-execute::
 
     opt = torch.optim.Adam(dropout_model.parameters(), lr=1e-3)
 
@@ -111,7 +124,7 @@ time, which is what enables repeated forward passes to produce a distribution ov
         loss.backward()
         opt.step()
 
-    dropout_model.eval()
+    dropout_model.eval();
 
 2. Representation
 ~~~~~~~~~~~~~~~~~~
@@ -120,7 +133,7 @@ Having the correct Representation is key for later measuring and evaluating the 
 both first and second order distributions as well as credal sets. To choose the representation either select
 the generic ``representer`` or any of the more targeted representers (link).
 
-.. code-block:: python
+.. jupyter-execute::
 
     rep = representer(dropout_model, num_samples=100)
     representation = rep.represent(X_tensor)
@@ -131,7 +144,7 @@ To understand and decide on a model's robustness, there needs to be a metric. Qu
 either as an actual measure or a decomposition depending on the transformation. This choice is decided downstream through the
 ``quantify`` method:
 
-.. code-block:: python
+.. jupyter-execute::
 
     quantification = quantify(representation)
     uncertainty = quantification.total.detach().numpy()
@@ -143,7 +156,7 @@ either as an actual measure or a decomposition depending on the transformation. 
 Finally ``probly`` offers a unified evaluation structure. Here we perform selective prediction: sorting instances
 by their uncertainty and checking whether the most uncertain ones are indeed the ones the model gets wrong.
 
-.. code-block:: python
+.. jupyter-execute::
 
     with torch.no_grad():
         predictions = dropout_model(X_tensor).argmax(-1)
@@ -151,15 +164,6 @@ by their uncertainty and checking whether the most uncertain ones are indeed the
 
     aurc, bin_losses = selective_prediction(uncertainty, losses)
     print(f"AURC: {aurc:.4f}")
-
-
-Output
-~~~~~~~
-As Output you can expect something like this:
-
-.. code-block:: text
-
-    AURC: 0.0061
 
 Plotting allows easy understanding of uncertainty, a variation of the dropout example can be seen here:
 

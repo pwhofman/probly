@@ -77,6 +77,7 @@ extensions = [
     "sphinx.ext.autosectionlabel",  # for auto-generating section labels
     "sphinxcontrib.bibtex",  # for bibliography support
     "sphinx_design",  # grid and card directives used by the methods guide
+    "jupyter_sphinx",  # executes narrative code blocks so their printed output regenerates
 ]
 
 suppress_warnings = []
@@ -125,6 +126,8 @@ exclude_patterns = [
     "../../notebooks/**",
     "../../supporting_files/**",
     "sg_execution_times.rst",
+    # Hidden setup snippets pulled in with ``.. include::``; not pages of their own.
+    "_includes/**",
 ]
 
 
@@ -326,7 +329,7 @@ linkcode_resolve = make_linkcode_resolve(REPO_ROOT)
 html_theme = "furo"
 
 html_static_path = ["_static"]
-html_css_files = ["css/custom.css", "css/ecosystem.css"]
+html_css_files = ["css/custom.css", "css/ecosystem.css", "css/jupyter.css"]
 html_js_files = ["js/ecosystem.js"]
 pygments_dark_style = "monokai"
 
