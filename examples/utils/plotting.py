@@ -12,6 +12,10 @@ from matplotlib.ticker import FormatStrFormatter
 from probly.quantification import quantify
 
 
+def _class_label(label, class_names: list[str] | None) -> str:
+    return str(int(label)) if class_names is None else class_names[int(label)]
+
+
 def plot_mnist_uncertainty(
     images_test,
     y_test,
@@ -20,10 +24,12 @@ def plot_mnist_uncertainty(
     title: str = "Most Uncertain Test Predictions",
     n_top: int = 5,
     unit: str = "bits",
+    class_names: list[str] | None = None,
 ) -> ModuleType:
-    num_classes = mean_probs.shape[1]
     top_idx = uncertainty.argsort()[-n_top:][::-1]
     preds = mean_probs.argmax(axis=-1)
+    # Class names are wider than digits, so put true and predicted label on separate lines.
+    separator = " | " if class_names is None else "\n"
 
     tab_colors = plt.cm.tab10.colors
 
@@ -37,7 +43,7 @@ def plot_mnist_uncertainty(
 
         axes[col].imshow(img, cmap="gray")
         axes[col].set_title(
-            f"True: {int(y_test[idx])} | Pred: {int(preds[idx])}\n"
+            f"True: {_class_label(y_test[idx], class_names)}{separator}Pred: {_class_label(preds[idx], class_names)}\n"
             f"U = {uncertainty[idx]:.2f} {unit}"
         )
         axes[col].axis("off")

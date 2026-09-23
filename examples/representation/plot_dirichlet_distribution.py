@@ -2,14 +2,17 @@
 Second order: a parameterized Dirichlet
 ==================================================
 
-The other encoding of the second-order rung: instead of drawing members, state the
-second-order distribution in closed form. Over the simplex the usual choice is a
-Dirichlet, here an
+Instead of approximating a second-order distribution by a finite sample, as in
+:ref:`sphx_glr_auto_examples_representation_plot_second_order_sample.py`, one may also
+state it in closed form. Over the probability simplex, the standard choice is a Dirichlet
+distribution, here a
 :class:`~probly.representation.distribution.numpy_dirichlet.NumpyDirichletDistribution`,
-which a single forward pass can produce.
+whose parameters a model can output in a single forward pass.
 
-The concentration parameters carry both readings at once: their normalization is the mean
-prediction, and their total mass is how much evidence the model claims to have.
+A Dirichlet is determined by its concentration parameters, which encode two quantities at
+once. Normalized, they yield the mean prediction, that is, the first-order distribution
+the Dirichlet collapses to; summed, they indicate how much evidence the model claims to
+have, and hence how tightly the mass concentrates around that mean.
 """
 
 from __future__ import annotations
@@ -24,8 +27,8 @@ from probly.representation.distribution import NumpyDirichletDistribution
 CLASSES = ["cat", "dog", "fox"]
 config = PlotConfig()
 
-# Two inputs with the same mean prediction but very different evidence.
-# Shape: (instances, classes)
+# Two inputs with the same mean prediction, (0.45, 0.35, 0.20), but a total evidence of
+# 40 and 2, respectively. Shape: (instances, classes)
 distribution = NumpyDirichletDistribution(alphas=np.array([[18.0, 14.0, 8.0], [0.9, 0.7, 0.4]]))
 
 print("Shape (batch dims):", distribution.shape)
@@ -34,19 +37,21 @@ print("Mean prediction:\n", distribution.mean.probabilities)
 print("Total evidence per input:", distribution.alphas.sum(axis=-1))
 
 # %%
-# Ten draws from the second-order distribution are exactly the members a sampled
-# representation would have had to produce by running the model ten times.
+# Drawing from the Dirichlet recovers the sampled encoding of the same object. Ten draws
+# have the same form as the ten members of an ensemble, but they cost no additional
+# forward passes.
 draws = distribution.sample(num_samples=10, rng=np.random.default_rng(0))
 print("Draw shape (members, instances, classes):", draws.samples.probabilities.shape)
 
 
 # %%
-# On the simplex the density is a surface rather than a scatter: concentrated mass means
-# the odds are pinned down, mass pushed out to the corners means they are not. The
-# surfaces are drawn on a log scale, each panel with its own color range, because the two
-# densities differ by orders of magnitude.
+# On the simplex, a Dirichlet is a density rather than a scatter of points. Mass
+# concentrated in the interior indicates that the odds are pinned down, whereas mass pushed
+# toward the edges and corners indicates that they are not. The densities are drawn on a
+# log scale, each panel with its own color range, because they differ by orders of
+# magnitude.
 def to_cartesian(probabilities: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Map points on the 3-simplex to plot coordinates."""
+    """Map distributions over three classes to 2D plot coordinates."""
     x = probabilities[..., 1] + 0.5 * probabilities[..., 2]
     y = (np.sqrt(3) / 2) * probabilities[..., 2]
     return x, y
@@ -83,7 +88,11 @@ fig.tight_layout()
 plt.show()
 
 # %%
-# Both inputs share a mean prediction, so both collapse to the same first-order
-# distribution. The resolution of the second-order object is fixed by the concentration
-# parameters rather than bought with a sample count, which is what makes this encoding
-# cheap at inference and expensive at training.
+# Both inputs share the mean prediction and thus collapse to the same first-order
+# distribution; only the total evidence tells them apart. In contrast to the sampled
+# encoding, the second-order object is given exactly by its concentration parameters, so
+# there is no sample size to choose, and a single forward pass suffices at inference
+# time. The cost is shifted to
+# training: the model has to be trained, typically with a dedicated loss, to output
+# concentration parameters, and the evidence it claims is a learned quantity that is only
+# as trustworthy as that training.

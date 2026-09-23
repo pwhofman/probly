@@ -57,7 +57,7 @@ unaffected; only the confidence attached to it changes.
     across classes.
 :Reference: :cite:`guoOnCalibration2017`
 
-.. minigallery:: probly.method.calibration.temperature_scaling
+.. minigallery:: probly.transformation.calibration.temperature_scaling
 
 .. _m-platt-scaling:
 
@@ -83,7 +83,7 @@ shifts the decision threshold, however, so the accuracy may change. In
     accuracy.
 :Reference: :cite:`plattProbabilisticOutputs1999`
 
-.. minigallery:: probly.method.calibration.platt_scaling
+.. minigallery:: probly.transformation.calibration.platt_scaling
 
 .. _m-vector-scaling:
 
@@ -108,7 +108,7 @@ reorder the logits, so vector scaling may change the predicted class.
     classes.
 :Reference: :cite:`guoOnCalibration2017`
 
-.. minigallery:: probly.method.calibration.vector_scaling
+.. minigallery:: probly.transformation.calibration.vector_scaling
 
 .. _m-isotonic-regression:
 
@@ -135,7 +135,7 @@ In ``probly``, isotonic regression applies to binary classifiers only.
     plateaus; advisable only when the split is large.
 :Reference: :cite:`zadroznyTransformingClassifier2002`
 
-.. minigallery:: probly.method.calibration.isotonic_regression
+.. minigallery:: probly.transformation.calibration.isotonic_regression
 
 .. _m-dirichlet-calibration:
 
@@ -165,7 +165,7 @@ classes.
     indispensable.
 :Reference: :cite:`kullBeyondTemperatureScaling2019`
 
-.. minigallery:: probly.method.calibration.dirichlet_calibration
+.. minigallery:: probly.transformation.calibration.dirichlet_calibration
 
 Choosing a Method
 -----------------
