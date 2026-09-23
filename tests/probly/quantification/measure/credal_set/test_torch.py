@@ -137,6 +137,33 @@ def test_convex_batch_shape_preserved() -> None:
     assert lower_entropy(cs).shape == (5,)
 
 
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+def test_convex_upper_entropy_with_a_class_that_is_zero_in_every_vertex(dtype: torch.dtype) -> None:
+    """Regression: the nan gradient through log(0) crashed L-BFGS in float32 and gave nan in float64."""
+    vertices = torch.tensor([[0.9, 0.1, 0.0], [0.5, 0.5, 0.0]], dtype=dtype)
+    cs = TorchConvexCredalSet(tensor=TorchProbabilityCategoricalDistribution(vertices))
+
+    assert float(upper_entropy(cs)) == pytest.approx(float(np.log(2)), abs=1e-4)
+
+
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+def test_convex_upper_entropy_zero_class_in_one_set_does_not_affect_the_other_sets(dtype: torch.dtype) -> None:
+    """Regression: one set with a class that is zero in every vertex stalled L-BFGS for the whole batch."""
+    vertices = torch.tensor(
+        [
+            # Maximum log(2), reached at the second vertex.
+            [[0.9, 0.1, 0.0], [0.5, 0.5, 0.0]],
+            # The uniform distribution lies on this segment, so the maximum is log(3).
+            [[0.9, 0.05, 0.05], [0.2, 0.4, 0.4]],
+        ],
+        dtype=dtype,
+    )
+    cs = TorchConvexCredalSet(tensor=TorchProbabilityCategoricalDistribution(vertices))
+
+    expected = torch.tensor([np.log(2), np.log(3)], dtype=dtype)
+    torch.testing.assert_close(upper_entropy(cs), expected, atol=1e-4, rtol=0)
+
+
 # ---------------------------------------------------------------------------
 # Generalized Hartley
 # ---------------------------------------------------------------------------
