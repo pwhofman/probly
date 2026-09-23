@@ -40,5 +40,6 @@
         nn.functional.cross_entropy(net(data_id), labels).backward()
         optimizer.step()
     net.eval()
+    net.requires_grad_(False)  # trained and frozen, so outputs need no .detach()
 
     x = data_id  # the inputs the representation blocks below are built from

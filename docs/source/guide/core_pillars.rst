@@ -63,14 +63,14 @@ One Pipeline, Four Stages
 
 Everything below is an elaboration of this snippet.
 
-.. code-block:: python
+.. jupyter-execute::
 
     from probly.method import dropout
     from probly.representer import representer
     from probly.quantification import quantify
     from probly.evaluation.ood import evaluate_ood
 
-    net = ...  # any trained torch or flax network
+    # net: any trained torch or flax network (here, a small Two Moons classifier)
 
     # 1. transform: keep dropout active at inference (MC dropout)
     model = dropout(net, p=0.25, predictor_type="logit_classifier")
@@ -266,7 +266,7 @@ Constructing a decomposition directly is how you choose a different one:
     uq = SecondOrderScoringRuleDecomposition(out, BrierLoss())
     print([c.__name__ for c in uq.components])  # which notions this split provides
     eu = uq[EpistemicUncertainty]               # or uq["eu"], or uq.epistemic
-    print(eu.shape, eu[:5].detach())            # one score per input; first five shown
+    print(eu.shape, eu[:5])                     # one score per input; first five shown
 
 This is what makes the "pick the scoring rule first" rule of thumb from
 :ref:`uq-quantifying` executable rather than advisory: ``LogLoss`` reproduces
