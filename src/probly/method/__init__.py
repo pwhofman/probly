@@ -14,6 +14,7 @@ from probly.method.conformal_credal_set import (
 from probly.method.credal_bnn import credal_bnn
 from probly.method.credal_dro import credal_dro
 from probly.method.credal_ensembling import credal_ensembling
+from probly.method.credal_net import credal_net
 from probly.method.credal_relative_likelihood import credal_relative_likelihood
 from probly.method.credal_wrapper import credal_wrapper
 from probly.method.dare import dare
@@ -51,6 +52,7 @@ __all__ = [
     "credal_bnn",
     "credal_dro",
     "credal_ensembling",
+    "credal_net",
     "credal_relative_likelihood",
     "credal_wrapper",
     "cuq_graph_neural_network",
