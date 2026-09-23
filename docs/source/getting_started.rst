@@ -39,7 +39,7 @@ To make your model uncertainty aware, using a method like ``dropout`` you need t
 
     random.seed(0)
     np.random.seed(0)
-    torch.manual_seed(0)
+    torch.manual_seed(0);
 
 .. jupyter-execute::
 
@@ -124,7 +124,7 @@ time, which is what enables repeated forward passes to produce a distribution ov
         loss.backward()
         opt.step()
 
-    dropout_model.eval()
+    dropout_model.eval();
 
 2. Representation
 ~~~~~~~~~~~~~~~~~~
