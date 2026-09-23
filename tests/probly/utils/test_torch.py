@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from probly.utils.torch import (
     torch_collect_outputs,
+    torch_entropy,
     torch_head_dimension,
     torch_reset_all_parameters,
     torch_temperature_softmax,
@@ -73,6 +74,16 @@ def test_entropy_dispatches_to_torch() -> None:
     p = torch.tensor([[0.5, 0.5], [1.0, 0.0]])
     torch.testing.assert_close(entropy(p), torch_entropy(p))
     torch.testing.assert_close(entropy(p), torch.tensor([math.log(2.0), 0.0]))
+
+
+def test_torch_entropy_gradient_is_finite_at_exact_zeros() -> None:
+    p = torch.tensor([0.5, 0.5, 0.0], dtype=torch.float64, requires_grad=True)
+
+    (gradient,) = torch.autograd.grad(torch_entropy(p), p)
+
+    assert torch.isfinite(gradient).all()
+    # dH/dp_k = -(1 + log p_k) wherever p_k > 0.
+    torch.testing.assert_close(gradient[:2], torch.full((2,), -(1.0 + math.log(0.5)), dtype=torch.float64))
 
 
 def test_intersection_probability_dispatches_to_torch() -> None:
