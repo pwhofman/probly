@@ -202,7 +202,7 @@ the simplex, and hence which distributions near its boundary are included.
     ~probly.transformation.conformal_credal_set.conformal_inner_product
     ~probly.transformation.conformal_credal_set.conformal_dirichlet_relative_likelihood
 
-.. minigallery:: probly.transformation.conformal_credal_set.conformal_total_variation probly.transformation.conformal_credal_set.conformal_kullback_leibler probly.transformation.conformal_credal_set.conformal_wasserstein_distance probly.transformation.conformal_credal_set.conformal_inner_product probly.transformation.conformal_credal_set.conformal_dirichlet_relative_likelihood
+.. minigallery:: probly.transformation.conformal_total_variation probly.transformation.conformal_kullback_leibler probly.transformation.conformal_wasserstein_distance probly.transformation.conformal_inner_product probly.transformation.conformal_dirichlet_relative_likelihood
 
 .. admonition:: Categorical score targets
     :class: note
