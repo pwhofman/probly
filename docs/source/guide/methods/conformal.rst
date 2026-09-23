@@ -20,11 +20,29 @@ All variants on this page share the same mechanism, which consists of three
 steps. First, a **non-conformity score** ``s(x, y)`` measures how poorly a
 candidate outcome ``y`` conforms to the model's prediction for ``x``. Second,
 this score is evaluated on a held-out calibration split, and its empirical
-``1 - alpha`` quantile is stored. Third, at prediction time, the set comprises
-every candidate whose score does not exceed this quantile.
+``1 - alpha`` quantile, corrected slightly upward for the finite sample size,
+is stored. Third, at prediction time, the set comprises every candidate whose
+score does not exceed this quantile. In probly, the second step is carried out
+by :func:`probly.calibrator.calibrate`, which must be applied to data disjoint
+from the training data before the wrapper can predict.
 
-Consequently, the guarantee holds for any choice of score, and the design
-effort goes entirely into the score. The score does not affect *whether*
+The figure below, taken from
+:ref:`sphx_glr_auto_examples_conformal_plot_conformal_introduction.py`, shows
+the second step for a random forest on noisy handwritten digits with
+``alpha = 0.1``. The histogram collects the scores ``1 - p_y`` of the true
+labels on the calibration split, and the dashed line marks the calibrated
+quantile ``q_hat``. About 10% of the calibration scores lie to its right; at
+prediction time, a label enters the set if its score falls to the left.
+
+.. image:: /auto_examples/conformal/images/sphx_glr_plot_conformal_introduction_001.png
+    :alt: Histogram of the LAC calibration scores of a random forest on noisy
+        digits, with a dashed line at the calibrated quantile and about 10% of
+        the scores lying to its right.
+    :width: 100%
+
+Since none of these steps depends on what the score measures, the guarantee
+holds for every choice of score, and the design effort shifts entirely to the
+score itself. The score does not affect *whether*
 coverage holds, only how large the sets are and how well their size adapts to
 the difficulty of the input; it is along this axis that the variants below
 differ.
@@ -38,15 +56,36 @@ differ.
     closes it; without further assumptions, exact conditional coverage is in
     general unattainable.
 
-    Before it can predict, the wrapper must be calibrated on data disjoint
-    from the training data; see :func:`probly.calibrator.calibrate`.
+The figure below, taken from
+:ref:`sphx_glr_auto_examples_conformal_plot_conformal_classification_scores.py`,
+makes the distinction concrete. The test inputs are grouped into thirds by the
+model's top probability, and the coverage is measured within each group. All
+four classification scores reach 90% overall, but LAC covers the least
+confident third only about three times in four and the most confident third
+almost always. The adaptive scores spread the coverage more evenly, yet none of
+them reaches 90% in every group.
+
+.. image:: /auto_examples/conformal/images/sphx_glr_plot_conformal_classification_scores_004.png
+    :alt: Grouped bar chart of the coverage of LAC, APS, RAPS and SAPS in three
+        groups of test inputs ordered by model confidence; LAC falls to about
+        0.76 in the least confident group, while the adaptive scores stay
+        between about 0.83 and 0.95.
+    :width: 100%
 
 Classification
 --------------
 
 In classification, the prediction is a set of labels, and the scores differ
 essentially in how much probability mass they require before they stop adding
-classes.
+classes. The figure below, from the same example, shows the resulting set
+sizes at ``alpha = 0.1``: at the same coverage, LAC mostly returns one or two
+labels, whereas the adaptive scores return two or three labels more often.
+
+.. image:: /auto_examples/conformal/images/sphx_glr_plot_conformal_classification_scores_002.png
+    :alt: Four histograms of prediction set sizes for LAC, APS, RAPS and SAPS
+        at alpha 0.1, each with a coverage of about 0.9; LAC has the smallest
+        mean set size.
+    :width: 100%
 
 .. _m-conformal-lac:
 
@@ -140,7 +179,19 @@ Regression
 ----------
 
 In regression, the prediction is an interval, and the main question is whether
-its width may vary with the input.
+its width may vary with the input. The figure below, taken from
+:ref:`sphx_glr_auto_examples_conformal_plot_conformal_regression_scores.py`,
+compares three of the scores on synthetic data whose noise grows with ``x``.
+All three intervals reach about 90% coverage, but only the two CQR variants
+follow the true conditional quantiles (dashed); the absolute-error interval is
+too wide where the noise is small and too narrow where it is large.
+
+.. image:: /auto_examples/conformal/images/sphx_glr_plot_conformal_regression_scores_001.png
+    :alt: Three panels of conformal prediction bands on heteroscedastic
+        synthetic data: a constant-width band for the absolute-error score and
+        bands that widen with x for CQR and CQR-r, which follow the true 5% and
+        95% quantiles.
+    :width: 100%
 
 .. _m-conformal-absolute-error:
 
@@ -207,8 +258,9 @@ endpoints outward, or inward, by the same constant.
 interval, so that the correction becomes multiplicative rather than additive.
 The difference matters because an additive correction widens every interval by
 the same amount, whereas a multiplicative one widens each interval in
-proportion to its predicted width. The latter is what a base model requires
-whose intervals have the right shape but the wrong overall scale.
+proportion to its predicted width. A multiplicative correction is therefore
+the appropriate one for a base model whose intervals have the right shape but
+the wrong overall scale.
 
 :Idea: Divide the CQR score by the predicted interval width, which makes the
     correction multiplicative.
@@ -227,8 +279,9 @@ whose intervals have the right shape but the wrong overall scale.
 :func:`conformal_uacqr <probly.transformation.conformal.conformal_uacqr>`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Uncertainty-aware CQR.** Based on an *ensemble* of quantile regressors, the
-CQR score is normalized by the ensemble's standard deviation at each endpoint.
+**Uncertainty-aware CQR.** Here, the base model is an *ensemble* of quantile
+regressors, and the CQR score is normalized by the ensemble's standard
+deviation at each endpoint.
 Since this standard deviation reflects disagreement among the members rather
 than noise in the target, the intervals widen where the model is uncertain
 about the quantiles themselves, which one may interpret as an epistemic
@@ -250,16 +303,24 @@ Choosing a Score
 ----------------
 
 For classification, :func:`conformal_lac` is the natural choice when the
-average set size matters most, and :func:`conformal_raps` when conditional
-coverage does; :func:`conformal_aps` serves as the reference point against
-which both are usually compared. For regression,
-:func:`conformal_absolute_error` is the default unless the base model can
-predict quantiles, in which case :func:`conformal_cqr_r` is preferable.
+average set size matters most. When conditional coverage matters as well, the
+adaptive scores are preferable: :func:`conformal_aps` distributes the coverage
+most evenly but produces the largest sets, whereas :func:`conformal_raps` and
+:func:`conformal_saps` give up some of this evenness in exchange for smaller
+sets. For regression, :func:`conformal_absolute_error` is the default unless
+the base model can predict quantiles, in which case :func:`conformal_cqr_r` is
+usually preferable.
 
-Whichever score is chosen, it should be evaluated on both axes at once.
-Coverage alone is uninformative, since it is guaranteed by construction; what
-separates the scores is the *set size at the target coverage*, together with
-how evenly the coverage is distributed across inputs.
+Whichever score is chosen, coverage alone says little about its quality,
+since it is guaranteed by construction. What separates the scores is the *set
+size at the target coverage*, together with how evenly the coverage is
+distributed across inputs, and the two should be evaluated jointly.
+:ref:`sphx_glr_auto_examples_conformal_plot_conformal_classification_scores.py`
+carries out this comparison for the classification scores, including how the
+sets grow as ``alpha`` shrinks, and
+:ref:`sphx_glr_auto_examples_conformal_plot_conformal_regression_scores.py`
+does the same for the regression scores, with coverage and interval width
+along the input.
 
 The same calibration machinery can also be applied to distributions instead
 of labels, which leads to the :ref:`conformal credal sets
