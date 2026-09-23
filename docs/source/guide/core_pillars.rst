@@ -264,8 +264,9 @@ Constructing a decomposition directly is how you choose a different one:
     )
 
     uq = SecondOrderScoringRuleDecomposition(out, BrierLoss())
-    uq.components              # which notions this split actually provides
-    uq[EpistemicUncertainty]   # or uq["eu"], or uq.epistemic
+    print([c.__name__ for c in uq.components])  # which notions this split provides
+    eu = uq[EpistemicUncertainty]               # or uq["eu"], or uq.epistemic
+    print(eu.shape, eu[:5].detach())            # one score per input; first five shown
 
 This is what makes the "pick the scoring rule first" rule of thumb from
 :ref:`uq-quantifying` executable rather than advisory: ``LogLoss`` reproduces
