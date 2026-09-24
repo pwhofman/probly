@@ -113,7 +113,7 @@ class NumpyDiscreteCredalSet(
     @override
     @property
     def barycenter(self) -> NumpyCategoricalDistribution:
-        return np.mean(self.array, axis=-1)
+        return np.mean(self.array, axis=-1)  # ty:ignore[invalid-return-type]
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
@@ -158,7 +158,7 @@ class NumpyConvexCredalSet(
     @override
     @property
     def barycenter(self) -> NumpyCategoricalDistribution:
-        return np.mean(self.array, axis=-1)
+        return np.mean(self.array, axis=-1)  # ty:ignore[invalid-return-type]
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
