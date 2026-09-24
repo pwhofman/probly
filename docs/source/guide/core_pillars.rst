@@ -258,6 +258,17 @@ in the dispatch rather than in a docstring warning: requesting a decomposition
 that does not exist for the given representation raises ``NotImplementedError``
 instead of returning a quietly meaningless number.
 
+.. jupyter-execute::
+
+    from probly.quantification import SecondOrderEntropyDecomposition
+
+    first_order = categorical_from_mean(out)  # a bare first-order distribution
+
+    try:
+        SecondOrderEntropyDecomposition(first_order).epistemic
+    except NotImplementedError as err:
+        print(f"NotImplementedError: {err}")
+
 For a second-order sample, the decomposition that ``decompose`` selects is
 ``SecondOrderEntropyDecomposition``. A different one is chosen by constructing
 it directly:

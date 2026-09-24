@@ -16,8 +16,14 @@
     torch.manual_seed(0)
 
     X, y = make_moons(n_samples=500, noise=0.05, random_state=0)
-    data_id = torch.from_numpy(X).float()
-    labels = torch.from_numpy(y).long()
+    data_train = torch.from_numpy(X).float()
+    labels_train = torch.from_numpy(y).long()
+
+    # Held-out in-distribution inputs, noisier than the training set so the model
+    # makes some mistakes and selective prediction has errors to rank.
+    X_id, y_id = make_moons(n_samples=500, noise=0.2, random_state=1)
+    data_id = torch.from_numpy(X_id).float()
+    labels = torch.from_numpy(y_id).long()
 
     # Out-of-distribution inputs: the same two moons, translated off the manifold
     # the model was fitted on.
@@ -37,7 +43,7 @@
     net.train()
     for _ in range(300):
         optimizer.zero_grad()
-        nn.functional.cross_entropy(net(data_id), labels).backward()
+        nn.functional.cross_entropy(net(data_train), labels_train).backward()
         optimizer.step()
     net.eval()
     net.requires_grad_(False)  # trained and frozen, so outputs need no .detach()
