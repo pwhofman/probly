@@ -100,14 +100,17 @@ def torch_temperature_softmax(logits: torch.Tensor, temperature: float | torch.T
 def torch_entropy(p: torch.Tensor) -> torch.Tensor:
     """Shannon entropy H(p) computed in torch along the last dim; 0*log(0) treated as 0.
 
+    The logarithm is fed with the zeros replaced by ones instead of masking its result, so the
+    gradient stays finite for probability vectors that contain exact zeros.
+
     Args:
         p: Probabilities to compute entropy of.
 
     Returns:
         Entropy of probabilities p
     """
-    log_p = torch.where(p > 0, p.log(), p.new_zeros(()))
-    result = -(p * log_p).sum(-1)
+    safe_p = torch.where(p > 0, p, torch.ones_like(p))
+    result = -(p * safe_p.log()).sum(-1)
     return torch.clamp_min(result, 0.0) + 0.0  # Ensure non-negativity
 
 
