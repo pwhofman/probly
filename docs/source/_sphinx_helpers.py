@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import functools
 import importlib
 import inspect
 import os
 from pathlib import Path
 import pkgutil
+import re
 from typing import TYPE_CHECKING
 
 # env.dependencies entries must be _StrPath; plain str crashes _has_doc_changed.
@@ -39,6 +41,300 @@ def _resolve_dotted(qualified_name: str) -> object | None:
             return None
         return obj
     return None
+
+
+@functools.cache
+def _resolve_attribute_first(qualified_name: str) -> object | None:
+    """Resolve a dotted name, preferring an attribute over a same-named module.
+
+    ``_resolve_dotted`` imports the longest importable prefix, so it returns the
+    module ``probly.method.dropout`` rather than the function re-exported under
+    that name. sphinx-gallery records a backreference under the name an example
+    writes, which for ``from probly.method import dropout`` denotes the
+    function, so alias detection has to resolve the attribute first.
+
+    Args:
+        qualified_name: Dotted name to resolve.
+
+    Returns:
+        The resolved object, or None if no part of the name resolves.
+    """
+    parts = qualified_name.split(".")
+    if len(parts) > 1:
+        parent = _resolve_attribute_first(".".join(parts[:-1]))
+        if parent is not None:
+            attribute = getattr(parent, parts[-1], None)
+            if attribute is not None:
+                return attribute
+    try:
+        return importlib.import_module(qualified_name)
+    except Exception:  # noqa: BLE001  (optional backends may be absent)
+        return None
+
+
+def _is_module_attribute(qualified_name: str) -> bool:
+    """Whether *qualified_name* names an attribute of a module, not of a class.
+
+    Only module-level names are alias candidates. Attribute chains through a
+    class resolve to the inherited implementation -- every predictor's ``.eval``
+    is ``torch.nn.Module.eval``, one object under many names -- which is
+    identity, not aliasing, and must not pool their examples.
+    """
+    parent, _, _ = qualified_name.rpartition(".")
+    return bool(parent) and inspect.ismodule(_resolve_attribute_first(parent))
+
+
+@functools.cache
+def _alias_index(package_names: tuple[str, ...] = ("probly", "pytraverse")) -> dict[int, list[str]]:
+    """Map each public object to every documented module-level name it has.
+
+    Keyed by ``id``: probly builds several public entry points from one
+    factory (flexdispatch registers a fresh function per method), so those
+    share ``__module__`` and ``__qualname__`` while being distinct objects that
+    must stay distinct. ``_resolve_attribute_first`` is cached, which keeps the
+    objects alive and their ids therefore valid for the build.
+
+    Args:
+        package_names: Top-level packages to walk.
+
+    Returns:
+        A mapping of ``id(object)`` to its sorted dotted names.
+    """
+    index: dict[int, list[str]] = {}
+    for root_name in package_names:
+        try:
+            root = importlib.import_module(root_name)
+        except Exception:  # noqa: BLE001, S112  (an unimportable package documents nothing)
+            continue
+        module_names = [root_name]
+        module_names += [info.name for info in pkgutil.walk_packages(root.__path__, prefix=f"{root_name}.")]
+        for module_name in module_names:
+            try:
+                module = importlib.import_module(module_name)
+            except Exception:  # noqa: BLE001, S112  (optional backends may be absent)
+                continue
+            if any(part.startswith("_") for part in module_name.split(".")):
+                continue  # a private module documents nothing, so its names are not alias targets
+            exported = getattr(module, "__all__", None)
+            names = (
+                exported if isinstance(exported, (list, tuple)) else [n for n in vars(module) if not n.startswith("_")]
+            )
+            for name in names:
+                obj = getattr(module, name, None)
+                if obj is None or not (inspect.isfunction(obj) or inspect.isclass(obj) or inspect.ismodule(obj)):
+                    continue
+                index.setdefault(id(obj), []).append(f"{module_name}.{name}")
+    return {obj_id: sorted(set(names)) for obj_id, names in index.items()}
+
+
+def merge_backreference_aliases(
+    backrefs: dict[str, list],
+    package_names: tuple[str, ...] = ("probly", "pytraverse"),
+) -> dict[str, list]:
+    """Union backreference entries across dotted names denoting the same object.
+
+    probly re-exports the same function from several public namespaces, so
+    ``probly.method.dropout`` and ``probly.transformation.dropout`` are one
+    object under two names. sphinx-gallery keys backreferences by the name an
+    example imports, which splits the examples for one method across two keys:
+    a ``minigallery`` on either name then shows only part of them, and a name
+    that no example happens to import -- ``probly.method.dropconnect``, whose
+    examples all import from ``probly.transformation`` -- shows none at all.
+
+    Each module-level key is resolved to an object, its entries unioned with
+    those of every other name for that object, and the result written back
+    under all of them, including aliases that were absent from the map. Entries
+    are de-duplicated on ``(filename, gallery target dir)``. Names that do not
+    resolve, name a class attribute, or resolve to an object of their own are
+    left untouched.
+
+    Args:
+        backrefs: Parsed ``backreferences_all.json``, mapping a dotted name to
+            its list of example entries.
+        package_names: Top-level packages to search for aliases.
+
+    Returns:
+        A new mapping with alias groups unioned.
+    """
+    index = _alias_index(package_names)
+
+    groups: dict[int, set[str]] = {}
+    for name in sorted(backrefs):
+        if not _is_module_attribute(name):
+            continue
+        obj = _resolve_attribute_first(name)
+        if obj is None:
+            continue
+        groups.setdefault(id(obj), set(index.get(id(obj), []))).add(name)
+
+    merged = {name: list(entries) for name, entries in backrefs.items()}
+    for names in groups.values():
+        if len(names) < 2:
+            continue
+        union: list = []
+        seen: set[tuple[str, str]] = set()
+        for name in sorted(names):
+            for entry in backrefs.get(name, []):
+                key = (entry[0], entry[2])  # (filename, gallery target dir)
+                if key not in seen:
+                    seen.add(key)
+                    union.append(entry)
+        if not union:
+            continue
+        for name in names:
+            merged[name] = list(union)
+    return merged
+
+
+_MINIGALLERY_DIRECTIVE = re.compile(r"^(\s*)\.\.\s+minigallery::(.*)$")
+
+
+def minigallery_symbol_pages(src_dir: Path) -> dict[str, set[Path]]:
+    """Map each symbol named in a ``minigallery`` directive to the pages using it.
+
+    A ``minigallery`` renders from ``backreferences_all.json`` when Sphinx reads
+    the page that contains it, so a page only picks up new examples if it is
+    re-read. Narrative pages are hand-written and never change on their own,
+    which is what this map is for: the caller touches them when the symbols they
+    show gained or lost examples. Generated example pages are skipped.
+
+    Args:
+        src_dir: Documentation source directory to scan recursively.
+
+    Returns:
+        A mapping of symbol name to the set of ``.rst`` paths naming it.
+    """
+    pages: dict[str, set[Path]] = {}
+    for rst in src_dir.rglob("*.rst"):
+        if "auto_examples" in rst.parts:
+            continue
+        try:
+            lines = rst.read_text(encoding="utf-8").splitlines()
+        except (OSError, UnicodeDecodeError):
+            continue
+        for index, line in enumerate(lines):
+            match = _MINIGALLERY_DIRECTIVE.match(line)
+            if match is None:
+                continue
+            indent, arguments = len(match.group(1)), match.group(2).split()
+            for following in lines[index + 1 :]:
+                stripped = following.strip()
+                if not stripped:
+                    continue
+                if len(following) - len(following.lstrip()) <= indent:
+                    break
+                if stripped.startswith(":"):  # a directive option, not an argument
+                    continue
+                arguments.extend(stripped.split())
+            for symbol in arguments:
+                pages.setdefault(symbol, set()).add(rst)
+    return pages
+
+
+def _gallery_roots(gallery_conf: dict) -> list[tuple[Path, Path]]:
+    """Pair each gallery output directory with the examples directory it is built from."""
+    src_dir = Path(gallery_conf["src_dir"])
+    return [
+        (src_dir / gallery_dir, Path(examples_dir))
+        for examples_dir, gallery_dir in zip(gallery_conf["examples_dirs"], gallery_conf["gallery_dirs"], strict=True)
+    ]
+
+
+def _example_source_dir(target_dir: Path, gallery_conf: dict) -> Path | None:
+    """Return the examples directory a gallery output directory is generated from."""
+    for gallery_root, examples_root in _gallery_roots(gallery_conf):
+        if target_dir.is_relative_to(gallery_root):
+            return examples_root / target_dir.relative_to(gallery_root)
+    return None
+
+
+def stale_example_backreferences(stale_examples: list[str], gallery_conf: dict) -> dict[str, list]:
+    """Rebuild the backreference entries of examples sphinx-gallery skipped.
+
+    sphinx-gallery only writes entries for the examples it executes, so the
+    MD5-skipped (stale) ones have to be filled in by the caller. Taking them from
+    the previous build's ``backreferences_all.json`` loses any example that was
+    missing from that build -- one deleted and then restored unchanged is never
+    executed again, so it would stay out of every minigallery until a full
+    rebuild. Instead, each entry is derived from what sphinx-gallery persisted
+    next to the example's generated page: the ``.codeobj.json`` of the names it
+    uses, and the copied source for its intro and title. This mirrors
+    ``sphinx_gallery.gen_rst._get_backreferences``.
+
+    Args:
+        stale_examples: Generated example paths, as in ``gallery_conf["stale_examples"]``.
+        gallery_conf: The sphinx-gallery configuration.
+
+    Returns:
+        A mapping of symbol name to the entries of the stale examples using it.
+    """
+    from sphinx_gallery.gen_rst import extract_intro_and_title  # noqa: PLC0415
+    from sphinx_gallery.py_source_parser import split_code_and_text_blocks  # noqa: PLC0415
+    from sphinx_gallery.utils import _read_json  # noqa: PLC0415
+
+    doc_module = gallery_conf["doc_module"]
+    exclude_regex = gallery_conf["exclude_implicit_doc_regex"]
+    prefer_full_module = gallery_conf["prefer_full_module"]
+    backrefs: dict[str, list] = {}
+    for stale in sorted(stale_examples):
+        target = Path(stale)
+        codeobj_path = target.with_suffix(".codeobj.json")
+        example_dir = _example_source_dir(target.parent, gallery_conf)
+        if not codeobj_path.exists() or example_dir is None:
+            continue  # sphinx-gallery writes no .codeobj.json when an example uses no names
+        _, blocks = split_code_and_text_blocks(str(target))
+        intro, title = extract_intro_and_title(str(target), blocks[0].content)
+        entry = [target.name, str(example_dir), str(target.parent), intro, title]
+        symbols: set[str] = set()
+        for cobjs in _read_json(codeobj_path).values():
+            for cobj in cobjs:
+                full_name = f"{cobj['module']}.{cobj['name']}"
+                if not cobj["module"].startswith(doc_module):
+                    continue
+                if not cobj["is_explicit"] and exclude_regex and exclude_regex.search(full_name):
+                    continue
+                if any(re.search(pattern, full_name) for pattern in prefer_full_module):
+                    symbols.add(full_name)
+                else:
+                    symbols.add(f"{cobj['module_short']}.{cobj['name']}")
+        for symbol in symbols:
+            backrefs.setdefault(symbol, []).append(entry)
+    return backrefs
+
+
+_GENERATED_EXAMPLE_SUFFIXES = (".rst", ".py", ".py.md5", ".codeobj.json", ".zip", ".ipynb")
+
+
+def remove_orphaned_example_pages(gallery_conf: dict) -> list[Path]:
+    """Delete generated pages of examples whose source file no longer exists.
+
+    sphinx-gallery never removes what it generated for a deleted or renamed
+    example, so its page stays in the source tree and fails strict builds as a
+    document not included in any toctree. An example is orphaned when the copy
+    of its source in the gallery output has no counterpart in the examples
+    directory. Images are left alone, since their names prefix-match other
+    examples and nothing references them once the page is gone.
+
+    Args:
+        gallery_conf: The sphinx-gallery configuration.
+
+    Returns:
+        The deleted files.
+    """
+    removed: list[Path] = []
+    for gallery_root, _ in _gallery_roots(gallery_conf):
+        if not gallery_root.is_dir():
+            continue
+        for copy in gallery_root.rglob("*.py"):
+            example_dir = _example_source_dir(copy.parent, gallery_conf)
+            if example_dir is None or (example_dir / copy.name).exists():
+                continue
+            for suffix in _GENERATED_EXAMPLE_SUFFIXES:
+                generated = copy.with_name(copy.stem + suffix)
+                if generated.exists():
+                    generated.unlink()
+                    removed.append(generated)
+    return removed
 
 
 def _defining_file(obj: object) -> Path | None:

@@ -148,7 +148,6 @@ Bayesian argument.
     ``N`` forward passes per prediction.
 :Reference: :cite:`lakshminarayananSimpleScalable2017`
 
-.. minigallery:: probly.method.ensemble
 .. minigallery:: probly.transformation.ensemble
 
 .. _m-batchensemble:

@@ -19,7 +19,11 @@ from _sphinx_helpers import (  # noqa: E402
     build_reexported_map,
     ignore_installed_template_mtimes,
     make_linkcode_resolve,
+    merge_backreference_aliases,
+    minigallery_symbol_pages,
+    remove_orphaned_example_pages,
     scrub_external_dependencies,
+    stale_example_backreferences,
 )
 
 import probly  # noqa: E402
@@ -220,8 +224,8 @@ _SKIP_XREF_NAMES = frozenset(
 
 
 # Previous build's backreferences_all.json, captured before sphinx-gallery
-# overwrites it.  Used to carry over entries for skipped examples and to detect
-# which API pages need re-reading.  Entry shape per symbol:
+# overwrites it.  Used to detect which pages need re-reading.  Entry shape per
+# symbol:
 # [fname, example_src_dir, gallery_target_dir, intro, title].
 _BACKREFS_SNAPSHOT: dict = {}
 
@@ -229,11 +233,14 @@ _BACKREFS_SNAPSHOT: dict = {}
 def _snapshot_backreferences(app: Sphinx) -> None:
     """Snapshot backreferences_all.json before sphinx-gallery overwrites it.
 
-    Runs at priority 499, just before sphinx-gallery's builder-inited at 500.
+    Also deletes the generated pages of examples removed since the last build,
+    which sphinx-gallery leaves behind as orphans.  Runs at priority 499, just
+    before sphinx-gallery's builder-inited at 500.
     """
     from sphinx_gallery.utils import _read_json  # noqa: PLC0415
 
     gallery_conf = app.config.sphinx_gallery_conf
+    remove_orphaned_example_pages(gallery_conf)
     backreferences_dir = gallery_conf.get("backreferences_dir")
     if not backreferences_dir:
         return
@@ -250,12 +257,21 @@ def _rebuild_stale_backreferences(app: Sphinx) -> None:
     executed this build; MD5-skipped (stale) examples are dropped, so the
     minigallery directives on API pages silently lose them.  Running after
     sphinx-gallery (priority 501 > 500), this rebuilds the file as: fresh
-    entries from this build, plus the previous build's entries for exactly the
-    examples sphinx-gallery reports in ``stale_examples``.  Deleted or renamed
-    examples are neither fresh nor stale, so they drop out naturally.  Finally,
-    API RST files of symbols whose entries changed since the last build are
-    touched so Sphinx re-reads those pages and re-renders their minigalleries;
-    an unchanged build touches nothing.
+    entries from this build, plus entries for exactly the examples
+    sphinx-gallery reports in ``stale_examples``, derived from the files it
+    persisted for them (see ``_sphinx_helpers.stale_example_backreferences``).
+    Deleted or renamed examples are neither fresh nor stale, so they drop out
+    naturally.
+
+    The rebuilt map is then alias-merged, because sphinx-gallery keys entries by
+    the name an example imports and probly re-exports one object under several
+    public names; see ``_sphinx_helpers.merge_backreference_aliases``.
+
+    Finally, every page showing a symbol whose entries changed since the last
+    build is touched so Sphinx re-reads it and re-renders its minigallery: the
+    symbol's own API stub, plus any narrative page naming it in a minigallery
+    directive, which nothing else would ever outdate.  An unchanged build
+    touches nothing.
     """
     from sphinx_gallery.utils import _read_json, _write_json  # noqa: PLC0415
 
@@ -269,25 +285,36 @@ def _rebuild_stale_backreferences(app: Sphinx) -> None:
         return
 
     fresh: dict = _read_json(json_path)
-    stale_files = {str(Path(p)) for p in gallery_conf.get("stale_examples", [])}
+    stale = stale_example_backreferences(gallery_conf.get("stale_examples", []), gallery_conf)
 
     rebuilt: dict = {symbol: list(entries) for symbol, entries in fresh.items()}
-    for symbol, old_entries in _BACKREFS_SNAPSHOT.items():
+    for symbol, stale_entries in stale.items():
         fresh_ids = {(e[0], e[2]) for e in rebuilt.get(symbol, [])}  # (fname, target_dir)
-        carried = [e for e in old_entries if str(Path(e[2]) / e[0]) in stale_files and (e[0], e[2]) not in fresh_ids]
-        if carried:
-            rebuilt.setdefault(symbol, []).extend(carried)
+        added = [e for e in stale_entries if (e[0], e[2]) not in fresh_ids]
+        if added:
+            rebuilt.setdefault(symbol, []).extend(added)
+
+    rebuilt = merge_backreference_aliases(rebuilt)
+    # Fresh entries follow the order parallel examples finish in; sort so an
+    # unchanged set compares equal to the snapshot and touches no page.
+    rebuilt = {symbol: sorted(entries, key=lambda e: (e[2], e[0])) for symbol, entries in rebuilt.items()}
 
     if rebuilt != fresh:
         _write_json(Path(src_dir) / backreferences_dir / "backreferences_all", rebuilt)
 
-    # Touch only the API pages whose minigallery data changed since last build.
+    # Touch only the pages whose minigallery data changed since last build.
     api_dir = Path(src_dir) / "api"
+    symbol_pages = minigallery_symbol_pages(Path(src_dir))
+    outdated: set[Path] = set()
     for symbol in set(rebuilt) | set(_BACKREFS_SNAPSHOT):
-        if rebuilt.get(symbol) != _BACKREFS_SNAPSHOT.get(symbol):
-            rst = api_dir / f"{symbol}.rst"
-            if rst.exists():
-                rst.touch()
+        if rebuilt.get(symbol) == _BACKREFS_SNAPSHOT.get(symbol):
+            continue
+        stub = api_dir / f"{symbol}.rst"
+        if stub.exists():
+            outdated.add(stub)
+        outdated |= symbol_pages.get(symbol, set())
+    for rst in outdated:
+        rst.touch()
 
 
 def setup(app: Sphinx) -> None:
