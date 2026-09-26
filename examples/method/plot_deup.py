@@ -55,7 +55,7 @@ deup_model = deup(
     predictor_type="logit_classifier",
 )
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 deup_model.to(device)
 
 # %%

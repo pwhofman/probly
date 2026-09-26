@@ -1,37 +1,17 @@
-.. _representation:
+.. _jax_representations:
 
-==============
-Representation
-==============
+===================
+JAX Representations
+===================
 
-.. currentmodule:: probly.representation
+This page covers the machinery behind ``probly``'s JAX representation types:
+how Python operators on protected-axis representations are dispatched and
+permitted, and how constructor validation interacts with ``jax.jit``. It is
+mostly relevant when implementing a new JAX representation, or when compiling
+code that constructs one.
 
-Categorical score targets
-=========================
-
-The inner-product, KL-divergence, total-variation, and Wasserstein conformal
-scores interpret targets consistently across NumPy, Torch, and JAX:
-
-* Integer arrays contain class indices, interpreted as point-mass targets.
-* Floating-point arrays contain probability vectors with a trailing class axis.
-* ``CategoricalDistribution`` targets supply their normalized probabilities,
-  regardless of their storage dtype or whether they store logits.
-* Boolean and complex target arrays are rejected.
-
-Types and dtypes determine the interpretation. Shapes only validate the class
-count and establish ordinary batch broadcasting. For example, predictions of
-shape ``(members, batch, classes)`` accept floating targets of shape
-``(batch, classes)`` or integer labels of shape ``(batch,)``. Singleton batch
-dimensions are preserved according to normal broadcasting rules.
-
-Integer one-hot arrays must be cast to floating point or wrapped in a
-categorical distribution to be interpreted as probability vectors. Conversely,
-class labels stored as floats must be explicitly converted to an integer dtype.
-There is no special reshaping of row-vector labels and no rank-based inference
-of target semantics.
-
-JAX protected-axis operators
-============================
+Protected-axis operators
+========================
 
 ``JaxAxisProtected`` provides Python array operators through
 ``JaxOperatorsMixin``. Operators dispatch through probly's ``__jax_function__``
@@ -55,7 +35,7 @@ Enabling operations
 Arithmetic is disabled by default. A representation opts in by adding wrapper
 functions to its ``permitted_functions`` set:
 
-.. code-block:: python
+.. jupyter-execute::
 
     from collections.abc import Callable
     from dataclasses import dataclass
@@ -125,8 +105,8 @@ the wrapper function and original operands in expression order. Its results
 are checked for protected-shape and batch-shape preservation before
 ``with_protected_values(values, func)`` reconstructs the representation.
 
-JAX constructor validation
---------------------------
+Constructor validation
+======================
 
 JAX representation types use
 ``jax.experimental.checkify.check`` for their constructor argument value validation
@@ -138,7 +118,7 @@ When a compiled function constructs or reconstructs one of these representations
 (including through indexing, reshaping, arithmetic, or sampling), functionalize
 the checks with ``checkify``:
 
-.. code-block:: python
+.. jupyter-execute::
 
     import jax
     import jax.numpy as jnp
@@ -155,6 +135,7 @@ the checks with ``checkify``:
     checked_mean = jax.jit(checkify.checkify(lambda d: jax_mean(d, axis=0)))
     error, result = checked_mean(distribution)
     error.throw()  # Check the error outside the compiled function.
+    print(result)
 
 Plain ``jax.jit`` cannot stage these checks without ``checkify``. Checks run on
 each execution, including calls that reuse compiled code. Checkified functions

@@ -130,6 +130,8 @@ docs = [
     "furo",                         # theme
     "sphinx-copybutton",            # adds copy buttons to code blocks
     "sphinxcontrib-bibtex>=2.0.0",  # for bibliography support
+    "sphinx-design",                # grid and card directives used by the methods guide
+    "jupyter-sphinx",               # executes narrative code blocks so their output regenerates
 ]
 benchmark = [
     "wandb>=0.25.1",

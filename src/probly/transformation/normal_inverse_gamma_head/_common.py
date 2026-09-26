@@ -30,7 +30,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
 
 
 def normal_inverse_gamma_head[T: Predictor](base: T) -> T:
-    """Replace the final linear layer with a Normal-Inverse-Gamma head.
+    """Replace the final linear layer with a Normal-Inverse-Gamma head based on :cite:`aminiDeepEvidential2020`.
 
     Args:
         base: The base model to be transformed.

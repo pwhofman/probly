@@ -78,7 +78,7 @@ def temperature_scaling[**In, Out](base: Predictor[In, Out]) -> CalibrationPredi
 @predictor_transformation(permitted_predictor_types=(BinaryLogitClassifier,), preserve_predictor_type=True)
 @CalibrationPredictor.register_factory
 def platt_scaling[**In, Out](base: Predictor[In, Out]) -> CalibrationPredictor[In, Out]:
-    """Create a platt scaling calibration wrapper."""
+    """Create a platt scaling calibration wrapper based on :cite:`plattProbabilisticOutputs1999`."""
     return calibration_generator(
         base,
         config=CalibrationMethodConfig(method="platt", vector_scale=False, use_bias=True),
@@ -109,9 +109,9 @@ def dirichlet_calibration[**In, Out](
     reg_lambda: float = 1e-3,
     reg_mu: float | None = None,
 ) -> CalibrationPredictor[In, Out]:
-    """Turn a multi-class logit classifier into a Dirichlet-calibrated classifier.
+    """Dirichlet-calibrate a multi-class logit classifier based on :cite:`kullBeyondTemperatureScaling2019`.
 
-    Based on :cite:`kullBeyondTemperatureScaling2019`.  Dirichlet calibration fits
+    Dirichlet calibration fits
     a multinomial logistic regression on the log-probabilities of the base
     classifier, ``q = softmax(W @ ln(p) + b)`` with a full ``num_classes x
     num_classes`` weight matrix ``W`` and bias ``b``.  This generalises temperature
@@ -158,7 +158,7 @@ def dirichlet_calibration[**In, Out](
 @BinaryProbabilisticClassifier.register_factory
 @CalibrationPredictor.register_factory
 def isotonic_regression[**In, Out](base: Predictor[In, Out]) -> CalibrationPredictor[In, Out]:
-    """Create an isotonic regression calibration wrapper for binary logits."""
+    """Create an isotonic regression calibration wrapper based on :cite:`zadroznyTransformingClassifier2002`."""
     return calibration_generator(
         base,
         config=CalibrationMethodConfig(method="isotonic", vector_scale=False, use_bias=False),

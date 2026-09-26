@@ -87,9 +87,9 @@ def mahalanobis[**In, Out: MahalanobisRepresentation](
     feature_nodes: FeatureNodes = None,
     input_preprocessing_eps: float = 0.0,
 ) -> MahalanobisPredictor[In, Out]:
-    """Turn a classifier into a Mahalanobis-distance OOD detector.
+    """Turn a classifier into a Mahalanobis-distance OOD detector based on :cite:`leeSimpleUnifiedFramework2018`.
 
-    Based on :cite:`leeSimpleUnifiedFramework2018`.  The final linear head is
+    The final linear head is
     stripped to expose penultimate features, class-conditional Gaussians with a
     tied covariance are fitted on those features (and, optionally, on extra
     intermediate layers), and the per-layer Mahalanobis confidence is combined

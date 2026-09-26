@@ -1,5 +1,6 @@
 """Uncertainty-aware methods."""
 
+from probly.method import laplace
 from probly.method.batchensemble import batchensemble
 from probly.method.bayesian import bayesian
 from probly.method.cast import cast
@@ -13,6 +14,7 @@ from probly.method.conformal_credal_set import (
 from probly.method.credal_bnn import credal_bnn
 from probly.method.credal_dro import credal_dro
 from probly.method.credal_ensembling import credal_ensembling
+from probly.method.credal_net import credal_net
 from probly.method.credal_relative_likelihood import credal_relative_likelihood
 from probly.method.credal_wrapper import credal_wrapper
 from probly.method.dare import dare
@@ -31,7 +33,6 @@ from probly.method.graph_posterior_network import (
     lop_graph_posterior_network,
 )
 from probly.method.het_net import het_net
-import probly.method.laplace  # noqa: F401  # registers LaplaceRepresenter lazily
 from probly.method.mahalanobis import mahalanobis
 from probly.method.masksembles import masksembles
 from probly.method.sngp import sngp
@@ -51,6 +52,7 @@ __all__ = [
     "credal_bnn",
     "credal_dro",
     "credal_ensembling",
+    "credal_net",
     "credal_relative_likelihood",
     "credal_wrapper",
     "cuq_graph_neural_network",
@@ -66,6 +68,7 @@ __all__ = [
     "g_vbll",
     "graph_posterior_network",
     "het_net",
+    "laplace",
     "lop_graph_posterior_network",
     "mahalanobis",
     "masksembles",
