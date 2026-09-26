@@ -175,3 +175,35 @@ class TestPValues:
         for m in model.modules():
             if isinstance(m, DropConnectLinear):
                 assert m.p == p
+
+
+class TestFirstLayer:
+    """The first layer, which is not replaced, is the first layer with parameters."""
+
+    def test_leading_flatten_module_is_not_the_first_layer(self, torch_leading_flatten_model: nn.Module) -> None:
+        model = dropconnect(torch_leading_flatten_model, p=0.25)
+
+        assert isinstance(model.flatten, nn.Flatten)
+        assert [type(m) for m in model.linear_relu_stack] == [
+            nn.Linear,
+            nn.ReLU,
+            DropConnectLinear,
+            nn.ReLU,
+            DropConnectLinear,
+        ]
+
+    def test_leading_parameter_free_modules_in_a_sequential_are_ignored(self) -> None:
+        base = nn.Sequential(nn.Flatten(), nn.Identity(), nn.Linear(16, 16), nn.ReLU(), nn.Linear(16, 3))
+
+        model = dropconnect(base, p=0.25)
+
+        assert [type(m) for m in model] == [nn.Flatten, nn.Identity, nn.Linear, nn.ReLU, DropConnectLinear]
+
+    def test_parameter_free_modules_after_the_output_layer_change_nothing(
+        self, torch_trailing_activation_model: nn.Module
+    ) -> None:
+        model = dropconnect(torch_trailing_activation_model, p=0.25)
+
+        assert isinstance(model.fc1, nn.Linear)
+        assert isinstance(model.fc2, DropConnectLinear)
+        assert isinstance(model.fc3, DropConnectLinear)
