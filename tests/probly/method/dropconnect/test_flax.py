@@ -225,3 +225,24 @@ class TestCall:
         y = dropconnect_layer(x)
         assert y is not None
         assert y.shape == (2,)
+
+
+class TestFirstLayer:
+    """The first layer, which is not replaced, is the first layer with parameters."""
+
+    def test_leading_parameter_free_module_is_not_the_first_layer(self, flax_rngs: nnx.Rngs) -> None:
+        base = nnx.Sequential(
+            nnx.Dropout(rate=0.1, rngs=flax_rngs),
+            nnx.Linear(4, 16, rngs=flax_rngs),
+            nnx.relu,
+            nnx.Linear(16, 3, rngs=flax_rngs),
+        )
+
+        model = dropconnect(base, p=0.25)
+
+        layers = list(model.layers)
+        assert len(layers) == 4
+        assert isinstance(layers[0], nnx.Dropout)
+        assert type(layers[1]) is nnx.Linear
+        assert jnp.array_equal(layers[2](jnp.array([-1.0, 2.0])), jnp.array([0.0, 2.0]))  # the relu
+        assert isinstance(layers[3], DropConnectLinear)
