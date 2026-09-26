@@ -590,7 +590,7 @@ class TestNumpySampleArrayFunctions:
         sample = NumpySample(array=arr, sample_axis=0)
         result = np.matrix_transpose(sample)
         # sample axis untouched
-        assert result.sample_axis == 0  # ty: ignore[unresolved-attribute]
+        assert result.sample_axis == 0
 
     def test_flip_preserves_sample_axis(self) -> None:
         arr = np.arange(12).reshape(3, 4)
@@ -689,13 +689,13 @@ class TestNumpySampleArrayFunctions:
         arr = np.arange(12).reshape(3, 4)
         sample = NumpySample(array=arr, sample_axis=0)
         result = np.expand_dims(sample, axis=2)
-        assert result.sample_axis == 0  # ty: ignore[unresolved-attribute]
+        assert result.sample_axis == 0
 
     def test_expand_dims_tuple_axes(self) -> None:
         arr = np.arange(12).reshape(3, 4)
         sample = NumpySample(array=arr, sample_axis=0)
         result = np.expand_dims(sample, axis=(0, 1))
-        assert result.sample_axis == 2  # ty: ignore[unresolved-attribute]
+        assert result.sample_axis == 2
 
     def test_squeeze_removes_singleton_after_sample(self) -> None:
         arr = np.zeros((3, 1, 4))
