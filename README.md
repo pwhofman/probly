@@ -3,7 +3,7 @@
 <picture>
   <source srcset="docs/source/_static/readme/ecosystem_dark.png" media="(prefers-color-scheme: dark)">
   <source srcset="docs/source/_static/readme/ecosystem_light.png" media="(prefers-color-scheme: light)">
-  <img src="docs/source/_static/readme/ecosystem_light.png" alt="probly at the center of a ring of the libraries it works with: PyTorch, Flax/JAX, scikit-learn, River, Hugging Face and NumPy as native backends, plus Lightning, torch-uncertainty, PyTorch Geometric and laplace-torch as integrations" width="68%" />
+  <img src="docs/source/_static/readme/ecosystem_light.png" alt="probly at the center of a ring of the libraries it works with: PyTorch, Flax/JAX, scikit-learn, River, Hugging Face and NumPy as native backends, plus Lightning, torch-uncertainty, PyTorch Geometric, laplace-torch and GPyTorch as integrations" width="68%" />
 </picture>
 
 [![PyPI version](https://badge.fury.io/py/probly.svg)](https://badge.fury.io/py/probly)

@@ -2221,6 +2221,7 @@ all-ml = [
     { name = "accelerate" },
     { name = "curvlinops-for-pytorch" },
     { name = "flax" },
+    { name = "gpytorch" },
     { name = "jax" },
     { name = "laplace-torch" },
     { name = "lightning" },
@@ -2293,6 +2294,11 @@ docs = [
     { name = "sphinx-gallery", marker = "python_full_version >= '3.13'" },
     { name = "sphinxcontrib-bibtex", marker = "python_full_version >= '3.13'" },
 ]
+gpytorch = [
+    { name = "gpytorch" },
+    { name = "torch" },
+    { name = "torchvision" },
+]
 jax = [
     { name = "flax" },
     { name = "jax" },
@@ -2360,6 +2366,7 @@ all-ml = [
     { name = "accelerate", specifier = ">=0.24.1" },
     { name = "curvlinops-for-pytorch", specifier = ">=2.0,<3.0" },
     { name = "flax", specifier = ">=0.12.5" },
+    { name = "gpytorch", specifier = ">=1.11" },
     { name = "jax", specifier = ">=0.8.1" },
     { name = "laplace-torch", specifier = ">=0.2.0" },
     { name = "lightning", specifier = ">=2.6.0" },
@@ -2381,7 +2388,9 @@ benchmark = [
     { name = "nvidia-ml-py", specifier = "==13.595.45" },
     { name = "pytorch-optimizer", specifier = ">=3.0" },
     { name = "torch", specifier = "<2.11.0" },
+    { name = "torch", specifier = ">=2.6.0" },
     { name = "torchvision", specifier = "<0.26.0" },
+    { name = "torchvision", specifier = ">=0.21.0" },
     { name = "wandb", specifier = ">=0.25.1" },
     { name = "webdataset", specifier = ">=1.0.2" },
 ]
@@ -2433,6 +2442,11 @@ docs = [
     { name = "sphinx-copybutton", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
     { name = "sphinx-gallery", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
     { name = "sphinxcontrib-bibtex", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=2.0.0" },
+]
+gpytorch = [
+    { name = "gpytorch", specifier = ">=1.11" },
+    { name = "torch", specifier = ">=2.6.0" },
+    { name = "torchvision", specifier = ">=0.21.0" },
 ]
 jax = [
     { name = "flax", specifier = ">=0.12.5" },
