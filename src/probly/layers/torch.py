@@ -1327,7 +1327,7 @@ def _clamp_nonnegative_(parameter: torch.Tensor) -> torch.Tensor:
 
 
 class IntConv2d(nn.Module):
-    """Interval-arithmetic 2D convolution based on :cite:`wangCredalDeepEnsembles2024`.
+    """Interval-arithmetic 2D convolution based on :cite:`wangCreINNsCredalSet2025`.
 
     Has paired center and radius kernels (and biases); the radius weight and
     bias are clamped to non-negative values inside ``forward``. Inputs and
@@ -1421,7 +1421,7 @@ class IntConv2d(nn.Module):
 
 
 class IntLinear(nn.Module):
-    """Interval-arithmetic linear layer based on :cite:`wangCredalDeepEnsembles2024`.
+    """Interval-arithmetic linear layer based on :cite:`wangCreINNsCredalSet2025`.
 
     1D analogue of :class:`IntConv2d`. Inputs and outputs are packed
     ``(..., 2 * features)`` (lower half then upper); the same non-negativity
@@ -1490,7 +1490,7 @@ class IntLinear(nn.Module):
 
 
 class IntBatchNorm2d(nn.Module):
-    """Interval-valued batch normalization for 2D feature maps based on :cite:`wangCredalDeepEnsembles2024`.
+    """Interval-valued batch normalization for 2D feature maps based on :cite:`wangCreINNsCredalSet2025`.
 
     Inputs and outputs are packed ``(B, 2C, H, W)``. Splits into
     ``center = (lo + hi)/2`` and ``radius = (hi - lo)/2``, normalizes each
@@ -1584,7 +1584,7 @@ class IntBatchNorm2d(nn.Module):
 
 
 class IntBatchNorm1d(nn.Module):
-    """Interval-valued batch normalization for 1D features based on :cite:`wangCredalDeepEnsembles2024`.
+    """Interval-valued batch normalization for 1D features based on :cite:`wangCreINNsCredalSet2025`.
 
     1D analogue of :class:`IntBatchNorm2d`, used after :class:`IntLinear` on
     flattened features. Inputs and outputs are packed ``(B, 2 * num_features)``.
@@ -1675,7 +1675,7 @@ class IntBatchNorm1d(nn.Module):
 
 
 class IntSoftmax(nn.Module):
-    """Interval SoftMax head based on :cite:`wangCredalDeepEnsembles2024`.
+    """Interval SoftMax head based on :cite:`wangCreINNsCredalSet2025`.
 
     Applies Eq. 7 of the paper in ``(lo, hi)`` parameterization, then the
     Section 3.3 reachability clip so the output is always a valid (reachable)

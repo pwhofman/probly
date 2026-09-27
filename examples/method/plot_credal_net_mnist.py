@@ -57,7 +57,7 @@ credal_model = credal_net(
 # --------
 #
 # Train the wrapped credal net directly with the intersection-probability
-# cross-entropy loss (Eq. 14 of :cite:`wangCredalDeepEnsembles2024`), which operates on
+# cross-entropy loss (Eq. 14 of :cite:`wangCreINNsCredalSet2025`), which operates on
 # the packed ``(lower, upper)`` interval output produced by ``predict_raw``.
 
 opt = torch.optim.Adam(credal_model.parameters(), lr=1e-3)

@@ -205,7 +205,7 @@ Instead of committing to a single second-order distribution, credal methods repr
 | Credal wrapper (`credal_wrapper`)[¹](#fn-credal-1)                                              | [Wang et al., 2025](https://openreview.net/forum?id=cv2iMNWCsh) | torch |
 | Credal ensembling (`credal_ensembling`)[¹](#fn-credal-1)                                        | [Nguyen et al., 2025](https://doi.org/10.1007/s10994-024-06703-y) | torch |
 | Credal Bayesian deep learning (`credal_bnn`)[¹](#fn-credal-1)                                   | [Caprio et al., 2024](https://openreview.net/forum?id=4NHF9AC5ui) | torch |
-| Credal nets (`credal_net`)[¹](#fn-credal-1)                                                     | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
+| Credal nets (`credal_net`)[¹](#fn-credal-1)                                                     | [Wang et al., 2025](https://doi.org/10.1016/j.neunet.2025.107198) | torch |
 | Relative-likelihood credal prediction (`credal_relative_likelihood`)[¹](#fn-credal-1)           | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | torch |
 | Class-bias ensembles (`class_bias_ensemble`)[²](#fn-credal-2)                                   | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | torch |
 | Efficient credal prediction (`efficient_credal_prediction`)[³](#fn-credal-3)                    | [Hofman et al., 2026](https://doi.org/10.48550/arXiv.2603.08495) | torch |

@@ -116,7 +116,7 @@ def torch_entropy(p: torch.Tensor) -> torch.Tensor:
 
 @intersection_probability.register(torch.Tensor)
 def torch_intersection_probability(lower: torch.Tensor, upper: torch.Tensor) -> torch.Tensor:
-    """Intersection probability of a probability interval, per :cite:`wangCredalDeepEnsembles2024` Section 3.4.
+    """Intersection probability of a probability interval, per :cite:`wangCreINNsCredalSet2025` Section 3.4.
 
     Reduces an interval credal set ``[lower, upper]`` to a single probability
     vector by ``q_int_k = lower_k + alpha * (upper_k - lower_k)`` with
