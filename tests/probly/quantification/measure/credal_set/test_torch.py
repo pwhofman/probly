@@ -658,12 +658,19 @@ def test_dirichlet_level_set_lower_entropy_is_the_minimum_over_its_bounds(
     assert_in_intervals(p.numpy(), lower, upper, atol=atol)
 
 
-def test_lower_entropy_without_an_approximation_rejects_approximate() -> None:
-    """Convex and distance-based credal sets have no approximate lower entropy to switch to."""
-    for credal_set in (_convex_credal_set([[0.2, 0.8], [0.6, 0.4]]), _distance_credal_set([0.3, 0.7], 0.1)):
-        with pytest.raises(ValueError, match="has no approximation"):
-            lower_entropy(credal_set, approximate=True)
-        torch.testing.assert_close(lower_entropy(credal_set, approximate="auto"), lower_entropy(credal_set))
+@pytest.mark.parametrize("approximate", [False, True, "auto"])
+def test_convex_lower_entropy_accepts_approximate(approximate) -> None:
+    """An exact result is admissible for every approximation setting."""
+    credal_set = _convex_credal_set([[0.2, 0.8], [0.6, 0.4]])
+    torch.testing.assert_close(lower_entropy(credal_set, approximate=approximate), lower_entropy(credal_set))
+
+
+def test_distance_lower_entropy_requires_approximation() -> None:
+    credal_set = _distance_credal_set([0.3, 0.7], 0.1)
+    with pytest.raises(ValueError, match="approximate=False is not supported"):
+        lower_entropy(credal_set, approximate=False)
+    for approximate in (True, "auto"):
+        torch.testing.assert_close(lower_entropy(credal_set, approximate=approximate), lower_entropy(credal_set))
 
 
 def test_credal_set_decomposition_approximates_with_a_warning_by_default() -> None:

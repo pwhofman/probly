@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+from functools import wraps
 from typing import TYPE_CHECKING, Any, Literal, overload, override
 import warnings
 
 from flextype import Flexdispatch, flexdispatch
 
-from probly.representation.credal_set._common import DirichletLevelSetCredalSet, ProbabilityIntervalsCredalSet
-
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from flextype import LazyType
+
     from probly.representation.array_like import ArrayLike
     from probly.representation.credal_set._common import CredalSet
 
@@ -19,8 +22,6 @@ type _EntropyResult = ArrayLike | tuple[ArrayLike, ArrayLike]
 
 # Probability intervals with at most this many classes get the exact lower entropy.
 EXACT_LOWER_ENTROPY_MAX_CLASSES = 14
-# Credal sets whose lower entropy has an approximation, selected with ``approximate``.
-APPROXIMATE_LOWER_ENTROPY_TYPES = (ProbabilityIntervalsCredalSet, DirichletLevelSetCredalSet)
 
 
 class _EntropyDispatcher(Flexdispatch[..., _EntropyResult]):
@@ -65,13 +66,50 @@ class _LowerEntropyDispatcher(_EntropyDispatcher):
     """An entropy dispatcher that also takes the ``approximate`` option of :func:`lower_entropy`."""
 
     @overload
+    def register_approx[F: Callable[..., Any]](self, cls: LazyType, func: F) -> F: ...
+
+    @overload
+    def register_approx[F: Callable[..., Any]](self, cls: LazyType) -> Callable[[F], F]: ...
+
+    def register_approx(self, cls: LazyType, func: Callable | None = None) -> Callable:
+        """Register an approximation-only implementation without an ``approximate`` parameter.
+
+        The registered wrapper rejects ``approximate=False`` and consumes ``True`` or
+        ``"auto"`` before calling the implementation.
+
+        Args:
+            cls: The dispatch type or lazy type specification.
+            func: The approximation. If omitted, return a registration decorator.
+
+        Returns:
+            The original function, or a decorator that registers and returns it.
+        """
+        if func is None:
+            return lambda implementation: self.register_approx(cls, implementation)
+
+        @wraps(func)
+        def approx(
+            credal_set: CredalSet, *args: object, approximate: Approximate = "auto", **kwargs: object
+        ) -> _EntropyResult:
+            if approximate is False:
+                msg = (
+                    f"The lower entropy of {type(credal_set).__name__} only has an approximate implementation, "
+                    "so approximate=False is not supported. Use approximate=True or approximate='auto'."
+                )
+                raise ValueError(msg)
+            return func(credal_set, *args, **kwargs)
+
+        super().register(cls, approx)
+        return func
+
+    @overload
     def __call__(
         self,
         credal_set: CredalSet,
         base: LogBase = None,
         *,
         return_distribution: Literal[False] = False,
-        approximate: Approximate = False,
+        approximate: Approximate = "auto",
     ) -> ArrayLike: ...
 
     @overload
@@ -81,7 +119,7 @@ class _LowerEntropyDispatcher(_EntropyDispatcher):
         base: LogBase = None,
         *,
         return_distribution: Literal[True],
-        approximate: Approximate = False,
+        approximate: Approximate = "auto",
     ) -> tuple[ArrayLike, ArrayLike]: ...
 
     @overload
@@ -91,29 +129,16 @@ class _LowerEntropyDispatcher(_EntropyDispatcher):
         base: LogBase = None,
         *,
         return_distribution: bool,
-        approximate: Approximate = False,
+        approximate: Approximate = "auto",
     ) -> _EntropyResult: ...
 
     @override
     def __call__(self, credal_set: CredalSet, *args: Any, **kwargs: Any) -> _EntropyResult:
-        """Check ``approximate`` and forward the arguments to the registered implementation.
-
-        Only the credal sets in ``APPROXIMATE_LOWER_ENTROPY_TYPES`` take ``approximate``. For
-        the others, ``True`` raises and the option is not forwarded, since their lower entropy
-        is always exact.
-        """
-        approximate = kwargs.get("approximate", False)
+        """Check ``approximate`` and forward the arguments to the registered implementation."""
+        approximate = kwargs.setdefault("approximate", "auto")
         if approximate not in (True, False, "auto"):
             msg = f"approximate must be True, False or 'auto', got {approximate!r}."
             raise ValueError(msg)
-        if not isinstance(credal_set, APPROXIMATE_LOWER_ENTROPY_TYPES):
-            if approximate is True:
-                msg = (
-                    f"The lower entropy of {type(credal_set).__name__} has no approximation, "
-                    "so approximate=True is not supported."
-                )
-                raise ValueError(msg)
-            kwargs.pop("approximate", None)
         return super().__call__(credal_set, *args, **kwargs)
 
 
@@ -139,12 +164,17 @@ def lower_entropy(
     base: LogBase = None,
     *,
     return_distribution: bool = False,
-    approximate: Approximate = False,
+    approximate: Approximate = "auto",
 ) -> ArrayLike | tuple[ArrayLike, ArrayLike]:
     """Compute the lower entropy of a credal set.
 
     If ``return_distribution`` is ``True``, returns ``(entropy, distribution)``
     where ``distribution`` is the minimizer of shape ``(..., num_classes)``.
+
+    ``approximate=False`` requires an exact computation, while ``True`` permits an
+    approximation. The default, ``"auto"``, selects the available strategy. Exact-only
+    implementations accept all three values and always compute the exact result.
+    Approximation-only implementations reject ``False`` with a ``ValueError``.
 
     For probability intervals and Dirichlet level sets, the exact lower entropy tries every
     extreme point of the set, which is only feasible for up to 14 classes. ``approximate``
@@ -152,12 +182,12 @@ def lower_entropy(
 
     - ``False``: exactly. More than 14 classes raise a ``ValueError``.
     - ``True``: with a greedy search, which gives an upper bound on the lower entropy.
-    - ``"auto"``: exactly for up to 14 classes, and with the greedy search and a warning for
+    - ``"auto"`` (default): exactly for up to 14 classes, and with the greedy search and a warning for
       more classes.
 
-    Other credal sets have no approximation, so ``approximate=True`` raises a ``ValueError``
-    for them, and ``False`` and ``"auto"`` give their exact lower entropy. The credal set
-    decomposition, which ``quantify`` uses, passes ``"auto"`` by default.
+    Distance-based credal sets only have an approximate lower entropy implementation.
+    Dirichlet level sets use sampled per-class bounds; their ``approximate`` option
+    controls entropy optimization over those bounds, not the sampling approximation.
     """
     msg = f"Lower entropy is not supported for credal sets of type {type(credal_set)}."
     raise NotImplementedError(msg)

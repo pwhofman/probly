@@ -285,21 +285,24 @@ class IntervalLowerEntropySuite:
 
         np.testing.assert_allclose(value, np.log(2), atol=1e-10)
 
-    def test_lower_entropy_auto_warns_and_approximates_above_the_threshold(self, backend: Backend) -> None:
+    @pytest.mark.parametrize("kwargs", [{}, {"approximate": "auto"}])
+    def test_lower_entropy_auto_warns_and_approximates_above_the_threshold(
+        self, backend: Backend, kwargs: dict
+    ) -> None:
         """Above the threshold, ``approximate="auto"`` uses the greedy search and says so."""
         lower, upper = random_intervals(np.random.default_rng(5), "dirichlet", EXACT_MAX_CLASSES + 1)
 
         with pytest.warns(UserWarning, match="approximated by a greedy search"):
-            value = backend.numpy(lower_entropy(backend.intervals(lower, upper), approximate="auto"))
+            value = backend.numpy(lower_entropy(backend.intervals(lower, upper), **kwargs))
 
         np.testing.assert_allclose(value, previous_greedy_min_entropy(lower, upper), atol=1e-10)
 
-    def test_lower_entropy_raises_above_the_threshold_by_default(self, backend: Backend) -> None:
-        """Without ``approximate``, too many classes raise instead of silently approximating."""
+    def test_lower_entropy_exact_raises_above_the_threshold(self, backend: Backend) -> None:
+        """An explicit request for exact computation raises when there are too many classes."""
         lower, upper = random_intervals(np.random.default_rng(5), "dirichlet", EXACT_MAX_CLASSES + 1)
 
         with pytest.raises(ValueError, match="approximate=True"):
-            lower_entropy(backend.intervals(lower, upper))
+            lower_entropy(backend.intervals(lower, upper), approximate=False)
 
     def test_lower_entropy_rejects_an_unknown_approximate(self, backend: Backend) -> None:
         with pytest.raises(ValueError, match="approximate must be"):

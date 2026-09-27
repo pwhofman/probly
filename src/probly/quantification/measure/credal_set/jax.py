@@ -204,7 +204,7 @@ def jax_intervals_lower_entropy(
     base: LogBase = None,
     *,
     return_distribution: bool = False,
-    approximate: Approximate = False,
+    approximate: Approximate = "auto",
 ) -> jax.Array | tuple[jax.Array, jax.Array]:
     """Compute the lower entropy of a probability-intervals credal set.
 
@@ -238,7 +238,7 @@ def jax_distance_based_upper_entropy(
     return result
 
 
-@lower_entropy.register(JaxDistanceBasedCredalSet)
+@lower_entropy.register_approx(JaxDistanceBasedCredalSet)
 def jax_distance_based_lower_entropy(
     credal_set: JaxDistanceBasedCredalSet,
     base: LogBase = None,
@@ -364,11 +364,14 @@ def jax_convex_lower_entropy(
     base: LogBase = None,
     *,
     return_distribution: bool = False,
+    approximate: Approximate = "auto",
 ) -> jax.Array | tuple[jax.Array, jax.Array]:
     """Compute the lower entropy of a convex hull credal set.
 
     Since entropy is concave, the minimum over a convex hull is always at a vertex.
+    The result is exact for every value of ``approximate``.
     """
+    del approximate
     vertices = credal_set.tensor.probabilities
     vertex_entropies = jax_entropy(vertices)
     if return_distribution:
@@ -444,7 +447,7 @@ def jax_dirichlet_level_set_lower_entropy(
     base: LogBase = None,
     *,
     return_distribution: bool = False,
-    approximate: Approximate = False,
+    approximate: Approximate = "auto",
 ) -> jax.Array | tuple[jax.Array, jax.Array]:
     """Compute the lower entropy of a Dirichlet level set credal set.
 

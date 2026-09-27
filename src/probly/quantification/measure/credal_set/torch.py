@@ -183,7 +183,7 @@ def torch_intervals_lower_entropy(
     base: LogBase = None,
     *,
     return_distribution: bool = False,
-    approximate: Approximate = False,
+    approximate: Approximate = "auto",
 ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
     """Compute the lower entropy of a probability-intervals credal set.
 
@@ -231,7 +231,7 @@ def torch_distance_based_upper_entropy(
     return result
 
 
-@lower_entropy.register(TorchDistanceBasedCredalSet)
+@lower_entropy.register_approx(TorchDistanceBasedCredalSet)
 def torch_distance_based_lower_entropy(
     credal_set: TorchDistanceBasedCredalSet,
     base: LogBase = None,
@@ -315,11 +315,14 @@ def torch_convex_lower_entropy(
     base: LogBase = None,
     *,
     return_distribution: bool = False,
+    approximate: Approximate = "auto",
 ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
     """Compute the lower entropy of a convex hull credal set.
 
     Since entropy is concave, the minimum over a convex hull is always at a vertex.
+    The result is exact for every value of ``approximate``.
     """
+    del approximate
     vertices = credal_set.tensor.probabilities  # (..., n_vertices, n_classes)
     vertex_entropies = torch_entropy(vertices)  # (..., n_vertices)
     if return_distribution:
@@ -404,7 +407,7 @@ def torch_dirichlet_level_set_lower_entropy(
     base: LogBase = None,
     *,
     return_distribution: bool = False,
-    approximate: Approximate = False,
+    approximate: Approximate = "auto",
 ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
     """Compute the lower entropy of a Dirichlet level set credal set.
 
