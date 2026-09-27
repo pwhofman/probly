@@ -1314,6 +1314,18 @@ def unpack_interval(x: torch.Tensor, channel_dim: int = 1) -> tuple[torch.Tensor
     return x.split(c // 2, dim=channel_dim)
 
 
+def _clamp_nonnegative_(parameter: torch.Tensor) -> torch.Tensor:
+    """Set the negative entries of a radius parameter to zero in place and return it.
+
+    This keeps the radii non-negative the way the constraint of the reference
+    implementation does after every update: the layer uses the raw parameter, so a
+    radius that is exactly zero still receives a gradient and can grow again.
+    """
+    with torch.no_grad():
+        parameter.clamp_(min=0.0)
+    return parameter
+
+
 class IntConv2d(nn.Module):
     """Interval-arithmetic 2D convolution based on :cite:`wangCredalDeepEnsembles2024`.
 
@@ -1381,7 +1393,7 @@ class IntConv2d(nn.Module):
         lo = x[:, : self.in_channels]
         hi = x[:, self.in_channels :]
 
-        radius_weight = F.relu(self.radius_weight)
+        radius_weight = _clamp_nonnegative_(self.radius_weight)
         w_lo = self.center_weight - radius_weight
         w_hi = self.center_weight + radius_weight
         w_lo_pos, w_lo_neg = torch.clamp(w_lo, min=0.0), torch.clamp(w_lo, max=0.0)
@@ -1391,7 +1403,7 @@ class IntConv2d(nn.Module):
         hi_out = self._conv(lo, w_hi_neg) + self._conv(hi, w_hi_pos)
 
         if self.use_bias:
-            radius_bias = F.relu(self.radius_bias)
+            radius_bias = _clamp_nonnegative_(self.radius_bias)
             b_lo = (self.center_bias - radius_bias).view(1, -1, 1, 1)
             b_hi = (self.center_bias + radius_bias).view(1, -1, 1, 1)
             lo_out = lo_out + b_lo
@@ -1456,7 +1468,7 @@ class IntLinear(nn.Module):
         lo = x[..., : self.in_features]
         hi = x[..., self.in_features :]
 
-        radius_weight = F.relu(self.radius_weight)
+        radius_weight = _clamp_nonnegative_(self.radius_weight)
         w_lo = self.center_weight - radius_weight
         w_hi = self.center_weight + radius_weight
         w_lo_pos, w_lo_neg = torch.clamp(w_lo, min=0.0), torch.clamp(w_lo, max=0.0)
@@ -1466,7 +1478,7 @@ class IntLinear(nn.Module):
         hi_out = F.linear(lo, w_hi_neg) + F.linear(hi, w_hi_pos)
 
         if self.use_bias:
-            radius_bias = F.relu(self.radius_bias)
+            radius_bias = _clamp_nonnegative_(self.radius_bias)
             lo_out = lo_out + (self.center_bias - radius_bias)
             hi_out = hi_out + (self.center_bias + radius_bias)
 
