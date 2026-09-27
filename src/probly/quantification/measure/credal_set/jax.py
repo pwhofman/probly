@@ -7,7 +7,6 @@ import math
 
 import jax
 import jax.numpy as jnp
-import jax.scipy.optimize
 
 from probly.representation.credal_set.jax import (
     JaxConvexCredalSet,
@@ -20,9 +19,7 @@ from probly.utils.jax import jax_entropy
 from ._common import LogBase, generalized_hartley, lower_entropy, upper_entropy
 
 _BISECT_ITERS = 64
-_BFGS_ITERS = 128
-_FRANK_WOLFE_ITERS = 512
-_FRANK_WOLFE_TOL = 1e-5
+_CONVEX_ITERS = 100
 
 
 def _apply_base(result: jax.Array, n_classes: int, base: LogBase) -> jax.Array:
@@ -169,74 +166,155 @@ def jax_distance_based_lower_entropy(
     return result
 
 
-def _convex_entropy_fallback(vertices: jax.Array, weights: jax.Array) -> jax.Array:
-    """Improve feasible mixture weights using pairwise Frank-Wolfe steps.
+def _entropy_scores(vertices: jax.Array, weights: jax.Array) -> tuple[jax.Array, jax.Array, jax.Array]:
+    """Mixture ``p = weights @ vertices``, entropy gradient ``g = -log(p) - 1`` and vertex scores ``vertices @ g``.
 
-    Entropy is concave in the mixture weights. Transfer mass from the active
-    vertex with the smallest derivative to the vertex with the largest one.
-    A bounded line search preserves feasibility, and the Frank-Wolfe gap
-    bounds the remaining entropy improvement.
+    The score of a vertex is the derivative of the entropy in its direction, up to a constant.
+    The gradient is finite at exact zeros, where the log is taken of the smallest positive
+    float, so a class that is zero in every vertex adds nothing to the scores.
+
+    Args:
+        vertices: Vertex probabilities of shape ``(V, C)``.
+        weights: Mixture weights of shape ``(V,)``.
+
+    Returns:
+        Tuple of the mixture of shape ``(C,)``, the gradient of shape ``(C,)`` and the scores of
+        shape ``(V,)``.
     """
-    tiny = jnp.finfo(vertices.dtype).tiny
+    p = jnp.sum(jnp.expand_dims(weights, axis=-1) * vertices, axis=-2)
+    gradient = -jnp.log(jnp.maximum(p, jnp.finfo(p.dtype).tiny)) - 1.0
+    return p, gradient, jnp.sum(vertices * gradient, axis=-1)
 
-    def condition(state: tuple[jax.Array, jax.Array, jax.Array]) -> jax.Array:
-        iteration, _, gap = state
-        return (iteration < _FRANK_WOLFE_ITERS) & (gap > _FRANK_WOLFE_TOL)
 
-    def step(state: tuple[jax.Array, jax.Array, jax.Array]) -> tuple[jax.Array, jax.Array, jax.Array]:
-        iteration, current, _ = state
-        p = current @ vertices
-        gradient = -jnp.log(jnp.maximum(p, tiny)) - 1.0
-        derivatives = vertices @ gradient
-        index = jnp.argmax(derivatives)
-        away = jnp.argmin(jnp.where(current > 0, derivatives, jnp.inf))
-        gap = derivatives[index] - p @ gradient
-        direction = vertices[index] - vertices[away]
+def _entropy_line_search(p: jax.Array, direction: jax.Array, max_step: jax.Array) -> jax.Array:
+    """Step ``t`` in ``[0, max_step]`` that maximizes ``H(p + t * direction)``.
 
-        def bisect(_: int, bounds: tuple[jax.Array, jax.Array]) -> tuple[jax.Array, jax.Array]:
-            low, high = bounds
-            mid = (low + high) / 2.0
-            derivative = -jnp.sum(direction * (jnp.log(jnp.maximum(p + mid * direction, tiny)) + 1.0))
-            return jnp.where(derivative > 0, mid, low), jnp.where(derivative > 0, high, mid)
+    The entropy is concave along the line, so its derivative decreases in ``t`` and bisection,
+    run to the precision of the dtype, finds where it changes sign. If the entropy still rises
+    at ``max_step``, exactly ``max_step`` is returned, so that a mixture weight that reaches
+    zero becomes exactly zero.
 
-        low, high = jax.lax.fori_loop(0, 32, bisect, (jnp.array(0.0, p.dtype), current[away]))
-        fraction = (low + high) / 2.0
-        candidate = current.at[away].add(-fraction).at[index].add(fraction)
-        improved = jax_entropy(candidate @ vertices) >= jax_entropy(p)
-        return iteration + 1, jnp.where(improved, candidate, current), gap
+    Args:
+        p: Distribution of shape ``(C,)``.
+        direction: Direction of shape ``(C,)`` that sums to zero.
+        max_step: Largest step, a scalar.
 
-    _, result, _ = jax.lax.while_loop(condition, step, (jnp.array(0), weights, jnp.array(jnp.inf, vertices.dtype)))
-    return result
+    Returns:
+        A step that does not lower the entropy.
+    """
+    tiny = jnp.finfo(p.dtype).tiny
+
+    def slope(step: jax.Array) -> jax.Array:
+        return -jnp.sum(direction * (jnp.log(jnp.maximum(p + step * direction, tiny)) + 1.0))
+
+    def bisect(_: int, bounds: tuple[jax.Array, jax.Array]) -> tuple[jax.Array, jax.Array]:
+        low, high = bounds
+        middle = (low + high) / 2
+        rising = slope(middle) > 0
+        return jnp.where(rising, middle, low), jnp.where(rising, high, middle)
+
+    iterations = round(-math.log2(jnp.finfo(p.dtype).eps))
+    low, _ = jax.lax.fori_loop(0, iterations, bisect, (jnp.zeros_like(max_step), max_step))
+    return jnp.where(slope(max_step) >= 0, max_step, low)
+
+
+def _pairwise_step(vertices: jax.Array, weights: jax.Array) -> jax.Array:
+    """Pairwise Frank-Wolfe step: move weight from the worst vertex in use to the best vertex.
+
+    Along the edge from the vertex in use with the smallest derivative to the vertex with the
+    largest one, the entropy rises whenever the weights are not optimal. The exact line search
+    may add the best vertex or drop the worst one, and the sum of the weights is kept.
+
+    Args:
+        vertices: Vertex probabilities of shape ``(V, C)``.
+        weights: Mixture weights of shape ``(V,)``.
+
+    Returns:
+        The new weights of shape ``(V,)``.
+    """
+    p, _, scores = _entropy_scores(vertices, weights)
+    toward = jnp.argmax(scores)
+    away = jnp.argmin(jnp.where(weights > 0, scores, jnp.inf))
+    direction = jnp.zeros_like(weights).at[toward].add(1.0).at[away].add(-1.0)
+    moved = jnp.sum(jnp.expand_dims(direction, axis=-1) * vertices, axis=-2)
+    step = _entropy_line_search(p, moved, weights[away])
+    return jnp.clip(weights + step * direction, min=0.0)
+
+
+def _newton_step(vertices: jax.Array, weights: jax.Array) -> jax.Array:
+    """Newton step on the weights of the vertices in use, followed by an exact line search.
+
+    The Hessian of the entropy in the weights is ``-vertices diag(1 / p) vertices^T``. The step
+    maximizes the second-order model among the vertices in use, keeping the sum of the weights,
+    by solving its KKT system. A small ridge keeps the system solvable for repeated or affinely
+    dependent vertices. The line search stops at the first weight that reaches zero, and the
+    sum of the weights is kept.
+
+    Args:
+        vertices: Vertex probabilities of shape ``(V, C)``.
+        weights: Mixture weights of shape ``(V,)``.
+
+    Returns:
+        The new weights of shape ``(V,)``.
+    """
+    p, _, scores = _entropy_scores(vertices, weights)
+    in_use = weights > 0
+    mask = in_use.astype(weights.dtype)
+    inverse = jnp.where(p > 0, 1.0 / jnp.maximum(p, jnp.finfo(p.dtype).tiny), 0.0)
+    curvature = (vertices * inverse) @ vertices.T
+    curvature = jnp.where(in_use[:, None] & in_use[None, :], curvature, 0.0)
+    ridge = math.sqrt(jnp.finfo(p.dtype).eps) * jnp.trace(curvature) / jnp.sum(mask)
+    system = curvature + jnp.diag(jnp.where(in_use, ridge, 1.0))
+    zero = jnp.zeros((1, 1), dtype=weights.dtype)
+    kkt = jnp.block([[system, mask[:, None]], [mask[None, :], zero]])
+    solution = jnp.linalg.solve(kkt, jnp.concatenate([scores * mask, zero[0]]))
+    direction = jnp.where(in_use, jnp.nan_to_num(solution[:-1], nan=0.0, posinf=0.0, neginf=0.0), 0.0)
+    # Remove the rounding error of the solve, so that the weights keep their sum.
+    direction = (direction - jnp.sum(direction * mask) / jnp.sum(mask)) * mask
+    ratio = jnp.where(direction < 0, weights / -direction, jnp.inf)
+    max_step = jnp.min(ratio)
+    max_step = jnp.where(jnp.isfinite(max_step), max_step, 0.0)
+    moved = jnp.sum(jnp.expand_dims(direction, axis=-1) * vertices, axis=-2)
+    step = _entropy_line_search(p, moved, max_step)
+    return jnp.clip(jnp.where(ratio <= step, 0.0, weights + step * direction), min=0.0)
 
 
 def _convex_max_entropy_weights(vertices: jax.Array) -> jax.Array:
-    """Find entropy-maximizing mixture weights over a single set of vertices.
+    """Entropy-maximizing mixture weights of one convex hull.
+
+    Entropy is concave in the mixture weights, so every stationary point is a maximum. Each
+    iteration makes a pairwise Frank-Wolfe step, which can add and drop vertices, and a Newton
+    step on the vertices in use, which converges fast once the right vertices are in use. Both
+    keep the weights nonnegative and summing to one. The Frank-Wolfe gap
+    ``max_v vertices[v] @ g - p @ g`` bounds how far ``H(p)`` is below the maximum, since
+    entropy is concave. The search starts from uniform weights and stops once the gap is at
+    most 1e-10 in float64 or 1e-5 in other dtypes. It also stops when an iteration leaves the
+    weights unchanged, since every later iteration would do the same, and after at most
+    ``_CONVEX_ITERS`` iterations. This is the iteration of the torch implementation for a
+    single set.
 
     Args:
-        vertices: Vertex probabilities of shape ``(n_vertices, n_classes)``.
+        vertices: Vertex probabilities of shape ``(V, C)``.
 
     Returns:
-        Nonnegative mixture weights summing to one, shape ``(n_vertices,)``.
+        Mixture weights of shape ``(V,)``.
     """
+    tolerance = 1e-10 if vertices.dtype == jnp.float64 else 1e-5
 
-    def objective(logits: jax.Array) -> jax.Array:
-        p = jnp.sum(jnp.expand_dims(jax.nn.softmax(logits, axis=-1), axis=-1) * vertices, axis=-2)
-        return -jax_entropy(p)
+    def condition(state: tuple[jax.Array, jax.Array, jax.Array]) -> jax.Array:
+        iteration, current, previous = state
+        p, gradient, scores = _entropy_scores(vertices, current)
+        gap = jnp.max(scores) - jnp.sum(p * gradient)
+        return (iteration < _CONVEX_ITERS) & (gap > tolerance) & jnp.any(current != previous)
 
-    x0 = jnp.zeros(vertices.shape[0], dtype=vertices.dtype)
-    result = jax.scipy.optimize.minimize(objective, x0, method="BFGS", options={"maxiter": _BFGS_ITERS})
-    uniform = jax.nn.softmax(x0)
-    best_vertex = jnp.argmax(jax_entropy(vertices))
-    vertex_weights = jax.nn.one_hot(best_vertex, vertices.shape[0], dtype=vertices.dtype)
-    baseline = jnp.where(jax_entropy(uniform @ vertices) >= jax_entropy(vertices[best_vertex]), uniform, vertex_weights)
-    candidate = jax.nn.softmax(result.x)
-    candidate_entropy = jax_entropy(candidate @ vertices)
-    usable = jnp.isfinite(candidate).all() & jnp.isfinite(candidate_entropy)
-    improved = usable & (candidate_entropy >= jax_entropy(baseline @ vertices))
-    best = jnp.where(improved, candidate, baseline)
-    # Failed iterates may still be useful starting points, but are not accepted
-    # as an optimum. The fallback never replaces a better feasible candidate.
-    return jax.lax.cond(result.success & improved, lambda: best, lambda: _convex_entropy_fallback(vertices, best))
+    def step(state: tuple[jax.Array, jax.Array, jax.Array]) -> tuple[jax.Array, jax.Array, jax.Array]:
+        iteration, current, _ = state
+        return iteration + 1, _newton_step(vertices, _pairwise_step(vertices, current)), current
+
+    weights = jnp.full(vertices.shape[:1], 1.0 / vertices.shape[0], dtype=vertices.dtype)
+    # The previous weights start as nan, which differs from any weights.
+    _, weights, _ = jax.lax.while_loop(condition, step, (jnp.array(0), weights, jnp.full_like(weights, jnp.nan)))
+    return weights / jnp.sum(weights)
 
 
 @upper_entropy.register(JaxConvexCredalSet)
@@ -248,24 +326,24 @@ def jax_convex_upper_entropy(
 ) -> jax.Array | tuple[jax.Array, jax.Array]:
     """Compute the upper entropy of a convex hull credal set.
 
-    Maximize entropy over ``conv(vertices)`` with BFGS on softmax weights,
-    falling back to feasible Frank-Wolfe steps if optimization fails.
-
-    Since entropy is concave the maximum over a convex hull may lie in the
-    interior; the unconstrained softmax parameterization handles this. This is
-    the jax counterpart of the torch L-BFGS implementation, so results agree
-    only up to optimizer tolerance.
+    Maximize entropy over ``conv(vertices)``, which may be attained in the interior since
+    entropy is concave. Each set is optimized on its own with pairwise Frank-Wolfe and Newton
+    steps until a bound certifies that the entropy is within 1e-10 (float64) or 1e-5 (other
+    dtypes) of the maximum; see ``_convex_max_entropy_weights``. The torch implementation runs
+    the same iteration, so the two agree within that bound. Half-precision sets are optimized
+    in float32, and the results are cast back.
     """
     vertices = credal_set.tensor.probabilities
     batch_shape = vertices.shape[:-2]
     *_, n_vertices, n_classes = vertices.shape
-    flat_v = vertices.reshape(-1, n_vertices, n_classes)
+    # jnp.linalg cannot solve in half precision, so optimize in at least single precision.
+    flat_v = vertices.reshape(-1, n_vertices, n_classes).astype(jnp.promote_types(vertices.dtype, jnp.float32))
 
     weights = jax.vmap(_convex_max_entropy_weights)(flat_v)
     p = jnp.sum(jnp.expand_dims(weights, axis=-1) * flat_v, axis=-2)
-    result = _apply_base(jax_entropy(p).reshape(batch_shape), credal_set.num_classes, base)
+    result = _apply_base(jax_entropy(p).reshape(batch_shape).astype(vertices.dtype), credal_set.num_classes, base)
     if return_distribution:
-        return result, p.reshape(*batch_shape, n_classes)
+        return result, p.reshape(*batch_shape, n_classes).astype(vertices.dtype)
     return result
 
 

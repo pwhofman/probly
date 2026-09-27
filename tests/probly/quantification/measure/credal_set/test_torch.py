@@ -23,6 +23,8 @@ from probly.representation.distribution.torch_categorical import (
     TorchProbabilityCategoricalDistribution,
 )
 
+from ._convex_suite import ConvexUpperEntropySuite, convex_hull_distance, convex_max_entropy, random_vertices
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -585,3 +587,69 @@ def test_credal_set_entropy_decomposition_unchanged() -> None:
     dec: CredalSetEntropyDecomposition[torch.Tensor] = CredalSetEntropyDecomposition(credal_set=cs)
     assert torch.allclose(dec.total, upper_entropy(cs))
     assert torch.allclose(dec.aleatoric, lower_entropy(cs))
+
+
+# ---------------------------------------------------------------------------
+# Convex upper entropy against numpy references
+# ---------------------------------------------------------------------------
+
+
+class _TorchConvexBackend:
+    """Builds torch convex credal sets from numpy arrays for the shared correctness suite."""
+
+    @staticmethod
+    def convex(vertices: np.ndarray) -> TorchConvexCredalSet:
+        return TorchConvexCredalSet(tensor=TorchProbabilityCategoricalDistribution(torch.as_tensor(vertices)))
+
+    @staticmethod
+    def numpy(value: torch.Tensor) -> np.ndarray:
+        return value.detach().cpu().numpy()
+
+
+@pytest.fixture
+def convex_backend() -> _TorchConvexBackend:
+    return _TorchConvexBackend()
+
+
+class TestTorchConvexUpperEntropy(ConvexUpperEntropySuite):
+    """Convex-hull upper entropy on torch tensors."""
+
+
+_CONVEX_KINDS = ["ensemble", "dirichlet", "sparse", "repeated"]
+
+
+def _convex_set(vertices: np.ndarray | torch.Tensor, dtype: torch.dtype) -> TorchConvexCredalSet:
+    return TorchConvexCredalSet(tensor=TorchProbabilityCategoricalDistribution(torch.as_tensor(vertices, dtype=dtype)))
+
+
+@pytest.mark.parametrize("dtype", [torch.float16, torch.bfloat16], ids=["float16", "bfloat16"])
+def test_convex_upper_entropy_in_half_precision(dtype: torch.dtype) -> None:
+    """Half-precision sets are optimized in single precision, and the results keep the input dtype."""
+    rng = np.random.default_rng(3)
+    vertices = np.stack([random_vertices(rng, kind, 5, 6) for kind in _CONVEX_KINDS])
+    credal_set = _convex_set(vertices, dtype)
+    seen = credal_set.tensor.probabilities.double().numpy()
+
+    value, p = upper_entropy(credal_set, return_distribution=True)
+
+    assert value.dtype == dtype
+    assert p.dtype == dtype
+    # Six units in the last place of the dtype, for entropies between 1 and 2.
+    atol = 6 * float(torch.finfo(dtype).eps)
+    np.testing.assert_allclose(value.double().numpy(), [convex_max_entropy(v) for v in seen], atol=atol)
+    for row in range(len(seen)):
+        assert convex_hull_distance(p[row].double().numpy(), seen[row]) <= 10 * float(torch.finfo(dtype).eps)
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required for the device check.")
+def test_convex_upper_entropy_on_cuda_matches_cpu() -> None:
+    rng = np.random.default_rng(0)
+    vertices = torch.tensor(np.stack([random_vertices(rng, kind, 5, 6) for kind in _CONVEX_KINDS]))
+
+    cpu_value, cpu_p = upper_entropy(_convex_set(vertices, torch.float64), return_distribution=True)
+    cuda_value, cuda_p = upper_entropy(_convex_set(vertices.cuda(), torch.float64), return_distribution=True)
+
+    assert cuda_value.device.type == "cuda"
+    assert cuda_p.device.type == "cuda"
+    torch.testing.assert_close(cuda_value.cpu(), cpu_value, atol=1e-9, rtol=0)
+    torch.testing.assert_close(cuda_p.cpu(), cpu_p, atol=1e-6, rtol=0)
