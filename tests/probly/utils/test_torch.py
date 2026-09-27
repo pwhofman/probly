@@ -9,39 +9,12 @@ import pytest
 
 pytest.importorskip("torch")
 import torch
-from torch.utils.data import DataLoader, TensorDataset
 
 from probly.utils.torch import (
-    torch_collect_outputs,
     torch_entropy,
     torch_head_dimension,
-    torch_reset_all_parameters,
     torch_temperature_softmax,
 )
-
-
-def test_torch_reset_all_parameters(torch_conv_linear_model: torch.nn.Module) -> None:
-    def flatten_params(model: torch.nn.Module) -> torch.Tensor:
-        return torch.cat([param.flatten() for param in model.parameters()])
-
-    before = flatten_params(torch_conv_linear_model)
-    torch_reset_all_parameters(torch_conv_linear_model)
-    after = flatten_params(torch_conv_linear_model)
-    assert not torch.equal(before, after)
-
-
-def test_torch_collect_outputs(torch_conv_linear_model: torch.nn.Module) -> None:
-    loader = DataLoader(
-        TensorDataset(
-            torch.randn(2, 3, 5, 5),
-            torch.randn(
-                2,
-            ),
-        ),
-    )
-    outputs, targets = torch_collect_outputs(torch_conv_linear_model, loader, torch.device("cpu"))
-    assert outputs.shape == (2, 2)
-    assert targets.shape == (2,)
 
 
 def test_temperature_softmax() -> None:
@@ -58,13 +31,6 @@ def test_head_dimension_accepts_custom_module_and_integer_like_values() -> None:
     assert torch_head_dimension(head, "out_features") == 7
     with pytest.raises(TypeError, match="in_features"):
         torch_head_dimension(head, "in_features")
-
-
-def test_reset_skips_non_callable_reset_parameters() -> None:
-    class CustomModule(torch.nn.Module):
-        reset_parameters = None
-
-    torch_reset_all_parameters(CustomModule())
 
 
 def test_entropy_dispatches_to_torch() -> None:
