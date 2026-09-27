@@ -23,6 +23,35 @@ from probly.representation.distribution.torch_categorical import (
     TorchProbabilityCategoricalDistribution,
 )
 
+from ._entropy_suite import (
+    EXACT_MAX_CLASSES,
+    IntervalLowerEntropySuite,
+    assert_in_intervals,
+    interval_min_entropy,
+    previous_greedy_min_entropy,
+    random_intervals,
+)
+
+
+class _TorchBackend:
+    """Builds torch credal sets from numpy arrays for the shared correctness suite."""
+
+    @staticmethod
+    def intervals(lower: np.ndarray, upper: np.ndarray) -> TorchProbabilityIntervalsCredalSet:
+        return TorchProbabilityIntervalsCredalSet(
+            lower_bounds=torch.as_tensor(lower), upper_bounds=torch.as_tensor(upper)
+        )
+
+    @staticmethod
+    def numpy(value: torch.Tensor) -> np.ndarray:
+        return value.detach().cpu().numpy()
+
+
+@pytest.fixture
+def backend() -> _TorchBackend:
+    return _TorchBackend()
+
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -585,3 +614,68 @@ def test_credal_set_entropy_decomposition_unchanged() -> None:
     dec: CredalSetEntropyDecomposition[torch.Tensor] = CredalSetEntropyDecomposition(credal_set=cs)
     assert torch.allclose(dec.total, upper_entropy(cs))
     assert torch.allclose(dec.aleatoric, lower_entropy(cs))
+
+
+# ---------------------------------------------------------------------------
+# Correctness suite against numpy references
+# ---------------------------------------------------------------------------
+
+
+class TestTorchIntervalLowerEntropy(IntervalLowerEntropySuite):
+    """Probability-interval lower entropy on torch tensors."""
+
+
+# Bounds on which the greedy search is more than 0.1 nats above the minimum.
+_LEVEL_SET_LOWER = np.array([[0.14, 0.01, 0.19, 0.13], [0.03, 0.16, 0.1, 0.18]])
+_LEVEL_SET_UPPER = np.array([[0.34, 0.41, 0.38, 0.38], [0.37, 0.4, 0.54, 0.51]])
+
+
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+def test_dirichlet_level_set_lower_entropy_is_the_minimum_over_its_bounds(
+    monkeypatch: pytest.MonkeyPatch, dtype: torch.dtype
+) -> None:
+    """The lower entropy of a level set is the minimum over its bounds, which the greedy search missed.
+
+    The level set gets fixed bounds, so the test does not depend on the Monte Carlo sampler.
+    """
+    from probly.representation.credal_set.torch import TorchDirichletLevelSetCredalSet  # noqa: PLC0415
+
+    lower, upper = _LEVEL_SET_LOWER, _LEVEL_SET_UPPER
+    monkeypatch.setattr(TorchDirichletLevelSetCredalSet, "lower", lambda _: torch.as_tensor(lower, dtype=dtype))
+    monkeypatch.setattr(TorchDirichletLevelSetCredalSet, "upper", lambda _: torch.as_tensor(upper, dtype=dtype))
+    cred = TorchDirichletLevelSetCredalSet(
+        alphas=torch.tensor([[2.0, 5.0, 3.0, 1.5], [1.5, 1.2, 6.0, 2.5]], dtype=dtype),
+        threshold=torch.tensor(0.3, dtype=dtype),
+    )
+
+    value, p = lower_entropy(cred, return_distribution=True)
+
+    expected = [interval_min_entropy(lo, up) for lo, up in zip(lower, upper, strict=True)]
+    greedy = [previous_greedy_min_entropy(lo, up) for lo, up in zip(lower, upper, strict=True)]
+    assert np.all(np.asarray(greedy) > np.asarray(expected) + 0.1)
+    atol = 1e-5 if dtype == torch.float32 else 1e-10
+    np.testing.assert_allclose(value.numpy(), expected, atol=atol)
+    assert_in_intervals(p.numpy(), lower, upper, atol=atol)
+
+
+def test_lower_entropy_without_an_approximation_rejects_approximate() -> None:
+    """Convex and distance-based credal sets have no approximate lower entropy to switch to."""
+    for credal_set in (_convex_credal_set([[0.2, 0.8], [0.6, 0.4]]), _distance_credal_set([0.3, 0.7], 0.1)):
+        with pytest.raises(ValueError, match="has no approximation"):
+            lower_entropy(credal_set, approximate=True)
+        torch.testing.assert_close(lower_entropy(credal_set, approximate="auto"), lower_entropy(credal_set))
+
+
+def test_credal_set_decomposition_approximates_with_a_warning_by_default() -> None:
+    """``quantify`` uses ``approximate="auto"`` by default and passes other values on to the lower entropy."""
+    from probly.quantification import quantify  # noqa: PLC0415
+
+    lower, upper = random_intervals(np.random.default_rng(0), "ensemble", EXACT_MAX_CLASSES + 2)
+    credal_set = _TorchBackend.intervals(lower, upper)
+    greedy = previous_greedy_min_entropy(lower, upper)
+
+    with pytest.warns(UserWarning, match="approximated by a greedy search"):
+        np.testing.assert_allclose(float(quantify(credal_set).aleatoric), greedy, atol=1e-10)
+    with pytest.raises(ValueError, match="approximate=True"):
+        _ = quantify(credal_set, approximate=False).aleatoric
+    np.testing.assert_allclose(float(quantify(credal_set, approximate=True).aleatoric), greedy, atol=1e-10)

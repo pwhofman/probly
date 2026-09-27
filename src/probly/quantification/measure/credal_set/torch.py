@@ -15,7 +15,14 @@ from probly.representation.credal_set.torch import (
 )
 from probly.utils.torch import torch_entropy
 
-from ._common import LogBase, generalized_hartley, lower_entropy, upper_entropy
+from ._common import (
+    Approximate,
+    LogBase,
+    generalized_hartley,
+    lower_entropy,
+    upper_entropy,
+    use_approximate_lower_entropy,
+)
 
 _BISECT_ITERS = 64
 _LBFGS_ITERS = 128
@@ -26,6 +33,117 @@ def _apply_base(result: torch.Tensor, n_classes: int, base: LogBase) -> torch.Te
     if base is None:
         return result
     return result / math.log(n_classes if base == "normalize" else base)  # type: ignore[arg-type]
+
+
+def _approximate_min_entropy_distribution(
+    lower: torch.Tensor, upper: torch.Tensor
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Minimize entropy over ``{p : lower <= p <= upper, sum(p) = 1}``.
+
+    Since entropy is concave the minimum is at an extreme point of the polytope.
+    This greedy heuristic tries each class as the primary recipient of excess
+    mass and keeps the configuration with the lowest entropy found.
+
+    Args:
+        lower: Lower probability envelope of shape ``(..., C)``.
+        upper: Upper probability envelope of shape ``(..., C)``.
+
+    Returns:
+        Tuple of ``(entropies, distributions)`` of shapes ``(...)`` and ``(..., C)``.
+    """
+    n_classes = lower.shape[-1]
+    capacity = upper - lower
+    residual = 1.0 - lower.sum(-1)
+    best = lower.new_full(lower.shape[:-1], float("inf"))
+    best_p = torch.empty_like(lower)
+    for j in range(n_classes):
+        p = lower.detach().clone()
+        rem = residual.clone()
+        for i in [j, *[k for k in range(n_classes) if k != j]]:
+            fill = torch.minimum(rem.clamp(min=0.0), capacity[..., i])
+            p[..., i] = p[..., i] + fill
+            rem = rem - fill
+        h = torch_entropy(p)
+        improved = h < best
+        best_p = torch.where(improved.unsqueeze(-1), p, best_p)
+        best = torch.minimum(best, h)
+    return best, best_p
+
+
+def _exact_min_entropy_distribution(lower: torch.Tensor, upper: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    """Minimize entropy over ``{p : lower <= p <= upper, sum(p) = 1}`` exactly.
+
+    Since entropy is concave the minimum is at an extreme point of the polytope. At an extreme
+    point, every class but one sits at its lower or upper bound, and the remaining class, the
+    free class, takes the rest of the mass. For every free class, all subsets of the other
+    classes are tried at their upper bound, and a subset gives an extreme point if the rest of
+    the mass fits within the bounds of the free class. The entropy of a candidate is a sum over
+    the classes, so the sums over all subsets are one matrix product.
+
+    Bounds that admit no distribution keep ``lower`` if ``sum(lower) > 1`` and ``upper`` if
+    ``sum(upper) < 1``, as the greedy heuristic does.
+
+    Args:
+        lower: Lower probability envelope of shape ``(..., C)``.
+        upper: Upper probability envelope of shape ``(..., C)``.
+
+    Returns:
+        Tuple of ``(entropies, distributions)`` of shapes ``(...)`` and ``(..., C)``.
+    """
+    n_classes = lower.shape[-1]
+    capacity = upper - lower
+    residual = 1.0 - lower.sum(-1, keepdim=True)
+    # Row s marks the classes of subset s, for all 2**C subsets.
+    codes = torch.arange(2**n_classes, device=lower.device).unsqueeze(-1)
+    subsets = ((codes >> torch.arange(n_classes, device=lower.device)) & 1).to(lower.dtype)
+    tolerance = 8 * n_classes * torch.finfo(lower.dtype).eps
+    lower_terms = torch.special.entr(lower)
+    gain = torch.special.entr(upper) - lower_terms
+    is_class = torch.arange(n_classes, device=lower.device)
+    best = torch.full_like(residual.squeeze(-1), torch.inf)
+    best_p = torch.where(residual <= 0, lower, upper)
+    for free in range(n_classes):
+        raised = subsets[subsets[:, free] == 0]
+        free_capacity = capacity[..., free : free + 1]
+        # Mass left for the free class above its lower bound, for every subset.
+        mass = residual - capacity @ raised.T
+        fits = (mass >= -tolerance) & (mass <= free_capacity + tolerance)
+        mass = torch.minimum(mass.clamp_min(0.0), free_capacity)
+        entropy = (
+            lower_terms.sum(-1, keepdim=True)
+            - lower_terms[..., free : free + 1]
+            + gain @ raised.T
+            + torch.special.entr(lower[..., free : free + 1] + mass)
+        )
+        value, index = torch.where(fits, entropy, torch.inf).min(-1)
+        p = torch.where(
+            is_class == free, lower + mass.gather(-1, index.unsqueeze(-1)), lower + capacity * raised[index]
+        )
+        improved = value < best
+        best_p = torch.where(improved.unsqueeze(-1), p, best_p)
+        best = torch.where(improved, value, best)
+    return torch_entropy(best_p), best_p
+
+
+def _min_entropy_distribution(
+    lower: torch.Tensor, upper: torch.Tensor, approximate: Approximate
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Minimize entropy over ``{p : lower <= p <= upper, sum(p) = 1}``.
+
+    Exactly, by trying every extreme point, or with the greedy heuristic, as selected by
+    ``approximate`` (see :func:`lower_entropy`).
+
+    Args:
+        lower: Lower probability envelope of shape ``(..., C)``.
+        upper: Upper probability envelope of shape ``(..., C)``.
+        approximate: Whether to use the greedy heuristic, ``True``, ``False`` or ``"auto"``.
+
+    Returns:
+        Tuple of ``(entropies, distributions)`` of shapes ``(...)`` and ``(..., C)``.
+    """
+    if use_approximate_lower_entropy(lower.shape[-1], approximate):
+        return _approximate_min_entropy_distribution(lower, upper)
+    return _exact_min_entropy_distribution(lower, upper)
 
 
 @upper_entropy.register(TorchProbabilityIntervalsCredalSet)
@@ -65,33 +183,18 @@ def torch_intervals_lower_entropy(
     base: LogBase = None,
     *,
     return_distribution: bool = False,
+    approximate: Approximate = False,
 ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
     """Compute the lower entropy of a probability-intervals credal set.
 
     Minimize entropy over {p : lower <= p <= upper, sum(p) = 1}.
 
     Since entropy is concave the minimum is at an extreme point of the polytope.
-    This greedy heuristic tries each class as the primary recipient of excess
-    mass and returns the configuration with the lowest entropy found.
+    The exact value tries every extreme point. The approximation, selected with
+    ``approximate`` (see :func:`lower_entropy`), is a greedy heuristic that tries
+    each class as the primary recipient of excess mass.
     """
-    lower, upper = credal_set.lower_bounds, credal_set.upper_bounds
-    n_classes = lower.shape[-1]
-    capacity = upper - lower
-    residual = 1.0 - lower.sum(-1)
-    best = lower.new_full(lower.shape[:-1], float("inf"))
-    best_p = torch.empty_like(lower)
-    for j in range(n_classes):
-        p = lower.detach().clone()
-        rem = residual.clone()
-        for i in [j, *[k for k in range(n_classes) if k != j]]:
-            fill = torch.minimum(rem.clamp(min=0.0), capacity[..., i])
-            p[..., i] = p[..., i] + fill
-            rem = rem - fill
-        h = torch_entropy(p)
-        if return_distribution:
-            improved = h < best
-            best_p = torch.where(improved.unsqueeze(-1), p, best_p)
-        best = torch.minimum(best, h)
+    best, best_p = _min_entropy_distribution(credal_set.lower_bounds, credal_set.upper_bounds, approximate)
     result = _apply_base(best, credal_set.num_classes, base)
     if return_distribution:
         return result, best_p
@@ -301,31 +404,15 @@ def torch_dirichlet_level_set_lower_entropy(
     base: LogBase = None,
     *,
     return_distribution: bool = False,
+    approximate: Approximate = False,
 ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
     """Compute the lower entropy of a Dirichlet level set credal set.
 
-    Uses per-class bounds from Monte Carlo sampling, then applies the
-    greedy heuristic for entropy minimization at extreme points.
+    Uses per-class bounds from Monte Carlo sampling, then minimizes the entropy
+    over the extreme points of these bounds, exactly or, with ``approximate``,
+    with the greedy heuristic.
     """
-    lower = credal_set.lower()
-    upper = credal_set.upper()
-    n_classes = lower.shape[-1]
-    capacity = upper - lower
-    residual = 1.0 - lower.sum(-1)
-    best = lower.new_full(lower.shape[:-1], float("inf"))
-    best_p = torch.empty_like(lower)
-    for j in range(n_classes):
-        p = lower.detach().clone()
-        rem = residual.clone()
-        for i in [j, *[k for k in range(n_classes) if k != j]]:
-            fill = torch.minimum(rem.clamp(min=0.0), capacity[..., i])
-            p[..., i] = p[..., i] + fill
-            rem = rem - fill
-        h = torch_entropy(p)
-        if return_distribution:
-            improved = h < best
-            best_p = torch.where(improved.unsqueeze(-1), p, best_p)
-        best = torch.minimum(best, h)
+    best, best_p = _min_entropy_distribution(credal_set.lower(), credal_set.upper(), approximate)
     result = _apply_base(best, credal_set.num_classes, base)
     if return_distribution:
         return result, best_p

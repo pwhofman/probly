@@ -38,6 +38,13 @@ from probly.representation.distribution.jax_categorical import (
 )
 from probly.utils.jax import jax_entropy
 
+from ._entropy_suite import (
+    IntervalLowerEntropySuite,
+    assert_in_intervals,
+    interval_min_entropy,
+    previous_greedy_min_entropy,
+)
+
 _ATOL = 1e-4
 
 
@@ -504,3 +511,67 @@ def test_credal_set_entropy_decomposition_unchanged() -> None:
     dec: CredalSetEntropyDecomposition[jax.Array] = CredalSetEntropyDecomposition(credal_set=cs)
     assert bool(jnp.allclose(dec.total, upper_entropy(cs)))
     assert bool(jnp.allclose(dec.aleatoric, lower_entropy(cs)))
+
+
+class _JaxBackend:
+    """Builds jax credal sets from numpy arrays for the shared correctness suite."""
+
+    @staticmethod
+    def intervals(lower: np.ndarray, upper: np.ndarray) -> JaxProbabilityIntervalsCredalSet:
+        return JaxProbabilityIntervalsCredalSet(lower_bounds=jnp.asarray(lower), upper_bounds=jnp.asarray(upper))
+
+    @staticmethod
+    def numpy(value: jax.Array) -> np.ndarray:
+        return np.asarray(value)
+
+
+@pytest.fixture
+def backend():
+    """Run the shared suite with float64 enabled, so both float32 and float64 inputs keep their dtype."""
+    previous = jax.config.read("jax_enable_x64")
+    jax.config.update("jax_enable_x64", True)
+    try:
+        yield _JaxBackend()
+    finally:
+        jax.config.update("jax_enable_x64", previous)
+
+
+class TestJaxIntervalLowerEntropy(IntervalLowerEntropySuite):
+    """Probability-interval lower entropy on jax arrays."""
+
+
+@pytest.mark.parametrize("dtype", [jnp.float32, jnp.float64], ids=["float32", "float64"])
+def test_dirichlet_level_set_lower_entropy_is_the_minimum_over_its_bounds(backend, monkeypatch, dtype) -> None:
+    """The lower entropy of a level set is the minimum over its bounds, which the greedy search missed.
+
+    The level set gets fixed bounds, on which the greedy search is more than 0.1 nats above the
+    minimum, so the test does not depend on the Monte Carlo sampler.
+    """
+    del backend  # Only needed to enable float64.
+    lower = np.array([[0.14, 0.01, 0.19, 0.13], [0.03, 0.16, 0.1, 0.18]])
+    upper = np.array([[0.34, 0.41, 0.38, 0.38], [0.37, 0.4, 0.54, 0.51]])
+    monkeypatch.setattr(JaxDirichletLevelSetCredalSet, "lower", lambda _: jnp.asarray(lower, dtype=dtype))
+    monkeypatch.setattr(JaxDirichletLevelSetCredalSet, "upper", lambda _: jnp.asarray(upper, dtype=dtype))
+    cred = JaxDirichletLevelSetCredalSet(
+        alphas=jnp.array([[2.0, 5.0, 3.0, 1.5], [1.5, 1.2, 6.0, 2.5]], dtype=dtype),
+        threshold=jnp.array(0.3, dtype=dtype),
+    )
+
+    value, p = lower_entropy(cred, return_distribution=True)
+
+    expected = [interval_min_entropy(lo, up) for lo, up in zip(lower, upper, strict=True)]
+    greedy = [previous_greedy_min_entropy(lo, up) for lo, up in zip(lower, upper, strict=True)]
+    assert np.all(np.asarray(greedy) > np.asarray(expected) + 0.1)
+    atol = 1e-5 if dtype == jnp.float32 else 1e-10
+    np.testing.assert_allclose(np.asarray(value), expected, atol=atol)
+    assert_in_intervals(np.asarray(p), lower, upper, atol=atol)
+
+
+def test_lower_entropy_without_an_approximation_rejects_approximate() -> None:
+    """Convex and distance-based credal sets have no approximate lower entropy to switch to."""
+    for credal_set in (_convex_credal_set([[0.2, 0.8], [0.6, 0.4]]), _distance_credal_set([0.3, 0.7], 0.1)):
+        with pytest.raises(ValueError, match="has no approximation"):
+            lower_entropy(credal_set, approximate=True)
+        np.testing.assert_allclose(
+            np.asarray(lower_entropy(credal_set, approximate="auto")), np.asarray(lower_entropy(credal_set))
+        )

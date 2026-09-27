@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from inspect import signature
+import itertools
 from pathlib import Path
 import pickle
 import shutil
@@ -10,10 +11,19 @@ import subprocess
 import sys
 
 from flextype import Flexdispatch
+import numpy as np
 import pytest
 
 from probly.quantification.measure.credal_set import lower_entropy, upper_entropy
 from probly.representation.credal_set import CredalSet
+
+from ._entropy_suite import (
+    entropy,
+    interval_min_entropy,
+    interval_min_entropy_by_free_class,
+    previous_greedy_min_entropy,
+    random_intervals,
+)
 
 
 @pytest.mark.parametrize("measure", [upper_entropy, lower_entropy])
@@ -21,7 +31,11 @@ def test_entropy_dispatcher_metadata_and_pickle(measure):
     assert isinstance(measure, Flexdispatch)
     assert measure.__name__ in {"upper_entropy", "lower_entropy"}
     assert "entropy of a credal set" in measure.__doc__
-    assert list(signature(measure).parameters) == ["credal_set", "base", "return_distribution"]
+    parameters = ["credal_set", "base", "return_distribution"]
+    if measure is lower_entropy:
+        parameters.append("approximate")
+        assert signature(measure).parameters["approximate"].default is False
+    assert list(signature(measure).parameters) == parameters
     assert signature(measure).parameters["return_distribution"].default is False
     assert pickle.loads(pickle.dumps(measure)) is measure  # noqa: S301
 
@@ -130,3 +144,30 @@ def test_entropy_dispatcher_types(tmp_path: Path):
         timeout=60,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def _all_fill_orders_min_entropy(lower: np.ndarray, upper: np.ndarray) -> float:
+    """Minimum entropy over the greedy fills in every order, which reach every vertex."""
+    best = np.inf
+    for order in itertools.permutations(range(len(lower))):
+        p = lower.astype(np.float64)
+        remaining = 1.0 - p.sum()
+        for i in order:
+            fill = min(max(remaining, 0.0), upper[i] - lower[i])
+            p[i] += fill
+            remaining -= fill
+        best = min(best, float(entropy(p)))
+    return best
+
+
+@pytest.mark.parametrize("n_classes", range(1, 7))
+@pytest.mark.parametrize("kind", ["ensemble", "dirichlet", "sparse", "box"])
+def test_interval_references_agree(n_classes: int, kind: str) -> None:
+    """The three exact interval references agree, and the previous greedy never beats them."""
+    rng = np.random.default_rng(n_classes)
+    for _ in range(5):
+        lower, upper = random_intervals(rng, kind, n_classes)
+        exact = interval_min_entropy(lower, upper)
+        np.testing.assert_allclose(interval_min_entropy_by_free_class(lower, upper), exact, atol=1e-12)
+        np.testing.assert_allclose(_all_fill_orders_min_entropy(lower, upper), exact, atol=1e-12)
+        assert previous_greedy_min_entropy(lower, upper) >= exact - 1e-12
