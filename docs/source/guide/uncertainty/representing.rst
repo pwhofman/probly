@@ -44,6 +44,13 @@ Zeroth Order: Point Predictions
 - in return, this rung is the cheapest to produce, yields one unambiguous decision, and is comparable across models
 - the price is that there is no way to abstain, and no slot at all for "no basis for an answer"
 
+.. image:: /auto_examples/representation/images/sphx_glr_plot_first_order_distribution_001.png
+    :alt: Two bar charts, one per input, each with a single full-height bar on
+        the class "dog" and nothing on the other two classes.
+    :width: 100%
+
+- the example: :ref:`sphx_glr_auto_examples_representation_plot_first_order_distribution.py`
+
 .. _uq-first-order:
 
 First Order: Probability Distributions
@@ -57,6 +64,18 @@ First Order: Probability Distributions
 - what a distribution cannot do is the point of :ref:`uq-why`: it has no slot for a claim about itself, so both readings of (0.34, 0.33, 0.33) are literally the same object on this rung
 - consequently, first order can report total uncertainty only, and a decomposition is undefined on it (:ref:`uq-decomposition`)
 - some methods land on this rung by construction and target one part only: a heteroscedastic head models label noise, so it yields a quantity intended as aleatoric and none for the epistemic part :cite:`kendallWhatUncertainties2017, collierCorrelatedInputDependent2021`
+
+.. image:: /auto_examples/representation/images/sphx_glr_plot_first_order_distribution_002.png
+    :alt: Two bar charts, one per input, one showing probabilities 0.49 and
+        0.51 with the third class at zero, the other showing three near-equal
+        bars.
+    :width: 100%
+
+.. image:: /auto_examples/representation/images/sphx_glr_plot_first_order_distribution_003.png
+    :alt: Two Gaussian densities with the same mean, one narrow and one wide.
+    :width: 100%
+
+- the example: :ref:`sphx_glr_auto_examples_representation_plot_first_order_distribution.py`
 
 .. _uq-sets:
 
@@ -73,6 +92,14 @@ Sets of Outcomes
 - it is typically derived rather than produced: a conformal procedure combines a score from a first-order model with a calibration split, so the set re-encodes that model's output at the same order, trading the weights for a guarantee
 - it is silent about the split, since a wide set does not reveal whether the world or the model made it wide
 - the methods for this representation are catalogued in :ref:`methods-conformal`
+
+.. image:: /auto_examples/representation/images/sphx_glr_plot_conformal_prediction_set_001.png
+    :alt: Three bar charts of class scores, with the labels kept in the
+        prediction set colored and the dropped labels in gray, for set sizes
+        one, two and three.
+    :width: 100%
+
+- the example: :ref:`sphx_glr_auto_examples_representation_plot_conformal_prediction_set.py`
 
 .. _uq-second-order:
 
@@ -92,6 +119,22 @@ Second Order: Distributions Over Distributions
 - the remaining caveat is conceptual: second-order probabilities are a claim of a new kind, they cannot be checked directly against observed frequencies, and which measure to read off them is still contested :cite:`saleSecondOrder2024`
 - the methods on this rung are catalogued in :ref:`methods-second-order`
 
+.. image:: /auto_examples/representation/images/sphx_glr_plot_second_order_sample_001.png
+    :alt: Two simplex triangles, the left one with ten member points on top of
+        each other, the right one with the same mean prediction but ten points
+        scattered widely.
+    :width: 100%
+
+- the example: :ref:`sphx_glr_auto_examples_representation_plot_second_order_sample.py`
+
+.. image:: /auto_examples/representation/images/sphx_glr_plot_dirichlet_distribution_001.png
+    :alt: Two simplex triangles showing Dirichlet densities, the left one a
+        concentrated blob in the interior, the right one with the mass pushed
+        out to the edges and corners.
+    :width: 100%
+
+- the example: :ref:`sphx_glr_auto_examples_representation_plot_dirichlet_distribution.py`
+
 .. _uq-credal:
 
 Credal Sets
@@ -106,97 +149,6 @@ Credal Sets
 - measures accordingly come in lower/upper pairs, and the resulting split is a different object from the second-order one :cite:`abellanDisaggregatedTotal2006` :cite:`abellanNonSpecificity2000`
 - since a set does not order the actions, a decision requires an additional rule, such as maximin, interval dominance, or a betting probability :cite:`cuzzolinIntersectionProbability2022`
 - the methods for this representation are catalogued in :ref:`methods-credal`
-
-Side by Side
-------------
-
-- the same three-class problem, "cat" against "dog" against "fox", rendered as each of the objects above
-
-Point Prediction
-~~~~~~~~~~~~~~~~
-
-- the object is an index: "dog"
-- the two inputs (0.49, 0.51, 0.00) and (0.33, 0.34, 0.33) reduce to the *same* point prediction
-- nothing in the object records that one was a near-tie between two classes and the other a three-way tie
-
-.. image:: /auto_examples/representation/images/sphx_glr_plot_first_order_distribution_001.png
-    :alt: Two bar charts, one per input, each with a single full-height bar on
-        the class "dog" and nothing on the other two classes.
-    :width: 100%
-
-Probability Distribution
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-- the object is a vector on the simplex: (0.49, 0.51, 0.00)
-- the two inputs are now different objects, since one rules "fox" out and the other keeps all three classes in play
-- in regression, the same rung is a mean and a variance, so two predictions may share a mean and differ only in spread
-- the library represents it as a categorical distribution, or as a Gaussian in the real-valued case
-
-.. image:: /auto_examples/representation/images/sphx_glr_plot_first_order_distribution_002.png
-    :alt: Two bar charts, one per input, one showing probabilities 0.49 and
-        0.51 with the third class at zero, the other showing three near-equal
-        bars.
-    :width: 100%
-
-.. image:: /auto_examples/representation/images/sphx_glr_plot_first_order_distribution_003.png
-    :alt: Two Gaussian densities with the same mean, one narrow and one wide.
-    :width: 100%
-
-- the example: :ref:`sphx_glr_auto_examples_representation_plot_first_order_distribution.py`
-
-Set of Outcomes
-~~~~~~~~~~~~~~~
-
-- the object is a subset of the labels, {dog}, {cat, dog}, or all three, and an interval in regression
-- its members carry no odds: where the distribution above said 0.49 and 0.51, the set only says {cat, dog}
-- the one number to read off it is its size, which is the price paid for the coverage level fixed in the calibration step
-
-.. image:: /auto_examples/representation/images/sphx_glr_plot_conformal_prediction_set_001.png
-    :alt: Three bar charts of class scores, with the labels kept in the
-        prediction set colored and the dropped labels in gray, for set sizes
-        one, two and three.
-    :width: 100%
-
-- the example: :ref:`sphx_glr_auto_examples_representation_plot_conformal_prediction_set.py`
-
-Second Order, Sampled
-~~~~~~~~~~~~~~~~~~~~~
-
-- the object is a collection: ten vectors, one per ensemble member or dropout pass
-- two inputs may share the *same* mean prediction and still differ: for one, the members lie on top of each other, for the other, they scatter across the simplex
-- that spread is the claim about itself for which the first-order rung had no slot
-- the count is part of the object: ten members give a coarser picture than a hundred, and the measures read off them move with it
-
-.. image:: /auto_examples/representation/images/sphx_glr_plot_second_order_sample_001.png
-    :alt: Two simplex triangles, the left one with ten member points on top of
-        each other, the right one with the same mean prediction but ten points
-        scattered widely.
-    :width: 100%
-
-- the example: :ref:`sphx_glr_auto_examples_representation_plot_second_order_sample.py`
-
-Second Order, Parameterized
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- the object is a density on the simplex, a Dirichlet given by its concentration parameters
-- normalized, the parameters give the mean prediction; summed, they give how much evidence the model claims
-- consequently, (18, 14, 8) and (0.9, 0.7, 0.4) share the same mean prediction and have nothing else in common
-- a single forward pass produces it, so there is no sample count to pay for and no sample-size bias to report
-
-.. image:: /auto_examples/representation/images/sphx_glr_plot_dirichlet_distribution_001.png
-    :alt: Two simplex triangles showing Dirichlet densities, the left one a
-        concentrated blob in the interior, the right one with the mass pushed
-        out to the edges and corners.
-    :width: 100%
-
-- the example: :ref:`sphx_glr_auto_examples_representation_plot_dirichlet_distribution.py`
-
-Credal Set
-~~~~~~~~~~
-
-- the object is a region of the simplex, given by vertices or by per-class intervals
-- it carries no density inside, so every query returns a lower and an upper probability
-- the extent of the region carries the epistemic reading: two members predicting 0.1 and 0.9 share their mean with two members both predicting 0.5, yet the first pair spans a wide region and the second collapses to a point
 
 .. image:: /auto_examples/representation/images/sphx_glr_plot_convex_credal_set_001.png
     :alt: A simplex triangle with two filled polygons, one per input, each the
