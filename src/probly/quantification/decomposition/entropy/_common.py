@@ -14,11 +14,12 @@ from probly.quantification.decomposition.decomposition import (
 from probly.quantification.measure.credal_set import lower_entropy, upper_entropy
 from probly.quantification.measure.distribution import (
     conditional_entropy,
+    entropy,
     entropy_of_expected_predictive_distribution,
     mutual_information,
 )
 from probly.representation.credal_set import CategoricalCredalSet
-from probly.representation.distribution import DistributionSample, SecondOrderDistribution
+from probly.representation.distribution import CategoricalDistribution, DistributionSample, SecondOrderDistribution
 from probly.representation.distribution._common import DirichletMixtureDistribution
 
 if TYPE_CHECKING:
@@ -89,11 +90,11 @@ class LabelNoiseEntropyDecomposition[T](CachingDecomposition, AleatoricDecomposi
     HetNets only capture aleatoric uncertainty.
     """
 
-    distribution: SecondOrderDistributionLike
+    distribution: CategoricalDistribution
     base: LogBase = None
 
     @override
     @property
     def _aleatoric(self) -> T:
         """The aleatoric uncertainty of the decomposition."""
-        return conditional_entropy(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
+        return entropy(self.distribution, base=self.base)
