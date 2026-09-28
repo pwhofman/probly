@@ -1714,6 +1714,7 @@ class HeteroscedasticLayer(nn.Module):
         num_factors: int, number of factors.
         temperature: float, temperature scaling.
         is_parameter_efficient: bool, whether to use parameter efficient routing.
+        num_samples: int, number of Monte Carlo samples of the utility drawn in every forward pass.
         mu_layer: nn.Linear, deterministic mean parameter transformation.
         diag_layer: nn.Linear, diagonal correction variance transformation.
         v_layer: nn.Linear, covariance factor parameterization routing.
@@ -1727,6 +1728,7 @@ class HeteroscedasticLayer(nn.Module):
         num_factors: int = 15,
         temperature: float = 1.0,
         is_parameter_efficient: bool = False,
+        num_samples: int = 100,
     ) -> None:
         """Initialize the HeteroscedasticLayer.
 
@@ -1736,6 +1738,7 @@ class HeteroscedasticLayer(nn.Module):
             num_factors: int, number of factors.
             temperature: float, temperature scaling.
             is_parameter_efficient: bool, whether to use parameter efficient routing.
+            num_samples: int, number of Monte Carlo samples of the utility drawn in every forward pass.
         """
         super().__init__()
         self.in_features = in_features
@@ -1743,7 +1746,7 @@ class HeteroscedasticLayer(nn.Module):
         self.num_factors = num_factors
         self.temperature = temperature
         self.is_parameter_efficient = is_parameter_efficient
-        self.training_samples: int = 1
+        self.num_samples = num_samples
 
         self.mu_layer = nn.Linear(in_features, num_classes)
         self.diag_layer = nn.Linear(in_features, num_classes)
@@ -1768,40 +1771,24 @@ class HeteroscedasticLayer(nn.Module):
             nn.init.xavier_normal_(self.V_matrix)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Sample utility logits and return temperature-scaled logits or averaged log-probs.
+        """Sample utility logits and return the log of the averaged probabilities.
 
-        When ``training_samples == 1`` (default), draws a single noise sample and returns
-        temperature-scaled logits of shape ``(batch_size, num_classes)``.  When
-        ``training_samples > 1``, draws S noise samples in a single vectorized operation —
-        the backbone-derived statistics (mu, diag_scale, v_x) are computed only once — and
-        returns the log of the softmax-averaged utilities of shape ``(batch_size, num_classes)``.
+        Draws ``num_samples`` noise samples of the utility in a single vectorized operation
+        (the statistics mu, diag_scale and v_x are computed only once), applies the
+        temperature-scaled softmax to every sample and averages the probabilities.
 
         Args:
             x: Input tensor of shape (batch_size, in_features).
 
         Returns:
-            Temperature-scaled logits ``(B, K)`` when ``training_samples == 1``, or averaged
-            log-probabilities ``(B, K)`` when ``training_samples > 1``.
+            Log-probabilities of shape ``(batch_size, num_classes)``.
         """
         batch_size = x.size(0)
 
         mu = self.mu_layer(x)
         diag_scale = F.softplus(self.diag_layer(x))
 
-        if self.training_samples == 1:
-            eps_k = torch.randn(batch_size, self.num_classes, device=x.device, dtype=x.dtype)
-            eps_r = torch.randn(batch_size, self.num_factors, device=x.device, dtype=x.dtype)
-            if self.is_parameter_efficient:
-                v_x = self.v_layer(x)
-                scaled_eps_r = (eps_r * v_x).unsqueeze(-1)
-                low_rank_noise = torch.matmul(self.V_matrix, scaled_eps_r).squeeze(-1)
-            else:
-                v_x_full = self.v_layer(x).view(batch_size, self.num_classes, self.num_factors)
-                low_rank_noise = torch.matmul(v_x_full, eps_r.unsqueeze(-1)).squeeze(-1)
-            utilities = mu + diag_scale * eps_k + low_rank_noise
-            return utilities / self.temperature
-
-        n_samples = self.training_samples
+        n_samples = self.num_samples
         eps_k = torch.randn(n_samples, batch_size, self.num_classes, device=x.device, dtype=x.dtype)
         eps_r = torch.randn(n_samples, batch_size, self.num_factors, device=x.device, dtype=x.dtype)
         if self.is_parameter_efficient:

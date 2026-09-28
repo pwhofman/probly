@@ -778,19 +778,21 @@ class TestIRDHead:
 class TestHeteroscedasticLayer:
     """Forward paths of the heteroscedastic logits layer."""
 
-    def test_single_sample_full_routing(self) -> None:
+    def test_returns_log_probabilities(self) -> None:
         torch, _ = _torch_modules()
         from probly.layers.torch import HeteroscedasticLayer  # noqa: PLC0415
 
         torch.manual_seed(0)
-        layer = HeteroscedasticLayer(in_features=8, num_classes=3, num_factors=4)
-        # Default training_samples == 1 returns scaled logits.
+        layer = HeteroscedasticLayer(in_features=8, num_classes=3, num_factors=4, num_samples=4)
         x = torch.randn(5, 8)
         out = layer(x)
+        # The output is the log of the averaged probabilities, so exp(out) sums to one per input.
         assert out.shape == (5, 3)
         assert torch.isfinite(out).all()
+        torch.testing.assert_close(out.exp().sum(-1), torch.ones(5), atol=1e-5, rtol=1e-5)
+        assert torch.all(out <= 1e-6)
 
-    def test_single_sample_parameter_efficient(self) -> None:
+    def test_parameter_efficient_routing(self) -> None:
         torch, _ = _torch_modules()
         from probly.layers.torch import HeteroscedasticLayer  # noqa: PLC0415
 
@@ -800,6 +802,7 @@ class TestHeteroscedasticLayer:
             num_classes=3,
             num_factors=4,
             is_parameter_efficient=True,
+            num_samples=4,
         )
         # The parameter-efficient routing introduces a global V_matrix.
         assert hasattr(layer, "V_matrix")
@@ -807,40 +810,25 @@ class TestHeteroscedasticLayer:
         x = torch.randn(5, 8)
         out = layer(x)
         assert out.shape == (5, 3)
-        assert torch.isfinite(out).all()
+        torch.testing.assert_close(out.exp().sum(-1), torch.ones(5), atol=1e-5, rtol=1e-5)
 
-    def test_multi_sample_full_routing_returns_log_probs(self) -> None:
+    def test_single_sample_is_the_log_softmax_of_one_draw(self) -> None:
         torch, _ = _torch_modules()
         from probly.layers.torch import HeteroscedasticLayer  # noqa: PLC0415
 
-        torch.manual_seed(0)
-        layer = HeteroscedasticLayer(in_features=8, num_classes=3, num_factors=4)
-        layer.training_samples = 4
+        layer = HeteroscedasticLayer(in_features=8, num_classes=3, num_factors=4, num_samples=1)
         x = torch.randn(5, 8)
         out = layer(x)
-        # Output is log of softmax-averaged probabilities -> sum_class exp(out) == 1.
         assert out.shape == (5, 3)
-        probs = out.exp()
-        torch.testing.assert_close(probs.sum(-1), torch.ones(5), atol=1e-5, rtol=1e-5)
-        assert torch.all(out <= 0.0 + 1e-6)  # log-probability <= 0
+        torch.testing.assert_close(out.exp().sum(-1), torch.ones(5), atol=1e-5, rtol=1e-5)
 
-    def test_multi_sample_parameter_efficient_routing(self) -> None:
-        torch, _ = _torch_modules()
+    def test_num_samples_is_fixed_at_construction(self) -> None:
+        _, _ = _torch_modules()
         from probly.layers.torch import HeteroscedasticLayer  # noqa: PLC0415
 
-        torch.manual_seed(0)
-        layer = HeteroscedasticLayer(
-            in_features=8,
-            num_classes=3,
-            num_factors=4,
-            is_parameter_efficient=True,
-        )
-        layer.training_samples = 4
-        x = torch.randn(5, 8)
-        out = layer(x)
-        assert out.shape == (5, 3)
-        probs = out.exp()
-        torch.testing.assert_close(probs.sum(-1), torch.ones(5), atol=1e-5, rtol=1e-5)
+        assert HeteroscedasticLayer(in_features=8, num_classes=3).num_samples == 100
+        assert HeteroscedasticLayer(in_features=8, num_classes=3, num_samples=7).num_samples == 7
+        assert not hasattr(HeteroscedasticLayer(in_features=8, num_classes=3), "training_samples")
 
 
 class TestKLDivergenceHelper:
