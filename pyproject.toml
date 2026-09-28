@@ -132,6 +132,7 @@ docs = [
     "sphinxcontrib-bibtex>=2.0.0",  # for bibliography support
     "sphinx-design",                # grid and card directives used by the methods guide
     "jupyter-sphinx",               # executes narrative code blocks so their output regenerates
+    "sphinx-codeautolink",          # links names in narrative code blocks to their API reference
 ]
 benchmark = [
     "wandb>=0.25.1",
