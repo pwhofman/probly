@@ -1314,8 +1314,20 @@ def unpack_interval(x: torch.Tensor, channel_dim: int = 1) -> tuple[torch.Tensor
     return x.split(c // 2, dim=channel_dim)
 
 
+def _clamp_nonnegative_(parameter: torch.Tensor) -> torch.Tensor:
+    """Set the negative entries of a radius parameter to zero in place and return it.
+
+    This keeps the radii non-negative the way the constraint of the reference
+    implementation does after every update: the layer uses the raw parameter, so a
+    radius that is exactly zero still receives a gradient and can grow again.
+    """
+    with torch.no_grad():
+        parameter.clamp_(min=0.0)
+    return parameter
+
+
 class IntConv2d(nn.Module):
-    """Interval-arithmetic 2D convolution based on :cite:`wangCredalDeepEnsembles2024`.
+    """Interval-arithmetic 2D convolution based on :cite:`wangCreINNsCredalSet2025`.
 
     Has paired center and radius kernels (and biases); the radius weight and
     bias are clamped to non-negative values inside ``forward``. Inputs and
@@ -1381,7 +1393,7 @@ class IntConv2d(nn.Module):
         lo = x[:, : self.in_channels]
         hi = x[:, self.in_channels :]
 
-        radius_weight = F.relu(self.radius_weight)
+        radius_weight = _clamp_nonnegative_(self.radius_weight)
         w_lo = self.center_weight - radius_weight
         w_hi = self.center_weight + radius_weight
         w_lo_pos, w_lo_neg = torch.clamp(w_lo, min=0.0), torch.clamp(w_lo, max=0.0)
@@ -1391,7 +1403,7 @@ class IntConv2d(nn.Module):
         hi_out = self._conv(lo, w_hi_neg) + self._conv(hi, w_hi_pos)
 
         if self.use_bias:
-            radius_bias = F.relu(self.radius_bias)
+            radius_bias = _clamp_nonnegative_(self.radius_bias)
             b_lo = (self.center_bias - radius_bias).view(1, -1, 1, 1)
             b_hi = (self.center_bias + radius_bias).view(1, -1, 1, 1)
             lo_out = lo_out + b_lo
@@ -1409,7 +1421,7 @@ class IntConv2d(nn.Module):
 
 
 class IntLinear(nn.Module):
-    """Interval-arithmetic linear layer based on :cite:`wangCredalDeepEnsembles2024`.
+    """Interval-arithmetic linear layer based on :cite:`wangCreINNsCredalSet2025`.
 
     1D analogue of :class:`IntConv2d`. Inputs and outputs are packed
     ``(..., 2 * features)`` (lower half then upper); the same non-negativity
@@ -1456,7 +1468,7 @@ class IntLinear(nn.Module):
         lo = x[..., : self.in_features]
         hi = x[..., self.in_features :]
 
-        radius_weight = F.relu(self.radius_weight)
+        radius_weight = _clamp_nonnegative_(self.radius_weight)
         w_lo = self.center_weight - radius_weight
         w_hi = self.center_weight + radius_weight
         w_lo_pos, w_lo_neg = torch.clamp(w_lo, min=0.0), torch.clamp(w_lo, max=0.0)
@@ -1466,7 +1478,7 @@ class IntLinear(nn.Module):
         hi_out = F.linear(lo, w_hi_neg) + F.linear(hi, w_hi_pos)
 
         if self.use_bias:
-            radius_bias = F.relu(self.radius_bias)
+            radius_bias = _clamp_nonnegative_(self.radius_bias)
             lo_out = lo_out + (self.center_bias - radius_bias)
             hi_out = hi_out + (self.center_bias + radius_bias)
 
@@ -1478,7 +1490,7 @@ class IntLinear(nn.Module):
 
 
 class IntBatchNorm2d(nn.Module):
-    """Interval-valued batch normalization for 2D feature maps based on :cite:`wangCredalDeepEnsembles2024`.
+    """Interval-valued batch normalization for 2D feature maps based on :cite:`wangCreINNsCredalSet2025`.
 
     Inputs and outputs are packed ``(B, 2C, H, W)``. Splits into
     ``center = (lo + hi)/2`` and ``radius = (hi - lo)/2``, normalizes each
@@ -1572,7 +1584,7 @@ class IntBatchNorm2d(nn.Module):
 
 
 class IntBatchNorm1d(nn.Module):
-    """Interval-valued batch normalization for 1D features based on :cite:`wangCredalDeepEnsembles2024`.
+    """Interval-valued batch normalization for 1D features based on :cite:`wangCreINNsCredalSet2025`.
 
     1D analogue of :class:`IntBatchNorm2d`, used after :class:`IntLinear` on
     flattened features. Inputs and outputs are packed ``(B, 2 * num_features)``.
@@ -1663,7 +1675,7 @@ class IntBatchNorm1d(nn.Module):
 
 
 class IntSoftmax(nn.Module):
-    """Interval SoftMax head based on :cite:`wangCredalDeepEnsembles2024`.
+    """Interval SoftMax head based on :cite:`wangCreINNsCredalSet2025`.
 
     Applies Eq. 7 of the paper in ``(lo, hi)`` parameterization, then the
     Section 3.3 reachability clip so the output is always a valid (reachable)
