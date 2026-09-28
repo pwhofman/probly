@@ -25,11 +25,14 @@ from probly.representation.distribution.torch_categorical import (
 
 from ._entropy_suite import (
     EXACT_MAX_CLASSES,
+    DistanceBasedEntropySuite,
     IntervalLowerEntropySuite,
     assert_in_intervals,
     interval_min_entropy,
     previous_greedy_min_entropy,
     random_intervals,
+    tv_ball_max_entropy,
+    tv_ball_min_entropy,
 )
 
 
@@ -40,6 +43,13 @@ class _TorchBackend:
     def intervals(lower: np.ndarray, upper: np.ndarray) -> TorchProbabilityIntervalsCredalSet:
         return TorchProbabilityIntervalsCredalSet(
             lower_bounds=torch.as_tensor(lower), upper_bounds=torch.as_tensor(upper)
+        )
+
+    @staticmethod
+    def distance(nominal: np.ndarray, radius: np.ndarray) -> TorchDistanceBasedCredalSet:
+        return TorchDistanceBasedCredalSet(
+            nominal=TorchProbabilityCategoricalDistribution(torch.as_tensor(nominal)),
+            radius=torch.as_tensor(radius),
         )
 
     @staticmethod
@@ -665,11 +675,9 @@ def test_convex_lower_entropy_accepts_approximate(approximate) -> None:
     torch.testing.assert_close(lower_entropy(credal_set, approximate=approximate), lower_entropy(credal_set))
 
 
-def test_distance_lower_entropy_requires_approximation() -> None:
+def test_distance_lower_entropy_is_exact_for_every_approximate_value() -> None:
     credal_set = _distance_credal_set([0.3, 0.7], 0.1)
-    with pytest.raises(ValueError, match="approximate=False is not supported"):
-        lower_entropy(credal_set, approximate=False)
-    for approximate in (True, "auto"):
+    for approximate in (False, True, "auto"):
         torch.testing.assert_close(lower_entropy(credal_set, approximate=approximate), lower_entropy(credal_set))
 
 
@@ -686,3 +694,39 @@ def test_credal_set_decomposition_approximates_with_a_warning_by_default() -> No
     with pytest.raises(ValueError, match="approximate=True"):
         _ = quantify(credal_set, approximate=False).aleatoric
     np.testing.assert_allclose(float(quantify(credal_set, approximate=True).aleatoric), greedy, atol=1e-10)
+
+
+class TestTorchDistanceBasedEntropy(DistanceBasedEntropySuite):
+    """Total-variation ball entropies on torch tensors."""
+
+
+def test_quantify_conformal_total_variation_uses_the_ball() -> None:
+    """End to end: quantify on a conformal total-variation set optimizes over the ball, not over its box."""
+    from torch import nn  # noqa: PLC0415
+
+    from probly.calibrator import calibrate  # noqa: PLC0415
+    from probly.method.conformal_credal_set import conformal_total_variation  # noqa: PLC0415
+    from probly.predictor import predict  # noqa: PLC0415
+    from probly.quantification import quantify  # noqa: PLC0415
+
+    torch.manual_seed(0)
+    linear = nn.Linear(4, 6)
+    model = nn.Sequential(linear, nn.Softmax(dim=-1))
+    with torch.no_grad():
+        linear.weight.mul_(6.0)
+        x_calib, x_test = torch.randn(100, 4), torch.randn(8, 4)
+        y_calib = model(x_calib).argmax(-1)
+    credal_set = predict(calibrate(conformal_total_variation(model), 0.4, y_calib, x_calib), x_test)
+    assert isinstance(credal_set, TorchDistanceBasedCredalSet)
+
+    decomposition = quantify(credal_set)
+
+    nominal = credal_set.nominal.probabilities.detach().numpy()
+    radius = credal_set.radius.detach().numpy()
+    expected_total = [tv_ball_max_entropy(c, r) for c, r in zip(nominal, radius, strict=True)]
+    expected_aleatoric = [tv_ball_min_entropy(c, r) for c, r in zip(nominal, radius, strict=True)]
+    total = decomposition.total.detach().numpy()
+    aleatoric = decomposition.aleatoric.detach().numpy()
+    np.testing.assert_allclose(total, expected_total, atol=1e-5)
+    np.testing.assert_allclose(aleatoric, expected_aleatoric, atol=1e-5)
+    np.testing.assert_allclose(decomposition.epistemic.detach().numpy(), total - aleatoric, atol=1e-6)

@@ -19,11 +19,13 @@ import jax.numpy as jnp
 import numpy as np
 import torch
 
-from probly.quantification.measure.credal_set import lower_entropy
-from probly.representation.credal_set.jax import JaxProbabilityIntervalsCredalSet
-from probly.representation.credal_set.torch import TorchProbabilityIntervalsCredalSet
+from probly.quantification.measure.credal_set import lower_entropy, upper_entropy
+from probly.representation.credal_set.jax import JaxDistanceBasedCredalSet, JaxProbabilityIntervalsCredalSet
+from probly.representation.credal_set.torch import TorchDistanceBasedCredalSet, TorchProbabilityIntervalsCredalSet
+from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
+from probly.representation.distribution.torch_categorical import TorchProbabilityCategoricalDistribution
 
-from ._entropy_suite import DTYPES, EXACT_MAX_CLASSES, random_intervals
+from ._entropy_suite import DTYPES, EXACT_MAX_CLASSES, random_intervals, random_tv_ball
 
 
 @pytest.fixture(autouse=True)
@@ -59,6 +61,31 @@ def test_intervals_lower_entropy_parity(dtype: type[np.floating], n_classes: int
         JaxProbabilityIntervalsCredalSet(jnp.asarray(lower), jnp.asarray(upper)),
         return_distribution=True,
         approximate=approximate,
+    )
+
+    assert jax_value.dtype == torch_value.numpy().dtype == dtype
+    np.testing.assert_allclose(np.asarray(jax_value), torch_value.numpy(), atol=_parity_tolerance(dtype))
+    np.testing.assert_allclose(np.sort(np.asarray(jax_p)), np.sort(torch_p.numpy()), atol=10 * _parity_tolerance(dtype))
+
+
+@DTYPES
+@pytest.mark.parametrize("n_classes", [2, 4, 10, 50])
+@pytest.mark.parametrize("measure", [upper_entropy, lower_entropy], ids=["upper", "lower"])
+def test_distance_based_entropy_parity(dtype: type[np.floating], n_classes: int, measure) -> None:
+    rng = np.random.default_rng(n_classes)
+    balls = [random_tv_ball(rng, kind, n_classes) for kind in ["softmax", "dirichlet", "sparse"] * 5]
+    nominal = np.stack([b[0] for b in balls]).astype(dtype)
+    radius = np.array([b[1] for b in balls], dtype=dtype)
+
+    torch_value, torch_p = measure(
+        TorchDistanceBasedCredalSet(
+            TorchProbabilityCategoricalDistribution(torch.as_tensor(nominal)), torch.as_tensor(radius)
+        ),
+        return_distribution=True,
+    )
+    jax_value, jax_p = measure(
+        JaxDistanceBasedCredalSet(JaxProbabilityCategoricalDistribution(jnp.asarray(nominal)), jnp.asarray(radius)),
+        return_distribution=True,
     )
 
     assert jax_value.dtype == torch_value.numpy().dtype == dtype

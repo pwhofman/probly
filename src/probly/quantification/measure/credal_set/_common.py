@@ -185,7 +185,7 @@ def lower_entropy(
     - ``"auto"`` (default): exactly for up to 14 classes, and with the greedy search and a warning for
       more classes.
 
-    Distance-based credal sets only have an approximate lower entropy implementation.
+    Distance-based credal sets have an exact lower entropy for every value of ``approximate``.
     Dirichlet level sets use sampled per-class bounds; their ``approximate`` option
     controls entropy optimization over those bounds, not the sampling approximation.
     """

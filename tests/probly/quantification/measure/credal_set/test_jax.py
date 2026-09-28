@@ -39,8 +39,10 @@ from probly.representation.distribution.jax_categorical import (
 from probly.utils.jax import jax_entropy
 
 from ._entropy_suite import (
+    DistanceBasedEntropySuite,
     IntervalLowerEntropySuite,
     assert_in_intervals,
+    entropy,
     interval_min_entropy,
     previous_greedy_min_entropy,
 )
@@ -521,6 +523,13 @@ class _JaxBackend:
         return JaxProbabilityIntervalsCredalSet(lower_bounds=jnp.asarray(lower), upper_bounds=jnp.asarray(upper))
 
     @staticmethod
+    def distance(nominal: np.ndarray, radius: np.ndarray) -> JaxDistanceBasedCredalSet:
+        return JaxDistanceBasedCredalSet(
+            nominal=JaxProbabilityCategoricalDistribution(jnp.asarray(nominal)),
+            radius=jnp.asarray(radius),
+        )
+
+    @staticmethod
     def numpy(value: jax.Array) -> np.ndarray:
         return np.asarray(value)
 
@@ -576,11 +585,41 @@ def test_convex_lower_entropy_accepts_approximate(approximate) -> None:
     )
 
 
-def test_distance_lower_entropy_requires_approximation() -> None:
+def test_distance_lower_entropy_is_exact_for_every_approximate_value() -> None:
     credal_set = _distance_credal_set([0.3, 0.7], 0.1)
-    with pytest.raises(ValueError, match="approximate=False is not supported"):
-        lower_entropy(credal_set, approximate=False)
-    for approximate in (True, "auto"):
+    for approximate in (False, True, "auto"):
         np.testing.assert_allclose(
             np.asarray(lower_entropy(credal_set, approximate=approximate)), np.asarray(lower_entropy(credal_set))
         )
+
+
+class TestJaxDistanceBasedEntropy(DistanceBasedEntropySuite):
+    """Total-variation ball entropies on jax arrays."""
+
+
+def test_quantify_distance_based_uses_the_ball() -> None:
+    """End to end: quantify on total-variation sets gives the entropies of the ball, not of its box.
+
+    Around (.5, .5, 0, 0) with radius .3 the maximum lowers the two large classes to .35 and
+    raises the empty ones to .15. Around the uniform distribution with radius .25 the minimum
+    moves .25 into one class from one other class.
+    """
+    from probly.quantification import quantify  # noqa: PLC0415
+
+    nominal = np.array([[0.5, 0.5, 0.0, 0.0], [0.25, 0.25, 0.25, 0.25]], dtype=np.float32)
+    radius = np.array([0.3, 0.25], dtype=np.float32)
+    cs = JaxDistanceBasedCredalSet(
+        nominal=JaxProbabilityCategoricalDistribution(jnp.asarray(nominal)), radius=jnp.asarray(radius)
+    )
+
+    decomposition = quantify(cs)
+
+    expected_total = entropy(np.array([[0.35, 0.35, 0.15, 0.15], [0.25, 0.25, 0.25, 0.25]]))
+    expected_aleatoric = entropy(np.array([[0.8, 0.2, 0.0, 0.0], [0.5, 0.25, 0.25, 0.0]]))
+    np.testing.assert_allclose(np.asarray(decomposition.total), expected_total, atol=_ATOL)
+    np.testing.assert_allclose(np.asarray(decomposition.aleatoric), expected_aleatoric, atol=_ATOL)
+    np.testing.assert_allclose(
+        np.asarray(decomposition.epistemic),
+        np.asarray(decomposition.total) - np.asarray(decomposition.aleatoric),
+        atol=1e-6,
+    )

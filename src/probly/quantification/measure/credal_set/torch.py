@@ -201,6 +201,78 @@ def torch_intervals_lower_entropy(
     return result
 
 
+def _nominal_and_radius(credal_set: TorchDistanceBasedCredalSet) -> tuple[torch.Tensor, torch.Tensor]:
+    """Nominal distributions of shape ``(..., K)`` and radii of shape ``(..., 1)`` of a distance-based set.
+
+    The radius broadcasts as in ``lower()`` and ``upper()``, and a negative radius counts as zero.
+    """
+    nominal = credal_set.nominal.probabilities
+    radius = credal_set.radius.to(nominal.device)
+    if radius.dim() == nominal.dim() - 1:
+        radius = radius.unsqueeze(-1)
+    dtype = torch.result_type(nominal, radius)
+    nominal, radius = torch.broadcast_tensors(nominal.to(dtype), radius.to(dtype).clamp_min(0.0))
+    return nominal, radius[..., :1]
+
+
+def _tv_ball_max_entropy_distribution(nominal: torch.Tensor, radius: torch.Tensor) -> torch.Tensor:
+    """Maximize entropy over the total variation ball ``{p : TV(p, nominal) <= radius}``.
+
+    The maximum moves mass from the largest classes to the smallest: the classes below a level
+    ``low`` rise to ``low`` and the classes above a level ``high`` drop to ``high``, so that the
+    same mass ``m`` is added and removed. Moving more mass raises the entropy until the levels
+    meet at the uniform distribution, so ``m = min(radius, TV(nominal, uniform))``. With the
+    classes sorted, ``low = min_k (m + S_k) / k`` over the sums ``S_k`` of the ``k`` smallest
+    classes and ``high = max_k (T_k - m) / k`` over the sums ``T_k`` of the ``k`` largest.
+
+    Args:
+        nominal: Nominal distributions of shape ``(..., K)``.
+        radius: Nonnegative radii of shape ``(..., 1)``.
+
+    Returns:
+        The maximum-entropy distributions of shape ``(..., K)``.
+    """
+    n_classes = nominal.shape[-1]
+    uniform = nominal.sum(-1, keepdim=True) / n_classes
+    mass = torch.minimum(radius, (nominal - uniform).clamp_min(0.0).sum(-1, keepdim=True))
+    counts = torch.arange(1, n_classes + 1, device=nominal.device, dtype=nominal.dtype)
+    ascending = nominal.sort(dim=-1).values
+    low = ((mass + ascending.cumsum(-1)) / counts).amin(-1, keepdim=True)
+    high = ((ascending.flip(-1).cumsum(-1) - mass) / counts).amax(-1, keepdim=True)
+    return torch.clamp(nominal, low, high)
+
+
+def _tv_ball_min_entropy_distribution(nominal: torch.Tensor, radius: torch.Tensor) -> torch.Tensor:
+    """Minimize entropy over the total variation ball ``{p : TV(p, nominal) <= radius}``.
+
+    Entropy is concave, so the minimum is at a vertex of the ball, where one class gains mass
+    and the others lose it. Giving the mass to the largest class and taking it from the
+    smallest classes first gives the most concentrated distribution in the ball, so this is
+    the minimum. The largest class can take at most the mass of the other classes, so the
+    mass moved is ``m = min(radius, 1 - max(nominal))``.
+
+    Args:
+        nominal: Nominal distributions of shape ``(..., K)``.
+        radius: Nonnegative radii of shape ``(..., 1)``.
+
+    Returns:
+        The minimum-entropy distributions of shape ``(..., K)``.
+    """
+    largest = nominal.argmax(-1, keepdim=True)
+    # Sort the donors, the classes other than the largest, in ascending order; the largest class comes last.
+    order = nominal.scatter(-1, largest, torch.inf).argsort(dim=-1)
+    ascending = nominal.gather(-1, order)
+    donors = ascending[..., :-1]
+    cumulative = donors.cumsum(-1)
+    # The largest class can take at most the mass of the donors, computed from the same cumulative sum
+    # that empties them, so that emptied classes are exactly zero.
+    mass = torch.minimum(radius, cumulative[..., -1:]) if donors.shape[-1] > 0 else torch.zeros_like(radius)
+    # Empty the smallest donors in turn until the mass is taken.
+    kept = torch.clamp(cumulative - mass, torch.zeros_like(donors), donors)
+    p = torch.empty_like(nominal).scatter(-1, order, torch.cat([kept, ascending[..., -1:] + mass], -1))
+    return p
+
+
 @upper_entropy.register(TorchDistanceBasedCredalSet)
 def torch_distance_based_upper_entropy(
     credal_set: TorchDistanceBasedCredalSet,
@@ -210,62 +282,37 @@ def torch_distance_based_upper_entropy(
 ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
     """Compute the upper entropy of a distance-based credal set.
 
-    The TV ball {p : TV(p, p_hat) <= r} implies per-class bounds
-    lower_i = max(0, p_hat_i - r), upper_i = min(1, p_hat_i + r).
-    Uses bisection on the Lagrange multiplier for sum(p) = 1.
+    Maximize entropy over the TV ball {p : TV(p, p_hat) <= r} by moving mass r (or less, if
+    the uniform distribution is closer) from the largest classes to the smallest. The result
+    is exact; see ``_tv_ball_max_entropy_distribution``. A negative radius counts as zero.
     """
-    lower = credal_set.lower()
-    upper = credal_set.upper()
-    lo = 1.0 + lower.amin(dim=-1).clamp_min(torch.finfo(lower.dtype).tiny).log()
-    hi = lower.new_ones(lower.shape[:-1])
-    for _ in range(_BISECT_ITERS):
-        mu = (lo + hi) / 2
-        g = torch.clamp((mu.unsqueeze(-1) - 1).exp(), lower, upper).sum(-1) - 1.0
-        lo = torch.where(g < 0, mu, lo)
-        hi = torch.where(g >= 0, mu, hi)
-    mu = (lo + hi) / 2
-    p = torch.clamp((mu.unsqueeze(-1) - 1).exp(), lower, upper)
+    p = _tv_ball_max_entropy_distribution(*_nominal_and_radius(credal_set))
     result = _apply_base(torch_entropy(p), credal_set.num_classes, base)
     if return_distribution:
         return result, p
     return result
 
 
-@lower_entropy.register_approx(TorchDistanceBasedCredalSet)
+@lower_entropy.register(TorchDistanceBasedCredalSet)
 def torch_distance_based_lower_entropy(
     credal_set: TorchDistanceBasedCredalSet,
     base: LogBase = None,
     *,
     return_distribution: bool = False,
+    approximate: Approximate = "auto",
 ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
     """Compute the lower entropy of a distance-based credal set.
 
-    The TV ball implies per-class bounds. Since entropy is concave, the
-    minimum is at an extreme point of the polytope. Greedy heuristic tries
-    each class as the primary recipient of excess mass.
+    Minimize entropy over the TV ball {p : TV(p, p_hat) <= r} by moving mass r into the
+    largest class, taken from the smallest classes first. The result is exact for every value
+    of ``approximate``; see ``_tv_ball_min_entropy_distribution``. A negative radius counts as
+    zero.
     """
-    lower = credal_set.lower()
-    upper = credal_set.upper()
-    n_classes = lower.shape[-1]
-    capacity = upper - lower
-    residual = 1.0 - lower.sum(-1)
-    best = lower.new_full(lower.shape[:-1], float("inf"))
-    best_p = torch.empty_like(lower)
-    for j in range(n_classes):
-        p = lower.detach().clone()
-        rem = residual.clone()
-        for i in [j, *[k for k in range(n_classes) if k != j]]:
-            fill = torch.minimum(rem.clamp(min=0.0), capacity[..., i])
-            p[..., i] = p[..., i] + fill
-            rem = rem - fill
-        h = torch_entropy(p)
-        if return_distribution:
-            improved = h < best
-            best_p = torch.where(improved.unsqueeze(-1), p, best_p)
-        best = torch.minimum(best, h)
-    result = _apply_base(best, credal_set.num_classes, base)
+    del approximate
+    p = _tv_ball_min_entropy_distribution(*_nominal_and_radius(credal_set))
+    result = _apply_base(torch_entropy(p), credal_set.num_classes, base)
     if return_distribution:
-        return result, best_p
+        return result, p
     return result
 
 

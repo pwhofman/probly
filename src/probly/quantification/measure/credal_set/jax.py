@@ -218,6 +218,81 @@ def jax_intervals_lower_entropy(
     return result
 
 
+def _nominal_and_radius(credal_set: JaxDistanceBasedCredalSet) -> tuple[jax.Array, jax.Array]:
+    """Nominal distributions of shape ``(..., K)`` and radii of shape ``(..., 1)`` of a distance-based set.
+
+    The radius broadcasts as in ``lower()`` and ``upper()``, and a negative radius counts as zero.
+    """
+    nominal = credal_set.nominal.probabilities
+    radius = jnp.asarray(credal_set.radius)
+    if radius.ndim == nominal.ndim - 1:
+        radius = radius[..., None]
+    dtype = jnp.result_type(nominal, radius)
+    nominal, radius = jnp.broadcast_arrays(nominal.astype(dtype), jnp.clip(radius.astype(dtype), min=0.0))
+    return nominal, radius[..., :1]
+
+
+@jax.jit
+def _tv_ball_max_entropy_distribution(nominal: jax.Array, radius: jax.Array) -> jax.Array:
+    """Maximize entropy over the total variation ball ``{p : TV(p, nominal) <= radius}``.
+
+    The maximum moves mass from the largest classes to the smallest: the classes below a level
+    ``low`` rise to ``low`` and the classes above a level ``high`` drop to ``high``, so that the
+    same mass ``m`` is added and removed. Moving more mass raises the entropy until the levels
+    meet at the uniform distribution, so ``m = min(radius, TV(nominal, uniform))``. With the
+    classes sorted, ``low = min_k (m + S_k) / k`` over the sums ``S_k`` of the ``k`` smallest
+    classes and ``high = max_k (T_k - m) / k`` over the sums ``T_k`` of the ``k`` largest.
+
+    Args:
+        nominal: Nominal distributions of shape ``(..., K)``.
+        radius: Nonnegative radii of shape ``(..., 1)``.
+
+    Returns:
+        The maximum-entropy distributions of shape ``(..., K)``.
+    """
+    n_classes = nominal.shape[-1]
+    uniform = jnp.sum(nominal, axis=-1, keepdims=True) / n_classes
+    mass = jnp.minimum(radius, jnp.sum(jnp.clip(nominal - uniform, min=0.0), axis=-1, keepdims=True))
+    counts = jnp.arange(1, n_classes + 1, dtype=nominal.dtype)
+    ascending = jnp.sort(nominal, axis=-1)
+    low = jnp.min((mass + jnp.cumsum(ascending, axis=-1)) / counts, axis=-1, keepdims=True)
+    high = jnp.max((jnp.cumsum(ascending[..., ::-1], axis=-1) - mass) / counts, axis=-1, keepdims=True)
+    return jnp.clip(nominal, low, high)
+
+
+@jax.jit
+def _tv_ball_min_entropy_distribution(nominal: jax.Array, radius: jax.Array) -> jax.Array:
+    """Minimize entropy over the total variation ball ``{p : TV(p, nominal) <= radius}``.
+
+    Entropy is concave, so the minimum is at a vertex of the ball, where one class gains mass
+    and the others lose it. Giving the mass to the largest class and taking it from the
+    smallest classes first gives the most concentrated distribution in the ball, so this is
+    the minimum. The largest class can take at most the mass of the other classes, so the
+    mass moved is ``m = min(radius, 1 - max(nominal))``.
+
+    Args:
+        nominal: Nominal distributions of shape ``(..., K)``.
+        radius: Nonnegative radii of shape ``(..., 1)``.
+
+    Returns:
+        The minimum-entropy distributions of shape ``(..., K)``.
+    """
+    largest = jnp.argmax(nominal, axis=-1, keepdims=True)
+    # Sort the donors, the classes other than the largest, in ascending order; the largest class comes last.
+    is_largest = jnp.arange(nominal.shape[-1]) == largest
+    order = jnp.argsort(jnp.where(is_largest, jnp.inf, nominal), axis=-1)
+    ascending = jnp.take_along_axis(nominal, order, -1)
+    donors = ascending[..., :-1]
+    cumulative = jnp.cumsum(donors, axis=-1)
+    # The largest class can take at most the mass of the donors, computed from the same cumulative sum
+    # that empties them, so that emptied classes are exactly zero.
+    mass = jnp.minimum(radius, cumulative[..., -1:]) if donors.shape[-1] > 0 else jnp.zeros_like(radius)
+    # Empty the smallest donors in turn until the mass is taken.
+    kept = jnp.clip(cumulative - mass, 0.0, donors)
+    sorted_p = jnp.concatenate([kept, ascending[..., -1:] + mass], axis=-1)
+    return jnp.put_along_axis(jnp.zeros_like(nominal), order, sorted_p, axis=-1, inplace=False)
+
+
 @upper_entropy.register(JaxDistanceBasedCredalSet)
 def jax_distance_based_upper_entropy(
     credal_set: JaxDistanceBasedCredalSet,
@@ -227,34 +302,37 @@ def jax_distance_based_upper_entropy(
 ) -> jax.Array | tuple[jax.Array, jax.Array]:
     """Compute the upper entropy of a distance-based credal set.
 
-    The TV ball ``{p : TV(p, p_hat) <= r}`` implies per-class bounds
-    ``lower_i = max(0, p_hat_i - r)`` and ``upper_i = min(1, p_hat_i + r)``.
-    Uses bisection on the Lagrange multiplier for ``sum(p) = 1``.
+    Maximize entropy over the TV ball ``{p : TV(p, p_hat) <= r}`` by moving mass ``r`` (or
+    less, if the uniform distribution is closer) from the largest classes to the smallest. The
+    result is exact; see ``_tv_ball_max_entropy_distribution``. A negative radius counts as zero.
     """
-    p = _max_entropy_distribution(credal_set.lower(), credal_set.upper())
+    p = _tv_ball_max_entropy_distribution(*_nominal_and_radius(credal_set))
     result = _apply_base(jax_entropy(p), credal_set.num_classes, base)
     if return_distribution:
         return result, p
     return result
 
 
-@lower_entropy.register_approx(JaxDistanceBasedCredalSet)
+@lower_entropy.register(JaxDistanceBasedCredalSet)
 def jax_distance_based_lower_entropy(
     credal_set: JaxDistanceBasedCredalSet,
     base: LogBase = None,
     *,
     return_distribution: bool = False,
+    approximate: Approximate = "auto",
 ) -> jax.Array | tuple[jax.Array, jax.Array]:
     """Compute the lower entropy of a distance-based credal set.
 
-    The TV ball implies per-class bounds. Since entropy is concave, the minimum
-    is at an extreme point of the polytope; a greedy heuristic tries each class
-    as the primary recipient of excess mass.
+    Minimize entropy over the TV ball ``{p : TV(p, p_hat) <= r}`` by moving mass ``r`` into
+    the largest class, taken from the smallest classes first. The result is exact for every
+    value of ``approximate``; see ``_tv_ball_min_entropy_distribution``. A negative radius
+    counts as zero.
     """
-    best, best_p = _approximate_min_entropy_distribution(credal_set.lower(), credal_set.upper())
-    result = _apply_base(best, credal_set.num_classes, base)
+    del approximate
+    p = _tv_ball_min_entropy_distribution(*_nominal_and_radius(credal_set))
+    result = _apply_base(jax_entropy(p), credal_set.num_classes, base)
     if return_distribution:
-        return result, best_p
+        return result, p
     return result
 
 

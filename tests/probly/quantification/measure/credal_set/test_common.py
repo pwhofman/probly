@@ -23,6 +23,13 @@ from ._entropy_suite import (
     interval_min_entropy_by_free_class,
     previous_greedy_min_entropy,
     random_intervals,
+    random_tv_ball,
+    total_variation,
+    tv_ball_ascent_gap,
+    tv_ball_max_entropy,
+    tv_ball_min_entropy,
+    tv_ball_min_entropy_by_receiver,
+    tv_ball_vertices,
 )
 
 
@@ -273,3 +280,21 @@ def test_interval_references_agree(n_classes: int, kind: str) -> None:
         np.testing.assert_allclose(interval_min_entropy_by_free_class(lower, upper), exact, atol=1e-12)
         np.testing.assert_allclose(_all_fill_orders_min_entropy(lower, upper), exact, atol=1e-12)
         assert previous_greedy_min_entropy(lower, upper) >= exact - 1e-12
+
+
+@pytest.mark.parametrize("n_classes", range(2, 6))
+@pytest.mark.parametrize("kind", ["softmax", "dirichlet", "sparse"])
+def test_tv_ball_references_agree(n_classes: int, kind: str) -> None:
+    """The three exact lower-entropy references agree, and SLSQP reaches the ascent-gap bound."""
+    rng = np.random.default_rng(n_classes)
+    for _ in range(4):
+        nominal, radius = random_tv_ball(rng, kind, n_classes)
+        vertices = tv_ball_vertices(nominal, radius)
+        assert (total_variation(vertices, nominal) <= radius + 1e-9).all()
+        exact = float(entropy(vertices).min())
+        np.testing.assert_allclose(tv_ball_min_entropy(nominal, radius), exact, atol=1e-12)
+        np.testing.assert_allclose(tv_ball_min_entropy_by_receiver(nominal, radius), exact, atol=1e-12)
+        # The maximum is at least the entropy of every vertex, and the linear bound at the nominal holds.
+        maximum = tv_ball_max_entropy(nominal, radius)
+        assert maximum >= float(entropy(vertices).max()) - 1e-9
+        assert maximum <= float(entropy(nominal)) + tv_ball_ascent_gap(nominal, nominal, radius) + 1e-9
