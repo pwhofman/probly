@@ -28,6 +28,13 @@ the same unified API.
 
       Get started
 
+   .. button-ref:: user_guide
+      :ref-type: doc
+      :color: primary
+      :outline:
+
+      User guide
+
    .. button-ref:: auto_examples/index
       :ref-type: doc
       :color: primary

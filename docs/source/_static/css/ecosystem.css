@@ -9,8 +9,8 @@
 .probly-ecosystem {
   --ring-radius-x: 37%;
   --ring-radius-y: 37%;
-  --chip-size: 5.4rem;
-  --chip-size-small: 4.7rem;
+  --chip-size: 3.9rem;
+  --chip-size-small: 3.4rem;
   --chip-fill: #eef1f6;
   --chip-edge: #d3d9e2;
   --ring-line: #a8b2bf;
@@ -18,9 +18,9 @@
 
   position: relative;
   width: 100%;
-  max-width: 40rem;
+  max-width: 28rem;
   aspect-ratio: 1 / 0.92;
-  margin: 1rem auto 2.5rem;
+  margin: 0.5rem auto 1.5rem;
 }
 
 body[data-theme="dark"] .probly-ecosystem {

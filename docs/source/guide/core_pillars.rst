@@ -60,38 +60,83 @@ through a framework-specific object.
 One Pipeline, Four Stages
 =========================
 
-The rest of this page elaborates on the following snippet.
+The rest of this page elaborates on the following snippet. The tabs switch
+between two methods, MC dropout and SNGP.
 
-.. jupyter-execute::
+.. tab-set::
+    :sync-group: method
 
-    from probly.method import dropout
-    from probly.representer import representer
-    from probly.quantification import quantify
-    from probly.evaluation.ood import evaluate_ood
+    .. tab-item:: MC dropout
+        :sync: dropout
 
-    # net: any trained torch or flax network (here, a small Two Moons classifier)
+        .. jupyter-execute::
 
-    # 1. transform: keep dropout active at inference (MC dropout)
-    model = dropout(net, p=0.25, predictor_type="logit_classifier")
+            from probly.method import dropout
+            from probly.representer import representer
+            from probly.quantification import quantify
+            from probly.evaluation.ood import evaluate_ood
 
-    # 2. represent: turn stochastic forward passes into a second-order representation
-    rep = representer(model, num_samples=50)
-    out_id = rep.represent(data_id)
-    out_ood = rep.represent(data_ood)
+            # net: any trained torch or flax network (here, a small Two Moons classifier)
 
-    # 3. quantify: reduce the representation to total/aleatoric/epistemic scalars
-    eu_id = quantify(out_id).epistemic
-    eu_ood = quantify(out_ood).epistemic
+            # 1. transform: keep dropout active at inference (MC dropout)
+            model = dropout(net, p=0.25, predictor_type="logit_classifier")
 
-    # 4. evaluate: does the epistemic part separate in- from out-of-distribution?
-    print(evaluate_ood(eu_id, eu_ood))
+            # 2. represent: turn stochastic forward passes into a second-order representation
+            rep = representer(model, num_samples=50)
+            out_id = rep.represent(data_id)
+            out_ood = rep.represent(data_ood)
 
-Only stage 1 is specific to the method. Replacing ``dropout`` with ``sngp``
-changes that one line; replacing it with ``ensemble`` additionally drops
-``num_samples``, since the members of an ensemble are iterated rather than
-sampled. Stages 3 and 4 remain untouched in either case, because every
-transformation leads to a representation that stage 3 already knows how to
-handle.
+            # 3. quantify: reduce the representation to total/aleatoric/epistemic scalars
+            eu_id = quantify(out_id).epistemic
+            eu_ood = quantify(out_ood).epistemic
+
+            # 4. evaluate: does the epistemic part separate in- from out-of-distribution?
+            print(evaluate_ood(eu_id, eu_ood))
+
+    .. tab-item:: SNGP
+        :sync: sngp
+
+        .. jupyter-execute::
+
+            from probly.method import sngp
+            from probly.method.sngp import reset_precision_matrix
+            from probly.representer import representer
+            from probly.quantification import quantify
+            from probly.evaluation.ood import evaluate_ood
+
+            # net: any torch network (here, a small Two Moons classifier)
+
+            # 1. transform: spectral-normalize the body and swap the last Linear for a
+            # random-feature GP head; SNGP is ante-hoc, so the result is trained
+            model = sngp(net, norm_multiplier=0.9, ridge_penalty=0.01).requires_grad_(True)
+            optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+            model.train()
+            for _ in range(300):
+                reset_precision_matrix(model)  # the GP covariance is re-estimated every epoch
+                optimizer.zero_grad()
+                logits, _ = model(data_train)  # in training mode: (logits, variance)
+                nn.functional.cross_entropy(logits, labels_train).backward()
+                optimizer.step()
+            model.eval().requires_grad_(False)  # trained and frozen, like net
+
+            # 2. represent: sample logits from the GP posterior into a second-order representation
+            rep = representer(model, num_samples=50)
+            out_id = rep.represent(data_id)
+            out_ood = rep.represent(data_ood)
+
+            # 3. quantify: reduce the representation to total/aleatoric/epistemic scalars
+            eu_id = quantify(out_id).epistemic
+            eu_ood = quantify(out_ood).epistemic
+
+            # 4. evaluate: does the epistemic part separate in- from out-of-distribution?
+            print(evaluate_ood(eu_id, eu_ood))
+
+Only stage 1 is specific to the method. Switching from ``dropout`` to ``sngp``
+changes the transformation and, because SNGP is ante-hoc, adds a training
+loop; replacing it with ``ensemble`` instead drops ``num_samples``, since the
+members of an ensemble are iterated rather than sampled. Stages 2 to 4 remain
+untouched in either case, because every transformation leads to a
+representation that stage 3 already knows how to handle.
 
 .. _pillar-transformation:
 
@@ -117,17 +162,29 @@ has to be trained afterwards: ``ensemble`` returns *N* models to fit,
 Whether a transformation is post-hoc or ante-hoc is independent of the
 namespace it lives in. The following example crosses the two axes:
 
-.. jupyter-execute::
+.. tab-set::
+    :sync-group: method
 
-    from probly.transformation import dropout   # a primitive, applied per layer
-    from probly.method import sngp              # a named method from the literature
+    .. tab-item:: MC dropout
+        :sync: dropout
 
-    # post-hoc: re-enables the dropout layers the network already has
-    mc = dropout(net, p=0.25, predictor_type="logit_classifier")
+        .. jupyter-execute::
 
-    # ante-hoc: swaps the last Linear for a random-feature GP head and
-    # spectral-normalizes the rest, so the returned model has to be trained
-    gp = sngp(net)
+            from probly.transformation import dropout   # a primitive, applied per layer
+
+            # post-hoc: re-enables the dropout layers the network already has
+            mc = dropout(net, p=0.25, predictor_type="logit_classifier")
+
+    .. tab-item:: SNGP
+        :sync: sngp
+
+        .. jupyter-execute::
+
+            from probly.method import sngp              # a named method from the literature
+
+            # ante-hoc: swaps the last Linear for a random-feature GP head and
+            # spectral-normalizes the rest, so the returned model has to be trained
+            gp = sngp(net)
 
 .. note::
 
@@ -275,16 +332,46 @@ it directly:
 
 .. jupyter-execute::
 
-    from probly.quantification import (
-        BrierLoss,
-        EpistemicUncertainty,
-        SecondOrderScoringRuleDecomposition,
-    )
+    from probly.quantification import BrierLoss, SecondOrderScoringRuleDecomposition
 
     uq = SecondOrderScoringRuleDecomposition(out, BrierLoss())
     print([c.__name__ for c in uq.components])  # which notions this split provides
-    eu = uq[EpistemicUncertainty]               # or uq["eu"], or uq.epistemic
-    print(eu.shape, eu[:5])                     # one score per input; first five shown
+
+Each notion is then read off the decomposition by attribute, short key, or
+notion type:
+
+.. tab-set::
+    :sync-group: notion
+
+    .. tab-item:: Total
+        :sync: total
+
+        .. jupyter-execute::
+
+            from probly.quantification import TotalUncertainty
+
+            total = uq.total                 # or uq["tu"], or uq[TotalUncertainty]
+            print(total.shape, total[:5])    # one score per input; first five shown
+
+    .. tab-item:: Aleatoric
+        :sync: aleatoric
+
+        .. jupyter-execute::
+
+            from probly.quantification import AleatoricUncertainty
+
+            aleatoric = uq.aleatoric                 # or uq["au"], or uq[AleatoricUncertainty]
+            print(aleatoric.shape, aleatoric[:5])    # one score per input; first five shown
+
+    .. tab-item:: Epistemic
+        :sync: epistemic
+
+        .. jupyter-execute::
+
+            from probly.quantification import EpistemicUncertainty
+
+            epistemic = uq.epistemic                 # or uq["eu"], or uq[EpistemicUncertainty]
+            print(epistemic.shape, epistemic[:5])    # one score per input; first five shown
 
 This makes the rule of thumb from :ref:`uq-quantifying`, to pick the scoring
 rule first, executable rather than advisory. ``LogLoss`` reproduces the
@@ -326,20 +413,48 @@ the three downstream tasks by which uncertainty is usually justified:
 .. jupyter-execute::
     :hide-code:
 
-    # The epistemic scores the evaluation blocks consume, from the MC dropout
-    # model built above: one set per split, plus the 0/1 losses.
+    # The decompositions the evaluation blocks consume, from the MC dropout
+    # model built above: one per split, plus the 0/1 losses.
     with torch.no_grad():
-        eu_id = decompose(representer(mc, num_samples=50).represent(data_id)).epistemic
-        eu_ood = decompose(representer(mc, num_samples=50).represent(data_ood)).epistemic
+        uq_id = decompose(representer(mc, num_samples=50).represent(data_id))
+        uq_ood = decompose(representer(mc, num_samples=50).represent(data_ood))
+        eu_id, eu_ood = uq_id.epistemic, uq_ood.epistemic
         # a torch criterion pairs with torch losses: selective_prediction
         # dispatches on the backend and does not mix the two.
         losses = (net(data_id).argmax(-1) != labels).float()
 
-.. jupyter-execute::
+Which notion is evaluated matters. Out-of-distribution inputs are a lack of
+knowledge, so the epistemic part should separate them best:
 
-    from probly.evaluation.ood import evaluate_ood
+.. tab-set::
+    :sync-group: notion
 
-    print(evaluate_ood(eu_id, eu_ood))
+    .. tab-item:: Total
+        :sync: total
+
+        .. jupyter-execute::
+
+            from probly.evaluation.ood import evaluate_ood
+
+            print(evaluate_ood(uq_id.total, uq_ood.total))
+
+    .. tab-item:: Aleatoric
+        :sync: aleatoric
+
+        .. jupyter-execute::
+
+            from probly.evaluation.ood import evaluate_ood
+
+            print(evaluate_ood(uq_id.aleatoric, uq_ood.aleatoric))
+
+    .. tab-item:: Epistemic
+        :sync: epistemic
+
+        .. jupyter-execute::
+
+            from probly.evaluation.ood import evaluate_ood
+
+            print(evaluate_ood(uq_id.epistemic, uq_ood.epistemic))
 
 Both functions return more than the headline number on request:
 
