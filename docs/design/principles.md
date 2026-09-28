@@ -21,3 +21,6 @@ backend modules define the same name. For example, for NumPy this gives `numpy.p
 The backend is a prefix, for functions and for classes: `torch_entropy`, `TorchSample`. When a module has several
 implementations of one function, one per representation, the representation is named between the backend and the
 function: `torch_categorical_entropy` and `torch_dirichlet_entropy` are both implementations of `entropy`.
+
+The prefix convention for backend naming is a hard requirement that is enforced for modules, classes, and functions
+by the `scripts/check_backend_naming.py` script.
