@@ -33,7 +33,9 @@ class WeatherNextPredictor:
             xarray dataset (or anything with ``data_vars`` and array-valued variables).
         ensemble_fn: Optional callable ``(seeds, *args, **kwargs) -> forecast`` running all members of an
             ensemble at once (e.g. the pmapped WeatherNext rollout), returning a forecast whose variables
-            carry a leading sample dimension. When given, the representer prefers it over ``forecast_fn``.
+            carry a leading ``sample`` dimension selectable with ``forecast.isel(sample=...)``. When given,
+            the representer prefers it over ``forecast_fn``, and a single call returns one member with the
+            ``sample`` dimension removed, matching the output of ``forecast_fn``.
         seed: Base seed; member ``i`` uses ``seed + i``.
     """
 
@@ -53,7 +55,7 @@ class WeatherNextPredictor:
         self._num_calls += 1
         if self.forecast_fn is not None:
             return self.forecast_fn(seed, *args, **kwargs)
-        return self.ensemble_fn([seed], *args, **kwargs)
+        return self.ensemble_fn([seed], *args, **kwargs).isel(sample=0)
 
 
 RandomPredictor.register(WeatherNextPredictor)

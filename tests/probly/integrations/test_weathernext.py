@@ -29,6 +29,10 @@ class FakeForecast:
         """Look up a variable by name."""
         return FakeVariable(self.data_vars[name])
 
+    def isel(self, sample: int) -> FakeForecast:
+        """Select one member along the leading sample dimension, like ``xarray.Dataset.isel``."""
+        return FakeForecast({name: data[sample] for name, data in self.data_vars.items()})
+
 
 def forecast_fn(seed: int, inputs: np.ndarray) -> FakeForecast:
     rng = np.random.default_rng(seed)
@@ -37,6 +41,13 @@ def forecast_fn(seed: int, inputs: np.ndarray) -> FakeForecast:
             "temperature": inputs + rng.normal(0, 1, size=inputs.shape),
             "wind": rng.normal(0, 1, size=inputs.shape),
         }
+    )
+
+
+def ensemble_fn(seeds: list[int], inputs: np.ndarray) -> FakeForecast:
+    members = [forecast_fn(seed, inputs) for seed in seeds]
+    return FakeForecast(
+        {name: np.stack([member[name].data for member in members], axis=0) for name in members[0].data_vars}
     )
 
 
@@ -88,12 +99,6 @@ def test_requires_a_forecast_function() -> None:
 
 
 def test_ensemble_fn_is_preferred_for_bulk_representation() -> None:
-    def ensemble_fn(seeds: list[int], inputs: np.ndarray) -> FakeForecast:
-        members = [forecast_fn(seed, inputs) for seed in seeds]
-        return FakeForecast(
-            {name: np.stack([member[name].data for member in members], axis=0) for name in members[0].data_vars}
-        )
-
     predictor = WeatherNextPredictor(ensemble_fn=ensemble_fn, seed=3)
     samples = representer(predictor, num_samples=4).represent(np.zeros((2, 3)))
     assert samples["temperature"].array.shape == (4, 2, 3)
@@ -101,3 +106,11 @@ def test_ensemble_fn_is_preferred_for_bulk_representation() -> None:
     # Matches the sequential path member-for-member thanks to the shared seed convention.
     sequential = WeatherNextPredictor(forecast_fn, seed=3)(np.zeros((2, 3)))
     np.testing.assert_array_equal(samples["temperature"].array[0], sequential["temperature"].data)
+
+
+def test_single_call_with_ensemble_fn_returns_one_member() -> None:
+    inputs = np.zeros((2, 3))
+    member = WeatherNextPredictor(ensemble_fn=ensemble_fn, seed=3)(inputs)
+    # Same shape and values as the member-wise path: no leading sample axis of length one.
+    assert member["temperature"].data.shape == (2, 3)
+    np.testing.assert_array_equal(member["temperature"].data, forecast_fn(3, inputs)["temperature"].data)
