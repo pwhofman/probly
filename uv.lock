@@ -2719,6 +2719,7 @@ dev = [
     { name = "sentence-transformers", marker = "python_full_version >= '3.13'" },
     { name = "sigx", marker = "python_full_version >= '3.13'" },
     { name = "sphinx", marker = "python_full_version >= '3.13'" },
+    { name = "sphinx-codeautolink", marker = "python_full_version >= '3.13'" },
     { name = "sphinx-copybutton", marker = "python_full_version >= '3.13'" },
     { name = "sphinx-design", marker = "python_full_version >= '3.13'" },
     { name = "sphinx-gallery", marker = "python_full_version >= '3.13'" },
@@ -2737,6 +2738,7 @@ docs = [
     { name = "joblib", marker = "python_full_version >= '3.13'" },
     { name = "jupyter-sphinx", marker = "python_full_version >= '3.13'" },
     { name = "sphinx", marker = "python_full_version >= '3.13'" },
+    { name = "sphinx-codeautolink", marker = "python_full_version >= '3.13'" },
     { name = "sphinx-copybutton", marker = "python_full_version >= '3.13'" },
     { name = "sphinx-design", marker = "python_full_version >= '3.13'" },
     { name = "sphinx-gallery", marker = "python_full_version >= '3.13'" },
@@ -2862,6 +2864,7 @@ dev = [
     { name = "sentence-transformers", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=2.3.0" },
     { name = "sigx", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", git = "https://github.com/Cortys/sigx.git?rev=master" },
     { name = "sphinx", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=9.0.0" },
+    { name = "sphinx-codeautolink", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
     { name = "sphinx-copybutton", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
     { name = "sphinx-design", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
     { name = "sphinx-gallery", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
@@ -2882,6 +2885,7 @@ docs = [
     { name = "joblib", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
     { name = "jupyter-sphinx", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
     { name = "sphinx", marker = "python_full_version >= '3.13' and python_full_version < '3.15'", specifier = ">=9.0.0" },
+    { name = "sphinx-codeautolink", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
     { name = "sphinx-copybutton", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
     { name = "sphinx-design", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
     { name = "sphinx-gallery", marker = "python_full_version >= '3.13' and python_full_version < '3.15'" },
@@ -4068,6 +4072,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/98/0b/a866924ded68efec7a1759587a4e478aec7559d8165fac8b2ad1c0e774d6/sphinx_basic_ng-1.0.0b2.tar.gz", hash = "sha256:9ec55a47c90c8c002b5960c57492ec3021f5193cb26cebc2dc4ea226848651c9", size = 20736, upload-time = "2023-07-08T18:40:54.166Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3c/dd/018ce05c532a22007ac58d4f45232514cd9d6dd0ee1dc374e309db830983/sphinx_basic_ng-1.0.0b2-py3-none-any.whl", hash = "sha256:eb09aedbabfb650607e9b4b68c9d240b90b1e1be221d6ad71d61c52e29f7932b", size = 22496, upload-time = "2023-07-08T18:40:52.659Z" },
+]
+
+[[package]]
+name = "sphinx-codeautolink"
+version = "0.19.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "beautifulsoup4", marker = "python_full_version >= '3.13'" },
+    { name = "sphinx", marker = "python_full_version >= '3.13'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/26/4e/92425c60359fa7b5b9ac0e0f1f788b86a89c4e65cf29139e1174e21e3adf/sphinx_codeautolink-0.19.0.tar.gz", hash = "sha256:abd8367831bb0b084ecad7b0a9b77f8458294e4468cadd5f37861da9b38e3e7e", size = 65422, upload-time = "2026-07-29T17:40:15.222Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fd/86/260d30033dbc48f8a0c37334159d56a1a731a7ce752d2803a6b5174e8731/sphinx_codeautolink-0.19.0-py3-none-any.whl", hash = "sha256:ebbaf815efee63cfdc5320a97ece7eb01af38f22ed404439bee520e9c8175605", size = 37671, upload-time = "2026-07-29T17:40:13.739Z" },
 ]
 
 [[package]]

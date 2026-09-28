@@ -82,6 +82,7 @@ extensions = [
     "sphinxcontrib.bibtex",  # for bibliography support
     "sphinx_design",  # grid and card directives used by the methods guide
     "jupyter_sphinx",  # executes narrative code blocks so their printed output regenerates
+    "sphinx_codeautolink",  # links names in all code blocks to their API reference
 ]
 
 suppress_warnings = []
@@ -145,7 +146,6 @@ sphinx_gallery_conf = {
     "gallery_dirs": ["auto_examples"],
     "backreferences_dir": "gen_modules/backreferences",
     "doc_module": ("probly",),
-    "reference_url": {"probly": None},
     "filename_pattern": r"plot_.*\.py",
     "ignore_pattern": r"(__init__|.*/llm/.*)\.py",
     "plot_gallery": True,
@@ -330,6 +330,14 @@ def setup(app: Sphinx) -> None:
     # bracket sphinx-gallery's gallery generation at 500.
     app.connect("builder-inited", _snapshot_backreferences, priority=499)
     app.connect("builder-inited", _rebuild_stale_backreferences, priority=501)
+    # sphinx-codeautolink links names in every code block, gallery ones included.
+    # sphinx-gallery's own link embedding wraps names first, which breaks
+    # codeautolink's matching, so drop that listener.
+    from sphinx_gallery.docs_resolv import embed_code_links  # noqa: PLC0415
+
+    for listener in list(app.events.listeners["build-finished"]):
+        if listener.handler is embed_code_links:
+            app.disconnect(listener.id)
 
     _orig_resolve = PythonDomain.resolve_xref
 
