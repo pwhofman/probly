@@ -61,3 +61,8 @@
 .probly-method-strip .sd-card-title {
   margin-bottom: 0.25rem;
 }
+
+/* Toctree without bullet markers (e.g. the User Guide page), keeping the nesting. */
+.toctree-wrapper.no-bullets ul {
+  list-style: none;
+}

@@ -6,6 +6,7 @@ User Guide
 
 .. toctree::
    :numbered:
+   :class: no-bullets
    :maxdepth: 3
 
    guide/uncertainty/index
