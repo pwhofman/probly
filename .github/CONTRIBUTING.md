@@ -4,6 +4,9 @@ in many forms. If you have an idea for a new feature, a bug fix, or
 any other suggestion for improvement, please open an issue on GitHub.
 If you would like to contribute code, keep reading!
 
+The [contributing section of the documentation](https://pwhofman.github.io/probly/stable/contributing/index.html)
+goes further: a step-by-step recipe for adding a new method, and the design it plugs into.
+
 ## What to work on ❓
 We want to offer support for PyTorch, HuggingFace, and sklearn models. We are interested in
 any contributions that translate existing features to these libraries. Furthermore, we are
