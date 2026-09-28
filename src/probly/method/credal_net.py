@@ -14,7 +14,7 @@ class CredalNetPredictor[**In, Out: ProbabilityIntervalsCredalSet](IntervalClass
 
 
 credal_net = CredalNetPredictor.register_factory(interval_classifier)
-credal_net.__doc__ = """Create a Credal Net predictor from a base predictor based on :cite:`saleSecondOrder2024`.
+credal_net.__doc__ = """Create a Credal Net predictor from a base predictor based on :cite:`wangCreINNsCredalSet2025`.
 
 Args:
     base: The base classifier whose layers are replaced with interval counterparts.
