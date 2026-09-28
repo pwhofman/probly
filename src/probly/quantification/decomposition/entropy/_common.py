@@ -22,6 +22,7 @@ from probly.representation.distribution import DistributionSample, SecondOrderDi
 from probly.representation.distribution._common import DirichletMixtureDistribution
 
 if TYPE_CHECKING:
+    from probly.quantification.measure.credal_set._common import Approximate
     from probly.quantification.measure.distribution import SecondOrderDistributionLike
     from probly.quantification.measure.distribution._common import LogBase
 
@@ -60,10 +61,15 @@ class CredalSetEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
 
     Total uncertainty is the upper entropy; aleatoric uncertainty is the lower
     entropy; epistemic uncertainty is their difference (upper minus lower).
+    ``approximate`` selects how the lower entropy is computed, see
+    :func:`~probly.quantification.measure.credal_set.lower_entropy`. The default
+    ``"auto"`` computes it exactly when that is feasible and approximates it with
+    a warning otherwise.
     """
 
     credal_set: CategoricalCredalSet
     base: LogBase = None
+    approximate: Approximate = "auto"
 
     @override
     @property
@@ -73,7 +79,7 @@ class CredalSetEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
     @override
     @property
     def _aleatoric(self) -> T:
-        return lower_entropy(self.credal_set, base=self.base)  # ty:ignore[invalid-return-type]
+        return lower_entropy(self.credal_set, base=self.base, approximate=self.approximate)  # ty:ignore[invalid-return-type]
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)

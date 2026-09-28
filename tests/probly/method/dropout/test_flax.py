@@ -9,6 +9,7 @@ from tests.probly.flax_utils import count_layers
 
 flax = pytest.importorskip("flax")
 from flax import nnx  # noqa: E402
+import jax.numpy as jnp  # noqa: E402
 
 
 def test_shared_mask_not_implemented_for_flax(flax_model_small_2d_2d: nnx.Module) -> None:
@@ -108,3 +109,27 @@ class TestNetworkArchitectures:
         for m in nnx.iter_modules(flax_custom_model):
             if isinstance(m, nnx.Dropout):
                 assert m.rate == p
+
+
+class TestFirstLayer:
+    """The first layer, which gets no dropout, is the first layer with parameters."""
+
+    def test_leading_parameter_free_module_is_not_the_first_layer(self, flax_rngs: nnx.Rngs) -> None:
+        base = nnx.Sequential(
+            nnx.Dropout(rate=0.1, rngs=flax_rngs),
+            nnx.Linear(4, 16, rngs=flax_rngs),
+            nnx.relu,
+            nnx.Linear(16, 3, rngs=flax_rngs),
+        )
+
+        model = dropout(base, p=0.25)
+
+        layers = list(model.layers)
+        assert len(layers) == 5
+        assert isinstance(layers[0], nnx.Dropout)
+        assert layers[0].rate == 0.1
+        assert isinstance(layers[1], nnx.Linear)
+        assert jnp.array_equal(layers[2](jnp.array([-1.0, 2.0])), jnp.array([0.0, 2.0]))  # the relu
+        assert isinstance(layers[3], nnx.Dropout)
+        assert layers[3].rate == 0.25
+        assert isinstance(layers[4], nnx.Linear)

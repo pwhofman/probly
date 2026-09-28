@@ -69,8 +69,10 @@ def _root_traverser(
 
 @tnn.layer_count_traverser.register(vars={"count": tnn.LAYER_COUNT}, update_vars=True)
 def _module_counter(obj: Module, count: int) -> tuple[Module, dict[str, int]]:
+    if next(obj.parameters(recurse=False), None) is None:
+        return obj, {}  # Don't count parameter-free modules as layers.
     return obj, {
-        "count": count + 1,  # Increment LAYER_COUNT for each traversed module.
+        "count": count + 1,  # Increment LAYER_COUNT for each traversed layer.
     }
 
 

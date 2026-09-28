@@ -128,6 +128,57 @@ def torch_custom_model() -> nn.Module:
 
 
 @pytest.fixture
+def torch_trailing_activation_model() -> nn.Module:
+    """Return a custom model that registers its activation and dropout after its output layer."""
+
+    class TrailingActivationModel(nn.Module):
+        """A classifier whose parameter-free modules are registered last, a common PyTorch style."""
+
+        def __init__(self) -> None:
+            """Initialize the TrailingActivationModel class."""
+            super().__init__()
+            self.fc1 = nn.Linear(4, 16)
+            self.fc2 = nn.Linear(16, 16)
+            self.fc3 = nn.Linear(16, 16)
+            self.relu = nn.ReLU()
+            self.dropout = nn.Dropout(0.1)
+
+        def forward(self, x: Tensor) -> Tensor:
+            """Apply two hidden layers with activation and dropout, then the output layer ``fc3``."""
+            x = self.dropout(self.relu(self.fc1(x)))
+            x = self.dropout(self.relu(self.fc2(x)))
+            return self.fc3(x)
+
+    return TrailingActivationModel()
+
+
+@pytest.fixture
+def torch_leading_flatten_model() -> nn.Module:
+    """Return a model in the style of the PyTorch quickstart, which registers ``nn.Flatten`` first."""
+
+    class QuickstartModel(nn.Module):
+        """A classifier for 4x4 inputs whose first registered module is a parameter-free ``nn.Flatten``."""
+
+        def __init__(self) -> None:
+            """Initialize the QuickstartModel class."""
+            super().__init__()
+            self.flatten = nn.Flatten()
+            self.linear_relu_stack = nn.Sequential(
+                nn.Linear(16, 16),
+                nn.ReLU(),
+                nn.Linear(16, 16),
+                nn.ReLU(),
+                nn.Linear(16, 3),
+            )
+
+        def forward(self, x: Tensor) -> Tensor:
+            """Flatten the input and apply the linear stack."""
+            return self.linear_relu_stack(self.flatten(x))
+
+    return QuickstartModel()
+
+
+@pytest.fixture
 def evidential_classification_model(
     torch_conv_linear_model: nn.Module,
 ) -> Predictor:
