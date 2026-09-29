@@ -6,18 +6,23 @@ from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TEN
 
 from ._common import (
     CategoricalCredalSet,
+    ConvexCredalSet,
     CredalSet,
     CredalSetType,
     DirichletLevelSetCredalSet,
     DiscreteCredalSet,
+    DistanceBasedCredalSet,
     ProbabilityIntervalsCredalSet,
+    SingletonCredalSet,
     create_convex_credal_set,
     create_dirichlet_level_set_credal_set,
+    create_discrete_credal_set,
     create_distance_based_credal_set,
     create_distance_based_credal_set_from_center_and_radius,
     create_probability_intervals,
     create_probability_intervals_from_bounds,
     create_probability_intervals_from_lower_upper_array,
+    create_singleton_credal_set,
 )
 from .numpy import NumpyCategoricalCredalSet, NumpyDiscreteCredalSet
 
@@ -46,18 +51,23 @@ def _jax(_: type) -> None:
 
 __all__ = [
     "CategoricalCredalSet",
+    "ConvexCredalSet",
     "CredalSet",
     "CredalSetType",
     "DirichletLevelSetCredalSet",
     "DiscreteCredalSet",
+    "DistanceBasedCredalSet",
     "NumpyCategoricalCredalSet",
     "NumpyDiscreteCredalSet",
     "ProbabilityIntervalsCredalSet",
+    "SingletonCredalSet",
     "create_convex_credal_set",
     "create_dirichlet_level_set_credal_set",
+    "create_discrete_credal_set",
     "create_distance_based_credal_set",
     "create_distance_based_credal_set_from_center_and_radius",
     "create_probability_intervals",
     "create_probability_intervals_from_bounds",
     "create_probability_intervals_from_lower_upper_array",
+    "create_singleton_credal_set",
 ]
