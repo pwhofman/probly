@@ -478,3 +478,123 @@ class BatchEnsembleConv(nnx.Conv):
             bias_dim = (slice(None),) + (None,) * (y.ndim - 2) + (slice(None),)
             y = y + self.bias[bias_dim]
         return y.reshape(eb, *y.shape[2:])
+
+
+class Identity(nnx.Module):
+    """A module that returns its input unchanged.
+
+    ``flax.nnx`` provides no built-in identity module (unlike ``torch.nn.Identity``),
+    so transformations that strip a layer out of a model substitute this in its
+    place to keep the surrounding module tree intact.
+    """
+
+    def __call__(self, x: jax.Array) -> jax.Array:
+        """Return ``x`` unchanged.
+
+        Args:
+            x: Any input array.
+
+        Returns:
+            The argument ``x``, unmodified.
+        """
+        return x
+
+
+class MahalanobisHead(nnx.Module):
+    """Class-conditional Gaussian head with a tied covariance (Mahalanobis OOD).
+
+    Implements the Gaussian-discriminant-analysis confidence used by the
+    Mahalanobis out-of-distribution detector of :cite:`leeSimpleUnifiedFramework2018`.
+    One mean is estimated per class, while a single covariance (its inverse, the
+    precision matrix) is shared across all classes. This shared covariance
+    is the empirical covariance of the per-class-centered features, i.e. the
+    pooled within-class scatter.
+
+    After fitting, ``__call__`` returns the per-class confidence score
+    ``-0.5 * (z - mu_c)^T P (z - mu_c)`` (higher = closer to a class centroid =
+    more in-distribution). Downstream code typically takes ``max`` over classes
+    to obtain the per-sample Mahalanobis confidence.
+
+    Attributes:
+        means: Per-class mean vectors, shape ``(num_classes, feature_dim)``.
+        precision: Shared (tied) precision matrix, shape
+            ``(feature_dim, feature_dim)``.
+    """
+
+    means: jax.Array
+    precision: jax.Array
+
+    def __init__(self, num_classes: int, feature_dim: int) -> None:
+        """Initialize with zero means and an identity precision.
+
+        Args:
+            num_classes: Number of classes (one mean vector per class).
+            feature_dim: Dimensionality of the feature vectors.
+        """
+        super().__init__()
+        self.num_classes = num_classes
+        self.feature_dim = feature_dim
+        # Plain arrays rather than nnx.Param: these are fitted statistics, so they
+        # belong to the module state but must never be picked up by an optimizer
+        # filtering on nnx.Param.
+        self.means = jnp.zeros((num_classes, feature_dim))
+        self.precision = jnp.eye(feature_dim)
+
+    def fit(self, features: jax.Array, labels: jax.Array) -> None:
+        """Estimate per-class means and the shared (tied) precision matrix.
+
+        Each class mean is the empirical mean of its features. The shared
+        covariance is the empirical covariance of all per-class-centered
+        features (pooled within-class scatter). The precision is its
+        Hermitian pseudo-inverse, which stays finite even when the pooled
+        covariance is rank-deficient, e.g. for dead post-ReLU feature dimensions.
+
+        Samples whose label falls outside ``[0, num_classes)`` are ignored, and
+        classes without any sample keep a zero mean.
+
+        This method concretizes the number of valid samples, so it cannot be
+        called from inside ``jax.jit``.
+
+        Args:
+            features: Feature vectors of shape ``(N, feature_dim)``.
+            labels: Integer class labels of shape ``(N,)``.
+
+        Raises:
+            ValueError: If no sample matches any class index in
+                ``[0, num_classes)``, leaving the covariance undefined.
+        """
+        labels = jnp.asarray(labels)
+        valid = (labels >= 0) & (labels < self.num_classes)
+        num_valid = int(valid.sum())
+        if num_valid == 0:
+            msg = "Cannot fit MahalanobisHead: no labelled samples were provided."
+            raise ValueError(msg)
+
+        # One-hot accumulation instead of per-class boolean masking: it keeps every
+        # shape static (jax rejects data-dependent shapes) and needs no python loop.
+        safe_labels = jnp.where(valid, labels, 0)
+        one_hot = jax.nn.one_hot(safe_labels, self.num_classes, dtype=features.dtype) * valid[:, None]
+        counts = one_hot.sum(0)
+        means = (one_hot.T @ features) / jnp.maximum(counts, 1.0)[:, None]
+
+        centered = (features - means[safe_labels]) * valid[:, None]
+        cov = (centered.T @ centered) / num_valid
+
+        self.means = means
+        self.precision = jnp.linalg.pinv(cov, hermitian=True)
+
+    def __call__(self, features: jax.Array) -> jax.Array:
+        """Compute per-class Mahalanobis confidence scores for each sample.
+
+        Returns ``-0.5 * (z - mu_c)^T P (z - mu_c)`` for every class *c*.
+
+        Args:
+            features: Feature vectors of shape ``(N, feature_dim)``.
+
+        Returns:
+            Per-class confidence scores of shape ``(N, num_classes)``.
+        """
+        diff = jnp.expand_dims(features, axis=1) - jnp.expand_dims(self.means, axis=0)
+        # Per-class quadratic form (z - mu_c)^T P (z - mu_c), shape (N, C).
+        mahalanobis = jnp.einsum("ncd,de,nce->nc", diff, self.precision, diff)
+        return -0.5 * mahalanobis
