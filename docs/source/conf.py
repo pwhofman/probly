@@ -338,6 +338,19 @@ def setup(app: Sphinx) -> None:
     for listener in list(app.events.listeners["build-finished"]):
         if listener.handler is embed_code_links:
             app.disconnect(listener.id)
+        # codeautolink injects its links into the written HTML at build-finished,
+        # but only for the docs it saw as outdated at builder-inited. On a clean
+        # build the autosummary stubs and gallery pages do not exist yet at that
+        # point, and an incremental build rewrites every page after a config
+        # change, so either way pages were written without links. Mark every
+        # page that is actually written instead.
+        elif getattr(listener.handler, "__name__", "") == "apply_links":
+            codeautolink_state = listener.handler.__self__
+
+            def _mark_written(_app: Sphinx, _doctree: object, docname: str, state: object = codeautolink_state) -> None:
+                state.outdated_docs.add(str(Path(docname)))
+
+            app.connect("doctree-resolved", _mark_written)
 
     _orig_resolve = PythonDomain.resolve_xref
 

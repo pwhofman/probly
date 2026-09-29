@@ -135,7 +135,7 @@ print(f"KL Conformal quantile (radius): {calibrated_kl.conformal_quantile:.4f}")
 # Predict credal sets
 # --------------------
 # Each prediction is a
-# :class:`~probly.representation.credal_set.torch.TorchDistanceBasedCredalSet`
+# :class:`~probly.representation.credal_set.DistanceBasedCredalSet`
 # with a nominal distribution and a TV-ball radius equal to the quantile.
 
 credal_sets_tv = predict(calibrated_tv, X_test_t)

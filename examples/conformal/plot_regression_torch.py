@@ -2,7 +2,7 @@
 Regression Conformal Prediction — PyTorch
 ==========================================
 
-Demonstrate :func:`~probly.conformal.scores.absolute_error_score`
+Demonstrate :func:`~probly.conformal_scores.absolute_error_score`
 using a small :class:`~torch.nn.Module` on the Diabetes dataset.
 
 After applying :func:`~probly.method.conformal.conformal_absolute_error`

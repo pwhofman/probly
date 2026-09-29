@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
 
-from ._common import ConformalSet, OneHotConformalSet, create_interval_conformal_set, create_onehot_conformal_set
+from ._common import (
+    ConformalSet,
+    IntervalConformalSet,
+    OneHotConformalSet,
+    create_interval_conformal_set,
+    create_onehot_conformal_set,
+)
 from .numpy import NumpyIntervalConformalSet, NumpyOneHotConformalSet
 
 
@@ -22,6 +28,7 @@ def _(_: type) -> None:
 
 __all__ = [
     "ConformalSet",
+    "IntervalConformalSet",
     "NumpyIntervalConformalSet",
     "NumpyOneHotConformalSet",
     "OneHotConformalSet",

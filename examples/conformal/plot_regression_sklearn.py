@@ -2,7 +2,7 @@
 Regression Conformal Prediction — sklearn
 ==========================================
 
-Demonstrate :func:`~probly.conformal.scores.absolute_error_score`
+Demonstrate :func:`~probly.conformal_scores.absolute_error_score`
 using a :class:`~sklearn.tree.DecisionTreeRegressor` on the Diabetes dataset.
 
 The conformal interval for a new point :math:`x` is

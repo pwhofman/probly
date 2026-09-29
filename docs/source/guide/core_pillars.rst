@@ -215,9 +215,11 @@ Pillar 2: Representation
 
 A representation is the object that crosses the boundary between stages. It is
 what :ref:`uq-representing` describes in the abstract, made into a type:
-``CategoricalDistribution``, ``Sample``, ``ConvexCredalSet``,
-``ProbabilityIntervalsCredalSet``, and so on, each with an array, torch, and
-JAX implementation.
+:class:`~probly.representation.distribution.CategoricalDistribution`,
+:class:`~probly.representation.sample.Sample`,
+:class:`~probly.representation.credal_set.ConvexCredalSet`,
+:class:`~probly.representation.credal_set.ProbabilityIntervalsCredalSet`, and
+so on, each with a NumPy, torch, and JAX implementation.
 
 A representation carries its own semantics: which axis is the sample axis,
 whether it lives on the simplex, whether it is a set or a distribution. Stage 3

@@ -9,7 +9,7 @@ representations can be ordered by how much they are able to express
 
 1. a **point prediction**, a single outcome with nothing attached to it, and
 2. a **first-order distribution**, a probability distribution over the outcomes, here an
-   :class:`~probly.representation.distribution.numpy_categorical.NumpyProbabilityCategoricalDistribution`.
+   :class:`~probly.representation.distribution.CategoricalDistribution`.
 
 The two inputs below have the same ``argmax`` and hence the same point prediction. Their
 first-order distributions, however, differ, and this difference is precisely what the
@@ -24,16 +24,18 @@ from scipy.stats import norm
 
 from probly.plot import PlotConfig
 from probly.representation.distribution import (
-    NumpyGaussianDistribution,
-    NumpyProbabilityCategoricalDistribution,
+    CategoricalDistribution,
+    GaussianDistribution,
+    create_categorical_distribution,
+    create_gaussian_distribution,
 )
 
 CLASSES = ["cat", "dog", "fox"]
 config = PlotConfig()
 
 # Two predictions, one per input. Shape: (instances, classes) = (2, 3)
-distribution = NumpyProbabilityCategoricalDistribution(
-    array=np.array([[0.49, 0.51, 0.00], [0.33, 0.34, 0.33]]),
+distribution: CategoricalDistribution = create_categorical_distribution(
+    np.array([[0.49, 0.51, 0.00], [0.33, 0.34, 0.33]]),
 )
 
 print("Shape (batch dims):", distribution.shape)
@@ -75,10 +77,10 @@ fig.tight_layout()
 # %%
 # For regression, a first-order distribution is a distribution over the real line, for
 # instance a
-# :class:`~probly.representation.distribution.numpy_gaussian.NumpyGaussianDistribution`
+# :class:`~probly.representation.distribution.GaussianDistribution`
 # with a mean and a variance per input. Both inputs share the mean, which is all a point
 # prediction would report, and differ only in the variance.
-gaussian = NumpyGaussianDistribution(mean=np.array([3.2, 3.2]), var=np.array([0.05, 0.9]))
+gaussian: GaussianDistribution = create_gaussian_distribution(np.array([3.2, 3.2]), var=np.array([0.05, 0.9]))
 print("Means:", gaussian.mean)
 print("Standard deviations:", gaussian.std)
 
