@@ -23,6 +23,7 @@ from torch import nn
 from probly.calibrator import calibrate
 from probly.metrics import expected_calibration_error
 from probly.predictor import predict_raw
+from probly.plot import PlotConfig
 from probly.transformation.calibration import temperature_scaling, vector_scaling
 from probly_benchmark.data import load_mnist
 
@@ -34,6 +35,9 @@ NUM_CLASSES = 10
 RELIABILITY_BINS = 15
 NUM_TRAIN = 4096
 BATCH_SIZE = 256
+
+config = PlotConfig()
+BLUE, RED, GREEN = config.categorical_palette[:3]
 
 # %%
 # Setup
@@ -129,13 +133,17 @@ for name, probs, ece in (
 # Reliability Diagram
 # -------------------
 #
-# Per-bin top-label confidence against accuracy: the uncalibrated model sits below
-# the diagonal (overconfident), the vector-scaled one tracks it closely.
+# The top row shows the share of test predictions per confidence bin, with the
+# accuracy and the average confidence marked; the bottom row shows the accuracy of
+# each bin ("Outputs") and its gap to the bin's mean confidence ("Gap"), in the
+# style of :cite:`guoOnCalibration2017`. Empty bins are left out, and bins with only
+# a handful of predictions (see the histogram) are noisy. The uncalibrated model's bars
+# sit below the diagonal (overconfident); the vector-scaled ones track it closely.
 
 plot_reliability_diagram(
     {
-        f"Uncalibrated (ECE={uncal_ece:.4f})": uncal_probs,
-        f"Vector (ECE={cal_ece:.4f})": cal_probs,
+        "Uncalibrated": uncal_probs,
+        "Vector": cal_probs,
     },
     labels_test,
     title="Reliability Diagram - MNIST",
@@ -162,9 +170,9 @@ shared_temperature = float(temperature_model.temperature)
 classes = np.arange(NUM_CLASSES)
 
 fig, (ax_t, ax_b) = plt.subplots(1, 2, figsize=(10, 4))
-ax_t.bar(classes, class_temperatures, color="C0")
-ax_t.axhline(shared_temperature, color="C1", linestyle="--", label=f"Temperature scaling T = {shared_temperature:.2f}")
-ax_t.axhline(1.0, color="k", linestyle=":", label="T = 1 (uncalibrated)")
+ax_t.bar(classes, class_temperatures, color=BLUE)
+ax_t.axhline(shared_temperature, color=RED, linestyle="--", label=f"Temperature scaling T = {shared_temperature:.2f}")
+ax_t.axhline(1.0, color=config.color_neutral, linestyle=":", label="T = 1 (uncalibrated)")
 ax_t.set_xticks(classes)
 ax_t.set_xlabel("Class")
 ax_t.set_ylabel("Temperature")
@@ -172,8 +180,8 @@ ax_t.set_title("Per-Class Temperatures")
 ax_t.set_ylim(0, 1.4 * max(class_temperatures.max(), shared_temperature))
 ax_t.legend(loc="upper left")
 
-ax_b.bar(classes, class_biases - class_biases.mean(), color="C2")
-ax_b.axhline(0.0, color="k", linewidth=0.8)
+ax_b.bar(classes, class_biases - class_biases.mean(), color=BLUE)
+ax_b.axhline(0.0, color=config.color_neutral, linewidth=0.8)
 ax_b.set_xticks(classes)
 ax_b.set_xlabel("Class")
 ax_b.set_ylabel("Bias (mean-centered)")

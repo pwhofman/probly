@@ -24,6 +24,7 @@ from torch import nn
 from probly.calibrator import calibrate
 from probly.metrics import expected_calibration_error
 from probly.predictor import predict_raw
+from probly.plot import PlotConfig
 from probly.transformation.calibration import temperature_scaling
 from probly_benchmark.data import load_mnist
 
@@ -35,6 +36,9 @@ NUM_CLASSES = 10
 RELIABILITY_BINS = 15
 NUM_TRAIN = 4096
 BATCH_SIZE = 256
+
+config = PlotConfig()
+BLUE, RED, GREEN = config.categorical_palette[:3]
 
 # %%
 # Setup
@@ -120,13 +124,17 @@ print(f"Temperature:   NLL={nll(cal_probs, labels_test):.4f}  Brier={brier(cal_p
 # Reliability Diagram
 # -------------------
 #
-# Per-bin top-label confidence against accuracy: the uncalibrated model sits below
-# the diagonal (overconfident), the temperature-scaled one moves toward it.
+# The top row shows the share of test predictions per confidence bin, with the
+# accuracy and the average confidence marked; the bottom row shows the accuracy of
+# each bin ("Outputs") and its gap to the bin's mean confidence ("Gap"), in the
+# style of :cite:`guoOnCalibration2017`. Empty bins are left out, and bins with only
+# a handful of predictions (see the histogram) are noisy. The uncalibrated model's bars
+# sit below the diagonal (overconfident); temperature scaling moves them toward it.
 
 plot_reliability_diagram(
     {
-        f"Uncalibrated (ECE={uncal_ece:.4f})": uncal_probs,
-        f"Temperature (ECE={cal_ece:.4f})": cal_probs,
+        "Uncalibrated": uncal_probs,
+        "Temperature": cal_probs,
     },
     labels_test,
     title="Reliability Diagram - MNIST",
@@ -150,9 +158,9 @@ temperatures = np.geomspace(0.5, 5.0, 200)
 calib_nll = [float(nn.functional.cross_entropy(calib_logits / t, y_calib)) for t in temperatures]
 
 fig, (ax_nll, ax_hist) = plt.subplots(1, 2, figsize=(10, 4))
-ax_nll.plot(temperatures, calib_nll)
-ax_nll.axvline(temperature, color="C1", linestyle="--", label=f"Fitted T = {temperature:.2f}")
-ax_nll.axvline(1.0, color="k", linestyle=":", label="T = 1 (uncalibrated)")
+ax_nll.plot(temperatures, calib_nll, color=BLUE)
+ax_nll.axvline(temperature, color=RED, linestyle="--", label=f"Fitted T = {temperature:.2f}")
+ax_nll.axvline(1.0, color=config.color_neutral, linestyle=":", label="T = 1 (uncalibrated)")
 ax_nll.set_xscale("log")
 ax_nll.set_xticks([0.5, 1, 2, 5], labels=["0.5", "1", "2", "5"])
 ax_nll.minorticks_off()
@@ -162,8 +170,8 @@ ax_nll.set_title("NLL as a Function of T")
 ax_nll.legend()
 
 bins = np.linspace(1.0 / NUM_CLASSES, 1.0, 30)
-ax_hist.hist(uncal_probs.max(-1), bins=bins, alpha=0.6, label="Uncalibrated")
-ax_hist.hist(cal_probs.max(-1), bins=bins, alpha=0.6, label="Temperature")
+ax_hist.hist(uncal_probs.max(-1), bins=bins, alpha=config.histogram_alpha, color=BLUE, label="Uncalibrated")
+ax_hist.hist(cal_probs.max(-1), bins=bins, alpha=config.histogram_alpha, color=RED, label="Temperature")
 ax_hist.set_yscale("log")
 ax_hist.set_xlabel("Top-label confidence")
 ax_hist.set_ylabel("Count")

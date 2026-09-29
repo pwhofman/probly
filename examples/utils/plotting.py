@@ -31,8 +31,6 @@ def plot_mnist_uncertainty(
     # Class names are wider than digits, so put true and predicted label on separate lines.
     separator = " | " if class_names is None else "\n"
 
-    tab_colors = plt.cm.tab10.colors
-
     fig, axes = plt.subplots(1, n_top, figsize=(n_top * 2.4, 5))
     fig.suptitle(title)
 

@@ -25,6 +25,7 @@ from torch import nn
 from probly.calibrator import calibrate
 from probly.metrics import expected_calibration_error
 from probly.predictor import predict_raw
+from probly.plot import PlotConfig
 from probly.transformation.calibration import isotonic_regression, platt_scaling
 from probly_benchmark.data import load_mnist
 
@@ -36,6 +37,9 @@ CLASS_NAMES = ["even", "odd"]
 RELIABILITY_BINS = 15
 NUM_TRAIN = 4096
 BATCH_SIZE = 256
+
+config = PlotConfig()
+BLUE, RED, GREEN = config.categorical_palette[:3]
 
 # %%
 # Setup
@@ -132,16 +136,20 @@ for name, probs, ece in (
 # Reliability Diagram
 # -------------------
 #
-# Per-bin top-label confidence against accuracy. In the binary case the top-label
-# confidence is at least 0.5, so the curves start there. Because the isotonic map is
+# The top row shows the share of test predictions per confidence bin, with the
+# accuracy and the average confidence marked; the bottom row shows the accuracy of
+# each bin ("Outputs") and its gap to the bin's mean confidence ("Gap"), in the
+# style of :cite:`guoOnCalibration2017`. Empty bins are left out, and bins with only
+# a handful of predictions (see the histogram) are noisy. In the binary case the top-label
+# confidence is at least 0.5, so the left half of each panel stays empty. Because the isotonic map is
 # flat over long stretches of logits, many predictions share the same few
 # probability values, and some bins stay empty.
 
 plot_reliability_diagram(
     {
-        f"Uncalibrated (ECE={uncal_ece:.4f})": uncal_probs,
-        f"Platt (ECE={platt_ece:.4f})": platt_probs,
-        f"Isotonic (ECE={cal_ece:.4f})": cal_probs,
+        "Uncalibrated": uncal_probs,
+        "Platt": platt_probs,
+        "Isotonic": cal_probs,
     },
     labels_test,
     title="Reliability Diagram - MNIST Odd vs. Even",
@@ -178,10 +186,10 @@ bin_freq = np.array([calib_labels[bin_idx == b].mean() for b in range(len(edges)
 
 z_grid = np.linspace(calib_logits.min(), calib_logits.max(), 400)
 fig, ax = plt.subplots(figsize=(6, 4.5))
-ax.plot(z_grid, 1 / (1 + np.exp(-z_grid)), "k:", label="Uncalibrated sigmoid(z)")
-ax.plot(z_grid, 1 / (1 + np.exp(-(z_grid / temperature + bias))), color="C1", label="Platt")
-ax.plot(calib_logits[order], calib_isotonic[order], color="C2", label="Isotonic")
-ax.plot(bin_logit, bin_freq, "o", color="C0", label="Empirical fraction odd (calibration split)")
+ax.plot(z_grid, 1 / (1 + np.exp(-z_grid)), ":", color=config.color_neutral, label="Uncalibrated sigmoid(z)")
+ax.plot(z_grid, 1 / (1 + np.exp(-(z_grid / temperature + bias))), color=RED, label="Platt")
+ax.plot(calib_logits[order], calib_isotonic[order], color=GREEN, label="Isotonic")
+ax.plot(bin_logit, bin_freq, "o", color=BLUE, label="Empirical fraction odd (calibration split)")
 ax.set_xlabel("Logit z")
 ax.set_ylabel("P(odd)")
 ax.set_title("Isotonic Regression Map")

@@ -16,6 +16,7 @@ matrix as a heatmap.
 
 from __future__ import annotations
 
+from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -24,6 +25,7 @@ from torch import nn
 from probly.calibrator import calibrate
 from probly.transformation.calibration import dirichlet_calibration
 from probly.metrics import classwise_ece
+from probly.plot import PlotConfig
 from probly.predictor import predict_raw
 from probly_benchmark.data import load_mnist
 
@@ -35,6 +37,9 @@ NUM_CLASSES = 10
 RELIABILITY_BINS = 15
 NUM_TRAIN = 4096
 BATCH_SIZE = 256
+
+config = PlotConfig()
+BLUE, RED = config.categorical_palette[:2]
 
 # %%
 # Setup
@@ -115,13 +120,19 @@ print(f"Dirichlet:     NLL={nll(cal_probs, labels_test):.4f}  Brier={brier(cal_p
 # Reliability Diagram
 # -------------------
 #
-# Per-bin top-label confidence against accuracy: the uncalibrated model sits below
-# the diagonal (overconfident), the Dirichlet-calibrated one tracks it closely.
+# The top row shows the share of test predictions per confidence bin, with the
+# accuracy and the average confidence marked; the bottom row shows the accuracy of
+# each bin ("Outputs") and its gap to the bin's mean confidence ("Gap"), in the
+# style of :cite:`guoOnCalibration2017`. Empty bins are left out, and bins with only
+# a handful of predictions (see the histogram) are noisy. The uncalibrated model's bars
+# sit below the diagonal (overconfident); the Dirichlet-calibrated ones track it
+# closely. The diagram shows top-label confidence, so each panel reports the
+# confidence ECE; the classwise-ECE is printed above.
 
 plot_reliability_diagram(
     {
-        f"Uncalibrated (classwise-ECE={uncal_cw_ece:.4f})": uncal_probs,
-        f"Dirichlet (classwise-ECE={cal_cw_ece:.4f})": cal_probs,
+        "Uncalibrated": uncal_probs,
+        "Dirichlet": cal_probs,
     },
     labels_test,
     title="Reliability Diagram - MNIST",
@@ -151,7 +162,7 @@ plt.show()
 weight = calibrated_model.weight.numpy()
 
 fig, ax = plt.subplots(figsize=(5.5, 4.5))
-image = ax.imshow(weight, cmap="RdBu_r", vmin=-np.abs(weight).max(), vmax=np.abs(weight).max())
+image = ax.imshow(weight, cmap=LinearSegmentedColormap.from_list("blue_white_red", [BLUE, "white", RED]), vmin=-np.abs(weight).max(), vmax=np.abs(weight).max())
 ax.set_xlabel("Input class (ln p)")
 ax.set_ylabel("Output class")
 ax.set_title("Dirichlet Calibration Weight Matrix W")
