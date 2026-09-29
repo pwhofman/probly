@@ -57,7 +57,8 @@ for _epoch in range(300):
 # ---------------------
 #
 # Fit a Kronecker-factored (KFAC) Laplace approximation over the last layer of
-# the trained model.  No retraining is needed.
+# the trained model.  No retraining is needed. The fitted model is picked up by
+# :obj:`probly.method.laplace`, so the generic representer works on it directly.
 
 base_model.eval()
 

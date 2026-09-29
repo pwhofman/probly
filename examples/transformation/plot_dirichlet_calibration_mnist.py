@@ -16,17 +16,20 @@ matrix as a heatmap.
 
 from __future__ import annotations
 
+from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from torch import nn
 
 from probly.calibrator import calibrate
-from probly.method.calibration import dirichlet_calibration
+from probly.transformation.calibration import dirichlet_calibration
 from probly.metrics import classwise_ece
+from probly.plot import PlotConfig
 from probly.predictor import predict_raw
 from probly_benchmark.data import load_mnist
 
+from examples.utils.calibration import brier, nll, plot_reliability_diagram
 from examples.utils.model import ResFFN
 from examples.utils.plotting import plot_mnist_uncertainty
 
@@ -34,6 +37,9 @@ NUM_CLASSES = 10
 RELIABILITY_BINS = 15
 NUM_TRAIN = 4096
 BATCH_SIZE = 256
+
+config = PlotConfig()
+BLUE, RED = config.categorical_palette[:2]
 
 # %%
 # Setup
@@ -97,68 +103,41 @@ calibrate(calibrated_model, y_calib, X_calib)
 # calibration error (:func:`probly.metrics.classwise_ece`, the metric introduced
 # alongside Dirichlet calibration) before and after calibration.
 
-
-def _probs(logits: torch.Tensor) -> np.ndarray:
-    return logits.softmax(-1).detach().numpy()
-
-
-def _nll(probs: np.ndarray, labels: np.ndarray) -> float:
-    clipped = np.clip(probs[np.arange(len(labels)), labels], 1e-12, 1.0)
-    return float(-np.mean(np.log(clipped)))
-
-
-def _brier(probs: np.ndarray, labels: np.ndarray) -> float:
-    one_hot = np.eye(probs.shape[-1])[labels]
-    return float(np.mean(np.sum((probs - one_hot) ** 2, axis=-1)))
-
-
 labels_test = y_test.numpy()
 with torch.no_grad():
-    uncal_probs = _probs(model(X_test))
-    cal_probs = _probs(predict_raw(calibrated_model, X_test))
+    uncal_probs = model(X_test).softmax(-1).numpy()
+    cal_probs = predict_raw(calibrated_model, X_test).softmax(-1).numpy()
 
 uncal_cw_ece = float(classwise_ece(uncal_probs, labels_test, num_bins=RELIABILITY_BINS))
 cal_cw_ece = float(classwise_ece(cal_probs, labels_test, num_bins=RELIABILITY_BINS))
 
 accuracy = (cal_probs.argmax(-1) == labels_test).mean() * 100
 print(f"Test accuracy:         {accuracy:.1f}%")
-print(f"Uncalibrated:  NLL={_nll(uncal_probs, labels_test):.4f}  Brier={_brier(uncal_probs, labels_test):.4f}  classwise-ECE={uncal_cw_ece:.4f}")
-print(f"Dirichlet:     NLL={_nll(cal_probs, labels_test):.4f}  Brier={_brier(cal_probs, labels_test):.4f}  classwise-ECE={cal_cw_ece:.4f}")
+print(f"Uncalibrated:  NLL={nll(uncal_probs, labels_test):.4f}  Brier={brier(uncal_probs, labels_test):.4f}  classwise-ECE={uncal_cw_ece:.4f}")
+print(f"Dirichlet:     NLL={nll(cal_probs, labels_test):.4f}  Brier={brier(cal_probs, labels_test):.4f}  classwise-ECE={cal_cw_ece:.4f}")
 
 # %%
 # Reliability Diagram
 # -------------------
 #
-# Per-bin top-label confidence against accuracy: the uncalibrated model sits below
-# the diagonal (overconfident), the Dirichlet-calibrated one tracks it closely.
+# The top row shows the share of test predictions per confidence bin, with the
+# accuracy and the average confidence marked; the bottom row shows the accuracy of
+# each bin ("Outputs") and its gap to the bin's mean confidence ("Gap"), in the
+# style of :cite:`guoOnCalibration2017`. Empty bins are left out, and bins with only
+# a handful of predictions (see the histogram) are noisy. The uncalibrated model's bars
+# sit below the diagonal (overconfident); the Dirichlet-calibrated ones track it
+# closely. The diagram shows top-label confidence, so each panel reports the
+# confidence ECE; the classwise-ECE is printed above.
 
-
-def _reliability_curve(probs: np.ndarray, labels: np.ndarray, n_bins: int = RELIABILITY_BINS) -> tuple[np.ndarray, np.ndarray]:
-    confidence = probs.max(-1)
-    correct = (probs.argmax(-1) == labels).astype(float)
-    edges = np.linspace(0.0, 1.0, n_bins + 1)
-    bin_conf, bin_acc = np.full(n_bins, np.nan), np.full(n_bins, np.nan)
-    for b in range(n_bins):
-        mask = (confidence > edges[b]) & (confidence <= edges[b + 1])
-        if mask.any():
-            bin_conf[b] = confidence[mask].mean()
-            bin_acc[b] = correct[mask].mean()
-    return bin_conf, bin_acc
-
-
-uncal_conf, uncal_acc = _reliability_curve(uncal_probs, labels_test)
-cal_conf, cal_acc = _reliability_curve(cal_probs, labels_test)
-
-fig, ax = plt.subplots(figsize=(5, 5))
-ax.plot([0, 1], [0, 1], "k--", label="Perfectly calibrated")
-ax.plot(uncal_conf, uncal_acc, "o-", label=f"Uncalibrated (classwise-ECE={uncal_cw_ece:.4f})")
-ax.plot(cal_conf, cal_acc, "s-", label=f"Dirichlet (classwise-ECE={cal_cw_ece:.4f})")
-ax.set_xlabel("Confidence")
-ax.set_ylabel("Accuracy")
-ax.set_title("Reliability Diagram - MNIST")
-ax.legend(loc="upper left")
-fig.tight_layout()
-
+plot_reliability_diagram(
+    {
+        "Uncalibrated": uncal_probs,
+        "Dirichlet": cal_probs,
+    },
+    labels_test,
+    title="Reliability Diagram - MNIST",
+    n_bins=RELIABILITY_BINS,
+)
 plt.show()
 
 # %%
@@ -183,7 +162,7 @@ plt.show()
 weight = calibrated_model.weight.numpy()
 
 fig, ax = plt.subplots(figsize=(5.5, 4.5))
-image = ax.imshow(weight, cmap="RdBu_r", vmin=-np.abs(weight).max(), vmax=np.abs(weight).max())
+image = ax.imshow(weight, cmap=LinearSegmentedColormap.from_list("blue_white_red", [BLUE, "white", RED]), vmin=-np.abs(weight).max(), vmax=np.abs(weight).max())
 ax.set_xlabel("Input class (ln p)")
 ax.set_ylabel("Output class")
 ax.set_title("Dirichlet Calibration Weight Matrix W")

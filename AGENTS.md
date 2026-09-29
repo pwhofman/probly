@@ -3,7 +3,7 @@
 - If you are creating new files add them to git via `git add <file>`. If you forget to do this, your changes will not be committed and may be lost. Do not add bloat files like `__pycache__` or `*.pyc` files or auto-generated files to git.
 - Always run pre-commit checks with `uv run prek run --all-files` before committing to ensure that your code adheres to the project's style and quality standards.
 - When adding public-facing features add docstrings in Google-Style format and American english.
-- When adding a new uncertainty quantification method, follow `docs/source/adding_a_method.rst`. It has the file layout, the dispatch and lazy-registration wiring, and the checklist of everything a method has to touch (exports, reference, tests, example, and the README method table with its backend list).
+- When adding a new uncertainty quantification method, follow `docs/source/contributing/adding_a_method.rst`. It has the file layout, the dispatch and lazy-registration wiring, and the checklist of everything a method has to touch (exports, reference, tests, example, and the README method table with its backend list).
 ## Useful Commands:
 ### Build Docs (only use these commands verbatim from the project root)
 Incremental build (only changed examples and pages re-run):
