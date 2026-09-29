@@ -20,6 +20,7 @@ from probly import (
     quantification as quantification,
     representation as representation,
     representer as representer,
+    selective_prediction as selective_prediction,
     train as train,
     transformation as transformation,
     traverse_nn as traverse_nn,
