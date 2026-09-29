@@ -96,7 +96,7 @@ accommodate several priors without having to commit to one of them.
 
 .. _m-credal-net:
 
-:func:`credal_net <probly.method.credal_net.credal_net>`
+:func:`credal_net <probly.method.credal_net>`
 --------------------------------------------------------
 
 Instead of ensembling models, this approach makes the network itself
@@ -241,7 +241,7 @@ Full API
     credal_wrapper
     credal_ensembling
     credal_bnn
-    ~credal_net.credal_net
+    credal_net
     credal_relative_likelihood
     efficient_credal_prediction
     ~probly.transformation.conformal_credal_set

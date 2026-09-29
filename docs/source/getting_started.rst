@@ -94,7 +94,7 @@ Now we can begin the ``probly`` pipeline:
 ~~~~~~~~~~~~~~~~~~
 
 The first step is choosing any of the methods to transform the model into an uncertainty aware one.
-Instead of changing the model however, it wraps it as a ``Predictor`` (link) and therefore does not change
+Instead of changing the model however, it wraps it as a :class:`~probly.predictor.Predictor` and therefore does not change
 the underlying model. This step allows the measuring of uncertainty as well as the splitting into
 Aleatoric and Epistemic Uncertainty.
 For this example we use ``dropout``:
@@ -111,7 +111,7 @@ For this example we use ``dropout``:
     )
 
 Depending on the method you might need to adapt the parameters or proceed with the default option.
-The user-guide (link) or alternatively the API reference :ref:`api_ref` offer information about
+The :ref:`user_guide` or alternatively the :ref:`api_ref` offer information about
 all the transformations.
 
 Train the wrapped model just like you would train the original one, dropout stays active at inference
@@ -135,7 +135,8 @@ time, which is what enables repeated forward passes to produce a distribution ov
 
 Having the correct Representation is key for later measuring and evaluating the uncertainty. ``probly`` offers
 both first and second order distributions as well as credal sets. To choose the representation either select
-the generic ``representer`` or any of the more targeted representers (link).
+the generic ``representer`` or any of the more targeted representers in :mod:`probly.representer`
+(see :ref:`pillar-representation`).
 
 .. jupyter-execute::
 
