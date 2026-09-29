@@ -12,7 +12,7 @@ three standard diagnostic plots:
   FPR@95 annotation.
 - **Precision-Recall curve** -- with AUPR summary.
 
-All three accept an optional :class:`~probly.plot.PlotConfig` for consistent
+All three accept an optional :class:`~probly.plot.config.PlotConfig` for consistent
 styling across your project.
 """
 

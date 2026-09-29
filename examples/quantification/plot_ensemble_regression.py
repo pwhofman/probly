@@ -2,7 +2,7 @@
 Ensemble Regression Uncertainty
 ==========================================
 
-Demonstrate :func:`~probly.method.ensemble.ensemble`
+Demonstrate :func:`~probly.method.ensemble`
 using a PyTorch multi-layer perceptron regressor on a dummy dataset.
 
 This example computes epistemic, aleatoric, and total variance uncertainty
