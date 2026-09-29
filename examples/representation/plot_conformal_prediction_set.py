@@ -4,10 +4,10 @@ Sets of outcomes
 
 A set-valued prediction does not weigh the outcomes against each other; it merely states
 which of them remain in play. Conformal prediction produces such sets, and ``probly``
-stores them as an
-:class:`~probly.representation.conformal_set.array.ArrayOneHotConformalSet` for
+stores them as a
+:class:`~probly.representation.conformal_set.OneHotConformalSet` for
 classification and as an
-:class:`~probly.representation.conformal_set.array.ArrayIntervalConformalSet` for
+:class:`~probly.representation.conformal_set.IntervalConformalSet` for
 regression.
 
 The uncertainty is expressed by the size of the set, that is, by the number of labels,
@@ -23,6 +23,8 @@ import numpy as np
 
 from probly.plot import PlotConfig
 from probly.representation.conformal_set import (
+    IntervalConformalSet,
+    OneHotConformalSet,
     create_interval_conformal_set,
     create_onehot_conformal_set,
 )
@@ -37,7 +39,7 @@ scores = np.array([[0.05, 0.90, 0.05], [0.47, 0.51, 0.02], [0.34, 0.33, 0.33]])
 # quantile of nonconformity scores on a held-out calibration split; here it is set by hand.
 # Shape: (instances, classes)
 threshold = 0.3
-conformal_set = create_onehot_conformal_set(scores >= threshold)
+conformal_set: OneHotConformalSet = create_onehot_conformal_set(scores >= threshold)
 
 print("Set membership:\n", conformal_set.array)
 print("Set sizes:", conformal_set.set_size)
@@ -59,7 +61,10 @@ plt.show()
 
 # %%
 # For regression, the set is an interval, and its size is the interval's width.
-interval_set = create_interval_conformal_set(np.array([2.9, 1.4, 0.2]), np.array([3.5, 5.0, 6.4]))
+interval_set: IntervalConformalSet = create_interval_conformal_set(
+    np.array([2.9, 1.4, 0.2]),
+    np.array([3.5, 5.0, 6.4]),
+)
 print("Interval bounds:\n", interval_set.array)
 print("Interval widths:", interval_set.set_size)
 
