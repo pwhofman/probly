@@ -1,4 +1,4 @@
-"""Conformalized Credal Set Prediction :cite:`saleSecondOrder2024`, :cite:`angelopoulosGentleIntroduction2021`."""
+"""Conformalized credal set prediction."""
 
 from __future__ import annotations
 
