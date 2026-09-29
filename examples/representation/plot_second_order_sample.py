@@ -8,7 +8,7 @@ odds themselves are. The sampled encoding approximates this object by a finite c
 of first-order distributions, obtained, for instance, from the members of an ensemble,
 from repeated dropout passes, or from samples of a posterior over the weights. In
 ``probly``, such a collection is a
-:class:`~probly.representation.distribution.numpy_categorical.NumpyCategoricalDistributionSample`.
+:class:`~probly.representation.distribution.CategoricalDistributionSample`.
 
 The two inputs below have the same mean prediction, which is all a first-order
 representation would report. They differ in how far their members lie apart, and it is
@@ -23,10 +23,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from probly.plot import PlotConfig
-from probly.representation.distribution import (
-    NumpyCategoricalDistributionSample,
-    NumpyProbabilityCategoricalDistribution,
-)
+from probly.representation.distribution import CategoricalDistributionSample, create_categorical_distribution
+from probly.representation.sample import create_sample
 
 CLASSES = ["cat", "dog", "fox"]
 config = PlotConfig()
@@ -44,8 +42,8 @@ noise /= np.abs(noise).max(axis=(0, 2), keepdims=True)
 offsets = spread[None, :, None] * noise
 members = center + np.concatenate([offsets, -offsets])
 
-sample = NumpyCategoricalDistributionSample(
-    array=NumpyProbabilityCategoricalDistribution(array=members),
+sample: CategoricalDistributionSample = create_sample(
+    [create_categorical_distribution(member) for member in members],
     sample_axis=0,
 )
 

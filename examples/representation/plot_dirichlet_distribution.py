@@ -6,7 +6,7 @@ Instead of approximating a second-order distribution by a finite sample, as in
 :ref:`sphx_glr_auto_examples_representation_plot_second_order_sample.py`, one may also
 state it in closed form. Over the probability simplex, the standard choice is a Dirichlet
 distribution, here a
-:class:`~probly.representation.distribution.numpy_dirichlet.NumpyDirichletDistribution`,
+:class:`~probly.representation.distribution.DirichletDistribution`,
 whose parameters a model can output in a single forward pass.
 
 A Dirichlet is determined by its concentration parameters, which encode two quantities at
@@ -22,14 +22,16 @@ import numpy as np
 from scipy.stats import dirichlet
 
 from probly.plot import PlotConfig
-from probly.representation.distribution import NumpyDirichletDistribution
+from probly.representation.distribution import DirichletDistribution, create_dirichlet_distribution_from_alphas
 
 CLASSES = ["cat", "dog", "fox"]
 config = PlotConfig()
 
 # Two inputs with the same mean prediction, (0.45, 0.35, 0.20), but a total evidence of
 # 40 and 2, respectively. Shape: (instances, classes)
-distribution = NumpyDirichletDistribution(alphas=np.array([[18.0, 14.0, 8.0], [0.9, 0.7, 0.4]]))
+distribution: DirichletDistribution = create_dirichlet_distribution_from_alphas(
+    np.array([[18.0, 14.0, 8.0], [0.9, 0.7, 0.4]]),
+)
 
 print("Shape (batch dims):", distribution.shape)
 print("Concentration parameters:\n", distribution.alphas)

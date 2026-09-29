@@ -2,7 +2,7 @@
 Probability-intervals credal set
 ====================================
 
-An :class:`~probly.representation.credal_set.numpy.NumpyProbabilityIntervalsCredalSet`
+A :class:`~probly.representation.credal_set.ProbabilityIntervalsCredalSet`
 specifies independent **lower and upper bounds** on the probability of each
 class.  The credal set contains every distribution that satisfies all bounds
 simultaneously (and sums to one).
@@ -18,22 +18,27 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from probly.plot import plot_credal_set
-from probly.representation.credal_set.numpy import NumpyProbabilityIntervalsCredalSet
+from probly.representation.credal_set import (
+    ProbabilityIntervalsCredalSet,
+    create_probability_intervals_from_lower_upper_array,
+)
 
 # 2 instances over 3 classes.
-intervals = NumpyProbabilityIntervalsCredalSet(
-    lower_bounds=np.array(
-        [
-            [0.1, 0.2, 0.3],
-            [0.3, 0.1, 0.1],
-        ]
-    ),
-    upper_bounds=np.array(
-        [
-            [0.4, 0.5, 0.6],
-            [0.6, 0.3, 0.7],
-        ]
-    ),
+lower_bounds = np.array(
+    [
+        [0.1, 0.2, 0.3],
+        [0.3, 0.1, 0.1],
+    ]
+)
+upper_bounds = np.array(
+    [
+        [0.4, 0.5, 0.6],
+        [0.6, 0.3, 0.7],
+    ]
+)
+# The factory expects the lower bounds followed by the upper bounds along the last axis.
+intervals: ProbabilityIntervalsCredalSet = create_probability_intervals_from_lower_upper_array(
+    np.concatenate([lower_bounds, upper_bounds], axis=-1),
 )
 
 print("Shape (batch dims):", intervals.shape)
