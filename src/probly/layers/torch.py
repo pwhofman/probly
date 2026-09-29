@@ -1314,8 +1314,20 @@ def unpack_interval(x: torch.Tensor, channel_dim: int = 1) -> tuple[torch.Tensor
     return x.split(c // 2, dim=channel_dim)
 
 
+def _clamp_nonnegative_(parameter: torch.Tensor) -> torch.Tensor:
+    """Set the negative entries of a radius parameter to zero in place and return it.
+
+    This keeps the radii non-negative the way the constraint of the reference
+    implementation does after every update: the layer uses the raw parameter, so a
+    radius that is exactly zero still receives a gradient and can grow again.
+    """
+    with torch.no_grad():
+        parameter.clamp_(min=0.0)
+    return parameter
+
+
 class IntConv2d(nn.Module):
-    """Interval-arithmetic 2D convolution based on :cite:`wangCredalDeepEnsembles2024`.
+    """Interval-arithmetic 2D convolution based on :cite:`wangCreINNsCredalSet2025`.
 
     Has paired center and radius kernels (and biases); the radius weight and
     bias are clamped to non-negative values inside ``forward``. Inputs and
@@ -1381,7 +1393,7 @@ class IntConv2d(nn.Module):
         lo = x[:, : self.in_channels]
         hi = x[:, self.in_channels :]
 
-        radius_weight = F.relu(self.radius_weight)
+        radius_weight = _clamp_nonnegative_(self.radius_weight)
         w_lo = self.center_weight - radius_weight
         w_hi = self.center_weight + radius_weight
         w_lo_pos, w_lo_neg = torch.clamp(w_lo, min=0.0), torch.clamp(w_lo, max=0.0)
@@ -1391,7 +1403,7 @@ class IntConv2d(nn.Module):
         hi_out = self._conv(lo, w_hi_neg) + self._conv(hi, w_hi_pos)
 
         if self.use_bias:
-            radius_bias = F.relu(self.radius_bias)
+            radius_bias = _clamp_nonnegative_(self.radius_bias)
             b_lo = (self.center_bias - radius_bias).view(1, -1, 1, 1)
             b_hi = (self.center_bias + radius_bias).view(1, -1, 1, 1)
             lo_out = lo_out + b_lo
@@ -1409,7 +1421,7 @@ class IntConv2d(nn.Module):
 
 
 class IntLinear(nn.Module):
-    """Interval-arithmetic linear layer based on :cite:`wangCredalDeepEnsembles2024`.
+    """Interval-arithmetic linear layer based on :cite:`wangCreINNsCredalSet2025`.
 
     1D analogue of :class:`IntConv2d`. Inputs and outputs are packed
     ``(..., 2 * features)`` (lower half then upper); the same non-negativity
@@ -1456,7 +1468,7 @@ class IntLinear(nn.Module):
         lo = x[..., : self.in_features]
         hi = x[..., self.in_features :]
 
-        radius_weight = F.relu(self.radius_weight)
+        radius_weight = _clamp_nonnegative_(self.radius_weight)
         w_lo = self.center_weight - radius_weight
         w_hi = self.center_weight + radius_weight
         w_lo_pos, w_lo_neg = torch.clamp(w_lo, min=0.0), torch.clamp(w_lo, max=0.0)
@@ -1466,7 +1478,7 @@ class IntLinear(nn.Module):
         hi_out = F.linear(lo, w_hi_neg) + F.linear(hi, w_hi_pos)
 
         if self.use_bias:
-            radius_bias = F.relu(self.radius_bias)
+            radius_bias = _clamp_nonnegative_(self.radius_bias)
             lo_out = lo_out + (self.center_bias - radius_bias)
             hi_out = hi_out + (self.center_bias + radius_bias)
 
@@ -1478,7 +1490,7 @@ class IntLinear(nn.Module):
 
 
 class IntBatchNorm2d(nn.Module):
-    """Interval-valued batch normalization for 2D feature maps based on :cite:`wangCredalDeepEnsembles2024`.
+    """Interval-valued batch normalization for 2D feature maps based on :cite:`wangCreINNsCredalSet2025`.
 
     Inputs and outputs are packed ``(B, 2C, H, W)``. Splits into
     ``center = (lo + hi)/2`` and ``radius = (hi - lo)/2``, normalizes each
@@ -1572,7 +1584,7 @@ class IntBatchNorm2d(nn.Module):
 
 
 class IntBatchNorm1d(nn.Module):
-    """Interval-valued batch normalization for 1D features based on :cite:`wangCredalDeepEnsembles2024`.
+    """Interval-valued batch normalization for 1D features based on :cite:`wangCreINNsCredalSet2025`.
 
     1D analogue of :class:`IntBatchNorm2d`, used after :class:`IntLinear` on
     flattened features. Inputs and outputs are packed ``(B, 2 * num_features)``.
@@ -1663,7 +1675,7 @@ class IntBatchNorm1d(nn.Module):
 
 
 class IntSoftmax(nn.Module):
-    """Interval SoftMax head based on :cite:`wangCredalDeepEnsembles2024`.
+    """Interval SoftMax head based on :cite:`wangCreINNsCredalSet2025`.
 
     Applies Eq. 7 of the paper in ``(lo, hi)`` parameterization, then the
     Section 3.3 reachability clip so the output is always a valid (reachable)
@@ -1714,6 +1726,7 @@ class HeteroscedasticLayer(nn.Module):
         num_factors: int, number of factors.
         temperature: float, temperature scaling.
         is_parameter_efficient: bool, whether to use parameter efficient routing.
+        num_samples: int, number of Monte Carlo samples of the utility drawn in every forward pass.
         mu_layer: nn.Linear, deterministic mean parameter transformation.
         diag_layer: nn.Linear, diagonal correction variance transformation.
         v_layer: nn.Linear, covariance factor parameterization routing.
@@ -1727,6 +1740,7 @@ class HeteroscedasticLayer(nn.Module):
         num_factors: int = 15,
         temperature: float = 1.0,
         is_parameter_efficient: bool = False,
+        num_samples: int = 100,
     ) -> None:
         """Initialize the HeteroscedasticLayer.
 
@@ -1736,6 +1750,7 @@ class HeteroscedasticLayer(nn.Module):
             num_factors: int, number of factors.
             temperature: float, temperature scaling.
             is_parameter_efficient: bool, whether to use parameter efficient routing.
+            num_samples: int, number of Monte Carlo samples of the utility drawn in every forward pass.
         """
         super().__init__()
         self.in_features = in_features
@@ -1743,7 +1758,7 @@ class HeteroscedasticLayer(nn.Module):
         self.num_factors = num_factors
         self.temperature = temperature
         self.is_parameter_efficient = is_parameter_efficient
-        self.training_samples: int = 1
+        self.num_samples = num_samples
 
         self.mu_layer = nn.Linear(in_features, num_classes)
         self.diag_layer = nn.Linear(in_features, num_classes)
@@ -1768,40 +1783,24 @@ class HeteroscedasticLayer(nn.Module):
             nn.init.xavier_normal_(self.V_matrix)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Sample utility logits and return temperature-scaled logits or averaged log-probs.
+        """Sample utility logits and return the log of the averaged probabilities.
 
-        When ``training_samples == 1`` (default), draws a single noise sample and returns
-        temperature-scaled logits of shape ``(batch_size, num_classes)``.  When
-        ``training_samples > 1``, draws S noise samples in a single vectorized operation —
-        the backbone-derived statistics (mu, diag_scale, v_x) are computed only once — and
-        returns the log of the softmax-averaged utilities of shape ``(batch_size, num_classes)``.
+        Draws ``num_samples`` noise samples of the utility in a single vectorized operation
+        (the statistics mu, diag_scale and v_x are computed only once), applies the
+        temperature-scaled softmax to every sample and averages the probabilities.
 
         Args:
             x: Input tensor of shape (batch_size, in_features).
 
         Returns:
-            Temperature-scaled logits ``(B, K)`` when ``training_samples == 1``, or averaged
-            log-probabilities ``(B, K)`` when ``training_samples > 1``.
+            Log-probabilities of shape ``(batch_size, num_classes)``.
         """
         batch_size = x.size(0)
 
         mu = self.mu_layer(x)
         diag_scale = F.softplus(self.diag_layer(x))
 
-        if self.training_samples == 1:
-            eps_k = torch.randn(batch_size, self.num_classes, device=x.device, dtype=x.dtype)
-            eps_r = torch.randn(batch_size, self.num_factors, device=x.device, dtype=x.dtype)
-            if self.is_parameter_efficient:
-                v_x = self.v_layer(x)
-                scaled_eps_r = (eps_r * v_x).unsqueeze(-1)
-                low_rank_noise = torch.matmul(self.V_matrix, scaled_eps_r).squeeze(-1)
-            else:
-                v_x_full = self.v_layer(x).view(batch_size, self.num_classes, self.num_factors)
-                low_rank_noise = torch.matmul(v_x_full, eps_r.unsqueeze(-1)).squeeze(-1)
-            utilities = mu + diag_scale * eps_k + low_rank_noise
-            return utilities / self.temperature
-
-        n_samples = self.training_samples
+        n_samples = self.num_samples
         eps_k = torch.randn(n_samples, batch_size, self.num_classes, device=x.device, dtype=x.dtype)
         eps_r = torch.randn(n_samples, batch_size, self.num_factors, device=x.device, dtype=x.dtype)
         if self.is_parameter_efficient:
