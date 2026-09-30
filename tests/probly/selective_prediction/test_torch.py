@@ -11,7 +11,7 @@ from torch import nn  # noqa: E402
 from probly.quantification import quantify  # noqa: E402
 from probly.representer import representer  # noqa: E402
 from probly.representer.sampler import Sampler  # noqa: E402
-from probly.selective_prediction import ThresholdSelectivePredictor  # noqa: E402
+from probly.selective_prediction import SelectivePredictor, ThresholdSelector  # noqa: E402
 from probly.transformation import dropout, ensemble  # noqa: E402
 from probly.transformation.ensemble import EnsemblePredictor  # noqa: E402
 
@@ -26,7 +26,7 @@ def test_ensemble_selective_prediction_is_torch_native() -> None:
     x = torch.randn(8, 4)
 
     with torch.no_grad():
-        result = ThresholdSelectivePredictor(model, threshold=0.6).predict(x)
+        result = SelectivePredictor(model, ThresholdSelector(0.6)).predict(x)
         expected_uncertainty = quantify(representer(model).represent(x)).total
 
     assert isinstance(result.uncertainty, torch.Tensor)
@@ -41,9 +41,9 @@ def test_ensemble_selective_prediction_matches_numpy_threshold() -> None:
     model = _ensemble_model()
     x = torch.randn(8, 4)
     with torch.no_grad():
-        uncertainty = ThresholdSelectivePredictor(model, threshold=np.inf).predict(x).uncertainty
+        uncertainty = SelectivePredictor(model, ThresholdSelector(np.inf)).predict(x).uncertainty
         tau = float(uncertainty.median())
-        result = ThresholdSelectivePredictor(model, threshold=tau).predict(x)
+        result = SelectivePredictor(model, ThresholdSelector(tau)).predict(x)
 
     np.testing.assert_array_equal(result.accepted.numpy(), uncertainty.numpy() <= tau)
     assert result.coverage == float((uncertainty <= tau).float().mean())
@@ -56,7 +56,7 @@ def test_dropout_model_is_sampled_with_representer_kwargs() -> None:
     )
     x = torch.randn(8, 4)
 
-    sp = ThresholdSelectivePredictor(model, threshold=0.6, notion="epistemic", representer_kwargs={"num_samples": 7})
+    sp = SelectivePredictor(model, ThresholdSelector(0.6), notion="epistemic", representer_kwargs={"num_samples": 7})
     with torch.no_grad():
         result = sp.predict(x)
 
@@ -85,7 +85,7 @@ def test_regression_ensemble_selects_on_epistemic_uncertainty() -> None:
     x = torch.randn(8, 4)
 
     with torch.no_grad():
-        result = ThresholdSelectivePredictor(model, threshold=0.5, notion="epistemic", decider=lambda rep: rep).predict(
+        result = SelectivePredictor(model, ThresholdSelector(0.5), notion="epistemic", decider=lambda rep: rep).predict(
             x
         )
         representation = representer(model).represent(x)

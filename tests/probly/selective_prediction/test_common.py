@@ -23,7 +23,8 @@ from probly.representer import Representer, representer
 from probly.selective_prediction import (
     SelectivePrediction,
     SelectivePredictor,
-    ThresholdSelectivePredictor,
+    Selector,
+    ThresholdSelector,
 )
 
 PROBABILITIES = np.array([[0.9, 0.1], [0.5, 0.5], [0.6, 0.4], [0.99, 0.01]])
@@ -66,7 +67,7 @@ def _regression_sample() -> NumpyGaussianDistributionSample:
 
 def test_default_criterion_is_total_uncertainty_of_quantify() -> None:
     model = _model()
-    result = ThresholdSelectivePredictor(model, threshold=0.5).predict(None)
+    result = SelectivePredictor(model, ThresholdSelector(0.5)).predict(None)
     representation = model.predict_representation(None)
 
     assert isinstance(result, SelectivePrediction)
@@ -79,7 +80,7 @@ def test_default_criterion_is_total_uncertainty_of_quantify() -> None:
 
 
 def test_accepted_is_uncertainty_at_most_threshold() -> None:
-    result = ThresholdSelectivePredictor(_model(), threshold=0.5).predict(None)
+    result = SelectivePredictor(_model(), ThresholdSelector(0.5)).predict(None)
 
     np.testing.assert_array_equal(result.accepted, result.uncertainty <= 0.5)
     np.testing.assert_array_equal(result.accepted, [True, False, False, True])
@@ -87,27 +88,42 @@ def test_accepted_is_uncertainty_at_most_threshold() -> None:
 
 
 def test_tie_at_threshold_is_accepted() -> None:
-    result = ThresholdSelectivePredictor(_model(), threshold=float(ENTROPIES[2])).predict(None)
+    result = SelectivePredictor(_model(), ThresholdSelector(float(ENTROPIES[2]))).predict(None)
 
     assert result.accepted[2]
 
 
 @pytest.mark.parametrize(("threshold", "coverage"), [(np.inf, 1.0), (-np.inf, 0.0)])
 def test_infinite_thresholds_accept_all_or_none(threshold: float, coverage: float) -> None:
-    result = ThresholdSelectivePredictor(_model(), threshold=threshold).predict(None)
+    result = SelectivePredictor(_model(), ThresholdSelector(threshold)).predict(None)
 
     assert result.coverage == coverage
 
 
 def test_nan_threshold_raises() -> None:
     with pytest.raises(ValueError, match="NaN"):
-        ThresholdSelectivePredictor(_model(), threshold=float("nan"))
+        ThresholdSelector(float("nan"))
+
+
+def test_threshold_selector_works_on_plain_arrays() -> None:
+    selector = ThresholdSelector(0.5)
+    uncertainty = np.array([0.1, 0.5, 0.7, np.nan])
+
+    np.testing.assert_array_equal(selector.select(uncertainty), [True, True, False, False])
+    np.testing.assert_array_equal(selector(uncertainty), selector.select(uncertainty))
+
+
+def test_predictor_uses_selector_on_quantified_uncertainty() -> None:
+    selector = ThresholdSelector(0.5)
+    result = SelectivePredictor(_model(), selector).predict(None)
+
+    np.testing.assert_array_equal(result.accepted, selector.select(ENTROPIES))
 
 
 @pytest.mark.parametrize("notion", ["total", "aleatoric", "epistemic"])
 def test_notion_selects_component_of_decomposition(notion: str) -> None:
     sample = _ensemble_sample()
-    predictor = ThresholdSelectivePredictor(_RepresentationModel(sample), threshold=0.2, notion=notion)
+    predictor = SelectivePredictor(_RepresentationModel(sample), ThresholdSelector(0.2), notion=notion)
 
     result = predictor.predict(None)
 
@@ -115,8 +131,8 @@ def test_notion_selects_component_of_decomposition(notion: str) -> None:
 
 
 def test_epistemic_notion_separates_disagreement_from_noise() -> None:
-    result = ThresholdSelectivePredictor(
-        _RepresentationModel(_ensemble_sample()), threshold=0.1, notion="epistemic"
+    result = SelectivePredictor(
+        _RepresentationModel(_ensemble_sample()), ThresholdSelector(0.1), notion="epistemic"
     ).predict(None)
 
     assert result.uncertainty[0] > 0.1
@@ -126,22 +142,22 @@ def test_epistemic_notion_separates_disagreement_from_noise() -> None:
 
 @pytest.mark.parametrize("notion", ["EU", "eu", EpistemicUncertainty])
 def test_notion_accepts_aliases_and_classes(notion: Any) -> None:  # noqa: ANN401
-    predictor = ThresholdSelectivePredictor(_RepresentationModel(_ensemble_sample()), threshold=0.2, notion=notion)
+    predictor = SelectivePredictor(_RepresentationModel(_ensemble_sample()), ThresholdSelector(0.2), notion=notion)
 
     assert predictor.notion is EpistemicUncertainty
 
 
 def test_default_notion_is_total() -> None:
-    assert ThresholdSelectivePredictor(_model(), threshold=0.2).notion is TotalUncertainty
+    assert SelectivePredictor(_model(), ThresholdSelector(0.2)).notion is TotalUncertainty
 
 
 def test_invalid_notion_raises() -> None:
     with pytest.raises(ValueError, match="notion"):
-        ThresholdSelectivePredictor(_model(), threshold=0.2, notion="bogus")
+        SelectivePredictor(_model(), ThresholdSelector(0.2), notion="bogus")
 
 
 def test_notion_missing_from_decomposition_raises() -> None:
-    predictor = ThresholdSelectivePredictor(_model(), threshold=0.2, notion="epistemic")
+    predictor = SelectivePredictor(_model(), ThresholdSelector(0.2), notion="epistemic")
 
     with pytest.raises(KeyError, match="EpistemicUncertainty"):
         predictor.predict(None)
@@ -150,23 +166,23 @@ def test_notion_missing_from_decomposition_raises() -> None:
 @pytest.mark.parametrize("notion", ["total", "aleatoric", "epistemic"])
 def test_regression_criterion_comes_from_quantify(notion: str) -> None:
     sample = _regression_sample()
-    result = ThresholdSelectivePredictor(
-        _RepresentationModel(sample), threshold=1.0, notion=notion, decider=lambda rep: rep
+    result = SelectivePredictor(
+        _RepresentationModel(sample), ThresholdSelector(1.0), notion=notion, decider=lambda rep: rep
     ).predict(None)
 
     np.testing.assert_allclose(result.uncertainty, quantify(sample)[notion])
 
 
 def test_custom_decider_is_used() -> None:
-    result = ThresholdSelectivePredictor(
-        _model(), threshold=0.2, decider=lambda rep: rep.probabilities.argmax(-1)
+    result = SelectivePredictor(
+        _model(), ThresholdSelector(0.2), decider=lambda rep: rep.probabilities.argmax(-1)
     ).predict(None)
 
     np.testing.assert_array_equal(result.decision, [0, 0, 0, 0])
 
 
 def test_predict_dispatch_and_call_agree_with_method() -> None:
-    sp = ThresholdSelectivePredictor(_model(), threshold=0.5)
+    sp = SelectivePredictor(_model(), ThresholdSelector(0.5))
 
     via_method = sp.predict(None)
     via_dispatch = predict(sp, None)
@@ -197,7 +213,7 @@ representer.register(_SamplingModel, _SamplingRepresenter)
 
 
 def test_representer_kwargs_are_passed_to_the_representer() -> None:
-    sp = ThresholdSelectivePredictor(_SamplingModel(), threshold=0.5, representer_kwargs={"num_samples": 3})
+    sp = SelectivePredictor(_SamplingModel(), ThresholdSelector(0.5), representer_kwargs={"num_samples": 3})
 
     assert isinstance(sp.representer, _SamplingRepresenter)
     assert sp.representer.num_samples == 3
@@ -206,19 +222,18 @@ def test_representer_kwargs_are_passed_to_the_representer() -> None:
 
 def test_missing_representer_kwargs_raise() -> None:
     with pytest.raises(TypeError, match="num_samples"):
-        ThresholdSelectivePredictor(_SamplingModel(), threshold=0.5)
+        SelectivePredictor(_SamplingModel(), ThresholdSelector(0.5))
 
 
-def test_base_class_is_abstract() -> None:
+def test_selector_base_class_is_abstract() -> None:
     with pytest.raises(TypeError, match="abstract"):
-        SelectivePredictor(_model())
+        Selector()
 
 
-class _LeastUncertainSelectivePredictor(SelectivePredictor):
+class _LeastUncertainSelector(Selector):
     """Selector that overrides only `select` and keeps the k least uncertain instances."""
 
-    def __init__(self, model: Any, k: int) -> None:  # noqa: ANN401
-        super().__init__(model)
+    def __init__(self, k: int) -> None:
         self.k = k
 
     @override
@@ -228,8 +243,8 @@ class _LeastUncertainSelectivePredictor(SelectivePredictor):
         return accepted
 
 
-def test_subclass_overriding_select_runs_through_base_pipeline() -> None:
-    result = _LeastUncertainSelectivePredictor(_model(), k=1).predict(None)
+def test_custom_selector_runs_through_predictor_pipeline() -> None:
+    result = SelectivePredictor(_model(), _LeastUncertainSelector(k=1)).predict(None)
 
     assert isinstance(result, SelectivePrediction)
     np.testing.assert_array_equal(result.accepted, [False, False, False, True])

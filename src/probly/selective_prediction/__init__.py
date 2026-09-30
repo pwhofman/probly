@@ -5,11 +5,13 @@ from __future__ import annotations
 from ._common import (
     SelectivePrediction,
     SelectivePredictor,
-    ThresholdSelectivePredictor,
+    Selector,
+    ThresholdSelector,
 )
 
 __all__ = [
     "SelectivePrediction",
     "SelectivePredictor",
-    "ThresholdSelectivePredictor",
+    "Selector",
+    "ThresholdSelector",
 ]

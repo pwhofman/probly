@@ -16,7 +16,7 @@ from probly.representation.distribution.jax_gaussian import (  # noqa: E402
     JaxGaussianDistribution,
     JaxGaussianDistributionSample,
 )
-from probly.selective_prediction import ThresholdSelectivePredictor  # noqa: E402
+from probly.selective_prediction import SelectivePredictor, ThresholdSelector  # noqa: E402
 
 PROBABILITIES = np.array([[0.9, 0.1], [0.5, 0.5], [0.6, 0.4], [0.99, 0.01]])
 
@@ -36,7 +36,7 @@ class _NumpyCategoricalModel:
 
 
 def test_selective_prediction_is_jax_native() -> None:
-    result = ThresholdSelectivePredictor(_JaxCategoricalModel(), threshold=0.5).predict(None)
+    result = SelectivePredictor(_JaxCategoricalModel(), ThresholdSelector(0.5)).predict(None)
 
     assert isinstance(result.uncertainty, jax.Array)
     assert isinstance(result.accepted, jax.Array)
@@ -45,8 +45,8 @@ def test_selective_prediction_is_jax_native() -> None:
 
 
 def test_selective_prediction_matches_numpy_reference() -> None:
-    jax_result = ThresholdSelectivePredictor(_JaxCategoricalModel(), threshold=0.5).predict(None)
-    numpy_result = ThresholdSelectivePredictor(_NumpyCategoricalModel(), threshold=0.5).predict(None)
+    jax_result = SelectivePredictor(_JaxCategoricalModel(), ThresholdSelector(0.5)).predict(None)
+    numpy_result = SelectivePredictor(_NumpyCategoricalModel(), ThresholdSelector(0.5)).predict(None)
 
     np.testing.assert_allclose(np.asarray(jax_result.uncertainty), numpy_result.uncertainty, rtol=1e-6)
     np.testing.assert_array_equal(np.asarray(jax_result.accepted), numpy_result.accepted)
@@ -66,7 +66,7 @@ def test_regression_criterion_comes_from_quantify(notion: str) -> None:
     model = _JaxRegressionModel()
     representation = model.predict_representation(None)
 
-    result = ThresholdSelectivePredictor(model, threshold=1.0, notion=notion, decider=lambda rep: rep).predict(None)
+    result = SelectivePredictor(model, ThresholdSelector(1.0), notion=notion, decider=lambda rep: rep).predict(None)
 
     assert isinstance(result.uncertainty, jax.Array)
     np.testing.assert_allclose(np.asarray(result.uncertainty), np.asarray(quantify(representation)[notion]), rtol=1e-6)
