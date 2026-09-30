@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
 import numpy as np
 import pytest
 
 torch = pytest.importorskip("torch")
 from torch import nn  # noqa: E402
 
+from probly import method  # noqa: E402
+from probly.decider import categorical_from_maximin  # noqa: E402
 from probly.quantification import LogLoss, SecondOrderZeroOneDecomposition, quantify  # noqa: E402
 from probly.representation.distribution import (  # noqa: E402
+    CategoricalDistribution,
+    CategoricalDistributionSample,
+    DirichletDistribution,
     create_categorical_distribution,
     create_dirichlet_distribution_from_alphas,
 )
@@ -18,6 +25,9 @@ from probly.representer.sampler import Sampler  # noqa: E402
 from probly.selective_prediction import SelectivePredictor, ThresholdSelector  # noqa: E402
 from probly.transformation import dropout, ensemble  # noqa: E402
 from probly.transformation.ensemble import EnsemblePredictor  # noqa: E402
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def _ensemble_model() -> EnsemblePredictor:
@@ -139,3 +149,165 @@ def test_regression_ensemble_selects_on_epistemic_uncertainty() -> None:
 
     torch.testing.assert_close(result.uncertainty, quantify(representation).epistemic)
     torch.testing.assert_close(result.accepted, result.uncertainty <= 0.5)
+
+
+def _classifier_base() -> nn.Module:
+    return nn.Sequential(nn.Linear(4, 16), nn.ReLU(), nn.Linear(16, 3))
+
+
+_ALL_NOTIONS: dict[str, type[Exception] | None] = {"total": None, "aleatoric": None, "epistemic": None}
+_TOTAL_ONLY: dict[str, type[Exception] | None] = {"total": None, "aleatoric": KeyError, "epistemic": KeyError}
+
+# Method name: (transformation, representer kwargs, branch of the default loss, error per notion or None).
+_METHOD_MATRIX: dict[str, tuple[Callable[[nn.Module], Any], dict[str, Any], str, dict[str, type[Exception] | None]]] = {
+    "ensemble": (
+        lambda m: method.ensemble(m, num_members=3, predictor_type="logit_classifier"),
+        {},
+        "sample",
+        _ALL_NOTIONS,
+    ),
+    "dropout": (
+        lambda m: method.dropout(m, p=0.2, predictor_type="logit_classifier"),
+        {"num_samples": 5},
+        "sample",
+        _ALL_NOTIONS,
+    ),
+    "dropconnect": (
+        lambda m: method.dropconnect(m, predictor_type="logit_classifier"),
+        {"num_samples": 5},
+        "sample",
+        _ALL_NOTIONS,
+    ),
+    "bayesian": (
+        lambda m: method.bayesian(m, predictor_type="logit_classifier"),
+        {"num_samples": 5},
+        "sample",
+        _ALL_NOTIONS,
+    ),
+    "batchensemble": (
+        lambda m: method.batchensemble(m, num_members=3, predictor_type="logit_classifier"),
+        {},
+        "sample",
+        _ALL_NOTIONS,
+    ),
+    "masksembles": (lambda m: method.masksembles(m, predictor_type="logit_classifier"), {}, "sample", _ALL_NOTIONS),
+    "subensemble": (
+        lambda m: method.subensemble(m, num_heads=3, predictor_type="logit_classifier"),
+        {},
+        "sample",
+        _ALL_NOTIONS,
+    ),
+    "sngp": (
+        lambda m: method.sngp(m, num_random_features=32, predictor_type="logit_classifier"),
+        {},
+        "sample",
+        _ALL_NOTIONS,
+    ),
+    "dare": (lambda m: method.dare(m, num_members=3, predictor_type="logit_classifier"), {}, "sample", _ALL_NOTIONS),
+    "vbll": (method.vbll, {}, "sample", _ALL_NOTIONS),
+    "cast": (lambda m: method.cast(m, predictor_type="logit_classifier"), {}, "categorical", _TOTAL_ONLY),
+    "het_net": (
+        lambda m: method.het_net(m, num_samples=5, predictor_type="logit_distribution_predictor"),
+        {},
+        "categorical",
+        _TOTAL_ONLY,
+    ),
+    "g_vbll": (method.g_vbll, {}, "categorical", _TOTAL_ONLY),
+    # SecondOrderZeroOneDecomposition has no epistemic part for Dirichlet distributions yet.
+    "evidential_classification": (
+        method.evidential_classification,
+        {},
+        "dirichlet",
+        {"total": None, "aleatoric": None, "epistemic": NotImplementedError},
+    ),
+    "credal_ensembling": (
+        lambda m: method.credal_ensembling(m, num_members=3, predictor_type="logit_classifier"),
+        {},
+        "quantify",
+        _ALL_NOTIONS,
+    ),
+    "credal_wrapper": (
+        lambda m: method.credal_wrapper(m, num_members=3, predictor_type="logit_classifier"),
+        {},
+        "quantify",
+        _ALL_NOTIONS,
+    ),
+    "credal_relative_likelihood": (
+        lambda m: method.credal_relative_likelihood(m, num_members=3, predictor_type="logit_classifier"),
+        {},
+        "quantify",
+        _ALL_NOTIONS,
+    ),
+    "credal_dro": (
+        lambda m: method.credal_dro(m, num_members=3, predictor_type="logit_classifier"),
+        {},
+        "quantify",
+        _ALL_NOTIONS,
+    ),
+    "credal_net": (lambda m: method.credal_net(m, predictor_type="logit_classifier"), {}, "quantify", _ALL_NOTIONS),
+    "credal_bnn": (
+        lambda m: method.credal_bnn(m, num_members=3, predictor_type="logit_classifier"),
+        {},
+        "quantify",
+        _ALL_NOTIONS,
+    ),
+    "duq": (lambda m: method.duq(m, centroid_size=4), {}, "quantify", _TOTAL_ONLY),
+    "ddu": (method.ddu, {}, "quantify", {"total": KeyError, "aleatoric": None, "epistemic": None}),
+}
+
+
+def _branch(representation: object) -> str:
+    if isinstance(representation, CategoricalDistributionSample):
+        return "sample"
+    if isinstance(representation, CategoricalDistribution):
+        return "categorical"
+    if isinstance(representation, DirichletDistribution):
+        return "dirichlet"
+    return "quantify"
+
+
+@pytest.mark.filterwarnings("ignore:No residual connections detected:UserWarning")
+@pytest.mark.parametrize("notion", ["total", "aleatoric", "epistemic"])
+@pytest.mark.parametrize("name", list(_METHOD_MATRIX))
+def test_default_predictor_on_method(name: str, notion: str) -> None:
+    transformation, representer_kwargs, branch, errors = _METHOD_MATRIX[name]
+    torch.manual_seed(0)
+    model = transformation(_classifier_base())
+    x = torch.randn(8, 4)
+    predictor = SelectivePredictor(model, ThresholdSelector(0.5), notion=notion, representer_kwargs=representer_kwargs)
+
+    with torch.no_grad():
+        torch.manual_seed(1)
+        representation = predictor.representer.represent(x)
+        assert _branch(representation) == branch
+        error = errors[notion]
+        if error is not None:
+            with pytest.raises(error):
+                predictor.predict(x)
+            return
+        torch.manual_seed(1)
+        result = predictor.predict(x)
+
+    assert result.uncertainty.shape == (8,)
+    assert result.accepted.dtype == torch.bool
+    torch.testing.assert_close(result.accepted, result.uncertainty <= 0.5)
+    if branch == "quantify":
+        torch.testing.assert_close(result.uncertainty, quantify(representation)[notion])
+    elif notion == "total":
+        # Chow's criterion: one minus the maximum probability of the decision.
+        torch.testing.assert_close(result.uncertainty, 1.0 - result.decision.probabilities.max(dim=-1).values)
+
+
+def test_non_default_decider_on_credal_model() -> None:
+    torch.manual_seed(0)
+    model = method.credal_bnn(_classifier_base(), num_members=3, predictor_type="logit_classifier")
+    x = torch.randn(8, 4)
+
+    with torch.no_grad():
+        torch.manual_seed(1)
+        result = SelectivePredictor(model, ThresholdSelector(1.0), decider=categorical_from_maximin).predict(x)
+        torch.manual_seed(1)
+        expected = categorical_from_maximin(representer(model).represent(x))
+
+    assert isinstance(result.decision, CategoricalDistribution)
+    torch.testing.assert_close(result.decision.probabilities, expected.probabilities)

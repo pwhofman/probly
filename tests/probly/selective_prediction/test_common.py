@@ -112,6 +112,12 @@ def test_infinite_thresholds_accept_all_or_none(threshold: float, coverage: floa
     assert result.coverage == coverage
 
 
+def test_coverage_of_empty_batch_is_nan() -> None:
+    result = SelectivePrediction(decision=None, uncertainty=np.zeros(0), accepted=np.zeros(0, dtype=bool))
+
+    assert np.isnan(result.coverage)
+
+
 def test_nan_threshold_raises() -> None:
     with pytest.raises(ValueError, match="NaN"):
         ThresholdSelector(float("nan"))
@@ -182,8 +188,13 @@ def test_default_notion_is_total() -> None:
 
 
 def test_invalid_notion_raises() -> None:
-    with pytest.raises(ValueError, match="notion"):
+    with pytest.raises(ValueError, match=r"notion must be one of .*'tu', 'TU', got 'bogus'"):
         SelectivePredictor(_model(), ThresholdSelector(0.2), notion="bogus")
+
+
+def test_class_that_is_not_a_notion_raises() -> None:
+    with pytest.raises(TypeError, match="subclass of Notion"):
+        SelectivePredictor(_model(), ThresholdSelector(0.2), notion=int)
 
 
 def test_callable_notion_computes_criterion_from_representation() -> None:

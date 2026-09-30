@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any, cast, final, override
 from probly.decider import categorical_from_mean
 from probly.quantification import (
     Decomposition,
+    Notion,
     ScoringRule,
     SecondOrderScoringRuleDecomposition,
     SecondOrderZeroOneDecomposition,
@@ -45,7 +46,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
     from probly.predictor import Predictor
-    from probly.quantification import Notion
     from probly.quantification.notion import NotionKey, NotionName
     from probly.representation import Representation
     from probly.representer import Representer
@@ -89,9 +89,16 @@ class SelectivePrediction[D]:
 
     @property
     def coverage(self) -> float:
-        """Fraction of instances whose prediction is accepted."""
+        """Fraction of instances whose prediction is accepted, or NaN for an empty batch.
+
+        The fraction is converted to a Python float, so the property cannot be used inside a traced function such as
+        one compiled with ``jax.jit``; compute the mean of :attr:`accepted` there instead.
+        """
         accepted: Any = self.accepted
-        return float(accepted.sum()) / math.prod(accepted.shape)
+        num_instances = math.prod(accepted.shape)
+        if num_instances == 0:
+            return math.nan
+        return float(accepted.sum()) / num_instances
 
 
 class Selector(ABC):
@@ -287,15 +294,21 @@ class SelectivePredictor[**In, R: Representation]:
 
         Raises:
             ValueError: If ``notion`` is a string that is not the name of a notion of uncertainty.
-            TypeError: If ``notion`` is neither a string, a notion class, nor a callable, or if ``loss`` is neither a
-                scoring rule nor ``None``.
+            TypeError: If ``notion`` is neither a string, a notion class, nor a callable, e.g. a class that is not a
+                subclass of :class:`~probly.quantification.Notion`, or if ``loss`` is neither a scoring rule nor
+                ``None``.
         """
         if isinstance(notion, str):
             try:
                 notion = notion_registry[cast("NotionName", notion)]
             except KeyError:
-                msg = f"notion must be 'total', 'aleatoric', or 'epistemic', got {notion!r}."
+                names = ", ".join(repr(name) for name in notion_registry)
+                msg = f"notion must be one of {names}, got {notion!r}."
                 raise ValueError(msg) from None
+        elif isinstance(notion, type):
+            if not issubclass(notion, Notion):
+                msg = f"notion must be a subclass of Notion if it is a class, got {notion.__name__}."
+                raise TypeError(msg)
         elif not callable(notion):
             msg = f"notion must be a string, a notion class, or a callable, got {type(notion).__name__}."
             raise TypeError(msg)
@@ -318,7 +331,9 @@ class SelectivePredictor[**In, R: Representation]:
     def predict(self, *args: In.args, **kwargs: In.kwargs) -> SelectivePrediction[Any]:
         """Predict and decide per instance whether to abstain.
 
-        The arguments are passed on to the model's representer.
+        The arguments are passed on to the model's representer. Gradients are not stopped: with PyTorch, the
+        criterion and the decision can be part of the autograd graph, so that ``.numpy()`` fails on them. Wrap
+        inference in ``torch.no_grad()``.
 
         Returns:
             The decision, uncertainty criterion, and acceptance mask for the input.
