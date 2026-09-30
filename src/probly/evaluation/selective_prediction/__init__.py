@@ -5,7 +5,7 @@ from __future__ import annotations
 from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
 
 from . import numpy as numpy
-from ._common import selective_prediction
+from ._common import evaluate_selective_prediction, selective_prediction
 
 
 @selective_prediction.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
@@ -19,5 +19,6 @@ def _(_: type) -> None:
 
 
 __all__ = [
+    "evaluate_selective_prediction",
     "selective_prediction",
 ]
