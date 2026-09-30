@@ -156,6 +156,43 @@ def test_invalid_notion_raises() -> None:
         SelectivePredictor(_model(), ThresholdSelector(0.2), notion="bogus")
 
 
+def test_callable_notion_computes_criterion_from_representation() -> None:
+    model = _model()
+    seen = []
+
+    def one_minus_max_probability(representation: Any) -> np.ndarray:  # noqa: ANN401
+        seen.append(representation)
+        return 1.0 - representation.probabilities.max(axis=-1)
+
+    result = SelectivePredictor(model, ThresholdSelector(0.3), notion=one_minus_max_probability).predict(None)
+
+    assert seen == [model.representation]
+    np.testing.assert_allclose(result.uncertainty, 1.0 - PROBABILITIES.max(axis=-1))
+    np.testing.assert_array_equal(result.accepted, [True, False, False, True])
+    np.testing.assert_allclose(
+        result.decision.probabilities,
+        categorical_from_mean(model.representation).probabilities,
+    )
+
+
+def test_callable_notion_skips_quantify(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail(_representation: object) -> None:
+        msg = "quantify must not be called for a callable notion"
+        raise AssertionError(msg)
+
+    monkeypatch.setattr("probly.selective_prediction._common.quantify", fail)
+    result = SelectivePredictor(
+        _model(), ThresholdSelector(0.5), notion=lambda _rep: np.array([0.1, 0.9, 0.5, 0.6])
+    ).predict(None)
+
+    np.testing.assert_array_equal(result.accepted, [True, False, True, False])
+
+
+def test_non_callable_notion_raises() -> None:
+    with pytest.raises(TypeError, match="notion"):
+        SelectivePredictor(_model(), ThresholdSelector(0.2), notion=0.5)
+
+
 def test_notion_missing_from_decomposition_raises() -> None:
     predictor = SelectivePredictor(_model(), ThresholdSelector(0.2), notion="epistemic")
 

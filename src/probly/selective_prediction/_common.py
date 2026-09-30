@@ -15,7 +15,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import math
-from typing import TYPE_CHECKING, Any, final, override
+from typing import TYPE_CHECKING, Any, cast, final, override
 
 from probly.decider import categorical_from_mean
 from probly.quantification import Decomposition, notion_registry, quantify
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
     from probly.predictor import Predictor
     from probly.quantification import Notion
-    from probly.quantification.notion import NotionKey
+    from probly.quantification.notion import NotionKey, NotionName
     from probly.representation import Representation
     from probly.representer import Representer
 
@@ -139,7 +139,8 @@ class SelectivePredictor[**In, R: Representation]:
     The criterion is the component of the uncertainty decomposition selected by ``notion``: the total uncertainty by
     default, or its aleatoric or epistemic part. Which decomposition is used is up to
     :func:`~probly.quantification.quantify`; for a sample of categorical distributions, e.g. the predictions of an
-    ensemble, it is the entropy decomposition.
+    ensemble, it is the entropy decomposition. Alternatively, ``notion`` can be a function that computes the
+    criterion from the representation itself, e.g. one minus the maximum mean probability.
 
     For models not transformed by probly, compute the criterion and the decision directly and apply a
     :class:`Selector` to the criterion.
@@ -148,14 +149,15 @@ class SelectivePredictor[**In, R: Representation]:
         model: The wrapped uncertainty-aware model.
         selector: The rule that decides which predictions are accepted.
         representer: The representer that builds representations from the model's predictions.
-        notion: The notion of uncertainty the criterion measures.
+        notion: The notion of uncertainty the criterion measures, or the function computing the criterion from the
+            representation.
         decider: Function mapping a representation to the decision.
     """
 
     model: Predictor[In, Any]
     selector: Selector
     representer: Representer[Any, In, Any, R]
-    notion: type[Notion]
+    notion: type[Notion] | Callable[[R], Any]
     decider: Callable[[R], Any]
 
     def __init__(
@@ -163,7 +165,7 @@ class SelectivePredictor[**In, R: Representation]:
         model: Predictor[In, Any],
         selector: Selector,
         *,
-        notion: NotionKey = "total",
+        notion: NotionKey | Callable[[R], Any] = "total",
         decider: Callable[[R], Any] | None = None,
         representer_kwargs: Mapping[str, Any] | None = None,
     ) -> None:
@@ -175,7 +177,9 @@ class SelectivePredictor[**In, R: Representation]:
             selector: The rule that decides which predictions are accepted, e.g. a :class:`ThresholdSelector`.
             notion: The notion of uncertainty to select on, e.g. ``"total"``, ``"aleatoric"``, or ``"epistemic"``.
                 Defaults to ``"total"``. The model's uncertainty decomposition has to contain this notion; a single
-                categorical distribution, for instance, only provides the total uncertainty.
+                categorical distribution, for instance, only provides the total uncertainty. Alternatively, a
+                function mapping the representation to the criterion per instance, where higher means more
+                uncertain; it is used instead of :func:`~probly.quantification.quantify`.
             decider: Function mapping a representation to the decision. Defaults to
                 :func:`~probly.decider.categorical_from_mean`.
             representer_kwargs: Keyword arguments passed on to :func:`~probly.representer.representer` when building
@@ -183,14 +187,18 @@ class SelectivePredictor[**In, R: Representation]:
                 ``{"num_samples": ...}`` here.
 
         Raises:
-            ValueError: If ``notion`` is not the name of a notion of uncertainty.
+            ValueError: If ``notion`` is a string that is not the name of a notion of uncertainty.
+            TypeError: If ``notion`` is neither a string, a notion class, nor a callable.
         """
         if isinstance(notion, str):
             try:
-                notion = notion_registry[notion]
+                notion = notion_registry[cast("NotionName", notion)]
             except KeyError:
                 msg = f"notion must be 'total', 'aleatoric', or 'epistemic', got {notion!r}."
                 raise ValueError(msg) from None
+        elif not callable(notion):
+            msg = f"notion must be a string, a notion class, or a callable, got {type(notion).__name__}."
+            raise TypeError(msg)
 
         self.model = model
         self.selector = selector
@@ -208,21 +216,27 @@ class SelectivePredictor[**In, R: Representation]:
             The decision, uncertainty criterion, and acceptance mask for the input.
 
         Raises:
-            TypeError: If :func:`~probly.quantification.quantify` does not return a decomposition for the model's
-                representation.
-            KeyError: If the model's uncertainty decomposition does not contain :attr:`notion`.
+            TypeError: If :attr:`notion` is a notion class and :func:`~probly.quantification.quantify` does not
+                return a decomposition for the model's representation.
+            KeyError: If :attr:`notion` is a notion class that the model's uncertainty decomposition does not contain.
         """
         representation = self.representer.represent(*args, **kwargs)
-        decomposition = quantify(representation)
-        if not isinstance(decomposition, Decomposition):
-            msg = f"Expected quantify to return a Decomposition, got {type(decomposition).__name__}."
-            raise TypeError(msg)
-        uncertainty = decomposition[self.notion]
+        uncertainty = self._criterion(representation)
         return SelectivePrediction(
             decision=self.decider(representation),
             uncertainty=uncertainty,
             accepted=self.selector.select(uncertainty),
         )
+
+    def _criterion(self, representation: R) -> Any:  # noqa: ANN401
+        notion = self.notion
+        if not isinstance(notion, type):
+            return notion(representation)
+        decomposition = quantify(representation)
+        if not isinstance(decomposition, Decomposition):
+            msg = f"Expected quantify to return a Decomposition, got {type(decomposition).__name__}."
+            raise TypeError(msg)
+        return decomposition[notion]
 
     def __call__(self, *args: In.args, **kwargs: In.kwargs) -> SelectivePrediction[Any]:
         """Alias for :meth:`predict`."""
