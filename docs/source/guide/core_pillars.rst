@@ -409,6 +409,8 @@ the three downstream tasks by which uncertainty is usually justified:
 :Selective prediction: ``selective_prediction`` abstains on the most uncertain
     fraction of inputs and measures the accuracy that remains. A useful
     uncertainty makes the risk-coverage curve fall.
+    ``evaluate_selective_prediction`` summarizes the exact curve by its AURC and
+    AUGRC, or by the risk or coverage at a working point.
 :Active learning: uncertainty chooses the next labels, and the resulting
     learning curve is compared against random acquisition.
 
@@ -479,8 +481,9 @@ honest artifact, since the scalar alone hides where the gain occurs.
 
 ``probly.metrics`` holds the intrinsic scores (calibration error, coverage, set
 size), which ask a different question: not whether the derived score is
-*useful*, but whether the predicted distribution is *right*. The proper
-scoring rules, in turn, live with the quantifiers in
+*useful*, but whether the predicted distribution is *right*. The ranking scores
+on which the evaluation tasks rest (AUROC, AURC, AUGRC) live there as well. The
+proper scoring rules, in turn, live with the quantifiers in
 ``probly.quantification.scoring_rule``, so that a rule chosen for evaluation is
 the same object as the one that generated the decomposition.
 :ref:`uq-evaluating` draws this distinction in detail.
