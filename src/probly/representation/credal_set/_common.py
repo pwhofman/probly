@@ -104,6 +104,37 @@ def create_convex_credal_set[T: CategoricalDistribution](sample: Sample[T]) -> C
 
 
 @flexdispatch
+def create_discrete_credal_set[T: CategoricalDistribution](sample: Sample[T]) -> DiscreteCredalSet[T]:
+    """Create a discrete credal set from a sample.
+
+    Every member of the sample becomes one element of the credal set.
+
+    Args:
+        sample: A sample of categorical distributions.
+
+    Returns:
+        The created discrete credal set.
+    """
+    msg = f"No discrete credal set factory registered for sample type {type(sample)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def create_singleton_credal_set[T: CategoricalDistribution](distribution: T) -> SingletonCredalSet[T]:
+    """Create a singleton credal set that contains a single categorical distribution.
+
+    Args:
+        distribution: The categorical distribution, or an array of probabilities with the
+            classes along the last axis.
+
+    Returns:
+        The created singleton credal set.
+    """
+    msg = f"No singleton credal set factory registered for distribution type {type(distribution)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
 def create_distance_based_credal_set[T: CategoricalDistribution](sample: Sample[T]) -> DistanceBasedCredalSet[T]:
     """Create a distance-based credal set from a sample."""
     msg = f"No distance-based credal set factory registered for sample type {type(sample)}"

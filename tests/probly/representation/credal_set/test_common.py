@@ -53,3 +53,15 @@ class TestCredalSetCommonFallbacks:
 
         with pytest.raises(NotImplementedError, match="Dirichlet"):
             create_dirichlet_level_set_credal_set(object(), 0.5)
+
+    def test_create_discrete_credal_set_raises(self) -> None:
+        from probly.representation.credal_set._common import create_discrete_credal_set  # noqa: PLC0415
+
+        with pytest.raises(NotImplementedError, match="discrete"):
+            create_discrete_credal_set(object())
+
+    def test_create_singleton_credal_set_raises(self) -> None:
+        from probly.representation.credal_set._common import create_singleton_credal_set  # noqa: PLC0415
+
+        with pytest.raises(NotImplementedError, match="singleton"):
+            create_singleton_credal_set(object())

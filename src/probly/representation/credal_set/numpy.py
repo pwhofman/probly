@@ -17,9 +17,12 @@ from probly.representation.credal_set._common import (
     ProbabilityIntervalsCredalSet,
     SingletonCredalSet,
     create_convex_credal_set,
+    create_discrete_credal_set,
     create_distance_based_credal_set,
     create_distance_based_credal_set_from_center_and_radius,
     create_probability_intervals,
+    create_probability_intervals_from_lower_upper_array,
+    create_singleton_credal_set,
 )
 from probly.representation.distribution import NumpyCategoricalDistribution
 from probly.representation.distribution.numpy_categorical import NumpyProbabilityCategoricalDistribution
@@ -346,7 +349,19 @@ class NumpySingletonCredalSet(
 
 create_probability_intervals.register(NumpyCategoricalDistribution, NumpyProbabilityIntervalsCredalSet.from_sample)
 create_convex_credal_set.register(NumpySample, NumpyConvexCredalSet.from_numpy_sample)
+create_discrete_credal_set.register(NumpySample, NumpyDiscreteCredalSet.from_numpy_sample)
 create_distance_based_credal_set.register(NumpySample, NumpyDistanceBasedCredalSet.from_numpy_sample)
+
+
+@create_singleton_credal_set.register((NumpyCategoricalDistribution, np.ndarray))
+def _create_singleton_credal_set(distribution: NumpyCategoricalDistribution | np.ndarray) -> NumpySingletonCredalSet:
+    return NumpySingletonCredalSet(array=distribution)  # ty:ignore[invalid-argument-type]
+
+
+@create_probability_intervals_from_lower_upper_array.register(np.ndarray)
+def _create_probability_intervals_from_lower_upper_array(bounds: np.ndarray) -> NumpyProbabilityIntervalsCredalSet:
+    reshaped = bounds.reshape(*bounds.shape[:-1], 2, -1)
+    return NumpyProbabilityIntervalsCredalSet(lower_bounds=reshaped[..., 0, :], upper_bounds=reshaped[..., 1, :])
 
 
 @create_distance_based_credal_set_from_center_and_radius.register(NumpyCategoricalDistribution)

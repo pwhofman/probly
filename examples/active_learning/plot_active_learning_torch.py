@@ -2,12 +2,12 @@
 Active Learning with PyTorch - BADGE Selection
 ============================================================
 
-Demonstrate the :class:`~probly.evaluation.active_learning.BADGEQuery`
+Demonstrate the :class:`~probly.evaluation.active_learning.strategies.BADGEQuery`
 strategy using a PyTorch MLP on the Digits dataset.
 
 BADGE (Batch Active learning by Diverse Gradient Embeddings) selects batches
 that are both uncertain *and* diverse by running k-means++ on gradient
-embeddings. It requires a :class:`~probly.evaluation.active_learning.BadgeEstimator`
+embeddings. It requires a :class:`~probly.evaluation.active_learning.strategies.BadgeEstimator`
 that exposes penultimate-layer features via ``embed()``.
 
 This example compares three strategies:
@@ -68,7 +68,7 @@ y_test = torch.from_numpy(y_test_np).long()
 # -----------------------------
 # BADGE needs penultimate-layer embeddings. We build a simple MLP and expose
 # the hidden representation via ``embed()``. This satisfies the
-# :class:`~probly.evaluation.active_learning.BadgeEstimator` protocol:
+# :class:`~probly.evaluation.active_learning.strategies.BadgeEstimator` protocol:
 # ``fit``, ``predict``, ``predict_proba``, and ``embed``.
 
 
@@ -195,7 +195,7 @@ plt.show()
 # For richer uncertainty estimates, combine with probly's UQ transformations:
 #
 # - Use ``probly.method.dropout`` to add MC dropout for
-#   :class:`~probly.evaluation.active_learning.UncertaintyQuery`.
+#   :class:`~probly.evaluation.active_learning.strategies.UncertaintyQuery`.
 # - Use ``probly.method.ensemble`` for deep ensembles that naturally provide
 #   diverse uncertainty scores.
 #

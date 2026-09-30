@@ -1,9 +1,11 @@
-"""==========================
-Working with `NumpySample`
-==========================
+"""====================
+Working with samples
+====================
 
-``probly`` represents repeated stochastic predictions as a "sample". For NumPy-like data,
-the concrete implementation is :class:`probly.representation.sampling.sample.NumpySample`.
+``probly`` represents repeated stochastic predictions as a
+:class:`~probly.representation.sample.Sample`, created with
+:func:`~probly.representation.sample.create_sample`, which picks the implementation that
+matches the backend of the data.
 
 This example shows:
 
@@ -17,7 +19,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 
-from probly.representation.sample import NumpySample
+from probly.representation.sample import Sample, create_sample
 
 # Imagine these are 3 stochastic forward passes for 2 instances and 4 classes.
 # Shape per pass: (instances, classes)
@@ -26,12 +28,12 @@ pass_2 = np.array([[0.2, 0.2, 0.5, 0.1], [0.6, 0.2, 0.1, 0.1]])
 pass_3 = np.array([[0.15, 0.25, 0.5, 0.1], [0.65, 0.15, 0.1, 0.1]])
 data_stack = np.array([pass_1, pass_2, pass_3])
 
-# Create an NumpySample with sample_axis=0 (the first axis corresponds to the stochastic passes).
-sample = NumpySample(data_stack, sample_axis=0)
+# Create a sample with sample_axis=0 (the first axis corresponds to the stochastic passes).
+sample: Sample = create_sample(data_stack, sample_axis=0)
 
-# Compute mean and std across the sample axis (axis=0).
-mean = np.mean(data_stack, axis=0)
-std = np.std(data_stack, axis=0, ddof=0)
+# Compute mean and std across the sample axis.
+mean = sample.sample_mean()
+std = sample.sample_std(ddof=0)
 print("mean shape:", mean.shape)
 print("std shape:", std.shape)
 print("mean[0]:", mean[0])

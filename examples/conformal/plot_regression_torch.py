@@ -2,7 +2,7 @@
 Regression Conformal Prediction — PyTorch
 ==========================================
 
-Demonstrate :func:`~probly.conformal.scores.absolute_error_score`
+Demonstrate :func:`~probly.conformal_scores.absolute_error_score`
 using a small :class:`~torch.nn.Module` on the Diabetes dataset.
 
 After applying :func:`~probly.method.conformal.conformal_absolute_error`
@@ -99,7 +99,7 @@ plt.fill_between(
     intervals[order, 0],
     intervals[order, 1],
     alpha=0.35,
-    label="90% conformal interval",
+    label="95% conformal interval",
 )
 plt.scatter(range(len(y_test_np)), y_test_np[order], s=15, color="tab:red", label="True value", zorder=3)
 plt.xlabel("Test sample (sorted by true label)")

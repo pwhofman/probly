@@ -33,7 +33,7 @@ import torch
 from torch import nn
 
 from probly.calibrator import calibrate
-from probly.method.conformal_credal_set import (
+from probly.transformation.conformal_credal_set import (
     conformal_inner_product,
     conformal_kullback_leibler,
     conformal_total_variation,
@@ -106,7 +106,7 @@ model.eval()
 # %%
 # Wrap with conformalized credal set prediction
 # -----------------------------------------------
-# :func:`~probly.method.conformal_credal_set_prediction.conformal_total_variation`
+# :func:`~probly.transformation.conformal_credal_set.conformal_total_variation`
 # wraps any predictor.  Calibration computes the TV-distance quantile.
 
 model_tv = copy.deepcopy(model)
@@ -135,7 +135,7 @@ print(f"KL Conformal quantile (radius): {calibrated_kl.conformal_quantile:.4f}")
 # Predict credal sets
 # --------------------
 # Each prediction is a
-# :class:`~probly.representation.credal_set.torch.TorchDistanceBasedCredalSet`
+# :class:`~probly.representation.credal_set.DistanceBasedCredalSet`
 # with a nominal distribution and a TV-ball radius equal to the quantile.
 
 credal_sets_tv = predict(calibrated_tv, X_test_t)
