@@ -65,6 +65,10 @@ class Selector(ABC):
     the convention of :func:`~probly.evaluation.selective_prediction.selective_prediction`: higher values mean more
     uncertain, so the instances with the largest criterion are rejected first. A confidence score has to be negated.
 
+    The criterion is a one-dimensional array with one value per instance; inputs with a larger batch shape have to be
+    flattened. A NaN criterion counts as maximally uncertain, so selectors reject it instead of raising, and a single
+    failed instance does not abort the whole batch. Subclasses check the criterion with :meth:`_check_uncertainty`.
+
     Types of selective prediction differ in their selector: each is a subclass that overrides :meth:`select`.
     Selectors whose rule has to be fitted on data (e.g. a threshold chosen for a target coverage or risk) should
     implement the :class:`~probly.calibrator.Calibrator` protocol on arrays of the criterion and raise a
@@ -76,12 +80,29 @@ class Selector(ABC):
         """Decide which predictions are accepted.
 
         Args:
-            uncertainty: The uncertainty criterion per instance.
+            uncertainty: The uncertainty criterion per instance, as a one-dimensional array.
 
         Returns:
-            A boolean array with the batch shape of ``uncertainty``; ``True`` means the prediction is accepted.
+            A boolean array with the shape of ``uncertainty``; ``True`` means the prediction is accepted.
+
+        Raises:
+            TypeError: If ``uncertainty`` is not an array.
+            ValueError: If ``uncertainty`` is not one-dimensional.
         """
         raise NotImplementedError
+
+    @staticmethod
+    def _check_uncertainty[U](uncertainty: U) -> U:
+        """Check that the criterion is a one-dimensional array and return it unchanged."""
+        ndim = getattr(uncertainty, "ndim", None)
+        if ndim is None:
+            msg = f"uncertainty must be an array with one value per instance, got {type(uncertainty).__name__}."
+            raise TypeError(msg)
+        if ndim != 1:
+            shape = tuple(cast("Any", uncertainty).shape)
+            msg = f"uncertainty must be one-dimensional with one value per instance, got shape {shape}."
+            raise ValueError(msg)
+        return uncertainty
 
     def __call__(self, uncertainty: Any) -> Any:  # noqa: ANN401
         """Alias for :meth:`select`."""
@@ -124,7 +145,7 @@ class ThresholdSelector(Selector):
 
     @override
     def select(self, uncertainty: Any) -> Any:
-        return uncertainty <= self.threshold
+        return self._check_uncertainty(uncertainty) <= self.threshold
 
 
 class SelectivePredictor[**In, R: Representation]:
@@ -219,6 +240,8 @@ class SelectivePredictor[**In, R: Representation]:
             TypeError: If :attr:`notion` is a notion class and :func:`~probly.quantification.quantify` does not
                 return a decomposition for the model's representation.
             KeyError: If :attr:`notion` is a notion class that the model's uncertainty decomposition does not contain.
+            ValueError: If the criterion is not one-dimensional and :attr:`selector` checks its shape, as
+                :class:`ThresholdSelector` does.
         """
         representation = self.representer.represent(*args, **kwargs)
         uncertainty = self._criterion(representation)

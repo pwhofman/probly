@@ -113,6 +113,24 @@ def test_threshold_selector_works_on_plain_arrays() -> None:
     np.testing.assert_array_equal(selector(uncertainty), selector.select(uncertainty))
 
 
+@pytest.mark.parametrize("uncertainty", [np.float64(0.1), np.zeros((2, 2))])
+def test_threshold_selector_rejects_non_one_dimensional_uncertainty(uncertainty: np.ndarray) -> None:
+    with pytest.raises(ValueError, match="one-dimensional"):
+        ThresholdSelector(0.5).select(uncertainty)
+
+
+def test_threshold_selector_rejects_non_array_uncertainty() -> None:
+    with pytest.raises(TypeError, match="array"):
+        ThresholdSelector(0.5).select([0.1, 0.9])
+
+
+def test_predictor_rejects_criterion_with_extra_axes() -> None:
+    predictor = SelectivePredictor(_model(), ThresholdSelector(0.5), notion=lambda rep: rep.probabilities)
+
+    with pytest.raises(ValueError, match=r"shape \(4, 2\)"):
+        predictor.predict(None)
+
+
 def test_predictor_uses_selector_on_quantified_uncertainty() -> None:
     selector = ThresholdSelector(0.5)
     result = SelectivePredictor(_model(), selector).predict(None)
