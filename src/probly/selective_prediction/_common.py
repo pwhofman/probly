@@ -2,16 +2,23 @@
 
 A selective predictor is allowed to abstain: for each instance, it either returns the prediction of the wrapped model
 or refrains from predicting. The choice is made by a rule on an uncertainty criterion computed from the model's
-representation, which is why the wrapped model has to be uncertainty-aware.
+representation, which is why the wrapped model should be uncertainty-aware.
 
 The module separates the selection rule from the pipeline that computes the criterion. A :class:`Selector` decides
 on arrays of uncertainty values alone and can therefore be used with any model or with precomputed scores.
-:class:`SelectivePredictor` wraps a model transformed by probly, computes the criterion and the decision from its
-representation, and delegates the selection to a :class:`Selector`.
+:class:`SelectivePredictor` wraps a model transformed by probly, or a plain classifier declared with
+:func:`~probly.method.cast`, computes the criterion and the decision from its representation, and delegates the
+selection to a :class:`Selector`.
 
-By default, the criterion comes from the zero-one loss: it is one minus the maximum mean probability, the model's own
-probability that its decision is wrong. A :class:`ThresholdSelector` with threshold ``c`` on this criterion is Chow's
-rule (Chow, 1970) for an abstention cost ``c``.
+For classifiers whose representation is categorical or a Dirichlet distribution, e.g. an ensemble, an MC-dropout
+model or an evidential model, the default criterion comes from the zero-one loss: it is one minus the maximum mean
+probability, the model's own probability that its decision is wrong. A :class:`ThresholdSelector` with threshold
+``c`` on this criterion is Chow's rule (Chow, 1970) for an abstention cost ``c``. Other representations, e.g. credal
+sets or the predictions of regression models, keep their own default decomposition, so the criterion and the meaning
+of a threshold change with the model family.
+
+The total uncertainty is the recommended criterion for selective prediction (Hofman et al., 2025); the epistemic
+uncertainty suits the rejection of out-of-distribution instances, see :class:`SelectivePredictor`.
 """
 
 from __future__ import annotations
@@ -163,13 +170,14 @@ class ThresholdSelector(Selector):
     classification, which lies in ``[0, 1 - 1/K]`` for ``K`` classes, entropy in nats under the log loss, or
     differential entropy for Gaussian regression models, which can be negative.
 
-    On the default classification criterion, the threshold is the cost of abstaining: if an accepted prediction
-    costs 1 when it is wrong and 0 when it is right, and an abstention costs ``c``, then ``ThresholdSelector(c)`` is
-    Chow's rule (Chow, 1970). It abstains exactly where the model's own probability of an error exceeds ``c`` and
-    minimizes the expected cost if the model's probabilities are calibrated. Since the criterion never exceeds
-    ``1 - 1/K``, costs of at least ``1 - 1/K`` never lead to an abstention. Under another proper loss, such as the log
-    loss, the criterion is the expected loss of the model's best prediction and the threshold is the abstention cost
-    on the scale of that loss.
+    On the default criterion for categorical representations, the threshold is the cost of abstaining: if an
+    accepted prediction costs 1 when it is wrong and 0 when it is right, and an abstention costs ``c``, then
+    ``ThresholdSelector(c)`` is Chow's rule (Chow, 1970). It abstains exactly where the model's own probability of an
+    error exceeds ``c`` and minimizes the expected cost if the model's probabilities are calibrated. Since the
+    criterion never exceeds ``1 - 1/K``, costs of at least ``1 - 1/K`` never lead to an abstention. Under another
+    proper loss, such as the log loss, the criterion is the expected loss of the model's best prediction and the
+    threshold is the abstention cost on the scale of that loss. On other representations, e.g. the upper entropy of
+    a credal set, the threshold has no such reading.
 
     The threshold is set by the user rather than fitted on data, so no coverage or risk guarantee is given. In
     particular, if the model is miscalibrated, accepted predictions may be wrong more often than the threshold
@@ -225,18 +233,35 @@ class SelectivePredictor[**In, R: Representation]:
     - epistemic uncertainty, their difference, the expected disagreement with the decision.
 
     The log loss gives the entropy decomposition (entropy of the mean, expected entropy, and mutual information), and
-    the Brier loss the Gini decomposition. The loss applies to samples of categorical distributions, e.g. the
-    predictions of an ensemble or an MC-dropout model, and to single categorical distributions, which only have a
-    total uncertainty. For Dirichlet distributions, e.g. of evidential models, only the zero-one loss is supported.
-    Any other representation, e.g. of a regression model or a credal set, is decomposed by
-    :func:`~probly.quantification.quantify` if ``loss`` is left at its default; a loss passed explicitly raises a
-    ``NotImplementedError`` there instead of being ignored. If :attr:`loss` is ``None``, every representation is
-    decomposed by :func:`~probly.quantification.quantify`, which selects method-specific decompositions such as the
-    vacuity of evidential models. Alternatively, ``notion`` can be a function that computes the criterion from the
-    representation itself.
+    the Brier loss the Gini decomposition. Which decomposition is used depends on the representation:
 
-    For models not transformed by probly, compute the criterion and the decision directly and apply a
-    :class:`Selector` to the criterion.
+    - samples of categorical distributions, e.g. the predictions of an ensemble or an MC-dropout model: the
+      decomposition induced by :attr:`loss`;
+    - a single categorical distribution, e.g. of a plain classifier: the expected loss of the best prediction, which
+      is a total uncertainty only;
+    - Dirichlet distributions, e.g. of evidential models: the zero-one decomposition; other losses raise a
+      ``NotImplementedError``;
+    - any other representation, e.g. of a regression model or a credal set: the decomposition of
+      :func:`~probly.quantification.quantify` if ``loss`` is left at its default; a loss passed explicitly raises a
+      ``NotImplementedError`` there instead of being ignored.
+
+    Note that the loss takes precedence over a decomposition that a method registers for its own representation,
+    whenever that representation is also one of the first three. The decompositions of DARE, SNGP and
+    heteroscedastic networks, and the vacuity of evidential models, are therefore used only if :attr:`loss` is
+    ``None``, in which case every representation is decomposed by :func:`~probly.quantification.quantify`.
+    Alternatively, ``notion`` can be a function that computes the criterion from the representation itself.
+
+    For selective prediction, the total uncertainty is the recommended notion (Hofman et al., 2025). The epistemic
+    uncertainty ignores the noise in the labels, so it rejects errors less reliably, but it suits the rejection of
+    out-of-distribution instances, for which the log loss, i.e. mutual information, separates better than the
+    zero-one loss.
+
+    A plain classifier can be wrapped once its output is declared with :func:`~probly.method.cast`, e.g.
+    ``cast(net, predictor_type="logit_classifier")`` for a network that outputs logits, or
+    ``cast(forest, predictor_type="probabilistic_classifier")`` for a scikit-learn classifier. Its representation is a
+    single categorical distribution, so the default criterion is one minus its maximum probability. For precomputed
+    scores and for models that :func:`~probly.method.cast` does not cover, compute the criterion directly and apply a
+    :class:`Selector` to it.
 
     Attributes:
         model: The wrapped uncertainty-aware model.
@@ -270,12 +295,13 @@ class SelectivePredictor[**In, R: Representation]:
         """Initialize the selective predictor.
 
         Args:
-            model: An uncertainty-aware model accepted by :func:`~probly.representer.representer`, e.g. an
-                ensemble, an MC-dropout model, or an evidential model.
+            model: A model accepted by :func:`~probly.representer.representer`, e.g. an ensemble, an MC-dropout
+                model, an evidential model, or a plain classifier passed through :func:`~probly.method.cast`.
             selector: The rule that decides which predictions are accepted, e.g. a :class:`ThresholdSelector`.
             notion: The notion of uncertainty to select on, e.g. ``"total"``, ``"aleatoric"``, or ``"epistemic"``.
                 Defaults to ``"total"``. The model's uncertainty decomposition has to contain this notion; a single
-                categorical distribution, for instance, only provides the total uncertainty. Alternatively, a
+                categorical distribution, for instance, only provides the total uncertainty, and the decomposition of
+                DDU provides no total uncertainty, so it needs ``"aleatoric"`` or ``"epistemic"``. Alternatively, a
                 function mapping the representation to the criterion per instance, where higher means more
                 uncertain; it is used instead of the decomposition.
             loss: The task loss, i.e. the loss by which the predictions are evaluated. It induces the decomposition
@@ -295,7 +321,7 @@ class SelectivePredictor[**In, R: Representation]:
         Raises:
             ValueError: If ``notion`` is a string that is not the name of a notion of uncertainty.
             TypeError: If ``notion`` is neither a string, a notion class, nor a callable, e.g. a class that is not a
-                subclass of :class:`~probly.quantification.Notion`, or if ``loss`` is neither a scoring rule nor
+                subclass of :class:`~probly.quantification.notion.Notion`, or if ``loss`` is neither a scoring rule nor
                 ``None``.
         """
         if isinstance(notion, str):
