@@ -9,8 +9,20 @@ import pytest
 
 from probly.decider import categorical_from_mean
 from probly.predictor import predict
-from probly.quantification import EpistemicUncertainty, TotalUncertainty, quantify
-from probly.representation.distribution import create_categorical_distribution
+from probly.quantification import (
+    BrierLoss,
+    EpistemicUncertainty,
+    LogLoss,
+    SecondOrderScoringRuleDecomposition,
+    SecondOrderZeroOneDecomposition,
+    TotalUncertainty,
+    ZeroOneLoss,
+    quantify,
+)
+from probly.representation.distribution import (
+    create_categorical_distribution,
+    create_dirichlet_distribution_from_alphas,
+)
 from probly.representation.distribution.numpy_categorical import (
     NumpyCategoricalDistributionSample,
     NumpyProbabilityCategoricalDistribution,
@@ -28,6 +40,7 @@ from probly.selective_prediction import (
 )
 
 PROBABILITIES = np.array([[0.9, 0.1], [0.5, 0.5], [0.6, 0.4], [0.99, 0.01]])
+MAX_PROB_COMPLEMENTS = 1.0 - PROBABILITIES.max(axis=-1)
 ENTROPIES = -(PROBABILITIES * np.log(PROBABILITIES)).sum(axis=-1)
 
 
@@ -65,14 +78,13 @@ def _regression_sample() -> NumpyGaussianDistributionSample:
     return NumpyGaussianDistributionSample(NumpyGaussianDistribution(mean=means, var=variances), sample_axis=0)
 
 
-def test_default_criterion_is_total_uncertainty_of_quantify() -> None:
+def test_default_criterion_is_one_minus_max_probability() -> None:
     model = _model()
     result = SelectivePredictor(model, ThresholdSelector(0.5)).predict(None)
     representation = model.predict_representation(None)
 
     assert isinstance(result, SelectivePrediction)
-    np.testing.assert_allclose(result.uncertainty, ENTROPIES)
-    np.testing.assert_allclose(result.uncertainty, quantify(representation).total)
+    np.testing.assert_allclose(result.uncertainty, MAX_PROB_COMPLEMENTS)
     np.testing.assert_allclose(
         result.decision.probabilities,
         categorical_from_mean(representation).probabilities,
@@ -80,15 +92,15 @@ def test_default_criterion_is_total_uncertainty_of_quantify() -> None:
 
 
 def test_accepted_is_uncertainty_at_most_threshold() -> None:
-    result = SelectivePredictor(_model(), ThresholdSelector(0.5)).predict(None)
+    result = SelectivePredictor(_model(), ThresholdSelector(0.3)).predict(None)
 
-    np.testing.assert_array_equal(result.accepted, result.uncertainty <= 0.5)
+    np.testing.assert_array_equal(result.accepted, result.uncertainty <= 0.3)
     np.testing.assert_array_equal(result.accepted, [True, False, False, True])
     assert result.coverage == 0.5
 
 
 def test_tie_at_threshold_is_accepted() -> None:
-    result = SelectivePredictor(_model(), ThresholdSelector(float(ENTROPIES[2]))).predict(None)
+    result = SelectivePredictor(_model(), ThresholdSelector(float(MAX_PROB_COMPLEMENTS[2]))).predict(None)
 
     assert result.accepted[2]
 
@@ -131,11 +143,11 @@ def test_predictor_rejects_criterion_with_extra_axes() -> None:
         predictor.predict(None)
 
 
-def test_predictor_uses_selector_on_quantified_uncertainty() -> None:
-    selector = ThresholdSelector(0.5)
+def test_predictor_uses_selector_on_criterion() -> None:
+    selector = ThresholdSelector(0.3)
     result = SelectivePredictor(_model(), selector).predict(None)
 
-    np.testing.assert_array_equal(result.accepted, selector.select(ENTROPIES))
+    np.testing.assert_array_equal(result.accepted, selector.select(MAX_PROB_COMPLEMENTS))
 
 
 @pytest.mark.parametrize("notion", ["total", "aleatoric", "epistemic"])
@@ -145,7 +157,7 @@ def test_notion_selects_component_of_decomposition(notion: str) -> None:
 
     result = predictor.predict(None)
 
-    np.testing.assert_allclose(result.uncertainty, quantify(sample)[notion])
+    np.testing.assert_allclose(result.uncertainty, SecondOrderZeroOneDecomposition(sample)[notion])
 
 
 def test_epistemic_notion_separates_disagreement_from_noise() -> None:
@@ -228,6 +240,108 @@ def test_regression_criterion_comes_from_quantify(notion: str) -> None:
     np.testing.assert_allclose(result.uncertainty, quantify(sample)[notion])
 
 
+def _random_ensemble_sample() -> NumpyCategoricalDistributionSample:
+    probabilities = np.random.default_rng(0).dirichlet([1.0, 1.0, 1.0], size=(5, 50))
+    return NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
+        sample_axis=0,
+    )
+
+
+@pytest.mark.parametrize("cost", [0.1, 0.25, 0.4])
+def test_threshold_on_default_criterion_is_chows_rule(cost: float) -> None:
+    sample = _random_ensemble_sample()
+    for representation, probabilities in [
+        (sample, sample.sample_mean().probabilities),
+        (create_categorical_distribution(PROBABILITIES), PROBABILITIES),
+    ]:
+        result = SelectivePredictor(_RepresentationModel(representation), ThresholdSelector(cost)).predict(None)
+
+        np.testing.assert_array_equal(result.accepted, probabilities.max(axis=-1) >= 1.0 - cost)
+
+
+def test_default_decomposition_is_additive() -> None:
+    sample = _random_ensemble_sample()
+    components = {
+        notion: SelectivePredictor(_RepresentationModel(sample), ThresholdSelector(0.5), notion=notion)
+        .predict(None)
+        .uncertainty
+        for notion in ("total", "aleatoric", "epistemic")
+    }
+
+    np.testing.assert_allclose(components["total"], components["aleatoric"] + components["epistemic"])
+    assert bool((components["epistemic"] >= -1e-12).all())
+
+
+@pytest.mark.parametrize("notion", ["total", "aleatoric", "epistemic"])
+def test_log_loss_gives_entropy_decomposition(notion: str) -> None:
+    sample = _random_ensemble_sample()
+    result = SelectivePredictor(
+        _RepresentationModel(sample), ThresholdSelector(0.5), notion=notion, loss=LogLoss()
+    ).predict(None)
+
+    np.testing.assert_allclose(result.uncertainty, quantify(sample)[notion])
+
+
+def test_log_loss_gives_entropy_of_single_distribution() -> None:
+    result = SelectivePredictor(_model(), ThresholdSelector(0.5), loss=LogLoss()).predict(None)
+
+    np.testing.assert_allclose(result.uncertainty, ENTROPIES)
+
+
+def test_brier_loss_gives_its_scoring_rule_decomposition() -> None:
+    sample = _random_ensemble_sample()
+    result = SelectivePredictor(
+        _RepresentationModel(sample), ThresholdSelector(0.5), notion="epistemic", loss=BrierLoss()
+    ).predict(None)
+
+    np.testing.assert_allclose(result.uncertainty, SecondOrderScoringRuleDecomposition(sample, BrierLoss()).epistemic)
+
+
+def test_no_loss_uses_quantify() -> None:
+    sample = _random_ensemble_sample()
+    result = SelectivePredictor(
+        _RepresentationModel(sample), ThresholdSelector(0.5), notion="epistemic", loss=None
+    ).predict(None)
+
+    np.testing.assert_allclose(result.uncertainty, quantify(sample).epistemic)
+
+
+def test_dirichlet_criterion_uses_zero_one_decomposition() -> None:
+    alphas = np.array([[8.0, 1.0, 1.0], [2.0, 2.0, 2.0], [1.0, 5.0, 0.5]])
+    dirichlet = create_dirichlet_distribution_from_alphas(alphas)
+    expected = SecondOrderZeroOneDecomposition(dirichlet)
+
+    total = SelectivePredictor(_RepresentationModel(dirichlet), ThresholdSelector(0.5)).predict(None)
+    np.testing.assert_allclose(total.uncertainty, 1.0 - (alphas / alphas.sum(-1, keepdims=True)).max(-1))
+    np.testing.assert_allclose(total.uncertainty, expected.total)
+
+
+def test_dirichlet_rejects_other_losses() -> None:
+    dirichlet = create_dirichlet_distribution_from_alphas(np.array([[2.0, 1.0], [1.0, 1.0]]))
+    predictor = SelectivePredictor(_RepresentationModel(dirichlet), ThresholdSelector(0.5), loss=LogLoss())
+
+    with pytest.raises(NotImplementedError, match="LogLoss is not supported for Dirichlet"):
+        predictor.predict(None)
+
+
+def test_default_loss_is_zero_one() -> None:
+    assert isinstance(SelectivePredictor(_model(), ThresholdSelector(0.2)).loss, ZeroOneLoss)
+
+
+def test_invalid_loss_raises() -> None:
+    with pytest.raises(TypeError, match="loss"):
+        SelectivePredictor(_model(), ThresholdSelector(0.2), loss="zero_one")
+
+
+def test_callable_notion_ignores_loss() -> None:
+    result = SelectivePredictor(
+        _model(), ThresholdSelector(0.5), notion=lambda rep: 1.0 - rep.probabilities.max(axis=-1), loss=LogLoss()
+    ).predict(None)
+
+    np.testing.assert_allclose(result.uncertainty, MAX_PROB_COMPLEMENTS)
+
+
 def test_custom_decider_is_used() -> None:
     result = SelectivePredictor(
         _model(), ThresholdSelector(0.2), decider=lambda rep: rep.probabilities.argmax(-1)
@@ -272,7 +386,7 @@ def test_representer_kwargs_are_passed_to_the_representer() -> None:
 
     assert isinstance(sp.representer, _SamplingRepresenter)
     assert sp.representer.num_samples == 3
-    np.testing.assert_allclose(sp.predict(None).uncertainty, ENTROPIES)
+    np.testing.assert_allclose(sp.predict(None).uncertainty, MAX_PROB_COMPLEMENTS)
 
 
 def test_missing_representer_kwargs_raise() -> None:

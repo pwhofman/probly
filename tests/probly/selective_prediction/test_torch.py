@@ -8,7 +8,11 @@ import pytest
 torch = pytest.importorskip("torch")
 from torch import nn  # noqa: E402
 
-from probly.quantification import quantify  # noqa: E402
+from probly.quantification import LogLoss, SecondOrderZeroOneDecomposition, quantify  # noqa: E402
+from probly.representation.distribution import (  # noqa: E402
+    create_categorical_distribution,
+    create_dirichlet_distribution_from_alphas,
+)
 from probly.representer import representer  # noqa: E402
 from probly.representer.sampler import Sampler  # noqa: E402
 from probly.selective_prediction import SelectivePredictor, ThresholdSelector  # noqa: E402
@@ -27,7 +31,7 @@ def test_ensemble_selective_prediction_is_torch_native() -> None:
 
     with torch.no_grad():
         result = SelectivePredictor(model, ThresholdSelector(0.6)).predict(x)
-        expected_uncertainty = quantify(representer(model).represent(x)).total
+        expected_uncertainty = 1.0 - representer(model).represent(x).sample_mean().probabilities.max(dim=-1).values
 
     assert isinstance(result.uncertainty, torch.Tensor)
     assert isinstance(result.accepted, torch.Tensor)
@@ -35,6 +39,49 @@ def test_ensemble_selective_prediction_is_torch_native() -> None:
     assert result.accepted.shape == (8,)
     torch.testing.assert_close(result.uncertainty, expected_uncertainty)
     torch.testing.assert_close(result.accepted, expected_uncertainty <= 0.6)
+
+
+@pytest.mark.parametrize("notion", ["total", "aleatoric", "epistemic"])
+def test_ensemble_log_loss_matches_quantify(notion: str) -> None:
+    model = _ensemble_model()
+    x = torch.randn(8, 4)
+
+    with torch.no_grad():
+        result = SelectivePredictor(model, ThresholdSelector(0.6), notion=notion, loss=LogLoss()).predict(x)
+        expected = quantify(representer(model).represent(x))[notion]
+
+    torch.testing.assert_close(result.uncertainty, expected)
+
+
+class _RepresentationModel:
+    """Uncertainty-aware stub model that returns a fixed representation."""
+
+    def __init__(self, representation: object) -> None:
+        self.representation = representation
+
+    def predict_representation(self, _x: object) -> object:
+        return self.representation
+
+
+def test_single_distribution_criterion_is_torch_native() -> None:
+    probabilities = torch.tensor([[0.9, 0.1], [0.5, 0.5], [0.6, 0.4], [0.99, 0.01]])
+    model = _RepresentationModel(create_categorical_distribution(probabilities))
+
+    result = SelectivePredictor(model, ThresholdSelector(0.3)).predict(None)
+
+    assert isinstance(result.uncertainty, torch.Tensor)
+    torch.testing.assert_close(result.uncertainty, 1.0 - probabilities.max(dim=-1).values)
+    torch.testing.assert_close(result.accepted, torch.tensor([True, False, False, True]))
+
+
+def test_dirichlet_criterion_is_zero_one_total() -> None:
+    dirichlet = create_dirichlet_distribution_from_alphas(torch.tensor([[8.0, 1.0, 1.0], [2.0, 2.0, 2.0]]))
+
+    result = SelectivePredictor(_RepresentationModel(dirichlet), ThresholdSelector(0.5)).predict(None)
+
+    assert isinstance(result.uncertainty, torch.Tensor)
+    torch.testing.assert_close(result.uncertainty, SecondOrderZeroOneDecomposition(dirichlet).total)
+    torch.testing.assert_close(result.accepted, torch.tensor([True, False]))
 
 
 def test_ensemble_selective_prediction_matches_numpy_threshold() -> None:

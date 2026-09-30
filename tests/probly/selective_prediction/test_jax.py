@@ -10,8 +10,12 @@ import pytest
 jax = pytest.importorskip("jax")
 import jax.numpy as jnp  # noqa: E402
 
-from probly.quantification import quantify  # noqa: E402
+from probly.quantification import LogLoss, SecondOrderZeroOneDecomposition, quantify  # noqa: E402
 from probly.representation.distribution import create_categorical_distribution  # noqa: E402
+from probly.representation.distribution.jax_categorical import (  # noqa: E402
+    JaxCategoricalDistributionSample,
+    JaxProbabilityCategoricalDistribution,
+)
 from probly.representation.distribution.jax_gaussian import (  # noqa: E402
     JaxGaussianDistribution,
     JaxGaussianDistributionSample,
@@ -41,7 +45,52 @@ def test_selective_prediction_is_jax_native() -> None:
     assert isinstance(result.uncertainty, jax.Array)
     assert isinstance(result.accepted, jax.Array)
     assert result.accepted.dtype == jnp.bool_
-    assert result.coverage == 0.5
+    np.testing.assert_allclose(np.asarray(result.uncertainty), 1.0 - PROBABILITIES.max(axis=-1), rtol=1e-6)
+    assert result.coverage == 1.0
+
+
+def test_threshold_below_criterion_rejects_on_jax() -> None:
+    result = SelectivePredictor(_JaxCategoricalModel(), ThresholdSelector(0.3)).predict(None)
+
+    np.testing.assert_array_equal(np.asarray(result.accepted), [True, False, False, True])
+
+
+class _JaxSampleModel:
+    """Stub ensemble that returns a fixed sample of JAX categorical distributions."""
+
+    def predict_representation(self, _x: object) -> Any:  # noqa: ANN401
+        probabilities = jnp.array([[[0.9, 0.1], [0.7, 0.3]], [[0.2, 0.8], [0.7, 0.3]]])
+        return JaxCategoricalDistributionSample(
+            array=JaxProbabilityCategoricalDistribution(probabilities),
+            sample_axis=0,
+        )
+
+
+@pytest.mark.parametrize("notion", ["total", "aleatoric", "epistemic"])
+def test_sample_criterion_is_zero_one_decomposition(notion: str) -> None:
+    model = _JaxSampleModel()
+    representation = model.predict_representation(None)
+
+    result = SelectivePredictor(model, ThresholdSelector(0.5), notion=notion).predict(None)
+
+    assert isinstance(result.uncertainty, jax.Array)
+    np.testing.assert_allclose(
+        np.asarray(result.uncertainty),
+        np.asarray(SecondOrderZeroOneDecomposition(representation)[notion]),
+        rtol=1e-6,
+    )
+
+
+@pytest.mark.parametrize("notion", ["total", "aleatoric", "epistemic"])
+def test_sample_log_loss_matches_quantify(notion: str) -> None:
+    model = _JaxSampleModel()
+    representation = model.predict_representation(None)
+
+    result = SelectivePredictor(model, ThresholdSelector(0.5), notion=notion, loss=LogLoss()).predict(None)
+
+    np.testing.assert_allclose(
+        np.asarray(result.uncertainty), np.asarray(quantify(representation)[notion]), rtol=1e-6, atol=1e-7
+    )
 
 
 def test_selective_prediction_matches_numpy_reference() -> None:
