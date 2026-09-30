@@ -166,7 +166,7 @@ def test_epistemic_notion_separates_disagreement_from_noise() -> None:
     ).predict(None)
 
     assert result.uncertainty[0] > 0.1
-    np.testing.assert_allclose(result.uncertainty[1], 0.0, atol=1e-12)
+    assert result.uncertainty[1] == 0.0
     np.testing.assert_array_equal(result.accepted, [False, True])
 
 
@@ -270,7 +270,23 @@ def test_default_decomposition_is_additive() -> None:
     }
 
     np.testing.assert_allclose(components["total"], components["aleatoric"] + components["epistemic"])
-    assert bool((components["epistemic"] >= -1e-12).all())
+    assert bool((components["epistemic"] >= 0).all())
+
+
+def test_default_epistemic_is_exactly_zero_where_members_agree() -> None:
+    # Computed as total minus aleatoric, the epistemic part of these instances is float noise of about 1e-16,
+    # partly negative, so a threshold at zero would accept an arbitrary subset of them.
+    probabilities = np.random.default_rng(0).dirichlet([5.0, 1.0, 1.0], size=(5, 200))
+    probabilities = probabilities[:, (probabilities.argmax(axis=-1) == 0).all(axis=0)]
+    sample = NumpyCategoricalDistributionSample(
+        array=NumpyProbabilityCategoricalDistribution(probabilities),
+        sample_axis=0,
+    )
+
+    result = SelectivePredictor(_RepresentationModel(sample), ThresholdSelector(0.0), notion="epistemic").predict(None)
+
+    np.testing.assert_array_equal(result.uncertainty, 0.0)
+    assert bool(result.accepted.all())
 
 
 @pytest.mark.parametrize("notion", ["total", "aleatoric", "epistemic"])
@@ -327,6 +343,24 @@ def test_dirichlet_rejects_other_losses() -> None:
 
 def test_default_loss_is_zero_one() -> None:
     assert isinstance(SelectivePredictor(_model(), ThresholdSelector(0.2)).loss, ZeroOneLoss)
+
+
+@pytest.mark.parametrize("loss", [ZeroOneLoss(), LogLoss(), BrierLoss()])
+def test_explicit_loss_raises_for_representation_it_does_not_apply_to(loss: Any) -> None:  # noqa: ANN401
+    predictor = SelectivePredictor(_RepresentationModel(_regression_sample()), ThresholdSelector(0.5), loss=loss)
+
+    with pytest.raises(NotImplementedError, match=f"{type(loss).__name__} is not supported for"):
+        predictor.predict(None)
+
+
+def test_explicit_zero_one_loss_matches_default_where_it_applies() -> None:
+    sample = _random_ensemble_sample()
+    default = SelectivePredictor(_RepresentationModel(sample), ThresholdSelector(0.5), notion="epistemic")
+    explicit = SelectivePredictor(
+        _RepresentationModel(sample), ThresholdSelector(0.5), notion="epistemic", loss=ZeroOneLoss()
+    )
+
+    np.testing.assert_array_equal(explicit.predict(None).uncertainty, default.predict(None).uncertainty)
 
 
 def test_invalid_loss_raises() -> None:

@@ -53,6 +53,22 @@ if TYPE_CHECKING:
 _ZERO_ONE_LOSS = ZeroOneLoss()
 
 
+class _DefaultLoss:
+    """Default of the ``loss`` argument: the zero-one loss where it applies and quantify for other representations.
+
+    Unlike a zero-one loss passed explicitly, it does not raise for representations the loss does not apply to.
+    """
+
+    __slots__ = ()
+
+    @override
+    def __repr__(self) -> str:
+        return "ZeroOneLoss()"
+
+
+_DEFAULT_LOSS = _DefaultLoss()
+
+
 @dataclass(frozen=True, slots=True)
 class SelectivePrediction[D]:
     """Output of a selective predictor.
@@ -190,9 +206,11 @@ class SelectivePredictor[**In, R: Representation]:
 
     The criterion is the component of the uncertainty decomposition selected by ``notion``: the total uncertainty by
     default, or its aleatoric or epistemic part. For categorical predictions, the decomposition is induced by the
-    scoring rule :attr:`loss`, see
-    :class:`~probly.quantification.decomposition.scoring_rule.SecondOrderScoringRuleDecomposition`. The default
-    zero-one loss gives, with ``theta_bar`` the mean of the predicted distributions:
+    task loss :attr:`loss`, the loss by which the predictions are evaluated, see
+    :class:`~probly.quantification.decomposition.scoring_rule.SecondOrderScoringRuleDecomposition`. The total
+    uncertainty is then the expected task loss of the model's best prediction under its mean prediction, so the
+    criterion is aligned with the evaluation. The default zero-one loss gives, with ``theta_bar`` the mean of the
+    predicted distributions:
 
     - total uncertainty ``1 - max_k theta_bar_k``, the model's own probability that the decision of the default
       decider is wrong, so that a :class:`ThresholdSelector` on it is Chow's rule;
@@ -203,10 +221,12 @@ class SelectivePredictor[**In, R: Representation]:
     the Brier loss the Gini decomposition. The loss applies to samples of categorical distributions, e.g. the
     predictions of an ensemble or an MC-dropout model, and to single categorical distributions, which only have a
     total uncertainty. For Dirichlet distributions, e.g. of evidential models, only the zero-one loss is supported.
-    Any other representation, e.g. of a regression model, is decomposed by :func:`~probly.quantification.quantify`,
-    as is every representation if :attr:`loss` is ``None``; the latter selects method-specific decompositions such
-    as the vacuity of evidential models. Alternatively, ``notion`` can be a function that computes the criterion from
-    the representation itself.
+    Any other representation, e.g. of a regression model or a credal set, is decomposed by
+    :func:`~probly.quantification.quantify` if ``loss`` is left at its default; a loss passed explicitly raises a
+    ``NotImplementedError`` there instead of being ignored. If :attr:`loss` is ``None``, every representation is
+    decomposed by :func:`~probly.quantification.quantify`, which selects method-specific decompositions such as the
+    vacuity of evidential models. Alternatively, ``notion`` can be a function that computes the criterion from the
+    representation itself.
 
     For models not transformed by probly, compute the criterion and the decision directly and apply a
     :class:`Selector` to the criterion.
@@ -217,7 +237,7 @@ class SelectivePredictor[**In, R: Representation]:
         representer: The representer that builds representations from the model's predictions.
         notion: The notion of uncertainty the criterion measures, or the function computing the criterion from the
             representation.
-        loss: The scoring rule inducing the uncertainty decomposition of categorical predictions, or ``None`` to
+        loss: The task loss, which induces the uncertainty decomposition of categorical predictions, or ``None`` to
             use :func:`~probly.quantification.quantify` for every representation.
         decider: Function mapping a representation to the decision.
     """
@@ -228,6 +248,7 @@ class SelectivePredictor[**In, R: Representation]:
     notion: type[Notion] | Callable[[R], Any]
     loss: ScoringRule | None
     decider: Callable[[R], Any]
+    _loss_is_default: bool
 
     def __init__(
         self,
@@ -235,7 +256,7 @@ class SelectivePredictor[**In, R: Representation]:
         selector: Selector,
         *,
         notion: NotionKey | Callable[[R], Any] = "total",
-        loss: ScoringRule | None = _ZERO_ONE_LOSS,
+        loss: ScoringRule | _DefaultLoss | None = _DEFAULT_LOSS,
         decider: Callable[[R], Any] | None = None,
         representer_kwargs: Mapping[str, Any] | None = None,
     ) -> None:
@@ -250,13 +271,14 @@ class SelectivePredictor[**In, R: Representation]:
                 categorical distribution, for instance, only provides the total uncertainty. Alternatively, a
                 function mapping the representation to the criterion per instance, where higher means more
                 uncertain; it is used instead of the decomposition.
-            loss: The scoring rule inducing the decomposition of categorical predictions, e.g.
-                :class:`~probly.quantification.scoring_rule.ZeroOneLoss` (the default),
-                :class:`~probly.quantification.scoring_rule.LogLoss` for the entropy decomposition, or
-                :class:`~probly.quantification.scoring_rule.BrierLoss`. Representations that are not categorical are
-                decomposed by :func:`~probly.quantification.quantify`. ``None`` uses
-                :func:`~probly.quantification.quantify` for every representation, including method-specific
-                decompositions. Ignored if ``notion`` is a function.
+            loss: The task loss, i.e. the loss by which the predictions are evaluated. It induces the decomposition
+                of categorical predictions, e.g. :class:`~probly.quantification.scoring_rule.ZeroOneLoss` (the
+                default), :class:`~probly.quantification.scoring_rule.LogLoss` for the entropy decomposition, or
+                :class:`~probly.quantification.scoring_rule.BrierLoss`. If omitted, representations the zero-one loss
+                does not apply to, e.g. of regression models or credal sets, are decomposed by
+                :func:`~probly.quantification.quantify`. A loss passed explicitly has to apply to the representation,
+                otherwise :meth:`predict` raises. ``None`` uses :func:`~probly.quantification.quantify` for every
+                representation, including method-specific decompositions. Ignored if ``notion`` is a function.
             decider: Function mapping a representation to the decision. Defaults to
                 :func:`~probly.decider.categorical_from_mean`.
             representer_kwargs: Keyword arguments passed on to :func:`~probly.representer.representer` when building
@@ -277,6 +299,9 @@ class SelectivePredictor[**In, R: Representation]:
         elif not callable(notion):
             msg = f"notion must be a string, a notion class, or a callable, got {type(notion).__name__}."
             raise TypeError(msg)
+        loss_is_default = loss is _DEFAULT_LOSS
+        if loss_is_default:
+            loss = _ZERO_ONE_LOSS
         if loss is not None and not isinstance(loss, ScoringRule):
             msg = f"loss must be a scoring rule or None, got {type(loss).__name__}."
             raise TypeError(msg)
@@ -286,6 +311,7 @@ class SelectivePredictor[**In, R: Representation]:
         self.representer = representer(model, **(representer_kwargs or {}))
         self.notion = notion
         self.loss = loss
+        self._loss_is_default = loss_is_default
         self.decider = categorical_from_mean if decider is None else decider
 
     @final
@@ -301,8 +327,9 @@ class SelectivePredictor[**In, R: Representation]:
             TypeError: If :attr:`notion` is a notion class and :func:`~probly.quantification.quantify` does not
                 return a decomposition for the model's representation.
             KeyError: If :attr:`notion` is a notion class that the model's uncertainty decomposition does not contain.
-            NotImplementedError: If the representation is a Dirichlet distribution and :attr:`loss` is a scoring
-                rule other than the zero-one loss.
+            NotImplementedError: If :attr:`loss` was passed explicitly and does not apply to the representation: a
+                loss other than the zero-one loss for a Dirichlet distribution, or any loss for a representation that
+                is neither categorical nor a Dirichlet distribution.
             ValueError: If the criterion is not one-dimensional and :attr:`selector` checks its shape, as
                 :class:`ThresholdSelector` does.
         """
@@ -329,6 +356,10 @@ class SelectivePredictor[**In, R: Representation]:
         if loss is None:
             return quantify(representation)
         if isinstance(representation, CategoricalDistributionSample):
+            if isinstance(loss, ZeroOneLoss):
+                # Computes the epistemic part directly instead of as total minus aleatoric, which leaves float noise
+                # around zero for instances where all members agree.
+                return SecondOrderZeroOneDecomposition(representation)
             return SecondOrderScoringRuleDecomposition(representation, loss)
         if isinstance(representation, CategoricalDistribution):
             # A single distribution is evaluated as a sample with one member, which reuses the backend implementations.
@@ -341,7 +372,13 @@ class SelectivePredictor[**In, R: Representation]:
                 )
                 raise NotImplementedError(msg)
             return SecondOrderZeroOneDecomposition(representation)
-        return quantify(representation)
+        if self._loss_is_default:
+            return quantify(representation)
+        msg = (
+            f"{type(loss).__name__} is not supported for {type(representation).__name__}; "
+            "omit loss to use the default decomposition of this representation, or pass loss=None."
+        )
+        raise NotImplementedError(msg)
 
     def __call__(self, *args: In.args, **kwargs: In.kwargs) -> SelectivePrediction[Any]:
         """Alias for :meth:`predict`."""
