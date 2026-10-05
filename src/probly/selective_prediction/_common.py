@@ -17,6 +17,9 @@ probability, the model's own probability that its decision is wrong. A :class:`T
 sets or the predictions of regression models, keep their own default decomposition, so the criterion and the meaning
 of a threshold change with the model family.
 
+A :class:`CoverageSelector` fits the threshold on unlabeled calibration data so that a target fraction of new
+instances is accepted, with a split-conformal guarantee.
+
 The total uncertainty is the recommended criterion for selective prediction (Hofman et al., 2025); the epistemic
 uncertainty suits the rejection of out-of-distribution instances, see :class:`SelectivePredictor`.
 """
@@ -26,7 +29,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import math
-from typing import TYPE_CHECKING, Any, cast, final, override
+from typing import TYPE_CHECKING, Any, Self, cast, final, override
+
+from flextype import flexdispatch
+import numpy as np
 
 from probly.decider import categorical_from_mean
 from probly.quantification import (
@@ -48,6 +54,7 @@ from probly.representation.distribution import (
 )
 from probly.representation.sample import create_sample
 from probly.representer import representer
+from probly.utils.quantile import calculate_quantile
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -179,9 +186,9 @@ class ThresholdSelector(Selector):
     threshold is the abstention cost on the scale of that loss. On other representations, e.g. the upper entropy of
     a credal set, the threshold has no such reading.
 
-    The threshold is set by the user rather than fitted on data, so no coverage or risk guarantee is given. In
-    particular, if the model is miscalibrated, accepted predictions may be wrong more often than the threshold
-    suggests.
+    The threshold is set by the user rather than fitted on data, so no coverage or risk guarantee is given; use a
+    :class:`CoverageSelector` to fit it for a target coverage. In particular, if the model is miscalibrated, accepted
+    predictions may be wrong more often than the threshold suggests.
 
     Attributes:
         threshold: Maximum uncertainty criterion at which a prediction is accepted.
@@ -210,6 +217,103 @@ class ThresholdSelector(Selector):
         return self._check_uncertainty(uncertainty) <= self.threshold
 
 
+@flexdispatch
+def _to_float64_numpy(uncertainty: Any) -> np.ndarray:  # noqa: ANN401
+    """Copy a criterion array into a float64 NumPy array."""
+    return np.asarray(uncertainty, dtype=np.float64)
+
+
+class CoverageSelector(Selector):
+    """Selector that accepts a target fraction of the predictions, with a threshold fitted on calibration data.
+
+    The threshold is the ``ceil((n + 1) * coverage)``-th smallest uncertainty criterion of ``n`` calibration
+    instances, which is split conformal prediction applied to the criterion (Angelopoulos and Bates, 2021). A
+    prediction is accepted if and only if its criterion is less than or equal to the threshold, as in
+    :class:`ThresholdSelector`. If the calibration and test instances are exchangeable and the criterion is computed
+    in the same way for both, the probability that a new instance is accepted is at least ``coverage``. With distinct
+    criterion values it is also at most about ``coverage + 1 / (n + 1)``. This is the post-hoc step of SelectiveNet
+    (Geifman and El-Yaniv, 2019).
+
+    Calibration needs no labels. The guarantee is marginal, i.e. it holds on average over the calibration set and the
+    test instance, not for every calibration set, and it concerns the coverage only: it says nothing about the risk
+    of the accepted predictions. With a :class:`SelectivePredictor`, call :meth:`SelectivePredictor.calibrate`, which
+    computes the criterion exactly as :meth:`SelectivePredictor.predict` does. With precomputed scores, the criterion
+    has to be computed in the same way for calibration and test data. A random criterion, e.g. of an MC-dropout
+    model, must draw its randomness independently per instance; a dropout mask shared across the batch gives all
+    calibration instances the same draw, and the guarantee then holds only approximately.
+
+    Ties at the threshold are accepted, so on a criterion with many equal values, e.g. the epistemic part of the
+    zero-one decomposition, the realized coverage can be well above ``coverage``. With fewer than
+    ``coverage / (1 - coverage)`` calibration instances no finite threshold has the guarantee, and the threshold is
+    ``inf``, which accepts every prediction except those with a NaN criterion. The threshold is computed on a float64
+    NumPy copy of the criterion, so it is the same on every backend and for every floating-point precision. Rounding
+    in the quantile computation occasionally selects the next larger calibration value, which keeps the lower bound
+    but can exceed the upper one by ``1 / (n + 1)``.
+
+    Attributes:
+        coverage: The target fraction of accepted predictions.
+        threshold: Maximum uncertainty criterion at which a prediction is accepted, or ``None`` before
+            :meth:`calibrate` has been called.
+    """
+
+    coverage: float
+    threshold: float | None
+
+    def __init__(self, coverage: float) -> None:
+        """Initialize the selector.
+
+        Args:
+            coverage: The target fraction of accepted predictions, in ``(0, 1]``.
+
+        Raises:
+            ValueError: If ``coverage`` is not in ``(0, 1]``.
+        """
+        coverage = float(coverage)
+        if not 0.0 < coverage <= 1.0:
+            msg = f"coverage must be in (0, 1], got {coverage}."
+            raise ValueError(msg)
+        self.coverage = coverage
+        self.threshold = None
+
+    def calibrate(self, uncertainty: Any) -> Self:  # noqa: ANN401
+        """Fit the threshold on the uncertainty criterion of calibration instances.
+
+        Args:
+            uncertainty: The uncertainty criterion per calibration instance, as a one-dimensional array without NaN.
+                It is copied into a float64 NumPy array, so gradients are not tracked and arrays on an accelerator
+                are copied to the host.
+
+        Returns:
+            The calibrated selector itself.
+
+        Raises:
+            TypeError: If ``uncertainty`` is not an array.
+            ValueError: If ``uncertainty`` is not one-dimensional, is empty, or contains NaN.
+        """
+        scores = _to_float64_numpy(self._check_uncertainty(uncertainty))
+        n = scores.shape[0]
+        if n == 0:
+            msg = "uncertainty must contain at least one calibration instance."
+            raise ValueError(msg)
+        if np.isnan(scores).any():
+            msg = "uncertainty must not contain NaN."
+            raise ValueError(msg)
+        alpha = 1.0 - self.coverage
+        # Same expression as calculate_quantile, which clamps to the maximum if the rank exceeds n.
+        if math.ceil((n + 1) * (1 - alpha)) > n:
+            self.threshold = math.inf
+        else:
+            self.threshold = calculate_quantile(scores, alpha)
+        return self
+
+    @override
+    def select(self, uncertainty: Any) -> Any:
+        if self.threshold is None:
+            msg = "CoverageSelector is not calibrated. Call calibrate() with calibration uncertainties first."
+            raise ValueError(msg)
+        return self._check_uncertainty(uncertainty) <= self.threshold
+
+
 class SelectivePredictor[**In, R: Representation]:
     """Selective predictor for models transformed by probly.
 
@@ -217,7 +321,8 @@ class SelectivePredictor[**In, R: Representation]:
     MC-dropout model, and decides per instance whether to accept its prediction or to abstain. :meth:`predict` builds
     the model's representation once, decomposes its uncertainty, derives the decision with :attr:`decider`, and lets
     :attr:`selector` determine which predictions are accepted. Since the criterion and the decision are computed from
-    the same representation, they refer to the same forward passes.
+    the same representation, they refer to the same forward passes. A selector that is fitted on data, such as a
+    :class:`CoverageSelector`, is fitted with :meth:`calibrate`.
 
     The criterion is the component of the uncertainty decomposition selected by ``notion``: the total uncertainty by
     default, or its aleatoric or epistemic part. For categorical predictions, the decomposition is induced by the
@@ -381,6 +486,30 @@ class SelectivePredictor[**In, R: Representation]:
             uncertainty=uncertainty,
             accepted=self.selector.select(uncertainty),
         )
+
+    @final
+    def calibrate(self, *args: In.args, **kwargs: In.kwargs) -> Self:
+        """Fit the selector on calibration inputs.
+
+        The arguments are passed on to the model's representer, as in :meth:`predict`, and the criterion is computed
+        exactly as there, so calibration and test criteria are comparable. Gradients are not stopped, so wrap this in
+        ``torch.no_grad()`` with PyTorch. With this method, the predictor implements the
+        :class:`~probly.calibrator.Calibrator` protocol, even if its selector is not fitted on data.
+
+        Returns:
+            The calibrated selective predictor itself.
+
+        Raises:
+            TypeError: If :attr:`selector` is not fitted on data, e.g. a :class:`ThresholdSelector`.
+            ValueError: If the criterion is not valid for :attr:`selector`, e.g. empty or containing NaN.
+        """
+        calibrate = getattr(self.selector, "calibrate", None)
+        if not callable(calibrate):
+            msg = f"{type(self.selector).__name__} is not fitted on data, so there is nothing to calibrate."
+            raise TypeError(msg)
+        representation = self.representer.represent(*args, **kwargs)
+        calibrate(self._criterion(representation))
+        return self
 
     def _criterion(self, representation: R) -> Any:  # noqa: ANN401
         notion = self.notion

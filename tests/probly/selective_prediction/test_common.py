@@ -7,6 +7,7 @@ from typing import Any, override
 import numpy as np
 import pytest
 
+from probly.calibrator import Calibrator, calibrate
 from probly.decider import categorical_from_mean
 from probly.predictor import predict
 from probly.quantification import (
@@ -33,6 +34,7 @@ from probly.representation.distribution.numpy_gaussian import (
 )
 from probly.representer import Representer, representer
 from probly.selective_prediction import (
+    CoverageSelector,
     SelectivePrediction,
     SelectivePredictor,
     Selector,
@@ -463,3 +465,101 @@ def test_custom_selector_runs_through_predictor_pipeline() -> None:
     assert isinstance(result, SelectivePrediction)
     np.testing.assert_array_equal(result.accepted, [False, False, False, True])
     assert result.coverage == 0.25
+
+
+def _kth_smallest(values: np.ndarray, coverage: float) -> float:
+    n = len(values)
+    k = int(np.ceil((n + 1) * coverage))
+    return float(np.sort(values)[k - 1])
+
+
+@pytest.mark.parametrize(("n", "coverage"), [(19, 0.9), (50, 0.8), (99, 0.5), (200, 0.95), (10, 0.75)])
+def test_coverage_threshold_is_order_statistic(n: int, coverage: float) -> None:
+    kappa = np.random.default_rng(n).permutation(n).astype(float) / n
+    selector = CoverageSelector(coverage).calibrate(kappa)
+    assert selector.threshold == _kth_smallest(kappa, coverage)
+    assert isinstance(selector.threshold, float)
+    accepted = selector.select(kappa)
+    assert accepted.sum() == int(np.ceil((n + 1) * coverage))
+
+
+@pytest.mark.parametrize(("n", "coverage"), [(5, 0.9), (9, 0.95), (3, 1.0), (10, 1.0)])
+def test_coverage_threshold_is_inf_if_rank_exceeds_n(n: int, coverage: float) -> None:
+    kappa = np.arange(n, dtype=float)
+    selector = CoverageSelector(coverage).calibrate(kappa)
+    assert selector.threshold == np.inf
+    assert selector.select(np.array([1e9, np.nan])).tolist() == [True, False]
+
+
+@pytest.mark.parametrize("coverage", [0.0, -0.1, 1.5, float("nan")])
+def test_coverage_must_be_in_unit_interval(coverage: float) -> None:
+    with pytest.raises(ValueError, match="coverage"):
+        CoverageSelector(coverage)
+
+
+def test_coverage_selector_requires_calibration_and_returns_self() -> None:
+    selector = CoverageSelector(0.9)
+    assert selector.threshold is None
+    with pytest.raises(ValueError, match="not calibrated"):
+        selector.select(np.array([0.1]))
+    assert selector.calibrate(np.linspace(0.0, 1.0, 20)) is selector
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [np.array([]), np.array([0.1, np.nan]), np.zeros((2, 2))],
+)
+def test_coverage_calibration_rejects_invalid_arrays(bad: np.ndarray) -> None:
+    with pytest.raises(ValueError, match="uncertainty"):
+        CoverageSelector(0.9).calibrate(bad)
+
+
+def test_coverage_calibration_rejects_non_array() -> None:
+    with pytest.raises(TypeError, match="array"):
+        CoverageSelector(0.9).calibrate([0.1, 0.2])
+
+
+def test_coverage_ties_at_threshold_are_accepted() -> None:
+    kappa = np.array([0.1] * 10 + [0.5] * 10)
+    selector = CoverageSelector(0.6).calibrate(kappa)
+    assert selector.threshold == 0.5
+    assert selector.select(kappa).all()
+
+
+def test_coverage_guarantee_by_simulation() -> None:
+    rng = np.random.default_rng(0)
+    n, coverage, repeats = 19, 0.9, 20000
+    realized = np.empty(repeats)
+    for i in range(repeats):
+        cal, test = rng.random(n), rng.random()
+        realized[i] = CoverageSelector(coverage).calibrate(cal).select(np.array([test]))[0]
+    # Without ties the expected coverage is exactly ceil((n + 1) * c) / (n + 1) = 18 / 20.
+    se = np.sqrt(0.9 * 0.1 / repeats)
+    assert coverage - 4 * se <= realized.mean() <= coverage + 1 / (n + 1) + 4 * se
+
+
+def test_coverage_selector_is_a_calibrator() -> None:
+    selector = CoverageSelector(0.9)
+    assert isinstance(selector, Calibrator)
+    assert calibrate(selector, np.linspace(0.0, 1.0, 20)) is selector
+    assert selector.threshold is not None
+
+
+def test_pipeline_calibrate_matches_selector_on_predicted_criterion() -> None:
+    sp = SelectivePredictor(_model(), CoverageSelector(0.5))
+    assert sp.calibrate(None) is sp
+    expected = CoverageSelector(0.5).calibrate(1.0 - PROBABILITIES.max(axis=-1))
+    assert sp.selector.threshold == expected.threshold
+    result = sp.predict(None)
+    np.testing.assert_array_equal(result.accepted, result.uncertainty <= expected.threshold)
+
+
+def test_pipeline_calibrate_uses_callable_notion() -> None:
+    sp = SelectivePredictor(_model(), CoverageSelector(0.5), notion=lambda _rep: np.array([4.0, 3.0, 2.0, 1.0]))
+    sp.calibrate(None)
+    assert sp.selector.threshold == 3.0
+
+
+def test_pipeline_calibrate_requires_fitted_selector() -> None:
+    with pytest.raises(TypeError, match="ThresholdSelector"):
+        SelectivePredictor(_model(), ThresholdSelector(0.5)).calibrate(None)

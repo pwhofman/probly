@@ -22,7 +22,7 @@ from probly.representation.distribution import (  # noqa: E402
 )
 from probly.representer import representer  # noqa: E402
 from probly.representer.sampler import Sampler  # noqa: E402
-from probly.selective_prediction import SelectivePredictor, ThresholdSelector  # noqa: E402
+from probly.selective_prediction import CoverageSelector, SelectivePredictor, ThresholdSelector  # noqa: E402
 from probly.transformation import dropout, ensemble  # noqa: E402
 from probly.transformation.ensemble import EnsemblePredictor  # noqa: E402
 
@@ -311,3 +311,29 @@ def test_non_default_decider_on_credal_model() -> None:
 
     assert isinstance(result.decision, CategoricalDistribution)
     torch.testing.assert_close(result.decision.probabilities, expected.probabilities)
+
+
+@pytest.mark.parametrize("dtype", [torch.float64, torch.float32, torch.float16, torch.bfloat16])
+@pytest.mark.parametrize(("n", "coverage"), [(19, 0.9), (50, 0.3), (99, 0.5)])
+def test_coverage_selector_calibrates_torch_uncertainty(n: int, coverage: float, dtype: torch.dtype) -> None:
+    kappa = torch.rand(n, generator=torch.Generator().manual_seed(n)).to(dtype).requires_grad_()
+    selector = CoverageSelector(coverage).calibrate(kappa)
+    expected = CoverageSelector(coverage).calibrate(kappa.detach().double().numpy())
+    assert selector.threshold == expected.threshold
+    accepted = selector.select(kappa.detach())
+    assert accepted.dtype == torch.bool
+    assert accepted.sum() >= int(np.ceil((n + 1) * coverage))
+
+
+def test_coverage_selector_pipeline_calibrates_ensemble() -> None:
+    model = _ensemble_model()
+    x_cal, x_test = torch.randn(200, 4), torch.randn(100, 4)
+    sp = SelectivePredictor(model, CoverageSelector(0.8))
+    with torch.no_grad():
+        assert sp.calibrate(x_cal) is sp
+        result = sp.predict(x_test)
+        kappa_cal = SelectivePredictor(model, ThresholdSelector(1.0)).predict(x_cal).uncertainty
+    expected = CoverageSelector(0.8).calibrate(kappa_cal).threshold
+    assert sp.selector.threshold == expected
+    assert isinstance(result.accepted, torch.Tensor)
+    assert torch.equal(result.accepted, result.uncertainty <= expected)
