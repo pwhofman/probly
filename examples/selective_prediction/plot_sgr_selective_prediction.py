@@ -1,8 +1,9 @@
-"""=====================================
+"""======================================
 Selective Prediction with Risk Control
-=====================================
+======================================
 
-Choose the threshold on labeled calibration data so that the risk of the accepted predictions stays below a target.
+Choose the threshold on labeled calibration data so that the risk of the accepted predictions stays below a target
+(Geifman and El-Yaniv, 2017).
 """
 
 from __future__ import annotations
@@ -26,7 +27,7 @@ BLUE, RED = "#1e88e5", "#ff0d57"
 # Data and model
 # --------------
 
-X, y = make_moons(n_samples=3000, noise=0.25, random_state=0)
+X, y = make_moons(n_samples=10500, noise=0.25, random_state=0)
 X_train, y_train = X[:500], y[:500]
 X_pool, y_pool = torch.from_numpy(X[500:]).float(), y[500:]
 
@@ -47,67 +48,68 @@ model.eval()
 # Calibrate and predict
 # ---------------------
 #
-# SGR needs the labels of the calibration instances, passed as ``targets``. It returns the largest threshold it can
+# SGR needs the labels of the calibration instances, passed first. It returns the largest threshold it can
 # certify, such that with probability at least ``1 - delta`` over the calibration set, the risk of the accepted
-# predictions is at most ``risk``. The guarantee says nothing about the coverage.
+# predictions is at most ``risk``. The guarantee says nothing about the coverage. As in the paper, half of the pool
+# calibrates and half tests, and ``delta = 0.001``.
 
-risk, delta = 0.05, 0.1
-X_cal, y_cal = X_pool[:1000], y_pool[:1000]
-X_test, y_test = X_pool[1000:], y_pool[1000:]
+risk, delta = 0.02, 0.001
+X_cal, y_cal = X_pool[:5000], y_pool[:5000]
+X_test, y_test = X_pool[5000:], y_pool[5000:]
 
 predictor = SelectivePredictor(model, SGRSelector(risk, delta), representer_kwargs={"num_samples": 100})
 with torch.no_grad():
-    predictor.calibrate(X_cal, targets=torch.from_numpy(y_cal))
+    predictor.calibrate(torch.from_numpy(y_cal), X_cal)
     result = predictor.predict(X_test)
 
 accepted = result.accepted.numpy()
 wrong = result.decision.probabilities.argmax(dim=-1).numpy() != y_test
-print(f"target risk {risk:.2f}  delta {delta:.2f}  threshold {predictor.selector.threshold:.3f}")
-print(f"bound {predictor.selector.bound:.3f}  realized risk {wrong[accepted].mean():.3f}  coverage {result.coverage:.3f}")
+print(f"target risk {risk:.2f}  threshold {predictor.selector.threshold:.3f}  bound {predictor.selector.bound:.3f}")
+print(f"test risk {wrong[accepted].mean():.3f}  test coverage {result.coverage:.3f}")
 
 # %%
-# The guarantee over calibration sets
-# -----------------------------------
+# Risk control for several targets
+# --------------------------------
 #
-# The boxes show the realized risk over 200 random splits of the pooled instances into 1000 calibration and 1500 test
-# instances. The risk exceeds the target in at most a fraction ``delta`` of the splits.
+# The table follows the paper's Table 1: for each target risk ``r*``, the risk and coverage on the calibration
+# ("train") and test halves, and the certified bound ``b*``. The figure follows its Fig. 2: the test risk-coverage
+# curve of the criterion, with the SGR operating points on it. The uncertainties and errors are computed once, and
+# the selectors are calibrated on the arrays.
 
 with torch.no_grad():
     pooled = predictor.predict(X_pool)
 kappa = pooled.uncertainty.numpy()
 errors = (pooled.decision.probabilities.argmax(dim=-1).numpy() != y_pool).astype(float)
+cal, test = np.arange(5000), np.arange(5000, len(kappa))
 
-risks = [0.03, 0.05, 0.07, 0.09]
-rng = np.random.default_rng(0)
-realized = {r: [] for r in risks}
-for _ in range(200):
-    order = rng.permutation(len(kappa))
-    cal, test = order[:1000], order[1000:]
-    for r in risks:
-        selector = SGRSelector(r, delta)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", UserWarning)
-            threshold = selector.calibrate(kappa[cal], errors[cal]).threshold
-        mask = kappa[test] <= threshold
-        if mask.any():
-            realized[r].append(errors[test][mask].mean())
+print(f"{'r*':>6} {'cal risk':>9} {'cal cov':>8} {'test risk':>9} {'test cov':>8} {'b*':>6}")
+points = []
+target_risks = [0.01, 0.015, 0.02, 0.025, 0.03, 0.035]
+for r in target_risks:
+    selector = SGRSelector(r, delta)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        selector.calibrate(kappa[cal], errors[cal])
+    rows = []
+    for split in (cal, test):
+        mask = selector.select(kappa[split])
+        rows += [errors[split][mask].mean() if mask.any() else np.nan, mask.mean()]
+    points.append((rows[3], rows[2]))
+    print(f"{r:6.3f} {rows[0]:9.3f} {rows[1]:8.3f} {rows[2]:9.3f} {rows[3]:8.3f} {selector.bound:6.3f}")
+print(f"full-coverage test risk {errors[test].mean():.3f}")
+
+order = np.argsort(kappa[test], kind="stable")
+curve_risk = np.cumsum(errors[test][order]) / np.arange(1, len(order) + 1)
+curve_coverage = np.arange(1, len(order) + 1) / len(order)
 
 fig, ax = plt.subplots(figsize=(6, 5))
-ax.plot([0.02, 0.1], [0.02, 0.1], color="black", linestyle="--", label="target risk")
-bp = ax.boxplot(
-    [realized[r] for r in risks],
-    positions=risks,
-    widths=0.005,
-    patch_artist=True,
-    manage_ticks=False,
-    medianprops={"color": RED},
-)
-for box in bp["boxes"]:
-    box.set(facecolor=BLUE, alpha=0.5)
-for r in risks:
-    print(f"target risk {r:.2f}  share of splits above it {np.mean(np.array(realized[r]) > r):.3f}")
-ax.set_xlabel("target risk")
-ax.set_ylabel("realized risk of accepted predictions")
+ax.plot(curve_coverage, curve_risk, color=BLUE, label="test risk-coverage curve")
+coverages, risks = zip(*points, strict=True)
+ax.scatter(coverages, risks, color=RED, zorder=3, label="SGR operating points")
+ax.scatter(coverages, target_risks, color=RED, marker="_", s=200, label="target risk")
+ax.set_xlabel("Coverage")
+ax.set_ylabel("Risk")
+ax.set_ylim(0, 1.1 * errors[test].mean())
 ax.legend(loc="upper left")
 plt.tight_layout()
 plt.show()

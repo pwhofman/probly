@@ -140,8 +140,8 @@ def test_coverage_selector_calibrates_jax_uncertainty(n: int, coverage: float, d
 
 def test_coverage_selector_pipeline_calibrates_jax_model() -> None:
     sp = SelectivePredictor(_JaxCategoricalModel(), CoverageSelector(0.5))
-    assert sp.calibrate(None) is sp
-    reference = SelectivePredictor(_NumpyCategoricalModel(), CoverageSelector(0.5)).calibrate(None)
+    assert sp.calibrate(None, None) is sp
+    reference = SelectivePredictor(_NumpyCategoricalModel(), CoverageSelector(0.5)).calibrate(None, None)
     assert sp.selector.threshold == pytest.approx(reference.selector.threshold)
 
 
@@ -159,6 +159,6 @@ def test_sgr_selector_calibrates_jax_arrays() -> None:
 def test_sgr_selector_pipeline_calibrates_jax_model_with_targets() -> None:
     targets = np.array([0, 1, 0, 0])
     sp = SelectivePredictor(_JaxCategoricalModel(), SGRSelector(0.9, 0.5))
-    assert sp.calibrate(None, targets=jnp.asarray(targets)) is sp
-    reference = SelectivePredictor(_NumpyCategoricalModel(), SGRSelector(0.9, 0.5)).calibrate(None, targets=targets)
+    assert sp.calibrate(jnp.asarray(targets), None) is sp
+    reference = SelectivePredictor(_NumpyCategoricalModel(), SGRSelector(0.9, 0.5)).calibrate(targets, None)
     assert sp.selector.threshold == pytest.approx(reference.selector.threshold)

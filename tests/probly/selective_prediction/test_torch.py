@@ -335,7 +335,7 @@ def test_coverage_selector_pipeline_calibrates_ensemble() -> None:
     x_cal, x_test = torch.randn(200, 4), torch.randn(100, 4)
     sp = SelectivePredictor(model, CoverageSelector(0.8))
     with torch.no_grad():
-        assert sp.calibrate(x_cal) is sp
+        assert sp.calibrate(None, x_cal) is sp
         result = sp.predict(x_test)
         kappa_cal = SelectivePredictor(model, ThresholdSelector(1.0)).predict(x_cal).uncertainty
     expected = CoverageSelector(0.8).calibrate(kappa_cal).threshold
@@ -367,7 +367,7 @@ def test_sgr_selector_pipeline_calibrates_ensemble_with_targets() -> None:
         flip = decision.uncertainty > decision.uncertainty.median()
         targets = torch.where(flip, (targets + 1) % 3, targets)
         sp = SelectivePredictor(model, SGRSelector(0.2, 0.2))
-        assert sp.calibrate(x_cal, targets=targets) is sp
+        assert sp.calibrate(targets, x_cal) is sp
     losses = (decision.decision.probabilities.argmax(dim=-1) != targets).double().numpy()
     expected = SGRSelector(0.2, 0.2).calibrate(decision.uncertainty.double().numpy(), losses)
     assert sp.selector.threshold == expected.threshold

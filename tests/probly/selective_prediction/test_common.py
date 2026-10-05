@@ -493,9 +493,27 @@ def test_coverage_threshold_is_order_statistic(n: int, coverage: float) -> None:
 @pytest.mark.parametrize(("n", "coverage"), [(5, 0.9), (9, 0.95), (3, 1.0), (10, 1.0)])
 def test_coverage_threshold_is_inf_if_rank_exceeds_n(n: int, coverage: float) -> None:
     kappa = np.arange(n, dtype=float)
-    selector = CoverageSelector(coverage).calibrate(kappa)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        selector = CoverageSelector(coverage).calibrate(kappa)
     assert selector.threshold == np.inf
     assert selector.select(np.array([1e9, np.nan])).tolist() == [True, False]
+
+
+@pytest.mark.parametrize(("n", "coverage", "needed"), [(3, 0.8, 4), (8, 0.9, 9), (18, 0.95, 19)])
+def test_coverage_warns_if_calibration_set_is_too_small(n: int, coverage: float, needed: int) -> None:
+    with pytest.warns(UserWarning, match=f"Use at least {needed} calibration instances") as record:
+        CoverageSelector(coverage).calibrate(np.arange(n, dtype=float))
+    assert record[0].filename == __file__
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert CoverageSelector(coverage).calibrate(np.arange(needed, dtype=float)).threshold == needed - 1
+
+
+def test_full_coverage_accepts_everything_without_warning() -> None:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert CoverageSelector(1.0).calibrate(np.arange(10, dtype=float)).threshold == np.inf
 
 
 @pytest.mark.parametrize("coverage", [0.0, -0.1, 1.5, float("nan")])
@@ -554,7 +572,7 @@ def test_coverage_selector_is_a_calibrator() -> None:
 
 def test_pipeline_calibrate_matches_selector_on_predicted_criterion() -> None:
     sp = SelectivePredictor(_model(), CoverageSelector(0.5))
-    assert sp.calibrate(None) is sp
+    assert sp.calibrate(None, None) is sp
     expected = CoverageSelector(0.5).calibrate(1.0 - PROBABILITIES.max(axis=-1))
     assert sp.selector.threshold == expected.threshold
     result = sp.predict(None)
@@ -563,13 +581,13 @@ def test_pipeline_calibrate_matches_selector_on_predicted_criterion() -> None:
 
 def test_pipeline_calibrate_uses_callable_notion() -> None:
     sp = SelectivePredictor(_model(), CoverageSelector(0.5), notion=lambda _rep: np.array([4.0, 3.0, 2.0, 1.0]))
-    sp.calibrate(None)
+    sp.calibrate(None, None)
     assert sp.selector.threshold == 3.0
 
 
 def test_pipeline_calibrate_requires_fitted_selector() -> None:
     with pytest.raises(TypeError, match="ThresholdSelector"):
-        SelectivePredictor(_model(), ThresholdSelector(0.5)).calibrate(None)
+        SelectivePredictor(_model(), ThresholdSelector(0.5)).calibrate(None, None)
 
 
 @pytest.mark.parametrize("errors", [0, 1, 4, 17])
@@ -662,7 +680,7 @@ _KAPPA, _LOSSES = np.linspace(0.0, 1.0, 4), np.ones(4)
     [
         lambda: SGRSelector(0.01, 0.1).calibrate(_KAPPA, _LOSSES),
         lambda: calibrate(SGRSelector(0.01, 0.1), _KAPPA, _LOSSES),
-        lambda: SelectivePredictor(_model(), SGRSelector(0.01, 0.1)).calibrate(None, targets=np.ones(4, dtype=int)),
+        lambda: SelectivePredictor(_model(), SGRSelector(0.01, 0.1)).calibrate(np.ones(4, dtype=int), None),
     ],
     ids=["selector", "calibrator", "pipeline"],
 )
@@ -738,10 +756,10 @@ def test_sgr_risk_guarantee_by_simulation() -> None:
     assert violations / repeats <= delta
 
 
-def test_pipeline_calibrate_with_targets_matches_selector_on_losses() -> None:
-    targets = np.array([0, 1, 0, 0])
+def test_pipeline_calibrate_with_labels_matches_selector_on_losses() -> None:
+    labels = np.array([0, 1, 0, 0])
     sp = SelectivePredictor(_model(), SGRSelector(0.9, 0.5))
-    assert sp.calibrate(None, targets=targets) is sp
+    assert sp.calibrate(labels, None) is sp
     expected = SGRSelector(0.9, 0.5).calibrate(MAX_PROB_COMPLEMENTS, np.array([0.0, 1.0, 0.0, 0.0]))
     assert sp.selector.threshold == expected.threshold
     np.testing.assert_equal(sp.selector.bound, expected.bound)
@@ -754,30 +772,56 @@ def test_pipeline_losses_follow_the_decision_not_the_ground_truth_class_index() 
     np.testing.assert_array_equal(losses, [1.0, 1.0, 0.0, 0.0])
 
 
-def test_pipeline_targets_need_a_selector_that_takes_losses() -> None:
-    with pytest.raises(TypeError, match=r"losses|argument"):
-        SelectivePredictor(_model(), CoverageSelector(0.5)).calibrate(None, targets=np.zeros(4, dtype=int))
+class _CountingModel(_RepresentationModel):
+    """Stub model that counts its forward passes."""
+
+    calls = 0
+
+    @override
+    def predict_representation(self, _x: object) -> Any:
+        self.calls += 1
+        return self.representation
 
 
-def test_pipeline_sgr_without_targets_raises() -> None:
-    with pytest.raises(TypeError, match="targets"):
-        SelectivePredictor(_model(), SGRSelector(0.5, 0.5)).calibrate(None)
+@pytest.mark.parametrize(
+    ("selector", "labels", "match"),
+    [
+        (CoverageSelector(0.5), np.zeros(4, dtype=int), "CoverageSelector takes no labels"),
+        (SGRSelector(0.5, 0.5), None, "SGRSelector needs the labels"),
+    ],
+)
+def test_pipeline_label_mismatch_raises_before_the_forward_pass(
+    selector: Selector,
+    labels: np.ndarray | None,
+    match: str,
+) -> None:
+    model = _CountingModel(create_categorical_distribution(PROBABILITIES))
+    with pytest.raises(TypeError, match=match):
+        SelectivePredictor(model, selector).calibrate(labels, None)
+    assert model.calls == 0
 
 
-def test_pipeline_targets_need_a_task_loss() -> None:
+def test_pipeline_calibrate_without_model_input_raises() -> None:
+    model = _CountingModel(create_categorical_distribution(PROBABILITIES))
+    with pytest.raises(TypeError, match="No input of the model"):
+        SelectivePredictor(model, CoverageSelector(0.5)).calibrate(None)
+    assert model.calls == 0
+
+
+def test_pipeline_labels_need_a_task_loss() -> None:
     sp = SelectivePredictor(_model(), SGRSelector(0.5, 0.5), loss=None)
     with pytest.raises(TypeError, match="loss is None"):
-        sp.calibrate(None, targets=np.zeros(4, dtype=int))
+        sp.calibrate(np.zeros(4, dtype=int), None)
 
 
 def test_pipeline_non_binary_loss_is_rejected_by_sgr() -> None:
     sp = SelectivePredictor(_model(), SGRSelector(0.5, 0.5), loss=LogLoss())
     with pytest.raises(ValueError, match="binary"):
-        sp.calibrate(None, targets=np.zeros(4, dtype=int))
+        sp.calibrate(np.zeros(4, dtype=int), None)
 
 
 @pytest.mark.parametrize(
-    ("targets", "match"),
+    ("labels", "match"),
     [
         (np.array([0, 1, 2, 0]), "in \\[0, 2\\)"),
         (np.array([0, -1, 0, 0]), "in \\[0, 2\\)"),
@@ -786,17 +830,33 @@ def test_pipeline_non_binary_loss_is_rejected_by_sgr() -> None:
         (np.zeros((4, 1), dtype=int), "one class index"),
     ],
 )
-def test_pipeline_rejects_invalid_targets(targets: np.ndarray, match: str) -> None:
+def test_pipeline_rejects_invalid_labels(labels: np.ndarray, match: str) -> None:
     with pytest.raises(ValueError, match=match):
-        SelectivePredictor(_model(), SGRSelector(0.5, 0.5)).calibrate(None, targets=targets)
+        SelectivePredictor(_model(), SGRSelector(0.5, 0.5)).calibrate(labels, None)
 
 
-def test_pipeline_targets_on_a_regression_model_raise_not_implemented() -> None:
+def test_pipeline_labels_on_a_regression_model_raise_not_implemented() -> None:
     sp = SelectivePredictor(_RepresentationModel(_regression_sample()), SGRSelector(0.5, 0.5), decider=lambda r: r)
     with pytest.raises(NotImplementedError, match="ZeroOneLoss"):
-        sp.calibrate(None, targets=np.zeros(3, dtype=int))
+        sp.calibrate(np.zeros(3, dtype=int), None)
 
 
-def test_pipeline_calibrate_without_targets_is_unchanged_for_coverage() -> None:
-    sp = SelectivePredictor(_model(), CoverageSelector(0.5)).calibrate(None, targets=None)
-    assert sp.selector.threshold == CoverageSelector(0.5).calibrate(MAX_PROB_COMPLEMENTS).threshold
+def test_pipeline_calibrate_through_the_calibrator_protocol_takes_labels_first() -> None:
+    sp = SelectivePredictor(_model(), SGRSelector(0.9, 0.5))
+    calibrate(sp, np.array([0, 1, 0, 0]), None)
+    expected = SGRSelector(0.9, 0.5).calibrate(MAX_PROB_COMPLEMENTS, np.array([0.0, 1.0, 0.0, 0.0]))
+    assert sp.selector.threshold == expected.threshold
+
+
+def test_pipeline_copies_the_selector() -> None:
+    shared = CoverageSelector(0.5)
+    first = SelectivePredictor(_model(), shared).calibrate(None, None)
+    SelectivePredictor(_model(), shared, notion=lambda _: np.zeros(4)).calibrate(None, None)
+    assert shared.threshold is None
+    assert first.selector.threshold == CoverageSelector(0.5).calibrate(MAX_PROB_COMPLEMENTS).threshold
+
+
+def test_pipeline_missing_notion_names_the_available_ones() -> None:
+    sp = SelectivePredictor(_model(), ThresholdSelector(0.5), notion="epistemic")
+    with pytest.raises(KeyError, match=r"has no EpistemicUncertainty\. Pass notion as one of 'total'"):
+        sp.predict(None)
