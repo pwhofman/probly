@@ -9,6 +9,7 @@ from ._common import (
     SelectivePrediction,
     SelectivePredictor,
     Selector,
+    SGRSelector,
     ThresholdSelector,
     _to_float64_numpy,
 )
@@ -21,6 +22,7 @@ def _(_: type) -> None:
 
 __all__ = [
     "CoverageSelector",
+    "SGRSelector",
     "SelectivePrediction",
     "SelectivePredictor",
     "Selector",

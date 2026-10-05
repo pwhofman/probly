@@ -22,7 +22,12 @@ from probly.representation.distribution import (  # noqa: E402
 )
 from probly.representer import representer  # noqa: E402
 from probly.representer.sampler import Sampler  # noqa: E402
-from probly.selective_prediction import CoverageSelector, SelectivePredictor, ThresholdSelector  # noqa: E402
+from probly.selective_prediction import (  # noqa: E402
+    CoverageSelector,
+    SelectivePredictor,
+    SGRSelector,
+    ThresholdSelector,
+)
 from probly.transformation import dropout, ensemble  # noqa: E402
 from probly.transformation.ensemble import EnsemblePredictor  # noqa: E402
 
@@ -337,3 +342,33 @@ def test_coverage_selector_pipeline_calibrates_ensemble() -> None:
     assert sp.selector.threshold == expected
     assert isinstance(result.accepted, torch.Tensor)
     assert torch.equal(result.accepted, result.uncertainty <= expected)
+
+
+@pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
+def test_sgr_selector_calibrates_torch_uncertainty_and_losses(dtype: torch.dtype) -> None:
+    generator = torch.Generator().manual_seed(0)
+    kappa = torch.rand(400, generator=generator, dtype=torch.float64).to(dtype)
+    losses = (torch.rand(400, generator=generator) < 0.2 * kappa.double() ** 2).to(dtype)
+    kappa.requires_grad_()
+    selector = SGRSelector(0.1, 0.2).calibrate(kappa, losses)
+    expected = SGRSelector(0.1, 0.2).calibrate(kappa.detach().double().numpy(), losses.double().numpy())
+    assert selector.threshold == expected.threshold
+    np.testing.assert_equal(selector.bound, expected.bound)
+    assert selector.select(kappa.detach()).dtype == torch.bool
+
+
+def test_sgr_selector_pipeline_calibrates_ensemble_with_targets() -> None:
+    model = _ensemble_model()
+    x_cal = torch.randn(300, 4)
+    with torch.no_grad():
+        decision = SelectivePredictor(model, ThresholdSelector(1.0)).predict(x_cal)
+        # Labels that agree with the decision for the more certain instances.
+        targets = decision.decision.probabilities.argmax(dim=-1)
+        flip = decision.uncertainty > decision.uncertainty.median()
+        targets = torch.where(flip, (targets + 1) % 3, targets)
+        sp = SelectivePredictor(model, SGRSelector(0.2, 0.2))
+        assert sp.calibrate(x_cal, targets=targets) is sp
+    losses = (decision.decision.probabilities.argmax(dim=-1) != targets).double().numpy()
+    expected = SGRSelector(0.2, 0.2).calibrate(decision.uncertainty.double().numpy(), losses)
+    assert sp.selector.threshold == expected.threshold
+    assert sp.selector.threshold is not None
