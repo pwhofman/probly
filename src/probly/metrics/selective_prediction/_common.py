@@ -33,7 +33,8 @@ def risk_coverage_curve(criterion: object, losses: object) -> tuple[object, obje
 
     Args:
         criterion: Criterion values of shape ``(n,)``. Larger values are rejected first.
-        losses: Loss of the prediction for every instance, of shape ``(n,)``.
+        losses: Loss of the prediction for every instance, of shape ``(n,)``, on the same backend as ``criterion``
+            or as a NumPy array.
 
     Returns:
         A tuple containing:
@@ -68,9 +69,14 @@ def aurc(criterion: object, losses: object) -> object:
     any selector, and it would favor criteria that tie many instances, such as coarsened ones. Without ties, the
     two interpolations agree.
 
+    For losses in ``[0, 1]``, the AURC lies in ``[0, 1]``. Without ties, it differs from the per-instance mean of
+    the selective risks used by Geifman et al. (2019), ``(1/n) sum_k SR_k``, by ``(SR_1 - SR_n) / (2n)``, which
+    is negligible but means that values need not match libraries that use the per-instance mean.
+
     Args:
         criterion: Criterion values of shape ``(n,)``. Larger values are rejected first.
-        losses: Loss of the prediction for every instance, of shape ``(n,)``.
+        losses: Loss of the prediction for every instance, of shape ``(n,)``, on the same backend as ``criterion``
+            or as a NumPy array.
 
     Returns:
         The area under the risk-coverage curve.
@@ -90,16 +96,22 @@ def augrc(criterion: object, losses: object) -> object:
 
     The generalized risk at a threshold is the selective risk times the coverage, that is, the loss of the
     accepted instances averaged over all instances :cite:`traubOvercomingCommon2024`. In other words, it is the
-    risk of a silent failure for any prediction, not only for an accepted one. It improves whenever the ranking
-    or the predictions improve, which the AURC does not guarantee. Lower is better.
+    risk of a silent failure for any prediction, not only for an accepted one. Lower is better.
 
-    For the zero-one loss, the AUGRC has a pairwise reading: it is half the probability that, of two instances
-    drawn at random, either both are wrong, or exactly one is wrong and it has the lower criterion (a tie
-    counts half). Consequently, it lies in ``[0, 1/2]``.
+    For the zero-one loss, the AUGRC decreases with both the accuracy and the AUROC of the criterion as a
+    failure detector :cite:`traubOvercomingCommon2024`. The AURC does not, so a criterion that is better in both
+    can receive a worse AURC.
+
+    The zero-one loss also has a pairwise reading: the AUGRC is half the probability that, of two instances
+    drawn independently at random, either both are wrong, or exactly one is wrong and it has the lower criterion
+    (a tie counts half). For a general loss, the AUGRC is half the mean loss plus a concordance term that
+    rewards ranking larger losses toward rejection, where tied pairs contribute 0. For losses in ``[0, 1]``, it
+    lies in ``[0, 1/2]``.
 
     Args:
         criterion: Criterion values of shape ``(n,)``. Larger values are rejected first.
-        losses: Loss of the prediction for every instance, of shape ``(n,)``.
+        losses: Loss of the prediction for every instance, of shape ``(n,)``, on the same backend as ``criterion``
+            or as a NumPy array.
 
     Returns:
         The area under the generalized risk-coverage curve.
@@ -118,11 +130,14 @@ def risk_at_coverage(criterion: object, losses: object, coverage: float) -> obje
     """Selective risk at a target coverage.
 
     Not every coverage can be reached, since tied criterion values are accepted together. The risk is therefore
-    taken at the smallest reachable coverage that is at least ``coverage``.
+    taken at the smallest reachable coverage that is at least ``coverage``. This is the selective risk of the
+    threshold that reaches the coverage, not the minimum risk over all larger coverages. Under ``jax.jit``,
+    ``coverage`` must be a static argument.
 
     Args:
         criterion: Criterion values of shape ``(n,)``. Larger values are rejected first.
-        losses: Loss of the prediction for every instance, of shape ``(n,)``.
+        losses: Loss of the prediction for every instance, of shape ``(n,)``, on the same backend as ``criterion``
+            or as a NumPy array.
         coverage: Target coverage in ``(0, 1]``.
 
     Returns:
@@ -144,11 +159,13 @@ def coverage_at_risk(criterion: object, losses: object, risk: float) -> object:
 
     Since the selective risk is not monotone in the threshold, every threshold is checked. A binary search, as in
     :cite:`geifmanSelectiveClassification2017`, can miss the largest coverage that meets the target. Note that
-    the result is an empirical evaluation on the given data, not a guarantee for new data.
+    the result is an empirical evaluation on the given data, not a guarantee for new data. Under ``jax.jit``,
+    ``risk`` must be a static argument.
 
     Args:
         criterion: Criterion values of shape ``(n,)``. Larger values are rejected first.
-        losses: Loss of the prediction for every instance, of shape ``(n,)``.
+        losses: Loss of the prediction for every instance, of shape ``(n,)``, on the same backend as ``criterion``
+            or as a NumPy array.
         risk: Target selective risk, at least 0.
 
     Returns:
