@@ -140,6 +140,55 @@ def test_aurc_without_ties_matches_per_order_value() -> None:
     assert np.isclose(aurc(criterion, losses), _per_order_aurc(criterion, losses))
 
 
+def _reference_selective_risk_stats(
+    criterion: np.ndarray, losses: np.ndarray
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Transcription of the curve construction of FD-Shifts (selective_risk_stats and generalized_risk_stats).
+
+    Instances are sorted by decreasing confidence (confidence is minus the criterion). The risk after k instances is
+    the running mean of the losses, the generalized risk is the running sum divided by n, and only the last position
+    of each group of tied confidences is kept, because tied instances are accepted together.
+    """
+    n = len(losses)
+    order = np.argsort(criterion, kind="stable")
+    confidence = -criterion[order]
+    ordered_losses = losses[order]
+    counts = np.arange(1, n + 1)
+    risks = np.cumsum(ordered_losses) / counts
+    generalized = np.cumsum(ordered_losses) / n
+    last_of_group = np.append(confidence[1:] != confidence[:-1], True)
+    coverages = counts[last_of_group] / n
+    return coverages, risks[last_of_group], generalized[last_of_group]
+
+
+@pytest.mark.parametrize("seed", range(8))
+@pytest.mark.parametrize("ties", [False, True])
+def test_curve_and_augrc_match_fd_shifts_reference(seed: int, ties: bool) -> None:
+    rng = np.random.default_rng(seed)
+    n = int(rng.integers(30, 300))
+    criterion = rng.random(n)
+    if ties:
+        criterion = np.round(criterion, 1)
+    losses = (rng.random(n) < 0.05 + 0.4 * criterion).astype(float)
+    coverages, risks, generalized = _reference_selective_risk_stats(criterion, losses)
+
+    coverage, risk, _ = risk_coverage_curve(criterion, losses)
+    # probly has one point per instance, with tied instances sharing a coverage, and adds the endpoint (0, first
+    # risk). Keep the last point of every coverage value to compare with the reference.
+    assert coverage[0] == 0.0
+    assert risk[0] == risks[0]
+    last = np.append(coverage[1:-1] != coverage[2:], True)
+    np.testing.assert_allclose(coverage[1:][last], coverages)
+    np.testing.assert_allclose(risk[1:][last], risks)
+
+    expected_augrc = np.trapezoid(np.concatenate([[0.0], generalized]), np.concatenate([[0.0], coverages]))
+    assert np.isclose(augrc(criterion, losses), expected_augrc)
+    if not ties:
+        # Without ties the step construction and the expectation over orders agree with the plain trapezoid.
+        expected_aurc = np.trapezoid(np.concatenate([risks[:1], risks]), np.concatenate([[0.0], coverages]))
+        assert np.isclose(aurc(criterion, losses), expected_aurc)
+
+
 def test_aurc_does_not_prefer_a_coarsened_criterion() -> None:
     # The coarsened copy splits the instances into the most confident 5 % and a tie of all others, so it
     # discards ranking information. A straight line inside the tied step would give it the smaller area here.
@@ -163,6 +212,20 @@ def test_augrc_matches_closed_form_for_zero_one_loss(decimals: int | None) -> No
     auroc = float(roc_auc_score(losses, criterion))
     expected = (1 - auroc) * accuracy * (1 - accuracy) + 0.5 * (1 - accuracy) ** 2
     assert np.isclose(augrc(criterion, losses), expected)
+
+
+@pytest.mark.parametrize("decimals", [None, 1])
+def test_augrc_matches_pair_form_for_general_losses(decimals: int | None) -> None:
+    # AUGRC = mean(losses) / 2 + sum over pairs (i accepted before j) of (l_i - l_j) / (2 n^2). Tied pairs add 0.
+    rng = np.random.default_rng(2)
+    n = 200
+    criterion = rng.random(n)
+    if decimals is not None:
+        criterion = np.round(criterion, decimals)
+    losses = rng.random(n) * (rng.random(n) < 0.7)
+    before = criterion[:, None] < criterion[None, :]
+    pair_term = np.sum(before * (losses[:, None] - losses[None, :])) / (2 * n**2)
+    assert np.isclose(augrc(criterion, losses), losses.mean() / 2 + pair_term)
 
 
 def test_risk_at_coverage_takes_smallest_reachable_coverage() -> None:
