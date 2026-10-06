@@ -57,21 +57,21 @@ def risk_coverage_curve(criterion: object, losses: object) -> tuple[object, obje
 def aurc(criterion: object, losses: object) -> object:
     """Area under the exact risk-coverage curve.
 
-    The AURC is the trapezoidal area under the selective risk over the coverage of :func:`risk_coverage_curve`;
-    lower is better. The selective risk suits a deployed working point, since it is the risk of an accepted
-    prediction. Aggregated over all thresholds, however, it overweights failures at low coverage, where few
-    instances are accepted. For comparing criteria across thresholds, :func:`augrc` is therefore the better
-    choice :cite:`traubOvercomingCommon2024`.
+    The AURC is the area under the selective risk over the coverage; lower is better. The selective risk suits a
+    deployed working point, since it is the risk of an accepted prediction. Aggregated over all thresholds,
+    however, it overweights failures at low coverage, where few instances are accepted. For comparing criteria
+    across thresholds, :func:`augrc` is therefore the better choice :cite:`traubOvercomingCommon2024`.
 
     Inside a step of tied criterion values, the curve is interpolated with the expected selective risk when a
     random part of the tied instances is accepted. The AURC therefore equals the mean AURC over all orders of the
     tied instances. A straight line between the steps, as in :cite:`jaegerCallReflect2023`, lies below this
     expected risk whenever the tied instances are worse than those accepted before them. It cannot be reached by
     any selector, and it would favor criteria that tie many instances, such as coarsened ones. Without ties, the
-    two interpolations agree.
+    two interpolations agree. With ties, the AURC is thus not the trapezoid over the points of
+    :func:`risk_coverage_curve`, which joins the steps by straight lines.
 
     For losses in ``[0, 1]``, the AURC lies in ``[0, 1]``. Without ties, it differs from the per-instance mean of
-    the selective risks used by Geifman et al. (2019), ``(1/n) sum_k SR_k``, by ``(SR_1 - SR_n) / (2n)``, which
+    the selective risks, ``(1/n) sum_k SR_k`` :cite:`geifmanBiasReduced2019`, by ``(SR_1 - SR_n) / (2n)``, which
     is negligible but means that values need not match libraries that use the per-instance mean.
 
     Args:

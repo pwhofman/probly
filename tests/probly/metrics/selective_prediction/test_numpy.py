@@ -203,7 +203,7 @@ def test_aurc_does_not_prefer_a_coarsened_criterion() -> None:
 
 @pytest.mark.parametrize("decimals", [None, 1])
 def test_augrc_matches_closed_form_for_zero_one_loss(decimals: int | None) -> None:
-    # AUGRC = (1 - AUROC_f) * acc * (1 - acc) + (1 - acc)^2 / 2 (Traub et al., 2024, Eq. 8), with or without
+    # AUGRC = (1 - AUROC_f) * acc * (1 - acc) + (1 - acc)^2 / 2 (Traub et al., 2024, Eq. 7), with or without
     # ties in the criterion.
     rng = np.random.default_rng(1)
     criterion = rng.random(300)
