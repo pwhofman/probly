@@ -40,6 +40,8 @@ def selective_prediction(criterion: object, losses: object, n_bins: int = 50) ->
 
 _METRICS = ("aurc", "augrc")
 _WORKING_POINTS = {"risk": risk_at_coverage, "coverage": coverage_at_risk}
+# The second output of a working point, reported next to its first.
+_COMPANIONS = {"risk": "coverage", "coverage": "risk"}
 
 
 def evaluate_selective_prediction(
@@ -67,7 +69,10 @@ def evaluate_selective_prediction(
               percentage, for example ``"risk@0.8"`` or ``"risk@80%"``.
 
     Returns:
-        A dictionary mapping each requested metric name to its value.
+        A dictionary mapping each requested metric name to its value. A working point also reports the other
+        output of its function under the key ``"<name>:coverage"`` for ``"risk@<coverage>"``, the coverage that
+        was actually used, which can be above the target when criterion values are tied, and ``"<name>:risk"``
+        for ``"coverage@<risk>"``, the selective risk at that coverage (NaN if no coverage meets the target).
 
     Raises:
         ValueError: If a metric name is unknown or its target value is invalid.
@@ -103,6 +108,9 @@ def evaluate_selective_prediction(
                     "'coverage@<risk>', for example 'risk@0.8' or 'risk@80%'."
                 )
                 raise ValueError(msg) from None
-            value = function(criterion, losses, target_value)
+            value, companion = function(criterion, losses, target_value)
+            results[name] = float(value)  # ty:ignore[invalid-argument-type]
+            results[f"{name}:{_COMPANIONS[base.strip()]}"] = float(companion)  # ty:ignore[invalid-argument-type]
+            continue
         results[name] = float(value)  # ty:ignore[invalid-argument-type]
     return results

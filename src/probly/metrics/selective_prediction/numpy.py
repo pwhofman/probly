@@ -86,18 +86,22 @@ def numpy_augrc(criterion: np.ndarray, losses: np.ndarray) -> float:
 
 
 @risk_at_coverage.register(np.ndarray)
-def numpy_risk_at_coverage(criterion: np.ndarray, losses: np.ndarray, coverage: float) -> float:
+def numpy_risk_at_coverage(criterion: np.ndarray, losses: np.ndarray, coverage: float) -> tuple[float, float]:
     """Compute the selective risk at a target coverage for NumPy arrays."""
     check_coverage(coverage)
     curve_coverage, risk, _ = numpy_risk_coverage_curve(criterion, losses)
     # The coverage is non-decreasing, so the first point that reaches the target has the smallest coverage.
-    return float(risk[np.argmax(curve_coverage >= coverage)])
+    index = np.argmax(curve_coverage >= coverage)
+    return float(risk[index]), float(curve_coverage[index])
 
 
 @coverage_at_risk.register(np.ndarray)
-def numpy_coverage_at_risk(criterion: np.ndarray, losses: np.ndarray, risk: float) -> float:
+def numpy_coverage_at_risk(criterion: np.ndarray, losses: np.ndarray, risk: float) -> tuple[float, float]:
     """Compute the largest coverage with at most a target selective risk for NumPy arrays."""
     check_risk(risk)
     coverage, curve_risk, _ = numpy_risk_coverage_curve(criterion, losses)
     # The endpoint at coverage 0 is excluded, since it accepts no instance.
-    return float(np.max(np.where(curve_risk[1:] <= risk, coverage[1:], 0.0)))
+    feasible_coverage = np.where(curve_risk[1:] <= risk, coverage[1:], 0.0)
+    index = np.argmax(feasible_coverage)
+    best = feasible_coverage[index]
+    return float(best), float(curve_risk[1:][index]) if best > 0 else float("nan")

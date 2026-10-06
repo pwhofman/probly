@@ -167,9 +167,11 @@ def test_augrc_matches_closed_form_for_zero_one_loss(decimals: int | None) -> No
 
 def test_risk_at_coverage_takes_smallest_reachable_coverage() -> None:
     # Coverage 0.5 is not reachable because of the tie, so the risk is taken at the next reachable coverage, 0.75.
-    assert np.isclose(risk_at_coverage(CRITERION, LOSSES, 0.5), 1 / 3)
-    assert risk_at_coverage(CRITERION, LOSSES, 0.25) == 0.0
-    assert risk_at_coverage(CRITERION, LOSSES, 1.0) == 0.5
+    risk, coverage = risk_at_coverage(CRITERION, LOSSES, 0.5)
+    assert np.isclose(risk, 1 / 3)
+    assert coverage == 0.75
+    assert risk_at_coverage(CRITERION, LOSSES, 0.25) == (0.0, 0.25)
+    assert risk_at_coverage(CRITERION, LOSSES, 1.0) == (0.5, 1.0)
 
 
 @pytest.mark.parametrize("coverage", [0.0, -0.1, 1.1])
@@ -179,13 +181,17 @@ def test_risk_at_coverage_invalid_coverage_raises(coverage: float) -> None:
 
 
 def test_coverage_at_risk_exact_values() -> None:
-    assert coverage_at_risk(CRITERION, LOSSES, 0.0) == 0.25
-    assert coverage_at_risk(CRITERION, LOSSES, 0.4) == 0.75
-    assert coverage_at_risk(CRITERION, LOSSES, 0.5) == 1.0
+    assert coverage_at_risk(CRITERION, LOSSES, 0.0) == (0.25, 0.0)
+    coverage, risk = coverage_at_risk(CRITERION, LOSSES, 0.4)
+    assert coverage == 0.75
+    assert np.isclose(risk, 1 / 3)
+    assert coverage_at_risk(CRITERION, LOSSES, 0.5) == (1.0, 0.5)
 
 
-def test_coverage_at_risk_unreachable_risk_is_zero() -> None:
-    assert coverage_at_risk(np.array([0.1, 0.2]), np.array([1.0, 1.0]), 0.5) == 0.0
+def test_coverage_at_risk_unreachable_risk_is_zero_coverage_and_nan_risk() -> None:
+    coverage, risk = coverage_at_risk(np.array([0.1, 0.2]), np.array([1.0, 1.0]), 0.5)
+    assert coverage == 0.0
+    assert np.isnan(risk)
 
 
 def test_coverage_at_risk_checks_every_threshold() -> None:
@@ -193,8 +199,8 @@ def test_coverage_at_risk_checks_every_threshold() -> None:
     # would return a coverage of 0.5 instead of 1.0.
     criterion = np.array([0.1, 0.2, 0.3, 0.4])
     losses = np.array([1.0, 0.0, 1.0, 0.0])
-    assert coverage_at_risk(criterion, losses, 0.5) == 1.0
-    assert coverage_at_risk(criterion, losses, 0.6) == 1.0
+    assert coverage_at_risk(criterion, losses, 0.5) == (1.0, 0.5)
+    assert coverage_at_risk(criterion, losses, 0.6) == (1.0, 0.5)
 
 
 @pytest.mark.parametrize("risk", [-0.1, float("nan")])
@@ -206,5 +212,5 @@ def test_coverage_at_risk_invalid_risk_raises(risk: float) -> None:
 def test_metrics_return_floats() -> None:
     assert isinstance(aurc(CRITERION, LOSSES), float)
     assert isinstance(augrc(CRITERION, LOSSES), float)
-    assert isinstance(risk_at_coverage(CRITERION, LOSSES, 0.5), float)
-    assert isinstance(coverage_at_risk(CRITERION, LOSSES, 0.5), float)
+    for function in (risk_at_coverage, coverage_at_risk):
+        assert all(isinstance(value, float) for value in function(CRITERION, LOSSES, 0.5))

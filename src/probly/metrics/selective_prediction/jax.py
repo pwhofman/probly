@@ -94,18 +94,22 @@ def jax_augrc(criterion: jax.Array, losses: jax.Array) -> jax.Array:
 
 
 @risk_at_coverage.register((jax.Array, Tracer))
-def jax_risk_at_coverage(criterion: jax.Array, losses: jax.Array, coverage: float) -> jax.Array:
+def jax_risk_at_coverage(criterion: jax.Array, losses: jax.Array, coverage: float) -> tuple[jax.Array, jax.Array]:
     """Compute the selective risk at a target coverage for JAX arrays."""
     check_coverage(coverage)
     curve_coverage, risk, _ = jax_risk_coverage_curve(criterion, losses)
     # The coverage is non-decreasing, so the first point that reaches the target has the smallest coverage.
-    return risk[jnp.argmax(curve_coverage >= coverage)]
+    index = jnp.argmax(curve_coverage >= coverage)
+    return risk[index], curve_coverage[index]
 
 
 @coverage_at_risk.register((jax.Array, Tracer))
-def jax_coverage_at_risk(criterion: jax.Array, losses: jax.Array, risk: float) -> jax.Array:
+def jax_coverage_at_risk(criterion: jax.Array, losses: jax.Array, risk: float) -> tuple[jax.Array, jax.Array]:
     """Compute the largest coverage with at most a target selective risk for JAX arrays."""
     check_risk(risk)
     coverage, curve_risk, _ = jax_risk_coverage_curve(criterion, losses)
     # The endpoint at coverage 0 is excluded, since it accepts no instance.
-    return jnp.max(jnp.where(curve_risk[1:] <= risk, coverage[1:], 0.0))
+    feasible_coverage = jnp.where(curve_risk[1:] <= risk, coverage[1:], 0.0)
+    index = jnp.argmax(feasible_coverage)
+    best = feasible_coverage[index]
+    return best, jnp.where(best > 0, curve_risk[1:][index], jnp.nan)

@@ -38,10 +38,10 @@ def test_metrics_match_numpy() -> None:
         np.testing.assert_allclose(float(function(criterion_j, losses_j)), function(criterion, losses), rtol=1e-6)
     for coverage in (0.25, 0.5, 1.0):
         actual = risk_at_coverage(criterion_j, losses_j, coverage)
-        np.testing.assert_allclose(float(actual), risk_at_coverage(criterion, losses, coverage), rtol=1e-6)
+        np.testing.assert_allclose([float(v) for v in actual], risk_at_coverage(criterion, losses, coverage), rtol=1e-6)
     for risk in (0.0, 0.2, 0.3):
         actual = coverage_at_risk(criterion_j, losses_j, risk)
-        np.testing.assert_allclose(float(actual), coverage_at_risk(criterion, losses, risk), rtol=1e-6)
+        np.testing.assert_allclose([float(v) for v in actual], coverage_at_risk(criterion, losses, risk), rtol=1e-6)
 
 
 def test_risk_coverage_curve_and_aurc_under_jit() -> None:

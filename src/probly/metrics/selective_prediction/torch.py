@@ -99,18 +99,27 @@ def torch_augrc(criterion: torch.Tensor, losses: torch.Tensor) -> torch.Tensor:
 
 
 @risk_at_coverage.register(torch.Tensor)
-def torch_risk_at_coverage(criterion: torch.Tensor, losses: torch.Tensor, coverage: float) -> torch.Tensor:
+def torch_risk_at_coverage(
+    criterion: torch.Tensor, losses: torch.Tensor, coverage: float
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Compute the selective risk at a target coverage for PyTorch tensors."""
     check_coverage(coverage)
     curve_coverage, risk, _ = torch_risk_coverage_curve(criterion, losses)
     # The coverage is non-decreasing, so the first point that reaches the target has the smallest coverage.
-    return risk[torch.argmax((curve_coverage >= coverage).to(torch.uint8))]
+    index = torch.argmax((curve_coverage >= coverage).to(torch.uint8))
+    return risk[index], curve_coverage[index]
 
 
 @coverage_at_risk.register(torch.Tensor)
-def torch_coverage_at_risk(criterion: torch.Tensor, losses: torch.Tensor, risk: float) -> torch.Tensor:
+def torch_coverage_at_risk(
+    criterion: torch.Tensor, losses: torch.Tensor, risk: float
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Compute the largest coverage with at most a target selective risk for PyTorch tensors."""
     check_risk(risk)
     coverage, curve_risk, _ = torch_risk_coverage_curve(criterion, losses)
     # The endpoint at coverage 0 is excluded, since it accepts no instance.
-    return torch.where(curve_risk[1:] <= risk, coverage[1:], 0.0).max()
+    feasible_coverage = torch.where(curve_risk[1:] <= risk, coverage[1:], torch.zeros_like(coverage[1:]))
+    index = torch.argmax(feasible_coverage)
+    best = feasible_coverage[index]
+    nan = torch.full_like(best, torch.nan)
+    return best, torch.where(best > 0, curve_risk[1:][index], nan)

@@ -126,7 +126,7 @@ def augrc(criterion: object, losses: object) -> object:
 
 
 @flexdispatch
-def risk_at_coverage(criterion: object, losses: object, coverage: float) -> object:
+def risk_at_coverage(criterion: object, losses: object, coverage: float) -> tuple[object, object]:
     """Selective risk at a target coverage.
 
     Not every coverage can be reached, since tied criterion values are accepted together. The risk is therefore
@@ -141,7 +141,10 @@ def risk_at_coverage(criterion: object, losses: object, coverage: float) -> obje
         coverage: Target coverage in ``(0, 1]``.
 
     Returns:
-        The selective risk at that coverage.
+        A tuple containing:
+            - risk: The selective risk at that coverage.
+            - coverage: The coverage that was actually used, at least ``coverage``. With ties, it can be far above
+              the target, so criteria are comparable at a coverage only when this value is the same.
 
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
@@ -154,7 +157,7 @@ def risk_at_coverage(criterion: object, losses: object, coverage: float) -> obje
 
 
 @flexdispatch
-def coverage_at_risk(criterion: object, losses: object, risk: float) -> object:
+def coverage_at_risk(criterion: object, losses: object, risk: float) -> tuple[object, object]:
     """Largest coverage whose selective risk is at most a target risk.
 
     Since the selective risk is not monotone in the threshold, every threshold is checked. A binary search, as in
@@ -169,7 +172,9 @@ def coverage_at_risk(criterion: object, losses: object, risk: float) -> object:
         risk: Target selective risk, at least 0.
 
     Returns:
-        The largest coverage with a selective risk of at most ``risk``, or 0 if there is none.
+        A tuple containing:
+            - coverage: The largest coverage with a selective risk of at most ``risk``, or 0 if there is none.
+            - risk: The selective risk at that coverage, which is at most ``risk``, or NaN if there is none.
 
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
