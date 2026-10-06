@@ -18,7 +18,12 @@ def test_evaluate_default_metrics() -> None:
     criterion = np.array([0.1, 0.5, 0.5, 0.9])
     losses = np.array([0.0, 1.0, 0.0, 1.0])
     result = evaluate_selective_prediction(criterion, losses)
-    assert result == {"aurc": aurc(criterion, losses), "augrc": augrc(criterion, losses)}
+    assert result == {
+        "aurc": aurc(criterion, losses),
+        "augrc": augrc(criterion, losses),
+        "risk@1": float(np.mean(losses)),
+        "risk@1:coverage": 1.0,
+    }
     assert evaluate_selective_prediction(criterion, losses, "all") == result
     assert evaluate_selective_prediction(criterion, losses, "ALL") == result
 
