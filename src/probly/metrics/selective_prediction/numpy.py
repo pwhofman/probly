@@ -8,6 +8,7 @@ from ._common import (
     augrc,
     aurc,
     check_coverage,
+    check_finite_losses,
     check_inputs,
     check_no_nan,
     check_no_negative_infinity,
@@ -31,7 +32,7 @@ def _numpy_sorted_runs(
     n = check_inputs(criterion, losses)
     check_no_nan(np.isnan(criterion).any())
     check_no_negative_infinity(np.isneginf(criterion).any())
-    check_no_nan(np.isnan(losses).any(), "losses")
+    check_finite_losses(np.isfinite(losses).all())
     order = np.argsort(criterion, kind="stable")
     criterion_sorted = criterion[order]
     losses_sorted = losses[order]

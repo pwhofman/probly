@@ -10,6 +10,7 @@ from ._common import (
     augrc,
     aurc,
     check_coverage,
+    check_finite_losses,
     check_inputs,
     check_no_nan,
     check_no_negative_infinity,
@@ -34,7 +35,7 @@ def _jax_sorted_runs(criterion: jax.Array, losses: jax.Array) -> tuple[jax.Array
         check_no_nan(jnp.isnan(criterion).any())
         check_no_negative_infinity(jnp.isneginf(criterion).any())
     if not isinstance(losses, Tracer):
-        check_no_nan(jnp.isnan(losses).any(), "losses")
+        check_finite_losses(jnp.isfinite(losses).all())
     order = jnp.argsort(criterion, stable=True)
     criterion_sorted = criterion[order]
     losses_sorted = losses[order]

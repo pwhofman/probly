@@ -99,10 +99,12 @@ def test_positive_infinite_criterion_is_allowed() -> None:
         lambda criterion, losses: coverage_at_risk(criterion, losses, 0.5),
     ],
 )
-def test_nan_losses_raise(function: Callable[..., object]) -> None:
-    # Without the check, coverage_at_risk returned 0.5 here, because every comparison with NaN is false.
-    with pytest.raises(ValueError, match="losses must not contain NaN"):
-        function(np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.0, 1.0, np.nan, 0.0]))
+@pytest.mark.parametrize("value", [np.nan, np.inf, -np.inf])
+def test_non_finite_losses_raise(function: Callable[..., object], value: float) -> None:
+    # Without the check, coverage_at_risk returned 0.5 for NaN, because every comparison with NaN is false, and
+    # aurc returned NaN for an infinite loss, from inf - inf in the expectation over tie orders.
+    with pytest.raises(ValueError, match="losses must be finite"):
+        function(np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.0, 1.0, value, 0.0]))
 
 
 def test_aurc_and_augrc_exact_values() -> None:

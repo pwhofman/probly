@@ -8,6 +8,7 @@ from ._common import (
     augrc,
     aurc,
     check_coverage,
+    check_finite_losses,
     check_inputs,
     check_no_nan,
     check_no_negative_infinity,
@@ -37,7 +38,7 @@ def _torch_sorted_runs(
         losses = losses.to(torch.promote_types(losses.dtype, torch.float32))
     else:
         losses = losses.to(torch.get_default_dtype())
-    check_no_nan(torch.isnan(losses).any(), "losses")
+    check_finite_losses(torch.isfinite(losses).all())
     order = torch.argsort(criterion, stable=True)
     criterion_sorted = criterion[order]
     losses_sorted = losses[order]
