@@ -12,6 +12,7 @@ from ._common import (
     check_coverage,
     check_inputs,
     check_no_nan,
+    check_no_negative_infinity,
     check_risk,
     coverage_at_risk,
     risk_at_coverage,
@@ -31,6 +32,7 @@ def _jax_sorted_runs(criterion: jax.Array, losses: jax.Array) -> tuple[jax.Array
     # Inside a traced function the values are unknown, so the check can only run on concrete arrays.
     if not isinstance(criterion, Tracer):
         check_no_nan(jnp.isnan(criterion).any())
+        check_no_negative_infinity(jnp.isneginf(criterion).any())
     if not isinstance(losses, Tracer):
         check_no_nan(jnp.isnan(losses).any(), "losses")
     order = jnp.argsort(criterion, stable=True)

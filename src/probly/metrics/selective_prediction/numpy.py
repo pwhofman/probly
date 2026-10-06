@@ -10,6 +10,7 @@ from ._common import (
     check_coverage,
     check_inputs,
     check_no_nan,
+    check_no_negative_infinity,
     check_risk,
     coverage_at_risk,
     risk_at_coverage,
@@ -29,6 +30,7 @@ def _numpy_sorted_runs(
     losses = np.asarray(losses, dtype=float)
     n = check_inputs(criterion, losses)
     check_no_nan(np.isnan(criterion).any())
+    check_no_negative_infinity(np.isneginf(criterion).any())
     check_no_nan(np.isnan(losses).any(), "losses")
     order = np.argsort(criterion, kind="stable")
     criterion_sorted = criterion[order]

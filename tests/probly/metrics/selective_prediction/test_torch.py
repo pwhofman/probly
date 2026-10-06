@@ -90,3 +90,8 @@ def test_nan_criterion_raises() -> None:
 def test_nan_losses_raise() -> None:
     with pytest.raises(ValueError, match="losses must not contain NaN"):
         aurc(torch.tensor([0.1, 0.2]), torch.tensor([0.0, torch.nan]))
+
+
+def test_negative_infinite_criterion_raises() -> None:
+    with pytest.raises(ValueError, match="criterion must not contain -inf"):
+        aurc(torch.tensor([-torch.inf, 0.2]), torch.zeros(2))

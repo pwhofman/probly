@@ -27,8 +27,9 @@ def risk_coverage_curve(criterion: object, losses: object) -> tuple[object, obje
     criteria whose first step covers more instances would get a smaller area.
 
     A NaN in ``criterion`` has no place in the ranking, and a NaN in ``losses`` would silently drop the affected
-    points from the working points. Both raise an error. Inside a traced JAX function, such as one compiled with
-    ``jax.jit``, the values are unknown, and the check is skipped.
+    points from the working points. Both raise an error. So does a criterion of ``-inf``, which is the threshold
+    of the endpoint at coverage 0 and would be accepted there. Inside a traced JAX function, such as one compiled
+    with ``jax.jit``, the values are unknown, and the check is skipped.
 
     Args:
         criterion: Criterion values of shape ``(n,)``. Larger values are rejected first.
@@ -43,8 +44,8 @@ def risk_coverage_curve(criterion: object, losses: object) -> tuple[object, obje
 
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
-        ValueError: If ``criterion`` and ``losses`` are not one-dimensional with the same, nonzero length, or if
-            either contains NaN.
+        ValueError: If ``criterion`` and ``losses`` are not one-dimensional with the same, nonzero length, if
+            ``criterion`` contains NaN or ``-inf``, or if ``losses`` contains NaN.
     """
     msg = f"No risk_coverage_curve implementation registered for type {type(criterion)}"
     raise NotImplementedError(msg)
@@ -76,8 +77,8 @@ def aurc(criterion: object, losses: object) -> object:
 
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
-        ValueError: If ``criterion`` and ``losses`` are not one-dimensional with the same, nonzero length, or if
-            either contains NaN.
+        ValueError: If ``criterion`` and ``losses`` are not one-dimensional with the same, nonzero length, if
+            ``criterion`` contains NaN or ``-inf``, or if ``losses`` contains NaN.
     """
     msg = f"No aurc implementation registered for type {type(criterion)}"
     raise NotImplementedError(msg)
@@ -105,8 +106,8 @@ def augrc(criterion: object, losses: object) -> object:
 
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
-        ValueError: If ``criterion`` and ``losses`` are not one-dimensional with the same, nonzero length, or if
-            either contains NaN.
+        ValueError: If ``criterion`` and ``losses`` are not one-dimensional with the same, nonzero length, if
+            ``criterion`` contains NaN or ``-inf``, or if ``losses`` contains NaN.
     """
     msg = f"No augrc implementation registered for type {type(criterion)}"
     raise NotImplementedError(msg)
@@ -130,7 +131,8 @@ def risk_at_coverage(criterion: object, losses: object, coverage: float) -> obje
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
         ValueError: If ``coverage`` is not in ``(0, 1]``, if ``criterion`` and ``losses`` are not
-            one-dimensional with the same, nonzero length, or if either contains NaN.
+            one-dimensional with the same, nonzero length, if ``criterion`` contains NaN or ``-inf``, or if
+            ``losses`` contains NaN.
     """
     msg = f"No risk_at_coverage implementation registered for type {type(criterion)}"
     raise NotImplementedError(msg)
@@ -155,7 +157,7 @@ def coverage_at_risk(criterion: object, losses: object, risk: float) -> object:
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
         ValueError: If ``risk`` is negative or NaN, if ``criterion`` and ``losses`` are not one-dimensional with
-            the same, nonzero length, or if either contains NaN.
+            the same, nonzero length, if ``criterion`` contains NaN or ``-inf``, or if ``losses`` contains NaN.
     """
     msg = f"No coverage_at_risk implementation registered for type {type(criterion)}"
     raise NotImplementedError(msg)
@@ -197,6 +199,23 @@ def check_no_nan(has_nan: object, name: str = "criterion") -> None:
     """
     if has_nan:
         msg = f"{name} must not contain NaN."
+        raise ValueError(msg)
+
+
+def check_no_negative_infinity(has_negative_infinity: object) -> None:
+    """Check that the criterion contains no ``-inf``.
+
+    The threshold ``-inf`` marks the endpoint at coverage 0, so an instance with that criterion value would be
+    accepted at the endpoint.
+
+    Args:
+        has_negative_infinity: Whether the criterion contains ``-inf``, as a boolean or a zero-dimensional array.
+
+    Raises:
+        ValueError: If ``has_negative_infinity`` is true.
+    """
+    if has_negative_infinity:
+        msg = "criterion must not contain -inf, which is the threshold of the endpoint at coverage 0."
         raise ValueError(msg)
 
 

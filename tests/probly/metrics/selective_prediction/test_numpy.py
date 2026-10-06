@@ -77,6 +77,18 @@ def test_nan_criterion_raises(function: Callable[..., object]) -> None:
         function(np.array([0.1, np.nan, 0.3]), np.zeros(3))
 
 
+@pytest.mark.parametrize("function", [risk_coverage_curve, aurc, augrc])
+def test_negative_infinite_criterion_raises(function: Callable[..., object]) -> None:
+    with pytest.raises(ValueError, match="criterion must not contain -inf"):
+        function(np.array([-np.inf, 0.2, 0.3]), np.zeros(3))
+
+
+def test_positive_infinite_criterion_is_allowed() -> None:
+    coverage, _, thresholds = risk_coverage_curve(np.array([0.2, np.inf]), np.array([0.0, 1.0]))
+    np.testing.assert_allclose(coverage, [0.0, 0.5, 1.0])
+    np.testing.assert_array_equal(thresholds, [-np.inf, 0.2, np.inf])
+
+
 @pytest.mark.parametrize(
     "function",
     [

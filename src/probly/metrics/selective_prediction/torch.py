@@ -10,6 +10,7 @@ from ._common import (
     check_coverage,
     check_inputs,
     check_no_nan,
+    check_no_negative_infinity,
     check_risk,
     coverage_at_risk,
     risk_at_coverage,
@@ -29,6 +30,7 @@ def _torch_sorted_runs(
     losses = torch.as_tensor(losses, device=criterion.device)
     n = check_inputs(criterion, losses)
     check_no_nan(torch.isnan(criterion).any())
+    check_no_negative_infinity(torch.isneginf(criterion).any())
     # Half precision counts exactly only up to 2048 and overflows past 65504, so the curve is computed in at
     # least float32.
     if losses.is_floating_point():

@@ -73,3 +73,8 @@ def test_nan_criterion_raises() -> None:
 def test_nan_losses_raise() -> None:
     with pytest.raises(ValueError, match="losses must not contain NaN"):
         aurc(jnp.array([0.1, 0.2]), jnp.array([0.0, jnp.nan]))
+
+
+def test_negative_infinite_criterion_raises() -> None:
+    with pytest.raises(ValueError, match="criterion must not contain -inf"):
+        aurc(jnp.array([-jnp.inf, 0.2]), jnp.zeros(2))
