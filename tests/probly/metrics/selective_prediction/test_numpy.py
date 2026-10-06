@@ -77,6 +77,22 @@ def test_nan_criterion_raises(function: Callable[..., object]) -> None:
         function(np.array([0.1, np.nan, 0.3]), np.zeros(3))
 
 
+@pytest.mark.parametrize(
+    "function",
+    [
+        risk_coverage_curve,
+        aurc,
+        augrc,
+        lambda criterion, losses: risk_at_coverage(criterion, losses, 0.25),
+        lambda criterion, losses: coverage_at_risk(criterion, losses, 0.5),
+    ],
+)
+def test_nan_losses_raise(function: Callable[..., object]) -> None:
+    # Without the check, coverage_at_risk returned 0.5 here, because every comparison with NaN is false.
+    with pytest.raises(ValueError, match="losses must not contain NaN"):
+        function(np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.0, 1.0, np.nan, 0.0]))
+
+
 def test_aurc_and_augrc_exact_values() -> None:
     # Inside the tied step, half of the tied instances are accepted at coverage 0.5, with an expected loss of 1/2,
     # so the expected risk there is 1/4. Trapezoids between (0, 0), (0.25, 0), (0.5, 1/4), (0.75, 1/3) and

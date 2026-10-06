@@ -26,8 +26,9 @@ def risk_coverage_curve(criterion: object, losses: object) -> tuple[object, obje
     :cite:`jaegerCallReflect2023`. Without it, the area would only start at the coverage of the first step, so
     criteria whose first step covers more instances would get a smaller area.
 
-    A NaN in ``criterion`` has no place in the ranking and raises an error. Inside a traced JAX function, such
-    as one compiled with ``jax.jit``, the values are unknown, and the check is skipped.
+    A NaN in ``criterion`` has no place in the ranking, and a NaN in ``losses`` would silently drop the affected
+    points from the working points. Both raise an error. Inside a traced JAX function, such as one compiled with
+    ``jax.jit``, the values are unknown, and the check is skipped.
 
     Args:
         criterion: Criterion values of shape ``(n,)``. Larger values are rejected first.
@@ -43,7 +44,7 @@ def risk_coverage_curve(criterion: object, losses: object) -> tuple[object, obje
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
         ValueError: If ``criterion`` and ``losses`` are not one-dimensional with the same, nonzero length, or if
-            ``criterion`` contains NaN.
+            either contains NaN.
     """
     msg = f"No risk_coverage_curve implementation registered for type {type(criterion)}"
     raise NotImplementedError(msg)
@@ -76,7 +77,7 @@ def aurc(criterion: object, losses: object) -> object:
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
         ValueError: If ``criterion`` and ``losses`` are not one-dimensional with the same, nonzero length, or if
-            ``criterion`` contains NaN.
+            either contains NaN.
     """
     msg = f"No aurc implementation registered for type {type(criterion)}"
     raise NotImplementedError(msg)
@@ -105,7 +106,7 @@ def augrc(criterion: object, losses: object) -> object:
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
         ValueError: If ``criterion`` and ``losses`` are not one-dimensional with the same, nonzero length, or if
-            ``criterion`` contains NaN.
+            either contains NaN.
     """
     msg = f"No augrc implementation registered for type {type(criterion)}"
     raise NotImplementedError(msg)
@@ -129,7 +130,7 @@ def risk_at_coverage(criterion: object, losses: object, coverage: float) -> obje
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
         ValueError: If ``coverage`` is not in ``(0, 1]``, if ``criterion`` and ``losses`` are not
-            one-dimensional with the same, nonzero length, or if ``criterion`` contains NaN.
+            one-dimensional with the same, nonzero length, or if either contains NaN.
     """
     msg = f"No risk_at_coverage implementation registered for type {type(criterion)}"
     raise NotImplementedError(msg)
@@ -154,7 +155,7 @@ def coverage_at_risk(criterion: object, losses: object, risk: float) -> object:
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
         ValueError: If ``risk`` is negative or NaN, if ``criterion`` and ``losses`` are not one-dimensional with
-            the same, nonzero length, or if ``criterion`` contains NaN.
+            the same, nonzero length, or if either contains NaN.
     """
     msg = f"No coverage_at_risk implementation registered for type {type(criterion)}"
     raise NotImplementedError(msg)
@@ -184,17 +185,18 @@ def check_inputs(criterion: object, losses: object) -> int:
     return criterion_shape[0]
 
 
-def check_no_nan(has_nan: object) -> None:
-    """Check that the criterion contains no NaN.
+def check_no_nan(has_nan: object, name: str = "criterion") -> None:
+    """Check that the criterion or the losses contain no NaN.
 
     Args:
-        has_nan: Whether the criterion contains a NaN, as a boolean or a zero-dimensional array.
+        has_nan: Whether the checked values contain a NaN, as a boolean or a zero-dimensional array.
+        name: Name of the checked values, used in the error message.
 
     Raises:
         ValueError: If ``has_nan`` is true.
     """
     if has_nan:
-        msg = "criterion must not contain NaN."
+        msg = f"{name} must not contain NaN."
         raise ValueError(msg)
 
 

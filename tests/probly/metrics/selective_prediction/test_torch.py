@@ -85,3 +85,8 @@ def test_risk_coverage_curve_accepts_numpy_losses() -> None:
 def test_nan_criterion_raises() -> None:
     with pytest.raises(ValueError, match="criterion must not contain NaN"):
         aurc(torch.tensor([0.1, torch.nan]), torch.zeros(2))
+
+
+def test_nan_losses_raise() -> None:
+    with pytest.raises(ValueError, match="losses must not contain NaN"):
+        aurc(torch.tensor([0.1, 0.2]), torch.tensor([0.0, torch.nan]))

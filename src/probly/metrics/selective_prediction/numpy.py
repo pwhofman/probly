@@ -29,6 +29,7 @@ def _numpy_sorted_runs(
     losses = np.asarray(losses, dtype=float)
     n = check_inputs(criterion, losses)
     check_no_nan(np.isnan(criterion).any())
+    check_no_nan(np.isnan(losses).any(), "losses")
     order = np.argsort(criterion, kind="stable")
     criterion_sorted = criterion[order]
     losses_sorted = losses[order]

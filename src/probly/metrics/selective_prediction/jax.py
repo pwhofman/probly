@@ -31,6 +31,8 @@ def _jax_sorted_runs(criterion: jax.Array, losses: jax.Array) -> tuple[jax.Array
     # Inside a traced function the values are unknown, so the check can only run on concrete arrays.
     if not isinstance(criterion, Tracer):
         check_no_nan(jnp.isnan(criterion).any())
+    if not isinstance(losses, Tracer):
+        check_no_nan(jnp.isnan(losses).any(), "losses")
     order = jnp.argsort(criterion, stable=True)
     criterion_sorted = criterion[order]
     losses_sorted = losses[order]
