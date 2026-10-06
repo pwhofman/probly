@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -77,10 +78,48 @@ def test_nan_criterion_raises(function: Callable[..., object]) -> None:
 
 
 def test_aurc_and_augrc_exact_values() -> None:
-    # Trapezoids between the distinct points (0, 0), (0.25, 0), (0.75, 1/3) and (1, 1/2).
-    assert np.isclose(aurc(CRITERION, LOSSES), 0.5 * (1 / 3) / 2 + 0.25 * (1 / 3 + 1 / 2) / 2)
-    # Generalized risk at the same points: 0, 0, 1/4 and 1/2.
+    # Inside the tied step, half of the tied instances are accepted at coverage 0.5, with an expected loss of 1/2,
+    # so the expected risk there is 1/4. Trapezoids between (0, 0), (0.25, 0), (0.5, 1/4), (0.75, 1/3) and
+    # (1, 1/2).
+    expected = 0.25 * (1 / 4) / 2 + 0.25 * (1 / 4 + 1 / 3) / 2 + 0.25 * (1 / 3 + 1 / 2) / 2
+    assert np.isclose(aurc(CRITERION, LOSSES), expected)
+    # Generalized risk at the distinct points (0, 0), (0.25, 0), (0.75, 1/4) and (1, 1/2).
     assert np.isclose(augrc(CRITERION, LOSSES), 0.5 * (1 / 4) / 2 + 0.25 * (1 / 4 + 1 / 2) / 2)
+
+
+def _per_order_aurc(criterion: np.ndarray, losses: np.ndarray) -> float:
+    # AURC of one fixed order: every instance is its own step, with the endpoint (0, first risk).
+    order = np.argsort(criterion, kind="stable")
+    count = np.arange(1, len(losses) + 1)
+    risk = np.cumsum(losses[order]) / count
+    return float(np.trapezoid(np.concatenate([risk[:1], risk]), np.concatenate([[0.0], count / len(losses)])))
+
+
+def test_aurc_is_mean_over_orders_of_tied_instances() -> None:
+    criterion = np.array([0.2, 0.7, 0.2, 0.7, 0.7, 0.4, 0.2])
+    losses = np.array([0.0, 1.0, 0.5, 0.0, 1.0, 1.0, 0.2])
+    values = [
+        _per_order_aurc(criterion[list(permutation)], losses[list(permutation)])
+        for permutation in itertools.permutations(range(len(losses)))
+    ]
+    assert np.isclose(aurc(criterion, losses), np.mean(values))
+
+
+def test_aurc_without_ties_matches_per_order_value() -> None:
+    rng = np.random.default_rng(3)
+    criterion = rng.random(100)
+    losses = rng.random(100)
+    assert np.isclose(aurc(criterion, losses), _per_order_aurc(criterion, losses))
+
+
+def test_aurc_does_not_prefer_a_coarsened_criterion() -> None:
+    # The coarsened copy splits the instances into the most confident 5 % and a tie of all others, so it
+    # discards ranking information. A straight line inside the tied step would give it the smaller area here.
+    rng = np.random.default_rng(6)
+    criterion = rng.random(5000)
+    losses = (rng.random(5000) < 0.05 + 0.4 * criterion).astype(float)
+    coarse = (criterion > np.quantile(criterion, 0.05)).astype(float)
+    assert aurc(coarse, losses) > aurc(criterion, losses)
 
 
 @pytest.mark.parametrize("decimals", [None, 1])

@@ -59,6 +59,13 @@ def aurc(criterion: object, losses: object) -> object:
     instances are accepted. For comparing criteria across thresholds, :func:`augrc` is therefore the better
     choice :cite:`traubOvercomingCommon2024`.
 
+    Inside a step of tied criterion values, the curve is interpolated with the expected selective risk when a
+    random part of the tied instances is accepted. The AURC therefore equals the mean AURC over all orders of the
+    tied instances. A straight line between the steps, as in :cite:`jaegerCallReflect2023`, lies below this
+    expected risk whenever the tied instances are worse than those accepted before them. It cannot be reached by
+    any selector, and it would favor criteria that tie many instances, such as coarsened ones. Without ties, the
+    two interpolations agree.
+
     Args:
         criterion: Criterion values of shape ``(n,)``. Larger values are rejected first.
         losses: Loss of the prediction for every instance, of shape ``(n,)``.

@@ -19,9 +19,13 @@ from ._common import (
 )
 
 
-@risk_coverage_curve.register((jax.Array, Tracer))
-def jax_risk_coverage_curve(criterion: jax.Array, losses: jax.Array) -> tuple[jax.Array, jax.Array, jax.Array]:
-    """Compute the exact risk-coverage curve for JAX arrays."""
+def _jax_sorted_runs(criterion: jax.Array, losses: jax.Array) -> tuple[jax.Array, jax.Array, jax.Array, jax.Array]:
+    """Sort by the criterion and find the runs of tied criterion values.
+
+    Returns:
+        The sorted criterion, the sorted losses (as floats), and for every position the first and the last
+        position of its run.
+    """
     losses = jnp.asarray(losses, dtype=jnp.result_type(float))
     n = check_inputs(criterion, losses)
     # Inside a traced function the values are unknown, so the check can only run on concrete arrays.
@@ -31,18 +35,30 @@ def jax_risk_coverage_curve(criterion: jax.Array, losses: jax.Array) -> tuple[ja
     criterion_sorted = criterion[order]
     losses_sorted = losses[order]
 
-    # Tied instances are accepted together: every position in a run of tied criterion values points to the end
-    # of that run, as in probly.metrics.jax._binary_clf_curve. Ties are detected in the dtype of the
-    # criterion, since a cast to the dtype of the losses could merge distinct values.
-    is_run_end = jnp.concatenate([criterion_sorted[1:] != criterion_sorted[:-1], jnp.ones(1, dtype=bool)])
-    run_end = jnp.where(is_run_end, jnp.arange(n), n - 1)
+    # Ties are detected in the dtype of the criterion, since a cast to the dtype of the losses could merge
+    # distinct values.
+    is_new = criterion_sorted[1:] != criterion_sorted[:-1]
+    true = jnp.ones(1, dtype=bool)
+    positions = jnp.arange(n)
+    run_start = jax.lax.cummax(jnp.where(jnp.concatenate([true, is_new]), positions, 0), axis=0)
+    run_end = jnp.where(jnp.concatenate([is_new, true]), positions, n - 1)
     run_end = jax.lax.cummin(run_end, axis=0, reverse=True)
+    return criterion_sorted, losses_sorted, run_start, run_end
 
+
+@risk_coverage_curve.register((jax.Array, Tracer))
+def jax_risk_coverage_curve(criterion: jax.Array, losses: jax.Array) -> tuple[jax.Array, jax.Array, jax.Array]:
+    """Compute the exact risk-coverage curve for JAX arrays."""
+    criterion_sorted, losses_sorted, _, run_end = _jax_sorted_runs(criterion, losses)
+    n = len(losses_sorted)
+
+    # Tied instances are accepted together: every position in a run of tied criterion values points to the end
+    # of that run, as in probly.metrics.jax._binary_clf_curve.
     count = run_end + 1
     risk = jnp.cumsum(losses_sorted)[run_end] / count
-    coverage = jnp.concatenate([jnp.zeros(1, dtype=losses.dtype), count / n])
+    coverage = jnp.concatenate([jnp.zeros(1, dtype=losses_sorted.dtype), count / n])
     risk = jnp.concatenate([risk[:1], risk])
-    threshold_dtype = criterion.dtype if jnp.issubdtype(criterion.dtype, jnp.floating) else losses.dtype
+    threshold_dtype = criterion.dtype if jnp.issubdtype(criterion.dtype, jnp.floating) else losses_sorted.dtype
     thresholds = jnp.concatenate(
         [jnp.full(1, -jnp.inf, dtype=threshold_dtype), criterion_sorted.astype(threshold_dtype)]
     )
@@ -52,8 +68,18 @@ def jax_risk_coverage_curve(criterion: jax.Array, losses: jax.Array) -> tuple[ja
 @aurc.register((jax.Array, Tracer))
 def jax_aurc(criterion: jax.Array, losses: jax.Array) -> jax.Array:
     """Compute the area under the exact risk-coverage curve for JAX arrays."""
-    coverage, risk, _ = jax_risk_coverage_curve(criterion, losses)
-    return jnp.trapezoid(risk, coverage)
+    _, losses_sorted, run_start, run_end = _jax_sorted_runs(criterion, losses)
+    n = len(losses_sorted)
+
+    # Accepting the k most confident instances, with a random part of a tied run, gives an expected cumulative
+    # loss that is linear in k inside the run. The expected selective risk at every k is that loss over k.
+    cumulative = jnp.cumsum(losses_sorted)
+    before_run = jnp.where(run_start > 0, cumulative[run_start - 1], 0.0)
+    count = jnp.arange(1, n + 1)
+    expected_loss = before_run + (cumulative[run_end] - before_run) * (count - run_start) / (run_end - run_start + 1)
+    risk = expected_loss / count
+    coverage = jnp.concatenate([jnp.zeros(1, dtype=risk.dtype), count / n])
+    return jnp.trapezoid(jnp.concatenate([risk[:1], risk]), coverage)
 
 
 @augrc.register((jax.Array, Tracer))
