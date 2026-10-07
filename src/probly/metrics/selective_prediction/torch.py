@@ -22,7 +22,7 @@ from ._common import (
 def _torch_sorted_runs(
     criterion: torch.Tensor, losses: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Sort by the criterion and find the runs of tied criterion values.
+    """Check the inputs, sort by the criterion, and find the runs of tied criterion values.
 
     Returns:
         The sorted criterion, the sorted losses (in at least float32), and for every position the first and the
@@ -80,8 +80,8 @@ def torch_aurc(criterion: torch.Tensor, losses: torch.Tensor) -> torch.Tensor:
     _, losses_sorted, run_start, run_end = _torch_sorted_runs(criterion, losses)
     n = len(losses_sorted)
 
-    # Accepting the k most confident instances, with a random part of a tied run, gives an expected cumulative
-    # loss that is linear in k inside the run. The expected selective risk at every k is that loss over k.
+    # If the k most confident instances are accepted and a tied run is split at random, the expected cumulative
+    # loss is linear in k inside the run, and the expected selective risk is that loss divided by k.
     cumulative = torch.cumsum(losses_sorted, dim=0)
     before_run = torch.where(run_start > 0, cumulative[run_start - 1], 0.0)
     count = (torch.arange(n, device=run_end.device) + 1).to(cumulative.dtype)

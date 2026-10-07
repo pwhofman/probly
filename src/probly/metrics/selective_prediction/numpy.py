@@ -22,7 +22,7 @@ from ._common import (
 def _numpy_sorted_runs(
     criterion: np.ndarray, losses: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Sort by the criterion and find the runs of tied criterion values.
+    """Check the inputs, sort by the criterion, and find the runs of tied criterion values.
 
     Returns:
         The sorted criterion, the sorted losses (as floats), and for every position the first and the last
@@ -69,8 +69,8 @@ def numpy_aurc(criterion: np.ndarray, losses: np.ndarray) -> float:
     _, losses_sorted, run_start, run_end = _numpy_sorted_runs(criterion, losses)
     n = len(losses_sorted)
 
-    # Accepting the k most confident instances, with a random part of a tied run, gives an expected cumulative
-    # loss that is linear in k inside the run. The expected selective risk at every k is that loss over k.
+    # If the k most confident instances are accepted and a tied run is split at random, the expected cumulative
+    # loss is linear in k inside the run, and the expected selective risk is that loss divided by k.
     cumulative = np.cumsum(losses_sorted)
     before_run = np.where(run_start > 0, cumulative[run_start - 1], 0.0)
     count = np.arange(1, n + 1)

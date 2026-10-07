@@ -22,7 +22,7 @@ from ._common import (
 
 
 def _jax_sorted_runs(criterion: jax.Array, losses: jax.Array) -> tuple[jax.Array, jax.Array, jax.Array, jax.Array]:
-    """Sort by the criterion and find the runs of tied criterion values.
+    """Check the inputs, sort by the criterion, and find the runs of tied criterion values.
 
     Returns:
         The sorted criterion, the sorted losses (as floats), and for every position the first and the last
@@ -30,7 +30,7 @@ def _jax_sorted_runs(criterion: jax.Array, losses: jax.Array) -> tuple[jax.Array
     """
     losses = jnp.asarray(losses, dtype=jnp.result_type(float))
     n = check_inputs(criterion, losses)
-    # Inside a traced function the values are unknown, so the check can only run on concrete arrays.
+    # Inside a traced function the values are unknown, so the checks can only run on concrete arrays.
     if not isinstance(criterion, Tracer):
         check_no_nan(jnp.isnan(criterion).any())
         check_no_negative_infinity(jnp.isneginf(criterion).any())
@@ -76,8 +76,8 @@ def jax_aurc(criterion: jax.Array, losses: jax.Array) -> jax.Array:
     _, losses_sorted, run_start, run_end = _jax_sorted_runs(criterion, losses)
     n = len(losses_sorted)
 
-    # Accepting the k most confident instances, with a random part of a tied run, gives an expected cumulative
-    # loss that is linear in k inside the run. The expected selective risk at every k is that loss over k.
+    # If the k most confident instances are accepted and a tied run is split at random, the expected cumulative
+    # loss is linear in k inside the run, and the expected selective risk is that loss divided by k.
     cumulative = jnp.cumsum(losses_sorted)
     before_run = jnp.where(run_start > 0, cumulative[run_start - 1], 0.0)
     count = jnp.arange(1, n + 1)

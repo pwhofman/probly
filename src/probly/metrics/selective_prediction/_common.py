@@ -7,42 +7,36 @@ from flextype import flexdispatch
 
 @flexdispatch
 def risk_coverage_curve(criterion: object, losses: object) -> tuple[object, object, object]:
-    """Exact risk-coverage curve of selective prediction.
+    """Exact (unbinned) risk-coverage curve of selective prediction.
 
-    Roughly speaking, the curve shows how the loss of the accepted predictions changes as more and more
-    uncertain instances are rejected. More precisely, an instance is accepted when its criterion is at most a
-    threshold, so instances with a larger criterion (more uncertainty) are rejected first. For every threshold,
-    the curve records the coverage, the fraction of accepted instances, and the selective risk, the mean loss
-    over the accepted instances, ``sum(losses * accepted) / sum(accepted)``. Being a ratio, the selective risk
-    is not monotone in the threshold.
+    The curve shows how the risk of a predictor changes as it abstains on more of its least confident instances.
+    Concretely, an instance is accepted when its criterion is at most a threshold, so larger criterion values, which
+    indicate more uncertainty, are rejected first. For every threshold, the curve gives the coverage, that is, the
+    fraction of accepted instances, and the selective risk, the mean loss of the accepted instances. Note that the
+    selective risk need not be monotone in the coverage.
 
-    Tied criterion values form a single step: they are accepted or rejected together, so that the curve does
-    not depend on the order of the instances :cite:`jaegerCallReflect2023`. The output nevertheless has a point
-    for every instance, which keeps its shape fixed, and every instance of a tied run carries the point at the
-    end of that run. For criteria ``[0.1, 0.5, 0.5, 0.9]``, the coverages are ``[0.0, 0.25, 0.75, 0.75, 1.0]``.
-    The repeated points add no area.
+    Tied criterion values cannot be separated by a threshold and are accepted together, so a run of ties forms one
+    step of the curve, and the curve does not depend on the order of the instances :cite:`jaegerCallReflect2023`.
+    To keep the static shape ``(n + 1,)`` that ``jax.jit`` requires, every instance of a run repeats the point at
+    the end of the run: criteria ``[0.1, 0.5, 0.5, 0.9]`` give the coverages ``[0, 0.25, 0.75, 0.75, 1]``. The
+    first point is an endpoint at coverage 0, where the selective risk is undefined; by convention, it carries the
+    risk of the first step :cite:`jaegerCallReflect2023`. Without it, an area would start at the coverage of the
+    first step and thus favor criteria with a large first step.
 
-    The first point is an endpoint at coverage 0 that carries the risk of the first step, following
-    :cite:`jaegerCallReflect2023`. Without it, the area would only start at the coverage of the first step, so
-    criteria whose first step covers more instances would get a smaller area.
-
-    A NaN in ``criterion`` has no place in the ranking. A NaN in ``losses`` would silently drop the affected
-    points from the working points, and an infinite loss would make the AURC NaN. All of these raise an error.
-    So does a criterion of ``-inf``, which is the threshold of the endpoint at coverage 0 and would be accepted
-    there, while a criterion of ``+inf`` is allowed. Inside a traced JAX function, such as one compiled with
-    ``jax.jit``, the values are unknown, and the check is skipped.
+    A criterion of NaN or ``-inf``, which is reserved for the endpoint, and a non-finite loss raise an error, while
+    a criterion of ``+inf`` is allowed. Under ``jax.jit``, these checks are skipped, since the values are unknown
+    during tracing.
 
     Args:
         criterion: Criterion values of shape ``(n,)``. Larger values are rejected first.
-        losses: Loss of the prediction for every instance, of shape ``(n,)``, on the same backend as ``criterion``
-            or as a NumPy array.
+        losses: Loss per instance, of shape ``(n,)``, on the backend of ``criterion`` or as a NumPy array.
 
     Returns:
-        A tuple containing:
+        Tuple of arrays on the backend of ``criterion``:
             - coverage: Coverage at every threshold, non-decreasing, of shape ``(n + 1,)``.
             - risk: Selective risk at every threshold, of shape ``(n + 1,)``.
             - thresholds: Criterion values in ascending order, of shape ``(n + 1,)``, starting with ``-inf``
-              for the endpoint at coverage 0.
+              for the endpoint.
 
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
@@ -55,37 +49,34 @@ def risk_coverage_curve(criterion: object, losses: object) -> tuple[object, obje
 
 @flexdispatch
 def aurc(criterion: object, losses: object) -> object:
-    """Area under the exact risk-coverage curve.
+    """Area under the risk-coverage curve, averaged over the orders of tied criterion values.
 
-    The AURC is the area under the selective risk over the coverage; lower is better. The selective risk suits a
-    deployed working point, since it is the risk of an accepted prediction. Aggregated over all thresholds,
-    however, it overweights failures at low coverage, where few instances are accepted. For comparing criteria
-    across thresholds, :func:`augrc` is therefore the better choice :cite:`traubOvercomingCommon2024`.
+    Lower is better. The selective risk is the natural quantity at a deployed working point. Aggregated over all
+    thresholds, however, it overweights failures at low coverage, where a single failure is averaged over few
+    instances, so :func:`augrc` is the better choice for comparing criteria over all working points
+    :cite:`traubOvercomingCommon2024`.
 
-    Inside a step of tied criterion values, the curve is interpolated with the expected selective risk when a
-    random part of the tied instances is accepted. The AURC therefore equals the mean AURC over all orders of the
-    tied instances. A straight line between the steps, as in :cite:`jaegerCallReflect2023`, lies below this
-    expected risk whenever the tied instances are worse than those accepted before them. It cannot be reached by
-    any selector, and it would favor criteria that tie many instances, such as coarsened ones. Without ties, the
-    two interpolations agree. With ties, the AURC is thus not the trapezoid over the points of
-    :func:`risk_coverage_curve`, which joins the steps by straight lines.
+    With ties, the AURC is not the trapezoid over :func:`risk_coverage_curve`. Inside a step, it follows the
+    expected selective risk when a random part of the run is accepted; in other words, it is the mean of the AURC
+    over all orders of the tied instances. The straight line inside a step :cite:`jaegerCallReflect2023`, in
+    contrast, cannot be reached by a selector that uses only the criterion. It also lies below the expected risk
+    when the step is worse than what was accepted before it, so it favors criteria with many ties, such as
+    coarsened ones. Without ties, both areas agree.
 
-    For losses in ``[0, 1]``, the AURC lies in ``[0, 1]``. Without ties, it differs from the per-instance mean of
-    the selective risks, ``(1/n) sum_k SR_k`` :cite:`geifmanBiasReduced2019`, by ``(SR_1 - SR_n) / (2n)``, which
-    is negligible but means that values need not match libraries that use the per-instance mean.
+    For losses in ``[0, 1]``, the AURC lies in ``[0, 1]``. Without ties, it equals the per-instance mean
+    ``(1/n) sum_k SR_k`` :cite:`geifmanBiasReduced2019`, where ``SR_k`` is the selective risk of the ``k`` most
+    confident instances, plus ``(SR_1 - SR_n) / (2n)``, which vanishes as ``n`` grows for bounded losses.
 
     Args:
         criterion: Criterion values of shape ``(n,)``. Larger values are rejected first.
-        losses: Loss of the prediction for every instance, of shape ``(n,)``, on the same backend as ``criterion``
-            or as a NumPy array.
+        losses: Loss per instance, of shape ``(n,)``, on the backend of ``criterion`` or as a NumPy array.
 
     Returns:
-        The area under the risk-coverage curve.
+        The AURC, a float for NumPy inputs and a zero-dimensional array otherwise.
 
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
-        ValueError: If ``criterion`` and ``losses`` are not one-dimensional with the same, nonzero length, if
-            ``criterion`` contains NaN or ``-inf``, or if ``losses`` contains NaN or an infinite value.
+        ValueError: For the invalid inputs listed in :func:`risk_coverage_curve`.
     """
     msg = f"No aurc implementation registered for type {type(criterion)}"
     raise NotImplementedError(msg)
@@ -95,32 +86,29 @@ def aurc(criterion: object, losses: object) -> object:
 def augrc(criterion: object, losses: object) -> object:
     """Area under the exact generalized risk-coverage curve.
 
-    The generalized risk at a threshold is the selective risk times the coverage, that is, the loss of the
-    accepted instances averaged over all instances :cite:`traubOvercomingCommon2024`. In other words, it is the
-    risk of a silent failure for any prediction, not only for an accepted one. Lower is better.
+    Roughly speaking, the generalized risk is the risk of a silent failure, that is, of an instance that is
+    accepted and then fails :cite:`traubOvercomingCommon2024`. More precisely, it is the selective risk times the
+    coverage, or the loss of the accepted instances averaged over all instances. Lower is better. Unlike the
+    selective risk, its expectation is linear inside a step, so the trapezoid over :func:`risk_coverage_curve`
+    already equals the mean over all orders of the tied instances.
 
-    For the zero-one loss, the AUGRC decreases with both the accuracy and the AUROC of the criterion as a
-    failure detector :cite:`traubOvercomingCommon2024`. The AURC does not, so a criterion that is better in both
-    can receive a worse AURC.
-
-    The zero-one loss also has a pairwise reading: the AUGRC is half the probability that, of two instances
-    drawn independently at random, either both are wrong, or exactly one is wrong and it has the lower criterion
-    (a tie counts half). For a general loss, the AUGRC is half the mean loss plus a concordance term that
-    rewards ranking larger losses toward rejection, where tied pairs contribute 0. For losses in ``[0, 1]``, it
-    lies in ``[0, 1/2]``.
+    For the zero-one loss, the AUGRC decreases as both the accuracy and the AUROC of the criterion as a failure
+    detector increase, whereas the AURC need not :cite:`traubOvercomingCommon2024`. Indeed, the AUGRC is then half
+    the probability that, of two instances drawn independently, both are wrong, or exactly one is wrong and it has
+    the lower criterion, where ties count half. For a general loss, it is half the mean loss plus a concordance
+    term that rewards ranking larger losses toward rejection and to which tied pairs contribute 0. For losses in
+    ``[0, 1]``, it lies in ``[0, 1/2]``.
 
     Args:
         criterion: Criterion values of shape ``(n,)``. Larger values are rejected first.
-        losses: Loss of the prediction for every instance, of shape ``(n,)``, on the same backend as ``criterion``
-            or as a NumPy array.
+        losses: Loss per instance, of shape ``(n,)``, on the backend of ``criterion`` or as a NumPy array.
 
     Returns:
-        The area under the generalized risk-coverage curve.
+        The AUGRC, a float for NumPy inputs and a zero-dimensional array otherwise.
 
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
-        ValueError: If ``criterion`` and ``losses`` are not one-dimensional with the same, nonzero length, if
-            ``criterion`` contains NaN or ``-inf``, or if ``losses`` contains NaN or an infinite value.
+        ValueError: For the invalid inputs listed in :func:`risk_coverage_curve`.
     """
     msg = f"No augrc implementation registered for type {type(criterion)}"
     raise NotImplementedError(msg)
@@ -128,30 +116,28 @@ def augrc(criterion: object, losses: object) -> object:
 
 @flexdispatch
 def risk_at_coverage(criterion: object, losses: object, coverage: float) -> tuple[object, object]:
-    """Selective risk at a target coverage.
+    """Selective risk at the smallest reachable coverage that is at least a target.
 
-    Not every coverage can be reached, since tied criterion values are accepted together. The risk is therefore
-    taken at the smallest reachable coverage that is at least ``coverage``. This is the selective risk of the
-    threshold that reaches the coverage, not the minimum risk over all larger coverages. Under ``jax.jit``,
-    ``coverage`` must be a static argument.
+    Not every coverage is reachable: a threshold accepts ``k`` of the ``n`` instances, and ties skip some values
+    of ``k``. The target is therefore rounded up to a coverage of :func:`risk_coverage_curve`, and the result is
+    the risk there, not the minimum risk over larger coverages. Under ``jax.jit``, ``coverage`` must be a static
+    argument.
 
     Args:
         criterion: Criterion values of shape ``(n,)``. Larger values are rejected first.
-        losses: Loss of the prediction for every instance, of shape ``(n,)``, on the same backend as ``criterion``
-            or as a NumPy array.
+        losses: Loss per instance, of shape ``(n,)``, on the backend of ``criterion`` or as a NumPy array.
         coverage: Target coverage in ``(0, 1]``.
 
     Returns:
-        A tuple containing:
-            - risk: The selective risk at that coverage.
-            - coverage: The coverage that was actually used, at least ``coverage``. With ties, it can be far above
-              the target, so criteria are comparable at a coverage only when this value is the same.
+        Tuple of floats for NumPy inputs, of zero-dimensional arrays otherwise:
+            - risk: The selective risk at the realized coverage.
+            - coverage: The realized coverage. With many ties, it can be far above the target, so two criteria
+              are comparable only at equal realized coverages.
 
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
-        ValueError: If ``coverage`` is not in ``(0, 1]``, if ``criterion`` and ``losses`` are not
-            one-dimensional with the same, nonzero length, if ``criterion`` contains NaN or ``-inf``, or if
-            ``losses`` contains NaN or an infinite value.
+        ValueError: If ``coverage`` is not in ``(0, 1]``, or for the invalid inputs listed in
+            :func:`risk_coverage_curve`.
     """
     msg = f"No risk_at_coverage implementation registered for type {type(criterion)}"
     raise NotImplementedError(msg)
@@ -159,29 +145,27 @@ def risk_at_coverage(criterion: object, losses: object, coverage: float) -> tupl
 
 @flexdispatch
 def coverage_at_risk(criterion: object, losses: object, risk: float) -> tuple[object, object]:
-    """Largest coverage whose selective risk is at most a target risk.
+    """Largest coverage whose selective risk is at most a target.
 
-    Since the selective risk is not monotone in the threshold, every threshold is checked. A binary search, as in
-    :cite:`geifmanSelectiveClassification2017`, can miss the largest coverage that meets the target. Note that
-    the result is an empirical evaluation on the given data, not a guarantee for new data. Under ``jax.jit``,
-    ``risk`` must be a static argument.
+    Since the selective risk need not be monotone in the coverage, every threshold is checked; a binary search,
+    as in :cite:`geifmanSelectiveClassification2017`, can miss the largest such coverage. Note that the result is
+    an empirical working point and carries no guarantee for new data. Under ``jax.jit``, ``risk`` must be a static
+    argument.
 
     Args:
         criterion: Criterion values of shape ``(n,)``. Larger values are rejected first.
-        losses: Loss of the prediction for every instance, of shape ``(n,)``, on the same backend as ``criterion``
-            or as a NumPy array.
+        losses: Loss per instance, of shape ``(n,)``, on the backend of ``criterion`` or as a NumPy array.
         risk: Target selective risk, at least 0.
 
     Returns:
-        A tuple containing:
-            - coverage: The largest coverage with a selective risk of at most ``risk``, or 0 if there is none.
-            - risk: The selective risk at that coverage, which is at most ``risk``, or NaN if there is none.
+        Tuple of floats for NumPy inputs, of zero-dimensional arrays otherwise:
+            - coverage: The largest coverage that meets the target, or 0 if there is none.
+            - risk: The realized selective risk at that coverage, or NaN if there is none.
 
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``criterion``.
-        ValueError: If ``risk`` is negative or NaN, if ``criterion`` and ``losses`` are not one-dimensional with
-            the same, nonzero length, if ``criterion`` contains NaN or ``-inf``, or if ``losses`` contains NaN or
-            an infinite value.
+        ValueError: If ``risk`` is negative or NaN, or for the invalid inputs listed in
+            :func:`risk_coverage_curve`.
     """
     msg = f"No coverage_at_risk implementation registered for type {type(criterion)}"
     raise NotImplementedError(msg)
