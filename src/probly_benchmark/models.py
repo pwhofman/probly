@@ -27,6 +27,18 @@ def get_encoder_head(name: str, feature_dim: int, num_classes: int) -> nn.Module
     match name:
         case "linear":
             return nn.Linear(feature_dim, num_classes)
+        case "mlp_small":
+            # One hidden ReLU layer of 128 units before the linear output layer.
+            # This mirrors the smallest task network ensembled in the deep
+            # sub-ensembles reference (Valdenegro-Toro, arXiv:1910.08168), whose
+            # shallowest split (SE-1 on MNIST/SVHN) is FC-128 + output layer. A
+            # purely linear head on frozen features yields a strictly convex
+            # per-head objective whose unique optimum collapses member diversity.
+            return nn.Sequential(
+                nn.Linear(feature_dim, 128),
+                nn.ReLU(),
+                nn.Linear(128, num_classes),
+            )
         case _:
             msg = f"Encoder head {name} not recognized"
             raise ValueError(msg)

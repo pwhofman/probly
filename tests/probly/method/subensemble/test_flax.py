@@ -198,6 +198,21 @@ class TestReset:
                 assert jnp.array_equal(original_params_last_layer_iterator, params_head_iterator)
 
 
+class TestNonModuleLayers:
+    """Non-module layers (e.g. nnx.relu) must survive the backbone/head split."""
+
+    def test_non_module_layers_preserved(self, flax_regression_model_1d: nnx.Module) -> None:
+        """The relu callable stays in the backbone and a member forward runs end-to-end."""
+        model = subensemble(flax_regression_model_1d, num_heads=2)
+
+        member = model[0]
+        backbone = member.layers[0].module
+        assert len(backbone.layers) == 2  # Linear + relu callable
+
+        out = member(jnp.ones((1, 2)))
+        assert out.shape == (1, 1)
+
+
 class TestEdgeCases:
     """Tests for edge-case configurations."""
 
@@ -226,7 +241,7 @@ class TestEdgeCases:
 
         with pytest.raises(
             ValueError,
-            match=f"head_layer {head_layer} must be less than to {head_layer - 1}",
+            match=f"head_layer {head_layer} must be at most {head_layer - 1}",
         ):
             subensemble(
                 flax_model_small_2d_2d,

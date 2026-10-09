@@ -179,6 +179,7 @@ def _make_warmup_cosine(
 
 
 SCHEDULERS: dict[str, Callable[..., optim.lr_scheduler.LRScheduler] | None] = {
+    "none": None,
     "cosine": optim.lr_scheduler.CosineAnnealingLR,
     "multistep": optim.lr_scheduler.MultiStepLR,
     "step": optim.lr_scheduler.StepLR,
@@ -483,13 +484,18 @@ def _(
 ) -> None:
     """Train a subensemble: optionally warm up the shared backbone, then fit each head.
 
-    The shared backbone is always wrapped in :class:`_FrozenBackbone` at build time so
-    each head trains on fixed features. When ``cfg.pretrained`` is ``True`` the encoder
-    arrives already trained (e.g. from a torchvision/timm checkpoint) and we go straight
-    to fitting the heads. When ``cfg.pretrained`` is ``False`` the encoder is at random
-    init, so we first train a fresh ``Sequential(encoder, linear_head)`` end-to-end as
-    a regular base model and copy its trained encoder weights into the subensemble's
-    frozen backbone via ``load_state_dict``.
+    Follows Algorithm 1 of :cite:`valdenegrotoroDeepSubEnsembles2019`: the shared
+    backbone is always wrapped in :class:`_FrozenBackbone` at build time so each head
+    trains on fixed features. When ``cfg.pretrained`` is ``True`` the encoder arrives
+    already trained (e.g. from a torchvision checkpoint) and we go straight to fitting
+    the heads. When ``cfg.pretrained`` is ``False`` the encoder is at random init, so
+    we first train a fresh ``Sequential(encoder, head)`` end-to-end as a regular base
+    model — with the same head architecture the members use — and copy its trained
+    encoder weights into the subensemble's frozen backbone via ``load_state_dict``.
+    The jointly trained warmup head then seeds member 0's head (Algorithm 1 keeps the
+    initial task network as the first ensemble member); unlike the paper, member 0 is
+    still fine-tuned on the frozen features afterwards so all members share the same
+    training loop and logging.
 
     Only ``requires_grad=True`` parameters are passed to each per-head optimizer so the
     frozen backbone does not inflate optimizer state nor distort gradient-norm
@@ -507,7 +513,8 @@ def _(
             **extra,
         ).to(device)
         feature_dim = get_output_dim(warmup_encoder)
-        warmup_head = nn.Linear(feature_dim, num_classes).to(device)
+        head_name = (cfg.method.get("params") or {}).get("head", "linear")
+        warmup_head = models.get_encoder_head(head_name, feature_dim, num_classes).to(device)
         warmup_model = nn.Sequential(warmup_encoder, warmup_head)
 
         _training_loop(
@@ -525,17 +532,23 @@ def _(
 
         frozen_backbone = cast("_FrozenBackbone", next(model[0].children()))
         frozen_backbone.module.load_state_dict(warmup_encoder.state_dict())
+        # Algorithm 1 keeps the jointly trained task network as the first member;
+        # seed member 0's head with it instead of discarding the warmup head.
+        model[0][1].load_state_dict(warmup_head.state_dict())
 
     for i, member in enumerate(model):
         if i > 0 and isinstance(cfg.get("dataset"), str):
             # Long imagenet subensemble runs accumulate worker shared-memory / FD
             # state in the parent process; new workers forked between members can
-            # then SIGABRT during validation. Drop the previous member's loaders
-            # entirely and rebuild fresh ones before training the next head.
-            # ``del`` lets refcounting GC the loader, which triggers the iterator's
-            # ``__del__`` -> ``_shutdown_workers``; ``gc.collect`` mops up any
-            # cyclic refs; ``empty_cache`` is belt-and-braces for GPU memory.
+            # then SIGABRT during validation. Shut down the previous loaders'
+            # persistent workers and rebuild fresh loaders before the next head.
+            # The explicit worker release matters because ``main`` still holds
+            # references to the original (member-0) loaders, so ``del`` alone
+            # cannot free them; ``gc.collect`` mops up cyclic refs of the rebuilt
+            # loaders; ``empty_cache`` is belt-and-braces for GPU memory.
             # Skipped in the AL flow where the estimator provides the loader directly.
+            _release_persistent_workers(train_loader)
+            _release_persistent_workers(val_loader)
             del train_loader, val_loader
             gc.collect()
             torch.cuda.empty_cache()
@@ -555,6 +568,31 @@ def _(
             log_prefix=f"member_{i}/",
             param_groups=[{"params": trainable}],
         )
+
+
+def _release_persistent_workers(loader: DataLoader | None) -> None:
+    """Shut down a loader's persistent workers even while other references to it survive.
+
+    ``del loader`` alone cannot stop persistent workers when an outer frame (e.g.
+    ``main``) still holds the loader object: the workers are owned by the iterator the
+    DataLoader caches in ``_iterator``. Detach that iterator and shut it down
+    explicitly; the loader object stays usable and would simply spawn fresh workers
+    on its next iteration. ``wds.WebLoader`` wraps the torch ``DataLoader`` as the
+    first stage of its pipeline, so unwrap it first.
+    """
+    if loader is None:
+        return
+    inner: Any = loader
+    pipeline = getattr(inner, "pipeline", None)
+    if pipeline and isinstance(pipeline[0], torch.utils.data.DataLoader):
+        inner = pipeline[0]
+    iterator = getattr(inner, "_iterator", None)
+    if iterator is None:
+        return
+    inner._iterator = None  # noqa: SLF001
+    shutdown = getattr(iterator, "_shutdown_workers", None)
+    if shutdown is not None:
+        shutdown()
 
 
 def _rebuild_subensemble_loaders(cfg: DictConfig, member_idx: int) -> tuple[DataLoader, DataLoader | None]:

@@ -39,6 +39,11 @@ from probly.representation.credal_set.torch import (
 if TYPE_CHECKING:
     from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 
+# Number of decimal places used when rounding lower/upper bounds before the
+# probability-vector containment check.  Must match the numpy counterpart in
+# :mod:`probly.metrics.array` so that numpy and torch results agree.
+_CREDAL_ROUND_DECIMALS: int = 3
+
 
 @auc.register(torch.Tensor)
 def auc_torch(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:

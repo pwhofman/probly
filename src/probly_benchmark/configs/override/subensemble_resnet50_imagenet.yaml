@@ -1,7 +1,0 @@
-# @package _global_
-
-# Pretrained ImageNet models start from the timm checkpoint; resetting member
-# parameters would discard the pretraining. Keep them.
-method:
-  params:
-    reset_params: false

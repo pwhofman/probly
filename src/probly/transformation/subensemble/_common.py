@@ -36,7 +36,7 @@ def subensemble[**In, H, Out](
     num_heads: int,
     head: Predictor[[H], Out] | None = None,
     reset_params: bool = True,
-    head_layer: int = 1,
+    head_layer: int | None = 1,
 ) -> SubensemblePredictor[In, Out]:
     """Create a subensemble predictor from a base model or a base model and head model.
 
@@ -49,12 +49,16 @@ def subensemble[**In, H, Out](
             `base` is used as the shared backbone,
             `head` is duplicated `num_heads` times to form the subensemble heads.
 
+    The backbone used in the subensemble is a copy of (part of) `base`; the passed-in
+    `base` model itself is left unmodified.
+
     Args:
         base: The model to be used as backbone or to create the backbone and heads.
         num_heads: The number of heads in the subensemble.
         head: Optional model to be used as head of the subensemble.
         reset_params: Whether to reset the parameters of each head.
-        head_layer: The number of layers used to create the head if no head model is provided.
+        head_layer: The number of layers used to create the head if no head model is
+            provided. May be ``None`` when `head` is given.
 
     Returns:
         The subensemble predictor.
@@ -62,7 +66,7 @@ def subensemble[**In, H, Out](
     Raises:
         ValueError: If `head_layer` or `num_heads` is not a positive integer.
     """
-    if head_layer <= 0:
+    if head_layer is not None and head_layer <= 0:
         msg = f"head_layer must be a positive number, but got head_layer={head_layer} instead."
         raise ValueError(msg)
     if num_heads <= 0:

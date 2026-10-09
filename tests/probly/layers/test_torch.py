@@ -113,6 +113,81 @@ class TestIntLinear:
         lo, hi = out[..., :3], out[..., 3:]
         assert torch.all(lo <= hi + 1e-6)
 
+    def test_signed_input_exact_on_degenerate_signed_input(self) -> None:
+        """With ``signed_input=True``, a signed point input gets exact interval bounds."""
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntLinear, pack_interval  # noqa: PLC0415
+
+        torch.manual_seed(0)
+        layer = IntLinear(in_features=6, out_features=3, signed_input=True)
+        x = torch.randn(4, 6)  # signed, e.g. mean/std-normalized features
+        out = layer(pack_interval(x, channel_dim=1))
+        lo, hi = out[..., :3], out[..., 3:]
+
+        with torch.no_grad():
+            radius = torch.relu(layer.radius_weight)
+            w_lo = layer.center_weight - radius
+            w_hi = layer.center_weight + radius
+            x_pos, x_neg = torch.clamp(x, min=0.0), torch.clamp(x, max=0.0)
+            # For a point input, the exact bounds put the low weight on the
+            # positive part and the high weight on the negative part.
+            expected_lo = x_pos @ w_lo.t() + x_neg @ w_hi.t() + (layer.center_bias - torch.relu(layer.radius_bias))
+            expected_hi = x_pos @ w_hi.t() + x_neg @ w_lo.t() + (layer.center_bias + torch.relu(layer.radius_bias))
+        torch.testing.assert_close(lo, expected_lo)
+        torch.testing.assert_close(hi, expected_hi)
+        assert torch.all(lo <= hi + 1e-6)
+
+    def test_fast_path_crosses_on_signed_input_signed_path_does_not(self) -> None:
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntLinear, pack_interval  # noqa: PLC0415
+
+        torch.manual_seed(0)
+        layer = IntLinear(in_features=6, out_features=3, signed_input=False)
+        x = torch.randn(16, 6) * 2
+        packed = pack_interval(x, channel_dim=1)
+        out = layer(packed)
+        lo, hi = out[..., :3], out[..., 3:]
+        assert torch.any(lo > hi)  # documented failure mode of the fast path
+
+        layer.signed_input = True
+        out = layer(packed)
+        lo, hi = out[..., :3], out[..., 3:]
+        assert torch.all(lo <= hi + 1e-6)
+
+    def test_signed_input_matches_fast_path_on_nonneg_input(self) -> None:
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntLinear  # noqa: PLC0415
+
+        torch.manual_seed(0)
+        layer = IntLinear(in_features=6, out_features=3)
+        lo_in = torch.rand(4, 6)
+        hi_in = lo_in + torch.rand(4, 6)
+        packed = torch.cat([lo_in, hi_in], dim=-1)
+        fast = layer(packed)
+        layer.signed_input = True
+        general = layer(packed)
+        torch.testing.assert_close(fast, general)
+
+    def test_signed_input_satisfies_set_constraint(self) -> None:
+        """Sampled weights inside the interval box map a point input inside the output bounds."""
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntLinear, pack_interval  # noqa: PLC0415
+
+        torch.manual_seed(0)
+        layer = IntLinear(in_features=6, out_features=3, bias=False, signed_input=True)
+        x = torch.randn(4, 6)
+        out = layer(pack_interval(x, channel_dim=1))
+        lo, hi = out[..., :3], out[..., 3:]
+        with torch.no_grad():
+            radius = torch.relu(layer.radius_weight)
+            w_lo = layer.center_weight - radius
+            w_hi = layer.center_weight + radius
+            for _ in range(20):
+                w = w_lo + torch.rand_like(w_lo) * (w_hi - w_lo)
+                y = x @ w.t()
+                assert torch.all(y >= lo - 1e-5)
+                assert torch.all(y <= hi + 1e-5)
+
 
 class TestIntConv2d:
     """Interval-arithmetic 2D convolution."""
@@ -174,6 +249,38 @@ class TestIntConv2d:
         assert layer.kernel_size == (3, 5)
         assert layer.padding == (1, 2)
         assert layer.stride == (2, 1)
+
+    def test_signed_input_valid_on_normalized_images(self) -> None:
+        """The signed path keeps lo <= hi on mean/std-normalized (signed) inputs."""
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntConv2d, pack_interval  # noqa: PLC0415
+
+        torch.manual_seed(0)
+        layer = IntConv2d(in_channels=3, out_channels=4, kernel_size=3, padding=1, signed_input=False)
+        img = (torch.rand(2, 3, 8, 8) - 0.49) / 0.2  # roughly Normalize() output range
+        packed = pack_interval(img, channel_dim=1)
+        out = layer(packed)
+        lo, hi = out[:, :4], out[:, 4:]
+        assert torch.any(lo > hi)  # documented failure mode of the fast path
+
+        layer.signed_input = True
+        out = layer(packed)
+        lo, hi = out[:, :4], out[:, 4:]
+        assert torch.all(lo <= hi + 1e-5)
+
+    def test_signed_input_matches_fast_path_on_nonneg_input(self) -> None:
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntConv2d  # noqa: PLC0415
+
+        torch.manual_seed(0)
+        layer = IntConv2d(in_channels=3, out_channels=4, kernel_size=3, padding=1)
+        lo_in = torch.rand(2, 3, 8, 8)
+        hi_in = lo_in + torch.rand(2, 3, 8, 8)
+        packed = torch.cat([lo_in, hi_in], dim=1)
+        fast = layer(packed)
+        layer.signed_input = True
+        general = layer(packed)
+        torch.testing.assert_close(fast, general)
 
 
 class TestIntBatchNorm1d:
@@ -298,6 +405,102 @@ class TestIntSoftmax:
         # Probabilities are in [0, 1]
         assert torch.all((lo_out >= 0) & (lo_out <= 1))
         assert torch.all((hi_out >= 0) & (hi_out <= 1))
+
+    def test_matches_paper_equations(self) -> None:
+        """Output matches a direct evaluation of Eq. 7 and the Eq. 8 reachability clip."""
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntSoftmax  # noqa: PLC0415
+
+        torch.manual_seed(0)
+        n_classes = 5
+        lo = torch.randn(8, n_classes, dtype=torch.float64)
+        hi = lo + torch.rand(8, n_classes, dtype=torch.float64)
+        center = 0.5 * (lo + hi)
+
+        # Eq. 7, evaluated naively per class.
+        q_lo = torch.empty_like(lo)
+        q_hi = torch.empty_like(hi)
+        for k in range(n_classes):
+            others = torch.exp(center).sum(-1) - torch.exp(center[:, k])
+            q_lo[:, k] = torch.exp(lo[:, k]) / (torch.exp(lo[:, k]) + others)
+            q_hi[:, k] = torch.exp(hi[:, k]) / (torch.exp(hi[:, k]) + others)
+        # Eq. 8 reachability.
+        sum_lo, sum_hi = q_lo.sum(-1, keepdim=True), q_hi.sum(-1, keepdim=True)
+        expected_hi = torch.minimum(q_hi, 1 - (sum_lo - q_lo))
+        expected_lo = torch.maximum(q_lo, 1 - (sum_hi - q_hi))
+
+        out = IntSoftmax()(torch.cat([lo, hi], dim=-1))
+        torch.testing.assert_close(out[..., :n_classes], expected_lo)
+        torch.testing.assert_close(out[..., n_classes:], expected_hi)
+
+    def test_stable_for_large_logits(self) -> None:
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntSoftmax  # noqa: PLC0415
+
+        lo = torch.tensor([[80.0, -90.0, 100.0]])
+        hi = torch.tensor([[120.0, -50.0, 100.0]])
+        out = IntSoftmax()(torch.cat([lo, hi], dim=-1))
+        assert torch.all(torch.isfinite(out))
+        lo_out, hi_out = out[..., :3], out[..., 3:]
+        assert torch.all(lo_out <= hi_out + 1e-6)
+        assert torch.all((lo_out >= 0) & (hi_out <= 1))
+
+
+class TestIntDropout:
+    """Interval dropout with a mask shared across the packed halves."""
+
+    def test_eval_is_identity(self) -> None:
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntDropout  # noqa: PLC0415
+
+        layer = IntDropout(p=0.5)
+        layer.eval()
+        x = torch.randn(4, 6)
+        torch.testing.assert_close(layer(x), x)
+
+    def test_shared_mask_preserves_ordering(self) -> None:
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntDropout  # noqa: PLC0415
+
+        layer = IntDropout(p=0.5)
+        layer.train()
+        lo = torch.rand(64, 16)
+        hi = lo + torch.rand(64, 16)
+        out = layer(torch.cat([lo, hi], dim=-1))
+        lo_out, hi_out = out[..., :16], out[..., 16:]
+        # The shared mask zeroes lo and hi at identical positions, so the
+        # interval ordering survives dropout.
+        assert torch.all(lo_out <= hi_out)
+        assert torch.equal(lo_out == 0, hi_out == 0)
+
+    def test_shared_mask_on_conv_features(self) -> None:
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntDropout  # noqa: PLC0415
+
+        layer = IntDropout(p=0.5)
+        layer.train()
+        lo = torch.rand(8, 3, 5, 5)
+        hi = lo + torch.rand(8, 3, 5, 5)
+        out = layer(torch.cat([lo, hi], dim=1))
+        lo_out, hi_out = out[:, :3], out[:, 3:]
+        assert torch.all(lo_out <= hi_out)
+        assert torch.equal(lo_out == 0, hi_out == 0)
+
+    def test_p_one_zeroes_everything(self) -> None:
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntDropout  # noqa: PLC0415
+
+        layer = IntDropout(p=1.0)
+        layer.train()
+        x = torch.rand(4, 6)
+        assert torch.all(layer(x) == 0)
+
+    def test_invalid_p_raises(self) -> None:
+        _torch_modules()
+        from probly.layers.torch import IntDropout  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="dropout probability"):
+            IntDropout(p=1.5)
 
 
 class TestGaussianMixtureHead:

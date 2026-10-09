@@ -7,9 +7,14 @@ from torch import nn
 
 from probly.transformation.ensemble import ensemble
 from probly.traverse_nn import nn_traverser
-from pytraverse import traverse
+from pytraverse import CLONE, traverse
 
 from ._common import subensemble_generator
+
+
+def _clone(module: nn.Module) -> nn.Module:
+    """Deep-copy a module tree so the subensemble does not mutate the caller's model."""
+    return traverse(module, nn_traverser, init={CLONE: True})
 
 
 class _FrozenBackbone(nn.Module):
@@ -40,7 +45,11 @@ def generate_torch_subensemble(
     reset_params: bool = True,
     head_layer: int | None = 1,
 ) -> nn.ModuleList:
-    """Build a torch subensemble. See :func:`probly.method.subensemble.subensemble`."""
+    """Build a torch subensemble. See :func:`probly.method.subensemble.subensemble`.
+
+    The backbone is a deep copy of (part of) ``obj``; the passed-in model is left
+    unmodified, in particular its parameters keep their ``requires_grad`` state.
+    """
     if head is None:
         if head_layer is None:
             msg = "head_layer must be provided when head is not provided."
@@ -52,18 +61,19 @@ def generate_torch_subensemble(
                 "an explicit head module via the `head` argument."
             )
             raise ValueError(msg)
-        layers = [m for m in traverse(obj, nn_traverser).children() if isinstance(m, nn.Module)]
+        layers = [m for m in _clone(obj).children() if isinstance(m, nn.Module)]
         if head_layer > len(layers):
-            msg = f"head_layer {head_layer} must be less than to {len(layers)}"
+            msg = f"head_layer {head_layer} must be at most {len(layers)}"
             raise ValueError(msg)
 
         backbone: nn.Module = nn.Sequential(*layers[:-head_layer])
         head = nn.Sequential(*layers[-head_layer:])
     else:
-        backbone = obj
+        backbone = _clone(obj)
 
-    device = next(obj.parameters()).device
-    head.to(device)
+    first_param = next(obj.parameters(), None)
+    if first_param is not None:
+        head.to(first_param.device)
 
     heads = ensemble(head, num_members=num_heads, reset_params=reset_params)
     frozen_backbone = _FrozenBackbone(backbone)

@@ -198,7 +198,7 @@ class TestEdgeCases:
 
         with pytest.raises(
             ValueError,
-            match=f"head_layer {head_layer} must be less than to {head_layer - 1}",
+            match=f"head_layer {head_layer} must be at most {head_layer - 1}",
         ):
             subensemble(
                 torch_model_small_2d_2d,
@@ -265,6 +265,26 @@ class TestNonSequentialBackbone:
             assert p.requires_grad is False
         head_params = list(model[0][1].parameters())
         assert all(p.requires_grad for p in head_params)
+
+
+class TestBaseModelNotMutated:
+    """The transformation must not freeze or otherwise modify the caller's model."""
+
+    def test_explicit_head_path(self, torch_tiny_encoder: nn.Module) -> None:
+        """With an explicit head, the base model keeps requires_grad and train mode."""
+        head = nn.Linear(4, 3)
+
+        subensemble(torch_tiny_encoder, num_heads=2, head=head)
+
+        assert all(p.requires_grad for p in torch_tiny_encoder.parameters())
+        assert torch_tiny_encoder.training
+
+    def test_sliced_head_path(self, torch_model_small_2d_2d: nn.Module) -> None:
+        """With head_layer slicing, the base model keeps requires_grad and train mode."""
+        subensemble(torch_model_small_2d_2d, num_heads=2)
+
+        assert all(p.requires_grad for p in torch_model_small_2d_2d.parameters())
+        assert torch_model_small_2d_2d.training
 
 
 class TestFrozenBackboneInvariants:
