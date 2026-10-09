@@ -40,3 +40,7 @@ class TestSampleMeasureArray:
         result = total_logit_sample_variance(sample)
         assert result.shape == (1,)
         assert jnp.isfinite(result).all()
+        # Population variance (1/M) across members, summed over classes.
+        logits = sample.array.logits
+        expected = ((logits - logits.mean(axis=0)) ** 2).sum(axis=-1).mean(axis=0)
+        assert jnp.allclose(result, expected)
