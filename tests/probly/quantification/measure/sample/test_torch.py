@@ -48,3 +48,7 @@ class TestSampleMeasureTorch:
         result = total_logit_sample_variance(sample)
         assert result.shape == (1,)
         assert torch.isfinite(result).all()
+        # Population variance (1/M) across members, summed over classes.
+        logits = sample.tensor.logits
+        expected = ((logits - logits.mean(dim=0)) ** 2).sum(dim=-1).mean(dim=0)
+        assert torch.allclose(result, expected)

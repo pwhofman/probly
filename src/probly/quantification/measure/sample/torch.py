@@ -34,4 +34,4 @@ def torch_mean_squared_distance_to_scaled_one_hot(
 def torch_total_logit_sample_variance(sample: TorchCategoricalDistributionSample) -> torch.Tensor:
     """Torch impl. Variance of total logits (logits summed across members)."""
     tensor = sample.tensor.logits.float()
-    return torch.var(tensor, dim=sample.sample_dim).sum(dim=-1)
+    return torch.var(tensor, dim=sample.sample_dim, correction=0).sum(dim=-1)
