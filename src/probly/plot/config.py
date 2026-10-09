@@ -9,15 +9,18 @@ import matplotlib as mpl
 _FONT_FAMILY = "Fira Sans"
 
 
-def _apply_rc_defaults() -> None:
-    """Set global matplotlib rcParams for the Fira Sans font family."""
+def use_probly_style() -> None:
+    """Set the global matplotlib rcParams to probly's plotting style.
+
+    Affects all figures created afterwards, including ones not made by probly.
+    """
     rc = mpl.rcParams
     rc["font.family"] = "sans-serif"
     # Prefer Fira Sans but keep matplotlib's built-in sans-serif fallbacks
     # (DejaVu Sans always ships with matplotlib) so environments without Fira
     # Sans installed -- CI runners, most contributor machines -- fall back
     # silently instead of emitting a findfont warning per build/worker.
-    rc["font.sans-serif"] = [_FONT_FAMILY, *rc["font.sans-serif"]]
+    rc["font.sans-serif"] = [_FONT_FAMILY, *(font for font in rc["font.sans-serif"] if font != _FONT_FAMILY)]
 
     rc["xtick.labelsize"] = 10
     rc["ytick.labelsize"] = 10
@@ -32,9 +35,6 @@ def _apply_rc_defaults() -> None:
     rc["legend.fontsize"] = 10
     rc["figure.titlesize"] = 16
     rc["figure.titleweight"] = 700
-
-
-_apply_rc_defaults()
 
 
 @dataclass(frozen=True, slots=True)

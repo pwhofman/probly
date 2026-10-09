@@ -430,6 +430,21 @@ def seed_gallery_rngs(gallery_conf: dict, fname: str | None) -> None:  # noqa: A
     torch.manual_seed(GALLERY_SEED)
 
 
+def apply_gallery_plot_style(gallery_conf: dict, fname: str | None) -> None:  # noqa: ARG001
+    """Apply probly's plot style before each gallery example.
+
+    Registered in ``sphinx_gallery_conf["reset_modules"]`` after ``"matplotlib"``, whose reset restores matplotlib's
+    defaults before every example.
+
+    Args:
+        gallery_conf: The sphinx-gallery configuration (unused).
+        fname: The example about to run, or None between directories (unused).
+    """
+    from probly.plot import use_probly_style  # noqa: PLC0415
+
+    use_probly_style()
+
+
 def ignore_installed_template_mtimes(app: Sphinx) -> None:
     """Keep cached pages from being rewritten because installed templates look new.
 
