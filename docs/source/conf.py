@@ -161,9 +161,15 @@ sphinx_gallery_conf = {
     # sphinx-gallery treats it as off). os.process_cpu_count is 3.13+, so fall
     # back to os.cpu_count on 3.12.
     "parallel": int(os.environ.get("SPHINX_GALLERY_PARALLEL", getattr(os, "process_cpu_count", os.cpu_count)() or 1)),
-    # Seed the RNGs before every example so a build is reproducible; given by
-    # name because the gallery config is pickled to the parallel workers.
-    "reset_modules": ("matplotlib", "seaborn", "_sphinx_helpers.seed_gallery_rngs"),
+    # Seed the RNGs before every example so a build is reproducible, and
+    # re-apply probly's plot style after the matplotlib reset; given by name
+    # because the gallery config is pickled to the parallel workers.
+    "reset_modules": (
+        "matplotlib",
+        "seaborn",
+        "_sphinx_helpers.seed_gallery_rngs",
+        "_sphinx_helpers.apply_gallery_plot_style",
+    ),
     "default_thumb_file": str(REPO_ROOT / "docs" / "source" / "_static" / "logo" / "logo_light.png"),
 }
 
