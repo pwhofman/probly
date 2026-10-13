@@ -15,6 +15,8 @@ import torch
 from torch import nn
 
 from probly.method.sngp import reset_precision_matrix, sngp
+from probly.evaluation.selective_prediction import evaluate_selective_prediction
+from probly.metrics.selective_prediction import risk_coverage_curve
 from probly.quantification import LogLoss
 from probly.selective_prediction import SelectivePredictor, ThresholdSelector
 
@@ -163,13 +165,17 @@ plt.show()
 # Accuracy vs. coverage
 # ---------------------
 #
-# Dots mark the thresholds used above.
+# The curves come from :func:`~probly.metrics.selective_prediction.risk_coverage_curve`, and
+# :func:`~probly.evaluation.selective_prediction.evaluate_selective_prediction` summarizes them by their areas (lower is
+# better) and the risk at full coverage. Dots mark the thresholds used above.
 
 fig, ax = plt.subplots(figsize=(7, 4.5))
 for (notion, (pred, uncertainty, accepted)), color in zip(test.items(), [PURPLE, TEAL], strict=True):
-    hit = (pred == y_test)[np.argsort(uncertainty, kind="stable")]
-    n = np.arange(1, len(hit) + 1)
-    ax.plot(n / len(hit), np.cumsum(hit) / n, color=color, label=f"selective ({notion})")
+    errors = (pred != y_test).astype(float)
+    coverage, risk, _ = risk_coverage_curve(uncertainty, errors)
+    ax.plot(coverage, 1 - risk, color=color, label=f"selective ({notion})")
+    m = evaluate_selective_prediction(uncertainty, errors, ["augrc", "aurc", "risk@1"])
+    print(f"{notion:9s} AUGRC {m['augrc']:.4f}  AURC {m['aurc']:.4f}  risk at full coverage {m['risk@1']:.3f}")
     ax.scatter(accepted.mean(), (pred == y_test)[accepted].mean(), color=color, zorder=3)
 ax.axhline(correct.mean(), color="black", linestyle="--", label="normal prediction")
 ax.set_xlabel("coverage")

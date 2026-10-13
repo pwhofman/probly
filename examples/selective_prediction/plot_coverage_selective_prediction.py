@@ -16,6 +16,8 @@ from sklearn.datasets import make_moons
 import torch
 from torch import nn
 
+from probly.evaluation.selective_prediction import evaluate_selective_prediction
+from probly.metrics.selective_prediction import risk_coverage_curve
 from probly.selective_prediction import CoverageSelector, SelectivePredictor
 from probly.transformation import dropout
 
@@ -72,7 +74,9 @@ print(f"realized coverage {result.coverage:.3f}  selective risk {wrong[accepted]
 # The table follows SelectiveNet's Tables 1 and 2 (Geifman and El-Yaniv, 2019): the realized test coverage (mean and
 # standard deviation over 1000 random splits of the pool into 500 calibration and 1000 test instances), the selective
 # risk at it, and the average violation of the target. The figure follows its Fig. 2: the test risk-coverage curve of
-# the criterion on the first split, with markers at the calibrated coverages.
+# the criterion on the first split, from :func:`~probly.metrics.selective_prediction.risk_coverage_curve`, with markers
+# at the calibrated coverages. :func:`~probly.evaluation.selective_prediction.evaluate_selective_prediction` summarizes
+# the same curve by its areas and its risk at full coverage.
 
 with torch.no_grad():
     pooled = predictor.predict(X_pool)
@@ -95,9 +99,9 @@ for j, c in enumerate(targets):
 print(f"average violation {np.mean(np.abs(coverage.mean(axis=0) - targets)):.4f}")
 
 test = splits[0][500:]
-order = np.argsort(kappa[test], kind="stable")
-curve_risk = np.cumsum(errors[test][order]) / np.arange(1, len(order) + 1)
-curve_coverage = np.arange(1, len(order) + 1) / len(order)
+curve_coverage, curve_risk, _ = risk_coverage_curve(kappa[test], errors[test])
+m = evaluate_selective_prediction(kappa[test], errors[test])
+print(f"AUGRC {m['augrc']:.4f}  AURC {m['aurc']:.4f}  risk at full coverage {m['risk@1']:.3f}")
 
 fig, ax = plt.subplots(figsize=(6, 5))
 ax.plot(curve_coverage, curve_risk, color=BLUE, label="test risk-coverage curve")

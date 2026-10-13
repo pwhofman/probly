@@ -16,6 +16,8 @@ from sklearn.datasets import make_moons
 import torch
 from torch import nn
 
+from probly.evaluation.selective_prediction import evaluate_selective_prediction
+from probly.metrics.selective_prediction import risk_coverage_curve
 from probly.selective_prediction import SelectivePredictor, SGRSelector
 from probly.transformation import dropout
 
@@ -73,8 +75,8 @@ print(f"test risk {wrong[accepted].mean():.3f}  test coverage {result.coverage:.
 #
 # The table follows the paper's Table 1: for each target risk ``r*``, the risk and coverage on the calibration
 # ("train") and test halves, and the certified bound ``b*``. The figure follows its Fig. 2: the test risk-coverage
-# curve of the criterion, with the SGR operating points on it. The uncertainties and errors are computed once, and
-# the selectors are calibrated on the arrays.
+# curve of the criterion, from :func:`~probly.metrics.selective_prediction.risk_coverage_curve`, with the SGR operating
+# points on it. The uncertainties and errors are computed once, and the selectors are calibrated on the arrays.
 
 with torch.no_grad():
     pooled = predictor.predict(X_pool)
@@ -98,9 +100,7 @@ for r in target_risks:
     print(f"{r:6.3f} {rows[0]:9.3f} {rows[1]:8.3f} {rows[2]:9.3f} {rows[3]:8.3f} {selector.bound:6.3f}")
 print(f"full-coverage test risk {errors[test].mean():.3f}")
 
-order = np.argsort(kappa[test], kind="stable")
-curve_risk = np.cumsum(errors[test][order]) / np.arange(1, len(order) + 1)
-curve_coverage = np.arange(1, len(order) + 1) / len(order)
+curve_coverage, curve_risk, _ = risk_coverage_curve(kappa[test], errors[test])
 
 fig, ax = plt.subplots(figsize=(6, 5))
 ax.plot(curve_coverage, curve_risk, color=BLUE, label="test risk-coverage curve")
@@ -113,3 +113,17 @@ ax.set_ylim(0, 1.1 * errors[test].mean())
 ax.legend(loc="upper left")
 plt.tight_layout()
 plt.show()
+
+# %%
+# Comparison with the empirical working points
+# --------------------------------------------
+#
+# :func:`~probly.evaluation.selective_prediction.evaluate_selective_prediction` reads the test curve at the targets:
+# ``"coverage@<r>"`` is the largest test coverage whose test risk is at most ``r``. It is what a threshold chosen on
+# the test set itself would reach, so it bounds the coverage of SGR from above. SGR pays for its guarantee with the
+# gap between the two.
+
+working_points = evaluate_selective_prediction(kappa[test], errors[test], [f"coverage@{r}" for r in target_risks])
+print(f"{'r*':>6} {'SGR cov':>8} {'best cov':>8}")
+for r, (sgr_coverage, _) in zip(target_risks, points, strict=True):
+    print(f"{r:6.3f} {sgr_coverage:8.3f} {working_points[f'coverage@{r}']:8.3f}")

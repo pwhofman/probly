@@ -20,6 +20,8 @@ import numpy as np
 from sklearn.datasets import make_moons
 from sklearn.ensemble import RandomForestClassifier
 
+from probly.evaluation.selective_prediction import evaluate_selective_prediction
+from probly.metrics.selective_prediction import risk_coverage_curve
 from probly.method import cast
 from probly.selective_prediction import SelectivePredictor, ThresholdSelector
 
@@ -126,12 +128,17 @@ plt.show()
 # Accuracy vs. coverage
 # ---------------------
 #
-# Dots mark the thresholds chosen on the validation split, at the coverage they reach on the test set.
+# The curve comes from :func:`~probly.metrics.selective_prediction.risk_coverage_curve`, and
+# :func:`~probly.evaluation.selective_prediction.evaluate_selective_prediction` summarizes it by its areas (lower is
+# better) and the risk at full coverage. Dots mark the thresholds chosen on the validation split, at the coverage they
+# reach on the test set.
 
 fig, ax = plt.subplots(figsize=(7, 4.5))
-hit = correct[np.argsort(test_uncertainty, kind="stable")]
-n = np.arange(1, len(hit) + 1)
-ax.plot(n / len(hit), np.cumsum(hit) / n, color=PURPLE, label="selective")
+test_errors = (~correct).astype(float)
+curve_coverage, curve_risk, _ = risk_coverage_curve(test_uncertainty, test_errors)
+ax.plot(curve_coverage, 1 - curve_risk, color=PURPLE, label="selective")
+m = evaluate_selective_prediction(test_uncertainty, test_errors, ["augrc", "aurc", "risk@1"])
+print(f"AUGRC {m['augrc']:.4f}  AURC {m['aurc']:.4f}  risk at full coverage {m['risk@1']:.3f}")
 for coverage, selector in selectors.items():
     accepted = selector(test_uncertainty)
     point = (accepted.mean(), correct[accepted].mean())
