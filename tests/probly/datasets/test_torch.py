@@ -138,6 +138,25 @@ def test_dcic_dataset_class_labels_with_transform(tmp_path: Path) -> None:
     assert target.ndim == 0  # a single sampled class index
 
 
+def test_dcic_dataset_string_labels_sorted(tmp_path: Path) -> None:
+    # Real DCIC annotations use string class labels. Iterating a set of strings follows the per-process
+    # hash seed, so the class indices must come from the sorted labels to be reproducible across runs.
+    root = tmp_path / "DS"
+    root.mkdir()
+    labels = ["worm", "coral", "star", "sponge", "bubbles", "cop", "det", "leaf"]
+    annotations = [
+        {"annotations": [{"image_path": f"DS/img{i}.png", "class_label": label} for i, label in enumerate(labels)]}
+    ]
+    with (root / "annotations.json").open("w") as f:
+        json.dump(annotations, f)
+    for i in range(len(labels)):
+        Image.new("RGB", (4, 4)).save(root / f"img{i}.png")
+    dataset = DCICDataset(root)
+    assert dataset.label_mappings == {label: idx for idx, label in enumerate(sorted(labels))}
+    _, target = dataset[0]  # img0 is annotated "worm", the last label in sorted order
+    assert target.argmax().item() == len(labels) - 1
+
+
 @patch("probly.datasets.torch.DCICDataset.__init__", return_value=None)
 def test_cifar10h_dcic(mock_dcic_init: MagicMock) -> None:
     root = "some/path"
