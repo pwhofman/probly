@@ -14,6 +14,7 @@ from ._pr_curve_suite import PRCurveSuite
 from ._reference_suite import ReferenceSuite
 from ._roc_auc_score_suite import RocAucScoreSuite
 from ._roc_curve_suite import RocCurveSuite
+from ._scoring_rule_suite import ScoringRuleSuite
 
 torch = pytest.importorskip("torch")
 
@@ -108,3 +109,48 @@ class TestDistributionInput:
 
 class TestReference(ReferenceSuite):
     pass
+
+
+class TestScoringRules(ScoringRuleSuite):
+    pass
+
+
+class TestScoringRuleInputs:
+    """Scoring rules accept categorical distributions and reject samples."""
+
+    def test_log_loss_of_logit_distribution_is_exact(self):
+        from probly.metrics import log_loss_per_instance  # noqa: PLC0415
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchLogitCategoricalDistribution,
+        )
+
+        # exp(-800) underflows to zero, so only the log probabilities keep this loss finite.
+        dist = TorchLogitCategoricalDistribution(tensor=torch.tensor([[0.0, -800.0]]))
+        assert float(log_loss_per_instance(dist, torch.tensor([1]))[0]) == pytest.approx(800.0)
+
+    def test_distribution_target_matches_array(self):
+        from probly.metrics import brier_loss_per_instance  # noqa: PLC0415
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        probs = torch.tensor([[0.7, 0.3], [0.2, 0.8]])
+        target = torch.tensor([[0.5, 0.5], [0.1, 0.9]])
+        result = brier_loss_per_instance(probs, TorchProbabilityCategoricalDistribution(tensor=target))
+        torch.testing.assert_close(result, brier_loss_per_instance(probs, target))
+
+    def test_rejects_samples(self):
+        from probly.metrics import brier_loss_per_instance  # noqa: PLC0415
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        sample = TorchSample(torch.tensor([[[0.7, 0.3]], [[0.4, 0.6]]]), sample_dim=0)
+        with pytest.raises(TypeError, match="sample_mean"):
+            brier_loss_per_instance(sample, torch.tensor([0]))
+
+    def test_backward(self):
+        from probly.metrics import log_loss_per_instance  # noqa: PLC0415
+
+        probs = torch.softmax(torch.randn(8, 3), dim=1).requires_grad_()
+        log_loss_per_instance(probs, torch.randint(0, 3, (8,))).sum().backward()
+        assert probs.grad is not None
+        assert torch.isfinite(probs.grad).all()
