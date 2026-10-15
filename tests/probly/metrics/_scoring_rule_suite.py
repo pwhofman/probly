@@ -8,15 +8,26 @@ import numpy as np
 import pytest
 
 from probly.metrics import (
+    accuracy,
+    brier_loss,
     brier_loss_per_instance,
+    log_loss,
     log_loss_per_instance,
+    spherical_loss,
     spherical_loss_per_instance,
+    zero_one_loss,
     zero_one_loss_per_instance,
 )
 
 _PROBS = [[0.7, 0.2, 0.1], [0.1, 0.3, 0.6]]
 _LABELS = [0, 1]
 _RULES = [log_loss_per_instance, brier_loss_per_instance, zero_one_loss_per_instance, spherical_loss_per_instance]
+_AVERAGED = [
+    (log_loss, log_loss_per_instance),
+    (brier_loss, brier_loss_per_instance),
+    (zero_one_loss, zero_one_loss_per_instance),
+    (spherical_loss, spherical_loss_per_instance),
+]
 
 
 class ScoringRuleSuite:
@@ -79,3 +90,26 @@ class ScoringRuleSuite:
         """Labels of the batch shape must be integers rather than being cast silently."""
         with pytest.raises(ValueError, match="integer"):
             brier_loss_per_instance(array_fn(_PROBS), array_fn([0.0, 1.0]))
+
+    @pytest.mark.parametrize(("metric", "rule"), _AVERAGED)
+    def test_averaged_metric_is_mean_of_per_instance(self, array_fn, array_type, metric, rule):
+        """Each averaged metric returns the backend's scalar mean of its per-instance rule."""
+        result = metric(array_fn(_PROBS), array_fn(_LABELS))
+        assert isinstance(result, array_type)
+        expected = np.asarray(rule(array_fn(_PROBS), array_fn(_LABELS))).mean()
+        assert float(result) == pytest.approx(float(expected), rel=1e-6)
+
+    @pytest.mark.parametrize(
+        "probs",
+        [
+            [[0.7, 0.2, 0.1], [0.1, 0.3, 0.6], [0.2, 0.5, 0.3]],
+            # Exact ties, where argmax conventions decide whether a prediction counts as correct.
+            [[0.4, 0.4, 0.2], [0.2, 0.4, 0.4], [1 / 3, 1 / 3, 1 / 3]],
+        ],
+    )
+    def test_zero_one_loss_is_one_minus_accuracy(self, array_fn, probs):
+        """The independently implemented accuracy and zero-one loss agree, including on ties."""
+        labels = array_fn([1, 1, 0])
+        assert float(zero_one_loss(array_fn(probs), labels)) == pytest.approx(
+            1.0 - float(accuracy(array_fn(probs), labels))
+        )

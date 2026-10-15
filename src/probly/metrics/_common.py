@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import Any, cast
 
 from flextype import flexdispatch
 
@@ -508,3 +509,75 @@ def spherical_loss_per_instance(y_prob: object, y_true: object) -> object:
         TypeError: If ``y_prob`` is a sample of predictions.
     """
     return _expected_loss(_spherical_loss_vector(y_prob), y_true)
+
+
+def log_loss(y_prob: object, y_true: object) -> object:
+    """Compute the mean log loss of the predictions, the average of :func:`log_loss_per_instance`.
+
+    No clipping is applied, so the mean is ``inf`` if any true class has probability zero.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)``.
+
+    Returns:
+        The mean log loss.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    return cast("Any", log_loss_per_instance(y_prob, y_true)).mean()
+
+
+def brier_loss(y_prob: object, y_true: object) -> object:
+    """Compute the mean Brier loss of the predictions, the average of :func:`brier_loss_per_instance`.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)``.
+
+    Returns:
+        The mean Brier loss in ``[0, 2]``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    return cast("Any", brier_loss_per_instance(y_prob, y_true)).mean()
+
+
+def zero_one_loss(y_prob: object, y_true: object) -> object:
+    """Compute the mean zero-one loss of the predictions, the average of :func:`zero_one_loss_per_instance`.
+
+    With integer labels this is the error rate, ``1 - accuracy``.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)``.
+
+    Returns:
+        The mean zero-one loss in ``[0, 1]``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    return cast("Any", zero_one_loss_per_instance(y_prob, y_true)).mean()
+
+
+def spherical_loss(y_prob: object, y_true: object) -> object:
+    """Compute the mean spherical loss of the predictions, the average of :func:`spherical_loss_per_instance`.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)``.
+
+    Returns:
+        The mean spherical loss in ``[0, 1]``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    return cast("Any", spherical_loss_per_instance(y_prob, y_true)).mean()

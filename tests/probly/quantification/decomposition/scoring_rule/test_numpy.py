@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from probly.metrics import (
+    brier_loss,
     brier_loss_per_instance,
     log_loss_per_instance,
     spherical_loss_per_instance,
@@ -97,6 +98,6 @@ def test_spherical_loss_matches_closed_form_and_is_additive() -> None:
 
 def test_averaged_rule_is_rejected() -> None:
     # An averaged metric collapses the batch to one number, which would silently broadcast through the decomposition.
-    sr = SecondOrderScoringRuleDecomposition(_sample(), lambda p, q: brier_loss_per_instance(p, q).mean())
+    sr = SecondOrderScoringRuleDecomposition(_sample(), brier_loss)
     with pytest.raises(ValueError, match="one loss per instance"):
         _ = sr.total

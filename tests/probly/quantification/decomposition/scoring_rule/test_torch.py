@@ -8,6 +8,7 @@ pytest.importorskip("torch")
 import torch
 
 from probly.metrics import (
+    brier_loss,
     brier_loss_per_instance,
     log_loss_per_instance,
     spherical_loss_per_instance,
@@ -99,6 +100,6 @@ def test_torch_notion_indexing_matches_properties() -> None:
 
 
 def test_torch_averaged_rule_is_rejected() -> None:
-    sr = SecondOrderScoringRuleDecomposition(_sample(), lambda p, q: brier_loss_per_instance(p, q).mean())
+    sr = SecondOrderScoringRuleDecomposition(_sample(), brier_loss)
     with pytest.raises(ValueError, match="one loss per instance"):
         _ = sr.aleatoric
