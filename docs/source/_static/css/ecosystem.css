@@ -68,6 +68,11 @@ body[data-theme="dark"] .probly-ecosystem {
   --core-scale: 1.1;
 }
 
+/* The wordmark can be pulled and let go (_static/js/logo.js). */
+.probly-ecosystem__core.is-pulling {
+  cursor: grabbing;
+}
+
 /* --- the marks on the ring -------------------------------------------------- */
 
 .probly-ecosystem__node {

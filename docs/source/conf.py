@@ -378,7 +378,7 @@ html_theme = "furo"
 
 html_static_path = ["_static"]
 html_css_files = ["css/custom.css", "css/ecosystem.css", "css/jupyter.css"]
-html_js_files = ["js/ecosystem.js"]
+html_js_files = ["js/ecosystem.js", "js/logo.js"]
 pygments_dark_style = "monokai"
 
 html_theme_options = {
