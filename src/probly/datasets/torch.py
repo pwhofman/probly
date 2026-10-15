@@ -567,6 +567,48 @@ class CIFAR10C(torchvision.datasets.VisionDataset):
         return img, target
 
 
+class CIFAR100C(CIFAR10C):
+    """A Dataset class for the CIFAR-100-C corruption benchmark introduced in :cite:`hendrycksBenchmarkingNeural2019`.
+
+    One instance holds the 10,000 CIFAR-100 test images for a single ``corruption`` type at a single
+    ``severity`` level (1-5), with hard integer labels over the 100 fine classes. The release uses the same
+    19 corruption types and file layout as CIFAR-10-C. The data can be found at
+    https://zenodo.org/records/3555552 and fetched with ``download=True`` (a single ~2.9 GB
+    ``CIFAR-100-C.tar`` that covers all corruption types).
+    """
+
+    base_folder = "CIFAR-100-C"
+    url = "https://zenodo.org/records/3555552/files/CIFAR-100-C.tar"
+    filename = "CIFAR-100-C.tar"
+    tar_md5 = "11f0ed0f1191edbf9fa23466ae6021d3"
+
+    def __init__(
+        self,
+        root: str | Path,
+        corruption: str,
+        severity: int,
+        transform: Callable[..., Any] | None = None,
+        target_transform: Callable[..., Any] | None = None,
+        *,
+        download: bool = False,
+    ) -> None:
+        """Initialize an instance of the CIFAR100C class.
+
+        Args:
+            root: Root directory containing (or to download into) the ``CIFAR-100-C`` folder.
+            corruption: Corruption type; must be one of ``CIFAR100C.corruptions``.
+            severity: Corruption severity in 1..5.
+            transform: Optional transform to apply to the image.
+            target_transform: Optional transform to apply to the integer label.
+            download: Whether to download the CIFAR-100-C tar from Zenodo if missing.
+
+        Raises:
+            ValueError: If ``corruption`` is unknown or ``severity`` is not in 1..5.
+            RuntimeError: If the data is missing and ``download`` is False.
+        """
+        super().__init__(root, corruption, severity, transform, target_transform, download=download)
+
+
 class TinyImageNet(torchvision.datasets.VisionDataset):
     """A Dataset class for the Tiny ImageNet dataset introduced in :cite:`leTinyImageNet2015`.
 
