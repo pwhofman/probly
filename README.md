@@ -157,7 +157,7 @@ What differs between each method is how it represents uncertainty. `probly` cove
 These methods transform a point predictor into a model that outputs a distribution over possible distributions. Instead of returning a single prediction, they learn a higher-order probabilistic model where predictions are expressed as probability distributions. This can be achieved by stochastic sampling, ensembling, estimating feature-space distance to training data, or by parameterizing it with an evidential output head.
 
 <details>
-<summary><strong>Show all 23 methods</strong></summary>
+<summary><strong>Show all 24 methods</strong></summary>
 
 <a id="second-order-table"></a>
 
@@ -171,6 +171,7 @@ These methods transform a point predictor into a model that outputs a distributi
 | Deep ensembles (`ensemble`) | [Lakshminarayanan et al., 2017](https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html) | torch · flax · sklearn · river |
 | BatchEnsemble (`batchensemble`) | [Wen et al., 2020](https://openreview.net/forum?id=Sklf1yrYDr) | torch · flax |
 | Sub-ensembles (`subensemble`) | [Valdenegro-Toro, 2019](https://arxiv.org/abs/1910.08168) | torch · flax |
+| Masksembles (`masksembles`) | [Durasov et al., 2021](https://doi.org/10.1109/CVPR46437.2021.01333) | torch |
 | Deep anti-regularized ensembles (`dare`)[¹](#fn-so-1) | [de Mathelin et al., 2023](https://doi.org/10.48550/arXiv.2304.04042) | torch |
 | Deterministic uncertainty quantification (`duq`) | [van Amersfoort et al., 2020](http://proceedings.mlr.press/v119/van-amersfoort20a.html) | torch |
 | Deep deterministic uncertainty (`ddu`) | [Mukhoti et al., 2023](https://doi.org/10.1109/CVPR52729.2023.02336) | torch |
