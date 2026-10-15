@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
+from probly.metrics import (
+    brier_loss_per_instance,
+    log_loss_per_instance,
+    spherical_loss_per_instance,
+    zero_one_loss_per_instance,
+)
 from probly.quantification import (
-    BrierLoss,
-    LogLoss,
     SecondOrderEntropyDecomposition,
     SecondOrderScoringRuleDecomposition,
     SecondOrderZeroOneDecomposition,
-    SphericalLoss,
-    ZeroOneLoss,
 )
 from probly.representation.distribution.numpy_categorical import (
     NumpyCategoricalDistributionSample,
@@ -36,7 +39,7 @@ def _sample() -> NumpyCategoricalDistributionSample:
 
 
 def test_log_loss_matches_entropy_decomposition() -> None:
-    sr = SecondOrderScoringRuleDecomposition(_sample(), LogLoss())
+    sr = SecondOrderScoringRuleDecomposition(_sample(), log_loss_per_instance)
     ent = SecondOrderEntropyDecomposition(_sample())
     np.testing.assert_allclose(sr.total, ent.total, rtol=1e-10, atol=1e-12)
     np.testing.assert_allclose(sr.aleatoric, ent.aleatoric, rtol=1e-10, atol=1e-12)
@@ -54,7 +57,7 @@ def test_log_loss_matches_entropy_with_zero_probabilities() -> None:
         dtype=float,
     )
     sample = NumpyCategoricalDistributionSample(array=NumpyProbabilityCategoricalDistribution(probs), sample_axis=0)
-    sr = SecondOrderScoringRuleDecomposition(sample, LogLoss())
+    sr = SecondOrderScoringRuleDecomposition(sample, log_loss_per_instance)
     ent = SecondOrderEntropyDecomposition(sample)
     assert np.all(np.isfinite(np.asarray(sr.total)))
     assert np.all(np.isfinite(np.asarray(sr.aleatoric)))
@@ -64,7 +67,7 @@ def test_log_loss_matches_entropy_with_zero_probabilities() -> None:
 
 
 def test_zero_one_loss_matches_zero_one_decomposition() -> None:
-    sr = SecondOrderScoringRuleDecomposition(_sample(), ZeroOneLoss())
+    sr = SecondOrderScoringRuleDecomposition(_sample(), zero_one_loss_per_instance)
     zo = SecondOrderZeroOneDecomposition(_sample())
     np.testing.assert_allclose(sr.total, zo.total, rtol=1e-12, atol=1e-12)
     np.testing.assert_allclose(sr.aleatoric, zo.aleatoric, rtol=1e-12, atol=1e-12)
@@ -75,7 +78,7 @@ def test_brier_loss_matches_gini_closed_form() -> None:
     mean = _PROBS.mean(axis=0)
     tu = 1.0 - np.sum(mean**2, axis=-1)
     au = np.mean(1.0 - np.sum(_PROBS**2, axis=-1), axis=0)
-    sr = SecondOrderScoringRuleDecomposition(_sample(), BrierLoss())
+    sr = SecondOrderScoringRuleDecomposition(_sample(), brier_loss_per_instance)
     np.testing.assert_allclose(sr.total, tu, rtol=1e-12, atol=1e-12)
     np.testing.assert_allclose(sr.aleatoric, au, rtol=1e-12, atol=1e-12)
     np.testing.assert_allclose(sr.epistemic, tu - au, rtol=1e-12, atol=1e-12)
@@ -85,8 +88,15 @@ def test_spherical_loss_matches_closed_form_and_is_additive() -> None:
     mean = _PROBS.mean(axis=0)
     tu = 1.0 - np.sqrt(np.sum(mean**2, axis=-1))
     au = np.mean(1.0 - np.sqrt(np.sum(_PROBS**2, axis=-1)), axis=0)
-    sr = SecondOrderScoringRuleDecomposition(_sample(), SphericalLoss())
+    sr = SecondOrderScoringRuleDecomposition(_sample(), spherical_loss_per_instance)
     np.testing.assert_allclose(sr.total, tu, rtol=1e-12, atol=1e-12)
     np.testing.assert_allclose(sr.aleatoric, au, rtol=1e-12, atol=1e-12)
     np.testing.assert_allclose(sr.total, sr.aleatoric + sr.epistemic, rtol=1e-12, atol=1e-12)
     assert np.all(sr.epistemic >= -1e-12)
+
+
+def test_averaged_rule_is_rejected() -> None:
+    # An averaged metric collapses the batch to one number, which would silently broadcast through the decomposition.
+    sr = SecondOrderScoringRuleDecomposition(_sample(), lambda p, q: brier_loss_per_instance(p, q).mean())
+    with pytest.raises(ValueError, match="one loss per instance"):
+        _ = sr.total

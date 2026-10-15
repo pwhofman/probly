@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from flextype import flexdispatch
 
@@ -14,7 +14,7 @@ from probly.representation.sample import Sample
 DEFAULT_MEAN_FIELD_FACTOR: float = math.pi / 8.0
 
 if TYPE_CHECKING:
-    from probly.quantification.scoring_rule import ScoringRule
+    from probly.metrics import ScoringRule
     from probly.representation.array_like import ArrayLike
     from probly.representation.distribution import SecondOrderDistribution
 
@@ -63,16 +63,30 @@ def mutual_information(distribution: SecondOrderDistributionLike, base: LogBase 
 
 @flexdispatch
 def generalized_entropy_of_expected(distribution: SecondOrderDistributionLike, scoring_rule: ScoringRule) -> ArrayLike:
-    """Compute the generalized entropy ``G(theta_bar)`` of the BMA under a scoring rule."""
+    """Compute the generalized entropy ``G(theta_bar)`` of the BMA under a per-instance scoring rule."""
     msg = f"Generalized entropy of expected is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)
 
 
 @flexdispatch
 def expected_generalized_entropy(distribution: SecondOrderDistributionLike, scoring_rule: ScoringRule) -> ArrayLike:
-    """Compute the expected generalized entropy ``E[G(theta)]`` under a scoring rule."""
+    """Compute the expected generalized entropy ``E[G(theta)]`` under a per-instance scoring rule."""
     msg = f"Expected generalized entropy is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)
+
+
+def _generalized_entropy[T](scoring_rule: ScoringRule, probabilities: T) -> T:
+    """Compute ``G(theta) = scoring_rule(theta, theta)``, checking that the rule returns one loss per instance."""
+    losses = scoring_rule(probabilities, probabilities)
+    expected_shape = tuple(cast("Any", probabilities).shape[:-1])
+    shape = tuple(getattr(losses, "shape", ()))
+    if shape != expected_shape:
+        msg = (
+            f"The scoring rule must return one loss per instance, of shape {expected_shape}, got shape {shape}. "
+            "Pass a per-instance rule such as brier_loss_per_instance rather than an averaged metric."
+        )
+        raise ValueError(msg)
+    return cast("T", losses)
 
 
 @flexdispatch
