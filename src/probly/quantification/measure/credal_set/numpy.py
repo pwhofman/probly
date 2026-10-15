@@ -33,12 +33,6 @@ def _apply_base(result: np.ndarray, n_classes: int, base: LogBase) -> np.ndarray
     return result / math.log(n_classes if base == "normalize" else base)  # type: ignore[arg-type]
 
 
-def _entropy(p: np.ndarray) -> np.ndarray:
-    """Shannon entropy in nats along the last axis, with ``0 * log(0)`` counted as zero."""
-    safe_p = np.where(p > 0, p, 1.0)
-    return np.maximum(-np.sum(p * np.log(safe_p), axis=-1), 0.0)
-
-
 def _max_entropy_distribution(lower: np.ndarray, upper: np.ndarray) -> np.ndarray:
     """Maximize entropy over ``{p : lower <= p <= upper, sum(p) = 1}``.
 
@@ -89,7 +83,7 @@ def _approximate_min_entropy_distribution(lower: np.ndarray, upper: np.ndarray) 
             fill = np.minimum(np.maximum(rem, 0.0), capacity[..., i])
             p[..., i] += fill
             rem = rem - fill
-        h = _entropy(p)
+        h = entr(p).sum(axis=-1)
         improved = h < best
         best_p = np.where(improved[..., None], p, best_p)
         best = np.minimum(best, h)
@@ -150,7 +144,7 @@ def _exact_min_entropy_distribution(lower: np.ndarray, upper: np.ndarray) -> tup
         improved = value < best
         best_p = np.where(improved[..., None], p, best_p)
         best = np.where(improved, value, best)
-    return _entropy(best_p), best_p
+    return entr(best_p).sum(axis=-1), best_p
 
 
 def _min_entropy_distribution(
@@ -187,7 +181,7 @@ def numpy_intervals_upper_entropy(
     sum constraint.
     """
     p = _max_entropy_distribution(credal_set.lower_bounds, credal_set.upper_bounds)
-    result = _apply_base(_entropy(p), credal_set.num_classes, base)
+    result = _apply_base(entr(p).sum(axis=-1), credal_set.num_classes, base)
     if return_distribution:
         return result, p
     return result
@@ -300,7 +294,7 @@ def numpy_distance_based_upper_entropy(
     ``_tv_ball_max_entropy_distribution``. A negative radius counts as zero.
     """
     p = _tv_ball_max_entropy_distribution(*_nominal_and_radius(credal_set))
-    result = _apply_base(_entropy(p), credal_set.num_classes, base)
+    result = _apply_base(entr(p).sum(axis=-1), credal_set.num_classes, base)
     if return_distribution:
         return result, p
     return result
@@ -322,7 +316,7 @@ def numpy_distance_based_lower_entropy(
     """
     del approximate
     p = _tv_ball_min_entropy_distribution(*_nominal_and_radius(credal_set))
-    result = _apply_base(_entropy(p), credal_set.num_classes, base)
+    result = _apply_base(entr(p).sum(axis=-1), credal_set.num_classes, base)
     if return_distribution:
         return result, p
     return result
@@ -499,7 +493,7 @@ def numpy_convex_upper_entropy(
     flat_v = vertices.reshape(-1, n_vertices, n_classes).astype(np.promote_types(vertices.dtype, np.float32))
 
     p = np.sum(_convex_max_entropy_weights(flat_v)[..., None] * flat_v, axis=-2)
-    result = _apply_base(_entropy(p).reshape(batch_shape).astype(vertices.dtype), credal_set.num_classes, base)
+    result = _apply_base(entr(p).sum(axis=-1).reshape(batch_shape).astype(vertices.dtype), credal_set.num_classes, base)
     if return_distribution:
         return result, p.reshape(*batch_shape, n_classes).astype(vertices.dtype)
     return result
@@ -520,7 +514,7 @@ def numpy_convex_lower_entropy(
     """
     del approximate
     vertices = credal_set.array.probabilities  # (..., n_vertices, n_classes)
-    vertex_entropies = _entropy(vertices)  # (..., n_vertices)
+    vertex_entropies = entr(vertices).sum(axis=-1)  # (..., n_vertices)
     min_idx = np.argmin(vertex_entropies, axis=-1)
     min_h = np.take_along_axis(vertex_entropies, min_idx[..., None], axis=-1)[..., 0]
     result = _apply_base(min_h, credal_set.num_classes, base)
