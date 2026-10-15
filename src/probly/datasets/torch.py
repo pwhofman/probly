@@ -175,7 +175,8 @@ class DCICDataset(torch.utils.data.Dataset):
                 self.image_labels[img_path].append(label)
 
         self.image_paths = list(self.image_labels.keys())
-        unique_labels = {label for labels in self.image_labels.values() for label in labels}
+        # Sorted because DCIC class labels are strings, whose set order changes with each process's hash seed.
+        unique_labels = sorted({label for labels in self.image_labels.values() for label in labels})
         self.label_mappings = {label: idx for idx, label in enumerate(unique_labels)}
         self.num_classes = len({label for labels in self.image_labels.values() for label in labels})
         self.targets = []
