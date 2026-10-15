@@ -18,7 +18,7 @@ from torch import nn
 
 from probly.evaluation.selective_prediction import evaluate_selective_prediction
 from probly.metrics.selective_prediction import risk_coverage_curve
-from probly.selective_prediction import CoverageSelector, SelectivePredictor
+from probly.selective_prediction import SelectivePredictor, selector
 from probly.transformation import dropout
 
 from examples.utils.model import MLPClassifier
@@ -57,7 +57,7 @@ model.eval()
 target = 0.9
 X_cal, X_test, y_test = X_pool[:500], X_pool[500:], y_pool[500:]
 
-predictor = SelectivePredictor(model, CoverageSelector(target), representer_kwargs={"num_samples": 100})
+predictor = SelectivePredictor(model, selector=selector(coverage=target), representer_kwargs={"num_samples": 100})
 with torch.no_grad():
     predictor.calibrate(None, X_cal)
     result = predictor.predict(X_test)
@@ -65,7 +65,9 @@ with torch.no_grad():
 accepted = result.accepted.numpy()
 wrong = result.decision.probabilities.argmax(dim=-1).numpy() != y_test
 print(f"target coverage {target:.2f}  threshold {predictor.selector.threshold:.3f}")
-print(f"realized coverage {result.coverage:.3f}  selective risk {wrong[accepted].mean():.3f}  (all: {wrong.mean():.3f})")
+print(
+    f"realized coverage {result.coverage:.3f}  selective risk {wrong[accepted].mean():.3f}  (all: {wrong.mean():.3f})"
+)
 
 # %%
 # Coverage and risk for several targets
@@ -84,13 +86,15 @@ kappa = pooled.uncertainty.numpy()
 errors = (pooled.decision.probabilities.argmax(dim=-1).numpy() != y_pool).astype(float)
 
 targets = [0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]
+# The fitted rule only sees the uncertainties, so it is calibrated and applied on the arrays directly.
+rules = {c: selector(coverage=c) for c in targets}
 splits = [np.arange(len(kappa))] + [np.random.default_rng(i).permutation(len(kappa)) for i in range(999)]
 coverage = np.zeros((len(splits), len(targets)))
 risk = np.zeros((len(splits), len(targets)))
 for i, order in enumerate(splits):
     cal, test = order[:500], order[500:]
     for j, c in enumerate(targets):
-        mask = CoverageSelector(c).calibrate(kappa[cal]).select(kappa[test])
+        mask = rules[c].calibrate(kappa[cal]).select(kappa[test])
         coverage[i, j], risk[i, j] = mask.mean(), errors[test][mask].mean()
 
 print(f"{'target':>6} {'coverage':>15} {'risk':>6}")

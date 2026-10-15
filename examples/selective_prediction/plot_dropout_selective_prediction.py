@@ -17,7 +17,7 @@ from torch import nn
 from probly.evaluation.selective_prediction import evaluate_selective_prediction
 from probly.metrics.selective_prediction import risk_coverage_curve
 from probly.quantification import LogLoss
-from probly.selective_prediction import SelectivePredictor, ThresholdSelector
+from probly.selective_prediction import SelectivePredictor, selector
 from probly.transformation import dropout
 
 from examples.utils.model import MLPClassifier
@@ -62,10 +62,10 @@ model.eval()
 sampling = {"num_samples": 100}
 thresholds = {"total": 0.1, "epistemic": 0.03}
 predictors = {
-    "total": SelectivePredictor(model, ThresholdSelector(thresholds["total"]), representer_kwargs=sampling),
+    "total": SelectivePredictor(model, selector=selector(threshold=thresholds["total"]), representer_kwargs=sampling),
     "epistemic": SelectivePredictor(
         model,
-        ThresholdSelector(thresholds["epistemic"]),
+        selector=selector(threshold=thresholds["epistemic"]),
         notion="epistemic",
         loss=LogLoss(),
         representer_kwargs=sampling,
@@ -75,7 +75,7 @@ predictors = {
 
 def run(predictor: SelectivePredictor, x: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     with torch.no_grad():
-        result = predictor(torch.from_numpy(x).float())
+        result = predictor.predict(torch.from_numpy(x).float())
     prediction = result.decision.probabilities.argmax(dim=-1).numpy()
     return prediction, result.uncertainty.numpy(), result.accepted.numpy()
 

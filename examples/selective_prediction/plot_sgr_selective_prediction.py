@@ -8,8 +8,6 @@ Choose the threshold on labeled calibration data so that the risk of the accepte
 
 from __future__ import annotations
 
-import warnings
-
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.datasets import make_moons
@@ -18,7 +16,7 @@ from torch import nn
 
 from probly.evaluation.selective_prediction import evaluate_selective_prediction
 from probly.metrics.selective_prediction import risk_coverage_curve
-from probly.selective_prediction import SelectivePredictor, SGRSelector
+from probly.selective_prediction import SelectivePredictor, selector
 from probly.transformation import dropout
 
 from examples.utils.model import MLPClassifier
@@ -59,7 +57,9 @@ risk, delta = 0.02, 0.001
 X_cal, y_cal = X_pool[:5000], y_pool[:5000]
 X_test, y_test = X_pool[5000:], y_pool[5000:]
 
-predictor = SelectivePredictor(model, SGRSelector(risk, delta), representer_kwargs={"num_samples": 100})
+predictor = SelectivePredictor(
+    model, selector=selector(risk=risk, delta=delta), representer_kwargs={"num_samples": 100}
+)
 with torch.no_grad():
     predictor.calibrate(torch.from_numpy(y_cal), X_cal)
     result = predictor.predict(X_test)
@@ -76,7 +76,8 @@ print(f"test risk {wrong[accepted].mean():.3f}  test coverage {result.coverage:.
 # The table follows the paper's Table 1: for each target risk ``r*``, the risk and coverage on the calibration
 # ("train") and test halves, and the certified bound ``b*``. The figure follows its Fig. 2: the test risk-coverage
 # curve of the criterion, from :func:`~probly.metrics.selective_prediction.risk_coverage_curve`, with the SGR operating
-# points on it. The uncertainties and errors are computed once, and the selectors are calibrated on the arrays.
+# points on it. The uncertainties and errors are computed once, and the rule is fitted and applied on the arrays
+# directly.
 
 with torch.no_grad():
     pooled = predictor.predict(X_pool)
@@ -88,16 +89,14 @@ print(f"{'r*':>6} {'cal risk':>9} {'cal cov':>8} {'test risk':>9} {'test cov':>8
 points = []
 target_risks = [0.01, 0.015, 0.02, 0.025, 0.03, 0.035]
 for r in target_risks:
-    selector = SGRSelector(r, delta)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UserWarning)
-        selector.calibrate(kappa[cal], errors[cal])
+    rule = selector(risk=r, delta=delta)
+    rule.calibrate(kappa[cal], errors[cal])
     rows = []
     for split in (cal, test):
-        mask = selector.select(kappa[split])
+        mask = rule.select(kappa[split])
         rows += [errors[split][mask].mean() if mask.any() else np.nan, mask.mean()]
     points.append((rows[3], rows[2]))
-    print(f"{r:6.3f} {rows[0]:9.3f} {rows[1]:8.3f} {rows[2]:9.3f} {rows[3]:8.3f} {selector.bound:6.3f}")
+    print(f"{r:6.3f} {rows[0]:9.3f} {rows[1]:8.3f} {rows[2]:9.3f} {rows[3]:8.3f} {rule.bound:6.3f}")
 print(f"full-coverage test risk {errors[test].mean():.3f}")
 
 curve_coverage, curve_risk, _ = risk_coverage_curve(kappa[test], errors[test])

@@ -2,14 +2,12 @@
 Selective Prediction with a scikit-learn Classifier
 ===================================================
 
-Abstain with a plain scikit-learn classifier, using an uncertainty score you compute yourself.
+Abstain with a plain scikit-learn classifier, without any probly transformation.
 
-A :class:`~probly.selective_prediction.Selector` decides on the uncertainty criterion alone, so it works with any
-model: compute the criterion per instance and apply the selector to it. This route also covers precomputed scores and
-models that probly does not know. Here, the model is a random forest, the criterion is one minus its maximum predicted
-probability, and the threshold is chosen on held-out data for a target coverage. The last section shows the shorter
-route through :class:`~probly.selective_prediction.SelectivePredictor`, which accepts the forest once its output type
-is declared with :func:`~probly.method.cast`.
+:class:`~probly.selective_prediction.SelectivePredictor` accepts every model with ``predict_proba``, and the default
+criterion is one minus the maximum predicted probability. Here, the model is a random forest, and the threshold is
+chosen on held-out data for a target coverage or given as the cost of abstaining. The last section shows how to use
+a criterion that you compute yourself, which also covers models that probly does not know.
 """
 
 from __future__ import annotations
@@ -22,8 +20,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 from probly.evaluation.selective_prediction import evaluate_selective_prediction
 from probly.metrics.selective_prediction import risk_coverage_curve
-from probly.method import cast
-from probly.selective_prediction import SelectivePredictor, ThresholdSelector
+from probly.selective_prediction import SelectivePredictor, selector
 
 BLUE, RED, GRAY, PURPLE = "#1e88e5", "#ff0d57", "#7f8c8d", "#9b59b6"
 
@@ -46,48 +43,35 @@ X_test, y_test = make_moons(n_samples=1000, noise=0.25, random_state=1)
 model = RandomForestClassifier(n_estimators=200, min_samples_leaf=5, random_state=0).fit(X_train, y_train)
 
 # %%
-# Uncertainty criterion
-# ---------------------
-#
-# Any score works as long as it has one value per instance and higher means more uncertain. A confidence score such
-# as the maximum probability therefore has to be turned around.
-
-
-def uncertainty(x: np.ndarray) -> np.ndarray:
-    return 1.0 - model.predict_proba(x).max(axis=1)
-
-
-# %%
 # Threshold for a target coverage
 # -------------------------------
 #
-# A threshold at the ``q``-quantile of the validation criterion accepts a fraction of about ``q`` of new instances
-# from the same distribution. The ``inverted_cdf`` quantile is a value of the criterion itself, so ties at the
-# threshold are accepted, as :class:`~probly.selective_prediction.ThresholdSelector` does.
+# The predictor calibrates a threshold on the unlabeled validation criterion, so that about the target fraction of new
+# instances from the same distribution is accepted. The criterion is one value per instance, and higher means more
+# uncertain.
 
-val_uncertainty = uncertainty(X_val)
 target_coverages = [0.95, 0.9, 0.8, 0.7, 0.5]
-selectors = {
-    coverage: ThresholdSelector(np.quantile(val_uncertainty, coverage, method="inverted_cdf"))
-    for coverage in target_coverages
+predictors = {
+    c: SelectivePredictor(model, selector=selector(coverage=c)).calibrate(None, X_val) for c in target_coverages
 }
 
 # %%
 # Selective prediction
 # --------------------
 #
-# The selector sees only the criterion; the prediction comes from the model as usual.
+# The decision is the most probable class, as usual, and the uncertainty is one minus its probability.
 
-test_uncertainty = uncertainty(X_test)
-prediction = model.predict(X_test)
+results = {c: predictor.predict(X_test) for c, predictor in predictors.items()}
+test_uncertainty = results[0.8].uncertainty
+prediction = results[0.8].decision.probabilities.argmax(axis=-1)
 correct = prediction == y_test
 
 print(f"normal prediction          coverage 1.00  accuracy {correct.mean():.3f}")
-for coverage, selector in selectors.items():
-    accepted = selector.select(test_uncertainty)
+for coverage, result in results.items():
+    accepted = result.accepted
     print(
         f"selective (target {coverage:.2f})    coverage {accepted.mean():.2f}  accuracy {correct[accepted].mean():.3f}"
-        f"  threshold {selector.threshold:.3f}"
+        f"  threshold {predictors[coverage].selector.threshold:.3f}"
     )
 
 # %%
@@ -100,15 +84,16 @@ for coverage, selector in selectors.items():
 # measures how ambiguous an instance is, not how little data the model has seen near it; for a model that also
 # abstains far from the data, see :ref:`sphx_glr_auto_examples_selective_prediction_plot_sngp_selective_prediction.py`.
 
-selector = selectors[0.8]
+predictor = predictors[0.8]
 xx, yy = np.meshgrid(np.linspace(-3.0, 4.0, 300), np.linspace(-2.5, 3.0, 300))
 grid = np.c_[xx.ravel(), yy.ravel()]
-grid_prediction = model.predict(grid)
-grid_accepted = selector.select(uncertainty(grid))
+grid_result = predictor.predict(grid)
+grid_prediction = grid_result.decision.probabilities.argmax(axis=-1)
+grid_accepted = grid_result.accepted
 
 panels = [
     ("Normal prediction", grid_prediction, np.ones_like(correct)),
-    ("Selective (target coverage 0.8)", np.where(grid_accepted, grid_prediction, 2), selector(test_uncertainty)),
+    ("Selective (target coverage 0.8)", np.where(grid_accepted, grid_prediction, 2), results[0.8].accepted),
 ]
 
 fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), sharex=True, sharey=True)
@@ -139,8 +124,8 @@ curve_coverage, curve_risk, _ = risk_coverage_curve(test_uncertainty, test_error
 ax.plot(curve_coverage, 1 - curve_risk, color=PURPLE, label="selective")
 m = evaluate_selective_prediction(test_uncertainty, test_errors, ["augrc", "aurc", "risk@1"])
 print(f"AUGRC {m['augrc']:.4f}  AURC {m['aurc']:.4f}  risk at full coverage {m['risk@1']:.3f}")
-for coverage, selector in selectors.items():
-    accepted = selector(test_uncertainty)
+for coverage, result in results.items():
+    accepted = result.accepted
     point = (accepted.mean(), correct[accepted].mean())
     ax.scatter(*point, color=PURPLE, zorder=3)
     ax.annotate(f"{coverage:.2f}", point, textcoords="offset points", xytext=(0, 8), ha="center")
@@ -159,10 +144,8 @@ plt.show()
 # Instead of a target coverage, a cost ``c`` for abstaining can be given, where a correct prediction costs 0 and a
 # wrong one costs 1. Chow's rule (Chow, 1970) accepts a prediction if and only if its
 # maximum probability is at least ``1 - c``, which is the same as a criterion of at most ``c``. It is therefore a
-# :class:`~probly.selective_prediction.ThresholdSelector` at ``c`` on the criterion above and needs no validation data.
-# With ``K`` classes, only costs below ``1 - 1/K`` lead to any abstentions.
-# For models transformed by probly, :class:`~probly.selective_prediction.SelectivePredictor` uses this criterion by
-# default, so a :class:`~probly.selective_prediction.ThresholdSelector` at ``c`` applies Chow's rule there as well.
+# threshold of ``c`` on the criterion above (``threshold=c``) and needs no validation data. With ``K`` classes, only
+# costs below ``1 - 1/K`` lead to any abstentions.
 #
 # The rule minimizes the expected cost if the predicted probabilities are the true class probabilities. The forest
 # only estimates them, so the curves below show how close Chow's threshold comes to the lowest cost on the test set.
@@ -179,10 +162,9 @@ def empirical_cost(accepted: np.ndarray, cost: float) -> float:
 
 fig, ax = plt.subplots(figsize=(7, 4.5))
 for cost, color in zip(costs, [BLUE, PURPLE, RED], strict=True):
-    chow = ThresholdSelector(cost)
-    accepted = chow.select(test_uncertainty)
+    accepted = SelectivePredictor(model, selector=selector(threshold=cost)).predict(X_test).accepted
     chow_cost = empirical_cost(accepted, cost)
-    curve = [empirical_cost(ThresholdSelector(t).select(test_uncertainty), cost) for t in thresholds]
+    curve = [empirical_cost(test_uncertainty <= t, cost) for t in thresholds]
     best = thresholds[np.argmin(curve)]
     print(
         f"Chow (c = {cost:.2f})    coverage {accepted.mean():.2f}  accuracy {correct[accepted].mean():.3f}"
@@ -198,15 +180,13 @@ plt.tight_layout()
 plt.show()
 
 # %%
-# The same selection with SelectivePredictor
-# ------------------------------------------
+# A criterion of your own
+# -----------------------
 #
-# Declared as a probabilistic classifier with :func:`~probly.method.cast`, the forest can be wrapped by
-# :class:`~probly.selective_prediction.SelectivePredictor`. Its representation is a single categorical distribution,
-# so the default criterion is one minus the maximum probability, the criterion computed by hand above, and the
-# predictor accepts exactly the same instances.
+# A selector decides on an array of criterion values alone, so it works with any model, also one that probly does not
+# know. Here, the criterion is computed by hand from the forest's probabilities and reproduces the selection above.
 
-predictor = SelectivePredictor(cast(model, predictor_type="probabilistic_classifier"), selectors[0.8])
-result = predictor.predict(X_test)
-print(f"same criterion: {np.allclose(result.uncertainty, test_uncertainty)}")
-print(f"same selection: {np.array_equal(result.accepted, selectors[0.8].select(test_uncertainty))}")
+rule = selector(coverage=0.8).calibrate(1.0 - model.predict_proba(X_val).max(axis=1))
+own_uncertainty = 1.0 - model.predict_proba(X_test).max(axis=1)
+print(f"same criterion: {np.allclose(own_uncertainty, test_uncertainty)}")
+print(f"same selection: {np.array_equal(rule.select(own_uncertainty), results[0.8].accepted)}")
