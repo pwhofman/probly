@@ -2,6 +2,7 @@
 
 from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
 
+from . import numpy as numpy
 from ._common import (
     generalized_hartley,
     lower_entropy,
