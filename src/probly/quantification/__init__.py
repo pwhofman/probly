@@ -28,6 +28,7 @@ from .decomposition import (
     SecondOrderWassersteinDecomposition,
     SecondOrderZeroOneDecomposition,
     TotalDecomposition,
+    scoring_rule_decomposition,
 )
 from .measure import (
     conditional_entropy,
@@ -113,6 +114,7 @@ __all__ = [
     "notion_registry",
     "quantify",
     "sample_variance",
+    "scoring_rule_decomposition",
     "spectral_entropy",
     "total_logit_sample_variance",
     "vacuity",
