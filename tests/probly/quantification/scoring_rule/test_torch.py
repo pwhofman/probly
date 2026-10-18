@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 pytest.importorskip("torch")
+import numpy as np
 import torch
 
 from probly.quantification.scoring_rule import BrierLoss, LogLoss, SphericalLoss, ZeroOneLoss
@@ -58,3 +59,15 @@ def test_torch_loss_preserves_shape() -> None:
     p = torch.full((4, 3, 5), 1.0 / 5.0, dtype=torch.float64)
     for rule in (LogLoss(), BrierLoss(), ZeroOneLoss(), SphericalLoss()):
         assert rule.loss(p).shape == p.shape
+
+
+@pytest.mark.parametrize("rule", [LogLoss(), BrierLoss(), ZeroOneLoss(), SphericalLoss()])
+@pytest.mark.parametrize("labels", [[2, 0, 1], (2, 0, 1)])
+def test_call_picks_the_loss_of_the_label_from_other_backends(rule, labels) -> None:
+    probabilities = torch.tensor([[0.2, 0.5, 0.3], [0.6, 0.3, 0.1], [0.1, 0.1, 0.8]])
+    expected = rule.loss(probabilities)[torch.arange(3), torch.tensor(labels)]
+    result = rule(probabilities, labels)
+    assert isinstance(result, torch.Tensor)
+    torch.testing.assert_close(result, expected)
+    torch.testing.assert_close(rule(probabilities, torch.tensor(labels)), expected)
+    torch.testing.assert_close(rule(probabilities, np.array(labels)), expected)

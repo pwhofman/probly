@@ -6,7 +6,7 @@ import torch
 
 from probly.representation.sample.torch import TorchSample
 
-from ._common import _brier_loss_vector, _log_loss_vector, _spherical_loss_vector, _zero_one_loss_vector
+from ._common import _brier_loss_vector, _log_loss_vector, _loss_at_label, _spherical_loss_vector, _zero_one_loss_vector
 
 
 @_log_loss_vector.register
@@ -36,6 +36,13 @@ def torch_spherical_loss_vector(probabilities: torch.Tensor) -> torch.Tensor:
     """Compute the per-label spherical loss vector for a torch tensor."""
     norm = torch.sqrt(torch.sum(probabilities**2, dim=-1, keepdim=True))
     return 1.0 - probabilities / norm
+
+
+@_loss_at_label.register
+def torch_loss_at_label(loss_vector: torch.Tensor, labels: object) -> torch.Tensor:
+    """Pick the loss of the true label for a torch tensor."""
+    index = torch.as_tensor(labels, device=loss_vector.device).long()
+    return torch.take_along_dim(loss_vector, index[..., None], dim=-1)[..., 0]
 
 
 @_log_loss_vector.register(TorchSample)

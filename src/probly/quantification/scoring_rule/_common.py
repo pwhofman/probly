@@ -47,6 +47,28 @@ class ScoringRule(ABC):
             Samples are evaluated memberwise and retain their sample axis and weights.
         """
 
+    def __call__(self, probabilities: Any, labels: Any) -> Any:  # noqa: ANN401
+        """Return the loss ``l(theta_hat, y)`` of the prediction at the true label, per instance.
+
+        The labels are not range-checked: JAX clamps an index out of range and PyTorch on a GPU fails
+        asynchronously. Check them beforehand if they are not trusted.
+
+        Args:
+            probabilities: Predicted categorical probabilities of shape ``(..., K)`` or a categorical distribution.
+            labels: Class indices of shape ``(...)``, as an array of any supported backend or a list.
+
+        Returns:
+            The loss at the label, of shape ``(...)``, in the backend of the loss vector.
+        """
+        return _loss_at_label(self.loss(probabilities), labels)
+
+
+@flexdispatch
+def _loss_at_label[ArrayT](loss_vector: ArrayT, labels: Any) -> ArrayT:  # noqa: ANN401
+    """Pick the loss of the true label from a loss vector of shape ``(..., K)``."""
+    msg = f"Scoring rules are not supported for arrays of type {type(loss_vector)}."
+    raise NotImplementedError(msg)
+
 
 @flexdispatch
 def _log_loss_vector[ArrayT](probabilities: ArrayT) -> ArrayT:

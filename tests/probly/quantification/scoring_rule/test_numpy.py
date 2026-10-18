@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from probly.quantification.scoring_rule import BrierLoss, LogLoss, SphericalLoss, ZeroOneLoss
+from probly.representation.distribution import create_categorical_distribution
 from probly.representation.distribution.numpy_categorical import NumpyLogitCategoricalDistribution
 from probly.representation.sample.numpy import NumpySample
 
@@ -59,3 +60,12 @@ def test_loss_preserves_shape() -> None:
 def test_scoring_rules_are_value_equal() -> None:
     assert BrierLoss() == BrierLoss()
     assert LogLoss() != BrierLoss()
+
+
+@pytest.mark.parametrize("rule", [LogLoss(), BrierLoss(), ZeroOneLoss(), SphericalLoss()])
+def test_call_picks_the_loss_of_the_label(rule) -> None:
+    probabilities = np.array([[0.2, 0.5, 0.3], [0.6, 0.3, 0.1], [0.1, 0.1, 0.8]])
+    labels = [2, 0, 1]
+    expected = rule.loss(probabilities)[np.arange(3), labels]
+    np.testing.assert_allclose(rule(probabilities, labels), expected)
+    np.testing.assert_allclose(rule(create_categorical_distribution(probabilities), np.array(labels)), expected)

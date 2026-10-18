@@ -62,3 +62,11 @@ def test_loss_preserves_shape() -> None:
 def test_scoring_rules_are_value_equal() -> None:
     assert BrierLoss() == BrierLoss()
     assert LogLoss() != BrierLoss()
+
+
+@pytest.mark.parametrize("rule", [LogLoss(), BrierLoss(), ZeroOneLoss(), SphericalLoss()])
+def test_call_picks_the_loss_of_the_label(rule) -> None:
+    probabilities = jnp.array([[0.2, 0.5, 0.3], [0.6, 0.3, 0.1], [0.1, 0.1, 0.8]])
+    labels = jnp.array([2, 0, 1])
+    expected = rule.loss(probabilities)[jnp.arange(3), labels]
+    assert jnp.allclose(rule(probabilities, labels), expected)

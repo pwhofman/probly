@@ -6,7 +6,7 @@ import numpy as np
 
 from probly.representation.sample.numpy import NumpySample
 
-from ._common import _brier_loss_vector, _log_loss_vector, _spherical_loss_vector, _zero_one_loss_vector
+from ._common import _brier_loss_vector, _log_loss_vector, _loss_at_label, _spherical_loss_vector, _zero_one_loss_vector
 
 
 @_log_loss_vector.register
@@ -36,6 +36,13 @@ def numpy_spherical_loss_vector(probabilities: np.ndarray) -> np.ndarray:
     """Compute the per-label spherical loss vector for a NumPy array."""
     norm = np.sqrt(np.sum(probabilities**2, axis=-1, keepdims=True))
     return 1.0 - probabilities / norm
+
+
+@_loss_at_label.register
+def numpy_loss_at_label(loss_vector: np.ndarray, labels: object) -> np.ndarray:
+    """Pick the loss of the true label for a NumPy array."""
+    index = np.asarray(labels, dtype=np.intp)
+    return np.take_along_axis(loss_vector, index[..., None], axis=-1)[..., 0]
 
 
 @_log_loss_vector.register(NumpySample)

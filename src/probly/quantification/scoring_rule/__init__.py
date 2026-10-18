@@ -11,11 +11,13 @@ from ._common import (
     ZeroOneLoss,
     _brier_loss_vector,
     _log_loss_vector,
+    _loss_at_label,
     _spherical_loss_vector,
     _zero_one_loss_vector,
 )
 
 
+@_loss_at_label.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @_log_loss_vector.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @_brier_loss_vector.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @_zero_one_loss_vector.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
@@ -24,6 +26,7 @@ def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
+@_loss_at_label.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @_log_loss_vector.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @_brier_loss_vector.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @_zero_one_loss_vector.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))

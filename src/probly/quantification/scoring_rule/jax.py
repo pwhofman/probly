@@ -6,7 +6,7 @@ from jax import numpy as jnp
 
 from probly.representation.sample.jax import JaxSample
 
-from ._common import _brier_loss_vector, _log_loss_vector, _spherical_loss_vector, _zero_one_loss_vector
+from ._common import _brier_loss_vector, _log_loss_vector, _loss_at_label, _spherical_loss_vector, _zero_one_loss_vector
 
 
 @_log_loss_vector.register
@@ -36,6 +36,13 @@ def jax_spherical_loss_vector(probabilities: jnp.ndarray) -> jnp.ndarray:
     """Compute the per-label spherical loss vector for a JAX array."""
     norm = jnp.sqrt(jnp.sum(probabilities**2, axis=-1, keepdims=True))
     return 1.0 - probabilities / norm
+
+
+@_loss_at_label.register
+def jax_loss_at_label(loss_vector: jnp.ndarray, labels: object) -> jnp.ndarray:
+    """Pick the loss of the true label for a JAX array."""
+    index = jnp.asarray(labels).astype(jnp.int32)
+    return jnp.take_along_axis(loss_vector, index[..., None], axis=-1)[..., 0]
 
 
 @_log_loss_vector.register(JaxSample)
