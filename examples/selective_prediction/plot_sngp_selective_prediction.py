@@ -2,7 +2,7 @@
 SNGP Selective Prediction on Two Moons
 ======================================
 
-Abstain wherever an SNGP model is too uncertain, both near the class boundary and far from the data.
+Calibrate a selector on unlabeled data to a target coverage, then see what it does far from the data.
 """
 
 from __future__ import annotations
@@ -15,22 +15,21 @@ import torch
 from torch import nn
 
 from probly.method.sngp import reset_precision_matrix, sngp
-from probly.evaluation.selective_prediction import evaluate_selective_prediction
-from probly.metrics.selective_prediction import risk_coverage_curve
-from probly.quantification import LogLoss
-from probly.selective_prediction import SelectivePredictor, selector
+from probly.selective_prediction import SelectivePredictor, selective_predictor, selector
 
 from examples.utils.model import ResFFN
 
-BLUE, RED, GRAY, PURPLE, TEAL = "#1e88e5", "#ff0d57", "#7f8c8d", "#9b59b6", "#16a085"
+BLUE, RED, GRAY = "#1e88e5", "#ff0d57", "#7f8c8d"
 
 # %%
 # Data
 # ----
 #
-# Out-of-distribution points lie on a ring around the two moons.
+# Out-of-distribution points lie on a ring around the two moons. A validation split from the training distribution
+# is held out to calibrate the selector. Its labels are not used.
 
 X_train, y_train = make_moons(n_samples=500, noise=0.25, random_state=0)
+X_val, _ = make_moons(n_samples=1000, noise=0.25, random_state=2)
 X_test, y_test = make_moons(n_samples=1000, noise=0.25, random_state=1)
 
 angles = np.random.default_rng(0).uniform(0, 2 * np.pi, 500)
@@ -59,147 +58,62 @@ with torch.no_grad():
 model.eval()
 
 # %%
-# Selective prediction
-# --------------------
+# Calibrate to a coverage
+# -----------------------
 #
-# The recommended criterion is the total uncertainty under the zero-one loss, the default. It is one minus the
-# largest mean probability, the model's own probability that its prediction is wrong, so a threshold of 0.1 is
-# Chow's rule for an abstention that costs a tenth of an error. The epistemic uncertainty, in contrast, ignores the
-# noise in the labels and measures only the model's lack of knowledge. It is better suited to rejecting
-# out-of-distribution instances, and for that purpose, the log loss, whose epistemic part is the mutual
-# information, works better than the zero-one loss.
-
-sampling = {"num_samples": 100}
-thresholds = {"total": 0.1, "epistemic": 0.03}
-predictors = {
-    "total": SelectivePredictor(model, selector=selector(threshold=thresholds["total"]), representer_kwargs=sampling),
-    "epistemic": SelectivePredictor(
-        model,
-        selector=selector(threshold=thresholds["epistemic"]),
-        notion="epistemic",
-        loss=LogLoss(),
-        representer_kwargs=sampling,
-    ),
-}
+# A :func:`~probly.selective_prediction.selector` with ``coverage=0.8`` sets its threshold on the criterion of
+# unlabeled validation data, so that about 80 percent of new instances are accepted. The guarantee assumes that new
+# instances are exchangeable with the validation data. The test set meets this assumption, but the ring does not, and
+# SNGP is uncertain far from the data, so almost none of its points are accepted.
 
 
 def run(predictor: SelectivePredictor, x: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     with torch.no_grad():
         result = predictor.predict(torch.from_numpy(x).float())
-    prediction = result.decision.probabilities.argmax(dim=-1).numpy()
-    return prediction, result.uncertainty.numpy(), result.accepted.numpy()
+    return result.decision.probabilities.argmax(dim=-1).numpy(), result.uncertainty.numpy(), result.accepted.numpy()
 
 
-test = {notion: run(predictor, X_test) for notion, predictor in predictors.items()}
-ood = {notion: run(predictor, X_ood) for notion, predictor in predictors.items()}
-prediction = test["total"][0]
+predictor = selective_predictor(model, selector=selector(coverage=0.8), representer_kwargs={"num_samples": 100})
+with torch.no_grad():
+    predictor.calibrate(None, torch.from_numpy(X_val).float())
+
+prediction, _, accepted = run(predictor, X_test)
 correct = prediction == y_test
-
-print(f"normal prediction    coverage 1.00  accuracy {correct.mean():.3f}  OOD coverage 1.00")
-for notion, (pred, _, accepted) in test.items():
-    print(
-        f"selective ({notion:9s}) coverage {accepted.mean():.2f}  accuracy {(pred == y_test)[accepted].mean():.3f}"
-        f"  OOD coverage {ood[notion][2].mean():.2f}"
-    )
+ood_accepted = run(predictor, X_ood)[2]
+print(f"test  coverage {accepted.mean():.2f}  accuracy {correct[accepted].mean():.3f}  (target coverage 0.80)")
+print(f"OOD   coverage {ood_accepted.mean():.2f}")
 
 # %%
 # Decision regions
 # ----------------
 #
-# Crosses mark wrong predictions that are not abstained on, circles mark accepted OOD points.
+# Gray regions are abstained on. Circles mark OOD points that are accepted.
 
 xx, yy = np.meshgrid(np.linspace(-4.5, 5.5, 300), np.linspace(-3.5, 4.0, 300))
 grid = np.c_[xx.ravel(), yy.ravel()]
-on_grid = {notion: run(predictor, grid) for notion, predictor in predictors.items()}
 
-panels = [("Normal prediction", on_grid["total"][0], prediction, np.ones_like(correct), np.ones(len(X_ood), bool))]
-for notion, (pred, _, accepted) in on_grid.items():
-    panels.append(
-        (f"Selective ({notion})", np.where(accepted, pred, 2), test[notion][0], test[notion][2], ood[notion][2])
-    )
+grid_prediction, _, grid_accepted = run(predictor, grid)
+panels = [
+    ("Normal prediction", grid_prediction, np.ones_like(ood_accepted)),
+    ("Selective prediction", np.where(grid_accepted, grid_prediction, 2), ood_accepted),
+]
 
-fig, axes = plt.subplots(1, 3, figsize=(15, 4.5), sharex=True, sharey=True)
-for ax, (title, regions, pred, accepted, ood_accepted) in zip(axes, panels, strict=True):
+fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), sharex=True, sharey=True)
+for ax, (title, regions, ring_accepted) in zip(axes, panels, strict=True):
     ax.contourf(xx, yy, regions.reshape(xx.shape), levels=[-0.5, 0.5, 1.5, 2.5], colors=[BLUE, RED, GRAY], alpha=0.3)
     ax.scatter(*X_test.T, c=y_test, cmap=ListedColormap([BLUE, RED]), s=6, alpha=0.6)
-    errors = accepted & (pred != y_test)
-    ax.scatter(*X_test[errors].T, marker="x", color="black", s=20, label=f"{errors.sum()} accepted errors")
     ax.scatter(*X_ood.T, facecolors="none", edgecolors=GRAY, s=10, linewidths=0.5)
     ax.scatter(
-        *X_ood[ood_accepted].T,
+        *X_ood[ring_accepted].T,
         facecolors="none",
         edgecolors="black",
         s=10,
         linewidths=0.8,
-        label=f"{ood_accepted.sum()} accepted OOD",
+        label=f"{ring_accepted.sum()} accepted OOD",
     )
     ax.set_title(title)
     ax.set_xlabel("$x_1$")
     ax.legend(loc="lower right")
 axes[0].set_ylabel("$x_2$")
-plt.tight_layout()
-plt.show()
-
-# %%
-# Uncertainty of correct, wrong, and OOD predictions
-# --------------------------------------------------
-
-scales = {"total": "1 - max probability", "epistemic": "mutual information"}
-fig, axes = plt.subplots(1, 2, figsize=(12, 4))
-for ax, (notion, (pred, uncertainty, _)) in zip(axes, test.items(), strict=True):
-    hit = pred == y_test
-    ood_uncertainty = ood[notion][1]
-    bins = np.linspace(0, max(uncertainty.max(), ood_uncertainty.max()), 30)
-    ax.hist(uncertainty[hit], bins=bins, color=BLUE, alpha=0.6, label="correct")
-    ax.hist(uncertainty[~hit], bins=bins, color=RED, alpha=0.6, label="wrong")
-    ax.hist(ood_uncertainty, bins=bins, color=GRAY, alpha=0.6, label="OOD")
-    ax.axvline(thresholds[notion], color="black", linestyle="--", label="threshold")
-    ax.set_yscale("log")
-    ax.set_xlabel(f"{notion} uncertainty ({scales[notion]})")
-    ax.set_ylabel("count")
-    ax.legend()
-plt.tight_layout()
-plt.show()
-
-# %%
-# Accuracy vs. coverage
-# ---------------------
-#
-# The curves come from :func:`~probly.metrics.selective_prediction.risk_coverage_curve`, and
-# :func:`~probly.evaluation.selective_prediction.evaluate_selective_prediction` summarizes them by their areas (lower is
-# better) and the risk at full coverage. Dots mark the thresholds used above.
-
-fig, ax = plt.subplots(figsize=(7, 4.5))
-for (notion, (pred, uncertainty, accepted)), color in zip(test.items(), [PURPLE, TEAL], strict=True):
-    errors = (pred != y_test).astype(float)
-    coverage, risk, _ = risk_coverage_curve(uncertainty, errors)
-    ax.plot(coverage, 1 - risk, color=color, label=f"selective ({notion})")
-    m = evaluate_selective_prediction(uncertainty, errors, ["augrc", "aurc", "risk@1"])
-    print(f"{notion:9s} AUGRC {m['augrc']:.4f}  AURC {m['aurc']:.4f}  risk at full coverage {m['risk@1']:.3f}")
-    ax.scatter(accepted.mean(), (pred == y_test)[accepted].mean(), color=color, zorder=3)
-ax.axhline(correct.mean(), color="black", linestyle="--", label="normal prediction")
-ax.set_xlabel("coverage")
-ax.set_ylabel("accuracy on accepted")
-ax.set_xlim(0, 1)
-ax.legend(loc="lower left")
-plt.tight_layout()
-plt.show()
-
-# %%
-# Coverage in and out of distribution
-# -----------------------------------
-
-labels = ["normal", *(f"selective\n({notion})" for notion in predictors)]
-in_coverage = [1.0, *(test[notion][2].mean() for notion in predictors)]
-out_coverage = [1.0, *(ood[notion][2].mean() for notion in predictors)]
-
-fig, ax = plt.subplots(figsize=(7, 4))
-x = np.arange(len(labels))
-ax.bar(x - 0.2, in_coverage, width=0.4, color=BLUE, label="test")
-ax.bar(x + 0.2, out_coverage, width=0.4, color=GRAY, label="OOD")
-ax.set_xticks(x, labels)
-ax.set_ylabel("coverage")
-ax.set_ylim(0, 1.05)
-ax.legend()
 plt.tight_layout()
 plt.show()

@@ -2,8 +2,8 @@
 Selective Prediction with Risk Control
 ======================================
 
-Choose the threshold on labeled calibration data so that the risk of the accepted predictions stays below a target
-(Geifman and El-Yaniv, 2017).
+Choose the threshold of a plain neural network on labeled calibration data so that the risk of the accepted
+predictions stays below a target (Geifman and El-Yaniv, 2017).
 """
 
 from __future__ import annotations
@@ -14,10 +14,8 @@ from sklearn.datasets import make_moons
 import torch
 from torch import nn
 
-from probly.evaluation.selective_prediction import evaluate_selective_prediction
 from probly.metrics.selective_prediction import risk_coverage_curve
-from probly.selective_prediction import SelectivePredictor, selector
-from probly.transformation import dropout
+from probly.selective_prediction import selective_predictor, selector
 
 from examples.utils.model import MLPClassifier
 
@@ -26,18 +24,19 @@ BLUE, RED = "#1e88e5", "#ff0d57"
 # %%
 # Data and model
 # --------------
+#
+# The network is an ordinary torch model. It is trained as usual, without a probly transformation.
 
 X, y = make_moons(n_samples=10500, noise=0.25, random_state=0)
 X_train, y_train = X[:500], y[:500]
 X_pool, y_pool = torch.from_numpy(X[500:]).float(), y[500:]
 
 torch.manual_seed(0)
-model = dropout(MLPClassifier(), p=0.2, predictor_type="logit_classifier")
+model = MLPClassifier()
 
 opt = torch.optim.Adam(model.parameters(), lr=1e-2)
 X_train_t = torch.from_numpy(X_train).float()
 y_train_t = torch.from_numpy(y_train).long()
-model.train()
 for _ in range(500):
     opt.zero_grad()
     nn.functional.cross_entropy(model(X_train_t), y_train_t).backward()
@@ -48,18 +47,20 @@ model.eval()
 # Calibrate and predict
 # ---------------------
 #
-# SGR needs the labels of the calibration instances, passed first. It returns the largest threshold it can
-# certify, such that with probability at least ``1 - delta`` over the calibration set, the risk of the accepted
-# predictions is at most ``risk``. The guarantee says nothing about the coverage. As in the paper, half of the pool
-# calibrates and half tests, and ``delta = 0.001``.
+# ``predictor_type="logit_classifier"`` tells :func:`~probly.selective_prediction.selective_predictor` to treat the
+# network as a classifier that outputs logits. Its criterion is then one minus the softmax probability of the
+# prediction, the softmax response of the paper.
+#
+# SGR needs the labels of the calibration instances, passed first. It returns the largest threshold it can certify,
+# such that with probability at least ``1 - delta`` over the calibration set, the risk of the accepted predictions is
+# at most ``risk``. The guarantee says nothing about the coverage. As in the paper, half of the pool calibrates and
+# half tests, and ``delta = 0.001``.
 
 risk, delta = 0.02, 0.001
 X_cal, y_cal = X_pool[:5000], y_pool[:5000]
 X_test, y_test = X_pool[5000:], y_pool[5000:]
 
-predictor = SelectivePredictor(
-    model, selector=selector(risk=risk, delta=delta), representer_kwargs={"num_samples": 100}
-)
+predictor = selective_predictor(model, selector=selector(risk=risk, delta=delta), predictor_type="logit_classifier")
 with torch.no_grad():
     predictor.calibrate(torch.from_numpy(y_cal), X_cal)
     result = predictor.predict(X_test)
@@ -73,11 +74,10 @@ print(f"test risk {wrong[accepted].mean():.3f}  test coverage {result.coverage:.
 # Risk control for several targets
 # --------------------------------
 #
-# The table follows the paper's Table 1: for each target risk ``r*``, the risk and coverage on the calibration
-# ("train") and test halves, and the certified bound ``b*``. The figure follows its Fig. 2: the test risk-coverage
-# curve of the criterion, from :func:`~probly.metrics.selective_prediction.risk_coverage_curve`, with the SGR operating
-# points on it. The uncertainties and errors are computed once, and the rule is fitted and applied on the arrays
-# directly.
+# For each target risk, the rule is fitted on the calibration half and applied to the test half. The figure shows
+# the test risk-coverage curve of the criterion, from :func:`~probly.metrics.selective_prediction.risk_coverage_curve`,
+# with the SGR operating points on it. They stay below their targets, and the gap to the curve is the price of the
+# guarantee.
 
 with torch.no_grad():
     pooled = predictor.predict(X_pool)
@@ -85,19 +85,14 @@ kappa = pooled.uncertainty.numpy()
 errors = (pooled.decision.probabilities.argmax(dim=-1).numpy() != y_pool).astype(float)
 cal, test = np.arange(5000), np.arange(5000, len(kappa))
 
-print(f"{'r*':>6} {'cal risk':>9} {'cal cov':>8} {'test risk':>9} {'test cov':>8} {'b*':>6}")
+target_risks = [0.02, 0.025, 0.03, 0.04, 0.05]
 points = []
-target_risks = [0.01, 0.015, 0.02, 0.025, 0.03, 0.035]
+print(f"{'target':>7} {'test risk':>9} {'test cov':>8}")
 for r in target_risks:
-    rule = selector(risk=r, delta=delta)
-    rule.calibrate(kappa[cal], errors[cal])
-    rows = []
-    for split in (cal, test):
-        mask = rule.select(kappa[split])
-        rows += [errors[split][mask].mean() if mask.any() else np.nan, mask.mean()]
-    points.append((rows[3], rows[2]))
-    print(f"{r:6.3f} {rows[0]:9.3f} {rows[1]:8.3f} {rows[2]:9.3f} {rows[3]:8.3f} {rule.bound:6.3f}")
-print(f"full-coverage test risk {errors[test].mean():.3f}")
+    rule = selector(risk=r, delta=delta).calibrate(kappa[cal], errors[cal])
+    mask = rule.select(kappa[test])
+    points.append((mask.mean(), errors[test][mask].mean()))
+    print(f"{r:7.3f} {points[-1][1]:9.3f} {points[-1][0]:8.3f}")
 
 curve_coverage, curve_risk, _ = risk_coverage_curve(kappa[test], errors[test])
 
@@ -112,17 +107,3 @@ ax.set_ylim(0, 1.1 * errors[test].mean())
 ax.legend(loc="upper left")
 plt.tight_layout()
 plt.show()
-
-# %%
-# Comparison with the empirical working points
-# --------------------------------------------
-#
-# :func:`~probly.evaluation.selective_prediction.evaluate_selective_prediction` reads the test curve at the targets:
-# ``"coverage@<r>"`` is the largest test coverage whose test risk is at most ``r``. It is what a threshold chosen on
-# the test set itself would reach, so it bounds the coverage of SGR from above. SGR pays for its guarantee with the
-# gap between the two.
-
-working_points = evaluate_selective_prediction(kappa[test], errors[test], [f"coverage@{r}" for r in target_risks])
-print(f"{'r*':>6} {'SGR cov':>8} {'best cov':>8}")
-for r, (sgr_coverage, _) in zip(target_risks, points, strict=True):
-    print(f"{r:6.3f} {sgr_coverage:8.3f} {working_points[f'coverage@{r}']:8.3f}")
