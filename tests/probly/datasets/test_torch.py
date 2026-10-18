@@ -24,6 +24,7 @@ from probly.datasets.torch import (
     CIFAR10C,
     CIFAR10H,
     CIFAR10HDCIC,
+    CIFAR100C,
     Benthic,
     DCICDataset,
     ImageNetReaL,
@@ -135,6 +136,25 @@ def test_dcic_dataset_class_labels_with_transform(tmp_path: Path) -> None:
     image, target = dataset[1]
     assert torch.equal(image, torch.zeros(3))  # transform applied
     assert target.ndim == 0  # a single sampled class index
+
+
+def test_dcic_dataset_string_labels_sorted(tmp_path: Path) -> None:
+    # Real DCIC annotations use string class labels. Iterating a set of strings follows the per-process
+    # hash seed, so the class indices must come from the sorted labels to be reproducible across runs.
+    root = tmp_path / "DS"
+    root.mkdir()
+    labels = ["worm", "coral", "star", "sponge", "bubbles", "cop", "det", "leaf"]
+    annotations = [
+        {"annotations": [{"image_path": f"DS/img{i}.png", "class_label": label} for i, label in enumerate(labels)]}
+    ]
+    with (root / "annotations.json").open("w") as f:
+        json.dump(annotations, f)
+    for i in range(len(labels)):
+        Image.new("RGB", (4, 4)).save(root / f"img{i}.png")
+    dataset = DCICDataset(root)
+    assert dataset.label_mappings == {label: idx for idx, label in enumerate(sorted(labels))}
+    _, target = dataset[0]  # img0 is annotated "worm", the last label in sorted order
+    assert target.argmax().item() == len(labels) - 1
 
 
 @patch("probly.datasets.torch.DCICDataset.__init__", return_value=None)
@@ -270,6 +290,47 @@ def test_cifar10c_download_invoked(mock_download: MagicMock, tmp_path: Path) -> 
     mock_download.side_effect = lambda *_args, **_kwargs: _write_fake_cifar10c(folder, "snow")
     dataset = CIFAR10C(tmp_path, "snow", severity=1, download=True)
     mock_download.assert_called_once_with(CIFAR10C.url, str(tmp_path), filename=CIFAR10C.filename, md5=CIFAR10C.tar_md5)
+    assert len(dataset) == 2
+
+
+def test_cifar100c_slicing_and_getitem(tmp_path: Path) -> None:
+    folder = tmp_path / "CIFAR-100-C"
+    _write_fake_cifar10c(folder, "gaussian_noise", n_per_severity=2)  # CIFAR-100-C shares the file layout
+    # The real release stores fine labels in 0..99 as uint8.
+    np.save(folder / "labels.npy", np.tile(np.array([49, 99], dtype=np.uint8), 5))
+    dataset = CIFAR100C(tmp_path, "gaussian_noise", severity=3)  # n=2 -> global rows [4:6]
+    assert len(dataset) == 2
+    img, target = dataset[0]
+    assert np.asarray(img)[0, 0, 0] == 4  # severity-3 slice starts at global row 4
+    assert target == 49
+    assert type(target) is int
+    _, target1 = dataset[1]
+    assert target1 == 99
+
+
+def test_cifar100c_ignores_cifar10c_folder(tmp_path: Path) -> None:
+    _write_fake_cifar10c(tmp_path / "CIFAR-10-C", "gaussian_noise")
+    with pytest.raises(RuntimeError, match="download=True"):
+        CIFAR100C(tmp_path, "gaussian_noise", severity=1)
+
+
+def test_cifar100c_invalid_corruption(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="Unknown corruption"):
+        CIFAR100C(tmp_path, "not_a_corruption", severity=1)
+
+
+@patch("probly.datasets.torch.download_and_extract_archive")
+def test_cifar100c_download_invoked(mock_download: MagicMock, tmp_path: Path) -> None:
+    folder = tmp_path / "CIFAR-100-C"
+    # Simulate the download: when invoked, materialize the fixtures so loading succeeds.
+    mock_download.side_effect = lambda *_args, **_kwargs: _write_fake_cifar10c(folder, "snow")
+    dataset = CIFAR100C(tmp_path, "snow", severity=1, download=True)
+    mock_download.assert_called_once_with(
+        "https://zenodo.org/records/3555552/files/CIFAR-100-C.tar",
+        str(tmp_path),
+        filename="CIFAR-100-C.tar",
+        md5="11f0ed0f1191edbf9fa23466ae6021d3",
+    )
     assert len(dataset) == 2
 
 
