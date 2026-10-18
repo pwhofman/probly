@@ -1,9 +1,9 @@
 """Selective prediction: predict or abstain based on the uncertainty of an uncertainty-aware model.
 
-A :class:`SelectivePredictor` wraps a model that probly can represent, e.g. an ensemble, an MC-dropout model, or a
+A :func:`selective_predictor` wraps a model that probly can represent, e.g. an ensemble, an MC-dropout model, or a
 plain classifier declared with :func:`~probly.method.cast`, and accepts or rejects each prediction with a
-:class:`Selector`, a rule on the uncertainty criterion. :func:`selector` builds it from the keywords that name its
-guarantee:
+:class:`~probly.selective_prediction.selectors.Selector`, a rule on the uncertainty criterion. :func:`selector` builds
+it from the keywords that name its guarantee:
 
 - ``threshold``: a fixed threshold; on the default criterion, Chow's rule :cite:`chowOptimumRecognition1970`.
 - ``coverage``: a target coverage, fitted without labels with a split-conformal guarantee
@@ -18,27 +18,20 @@ cover one quantity each: the coverage or the risk. They hold if
 
 - the calibration data is independent of the model and of any recalibration of it, e.g. temperature scaling;
 - the criterion is computed in the same way for calibration and test data, as
-  :meth:`~probly.selective_prediction.SelectivePredictor.calibrate` and
-  :meth:`~probly.selective_prediction.SelectivePredictor.predict` do;
+  ``calibrate`` and ``predict`` of the selective predictor do;
 - a random model, e.g. with MC dropout, draws its randomness independently per instance; with a dropout mask shared
   across the batch, they hold only approximately.
 """
 
 from __future__ import annotations
 
-from probly.lazy_types import TORCH_TENSOR
-
-from ._common import SelectivePrediction, SelectivePredictor, Selector, _to_float64_numpy, selector
-
-
-@_to_float64_numpy.delayed_register(TORCH_TENSOR)
-def _(_: type) -> None:
-    from . import torch as torch  # noqa: PLC0415
-
+from ._common import SelectivePrediction, SelectivePredictor, selective_predictor
+from .selectors import Selector, selector
 
 __all__ = [
     "SelectivePrediction",
     "SelectivePredictor",
     "Selector",
+    "selective_predictor",
     "selector",
 ]
