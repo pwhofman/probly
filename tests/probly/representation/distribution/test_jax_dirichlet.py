@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
+from jax.experimental import checkify
 from scipy import stats
 
 from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
@@ -129,6 +131,20 @@ def test_operator_add_returns_distribution_and_keeps_positive() -> None:
     out2 = dist - 1000.0
     assert isinstance(out2, JaxDirichletDistribution)
     assert jnp.all(out2.alphas >= 1e-10)
+
+
+def test_distribution_opt_ins_and_traced_reconstruction() -> None:
+    d = JaxDirichletDistribution(jnp.array([[1.0, 2.0], [3.0, 4.0]]))
+    error, result = jax.jit(checkify.checkify(lambda x: 2 - x))(d)
+    error.throw()
+    np.testing.assert_allclose(result.alphas, jnp.maximum(2 - d.alphas, 1e-10))
+    with pytest.raises(TypeError):
+        _ = d * 2
+
+
+def test_eager_distribution_validation_is_preserved() -> None:
+    with pytest.raises(ValueError, match="strictly positive"):
+        JaxDirichletDistribution(jnp.array([-1.0, 2.0]))
 
 
 def test_copy_creates_independent_array() -> None:

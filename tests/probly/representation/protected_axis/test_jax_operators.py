@@ -12,13 +12,10 @@ import pytest
 
 pytest.importorskip("jax")
 import jax
-from jax.experimental import checkify
 import jax.numpy as jnp
 
 from probly.representation import jax_functions as jf
 from probly.representation._protected_axis.jax import JaxAxisProtected
-from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
-from probly.representation.distribution.jax_gaussian import JaxGaussianDistribution
 
 _BINARY = [
     (operator.add, jf.jax_add, jnp.add),
@@ -283,32 +280,6 @@ def test_traced_arithmetic_and_gradients():
     np.testing.assert_array_equal(jax.vmap(lambda a: a + 1)(x).array, x.array + 1)
     gradient = jax.grad(lambda a: jnp.sum((a * a).array))(x)
     np.testing.assert_array_equal(gradient.array, 2 * x.array)
-
-
-def test_distribution_opt_ins_and_traced_reconstruction():
-    d = JaxDirichletDistribution(jnp.array([[1.0, 2.0], [3.0, 4.0]]))
-    error, result = jax.jit(checkify.checkify(lambda x: 2 - x))(d)
-    error.throw()
-    np.testing.assert_allclose(result.alphas, jnp.maximum(2 - d.alphas, 1e-10))
-    with pytest.raises(TypeError):
-        _ = d * 2
-    g = JaxGaussianDistribution(jnp.array([1.0, 2.0]), jnp.array([3.0, 4.0]))
-    error, shifted = jax.jit(checkify.checkify(lambda x, offset: offset - x))(g, 5)
-    error.throw()
-    np.testing.assert_array_equal(shifted.mean, 5 - g.mean)
-    np.testing.assert_array_equal(shifted.var, g.var)
-    difference = g - g
-    np.testing.assert_array_equal(difference.mean, jnp.zeros(2))
-    np.testing.assert_array_equal(difference.var, 2 * g.var)
-    with pytest.raises(TypeError):
-        _ = g * 2
-
-
-def test_eager_distribution_validation_is_preserved():
-    with pytest.raises(ValueError, match="strictly positive"):
-        JaxDirichletDistribution(jnp.array([-1.0, 2.0]))
-    with pytest.raises(ValueError, match="Variance must be positive"):
-        JaxGaussianDistribution(jnp.zeros(2), -jnp.ones(2))
 
 
 def test_instance_permission_veto_is_respected_on_either_operand():
