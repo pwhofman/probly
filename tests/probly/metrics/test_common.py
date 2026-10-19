@@ -85,3 +85,27 @@ class TestMetricFallbacks:
 
         with pytest.raises(NotImplementedError, match="convex_hull_coverage"):
             convex_hull_coverage(object(), object())
+
+    def test_log_loss_per_instance_raises(self) -> None:
+        from probly.metrics._common import log_loss_per_instance  # noqa: PLC0415
+
+        with pytest.raises(NotImplementedError, match="log_loss_per_instance"):
+            log_loss_per_instance(object(), object())
+
+    def test_brier_loss_per_instance_raises(self) -> None:
+        from probly.metrics._common import brier_loss_per_instance  # noqa: PLC0415
+
+        with pytest.raises(NotImplementedError, match="brier_loss_per_instance"):
+            brier_loss_per_instance(object(), object())
+
+    def test_zero_one_loss_per_instance_raises(self) -> None:
+        from probly.metrics._common import zero_one_loss_per_instance  # noqa: PLC0415
+
+        with pytest.raises(NotImplementedError, match="zero_one_loss_per_instance"):
+            zero_one_loss_per_instance(object(), object())
+
+    def test_spherical_loss_per_instance_raises(self) -> None:
+        from probly.metrics._common import spherical_loss_per_instance  # noqa: PLC0415
+
+        with pytest.raises(NotImplementedError, match="spherical_loss_per_instance"):
+            spherical_loss_per_instance(object(), object())

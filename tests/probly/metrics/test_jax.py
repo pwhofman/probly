@@ -110,6 +110,29 @@ class TestScoringRuleInputs:
         dist = JaxLogitCategoricalDistribution(jnp.array([[0.0, -800.0]]))
         assert float(log_loss_per_instance(dist, jnp.array([1]))[0]) == pytest.approx(800.0)
 
+    def test_logit_distribution_scores_normalized_probabilities(self):
+        from probly.metrics import (  # noqa: PLC0415
+            brier_loss_per_instance,
+            log_loss_per_instance,
+            spherical_loss_per_instance,
+            zero_one_loss_per_instance,
+        )
+        from probly.representation.distribution.jax_categorical import (  # noqa: PLC0415
+            JaxLogitCategoricalDistribution,
+        )
+
+        probs = jnp.array([[0.7, 0.2, 0.1], [0.1, 0.3, 0.6]])
+        labels = jnp.array([0, 1])
+        # Shifted log probabilities are unnormalized logits of the same distribution.
+        dist = JaxLogitCategoricalDistribution(jnp.log(probs) + 1.0)
+        for rule in (
+            log_loss_per_instance,
+            brier_loss_per_instance,
+            zero_one_loss_per_instance,
+            spherical_loss_per_instance,
+        ):
+            assert jnp.allclose(rule(dist, labels), rule(probs, labels), rtol=1e-5), rule.__name__
+
     def test_distribution_target_matches_array(self):
         from probly.metrics import brier_loss_per_instance  # noqa: PLC0415
         from probly.representation.distribution.jax_categorical import (  # noqa: PLC0415

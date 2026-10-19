@@ -114,6 +114,29 @@ class TestScoringRuleInputs:
         dist = NumpyLogitCategoricalDistribution(array=np.array([[0.0, -800.0]]))
         assert float(log_loss_per_instance(dist, np.array([1]))[0]) == pytest.approx(800.0)
 
+    def test_logit_distribution_scores_normalized_probabilities(self):
+        from probly.metrics import (  # noqa: PLC0415
+            brier_loss_per_instance,
+            log_loss_per_instance,
+            spherical_loss_per_instance,
+            zero_one_loss_per_instance,
+        )
+        from probly.representation.distribution.numpy_categorical import (  # noqa: PLC0415
+            NumpyLogitCategoricalDistribution,
+        )
+
+        probs = np.array([[0.7, 0.2, 0.1], [0.1, 0.3, 0.6]])
+        labels = np.array([0, 1])
+        # Shifted log probabilities are unnormalized logits of the same distribution.
+        dist = NumpyLogitCategoricalDistribution(array=np.log(probs) + 1.0)
+        for rule in (
+            log_loss_per_instance,
+            brier_loss_per_instance,
+            zero_one_loss_per_instance,
+            spherical_loss_per_instance,
+        ):
+            np.testing.assert_allclose(rule(dist, labels), rule(probs, labels), rtol=1e-12, err_msg=rule.__name__)
+
     def test_distribution_target_matches_array(self):
         from probly.metrics import brier_loss_per_instance  # noqa: PLC0415
         from probly.representation.distribution.numpy_categorical import (  # noqa: PLC0415
