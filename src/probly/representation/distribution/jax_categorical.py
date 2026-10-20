@@ -9,15 +9,15 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self, overload, override
 import jax
 from jax.experimental import checkify
 import jax.numpy as jnp
+from ndlike.jax_functions import jax_average, jax_mean
+from ndlike.protected_axis.jax import JaxAxisProtected
 
-from probly.representation._protected_axis.jax import JaxAxisProtected
 from probly.representation.distribution._common import (
     CategoricalDistribution,
     CategoricalDistributionSample,
     create_categorical_distribution,
     create_categorical_distribution_from_logits,
 )
-from probly.representation.jax_functions import jax_average, jax_mean
 from probly.representation.sample.jax import JaxSample
 from probly.utils.jax import jax_fresh_prng_key
 

@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, override
 
 import jax
 import jax.numpy as jnp
+from ndlike.jax_functions import jax_mean
+from ndlike.protected_axis.jax import JaxAxisProtected
 
-from probly.representation._protected_axis.jax import JaxAxisProtected
 from probly.representation.credal_set._common import (
     CategoricalCredalSet,
     ConvexCredalSet,
@@ -28,7 +29,6 @@ from probly.representation.distribution.jax_categorical import (
     JaxCategoricalDistribution,
     JaxProbabilityCategoricalDistribution,
 )
-from probly.representation.jax_functions import jax_mean
 from probly.representation.sample.jax import JaxSample
 from probly.utils.jax import jax_intersection_probability
 
@@ -119,7 +119,7 @@ class JaxConvexCredalSet(
     @property
     def barycenter(self) -> JaxCategoricalDistribution:
         """Compute the barycenter of the convex credal set as the mean of the vertices."""
-        return jax_mean(self.tensor, axis=-1)  # ty:ignore[invalid-argument-type, invalid-return-type]
+        return jax_mean(self.tensor, axis=-1)  # ty:ignore[invalid-return-type]
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]

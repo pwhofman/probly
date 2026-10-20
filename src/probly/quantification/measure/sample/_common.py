@@ -11,7 +11,7 @@ from probly.representation.distribution._common import CategoricalDistributionSa
 from probly.representation.sample._common import Sample
 
 if TYPE_CHECKING:
-    from probly.representation.array_like import ArrayLike
+    from ndlike.array_like import ArrayLike
 
 
 @measure_atomic.register(Sample)

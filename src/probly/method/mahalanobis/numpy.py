@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import ClassVar
 
+from ndlike.protected_axis.numpy import NumpyAxisProtected
 import numpy as np
 
-from probly.representation._protected_axis.numpy import NumpyAxisProtected
 from probly.representation.distribution.numpy_categorical import NumpyCategoricalDistribution
 
 from ._common import (

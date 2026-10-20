@@ -17,7 +17,9 @@ from probly.transformation.transformation import predictor_transformation
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from probly.representation.array_like import ArrayLike
+    from ndlike.array_like import ArrayLike
+    import numpy as np
+
     from probly.representation.distribution._common import CategoricalDistribution
 
 type FeatureNodes = Sequence[str] | None
@@ -52,9 +54,9 @@ class MahalanobisRepresentation(Representation, Protocol):
 @flexdispatch
 def create_mahalanobis_representation(
     softmax: CategoricalDistribution,
-    layer_scores: ArrayLike,
-    weight: ArrayLike,
-    bias: ArrayLike,
+    layer_scores: ArrayLike | np.ndarray,
+    weight: ArrayLike | np.ndarray,
+    bias: ArrayLike | np.ndarray,
 ) -> MahalanobisRepresentation:
     """Create a Mahalanobis representation from softmax, layer scores and combiner weights."""
     msg = f"No Mahalanobis representation factory registered for softmax type {type(softmax)}"

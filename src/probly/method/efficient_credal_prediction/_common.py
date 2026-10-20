@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
+from ndlike.array_like import ArrayLike
 
 from probly.predictor import LogitClassifier, predict
-from probly.representation.array_like import ArrayLike
 from probly.representation.credal_set import (
     ProbabilityIntervalsCredalSet,
     create_probability_intervals_from_lower_upper_array,
@@ -17,8 +17,10 @@ from probly.representer._representer import Representer, representer
 from probly.transformation.transformation import predictor_transformation
 
 if TYPE_CHECKING:
+    import numpy as np
+    import torch
+
     from probly.predictor import Predictor
-    from probly.representation.array_like import ArrayLike
 
 
 @runtime_checkable
@@ -73,7 +75,7 @@ def _validate_alpha(alpha: float) -> None:
 
 
 @flexdispatch
-def compute_efficient_credal_prediction_bounds[T: ArrayLike](
+def compute_efficient_credal_prediction_bounds[T: ArrayLike | np.ndarray | torch.Tensor](
     logits_train: T,
     targets_train: T,
     num_classes: int,
@@ -89,7 +91,7 @@ def compute_efficient_credal_prediction_bounds[T: ArrayLike](
 
 
 @flexdispatch
-def compute_efficient_credal_bounds[T: ArrayLike](logits: T, lower: T, upper: T) -> T:
+def compute_efficient_credal_bounds[T: ArrayLike | np.ndarray | torch.Tensor](logits: T, lower: T, upper: T) -> T:
     """Compute packed ``(B, 2C)`` interval probability bounds via 2K logit perturbations.
 
     Implements the inference step of :cite:`hofmanEfficientCredal2026`: for each class

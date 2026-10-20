@@ -5,16 +5,16 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, override
 
+from ndlike.protected_axis.torch import TorchAxisProtected
+from ndlike.torch_functions import torch_average
 import torch
 
-from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.distribution._common import DirichletDistribution, create_dirichlet_distribution_from_alphas
 from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistribution,
     TorchProbabilityCategoricalDistribution,
 )
 from probly.representation.sample.torch import TorchSample
-from probly.representation.torch_functions import torch_average
 
 if TYPE_CHECKING:
     from collections.abc import Callable

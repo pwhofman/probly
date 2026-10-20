@@ -6,9 +6,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar, Self, override
 
+from ndlike.protected_axis.numpy import NumpyAxisProtected
 import numpy as np
 
-from probly.representation._protected_axis.numpy import NumpyAxisProtected
 from probly.representation.credal_set._common import (
     CategoricalCredalSet,
     ConvexCredalSet,

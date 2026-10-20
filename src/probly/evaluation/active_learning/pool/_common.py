@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from flextype import flexdispatch
 
 if TYPE_CHECKING:
-    from probly.representation.array_like import ArrayLike
+    from ndlike.array_like import ArrayLike
 
 
 @runtime_checkable

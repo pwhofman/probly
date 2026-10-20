@@ -17,8 +17,9 @@ from probly.transformation.transformation import predictor_transformation
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from ndlike.array_like import ArrayLike
+
     from probly.quantification.measure.distribution import LogBase
-    from probly.representation.array_like import ArrayLike
     from probly.representation.distribution._common import CategoricalDistribution
 
 

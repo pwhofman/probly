@@ -856,14 +856,14 @@ wheels = [
 
 [[package]]
 name = "flextype"
-version = "0.1.2"
+version = "0.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bb/7f/83466b8152e8e9689b426a8f01126e59831aa9624f29e49576b754c4f4c0/flextype-0.1.2.tar.gz", hash = "sha256:d0c671ef1fb33e1f60e1afc0b386132e84d977bbda63dc46b8021b3eef32e8c6", size = 21026, upload-time = "2026-07-31T09:44:54.391Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/41/7f/6de996e04570aa0cef54dbdc8531891865a88c59a5cca978f85e28e565f9/flextype-0.2.0.tar.gz", hash = "sha256:f139a8fa87255ec827db8bfc5a31737d7544048b9a33bcdba12deb39ff6cbfc7", size = 25450, upload-time = "2026-10-19T21:44:02.538Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3c/da/56c3fe7f241cfd3f0a2e758b8c1169eef46bd70fae31c0fc6594fc69cc57/flextype-0.1.2-py3-none-any.whl", hash = "sha256:a61ff10dd063c2d7fcd72418e45d80e730088ea9c217a79b091024d8b9987aa7", size = 20526, upload-time = "2026-07-31T09:44:52.923Z" },
+    { url = "https://files.pythonhosted.org/packages/48/65/538ba74cf8621966e87300405398a92d2961650f6525addde7e66fe49d97/flextype-0.2.0-py3-none-any.whl", hash = "sha256:230db60540d794370e2a9a064d86af57b74d19e833338889c4c772ef10ae276e", size = 24875, upload-time = "2026-10-19T21:44:01.154Z" },
 ]
 
 [[package]]
@@ -2135,6 +2135,19 @@ wheels = [
 ]
 
 [[package]]
+name = "ndlike"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "flextype" },
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/50/e7/611f3da2cc87954bf83f7accce3337aaff78403b380b9b1722795bb74b31/ndlike-0.1.0.tar.gz", hash = "sha256:76082019eec62c60809f7c7b2de6bfaddf140a843104cc4d4ace622bb5af8076", size = 50932, upload-time = "2026-10-20T01:54:16.635Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/49/ea/1a05bba86d45a18ddc9e73ded46aa16f0dc566bd095daccc9edd5396015e/ndlike-0.1.0-py3-none-any.whl", hash = "sha256:8004fb105a6792b808eee392511bb5ecfa3649513f0e38b926e655686ba67902", size = 57311, upload-time = "2026-10-20T01:54:15.207Z" },
+]
+
+[[package]]
 name = "nest-asyncio"
 version = "1.6.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2648,6 +2661,7 @@ dependencies = [
     { name = "flextype" },
     { name = "matplotlib" },
     { name = "mpltern" },
+    { name = "ndlike" },
     { name = "numpy" },
     { name = "scipy" },
     { name = "tqdm" },
@@ -2790,9 +2804,10 @@ transformers = [
 
 [package.metadata]
 requires-dist = [
-    { name = "flextype", specifier = ">=0.1.2" },
+    { name = "flextype", specifier = ">=0.2.0" },
     { name = "matplotlib", specifier = ">=3.9.2" },
     { name = "mpltern", specifier = ">=0.6.0" },
+    { name = "ndlike", specifier = ">=0.1.0" },
     { name = "numpy", specifier = ">=2.1.0" },
     { name = "scipy", specifier = ">=1.14.1" },
     { name = "tqdm", specifier = ">=4.25.0" },

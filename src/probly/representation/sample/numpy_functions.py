@@ -14,10 +14,10 @@ from probly.utils import switchdispatch
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from probly.representation.array_like import NumpyArrayLike, Order
+    from ndlike.array_like import NumpyLike, Order
 
 
-class NumpySampleCreator[D: NumpyArrayLike](Protocol):
+class NumpySampleCreator[D: NumpyLike](Protocol):
     """Protocol for creating sample arrays."""
 
     def __call__(self, array: D, sample_axis: int, weights: np.ndarray | None) -> Any:  # noqa: ANN401
@@ -25,7 +25,7 @@ class NumpySampleCreator[D: NumpyArrayLike](Protocol):
 
 
 @dataclass(frozen=True, slots=True)
-class NumpySampleInternals[D: NumpyArrayLike]:
+class NumpySampleInternals[D: NumpyLike]:
     """Internal information about a sample array."""
 
     create: NumpySampleCreator[D]
@@ -66,7 +66,7 @@ class _NumpyBoundFunctionWithInternals(Protocol):
         func: Callable,
         params: BoundArguments,
         create_sample: NumpySampleCreator,
-        array: NumpyArrayLike,
+        array: NumpyLike,
         sample_axis: int,
         weights: np.ndarray | None,
     ) -> Any:  # noqa: ANN401
@@ -192,7 +192,7 @@ def numpy_copy_function(
     func: Callable,
     params: BoundArguments,
     create_sample: NumpySampleCreator,
-    array: NumpyArrayLike,
+    array: NumpyLike,
     sample_axis: int,
     weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
@@ -280,7 +280,7 @@ def numpy_transpose(
     func: Callable,
     params: BoundArguments,
     create_sample: NumpySampleCreator,
-    array: NumpyArrayLike,
+    array: NumpyLike,
     sample_axis: int,
     weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
@@ -301,7 +301,7 @@ def numpy_matrix_transpose(
     func: Callable,
     params: BoundArguments,  # noqa: ARG001
     create_sample: NumpySampleCreator,
-    array: NumpyArrayLike,
+    array: NumpyLike,
     sample_axis: int,
     weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
@@ -333,7 +333,7 @@ def numpy_sample_axis_preserving_function(
     func: Callable,
     params: BoundArguments,
     create_sample: NumpySampleCreator,
-    array: NumpyArrayLike,  # noqa: ARG001
+    array: NumpyLike,  # noqa: ARG001
     sample_axis: int,
     weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
@@ -349,7 +349,7 @@ def numpy_reshape_function(  # noqa: PLR0912
     func: Callable,
     params: BoundArguments,
     create_sample: NumpySampleCreator,
-    array: NumpyArrayLike,
+    array: NumpyLike,
     sample_axis: int,
     weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
@@ -411,7 +411,7 @@ def numpy_swapaxes_function(
     func: Callable,
     params: BoundArguments,
     create_sample: NumpySampleCreator,
-    array: NumpyArrayLike,
+    array: NumpyLike,
     sample_axis: int,
     weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
@@ -441,7 +441,7 @@ def numpy_expand_dims_function(
     func: Callable,
     params: BoundArguments,
     create_sample: NumpySampleCreator,
-    array: NumpyArrayLike,
+    array: NumpyLike,
     sample_axis: int,
     weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
@@ -469,7 +469,7 @@ def numpy_squeeze_function(
     func: Callable,
     params: BoundArguments,
     create_sample: NumpySampleCreator,
-    array: NumpyArrayLike,
+    array: NumpyLike,
     sample_axis: int,
     weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
@@ -506,7 +506,7 @@ def numpy_apply_along_axis_function(
     func: Callable,
     params: BoundArguments,
     create_sample: NumpySampleCreator,
-    array: NumpyArrayLike,
+    array: NumpyLike,
     sample_axis: int,
     weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
@@ -528,10 +528,10 @@ def numpy_apply_along_axis_function(
 
 
 def _extract_sample_array_sequence_internals(
-    arrays: tuple[NumpyArrayLike, ...],
-) -> tuple[list[NumpyArrayLike], list[np.ndarray | None], bool, NumpySampleCreator | None, int | None, int | None]:
+    arrays: tuple[NumpyLike, ...],
+) -> tuple[list[NumpyLike], list[np.ndarray | None], bool, NumpySampleCreator | None, int | None, int | None]:
     """Extract the internals of a sequence of sample arrays."""
-    cast_arrays: list[NumpyArrayLike] = []
+    cast_arrays: list[NumpyLike] = []
     weights: list[np.ndarray | None] = []
     has_sample_arrays = False
     sample_axes: set[int] = set()

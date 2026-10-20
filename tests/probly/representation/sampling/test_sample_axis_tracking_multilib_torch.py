@@ -5,9 +5,9 @@ from __future__ import annotations
 import pytest
 
 pytest.importorskip("torch")
+from ndlike.array_like import ToIndices
 import torch
 
-from probly.representation.array_like import ToIndices
 from probly.representation.sample.axis_tracking import track_axis as track_axis_result
 
 

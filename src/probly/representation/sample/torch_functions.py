@@ -6,15 +6,15 @@ from dataclasses import dataclass
 from functools import singledispatch, wraps
 from typing import TYPE_CHECKING, Any, Protocol, overload
 
+from ndlike.torch_functions import torch_average
 import torch
 
-from probly.representation.torch_functions import torch_average
 from probly.utils import switchdispatch
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from probly.representation.torch_like import TorchLike
+    from ndlike.torch_like import TorchLike
 
 
 class TorchSampleCreator[D: TorchLike](Protocol):

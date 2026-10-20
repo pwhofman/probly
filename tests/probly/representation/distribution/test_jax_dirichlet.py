@@ -9,11 +9,7 @@ pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
 from jax.experimental import checkify
-from scipy import stats
-
-from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
-from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
-from probly.representation.jax_functions import (
+from ndlike.jax_functions import (
     jax_average,
     jax_expand_dims,
     jax_mean,
@@ -21,6 +17,10 @@ from probly.representation.jax_functions import (
     jax_sum,
     jax_transpose,
 )
+from scipy import stats
+
+from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
+from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
 from probly.representation.sample.jax import JaxSample
 
 
@@ -103,7 +103,7 @@ def test_jax_properties_batched() -> None:
 def test_len_behaviour() -> None:
     """Test __len__ behaviour (like "unsized bs. sized containers)."""
     dist_single = JaxDirichletDistribution.from_array([1.0, 2.0, 3.0])
-    with pytest.raises(TypeError, match=r"len\(\) of unsized distribution"):
+    with pytest.raises(TypeError, match=r"len\(\) of unsized object"):
         _ = len(dist_single)
 
     dist_batch = JaxDirichletDistribution.from_array(jnp.ones((5, 3)))
@@ -305,7 +305,7 @@ def test_average_preserves_distribution_type_and_uses_weights() -> None:
 
     assert isinstance(averaged, JaxDirichletDistribution)
     assert averaged.shape == (3,)
-    assert jnp.allclose(averaged.alphas, jax_average(alphas, axis=0, weights=weights))
+    assert jnp.allclose(averaged.alphas, jnp.average(alphas, axis=0, weights=weights))
 
 
 def test_mean_returns_probability_categorical() -> None:

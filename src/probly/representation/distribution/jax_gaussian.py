@@ -9,15 +9,15 @@ import jax
 from jax import numpy as jnp
 from jax.experimental import checkify
 from jax.scipy.stats import norm
+from ndlike.jax_functions import jax_add, jax_stack, jax_subtract
+from ndlike.protected_axis.jax import JaxAxisProtected
 import numpy as np
 
-from probly.representation._protected_axis.jax import JaxAxisProtected
 from probly.representation.distribution._common import (
     GaussianDistribution,
     GaussianDistributionSample,
     create_gaussian_distribution,
 )
-from probly.representation.jax_functions import jax_add, jax_stack, jax_subtract
 from probly.representation.sample.jax import JaxSample
 from probly.utils.jax import jax_fresh_prng_key
 

@@ -8,8 +8,7 @@ import math
 from typing import TYPE_CHECKING, Any, Protocol, overload
 
 import jax.numpy as jnp
-
-from probly.representation.jax_functions import (
+from ndlike.jax_functions import (
     jax_average,
     jax_concatenate,
     jax_conj,
@@ -28,6 +27,7 @@ from probly.representation.jax_functions import (
     jax_transpose,
     jax_var,
 )
+
 from probly.representation.sample.numpy_functions import track_sample_axis_after_reduction
 from probly.utils import switchdispatch
 
@@ -35,8 +35,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
     import jax
-
-    from probly.representation.jax_like import JaxLike
+    from ndlike.jax_like import JaxLike
 
 
 class JaxSampleCreator[D: JaxLike | jax.Array](Protocol):

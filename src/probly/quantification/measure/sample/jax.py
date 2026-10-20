@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import jax
 from jax import numpy as jnp
+from ndlike.jax_functions import jax_mean, jax_sum
 
 from probly.quantification.measure.sample._common import (
     mean_squared_distance_to_scaled_one_hot,
     total_logit_sample_variance,
 )
 from probly.representation.distribution.jax_categorical import JaxCategoricalDistributionSample
-from probly.representation.jax_functions import jax_mean, jax_sum
 
 
 @mean_squared_distance_to_scaled_one_hot.register(JaxCategoricalDistributionSample)

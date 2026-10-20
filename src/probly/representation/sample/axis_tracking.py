@@ -12,7 +12,7 @@ import numpy as np
 from probly.lazy_types import JAX_ARRAY, TORCH_TENSOR
 
 if TYPE_CHECKING:
-    from probly.representation.array_like import ToIndex, ToIndices
+    from ndlike.array_like import ToIndex, ToIndices
 
 
 @dataclass(frozen=True, slots=True)
