@@ -79,10 +79,11 @@ def evaluate_selective_prediction(
         - ``"<name>:coverage"`` for ``"risk@<coverage>"``: the coverage that was actually used. It is above the
           target when the target is not a reachable coverage, and it can be far above it when many criterion
           values are tied.
+          ``"<name>:coverage"`` is omitted for a target of 1, since the realized coverage is then always 1.
         - ``"<name>:risk"`` for ``"coverage@<risk>"``: the selective risk at that coverage, or NaN if no
           coverage meets the target.
 
-        The default set thus returns ``"aurc"``, ``"augrc"``, ``"risk@1"`` and ``"risk@1:coverage"``.
+        The default set thus returns ``"aurc"``, ``"augrc"`` and ``"risk@1"``.
 
     Raises:
         ValueError: If a metric name is unknown or its target value is invalid, and for the invalid inputs
@@ -122,7 +123,9 @@ def evaluate_selective_prediction(
                 raise ValueError(msg) from None
             value, companion = function(criterion, losses, target_value)
             results[name] = float(value)  # ty:ignore[invalid-argument-type]
-            results[f"{name}:{_COMPANIONS[base.strip()]}"] = float(companion)  # ty:ignore[invalid-argument-type]
+            # realized coverage at target 1 is always 1.
+            if not (base.strip() == "risk" and target_value == 1):
+                results[f"{name}:{_COMPANIONS[base.strip()]}"] = float(companion)  # ty:ignore[invalid-argument-type]
             continue
         results[name] = float(value)  # ty:ignore[invalid-argument-type]
     return results

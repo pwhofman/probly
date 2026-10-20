@@ -22,7 +22,6 @@ def test_evaluate_default_metrics() -> None:
         "aurc": aurc(criterion, losses),
         "augrc": augrc(criterion, losses),
         "risk@1": float(np.mean(losses)),
-        "risk@1:coverage": 1.0,
     }
     assert evaluate_selective_prediction(criterion, losses, "all") == result
     assert evaluate_selective_prediction(criterion, losses, "ALL") == result
@@ -41,6 +40,13 @@ def test_evaluate_working_points() -> None:
         "Coverage@0.4:risk": best_risk,
     }
     assert all(isinstance(value, float) for value in result.values())
+
+
+def test_evaluate_risk_at_1_drops_companion() -> None:
+    criterion = np.array([0.1, 0.5, 0.5, 0.9])
+    losses = np.array([0.0, 1.0, 0.0, 1.0])
+    result = evaluate_selective_prediction(criterion, losses, ["risk@1", "risk@100%", "risk@0.5"])
+    assert set(result) == {"risk@1", "risk@100%", "risk@0.5", "risk@0.5:coverage"}
 
 
 def test_evaluate_percentage_targets() -> None:
