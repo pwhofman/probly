@@ -7,9 +7,8 @@ from functools import singledispatch, wraps
 from inspect import BoundArguments, signature
 from typing import TYPE_CHECKING, Any, Literal, Protocol, overload
 
+from flextype import switchdispatch
 import numpy as np
-
-from probly.utils import switchdispatch
 
 if TYPE_CHECKING:
     from collections.abc import Callable

@@ -7,6 +7,7 @@ from functools import singledispatch, wraps
 import math
 from typing import TYPE_CHECKING, Any, Protocol, overload
 
+from flextype import switchdispatch
 import jax.numpy as jnp
 from ndlike.jax_functions import (
     jax_average,
@@ -29,7 +30,6 @@ from ndlike.jax_functions import (
 )
 
 from probly.representation.sample.numpy_functions import track_sample_axis_after_reduction
-from probly.utils import switchdispatch
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence

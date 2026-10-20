@@ -14,7 +14,7 @@ dependencies = [
     "mpltern>=0.6.0",
     "numpy>=2.1.0", # first cp313 wheels
     "tqdm>=4.25.0",
-    "flextype>=0.2.0",
+    "flextype>=0.3.0",
     "ndlike>=0.1.0",
 ]
 authors = [
