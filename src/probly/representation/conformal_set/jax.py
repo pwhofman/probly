@@ -10,8 +10,8 @@ if TYPE_CHECKING:
 
 from jax import numpy as jnp
 from jax.experimental import checkify
+from ndlike.protected_axis.jax import JaxAxisProtected
 
-from probly.representation._protected_axis.jax import JaxAxisProtected
 from probly.representation.conformal_set._common import (
     IntervalConformalSet,
     OneHotConformalSet,

@@ -7,13 +7,7 @@ import pytest
 pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
-import numpy as np
-
-from probly.representation.distribution.jax_categorical import (
-    JaxLogitCategoricalDistribution,
-    JaxProbabilityCategoricalDistribution,
-)
-from probly.representation.jax_functions import (
+from ndlike.jax_functions import (
     jax_average,
     jax_concatenate,
     jax_conj,
@@ -32,7 +26,13 @@ from probly.representation.jax_functions import (
     jax_transpose,
     jax_var,
 )
-from probly.representation.jax_like import JaxLikeImplementation, to_jax_like
+from ndlike.jax_like import JaxLikeImplementation, to_jax_like
+import numpy as np
+
+from probly.representation.distribution.jax_categorical import (
+    JaxLogitCategoricalDistribution,
+    JaxProbabilityCategoricalDistribution,
+)
 from probly.representation.sample.jax import JaxSample
 from probly.representation.sample.numpy import NumpySample
 
@@ -240,6 +240,16 @@ class TestJaxSampleEdgeCases:
 
         s = JaxSample(jnp.arange(6).reshape(2, 3), sample_axis=0)
         assert s.device is not None
+
+    @pytest.mark.parametrize("wrapped", [False, True])
+    def test_sharding_and_devices_delegate_to_array(self, wrapped: bool) -> None:
+        array = jnp.ones((2, 3))
+        if wrapped:
+            array = JaxProbabilityCategoricalDistribution(array)
+        sample = JaxSample(array, sample_axis=0)
+
+        assert sample.sharding is array.sharding
+        assert sample.devices() == array.devices()
 
     def test_array_namespace(self) -> None:
         _, jnp = _jax_modules()

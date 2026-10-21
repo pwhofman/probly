@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING, Literal
 from flextype import flexdispatch
 
 if TYPE_CHECKING:
-    from probly.representation.array_like import ArrayLike
+    from ndlike.array_like import ArrayLike
+
     from probly.representation.distribution import Distribution, SecondOrderDistribution
     from probly.representation.sample import Sample
 

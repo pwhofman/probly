@@ -10,6 +10,7 @@ import jax
 from jax import numpy as jnp
 from jax.experimental import checkify
 from jax.scipy.special import logit
+from ndlike.jax_functions import jax_stack
 
 from probly.representation.distribution._common import (
     BernoulliDistribution,
@@ -22,7 +23,6 @@ from probly.representation.distribution.jax_categorical import (
     JaxLogitCategoricalDistribution,
     JaxProbabilityCategoricalDistribution,
 )
-from probly.representation.jax_functions import jax_stack
 from probly.representation.sample.jax import JaxSample
 
 

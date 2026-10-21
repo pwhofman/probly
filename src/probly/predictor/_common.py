@@ -6,7 +6,7 @@ from collections.abc import Callable, Iterable
 from contextvars import ContextVar
 from typing import Any, ClassVar, Literal, Protocol, runtime_checkable
 
-from flextype import ProtocolRegistry, flexdispatch
+from flextype import ProtocolRegistry, flexdispatch, switch
 
 from probly.representation import Representation
 from probly.representation.credal_set import CredalSet, ProbabilityIntervalsCredalSet
@@ -23,7 +23,6 @@ from probly.representation.distribution import (
     create_categorical_distribution_from_logits,
     create_gaussian_distribution,
 )
-from probly.utils.switchdispatch import switch
 
 type PredictorName = Literal[
     "bernoulli_distribution_predictor",

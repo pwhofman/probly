@@ -5,10 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, override
 
+from ndlike.protected_axis.numpy import NumpyAxisProtected
 import numpy as np
 from scipy.stats import norm
 
-from probly.representation._protected_axis.numpy import NumpyAxisProtected
 from probly.representation.distribution._common import (
     GaussianDistribution,
     GaussianDistributionSample,

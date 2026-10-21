@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from typing import Any
 
 from flextype import flexdispatch
+from ndlike.array_like import ArrayLike
 import numpy as np
 
-from probly.representation.array_like import ArrayLike
 from probly.representation.distribution.numpy_categorical import NumpyCategoricalDistribution
 from probly.representation.sample.numpy import NumpySample
 

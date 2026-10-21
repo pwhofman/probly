@@ -12,8 +12,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from flextype import LazyType
+    from ndlike.array_like import ArrayLike
 
-    from probly.representation.array_like import ArrayLike
     from probly.representation.credal_set._common import CredalSet
 
 type LogBase = float | Literal["normalize"] | None

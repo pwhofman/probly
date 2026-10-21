@@ -5,10 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar
 
+from ndlike.protected_axis.torch import TorchAxisProtected
 import torch
 from torch import nn
 
-from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.traverse_nn import nn_compose, nn_traverser
 from probly.utils.torch import torch_head_dimension
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, singledispatch_traverser, traverse_with_state

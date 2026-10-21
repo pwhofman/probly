@@ -47,15 +47,15 @@ class TestComputeBoundsDispatch:
     def test_unregistered_array_type_raises_for_prediction_bounds(self) -> None:
         with pytest.raises(NotImplementedError, match="No credal bounds computation"):
             compute_efficient_credal_prediction_bounds(
-                "not-an-array",  # type: ignore[arg-type]
-                "not-an-array",  # type: ignore[arg-type]
+                "not-an-array",  # ty: ignore[invalid-argument-type]
+                "not-an-array",  # ty: ignore[invalid-argument-type]
                 num_classes=2,
                 alpha=0.5,
             )
 
     def test_unregistered_array_type_raises_for_credal_bounds(self) -> None:
         with pytest.raises(NotImplementedError, match="No compute_efficient_credal_bounds implementation"):
-            compute_efficient_credal_bounds("not-an-array", "lower", "upper")  # type: ignore[arg-type]
+            compute_efficient_credal_bounds("not-an-array", "lower", "upper")  # ty: ignore[invalid-argument-type]
 
 
 class TestEfficientCredalRepresenterRequiresBounds:

@@ -7,7 +7,8 @@ from flextype import flexdispatch
 from probly.representation.distribution import Distribution
 
 if TYPE_CHECKING:
-    from probly.representation.array_like import ArrayLike
+    from ndlike.array_like import ArrayLike
+
     from probly.representation.distribution import SecondOrderDistribution
     from probly.representation.sample import Sample
 

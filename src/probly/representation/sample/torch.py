@@ -5,15 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Self, cast, overload, override
 
+from ndlike.array_like import ToIndices, to_numpy_like
+from ndlike.torch_functions import torch_average
+from ndlike.torch_like import TorchLike, TorchLikeImplementation, to_torch_like
 import torch
 
-from probly.representation.array_like import ToIndices, to_numpy_array_like
 from probly.representation.sample._common import Sample, SampleAxis, create_sample
 from probly.representation.sample.axis_tracking import track_axis
 from probly.representation.sample.numpy import NumpySample
 from probly.representation.sample.torch_functions import TorchSampleInternals, torch_function, torch_sample_internals
-from probly.representation.torch_functions import torch_average
-from probly.representation.torch_like import TorchLike, TorchLikeImplementation, to_torch_like
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
@@ -313,8 +313,8 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
         return namespace(api_version=api_version)
 
     def __array_like__(self, dtype: npt.DTypeLike | None = None, /, *, copy: bool | None = None) -> NumpySample[Any]:
-        """Convert to a NumpyArrayLike."""
-        array = to_numpy_array_like(self.tensor, dtype=dtype, copy=copy)
+        """Convert to a NumpyLike."""
+        array = to_numpy_like(self.tensor, dtype=dtype, copy=copy)
         return NumpySample(array=array, sample_axis=self.sample_dim)
 
     @override

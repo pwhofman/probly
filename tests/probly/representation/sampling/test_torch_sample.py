@@ -6,16 +6,16 @@ import numpy as np
 import pytest
 
 pytest.importorskip("torch")
+from ndlike.array_like import to_numpy_like
+from ndlike.torch_functions import torch_average
 import torch
 
-from probly.representation.array_like import to_numpy_array_like
 from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistribution,
     TorchProbabilityCategoricalDistribution,
 )
 from probly.representation.sample.numpy import NumpySample
 from probly.representation.sample.torch import TorchSample
-from probly.representation.torch_functions import torch_average
 
 
 def _torch():
@@ -336,8 +336,8 @@ class TestTorchSample:
         with pytest.raises(ValueError, match="ddof"):
             sample.sample_var(ddof=1)
 
-    def test_to_numpy_array_like_uses_array_like(self, torch_tensor_sample_2d: TorchSample) -> None:
-        converted = to_numpy_array_like(torch_tensor_sample_2d)
+    def test_to_numpy_like_uses_array_like(self, torch_tensor_sample_2d: TorchSample) -> None:
+        converted = to_numpy_like(torch_tensor_sample_2d)
 
         assert isinstance(converted, NumpySample)
         assert converted.sample_axis == torch_tensor_sample_2d.sample_dim

@@ -9,6 +9,7 @@ import pytest
 pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
+from ndlike.jax_functions import jax_expand_dims, jax_mean, jax_moveaxis, jax_sum, jax_take_along_axis
 from scipy.special import digamma, polygamma
 from scipy.stats import dirichlet, entropy as scipy_entropy, norm
 
@@ -30,7 +31,6 @@ from probly.representation.distribution.jax_categorical import (
 )
 from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
 from probly.representation.distribution.jax_gaussian import JaxGaussianDistribution
-from probly.representation.jax_functions import jax_expand_dims, jax_mean, jax_moveaxis, jax_sum, jax_take_along_axis
 
 CATEGORICAL_BASES: tuple[float | Literal["normalize"] | None, ...] = (None, 2.0, "normalize")
 NUMERIC_BASES: tuple[float | None, ...] = (None, 2.0, 10.0)

@@ -6,9 +6,11 @@ from dataclasses import dataclass, field
 from inspect import signature
 from typing import Any, ClassVar, Literal, cast, override
 
+from ndlike.protected_axis.torch import TorchAxisProtected
+from ndlike.torch_functions import torch_average
+from ndlike.torch_like import TorchLike
 import torch
 
-from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.distribution._common import (
     Distribution,
     MixtureDistribution,
@@ -18,8 +20,6 @@ from probly.representation.distribution._common import (
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
 from probly.representation.sample.torch import TorchSample
-from probly.representation.torch_functions import torch_average
-from probly.representation.torch_like import TorchLike
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -104,11 +104,11 @@ class TorchMixtureDistribution[D: Distribution, T: TorchLike](
 
         components: TorchAxisProtected = self.components  # ty:ignore[invalid-assignment]
 
-        flat_components = components.reshape((-1, self.mixture_weights.shape[-1]))
+        flat_components = cast("Any", components.reshape((-1, self.mixture_weights.shape[-1])))
         gathered_components = flat_components.gather(dim=-1, index=flat_indices)
         selected_components = gathered_components.transpose(0, 1).reshape(num_samples, *self.shape)
 
-        sample_method = selected_components.sample  # ty:ignore[unresolved-attribute]
+        sample_method = selected_components.sample
         if "rng" in signature(sample_method).parameters:
             component_sample: TorchSample = sample_method(1, rng=rng)
         else:

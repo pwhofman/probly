@@ -7,13 +7,13 @@ import pytest
 pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
+from ndlike.jax_functions import jax_average, jax_concatenate, jax_expand_dims, jax_mean, jax_stack
 
 from probly.representation.distribution import create_categorical_distribution
 from probly.representation.distribution.jax_categorical import (
     JaxCategoricalDistribution,
     JaxProbabilityCategoricalDistribution,
 )
-from probly.representation.jax_functions import jax_average, jax_concatenate, jax_expand_dims, jax_mean, jax_stack
 from probly.representation.sample.jax import JaxSample
 
 
