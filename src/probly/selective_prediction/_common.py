@@ -31,6 +31,8 @@ from .selectors._common import Selector, _check_per_instance, _to_float64_numpy
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
+    from ndlike.array_like import ArrayLikeWithoutSize
+
     from probly.quantification.notion import NotionKey, NotionName
     from probly.representer import Representer
 
@@ -49,8 +51,8 @@ class SelectivePrediction[D]:
     """
 
     decision: D
-    uncertainty: Any
-    accepted: Any
+    uncertainty: ArrayLikeWithoutSize
+    accepted: ArrayLikeWithoutSize
 
     @property
     def coverage(self) -> float:
@@ -143,7 +145,7 @@ def _losses(predictor: SelectivePredictor[Any, Any], representation: Any, y: Any
     return values
 
 
-def _check_labels(decision: CategoricalDistribution, y: Any) -> None:  # noqa: ANN401
+def _check_labels(decision: CategoricalDistribution, y: ArrayLikeWithoutSize) -> None:
     """Check that the labels are one class index per instance, before a scoring rule picks the losses."""
     probabilities = _to_float64_numpy(decision.probabilities)
     num_instances, num_classes = probabilities.shape[0], probabilities.shape[-1]
@@ -162,7 +164,7 @@ def _check_labels(decision: CategoricalDistribution, y: Any) -> None:  # noqa: A
         raise ValueError(msg)
 
 
-def _criterion(predictor: SelectivePredictor[Any, Any], representation: Any) -> Any:  # noqa: ANN401
+def _criterion(predictor: SelectivePredictor[Any, Any], representation: Any) -> ArrayLikeWithoutSize:  # noqa: ANN401
     notion = predictor.notion
     if not isinstance(notion, type):
         criterion = _call_user(notion, "notion", representation)
@@ -179,7 +181,11 @@ def _criterion(predictor: SelectivePredictor[Any, Any], representation: Any) -> 
         raise
 
 
-def _named_criterion(predictor: SelectivePredictor[Any, Any], notion: type[Notion], representation: Any) -> Any:  # noqa: ANN401
+def _named_criterion(
+    predictor: SelectivePredictor[Any, Any],
+    notion: type[Notion],
+    representation: Any,  # noqa: ANN401
+) -> ArrayLikeWithoutSize:
     decomposition = _decomposition(predictor, representation)
     if not isinstance(decomposition, Decomposition):
         msg = f"Expected quantify to return a Decomposition, got {type(decomposition).__name__}."
@@ -478,7 +484,7 @@ def selective_predictor[**In](
     ``notion=lambda s: s.sample_var().squeeze(-1)``, ``decider=lambda s: s.sample_mean().squeeze(-1)`` and
     ``loss=lambda d, y: (d - y) ** 2``. For large data, concatenate precomputed representations on the instance axis,
     keeping their type (``torch.cat``, ``np.concatenate`` or
-    :func:`~probly.representation.jax_functions.jax_concatenate`), and wrap the identity
+    :func:`~ndlike.jax_functions.jax_concatenate`), and wrap the identity
     ``cast(lambda r: r, predictor_type=RepresentationPredictor)``. With PyTorch, wrap ``predict``,
     ``calibrate`` and ``evaluate`` in ``torch.no_grad()``, as they do not stop gradients.
 

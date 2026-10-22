@@ -5,13 +5,14 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import inspect
 import math
-from typing import Any, ClassVar, Literal, Self, cast, override
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, cast, override
 
-from flextype import flexdispatch
+from flextype import flexdispatch, switch
 import numpy as np
 from scipy.special import betaincinv
 
-from probly.utils.switchdispatch import switch
+if TYPE_CHECKING:
+    from ndlike.array_like import ArrayLikeWithoutSize
 
 type SelectorName = Literal["threshold", "coverage", "risk"]
 
@@ -40,7 +41,7 @@ class Selector(ABC):
     bound: float | None = None
 
     @abstractmethod
-    def select(self, uncertainty: Any) -> Any:  # noqa: ANN401
+    def select(self, uncertainty: ArrayLikeWithoutSize) -> ArrayLikeWithoutSize:
         """Decide which predictions are accepted.
 
         Args:
@@ -74,12 +75,12 @@ def _check_per_instance[U](values: U, name: str = "uncertainty") -> U:
 
 
 @flexdispatch
-def _to_float64_numpy(uncertainty: Any) -> np.ndarray:  # noqa: ANN401
+def _to_float64_numpy(uncertainty: ArrayLikeWithoutSize) -> np.ndarray:
     """Copy a criterion array into a float64 NumPy array."""
     return np.asarray(uncertainty, dtype=np.float64)
 
 
-def _calibration_array(values: Any, name: str) -> np.ndarray:  # noqa: ANN401
+def _calibration_array(values: ArrayLikeWithoutSize, name: str) -> np.ndarray:
     """Copy per-instance calibration data to float64 NumPy and check that it is usable."""
     array = _to_float64_numpy(_check_per_instance(values, name))
     if array.shape[0] == 0:
@@ -109,8 +110,8 @@ class ThresholdSelector(Selector):
         return f"selector(threshold={self.threshold})"
 
     @override
-    def select(self, uncertainty: Any) -> Any:
-        return _check_per_instance(uncertainty) <= self.threshold
+    def select(self, uncertainty: ArrayLikeWithoutSize) -> ArrayLikeWithoutSize:
+        return cast("Any", _check_per_instance(uncertainty)) <= self.threshold
 
 
 @selector_registry.register("coverage")
@@ -138,13 +139,13 @@ class CoverageSelector(Selector):
         return self.threshold is not None
 
     @override
-    def select(self, uncertainty: Any) -> Any:
+    def select(self, uncertainty: ArrayLikeWithoutSize) -> ArrayLikeWithoutSize:
         if not self.is_calibrated:
             msg = f"{self!r} is not calibrated. Call calibrate() first."
             raise ValueError(msg)
-        return _check_per_instance(uncertainty) <= self.threshold
+        return cast("Any", _check_per_instance(uncertainty)) <= self.threshold
 
-    def calibrate(self, uncertainty: Any) -> Self:  # noqa: ANN401
+    def calibrate(self, uncertainty: ArrayLikeWithoutSize) -> Self:
         """Fit the threshold on the criterion of calibration instances, a one-dimensional array without NaN.
 
         Raises:
@@ -213,13 +214,13 @@ class SGRSelector(Selector):
         return self.threshold is not None
 
     @override
-    def select(self, uncertainty: Any) -> Any:
+    def select(self, uncertainty: ArrayLikeWithoutSize) -> ArrayLikeWithoutSize:
         if not self.is_calibrated:
             msg = f"{self!r} is not calibrated. Call calibrate() first."
             raise ValueError(msg)
-        return _check_per_instance(uncertainty) <= self.threshold
+        return cast("Any", _check_per_instance(uncertainty)) <= self.threshold
 
-    def calibrate(self, uncertainty: Any, losses: Any) -> Self:  # noqa: ANN401
+    def calibrate(self, uncertainty: ArrayLikeWithoutSize, losses: ArrayLikeWithoutSize) -> Self:
         """Fit the threshold on the criterion and the zero-one losses (0 or 1) of calibration instances.
 
         Both are one-dimensional arrays of the same length without NaN.

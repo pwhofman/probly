@@ -9,6 +9,7 @@ import pytest
 
 jax = pytest.importorskip("jax")
 import jax.numpy as jnp  # noqa: E402
+from ndlike.jax_functions import jax_concatenate  # noqa: E402
 
 from probly.method import cast  # noqa: E402
 from probly.predictor import RepresentationPredictor  # noqa: E402
@@ -22,7 +23,6 @@ from probly.representation.distribution.jax_gaussian import (  # noqa: E402
     JaxGaussianDistribution,
     JaxGaussianDistributionSample,
 )
-from probly.representation.jax_functions import jax_concatenate  # noqa: E402
 from probly.selective_prediction import selective_predictor, selector as make_selector  # noqa: E402
 
 PROBABILITIES = np.array([[0.9, 0.1], [0.5, 0.5], [0.6, 0.4], [0.99, 0.01]])
