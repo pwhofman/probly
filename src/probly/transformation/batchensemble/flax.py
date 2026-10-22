@@ -10,9 +10,11 @@ import jax.numpy as jnp
 
 from probly.layers.flax import BatchEnsembleConv, BatchEnsembleLinear
 from probly.predictor import predict
+from probly.representation.distribution._common import create_categorical_distribution_from_logits
+from probly.representation.distribution.jax_categorical import JaxCategoricalDistributionSample
 from probly.representation.sample.jax import JaxSample
 
-from ._common import BatchEnsemblePredictor, _attach_num_members, register
+from ._common import BatchEnsemblePredictor, _attach_num_members, _wrap_batchensemble_logits, register
 
 
 def tile_inputs(x: jax.Array, num_members: int) -> jax.Array:
@@ -24,6 +26,19 @@ def tile_inputs(x: jax.Array, num_members: int) -> jax.Array:
 def _(model: nnx.Module, num_members: int) -> None:
     """Attach ``num_members`` as a plain attribute (preserved through ``nnx.split``)."""
     model.num_members = num_members  # ty: ignore[unresolved-attribute]
+
+
+@_wrap_batchensemble_logits.register(JaxSample)
+def _flax_wrap_batchensemble_logits(sample: JaxSample) -> JaxCategoricalDistributionSample:
+    """Wrap per-member logits as a categorical sample (assumes a logit-classifier base)."""
+    array = sample.array
+    sample_axis = sample.sample_axis
+    if array.ndim >= 3 and sample_axis == 0:
+        array = jnp.swapaxes(array, 0, 1)
+        sample_axis = 1
+
+    distribution = create_categorical_distribution_from_logits(array)
+    return JaxCategoricalDistributionSample(array=distribution, sample_axis=sample_axis)  # ty: ignore[invalid-argument-type]
 
 
 @predict.register(BatchEnsemblePredictor)
