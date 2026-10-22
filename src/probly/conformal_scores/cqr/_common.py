@@ -10,7 +10,7 @@ import numpy as np
 from probly.representation.sample.numpy import NumpySample
 
 if TYPE_CHECKING:
-    from probly.representation.array_like import ArrayLike
+    from ndlike.array_like import ArrayLike
 
 
 @flexdispatch

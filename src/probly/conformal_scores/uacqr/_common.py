@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 from flextype import flexdispatch
+from ndlike.array_like import ArrayLike
 import numpy as np
-
-from probly.representation.array_like import ArrayLike
 
 
 @flexdispatch

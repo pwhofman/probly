@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, ClassVar, Literal, override
 
+from ndlike.protected_axis.torch import TorchAxisProtected
 import torch
 
-from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.distribution._common import (
     GaussianDistribution,
     GaussianDistributionSample,

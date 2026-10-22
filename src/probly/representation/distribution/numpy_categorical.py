@@ -6,10 +6,10 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self, overload, override
 
+from ndlike.protected_axis.numpy import NumpyAxisProtected
 import numpy as np
 from scipy.special import logsumexp
 
-from probly.representation._protected_axis.numpy import NumpyAxisProtected
 from probly.representation.distribution._common import (
     CategoricalDistribution,
     CategoricalDistributionSample,

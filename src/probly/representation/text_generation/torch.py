@@ -5,10 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, override
 
+from ndlike.protected_axis.torch import TorchAxisProtected
 import numpy as np
 import torch
 
-from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.sample import RepresentationSample
 from probly.representation.sample.torch import TorchSample
 

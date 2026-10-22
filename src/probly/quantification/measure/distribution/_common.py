@@ -14,8 +14,9 @@ from probly.representation.sample import Sample
 DEFAULT_MEAN_FIELD_FACTOR: float = math.pi / 8.0
 
 if TYPE_CHECKING:
+    from ndlike.array_like import ArrayLike
+
     from probly.quantification.scoring_rule import ScoringRule
-    from probly.representation.array_like import ArrayLike
     from probly.representation.distribution import SecondOrderDistribution
 
 type LogBase = float | Literal["normalize"] | None

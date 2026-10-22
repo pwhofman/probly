@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
-from scipy import stats
-
-from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
-from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
-from probly.representation.jax_functions import (
+from jax.experimental import checkify
+from ndlike.jax_functions import (
     jax_average,
     jax_expand_dims,
     jax_mean,
@@ -19,6 +17,10 @@ from probly.representation.jax_functions import (
     jax_sum,
     jax_transpose,
 )
+from scipy import stats
+
+from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
+from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
 from probly.representation.sample.jax import JaxSample
 
 
@@ -101,7 +103,7 @@ def test_jax_properties_batched() -> None:
 def test_len_behaviour() -> None:
     """Test __len__ behaviour (like "unsized bs. sized containers)."""
     dist_single = JaxDirichletDistribution.from_array([1.0, 2.0, 3.0])
-    with pytest.raises(TypeError, match=r"len\(\) of unsized distribution"):
+    with pytest.raises(TypeError, match=r"len\(\) of unsized object"):
         _ = len(dist_single)
 
     dist_batch = JaxDirichletDistribution.from_array(jnp.ones((5, 3)))
@@ -129,6 +131,20 @@ def test_operator_add_returns_distribution_and_keeps_positive() -> None:
     out2 = dist - 1000.0
     assert isinstance(out2, JaxDirichletDistribution)
     assert jnp.all(out2.alphas >= 1e-10)
+
+
+def test_distribution_opt_ins_and_traced_reconstruction() -> None:
+    d = JaxDirichletDistribution(jnp.array([[1.0, 2.0], [3.0, 4.0]]))
+    error, result = jax.jit(checkify.checkify(lambda x: 2 - x))(d)
+    error.throw()
+    np.testing.assert_allclose(result.alphas, jnp.maximum(2 - d.alphas, 1e-10))
+    with pytest.raises(TypeError):
+        _ = d * 2
+
+
+def test_eager_distribution_validation_is_preserved() -> None:
+    with pytest.raises(ValueError, match="strictly positive"):
+        JaxDirichletDistribution(jnp.array([-1.0, 2.0]))
 
 
 def test_copy_creates_independent_array() -> None:
@@ -289,7 +305,7 @@ def test_average_preserves_distribution_type_and_uses_weights() -> None:
 
     assert isinstance(averaged, JaxDirichletDistribution)
     assert averaged.shape == (3,)
-    assert jnp.allclose(averaged.alphas, jax_average(alphas, axis=0, weights=weights))
+    assert jnp.allclose(averaged.alphas, jnp.average(alphas, axis=0, weights=weights))
 
 
 def test_mean_returns_probability_categorical() -> None:

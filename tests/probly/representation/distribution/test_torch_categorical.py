@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 pytest.importorskip("torch")
+from ndlike.torch_functions import torch_average
 import torch
 
 from probly.representation.distribution import (
@@ -19,7 +20,6 @@ from probly.representation.distribution.torch_categorical import (
     TorchProbabilityCategoricalDistribution,
 )
 from probly.representation.sample.torch import TorchSample
-from probly.representation.torch_functions import torch_average
 
 
 def test_create_categorical_distribution_from_torch_tensor() -> None:

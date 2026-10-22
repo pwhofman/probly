@@ -24,8 +24,9 @@ try:
 except ImportError:
     _GPYTORCH_AVAILABLE = False
 
+from ndlike.protected_axis.torch import TorchAxisProtected
+
 from probly.layers.torch import GaussianMixtureHead, apply_spectral_norm_to_encoder
-from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistribution,
     TorchProbabilityCategoricalDistribution,
