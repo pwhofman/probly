@@ -8,10 +8,18 @@ from . import numpy as numpy
 
 # eagerly register numpy (always available)
 from ._common import (
+    ScoringRule,
+    _brier_loss_vector,
+    _expected_loss,
+    _log_loss_vector,
+    _spherical_loss_vector,
+    _zero_one_loss_vector,
     accuracy,
     auc,
     average_interval_width,
     average_precision_score,
+    brier_loss,
+    brier_loss_per_instance,
     classwise_ece,
     convex_hull_coverage,
     coverage,
@@ -19,12 +27,23 @@ from ._common import (
     expected_calibration_error,
     false_negative_rate,
     false_positive_rate,
+    log_loss,
+    log_loss_per_instance,
     precision_recall_curve,
     roc_auc_score,
     roc_curve,
+    spherical_loss,
+    spherical_loss_per_instance,
+    zero_one_loss,
+    zero_one_loss_per_instance,
 )
 
 
+@_brier_loss_vector.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@_expected_loss.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@_log_loss_vector.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@_spherical_loss_vector.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@_zero_one_loss_vector.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @accuracy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @auc.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @average_interval_width.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
@@ -43,6 +62,11 @@ def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
+@_brier_loss_vector.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@_expected_loss.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@_log_loss_vector.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@_spherical_loss_vector.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@_zero_one_loss_vector.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @accuracy.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @auc.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @average_interval_width.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
@@ -62,10 +86,13 @@ def _(_: type) -> None:
 
 
 __all__ = [
+    "ScoringRule",
     "accuracy",
     "auc",
     "average_interval_width",
     "average_precision_score",
+    "brier_loss",
+    "brier_loss_per_instance",
     "classwise_ece",
     "convex_hull_coverage",
     "coverage",
@@ -73,7 +100,13 @@ __all__ = [
     "expected_calibration_error",
     "false_negative_rate",
     "false_positive_rate",
+    "log_loss",
+    "log_loss_per_instance",
     "precision_recall_curve",
     "roc_auc_score",
     "roc_curve",
+    "spherical_loss",
+    "spherical_loss_per_instance",
+    "zero_one_loss",
+    "zero_one_loss_per_instance",
 ]

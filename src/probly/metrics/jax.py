@@ -25,8 +25,15 @@ from probly.representation.credal_set.jax import (
     JaxDistanceBasedCredalSet,
     JaxProbabilityIntervalsCredalSet,
 )
+from probly.representation.distribution._common import CategoricalDistribution
 
 from ._common import (
+    _brier_loss_vector,
+    _expected_loss,
+    _log_loss_vector,
+    _spherical_loss_vector,
+    _validate_labels,
+    _zero_one_loss_vector,
     accuracy,
     auc,
     average_interval_width,
@@ -550,3 +557,43 @@ def _jax_convex_convex_hull_coverage(
     vertices = jax.device_get(y_pred.tensor.probabilities)
     targets = jax.device_get(y_true.probabilities)
     return _numpy_convex_hull_lp_coverage(vertices, targets, epsilon, **linprog_kwargs)
+
+
+@_log_loss_vector.register
+def jax_log_loss_vector(probabilities: jnp.ndarray) -> jnp.ndarray:
+    """Compute the per-label log loss vector for a JAX array."""
+    return -jnp.log(probabilities)
+
+
+@_brier_loss_vector.register
+def jax_brier_loss_vector(probabilities: jnp.ndarray) -> jnp.ndarray:
+    """Compute the per-label Brier loss vector for a JAX array."""
+    squared_norm = jnp.sum(probabilities**2, axis=-1, keepdims=True)
+    return squared_norm - 2.0 * probabilities + 1.0
+
+
+@_zero_one_loss_vector.register
+def jax_zero_one_loss_vector(probabilities: jnp.ndarray) -> jnp.ndarray:
+    """Compute the per-label zero-one loss vector for a JAX array."""
+    num_classes = probabilities.shape[-1]
+    argmax = jnp.argmax(probabilities, axis=-1)
+    one_hot = jnp.eye(num_classes, dtype=probabilities.dtype)[argmax]
+    return 1.0 - one_hot
+
+
+@_spherical_loss_vector.register
+def jax_spherical_loss_vector(probabilities: jnp.ndarray) -> jnp.ndarray:
+    """Compute the per-label spherical loss vector for a JAX array."""
+    norm = jnp.sqrt(jnp.sum(probabilities**2, axis=-1, keepdims=True))
+    return 1.0 - probabilities / norm
+
+
+@_expected_loss.register(jax.Array)
+def _jax_expected_loss(loss_vector: jax.Array, y_true: object) -> jax.Array:
+    """Reduce a per-label loss vector to the loss under integer labels or target probabilities."""
+    target = jnp.asarray(y_true.probabilities if isinstance(y_true, CategoricalDistribution) else y_true)
+    if target.shape == loss_vector.shape:
+        # A class without target mass never occurs, so it adds no loss even where that loss is infinite.
+        return jnp.where(target > 0, target * loss_vector, 0.0).sum(axis=-1)
+    _validate_labels(target.shape, loss_vector.shape, is_integer=bool(jnp.issubdtype(target.dtype, jnp.integer)))
+    return jnp.take_along_axis(loss_vector, target[..., None], axis=-1).squeeze(-1)

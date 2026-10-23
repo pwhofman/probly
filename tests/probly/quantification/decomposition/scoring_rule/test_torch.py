@@ -7,14 +7,17 @@ import pytest
 pytest.importorskip("torch")
 import torch
 
+from probly.metrics import (
+    brier_loss,
+    brier_loss_per_instance,
+    log_loss_per_instance,
+    spherical_loss_per_instance,
+    zero_one_loss_per_instance,
+)
 from probly.quantification import (
-    BrierLoss,
-    LogLoss,
     SecondOrderEntropyDecomposition,
     SecondOrderScoringRuleDecomposition,
     SecondOrderZeroOneDecomposition,
-    SphericalLoss,
-    ZeroOneLoss,
 )
 from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistributionSample,
@@ -39,7 +42,7 @@ def _sample() -> TorchCategoricalDistributionSample:
 
 
 def test_torch_log_loss_matches_entropy_decomposition() -> None:
-    sr = SecondOrderScoringRuleDecomposition(_sample(), LogLoss())
+    sr = SecondOrderScoringRuleDecomposition(_sample(), log_loss_per_instance)
     ent = SecondOrderEntropyDecomposition(_sample())
     assert torch.allclose(sr.total, ent.total, rtol=1e-10, atol=1e-12)
     assert torch.allclose(sr.aleatoric, ent.aleatoric, rtol=1e-10, atol=1e-12)
@@ -57,7 +60,7 @@ def test_torch_log_loss_matches_entropy_with_zero_probabilities() -> None:
         dtype=torch.float64,
     )
     sample = TorchCategoricalDistributionSample(tensor=TorchProbabilityCategoricalDistribution(probs), sample_dim=0)
-    sr = SecondOrderScoringRuleDecomposition(sample, LogLoss())
+    sr = SecondOrderScoringRuleDecomposition(sample, log_loss_per_instance)
     ent = SecondOrderEntropyDecomposition(sample)
     assert torch.all(torch.isfinite(sr.total))
     assert torch.all(torch.isfinite(sr.aleatoric))
@@ -67,7 +70,7 @@ def test_torch_log_loss_matches_entropy_with_zero_probabilities() -> None:
 
 
 def test_torch_zero_one_loss_matches_zero_one_decomposition() -> None:
-    sr = SecondOrderScoringRuleDecomposition(_sample(), ZeroOneLoss())
+    sr = SecondOrderScoringRuleDecomposition(_sample(), zero_one_loss_per_instance)
     zo = SecondOrderZeroOneDecomposition(_sample())
     assert torch.allclose(sr.total, zo.total, rtol=1e-12, atol=1e-12)
     assert torch.allclose(sr.aleatoric, zo.aleatoric, rtol=1e-12, atol=1e-12)
@@ -78,19 +81,25 @@ def test_torch_brier_loss_matches_gini_closed_form() -> None:
     mean = _PROBS.mean(dim=0)
     tu = 1.0 - torch.sum(mean**2, dim=-1)
     au = torch.mean(1.0 - torch.sum(_PROBS**2, dim=-1), dim=0)
-    sr = SecondOrderScoringRuleDecomposition(_sample(), BrierLoss())
+    sr = SecondOrderScoringRuleDecomposition(_sample(), brier_loss_per_instance)
     assert torch.allclose(sr.total, tu, rtol=1e-12, atol=1e-12)
     assert torch.allclose(sr.aleatoric, au, rtol=1e-12, atol=1e-12)
 
 
 def test_torch_spherical_loss_is_additive_and_nonnegative_eu() -> None:
-    sr = SecondOrderScoringRuleDecomposition(_sample(), SphericalLoss())
+    sr = SecondOrderScoringRuleDecomposition(_sample(), spherical_loss_per_instance)
     assert torch.allclose(sr.total, sr.aleatoric + sr.epistemic, rtol=1e-12, atol=1e-12)
     assert torch.all(sr.epistemic >= -1e-12)
 
 
 def test_torch_notion_indexing_matches_properties() -> None:
-    sr = SecondOrderScoringRuleDecomposition(_sample(), BrierLoss())
+    sr = SecondOrderScoringRuleDecomposition(_sample(), brier_loss_per_instance)
     assert torch.allclose(sr["tu"], sr.total)
     assert torch.allclose(sr["au"], sr.aleatoric)
     assert torch.allclose(sr["eu"], sr.epistemic)
+
+
+def test_torch_averaged_rule_is_rejected() -> None:
+    sr = SecondOrderScoringRuleDecomposition(_sample(), brier_loss)
+    with pytest.raises(ValueError, match="one loss per instance"):
+        _ = sr.aleatoric
