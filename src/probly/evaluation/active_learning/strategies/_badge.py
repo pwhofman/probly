@@ -10,8 +10,9 @@ from flextype import flexdispatch
 from ._protocols import BadgeEstimator, Estimator
 
 if TYPE_CHECKING:
+    from ndlike.array_like import ArrayLike
+
     from probly.evaluation.active_learning.pool import ActiveLearningPool
-    from probly.representation.array_like import ArrayLike
 
 
 @flexdispatch

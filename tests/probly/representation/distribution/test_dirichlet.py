@@ -90,7 +90,7 @@ def test_numpy_properties_batched() -> None:
 def test_len_behaviour() -> None:
     """Test __len__ behaviour (like "unsized vs sized" containers)."""
     dist_single = NumpyDirichletDistribution.from_array([1.0, 2.0, 3.0])
-    with pytest.raises(TypeError, match="len\\(\\) of unsized representation"):
+    with pytest.raises(TypeError, match=r"len\(\) of unsized object"):
         _ = len(dist_single)
 
     dist_batch = NumpyDirichletDistribution.from_array(np.ones((5, 3)))

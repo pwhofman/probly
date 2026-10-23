@@ -185,7 +185,7 @@ _TYPING_CHECK = """
 from typing import assert_type
 
 from probly.quantification.measure.credal_set import lower_entropy, upper_entropy
-from probly.representation.array_like import ArrayLike
+from ndlike.array_like import ArrayLike
 from probly.representation.credal_set import CredalSet
 
 def load_backend(cls: type) -> None:

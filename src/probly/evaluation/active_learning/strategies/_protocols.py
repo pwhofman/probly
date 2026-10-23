@@ -5,8 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
+    from ndlike.array_like import ArrayLike
+
     from probly.evaluation.active_learning.pool import ActiveLearningPool
-    from probly.representation.array_like import ArrayLike
 
 
 @runtime_checkable

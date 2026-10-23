@@ -39,7 +39,7 @@ Examples of how to use probly lives in the examples directory. You can find tuto
 Probly uses three dispatch layers to stay backend-agnostic:
 1. **`flexdispatch`** (from `flextype`) -- type-based function dispatch, like `functools.singledispatch` but more flexible. Core operations (`predict`, `calibrate`, `ensemble_generator`) use this to route to the right backend implementation based on the predictor's type.
 2. **`flexdispatch_traverser`** (from `pytraverse`) -- walks a neural network's layer tree and dispatches per-layer transformations by type. Methods like `dropout` and `batchensemble` use a traverser to apply backend-specific transforms to each layer.
-3. **`switchdispatch`** (`probly/utils/switchdispatch.py`) -- dispatches on value equality instead of type. Used for the predictor registry to map name strings to predictor classes.
+3. **`switchdispatch` and `switch`** (from `flextype`) -- dispatch on value equality instead of type. Used for the predictor registry to map name strings to predictor classes.
 **Typical flow** (e.g. `dropout(torch_model)`):
 ```
 user calls dropout(model)

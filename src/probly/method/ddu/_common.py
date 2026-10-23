@@ -18,7 +18,8 @@ from probly.transformation.transformation import predictor_transformation
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from probly.representation.array_like import ArrayLike
+    from ndlike.array_like import ArrayLike
+
     from probly.representation.distribution._common import CategoricalDistribution
 
 

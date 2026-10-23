@@ -7,6 +7,14 @@ from typing import TYPE_CHECKING
 import jax
 from jax import numpy as jnp
 from jax.scipy import special
+from ndlike.jax_functions import (
+    jax_mean,
+    jax_moveaxis,
+    jax_squeeze,
+    jax_sum,
+    jax_take_along_axis,
+    jax_var,
+)
 
 from probly.representation.distribution.jax_categorical import (
     JaxCategoricalDistribution,
@@ -16,14 +24,6 @@ from probly.representation.distribution.jax_dirichlet import JaxDirichletDistrib
 from probly.representation.distribution.jax_gaussian import (
     JaxGaussianDistribution,
     JaxGaussianDistributionSample,
-)
-from probly.representation.jax_functions import (
-    jax_mean,
-    jax_moveaxis,
-    jax_squeeze,
-    jax_sum,
-    jax_take_along_axis,
-    jax_var,
 )
 from probly.utils.jax import jax_entropy
 

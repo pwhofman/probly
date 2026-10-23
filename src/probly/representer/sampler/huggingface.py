@@ -419,11 +419,14 @@ class HFTextGenerationSampler(Representer[Any, [TextGenerationInputs], torch.Ten
 
         token_generation = TorchTokenGeneration(sequences=sequences, transition_scores=transition_scores)
         model_stop_token_ids = self._model_stop_token_ids()
-        return token_generation.to_text(
-            self.tokenizer,
-            length_normalization=self.length_normalization,
-            stop_token_ids=model_stop_token_ids if len(model_stop_token_ids) > 0 else None,
-        ).reshape(len(prompts), chunk_size)
+        return cast(
+            "TorchTextGeneration",
+            token_generation.to_text(
+                self.tokenizer,
+                length_normalization=self.length_normalization,
+                stop_token_ids=model_stop_token_ids if len(model_stop_token_ids) > 0 else None,
+            ).reshape(len(prompts), chunk_size),
+        )
 
     def _flatten_text_array(self, value: np.ndarray) -> tuple[list[str], tuple[int, ...]]:
         flat_values = value.reshape(-1).tolist()

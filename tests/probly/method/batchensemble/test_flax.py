@@ -14,8 +14,52 @@ import jax.numpy as jnp  # noqa: E402
 from probly.layers.flax import BatchEnsembleConv, BatchEnsembleLinear  # noqa: E402
 from probly.method.batchensemble import batchensemble  # noqa: E402
 from probly.predictor import predict  # noqa: E402
+from probly.quantification import quantify  # noqa: E402
+from probly.quantification.notion import (  # noqa: E402
+    AleatoricUncertainty,
+    EpistemicUncertainty,
+    TotalUncertainty,
+)
+from probly.representation.distribution.jax_categorical import (  # noqa: E402
+    JaxCategoricalDistributionSample,
+    JaxLogitCategoricalDistribution,
+)
 from probly.representation.sample.jax import JaxSample  # noqa: E402
+from probly.representer import representer  # noqa: E402
+from probly.transformation.batchensemble._common import BatchEnsembleRepresenter  # noqa: E402
 from tests.probly.flax_utils import count_layers  # noqa: E402
+
+
+class TestBatchEnsembleRepresenter:
+    """Tests for batchensemble representer registration."""
+
+    def test_batchensemble_uses_batchensemble_representer(self) -> None:
+        model = batchensemble(nnx.Linear(4, 2, rngs=nnx.Rngs(0)), num_members=3)
+        rep = representer(model)
+        assert isinstance(rep, BatchEnsembleRepresenter)
+
+    def test_batchensemble_representer_returns_categorical_sample(self) -> None:
+        model = batchensemble(nnx.Linear(4, 2, rngs=nnx.Rngs(0)), num_members=3)
+        rep = representer(model)
+        out = rep.represent(jnp.ones((2, 4)))
+        # Mirrors the deep-ensemble layout: array is a logit categorical distribution
+        # holding all members, with the ensemble axis at sample_axis=1.
+        assert isinstance(out, JaxCategoricalDistributionSample)
+        assert isinstance(out.array, JaxLogitCategoricalDistribution)
+        assert out.array.logits.shape == (2, 3, 2)
+        assert out.sample_axis == 1
+
+    def test_batchensemble_quantify_yields_per_sample_uncertainty(self) -> None:
+        model = batchensemble(nnx.Linear(4, 3, rngs=nnx.Rngs(0)), num_members=5)
+        rep = representer(model)
+        out = rep.represent(jax.random.normal(jax.random.key(0), (10, 4)))
+        decomposition = quantify(out)
+        assert set(decomposition.components) == {
+            TotalUncertainty,
+            AleatoricUncertainty,
+            EpistemicUncertainty,
+        }
+        assert decomposition["epistemic"].shape == (10,)
 
 
 class TestBatchEnsembleLayerAttributes:

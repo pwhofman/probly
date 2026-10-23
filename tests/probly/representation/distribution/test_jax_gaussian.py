@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
+from jax.experimental import checkify
 from scipy.stats import norm
 
 from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
@@ -53,6 +55,24 @@ def test_jax_gaussian_raises_on_non_positve_variance(invalid_var: float) -> None
 
     with pytest.raises(ValueError, match="Variance must be positive"):
         JaxGaussianDistribution(mean=mean, var=var)
+
+
+def test_eager_distribution_validation_is_preserved() -> None:
+    with pytest.raises(ValueError, match="Variance must be positive"):
+        JaxGaussianDistribution(jnp.zeros(2), -jnp.ones(2))
+
+
+def test_distribution_opt_ins_and_traced_reconstruction() -> None:
+    g = JaxGaussianDistribution(jnp.array([1.0, 2.0]), jnp.array([3.0, 4.0]))
+    error, shifted = jax.jit(checkify.checkify(lambda x, offset: offset - x))(g, 5)
+    error.throw()
+    np.testing.assert_array_equal(shifted.mean, 5 - g.mean)
+    np.testing.assert_array_equal(shifted.var, g.var)
+    difference = g - g
+    np.testing.assert_array_equal(difference.mean, jnp.zeros(2))
+    np.testing.assert_array_equal(difference.var, 2 * g.var)
+    with pytest.raises(TypeError):
+        _ = g * 2
 
 
 def test_from_parameters_creates_instance() -> None:

@@ -12,7 +12,7 @@ from probly.representation.representation import Representation
 from probly.representation.sample._common import RepresentationSample, Sample
 
 if TYPE_CHECKING:
-    from probly.representation.array_like import ArrayLike
+    from ndlike.array_like import ArrayLike
 
 type DistributionType = Literal[
     "gaussian",

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 import warnings
 
+from ndlike.torch_functions import torch_average
 import torch
 
 from probly.representation.distribution.torch_categorical import (
@@ -18,7 +19,6 @@ from probly.representation.distribution.torch_gaussian import (
 )
 from probly.representation.distribution.torch_mixture import TorchDirichletMixtureDistribution
 from probly.representation.distribution.torch_sparse_log_categorical import TorchSparseLogCategoricalDistribution
-from probly.representation.torch_functions import torch_average
 from probly.utils.torch import torch_entropy
 
 from ._common import (

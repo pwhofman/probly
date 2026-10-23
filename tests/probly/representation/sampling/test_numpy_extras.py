@@ -18,16 +18,16 @@ class TestNumpySamplePostInitGuards:
     def test_non_array_input_raises_type_error(self) -> None:
         # A 0-D ndarray subclass that *is* numpy-array-like would still pass; we use a
         # plain object that exposes ``ndim`` and ``shape`` but is otherwise not a
-        # NumpyArrayLike. The simplest way is to pass a numpy.matrix-like object via
+        # NumpyLike. The simplest way is to pass a numpy.matrix-like object via
         # bypassing the field validator: an ndarray-of-objects with the right ndim
         # is still an ndarray, so we go for the explicit failure path by replacing
-        # ``isinstance(array, NumpyArrayLike)`` with ``False`` via a fake class.
+        # ``isinstance(array, NumpyLike)`` with ``False`` via a fake class.
 
         class _FakeArray:
             ndim = 2
             shape = (2, 3)
 
-        with pytest.raises(TypeError, match="must be a NumpyArrayLike"):
+        with pytest.raises(TypeError, match="must be a NumpyLike"):
             NumpySample(array=_FakeArray(), sample_axis=0)  # type: ignore[arg-type]
 
 

@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, ClassVar, Self
 if TYPE_CHECKING:
     from probly.representation.sample._common import Sample
 
+from ndlike.protected_axis.numpy import NumpyAxisProtected
 import numpy as np
 
-from probly.representation._protected_axis.numpy import NumpyAxisProtected
 from probly.representation.conformal_set._common import (
     IntervalConformalSet,
     OneHotConformalSet,

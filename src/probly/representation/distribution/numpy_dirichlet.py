@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self, override
 
+from ndlike.protected_axis.numpy import NumpyAxisProtected
 import numpy as np
 
-from probly.representation._protected_axis.numpy import NumpyAxisProtected
 from probly.representation.distribution._common import DirichletDistribution, create_dirichlet_distribution_from_alphas
 from probly.representation.distribution.numpy_categorical import (
     NumpyCategoricalDistribution,

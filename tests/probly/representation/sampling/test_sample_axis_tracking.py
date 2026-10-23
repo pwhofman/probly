@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from ndlike.array_like import ToIndices
 import numpy as np
 import pytest
 
-from probly.representation.array_like import ToIndices
 from probly.representation.sample.axis_tracking import track_axis as track_axis_result
 
 

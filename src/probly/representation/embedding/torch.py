@@ -5,13 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self, override
 
+from ndlike.protected_axis.torch import TorchAxisProtected
+from ndlike.torch_functions import torch_average
+from ndlike.torch_like import TorchLikeImplementation
 import torch
 
-from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.embedding._common import Embedding, EmbeddingSample, EmbeddingSampleSample, create_embedding
 from probly.representation.sample.torch import TorchSample
-from probly.representation.torch_functions import torch_average
-from probly.representation.torch_like import TorchLikeImplementation
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable

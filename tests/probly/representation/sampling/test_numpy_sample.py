@@ -475,7 +475,7 @@ class TestNumpySampleValidation:
         assert sample.sample_axis == 1
 
     def test_array_must_be_arraylike(self) -> None:
-        # Plain Python list isn't NumpyArrayLike — fails earlier on .ndim access
+        # Plain Python list isn't NumpyLike — fails earlier on .ndim access
         # in __post_init__, raising AttributeError.
         with pytest.raises((TypeError, AttributeError)):
             NumpySample(array=[[1, 2], [3, 4]], sample_axis=0)  # type: ignore[arg-type]

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ndlike.torch_functions import torch_average
 import torch
 
 from probly.quantification.measure.sample._common import (
@@ -9,7 +10,6 @@ from probly.quantification.measure.sample._common import (
     total_logit_sample_variance,
 )
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistributionSample
-from probly.representation.torch_functions import torch_average
 
 
 @mean_squared_distance_to_scaled_one_hot.register(TorchCategoricalDistributionSample)

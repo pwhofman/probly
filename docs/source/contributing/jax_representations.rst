@@ -44,8 +44,8 @@ functions to its ``permitted_functions`` set:
     import jax
     import jax.numpy as jnp
 
-    from probly.representation._protected_axis.jax import JaxAxisProtected
-    from probly.representation.jax_functions import jax_add, jax_multiply
+    from ndlike.protected_axis.jax import JaxAxisProtected
+    from ndlike.jax_functions import jax_add, jax_multiply
 
     @dataclass(frozen=True, eq=False)
     class Vectors(JaxAxisProtected[jax.Array]):
@@ -127,7 +127,7 @@ the checks with ``checkify``:
     from probly.representation.distribution.jax_categorical import (
         JaxProbabilityCategoricalDistribution,
     )
-    from probly.representation.jax_functions import jax_mean
+    from ndlike.jax_functions import jax_mean
 
     distribution = JaxProbabilityCategoricalDistribution(
         jnp.array([[0.2, 0.8], [0.4, 0.6]])

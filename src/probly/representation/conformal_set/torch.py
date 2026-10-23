@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Self
 
+from ndlike.protected_axis.torch import TorchAxisProtected
 import torch
 
-from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.conformal_set._common import (
     IntervalConformalSet,
     OneHotConformalSet,
