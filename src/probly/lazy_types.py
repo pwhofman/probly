@@ -8,7 +8,7 @@ TORCH_TENSOR = "torch.Tensor"
 TORCH_TENSOR_LIKE = "ndlike.torch_like.TorchLikeImplementation"
 
 FLAX_MODULE = "flax.nnx.module.Module"
-FLAX_LIST = "flax.nnx.list.List"
+FLAX_LIST = "flax.nnx.helpers.List"
 FLAX_VARIABLE = "flax.nnx.variablelib.Variable"
 JAX_ARRAY = "jax.Array"
 JAX_TRACER = "jax._src.core.Tracer"

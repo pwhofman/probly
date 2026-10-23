@@ -6,6 +6,7 @@ import pytest
 
 from probly.method.batchensemble import batchensemble
 from probly.predictor import Predictor
+from probly.transformation.batchensemble._common import _wrap_batchensemble_logits
 
 
 class ValidPredictor(Predictor):
@@ -54,3 +55,9 @@ class TestInvalidPredictor:
         msg = f"No ensemble generator is registered for type {type(dummy_predictor)}"
         with pytest.raises(NotImplementedError, match=msg):
             batchensemble(dummy_predictor, num_members=num_members)
+
+
+def test_wrap_logits_without_backend_raises() -> None:
+    """Test that wrapping logits of an unregistered type raises NotImplementedError."""
+    with pytest.raises(NotImplementedError, match="No batchensemble logits wrapper registered"):
+        _wrap_batchensemble_logits(object())

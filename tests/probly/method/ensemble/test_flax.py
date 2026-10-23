@@ -11,6 +11,8 @@ from flax import nnx
 import jax
 import jax.numpy as jnp
 
+from probly.predictor import predict
+from probly.representation.distribution.jax_categorical import JaxLogitCategoricalDistribution
 from tests.probly.flax_utils import count_layers
 
 
@@ -174,3 +176,11 @@ class TestEnsembleCalls:
             member_out = member(x)
             assert custom_model_out.shape == member_out.shape
             assert not jnp.equal(custom_model_out, member_out).all()  # parameter reset
+
+
+def test_predict_stacks_member_distributions() -> None:
+    """Test that predicting a logit-classifier ensemble stacks the member distributions."""
+    model = ensemble(nnx.Linear(2, 3, rngs=nnx.Rngs(0)), num_members=4, predictor_type="logit_classifier")
+    out = predict(model, jnp.ones((5, 2)))
+    assert isinstance(out, JaxLogitCategoricalDistribution)
+    assert out.logits.shape == (4, 5, 3)

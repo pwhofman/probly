@@ -27,8 +27,9 @@ class BatchEnsemblePredictor[**In, Out](Predictor[In, Out], Protocol):
 
 @flexdispatch
 def _wrap_batchensemble_logits(sample: Sample) -> Sample:
-    """Wrap a per-member logit sample as a typed distribution sample (default: passthrough)."""
-    return sample
+    """Wrap a per-member logit sample as a typed distribution sample."""
+    msg = f"No batchensemble logits wrapper registered for type {type(sample)}."
+    raise NotImplementedError(msg)
 
 
 class BatchEnsembleRepresenter[**In, Out](Representer[Any, In, Out, Sample]):
