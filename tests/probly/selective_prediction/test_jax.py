@@ -23,6 +23,7 @@ from probly.representation.distribution.jax_gaussian import (  # noqa: E402
     JaxGaussianDistribution,
     JaxGaussianDistributionSample,
 )
+from probly.representer import representer  # noqa: E402
 from probly.selective_prediction import selective_predictor, selector as make_selector  # noqa: E402
 
 PROBABILITIES = np.array([[0.9, 0.1], [0.5, 0.5], [0.6, 0.4], [0.99, 0.01]])
@@ -51,7 +52,9 @@ def test_select_runs_under_jit() -> None:
 
 
 def test_selective_prediction_is_jax_native() -> None:
-    result = selective_predictor(_JaxCategoricalModel(), selector=make_selector(threshold=0.5)).predict(None)
+    result = selective_predictor(representer(_JaxCategoricalModel()), selector=make_selector(threshold=0.5)).predict(
+        None
+    )
 
     assert isinstance(result.uncertainty, jax.Array)
     assert isinstance(result.accepted, jax.Array)
@@ -61,7 +64,9 @@ def test_selective_prediction_is_jax_native() -> None:
 
 
 def test_threshold_below_criterion_rejects_on_jax() -> None:
-    result = selective_predictor(_JaxCategoricalModel(), selector=make_selector(threshold=0.3)).predict(None)
+    result = selective_predictor(representer(_JaxCategoricalModel()), selector=make_selector(threshold=0.3)).predict(
+        None
+    )
 
     np.testing.assert_array_equal(np.asarray(result.accepted), [True, False, False, True])
 
@@ -82,7 +87,7 @@ def test_sample_criterion_is_zero_one_decomposition(notion: str) -> None:
     model = _JaxSampleModel()
     representation = model.predict_representation(None)
 
-    result = selective_predictor(model, selector=make_selector(threshold=0.5), notion=notion).predict(None)
+    result = selective_predictor(representer(model), selector=make_selector(threshold=0.5), notion=notion).predict(None)
 
     assert isinstance(result.uncertainty, jax.Array)
     np.testing.assert_allclose(
@@ -97,9 +102,9 @@ def test_sample_log_loss_matches_quantify(notion: str) -> None:
     model = _JaxSampleModel()
     representation = model.predict_representation(None)
 
-    result = selective_predictor(model, selector=make_selector(threshold=0.5), notion=notion, loss=LogLoss()).predict(
-        None
-    )
+    result = selective_predictor(
+        representer(model), selector=make_selector(threshold=0.5), notion=notion, loss=LogLoss()
+    ).predict(None)
 
     np.testing.assert_allclose(
         np.asarray(result.uncertainty), np.asarray(quantify(representation)[notion]), rtol=1e-6, atol=1e-7
@@ -107,8 +112,12 @@ def test_sample_log_loss_matches_quantify(notion: str) -> None:
 
 
 def test_selective_prediction_matches_numpy_reference() -> None:
-    jax_result = selective_predictor(_JaxCategoricalModel(), selector=make_selector(threshold=0.5)).predict(None)
-    numpy_result = selective_predictor(_NumpyCategoricalModel(), selector=make_selector(threshold=0.5)).predict(None)
+    jax_result = selective_predictor(
+        representer(_JaxCategoricalModel()), selector=make_selector(threshold=0.5)
+    ).predict(None)
+    numpy_result = selective_predictor(
+        representer(_NumpyCategoricalModel()), selector=make_selector(threshold=0.5)
+    ).predict(None)
 
     np.testing.assert_allclose(np.asarray(jax_result.uncertainty), numpy_result.uncertainty, rtol=1e-6)
     np.testing.assert_array_equal(np.asarray(jax_result.accepted), numpy_result.accepted)
@@ -129,7 +138,7 @@ def test_regression_criterion_comes_from_quantify(notion: str) -> None:
     representation = model.predict_representation(None)
 
     result = selective_predictor(
-        model, selector=make_selector(threshold=1.0), notion=notion, decider=lambda rep: rep
+        representer(model), selector=make_selector(threshold=1.0), notion=notion, decider=lambda rep: rep
     ).predict(None)
 
     assert isinstance(result.uncertainty, jax.Array)
@@ -149,11 +158,11 @@ def test_coverage_selector_calibrates_jax_uncertainty(n: int, coverage: float, d
 
 
 def test_coverage_selector_pipeline_calibrates_jax_model() -> None:
-    sp = selective_predictor(_JaxCategoricalModel(), selector=make_selector(coverage=0.5))
+    sp = selective_predictor(representer(_JaxCategoricalModel()), selector=make_selector(coverage=0.5))
     assert sp.calibrate(None, None) is sp
-    reference = selective_predictor(_NumpyCategoricalModel(), selector=make_selector(coverage=0.5)).calibrate(
-        None, None
-    )
+    reference = selective_predictor(
+        representer(_NumpyCategoricalModel()), selector=make_selector(coverage=0.5)
+    ).calibrate(None, None)
     assert sp.selector.threshold == pytest.approx(reference.selector.threshold)
 
 
@@ -170,22 +179,22 @@ def test_sgr_selector_calibrates_jax_arrays() -> None:
 
 def test_sgr_selector_pipeline_calibrates_jax_model_with_targets() -> None:
     targets = np.array([0, 1, 0, 0])
-    sp = selective_predictor(_JaxCategoricalModel(), selector=make_selector(risk=0.9, delta=0.5))
+    sp = selective_predictor(representer(_JaxCategoricalModel()), selector=make_selector(risk=0.9, delta=0.5))
     assert sp.calibrate(jnp.asarray(targets), None) is sp
-    reference = selective_predictor(_NumpyCategoricalModel(), selector=make_selector(risk=0.9, delta=0.5)).calibrate(
-        targets, None
-    )
+    reference = selective_predictor(
+        representer(_NumpyCategoricalModel()), selector=make_selector(risk=0.9, delta=0.5)
+    ).calibrate(targets, None)
     assert sp.selector.threshold == pytest.approx(reference.selector.threshold)
 
 
 def test_evaluate_matches_numpy_reference() -> None:
     labels = np.array([0, 1, 0, 1])
-    jax_result = selective_predictor(_JaxCategoricalModel(), selector=make_selector(threshold=0.3)).evaluate(
-        jnp.asarray(labels), None
-    )
-    numpy_result = selective_predictor(_NumpyCategoricalModel(), selector=make_selector(threshold=0.3)).evaluate(
-        labels, None
-    )
+    jax_result = selective_predictor(
+        representer(_JaxCategoricalModel()), selector=make_selector(threshold=0.3)
+    ).evaluate(jnp.asarray(labels), None)
+    numpy_result = selective_predictor(
+        representer(_NumpyCategoricalModel()), selector=make_selector(threshold=0.3)
+    ).evaluate(labels, None)
 
     assert jax_result.keys() == numpy_result.keys()
     assert jax_result == pytest.approx(numpy_result, rel=1e-6)
@@ -196,11 +205,11 @@ def test_jax_concatenated_representations_on_an_identity_model_match_one_batch()
     concatenated = jax_concatenate([representation[:, :1], representation[:, 1:]], axis=1)
     identity = cast(lambda r: r, predictor_type=RepresentationPredictor)
 
-    result = selective_predictor(identity, selector=make_selector(threshold=0.5), notion="epistemic").predict(
-        concatenated
-    )
+    result = selective_predictor(
+        representer(identity), selector=make_selector(threshold=0.5), notion="epistemic"
+    ).predict(concatenated)
     expected = selective_predictor(
-        _JaxSampleModel(), selector=make_selector(threshold=0.5), notion="epistemic"
+        representer(_JaxSampleModel()), selector=make_selector(threshold=0.5), notion="epistemic"
     ).predict(None)
 
     assert type(concatenated) is type(representation)

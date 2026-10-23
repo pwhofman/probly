@@ -23,18 +23,16 @@ from probly.quantification import (
     scoring_rule_decomposition,
 )
 from probly.representation.distribution import CategoricalDistribution
-from probly.representer import representer
-from probly.transformation.transformation import predictor_transformation
+from probly.representer import Representer
 
 from .selectors._common import Selector, _check_per_instance, _to_float64_numpy
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable
 
     from ndlike.array_like import ArrayLikeWithoutSize
 
     from probly.quantification.notion import NotionKey, NotionName
-    from probly.representer import Representer
 
 # Default loss, told from an explicit ZeroOneLoss() by identity, because only it falls back to quantify.
 _ZERO_ONE_LOSS = ZeroOneLoss()
@@ -174,7 +172,8 @@ def _criterion(predictor: SelectivePredictor[Any, Any], representation: Any) -> 
         return _check_per_instance(criterion, "The criterion")
     except ValueError as error:
         error.add_note(
-            "For a classifier, transform the model with a predictor_type, e.g. predictor_type='logit_classifier'. "
+            "For a classifier, build the representer from a model with a predictor_type, e.g. "
+            "representer(cast(model, predictor_type='logit_classifier')). "
             "For regression, pass notion as a function that reduces the criterion, e.g. "
             "lambda s: s.sample_var().squeeze(-1) for a one-output regression model."
         )
@@ -236,7 +235,7 @@ class SelectivePredictor[**In, D](
 
     Attributes:
         selector: The selection rule, or ``None``. Its ``threshold`` and ``bound`` show its state.
-        representer: The representer of the model.
+        representer: The :class:`~probly.representer.Representer` that maps the inputs to the representation.
         notion: The notion class or the function that gives the criterion.
         loss: The task loss: a scoring rule, a function, or ``None``.
         decider: The :class:`~probly.decider.Decider` mapping a representation to the decision.
@@ -255,9 +254,8 @@ class SelectivePredictor[**In, D](
 
 @SelectivePredictor.register
 class _SelectivePredictorBase[**In](ABC):
-    """Selective predictor wrapping a model, see :func:`selective_predictor`."""
+    """Selective predictor wrapping a representer, see :func:`selective_predictor`."""
 
-    model: Predictor[In, Any]
     selector: Selector | None
     representer: Representer[Any, In, Any, Any]
     notion: type[Notion] | Callable[[Any], Any]
@@ -266,38 +264,36 @@ class _SelectivePredictorBase[**In](ABC):
 
     def __init__(
         self,
-        model: Predictor[In, Any],
+        base: Representer[Any, In, Any, Any],
         *,
         selector: Selector | None = None,
         notion: NotionKey | Callable[[Any], Any] = "total",
         loss: ScoringRule | Callable[[Any, Any], Any] | None = _ZERO_ONE_LOSS,
         decider: Decider[Any, Any] | None = None,
-        representer_kwargs: Mapping[str, Any] | None = None,
     ) -> None:
         super().__init__()
         if selector is not None and not isinstance(selector, Selector):
             msg = f"selector must be a Selector or None, got {type(selector).__name__}. Build one with selector(...)."
             raise TypeError(msg)
-        if representer.dispatch(type(model), registry_meta_lookup=model) is representer.dispatch(object):
+        if not isinstance(base, Representer):
             msg = (
-                f"{type(model).__name__} is not a model that probly can represent. Pass predictor_type=... or cast it "
-                "with probly.method.cast, or compute the criterion yourself and apply a selector to it, "
-                "see selector(...)."
+                f"base must be a Representer, got {type(base).__name__}. Build one with "
+                "probly.representer.representer(model, ...); cast a plain classifier first with "
+                "probly.method.cast(model, predictor_type=...)."
             )
             raise TypeError(msg)
-        self.model = model
         self.selector = selector
+        self.representer = base
         self.notion = _check_notion(notion)
         self.loss = _check_loss(loss, selector)
-        self.representer = representer(model, **(representer_kwargs or {}))
         self.decider = categorical_from_mean if decider is None else decider
 
     def predict(self, *args: In.args, **kwargs: In.kwargs) -> SelectivePrediction[Any]:
         """Predict and decide per instance whether to abstain, as :func:`~probly.predictor.predict` does.
 
         Args:
-            *args: Inputs of the model, passed to its representer.
-            **kwargs: Keyword arguments of the model.
+            *args: Inputs of the representer.
+            **kwargs: Keyword arguments of the representer.
 
         Returns:
             The decision, criterion and acceptance mask per instance.
@@ -319,15 +315,15 @@ class _SelectivePredictorBase[**In](ABC):
             y_calib: ``None`` for a selector that takes no losses, e.g. ``selector(coverage=...)``. For one that does,
                 e.g. ``selector(risk=..., delta=...)``, the labels to compute the losses of the decisions: one class
                 index per instance for a scoring rule, anything the function accepts for a function loss.
-            *calib_args: Inputs of the model, as in :meth:`predict`.
-            **calib_kwargs: Keyword arguments of the model, as in :meth:`predict`.
+            *calib_args: Inputs of the representer, as in :meth:`predict`.
+            **calib_kwargs: Keyword arguments of the representer, as in :meth:`predict`.
 
         Returns:
             The selective predictor itself.
 
         Raises:
-            TypeError: If there is no selector to fit (none or a fixed threshold) or no model input, if the labels do
-                not fit the selector, or if a scoring rule meets a decision that is not categorical.
+            TypeError: If there is no selector to fit (none or a fixed threshold) or no input of the representer, if
+                the labels do not fit the selector, or if a scoring rule meets a decision that is not categorical.
             ValueError: If the criterion or the labels are invalid, or the losses are not binary for the risk rule.
             NotImplementedError: If a scoring rule does not apply to the representation.
         """
@@ -341,7 +337,7 @@ class _SelectivePredictorBase[**In](ABC):
             raise TypeError(msg)
         if not calib_args and not calib_kwargs:
             msg = (
-                "No input of the model was given. Pass the labels first and then the inputs, e.g. "
+                "No input of the representer was given. Pass the labels first and then the inputs, e.g. "
                 "calibrate(y_calib, x_calib), with y_calib=None for the coverage rule."
             )
             raise TypeError(msg)
@@ -375,15 +371,15 @@ class _SelectivePredictorBase[**In](ABC):
 
         Args:
             y: The labels, as in :meth:`calibrate`.
-            *args: Inputs of the model, as in :meth:`predict`.
-            metrics: The metrics of ``evaluate_selective_prediction``; reserved, so not passed on to the model.
-            **kwargs: Keyword arguments of the model, as in :meth:`predict`.
+            *args: Inputs of the representer, as in :meth:`predict`.
+            metrics: The metrics of ``evaluate_selective_prediction``; reserved, so not passed on to the representer.
+            **kwargs: Keyword arguments of the representer, as in :meth:`predict`.
 
         Returns:
             A dictionary of floats.
 
         Raises:
-            TypeError: If ``loss`` is ``None`` or no input of the model is given.
+            TypeError: If ``loss`` is ``None`` or no input of the representer is given.
             ValueError: If a fitted selector is not calibrated, or the criterion or losses are invalid. Unlike
                 :meth:`predict`, the metrics need a criterion without ``-inf`` and finite losses, which e.g. a
                 :class:`~probly.quantification.LogLoss` breaks if the probability of the label underflows in float32.
@@ -392,7 +388,9 @@ class _SelectivePredictorBase[**In](ABC):
             msg = "evaluate needs losses. Pass a scoring rule or a function loss."
             raise TypeError(msg)
         if not args and not kwargs:
-            msg = "No input of the model was given. Pass the labels first and then the inputs, e.g. evaluate(y, x)."
+            msg = (
+                "No input of the representer was given. Pass the labels first and then the inputs, e.g. evaluate(y, x)."
+            )
             raise TypeError(msg)
         selector = self.selector
         _check_selector_calibrated(self)
@@ -416,7 +414,7 @@ class _SelectivePredictorBase[**In](ABC):
 def predict_selective_prediction[**In](
     predictor: SelectivePredictor[In, Any], *args: In.args, **kwargs: In.kwargs
 ) -> SelectivePrediction[Any]:
-    """Predict and decide per instance whether to abstain; the arguments go to the model's representer."""
+    """Predict and decide per instance whether to abstain; the arguments go to the representer."""
     selector = predictor.selector
     if selector is None:
         msg = "No selector to select with. Pass selector=selector(...), or use evaluate."
@@ -431,16 +429,14 @@ def predict_selective_prediction[**In](
     )
 
 
-@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
 @SelectivePredictor.register_factory
 def selective_predictor[**In](
-    base: Predictor[In, Any],
+    base: Representer[Any, In, Any, Any],
     *,
     selector: Selector | None = None,
     notion: NotionKey | Callable[[Any], Any] = "total",
     loss: ScoringRule | Callable[[Any, Any], Any] | None = _ZERO_ONE_LOSS,
     decider: Decider[Any, Any] | None = None,
-    representer_kwargs: Mapping[str, Any] | None = None,
 ) -> SelectivePredictor[In, Any]:
     r"""Selective predictor that answers or abstains based on an uncertainty criterion.
 
@@ -448,10 +444,11 @@ def selective_predictor[**In](
     :func:`~probly.selective_prediction.selector`; rules fitted on data are fitted with ``calibrate``. Without a
     selector, predicting raises and ``evaluate`` reports only the ranking metrics.
 
-    The model must be accepted by :func:`~probly.representer.representer`, e.g. an ensemble, an MC-dropout model, an
-    evidential model, an object with ``predict_proba``, or a plain classifier declared with
-    :func:`~probly.method.cast`. The criterion and the decision come from the same representation. For other models,
-    apply a :func:`~probly.selective_prediction.selector` to a criterion computed by hand.
+    The representer is built with :func:`~probly.representer.representer` from a model probly can represent, e.g. an
+    ensemble, an MC-dropout model, an evidential model, an object with ``predict_proba``, or a plain classifier declared
+    with :func:`~probly.method.cast`; options such as ``num_samples`` are set on it, e.g.
+    ``representer(model, num_samples=100)``. The criterion and the decision come from the same representation. For
+    other models, apply a :func:`~probly.selective_prediction.selector` to a criterion computed by hand.
 
     The criterion is the component of the uncertainty decomposition selected by ``notion``: the total uncertainty by
     default, recommended for selective prediction :cite:`hofmanAdjustingMeasures2025`, or its aleatoric or epistemic
@@ -484,12 +481,13 @@ def selective_predictor[**In](
     ``notion=lambda s: s.sample_var().squeeze(-1)``, ``decider=lambda s: s.sample_mean().squeeze(-1)`` and
     ``loss=lambda d, y: (d - y) ** 2``. For large data, concatenate precomputed representations on the instance axis,
     keeping their type (``torch.cat``, ``np.concatenate`` or
-    :func:`~ndlike.jax_functions.jax_concatenate`), and wrap the identity
-    ``cast(lambda r: r, predictor_type=RepresentationPredictor)``. With PyTorch, wrap ``predict``,
+    :func:`~ndlike.jax_functions.jax_concatenate`), and pass the representer of the identity,
+    ``representer(cast(lambda r: r, predictor_type=RepresentationPredictor))``. With PyTorch, wrap ``predict``,
     ``calibrate`` and ``evaluate`` in ``torch.no_grad()``, as they do not stop gradients.
 
     Args:
-        base: A model accepted by :func:`~probly.representer.representer`.
+        base: The :class:`~probly.representer.Representer` that maps the inputs to the representation, built with
+            :func:`~probly.representer.representer`.
         selector: The selection rule, built with :func:`~probly.selective_prediction.selector`, or ``None``.
             ``calibrate`` fits it in place, so predictors sharing a selector share its state.
         notion: The notion of uncertainty to select on, e.g. ``"total"``, ``"aleatoric"`` or ``"epistemic"``, or a
@@ -499,15 +497,14 @@ def selective_predictor[**In](
             :func:`~probly.quantification.quantify` everywhere and no losses.
         decider: A :class:`~probly.decider.Decider` mapping the representation to the decision. Defaults to
             :func:`~probly.decider.categorical_from_mean`.
-        representer_kwargs: Keyword arguments for :func:`~probly.representer.representer`, e.g.
-            ``{"num_samples": ...}``.
 
     Returns:
         The selective predictor, with ``predict``, ``calibrate`` and ``evaluate``.
 
     Raises:
-        TypeError: If ``selector`` is not a :class:`~probly.selective_prediction.selectors.Selector` or ``None``, the
-            model cannot be represented, or a selector that needs losses meets ``loss=None``.
+        TypeError: If ``selector`` is not a :class:`~probly.selective_prediction.selectors.Selector` or ``None``,
+            ``base`` is not a :class:`~probly.representer.Representer`, or a selector that needs losses meets
+            ``loss=None``.
         ValueError: If ``notion`` is a string that is not a notion of uncertainty.
     """
     return _SelectivePredictorBase(
@@ -516,7 +513,6 @@ def selective_predictor[**In](
         notion=notion,
         loss=loss,
         decider=decider,
-        representer_kwargs=representer_kwargs,
     )
 
 

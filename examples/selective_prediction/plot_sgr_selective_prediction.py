@@ -14,10 +14,11 @@ from sklearn.datasets import make_moons
 import torch
 from torch import nn
 
-from probly.metrics.selective_prediction import risk_coverage_curve
-from probly.selective_prediction import selective_predictor, selector
-
 from examples.utils.model import MLPClassifier
+from probly.method import cast
+from probly.metrics.selective_prediction import risk_coverage_curve
+from probly.representer import representer
+from probly.selective_prediction import selective_predictor, selector
 
 BLUE, RED = "#1e88e5", "#ff0d57"
 
@@ -47,9 +48,9 @@ model.eval()
 # Calibrate and predict
 # ---------------------
 #
-# ``predictor_type="logit_classifier"`` tells :func:`~probly.selective_prediction.selective_predictor` to treat the
-# network as a classifier that outputs logits. Its criterion is then one minus the softmax probability of the
-# prediction, the softmax response of the paper.
+# :func:`~probly.method.cast` with ``predictor_type="logit_classifier"`` tells
+# :func:`~probly.representer.representer` to treat the network as a classifier that outputs logits. Its criterion is
+# then one minus the softmax probability of the prediction, the softmax response of the paper.
 #
 # SGR needs the labels of the calibration instances, passed first. It returns the largest threshold it can certify,
 # such that with probability at least ``1 - delta`` over the calibration set, the risk of the accepted predictions is
@@ -60,7 +61,9 @@ risk, delta = 0.02, 0.001
 X_cal, y_cal = X_pool[:5000], y_pool[:5000]
 X_test, y_test = X_pool[5000:], y_pool[5000:]
 
-predictor = selective_predictor(model, selector=selector(risk=risk, delta=delta), predictor_type="logit_classifier")
+predictor = selective_predictor(
+    representer(cast(model, predictor_type="logit_classifier")), selector=selector(risk=risk, delta=delta)
+)
 with torch.no_grad():
     predictor.calibrate(torch.from_numpy(y_cal), X_cal)
     result = predictor.predict(X_test)

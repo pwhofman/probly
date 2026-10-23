@@ -7,17 +7,17 @@ Calibrate a selector on unlabeled data to a target coverage, then see what it do
 
 from __future__ import annotations
 
-import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.datasets import make_moons
 import torch
 from torch import nn
 
-from probly.method.sngp import reset_precision_matrix, sngp
-from probly.selective_prediction import SelectivePredictor, selective_predictor, selector
-
 from examples.utils.model import ResFFN
+from probly.method.sngp import reset_precision_matrix, sngp
+from probly.representer import representer
+from probly.selective_prediction import SelectivePredictor, selective_predictor, selector
 
 BLUE, RED, GRAY = "#1e88e5", "#ff0d57", "#7f8c8d"
 
@@ -73,7 +73,7 @@ def run(predictor: SelectivePredictor, x: np.ndarray) -> tuple[np.ndarray, np.nd
     return result.decision.probabilities.argmax(dim=-1).numpy(), result.uncertainty.numpy(), result.accepted.numpy()
 
 
-predictor = selective_predictor(model, selector=selector(coverage=0.8), representer_kwargs={"num_samples": 100})
+predictor = selective_predictor(representer(model, num_samples=100), selector=selector(coverage=0.8))
 with torch.no_grad():
     predictor.calibrate(None, torch.from_numpy(X_val).float())
 

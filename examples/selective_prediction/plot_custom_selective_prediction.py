@@ -14,12 +14,13 @@ from __future__ import annotations
 
 from typing import Any, Self, override
 
-import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.datasets import make_moons
 from sklearn.ensemble import RandomForestClassifier
 
+from probly.representer import representer
 from probly.selective_prediction import selective_predictor, selector
 from probly.selective_prediction.selectors import Selector, selector_registry
 
@@ -104,7 +105,7 @@ class CostSelector(Selector):
 # The predictor takes the new rule and the loss like any other. The default criterion is one minus the largest
 # predicted probability. The rule is fitted on the validation split, whose labels give the losses.
 
-predictor = selective_predictor(model, selector=selector(cost=ABSTAIN_COST), loss=asymmetric_loss)
+predictor = selective_predictor(representer(model), selector=selector(cost=ABSTAIN_COST), loss=asymmetric_loss)
 predictor.calibrate(y_val, X_val)
 result = predictor.predict(X_test)
 

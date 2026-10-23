@@ -42,7 +42,7 @@ def test_ensemble_selective_prediction_is_torch_native() -> None:
     x = torch.randn(8, 4)
 
     with torch.no_grad():
-        result = selective_predictor(model, selector=make_selector(threshold=0.6)).predict(x)
+        result = selective_predictor(representer(model), selector=make_selector(threshold=0.6)).predict(x)
         expected_uncertainty = 1.0 - representer(model).represent(x).sample_mean().probabilities.max(dim=-1).values
 
     assert isinstance(result.uncertainty, torch.Tensor)
@@ -60,7 +60,7 @@ def test_ensemble_log_loss_matches_quantify(notion: str) -> None:
 
     with torch.no_grad():
         result = selective_predictor(
-            model, selector=make_selector(threshold=0.6), notion=notion, loss=LogLoss()
+            representer(model), selector=make_selector(threshold=0.6), notion=notion, loss=LogLoss()
         ).predict(x)
         expected = quantify(representer(model).represent(x))[notion]
 
@@ -81,7 +81,7 @@ def test_single_distribution_criterion_is_torch_native() -> None:
     probabilities = torch.tensor([[0.9, 0.1], [0.5, 0.5], [0.6, 0.4], [0.99, 0.01]])
     model = _RepresentationModel(create_categorical_distribution(probabilities))
 
-    result = selective_predictor(model, selector=make_selector(threshold=0.3)).predict(None)
+    result = selective_predictor(representer(model), selector=make_selector(threshold=0.3)).predict(None)
 
     assert isinstance(result.uncertainty, torch.Tensor)
     torch.testing.assert_close(result.uncertainty, 1.0 - probabilities.max(dim=-1).values)
@@ -91,7 +91,9 @@ def test_single_distribution_criterion_is_torch_native() -> None:
 def test_dirichlet_criterion_is_zero_one_total() -> None:
     dirichlet = create_dirichlet_distribution_from_alphas(torch.tensor([[8.0, 1.0, 1.0], [2.0, 2.0, 2.0]]))
 
-    result = selective_predictor(_RepresentationModel(dirichlet), selector=make_selector(threshold=0.5)).predict(None)
+    result = selective_predictor(
+        representer(_RepresentationModel(dirichlet)), selector=make_selector(threshold=0.5)
+    ).predict(None)
 
     assert isinstance(result.uncertainty, torch.Tensor)
     torch.testing.assert_close(result.uncertainty, SecondOrderZeroOneDecomposition(dirichlet).total)
@@ -102,15 +104,17 @@ def test_ensemble_selective_prediction_matches_numpy_threshold() -> None:
     model = _ensemble_model()
     x = torch.randn(8, 4)
     with torch.no_grad():
-        uncertainty = selective_predictor(model, selector=make_selector(threshold=np.inf)).predict(x).uncertainty
+        uncertainty = (
+            selective_predictor(representer(model), selector=make_selector(threshold=np.inf)).predict(x).uncertainty
+        )
         tau = float(uncertainty.median())
-        result = selective_predictor(model, selector=make_selector(threshold=tau)).predict(x)
+        result = selective_predictor(representer(model), selector=make_selector(threshold=tau)).predict(x)
 
     np.testing.assert_array_equal(result.accepted.numpy(), uncertainty.numpy() <= tau)
     assert result.coverage == float((uncertainty <= tau).float().mean())
 
 
-def test_dropout_model_is_sampled_with_representer_kwargs() -> None:
+def test_dropout_model_is_sampled_with_the_configured_representer() -> None:
     torch.manual_seed(0)
     model = dropout(
         nn.Sequential(nn.Linear(4, 16), nn.ReLU(), nn.Linear(16, 3)), p=0.5, predictor_type="logit_classifier"
@@ -118,7 +122,7 @@ def test_dropout_model_is_sampled_with_representer_kwargs() -> None:
     x = torch.randn(8, 4)
 
     sp = selective_predictor(
-        model, selector=make_selector(threshold=0.6), notion="epistemic", representer_kwargs={"num_samples": 7}
+        representer(model, num_samples=7), selector=make_selector(threshold=0.6), notion="epistemic"
     )
     with torch.no_grad():
         result = sp.predict(x)
@@ -149,7 +153,7 @@ def test_regression_ensemble_selects_on_epistemic_uncertainty() -> None:
 
     with torch.no_grad():
         result = selective_predictor(
-            model, selector=make_selector(threshold=0.5), notion="epistemic", decider=lambda rep: rep
+            representer(model), selector=make_selector(threshold=0.5), notion="epistemic", decider=lambda rep: rep
         ).predict(x)
         representation = representer(model).represent(x)
 
@@ -281,7 +285,7 @@ def test_default_predictor_on_method(name: str, notion: str) -> None:
     model = transformation(_classifier_base())
     x = torch.randn(8, 4)
     predictor = selective_predictor(
-        model, selector=make_selector(threshold=0.5), notion=notion, representer_kwargs=representer_kwargs
+        representer(model, **representer_kwargs), selector=make_selector(threshold=0.5), notion=notion
     )
 
     with torch.no_grad():
@@ -314,7 +318,7 @@ def test_non_default_decider_on_credal_model() -> None:
     with torch.no_grad():
         torch.manual_seed(1)
         result = selective_predictor(
-            model, selector=make_selector(threshold=1.0), decider=categorical_from_maximin
+            representer(model), selector=make_selector(threshold=1.0), decider=categorical_from_maximin
         ).predict(x)
         torch.manual_seed(1)
         expected = categorical_from_maximin(representer(model).represent(x))
@@ -338,11 +342,13 @@ def test_coverage_selector_calibrates_torch_uncertainty(n: int, coverage: float,
 def test_coverage_selector_pipeline_calibrates_ensemble() -> None:
     model = _ensemble_model()
     x_cal, x_test = torch.randn(200, 4), torch.randn(100, 4)
-    sp = selective_predictor(model, selector=make_selector(coverage=0.8))
+    sp = selective_predictor(representer(model), selector=make_selector(coverage=0.8))
     with torch.no_grad():
         assert sp.calibrate(None, x_cal) is sp
         result = sp.predict(x_test)
-        kappa_cal = selective_predictor(model, selector=make_selector(threshold=1.0)).predict(x_cal).uncertainty
+        kappa_cal = (
+            selective_predictor(representer(model), selector=make_selector(threshold=1.0)).predict(x_cal).uncertainty
+        )
     expected = make_selector(coverage=0.8).calibrate(kappa_cal).threshold
     assert sp.selector.threshold == expected
     assert isinstance(result.accepted, torch.Tensor)
@@ -366,12 +372,12 @@ def test_sgr_selector_pipeline_calibrates_ensemble_with_targets() -> None:
     model = _ensemble_model()
     x_cal = torch.randn(300, 4)
     with torch.no_grad():
-        decision = selective_predictor(model, selector=make_selector(threshold=1.0)).predict(x_cal)
+        decision = selective_predictor(representer(model), selector=make_selector(threshold=1.0)).predict(x_cal)
         # Labels that agree with the decision for the more certain instances.
         targets = decision.decision.probabilities.argmax(dim=-1)
         flip = decision.uncertainty > decision.uncertainty.median()
         targets = torch.where(flip, (targets + 1) % 3, targets)
-        sp = selective_predictor(model, selector=make_selector(risk=0.2, delta=0.2))
+        sp = selective_predictor(representer(model), selector=make_selector(risk=0.2, delta=0.2))
         assert sp.calibrate(targets, x_cal) is sp
     losses = (decision.decision.probabilities.argmax(dim=-1) != targets).double().numpy()
     expected = make_selector(risk=0.2, delta=0.2).calibrate(decision.uncertainty.double().numpy(), losses)
@@ -383,7 +389,7 @@ def test_evaluate_and_predict_agree_on_a_float32_criterion_at_a_fixed_threshold(
     kappa = torch.tensor([0.3, 0.3, 0.9, 0.9], dtype=torch.float32)
     representation = create_categorical_distribution(torch.full((4, 2), 0.5))
     sp = selective_predictor(
-        cast(lambda r: r, predictor_type=RepresentationPredictor),
+        representer(cast(lambda r: r, predictor_type=RepresentationPredictor)),
         selector=make_selector(threshold=0.3),
         notion=lambda _rep: kappa,
         loss=lambda _d, y: y,
@@ -396,7 +402,7 @@ def test_evaluate_and_predict_agree_on_a_float32_criterion_at_a_fixed_threshold(
 def test_ensemble_evaluate_matches_predict() -> None:
     model = _ensemble_model()
     x = torch.randn(50, 4)
-    sp = selective_predictor(model, selector=make_selector(threshold=0.5))
+    sp = selective_predictor(representer(model), selector=make_selector(threshold=0.5))
     with torch.no_grad():
         result = sp.predict(x)
         targets = result.decision.probabilities.argmax(dim=-1)
@@ -414,9 +420,8 @@ def test_regression_recipe_on_a_dropout_model() -> None:
     model = dropout(nn.Sequential(nn.Linear(4, 16), nn.ReLU(), nn.Linear(16, 1)), p=0.2)
     x_cal, x_test, y_test = torch.randn(50, 4), torch.randn(30, 4), torch.randn(30)
     sp = selective_predictor(
-        model,
+        representer(model, num_samples=5),
         selector=make_selector(coverage=0.8),
-        representer_kwargs={"num_samples": 5},
         notion=lambda s: s.sample_var().squeeze(-1),
         decider=lambda s: s.sample_mean().squeeze(-1),
         loss=lambda d, y: (d - y) ** 2,
@@ -441,8 +446,10 @@ def test_concatenated_torch_representations_on_an_identity_model_match_one_batch
         rep = representer(model)
         concatenated = torch.cat([rep.represent(x[:10]), rep.represent(x[10:])], dim=0)
         identity = cast(lambda r: r, predictor_type=RepresentationPredictor)
-        result = selective_predictor(identity, selector=make_selector(threshold=0.6)).evaluate(targets, concatenated)
-        expected = selective_predictor(model, selector=make_selector(threshold=0.6)).evaluate(targets, x)
+        result = selective_predictor(representer(identity), selector=make_selector(threshold=0.6)).evaluate(
+            targets, concatenated
+        )
+        expected = selective_predictor(representer(model), selector=make_selector(threshold=0.6)).evaluate(targets, x)
 
     assert isinstance(concatenated, CategoricalDistributionSample)
     assert 0.0 < result["selected:coverage"] < 1.0
@@ -455,7 +462,7 @@ def test_error_note_names_the_torch_representation() -> None:
         raise ValueError(msg)
 
     with pytest.raises(ValueError, match="user error") as info, torch.no_grad():
-        selective_predictor(_ensemble_model(), selector=make_selector(threshold=0.5), notion=notion).predict(
-            torch.randn(8, 4)
-        )
+        selective_predictor(
+            representer(_ensemble_model()), selector=make_selector(threshold=0.5), notion=notion
+        ).predict(torch.randn(8, 4))
     assert "notion receives the representation (TorchSample), not the model output" in info.value.__notes__[0]

@@ -7,17 +7,17 @@ Abstain wherever an MC-dropout model is too uncertain, with a threshold that is 
 
 from __future__ import annotations
 
-import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.datasets import make_moons
 import torch
 from torch import nn
 
+from examples.utils.model import MLPClassifier
+from probly.representer import representer
 from probly.selective_prediction import selective_predictor, selector
 from probly.transformation import dropout
-
-from examples.utils.model import MLPClassifier
 
 BLUE, RED, GRAY = "#1e88e5", "#ff0d57", "#7f8c8d"
 
@@ -55,7 +55,7 @@ model.eval()
 # most 0.1. This is Chow's rule for an abstention that costs a tenth of a wrong prediction, so the threshold has a
 # meaning and needs no calibration data.
 
-predictor = selective_predictor(model, selector=selector(threshold=0.1), representer_kwargs={"num_samples": 100})
+predictor = selective_predictor(representer(model, num_samples=100), selector=selector(threshold=0.1))
 
 
 def run(x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:

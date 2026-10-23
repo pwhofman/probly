@@ -88,7 +88,7 @@ def _regression_sample() -> NumpyGaussianDistributionSample:
 
 def test_default_criterion_is_one_minus_max_probability() -> None:
     model = _model()
-    result = selective_predictor(model, selector=make_selector(threshold=0.5)).predict(None)
+    result = selective_predictor(representer(model), selector=make_selector(threshold=0.5)).predict(None)
     representation = model.predict_representation(None)
 
     assert isinstance(result, SelectivePrediction)
@@ -100,7 +100,7 @@ def test_default_criterion_is_one_minus_max_probability() -> None:
 
 
 def test_accepted_is_uncertainty_at_most_threshold() -> None:
-    result = selective_predictor(_model(), selector=make_selector(threshold=0.3)).predict(None)
+    result = selective_predictor(representer(_model()), selector=make_selector(threshold=0.3)).predict(None)
 
     np.testing.assert_array_equal(result.accepted, result.uncertainty <= 0.3)
     np.testing.assert_array_equal(result.accepted, [True, False, False, True])
@@ -108,16 +108,16 @@ def test_accepted_is_uncertainty_at_most_threshold() -> None:
 
 
 def test_tie_at_threshold_is_accepted() -> None:
-    result = selective_predictor(_model(), selector=make_selector(threshold=float(MAX_PROB_COMPLEMENTS[2]))).predict(
-        None
-    )
+    result = selective_predictor(
+        representer(_model()), selector=make_selector(threshold=float(MAX_PROB_COMPLEMENTS[2]))
+    ).predict(None)
 
     assert result.accepted[2]
 
 
 @pytest.mark.parametrize(("threshold", "coverage"), [(np.inf, 1.0), (-np.inf, 0.0)])
 def test_infinite_thresholds_accept_all_or_none(threshold: float, coverage: float) -> None:
-    result = selective_predictor(_model(), selector=make_selector(threshold=threshold)).predict(None)
+    result = selective_predictor(representer(_model()), selector=make_selector(threshold=threshold)).predict(None)
 
     assert result.coverage == coverage
 
@@ -130,7 +130,7 @@ def test_coverage_of_empty_batch_is_nan() -> None:
 
 def test_predictor_rejects_criterion_with_extra_axes() -> None:
     predictor = selective_predictor(
-        _model(), selector=make_selector(threshold=0.5), notion=lambda rep: rep.probabilities
+        representer(_model()), selector=make_selector(threshold=0.5), notion=lambda rep: rep.probabilities
     )
 
     with pytest.raises(ValueError, match=r"shape \(4, 2\)"):
@@ -140,7 +140,9 @@ def test_predictor_rejects_criterion_with_extra_axes() -> None:
 @pytest.mark.parametrize("notion", ["total", "aleatoric", "epistemic"])
 def test_notion_selects_component_of_decomposition(notion: str) -> None:
     sample = _ensemble_sample()
-    predictor = selective_predictor(_RepresentationModel(sample), selector=make_selector(threshold=0.2), notion=notion)
+    predictor = selective_predictor(
+        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.2), notion=notion
+    )
 
     result = predictor.predict(None)
 
@@ -149,7 +151,7 @@ def test_notion_selects_component_of_decomposition(notion: str) -> None:
 
 def test_epistemic_notion_separates_disagreement_from_noise() -> None:
     result = selective_predictor(
-        _RepresentationModel(_ensemble_sample()), selector=make_selector(threshold=0.1), notion="epistemic"
+        representer(_RepresentationModel(_ensemble_sample())), selector=make_selector(threshold=0.1), notion="epistemic"
     ).predict(None)
 
     assert result.uncertainty[0] > 0.1
@@ -160,24 +162,24 @@ def test_epistemic_notion_separates_disagreement_from_noise() -> None:
 @pytest.mark.parametrize("notion", ["EU", "eu", EpistemicUncertainty])
 def test_notion_accepts_aliases_and_classes(notion: Any) -> None:  # noqa: ANN401
     predictor = selective_predictor(
-        _RepresentationModel(_ensemble_sample()), selector=make_selector(threshold=0.2), notion=notion
+        representer(_RepresentationModel(_ensemble_sample())), selector=make_selector(threshold=0.2), notion=notion
     )
 
     assert predictor.notion is EpistemicUncertainty
 
 
 def test_default_notion_is_total() -> None:
-    assert selective_predictor(_model(), selector=make_selector(threshold=0.2)).notion is TotalUncertainty
+    assert selective_predictor(representer(_model()), selector=make_selector(threshold=0.2)).notion is TotalUncertainty
 
 
 def test_invalid_notion_raises() -> None:
     with pytest.raises(ValueError, match=r"notion must be one of .*'tu', 'TU', got 'bogus'"):
-        selective_predictor(_model(), selector=make_selector(threshold=0.2), notion="bogus")
+        selective_predictor(representer(_model()), selector=make_selector(threshold=0.2), notion="bogus")
 
 
 def test_class_that_is_not_a_notion_raises() -> None:
     with pytest.raises(TypeError, match="subclass of Notion"):
-        selective_predictor(_model(), selector=make_selector(threshold=0.2), notion=int)
+        selective_predictor(representer(_model()), selector=make_selector(threshold=0.2), notion=int)
 
 
 def test_callable_notion_computes_criterion_from_representation() -> None:
@@ -189,7 +191,7 @@ def test_callable_notion_computes_criterion_from_representation() -> None:
         return 1.0 - representation.probabilities.max(axis=-1)
 
     result = selective_predictor(
-        model, selector=make_selector(threshold=0.3), notion=one_minus_max_probability
+        representer(model), selector=make_selector(threshold=0.3), notion=one_minus_max_probability
     ).predict(None)
 
     assert seen == [model.representation]
@@ -208,7 +210,7 @@ def test_callable_notion_skips_quantify(monkeypatch: pytest.MonkeyPatch) -> None
 
     monkeypatch.setattr("probly.selective_prediction._common.quantify", fail)
     result = selective_predictor(
-        _model(), selector=make_selector(threshold=0.5), notion=lambda _rep: np.array([0.1, 0.9, 0.5, 0.6])
+        representer(_model()), selector=make_selector(threshold=0.5), notion=lambda _rep: np.array([0.1, 0.9, 0.5, 0.6])
     ).predict(None)
 
     np.testing.assert_array_equal(result.accepted, [True, False, True, False])
@@ -216,7 +218,7 @@ def test_callable_notion_skips_quantify(monkeypatch: pytest.MonkeyPatch) -> None
 
 def test_quantify_result_that_is_not_a_decomposition_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("probly.selective_prediction._common.quantify", lambda _representation: 0.5)
-    predictor = selective_predictor(_model(), selector=make_selector(threshold=0.2), loss=None)
+    predictor = selective_predictor(representer(_model()), selector=make_selector(threshold=0.2), loss=None)
 
     with pytest.raises(TypeError, match="Expected quantify to return a Decomposition"):
         predictor.predict(None)
@@ -224,11 +226,11 @@ def test_quantify_result_that_is_not_a_decomposition_raises(monkeypatch: pytest.
 
 def test_non_callable_notion_raises() -> None:
     with pytest.raises(TypeError, match="notion"):
-        selective_predictor(_model(), selector=make_selector(threshold=0.2), notion=0.5)
+        selective_predictor(representer(_model()), selector=make_selector(threshold=0.2), notion=0.5)
 
 
 def test_notion_missing_from_decomposition_raises() -> None:
-    predictor = selective_predictor(_model(), selector=make_selector(threshold=0.2), notion="epistemic")
+    predictor = selective_predictor(representer(_model()), selector=make_selector(threshold=0.2), notion="epistemic")
 
     with pytest.raises(KeyError, match=r"Probability\w* has no EpistemicUncertainty .* only: TotalUncertainty"):
         predictor.predict(None)
@@ -238,7 +240,10 @@ def test_notion_missing_from_decomposition_raises() -> None:
 def test_regression_criterion_comes_from_quantify(notion: str) -> None:
     sample = _regression_sample()
     result = selective_predictor(
-        _RepresentationModel(sample), selector=make_selector(threshold=1.0), notion=notion, decider=lambda rep: rep
+        representer(_RepresentationModel(sample)),
+        selector=make_selector(threshold=1.0),
+        notion=notion,
+        decider=lambda rep: rep,
     ).predict(None)
 
     np.testing.assert_allclose(result.uncertainty, quantify(sample)[notion])
@@ -260,7 +265,7 @@ def test_threshold_on_default_criterion_is_chows_rule(cost: float) -> None:
         (create_categorical_distribution(PROBABILITIES), PROBABILITIES),
     ]:
         result = selective_predictor(
-            _RepresentationModel(representation), selector=make_selector(threshold=cost)
+            representer(_RepresentationModel(representation)), selector=make_selector(threshold=cost)
         ).predict(None)
 
         np.testing.assert_array_equal(result.accepted, probabilities.max(axis=-1) >= 1.0 - cost)
@@ -269,7 +274,9 @@ def test_threshold_on_default_criterion_is_chows_rule(cost: float) -> None:
 def test_default_decomposition_is_additive() -> None:
     sample = _random_ensemble_sample()
     components = {
-        notion: selective_predictor(_RepresentationModel(sample), selector=make_selector(threshold=0.5), notion=notion)
+        notion: selective_predictor(
+            representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5), notion=notion
+        )
         .predict(None)
         .uncertainty
         for notion in ("total", "aleatoric", "epistemic")
@@ -290,7 +297,7 @@ def test_default_epistemic_is_exactly_zero_where_members_agree() -> None:
     )
 
     result = selective_predictor(
-        _RepresentationModel(sample), selector=make_selector(threshold=0.0), notion="epistemic"
+        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.0), notion="epistemic"
     ).predict(None)
 
     np.testing.assert_array_equal(result.uncertainty, 0.0)
@@ -301,14 +308,16 @@ def test_default_epistemic_is_exactly_zero_where_members_agree() -> None:
 def test_log_loss_gives_entropy_decomposition(notion: str) -> None:
     sample = _random_ensemble_sample()
     result = selective_predictor(
-        _RepresentationModel(sample), selector=make_selector(threshold=0.5), notion=notion, loss=LogLoss()
+        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5), notion=notion, loss=LogLoss()
     ).predict(None)
 
     np.testing.assert_allclose(result.uncertainty, quantify(sample)[notion])
 
 
 def test_log_loss_gives_entropy_of_single_distribution() -> None:
-    result = selective_predictor(_model(), selector=make_selector(threshold=0.5), loss=LogLoss()).predict(None)
+    result = selective_predictor(representer(_model()), selector=make_selector(threshold=0.5), loss=LogLoss()).predict(
+        None
+    )
 
     np.testing.assert_allclose(result.uncertainty, ENTROPIES)
 
@@ -316,7 +325,10 @@ def test_log_loss_gives_entropy_of_single_distribution() -> None:
 def test_brier_loss_gives_its_scoring_rule_decomposition() -> None:
     sample = _random_ensemble_sample()
     result = selective_predictor(
-        _RepresentationModel(sample), selector=make_selector(threshold=0.5), notion="epistemic", loss=BrierLoss()
+        representer(_RepresentationModel(sample)),
+        selector=make_selector(threshold=0.5),
+        notion="epistemic",
+        loss=BrierLoss(),
     ).predict(None)
 
     np.testing.assert_allclose(result.uncertainty, SecondOrderScoringRuleDecomposition(sample, BrierLoss()).epistemic)
@@ -325,7 +337,7 @@ def test_brier_loss_gives_its_scoring_rule_decomposition() -> None:
 def test_no_loss_uses_quantify() -> None:
     sample = _random_ensemble_sample()
     result = selective_predictor(
-        _RepresentationModel(sample), selector=make_selector(threshold=0.5), notion="epistemic", loss=None
+        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5), notion="epistemic", loss=None
     ).predict(None)
 
     np.testing.assert_allclose(result.uncertainty, quantify(sample).epistemic)
@@ -336,7 +348,9 @@ def test_dirichlet_criterion_uses_zero_one_decomposition() -> None:
     dirichlet = create_dirichlet_distribution_from_alphas(alphas)
     expected = SecondOrderZeroOneDecomposition(dirichlet)
 
-    total = selective_predictor(_RepresentationModel(dirichlet), selector=make_selector(threshold=0.5)).predict(None)
+    total = selective_predictor(
+        representer(_RepresentationModel(dirichlet)), selector=make_selector(threshold=0.5)
+    ).predict(None)
     np.testing.assert_allclose(total.uncertainty, 1.0 - (alphas / alphas.sum(-1, keepdims=True)).max(-1))
     np.testing.assert_allclose(total.uncertainty, expected.total)
 
@@ -344,7 +358,7 @@ def test_dirichlet_criterion_uses_zero_one_decomposition() -> None:
 def test_dirichlet_rejects_other_losses() -> None:
     dirichlet = create_dirichlet_distribution_from_alphas(np.array([[2.0, 1.0], [1.0, 1.0]]))
     predictor = selective_predictor(
-        _RepresentationModel(dirichlet), selector=make_selector(threshold=0.5), loss=LogLoss()
+        representer(_RepresentationModel(dirichlet)), selector=make_selector(threshold=0.5), loss=LogLoss()
     )
 
     with pytest.raises(NotImplementedError, match="LogLoss is not supported for Dirichlet"):
@@ -352,13 +366,15 @@ def test_dirichlet_rejects_other_losses() -> None:
 
 
 def test_default_loss_is_zero_one() -> None:
-    assert isinstance(selective_predictor(_model(), selector=make_selector(threshold=0.2)).loss, ZeroOneLoss)
+    assert isinstance(
+        selective_predictor(representer(_model()), selector=make_selector(threshold=0.2)).loss, ZeroOneLoss
+    )
 
 
 @pytest.mark.parametrize("loss", [ZeroOneLoss(), LogLoss(), BrierLoss()])
 def test_explicit_loss_raises_for_representation_it_does_not_apply_to(loss: Any) -> None:  # noqa: ANN401
     predictor = selective_predictor(
-        _RepresentationModel(_regression_sample()), selector=make_selector(threshold=0.5), loss=loss
+        representer(_RepresentationModel(_regression_sample())), selector=make_selector(threshold=0.5), loss=loss
     )
 
     with pytest.raises(NotImplementedError, match=f"{type(loss).__name__} is not supported for"):
@@ -368,10 +384,13 @@ def test_explicit_loss_raises_for_representation_it_does_not_apply_to(loss: Any)
 def test_explicit_zero_one_loss_matches_default_where_it_applies() -> None:
     sample = _random_ensemble_sample()
     default = selective_predictor(
-        _RepresentationModel(sample), selector=make_selector(threshold=0.5), notion="epistemic"
+        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5), notion="epistemic"
     )
     explicit = selective_predictor(
-        _RepresentationModel(sample), selector=make_selector(threshold=0.5), notion="epistemic", loss=ZeroOneLoss()
+        representer(_RepresentationModel(sample)),
+        selector=make_selector(threshold=0.5),
+        notion="epistemic",
+        loss=ZeroOneLoss(),
     )
 
     np.testing.assert_array_equal(explicit.predict(None).uncertainty, default.predict(None).uncertainty)
@@ -379,12 +398,12 @@ def test_explicit_zero_one_loss_matches_default_where_it_applies() -> None:
 
 def test_invalid_loss_raises() -> None:
     with pytest.raises(TypeError, match="loss"):
-        selective_predictor(_model(), selector=make_selector(threshold=0.2), loss="zero_one")
+        selective_predictor(representer(_model()), selector=make_selector(threshold=0.2), loss="zero_one")
 
 
 def test_callable_notion_ignores_loss() -> None:
     result = selective_predictor(
-        _model(),
+        representer(_model()),
         selector=make_selector(threshold=0.5),
         notion=lambda rep: 1.0 - rep.probabilities.max(axis=-1),
         loss=LogLoss(),
@@ -395,14 +414,14 @@ def test_callable_notion_ignores_loss() -> None:
 
 def test_custom_decider_is_used() -> None:
     result = selective_predictor(
-        _model(), selector=make_selector(threshold=0.2), decider=lambda rep: rep.probabilities.argmax(-1)
+        representer(_model()), selector=make_selector(threshold=0.2), decider=lambda rep: rep.probabilities.argmax(-1)
     ).predict(None)
 
     np.testing.assert_array_equal(result.decision, [0, 0, 0, 0])
 
 
 def test_predict_dispatch_agrees_with_method() -> None:
-    sp = selective_predictor(_model(), selector=make_selector(threshold=0.5))
+    sp = selective_predictor(representer(_model()), selector=make_selector(threshold=0.5))
 
     via_method = sp.predict(None)
     via_dispatch = predict(sp, None)
@@ -430,19 +449,13 @@ class _SamplingRepresenter(Representer):
 representer.register(_SamplingModel, _SamplingRepresenter)
 
 
-def test_representer_kwargs_are_passed_to_the_representer() -> None:
-    sp = selective_predictor(
-        _SamplingModel(), selector=make_selector(threshold=0.5), representer_kwargs={"num_samples": 3}
-    )
+def test_configured_representer_is_used_as_is() -> None:
+    sampling_representer = representer(_SamplingModel(), num_samples=3)
+    sp = selective_predictor(sampling_representer, selector=make_selector(threshold=0.5))
 
-    assert isinstance(sp.representer, _SamplingRepresenter)
+    assert sp.representer is sampling_representer
     assert sp.representer.num_samples == 3
     np.testing.assert_allclose(sp.predict(None).uncertainty, MAX_PROB_COMPLEMENTS)
-
-
-def test_missing_representer_kwargs_raise() -> None:
-    with pytest.raises(TypeError, match="num_samples"):
-        selective_predictor(_SamplingModel(), selector=make_selector(threshold=0.5))
 
 
 class _LeastUncertainSelector(Selector):
@@ -459,12 +472,12 @@ class _LeastUncertainSelector(Selector):
 
 
 def test_subclass_without_threshold_works_in_the_predictor() -> None:
-    result = selective_predictor(_model(), selector=_LeastUncertainSelector(k=1)).predict(None)
+    result = selective_predictor(representer(_model()), selector=_LeastUncertainSelector(k=1)).predict(None)
     np.testing.assert_array_equal(result.accepted, [False, False, False, True])
 
 
 def test_pipeline_calibrate_matches_selector_on_predicted_criterion() -> None:
-    sp = selective_predictor(_model(), selector=make_selector(coverage=0.5))
+    sp = selective_predictor(representer(_model()), selector=make_selector(coverage=0.5))
     assert sp.calibrate(None, None) is sp
     expected = make_selector(coverage=0.5).calibrate(1.0 - PROBABILITIES.max(axis=-1))
     assert sp.selector.threshold == expected.threshold
@@ -474,7 +487,7 @@ def test_pipeline_calibrate_matches_selector_on_predicted_criterion() -> None:
 
 def test_pipeline_calibrate_uses_callable_notion() -> None:
     sp = selective_predictor(
-        _model(), selector=make_selector(coverage=0.5), notion=lambda _rep: np.array([4.0, 3.0, 2.0, 1.0])
+        representer(_model()), selector=make_selector(coverage=0.5), notion=lambda _rep: np.array([4.0, 3.0, 2.0, 1.0])
     )
     sp.calibrate(None, None)
     assert sp.selector.threshold == 3.0
@@ -482,12 +495,12 @@ def test_pipeline_calibrate_uses_callable_notion() -> None:
 
 def test_pipeline_calibrate_requires_fitted_rule() -> None:
     with pytest.raises(TypeError, match=r"^selector\(threshold=0\.5\) is not fitted on data"):
-        selective_predictor(_model(), selector=make_selector(threshold=0.5)).calibrate(None, None)
+        selective_predictor(representer(_model()), selector=make_selector(threshold=0.5)).calibrate(None, None)
 
 
 def test_pipeline_calibrate_with_labels_matches_selector_on_losses() -> None:
     labels = np.array([0, 1, 0, 0])
-    sp = selective_predictor(_model(), selector=make_selector(risk=0.9, delta=0.5))
+    sp = selective_predictor(representer(_model()), selector=make_selector(risk=0.9, delta=0.5))
     assert sp.calibrate(labels, None) is sp
     expected = make_selector(risk=0.9, delta=0.5).calibrate(MAX_PROB_COMPLEMENTS, np.array([0.0, 1.0, 0.0, 0.0]))
     assert sp.selector.threshold == expected.threshold
@@ -496,7 +509,7 @@ def test_pipeline_calibrate_with_labels_matches_selector_on_losses() -> None:
 
 def test_pipeline_losses_follow_the_decision_not_the_ground_truth_class_index() -> None:
     # The decision is class 0 for every instance, so a target of 1 is an error and a target of 0 is not.
-    sp = selective_predictor(_model(), selector=make_selector(risk=0.99, delta=0.5))
+    sp = selective_predictor(representer(_model()), selector=make_selector(risk=0.99, delta=0.5))
     losses = _losses(sp, sp.representer.represent(None), np.array([1, 1, 0, 0]))
     np.testing.assert_array_equal(losses, [1.0, 1.0, 0.0, 0.0])
 
@@ -526,24 +539,24 @@ def test_pipeline_label_mismatch_raises_before_the_forward_pass(
 ) -> None:
     model = _CountingModel(create_categorical_distribution(PROBABILITIES))
     with pytest.raises(TypeError, match=match):
-        selective_predictor(model, selector=selector).calibrate(labels, None)
+        selective_predictor(representer(model), selector=selector).calibrate(labels, None)
     assert model.calls == 0
 
 
-def test_pipeline_calibrate_without_model_input_raises() -> None:
+def test_pipeline_calibrate_without_input_raises() -> None:
     model = _CountingModel(create_categorical_distribution(PROBABILITIES))
-    with pytest.raises(TypeError, match="No input of the model"):
-        selective_predictor(model, selector=make_selector(coverage=0.5)).calibrate(None)
+    with pytest.raises(TypeError, match="No input of the representer"):
+        selective_predictor(representer(model), selector=make_selector(coverage=0.5)).calibrate(None)
     assert model.calls == 0
 
 
 def test_risk_rule_needs_a_task_loss_at_construction() -> None:
     with pytest.raises(TypeError, match=r"^selector\(risk=.*\) needs losses"):
-        selective_predictor(_model(), selector=make_selector(risk=0.5, delta=0.5), loss=None)
+        selective_predictor(representer(_model()), selector=make_selector(risk=0.5, delta=0.5), loss=None)
 
 
 def test_pipeline_non_binary_loss_is_rejected_by_sgr() -> None:
-    sp = selective_predictor(_model(), selector=make_selector(risk=0.5, delta=0.5), loss=LogLoss())
+    sp = selective_predictor(representer(_model()), selector=make_selector(risk=0.5, delta=0.5), loss=LogLoss())
     with pytest.raises(ValueError, match="binary"):
         sp.calibrate(np.zeros(4, dtype=int), None)
 
@@ -560,19 +573,21 @@ def test_pipeline_non_binary_loss_is_rejected_by_sgr() -> None:
 )
 def test_pipeline_rejects_invalid_labels(labels: np.ndarray, match: str) -> None:
     with pytest.raises(ValueError, match=match):
-        selective_predictor(_model(), selector=make_selector(risk=0.5, delta=0.5)).calibrate(labels, None)
+        selective_predictor(representer(_model()), selector=make_selector(risk=0.5, delta=0.5)).calibrate(labels, None)
 
 
 def test_pipeline_scoring_rule_on_a_regression_decision_raises() -> None:
     sp = selective_predictor(
-        _RepresentationModel(_regression_sample()), selector=make_selector(risk=0.5, delta=0.5), decider=lambda r: r
+        representer(_RepresentationModel(_regression_sample())),
+        selector=make_selector(risk=0.5, delta=0.5),
+        decider=lambda r: r,
     )
     with pytest.raises(TypeError, match="A scoring rule needs a categorical decision, got NumpyGaussianDistribution"):
         sp.calibrate(np.zeros(3, dtype=int), None)
 
 
 def test_pipeline_calibrate_through_the_calibrator_protocol_takes_labels_first() -> None:
-    sp = selective_predictor(_model(), selector=make_selector(risk=0.9, delta=0.5))
+    sp = selective_predictor(representer(_model()), selector=make_selector(risk=0.9, delta=0.5))
     calibrate(sp, np.array([0, 1, 0, 0]), None)
     expected = make_selector(risk=0.9, delta=0.5).calibrate(MAX_PROB_COMPLEMENTS, np.array([0.0, 1.0, 0.0, 0.0]))
     assert sp.selector.threshold == expected.threshold
@@ -586,11 +601,11 @@ def test_pipeline_calibrate_through_the_calibrator_protocol_takes_labels_first()
 
 def test_selector_must_be_a_selector() -> None:
     with pytest.raises(TypeError, match="selector must be a Selector or None"):
-        selective_predictor(_model(), selector=0.5)
+        selective_predictor(representer(_model()), selector=0.5)
 
 
 def test_no_rule_is_allowed_but_cannot_predict_or_calibrate() -> None:
-    sp = selective_predictor(_model())
+    sp = selective_predictor(representer(_model()))
 
     assert sp.selector is None
     with pytest.raises(TypeError, match="No selector to select with"):
@@ -603,7 +618,7 @@ def test_no_rule_is_allowed_but_cannot_predict_or_calibrate() -> None:
 @pytest.mark.parametrize("selector", [make_selector(coverage=0.5), make_selector(risk=0.5, delta=0.5)])
 def test_uncalibrated_rule_raises_before_the_forward_pass(selector: Selector, method: str) -> None:
     model = _CountingModel(create_categorical_distribution(PROBABILITIES))
-    sp = selective_predictor(model, selector=selector)
+    sp = selective_predictor(representer(model), selector=selector)
     arguments = (None,) if method == "predict" else (np.zeros(4, dtype=int), None)
 
     with pytest.raises(ValueError, match=r"^selector\(.*\) is not calibrated\. Call calibrate\(\) first\."):
@@ -628,7 +643,7 @@ class _UncalibratedSelector(Selector):
 
 def test_custom_uncalibrated_selector_raises_before_the_forward_pass() -> None:
     model = _CountingModel(create_categorical_distribution(PROBABILITIES))
-    sp = selective_predictor(model, selector=_UncalibratedSelector())
+    sp = selective_predictor(representer(model), selector=_UncalibratedSelector())
 
     with pytest.raises(ValueError, match=r"^selector\(custom\) is not calibrated\."):
         sp.predict(None)
@@ -636,7 +651,7 @@ def test_custom_uncalibrated_selector_raises_before_the_forward_pass() -> None:
 
 
 def test_reassigned_selector_that_needs_losses_meets_loss_none_in_calibrate() -> None:
-    sp = selective_predictor(_model(), loss=None)
+    sp = selective_predictor(representer(_model()), loss=None)
     sp.selector = make_selector(risk=0.5, delta=0.5)
 
     with pytest.raises(TypeError, match=r"needs losses, but loss is None"):
@@ -645,7 +660,7 @@ def test_reassigned_selector_that_needs_losses_meets_loss_none_in_calibrate() ->
 
 def test_criterion_with_extra_axes_hint_names_the_predictor_type() -> None:
     predictor = selective_predictor(
-        _model(),
+        representer(_model()),
         selector=make_selector(threshold=0.5),
         notion=lambda _representation: np.zeros((4, 4)),
     )
@@ -659,19 +674,22 @@ def test_criterion_with_extra_axes_hint_names_the_predictor_type() -> None:
 
 
 def test_selector_threshold_is_fixed_or_fitted() -> None:
-    assert selective_predictor(_model(), selector=make_selector(threshold=0.3)).selector.threshold == 0.3
-    sp = selective_predictor(_model(), selector=make_selector(coverage=0.5))
+    assert selective_predictor(representer(_model()), selector=make_selector(threshold=0.3)).selector.threshold == 0.3
+    sp = selective_predictor(representer(_model()), selector=make_selector(coverage=0.5))
     assert sp.selector.threshold is None
     sp.calibrate(None, None)
     assert sp.selector.threshold is not None
 
 
 def test_selector_bound_belongs_to_the_risk_rule() -> None:
-    assert selective_predictor(_model(), selector=make_selector(threshold=0.3)).selector.bound is None
+    assert selective_predictor(representer(_model()), selector=make_selector(threshold=0.3)).selector.bound is None
     assert (
-        selective_predictor(_model(), selector=make_selector(coverage=0.5)).calibrate(None, None).selector.bound is None
+        selective_predictor(representer(_model()), selector=make_selector(coverage=0.5))
+        .calibrate(None, None)
+        .selector.bound
+        is None
     )
-    sp = selective_predictor(_model(), selector=make_selector(risk=0.9, delta=0.5))
+    sp = selective_predictor(representer(_model()), selector=make_selector(risk=0.9, delta=0.5))
     assert sp.selector.bound is None
     sp.calibrate(np.array([0, 1, 0, 0]), None)
     expected = make_selector(risk=0.9, delta=0.5).calibrate(MAX_PROB_COMPLEMENTS, np.array([0.0, 1.0, 0.0, 0.0]))
@@ -679,7 +697,7 @@ def test_selector_bound_belongs_to_the_risk_rule() -> None:
 
 
 def test_pipeline_calibrate_raises_if_nothing_was_certified() -> None:
-    sp = selective_predictor(_model(), selector=make_selector(risk=0.01, delta=0.1))
+    sp = selective_predictor(representer(_model()), selector=make_selector(risk=0.01, delta=0.1))
     with pytest.raises(ValueError, match="No threshold could be certified"):
         sp.calibrate(np.ones(4, dtype=int), None)
     assert not sp.selector.is_calibrated
@@ -710,24 +728,25 @@ class _Plain:
         cast(lambda r: r, predictor_type=RepresentationPredictor),
     ],
 )
-def test_representable_models_are_wrapped(model: Any) -> None:  # noqa: ANN401
-    kwargs: dict[str, Any] = {"representer_kwargs": {"num_samples": 2}} if isinstance(model, _SamplingModel) else {}
+def test_representer_of_a_representable_model_is_used_as_is(model: Any) -> None:  # noqa: ANN401
+    kwargs: dict[str, Any] = {"num_samples": 2} if isinstance(model, _SamplingModel) else {}
+    model_representer = representer(model, **kwargs)
 
-    assert isinstance(selective_predictor(model, **kwargs).representer, Representer)
+    assert selective_predictor(model_representer).representer is model_representer
 
 
 @pytest.mark.parametrize(
-    "model",
-    [lambda x: x, _Plain(), _ProbaModel().predict_proba, object()],
-    ids=["function", "callable object", "bound method", "object"],
+    "base",
+    [_model(), create_categorical_distribution(PROBABILITIES), lambda x: x, object()],
+    ids=["representable model", "representation", "function", "object"],
 )
-def test_model_that_probly_cannot_represent_is_rejected_at_construction(model: Any) -> None:  # noqa: ANN401
-    with pytest.raises(TypeError, match=r"is not a model that probly can represent.*apply a selector to it"):
-        selective_predictor(model, selector=make_selector(coverage=0.5))
+def test_base_that_is_not_a_representer_is_rejected_at_construction(base: Any) -> None:  # noqa: ANN401
+    with pytest.raises(TypeError, match=r"^base must be a Representer, got .*representer\(model, \.\.\.\)"):
+        selective_predictor(base, selector=make_selector(coverage=0.5))
 
 
 def test_evaluate_without_loss_suggests_a_loss() -> None:
-    sp = selective_predictor(_model(), loss=None)
+    sp = selective_predictor(representer(_model()), loss=None)
 
     with pytest.raises(TypeError, match=r"^evaluate needs losses\. Pass a scoring rule or a function loss\.$"):
         sp.evaluate(np.zeros(4, dtype=int), None)
@@ -735,7 +754,7 @@ def test_evaluate_without_loss_suggests_a_loss() -> None:
 
 def test_criterion_that_is_not_an_array_is_rejected_by_predict_and_evaluate() -> None:
     sp = selective_predictor(
-        _model(),
+        representer(_model()),
         selector=make_selector(threshold=0.3),
         notion=lambda rep: list(1 - rep.probabilities.max(-1)),
     )
@@ -747,7 +766,7 @@ def test_criterion_that_is_not_an_array_is_rejected_by_predict_and_evaluate() ->
 
 
 def test_evaluate_label_errors_do_not_name_calibration() -> None:
-    sp = selective_predictor(_model())
+    sp = selective_predictor(representer(_model()))
 
     with pytest.raises(ValueError, match=r"^The labels must be in"):
         sp.evaluate(np.array([0, 1, 0, 5]), None)
@@ -764,7 +783,7 @@ def test_function_loss_keeps_the_zero_one_criterion() -> None:
     # quantify would decompose a sample of categorical distributions by entropy instead.
     sample = _random_ensemble_sample()
     sp = selective_predictor(
-        _RepresentationModel(sample), selector=make_selector(threshold=0.5), notion="epistemic", loss=_cost
+        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5), notion="epistemic", loss=_cost
     )
 
     result = sp.predict(None)
@@ -781,7 +800,7 @@ def test_function_loss_receives_the_decision_and_the_labels() -> None:
         return _cost(decision, y)
 
     sp = selective_predictor(
-        _model(), selector=make_selector(risk=0.9, delta=0.5), loss=loss, decider=categorical_from_mean
+        representer(_model()), selector=make_selector(risk=0.9, delta=0.5), loss=loss, decider=categorical_from_mean
     )
     sp.calibrate(labels, None)
 
@@ -793,7 +812,7 @@ def test_function_loss_receives_the_decision_and_the_labels() -> None:
 
 
 def test_function_loss_must_return_one_value_per_instance() -> None:
-    sp = selective_predictor(_model(), loss=lambda d, _y: d.probabilities)
+    sp = selective_predictor(representer(_model()), loss=lambda d, _y: d.probabilities)
 
     with pytest.raises(ValueError, match=r"one value per instance, got shape \(4, 2\)"):
         sp.evaluate(np.zeros(4, dtype=int), None)
@@ -803,7 +822,7 @@ def test_regression_with_a_function_loss_uses_quantify_and_evaluates() -> None:
     sample = _regression_sample()
     y = np.array([0.0, 1.0, 2.0])
     sp = selective_predictor(
-        _RepresentationModel(sample),
+        representer(_RepresentationModel(sample)),
         selector=make_selector(threshold=1.0),
         notion="epistemic",
         decider=lambda s: s.array.mean.mean(axis=0),
@@ -834,17 +853,23 @@ def _raise_value_error(*_arguments: object) -> None:
     ("make", "call", "note"),
     [
         (
-            lambda: selective_predictor(_model(), selector=make_selector(threshold=0.5), notion=_raise_value_error),
+            lambda: selective_predictor(
+                representer(_model()), selector=make_selector(threshold=0.5), notion=_raise_value_error
+            ),
             lambda sp: sp.predict(None),
             "notion receives the representation (NumpyProbabilityCategoricalDistribution), not the model output.",
         ),
         (
-            lambda: selective_predictor(_model(), selector=make_selector(threshold=0.5), decider=_raise_value_error),
+            lambda: selective_predictor(
+                representer(_model()), selector=make_selector(threshold=0.5), decider=_raise_value_error
+            ),
             lambda sp: sp.predict(None),
             "decider receives the representation",
         ),
         (
-            lambda: selective_predictor(_model(), selector=make_selector(threshold=0.5), loss=_raise_value_error),
+            lambda: selective_predictor(
+                representer(_model()), selector=make_selector(threshold=0.5), loss=_raise_value_error
+            ),
             lambda sp: sp.evaluate(np.zeros(4, dtype=int), None),
             "loss receives the decision of the decider and the labels",
         ),
@@ -868,15 +893,15 @@ _LABELS = np.array([0, 1, 0, 1])  # The decision is class 0 everywhere, so insta
 _ZERO_ONE_LOSSES = np.array([0.0, 1.0, 0.0, 1.0])
 
 
-def test_evaluate_needs_model_input() -> None:
-    sp = selective_predictor(_model(), selector=make_selector(threshold=0.3))
+def test_evaluate_needs_input() -> None:
+    sp = selective_predictor(representer(_model()), selector=make_selector(threshold=0.3))
 
-    with pytest.raises(TypeError, match=r"No input of the model was given.*evaluate\(y, x\)"):
+    with pytest.raises(TypeError, match=r"No input of the representer was given.*evaluate\(y, x\)"):
         sp.evaluate(_LABELS)
 
 
 def test_evaluate_matches_the_metrics_on_criterion_and_losses() -> None:
-    result = selective_predictor(_model(), selector=make_selector(threshold=0.3)).evaluate(_LABELS, None)
+    result = selective_predictor(representer(_model()), selector=make_selector(threshold=0.3)).evaluate(_LABELS, None)
 
     expected = evaluate_selective_prediction(MAX_PROB_COMPLEMENTS, _ZERO_ONE_LOSSES)
     accepted = MAX_PROB_COMPLEMENTS <= 0.3
@@ -890,19 +915,21 @@ def test_evaluate_matches_the_metrics_on_criterion_and_losses() -> None:
 def test_evaluate_runs_the_model_once() -> None:
     model = _CountingModel(create_categorical_distribution(PROBABILITIES))
 
-    selective_predictor(model, selector=make_selector(threshold=0.3)).evaluate(_LABELS, None)
+    selective_predictor(representer(model), selector=make_selector(threshold=0.3)).evaluate(_LABELS, None)
 
     assert model.calls == 1
 
 
 def test_evaluate_without_a_rule_reports_only_ranking_metrics() -> None:
-    result = selective_predictor(_model(), notion=lambda _r: np.array([0.1, 0.2, 0.3, 0.4])).evaluate(_LABELS, None)
+    result = selective_predictor(representer(_model()), notion=lambda _r: np.array([0.1, 0.2, 0.3, 0.4])).evaluate(
+        _LABELS, None
+    )
 
     assert not any(key.startswith("selected:") for key in result)
 
 
 def test_evaluate_passes_metrics_on() -> None:
-    result = selective_predictor(_model()).evaluate(_LABELS, None, metrics=["aurc"])
+    result = selective_predictor(representer(_model())).evaluate(_LABELS, None, metrics=["aurc"])
 
     assert set(result) == {"aurc"}
     assert result["aurc"] == pytest.approx(
@@ -911,7 +938,7 @@ def test_evaluate_passes_metrics_on() -> None:
 
 
 def test_evaluate_with_a_calibrated_rule() -> None:
-    sp = selective_predictor(_model(), selector=make_selector(coverage=0.5)).calibrate(None, None)
+    sp = selective_predictor(representer(_model()), selector=make_selector(coverage=0.5)).calibrate(None, None)
 
     result = sp.evaluate(_LABELS, None)
 
@@ -920,7 +947,9 @@ def test_evaluate_with_a_calibrated_rule() -> None:
 
 def test_evaluate_maps_nan_criterion_to_inf_for_metrics_only() -> None:
     criterion = np.array([0.1, np.nan, 0.3, 0.2])
-    sp = selective_predictor(_model(), selector=make_selector(threshold=np.inf), notion=lambda _r: criterion)
+    sp = selective_predictor(
+        representer(_model()), selector=make_selector(threshold=np.inf), notion=lambda _r: criterion
+    )
 
     result = sp.evaluate(_LABELS, None)
 
@@ -933,7 +962,9 @@ def test_evaluate_maps_nan_criterion_to_inf_for_metrics_only() -> None:
 
 
 def test_evaluate_risk_is_nan_if_nothing_is_accepted() -> None:
-    result = selective_predictor(_model(), selector=make_selector(threshold=-np.inf)).evaluate(_LABELS, None)
+    result = selective_predictor(representer(_model()), selector=make_selector(threshold=-np.inf)).evaluate(
+        _LABELS, None
+    )
 
     assert result["selected:coverage"] == 0.0
     assert np.isnan(result["selected:risk"])
@@ -943,12 +974,14 @@ def test_evaluate_needs_losses_before_the_forward_pass() -> None:
     model = _CountingModel(create_categorical_distribution(PROBABILITIES))
 
     with pytest.raises(TypeError, match="evaluate needs losses"):
-        selective_predictor(model, selector=make_selector(threshold=0.5), loss=None).evaluate(_LABELS, None)
+        selective_predictor(representer(model), selector=make_selector(threshold=0.5), loss=None).evaluate(
+            _LABELS, None
+        )
     assert model.calls == 0
 
 
 def test_evaluate_rejects_losses_of_another_length() -> None:
-    sp = selective_predictor(_model(), selector=make_selector(threshold=0.5), loss=lambda _d, y: y)
+    sp = selective_predictor(representer(_model()), selector=make_selector(threshold=0.5), loss=lambda _d, y: y)
 
     with pytest.raises(ValueError, match=r"same shape, got \(4,\) and \(3,\)"):
         sp.evaluate(np.zeros(3), None)
@@ -962,10 +995,10 @@ def test_concatenated_representations_on_an_identity_model_match_one_batch() -> 
     concatenated = np.concatenate([representation[:2], representation[2:]], axis=0)
     identity = cast(lambda r: r, predictor_type=RepresentationPredictor)
 
-    sp = selective_predictor(identity, selector=make_selector(risk=0.9, delta=0.5)).calibrate(
+    sp = selective_predictor(representer(identity), selector=make_selector(risk=0.9, delta=0.5)).calibrate(
         np.array([0, 1, 0, 0]), concatenated
     )
-    reference = selective_predictor(_model(), selector=make_selector(risk=0.9, delta=0.5)).calibrate(
+    reference = selective_predictor(representer(_model()), selector=make_selector(risk=0.9, delta=0.5)).calibrate(
         np.array([0, 1, 0, 0]), None
     )
 
@@ -981,7 +1014,7 @@ def test_subclass_overriding_only_select_is_a_selector() -> None:
 
 
 def test_selective_predictor_is_a_protocol_instance_and_predicts_through_dispatch() -> None:
-    sp = selective_predictor(_model(), selector=make_selector(threshold=0.3))
+    sp = selective_predictor(representer(_model()), selector=make_selector(threshold=0.3))
 
     assert isinstance(sp, SelectivePredictor)
     result = predict(sp, None)
@@ -990,18 +1023,15 @@ def test_selective_predictor_is_a_protocol_instance_and_predicts_through_dispatc
 
 
 def test_calibrate_dispatch_takes_labels_first() -> None:
-    sp = selective_predictor(_model(), selector=make_selector(coverage=0.5))
+    sp = selective_predictor(representer(_model()), selector=make_selector(coverage=0.5))
 
     assert calibrate(sp, None, None) is sp
     assert sp.selector.is_calibrated
 
 
-def test_predictor_type_casts_an_uncast_model() -> None:
-    model = _Plain()
-
-    with pytest.raises(TypeError, match="predictor_type"):
-        selective_predictor(model)
-    sp = selective_predictor(model, predictor_type="categorical_distribution_predictor")
+def test_representer_of_a_cast_model_is_accepted() -> None:
+    model = cast(_Plain(), predictor_type="categorical_distribution_predictor")
+    sp = selective_predictor(representer(model))
 
     assert isinstance(sp, SelectivePredictor)
 
@@ -1009,7 +1039,7 @@ def test_predictor_type_casts_an_uncast_model() -> None:
 def test_object_registered_to_the_protocol_gets_the_pipeline() -> None:
     class Registered:
         def __init__(self) -> None:
-            inner = selective_predictor(_model(), selector=make_selector(threshold=0.3))
+            inner = selective_predictor(representer(_model()), selector=make_selector(threshold=0.3))
             self.selector = inner.selector
             self.representer = inner.representer
             self.notion = inner.notion

@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+from probly.representer import representer  # ty: ignore[unresolved-import]
 from probly.selective_prediction import selective_predictor, selector  # ty: ignore[unresolved-import]
 
 if TYPE_CHECKING:
@@ -80,7 +81,9 @@ def main() -> int:
             ok &= _check(name, f"selector {rule}", lambda make=make, u=u: make().select(u))
 
         def predictor(convert: Callable[[np.ndarray], Any] = convert, make_model: Any = make_model) -> None:  # noqa: ANN401
-            sp = selective_predictor(make_model(x, y), selector=selector(coverage=0.8)).calibrate(None, convert(x))
+            sp = selective_predictor(representer(make_model(x, y)), selector=selector(coverage=0.8)).calibrate(
+                None, convert(x)
+            )
             sp.predict(convert(x))
             sp.evaluate(convert(y), convert(x))
 
