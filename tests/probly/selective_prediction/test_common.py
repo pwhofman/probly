@@ -203,25 +203,17 @@ def test_callable_notion_computes_criterion_from_representation() -> None:
     )
 
 
-def test_callable_notion_skips_quantify(monkeypatch: pytest.MonkeyPatch) -> None:
-    def fail(_representation: object) -> None:
-        msg = "quantify must not be called for a callable notion"
+def test_callable_notion_skips_the_decomposition(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail(_representation: object, _loss: object) -> None:
+        msg = "scoring_rule_decomposition must not be called for a callable notion"
         raise AssertionError(msg)
 
-    monkeypatch.setattr("probly.selective_prediction._common.quantify", fail)
+    monkeypatch.setattr("probly.selective_prediction._common.scoring_rule_decomposition", fail)
     result = selective_predictor(
         representer(_model()), selector=make_selector(threshold=0.5), notion=lambda _rep: np.array([0.1, 0.9, 0.5, 0.6])
     ).predict(None)
 
     np.testing.assert_array_equal(result.accepted, [True, False, True, False])
-
-
-def test_quantify_result_that_is_not_a_decomposition_raises(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("probly.selective_prediction._common.quantify", lambda _representation: 0.5)
-    predictor = selective_predictor(representer(_model()), selector=make_selector(threshold=0.2), loss=None)
-
-    with pytest.raises(TypeError, match="Expected quantify to return a Decomposition"):
-        predictor.predict(None)
 
 
 def test_non_callable_notion_raises() -> None:
@@ -236,13 +228,28 @@ def test_notion_missing_from_decomposition_raises() -> None:
         predictor.predict(None)
 
 
+@pytest.mark.parametrize(
+    "kwargs", [{}, {"loss": None}, {"loss": lambda d, y: (d - y) ** 2}], ids=["default", "none", "function"]
+)
+def test_named_notion_without_a_scoring_rule_decomposition_raises(kwargs: dict[str, Any]) -> None:
+    predictor = selective_predictor(
+        representer(_RepresentationModel(_regression_sample())),
+        selector=make_selector(threshold=1.0),
+        decider=lambda rep: rep,
+        **kwargs,
+    )
+
+    with pytest.raises(NotImplementedError, match=r"ZeroOneLoss is not supported for NumpyGaussianDistributionSample"):
+        predictor.predict(None)
+
+
 @pytest.mark.parametrize("notion", ["total", "aleatoric", "epistemic"])
-def test_regression_criterion_comes_from_quantify(notion: str) -> None:
+def test_regression_criterion_from_a_quantify_notion(notion: str) -> None:
     sample = _regression_sample()
     result = selective_predictor(
         representer(_RepresentationModel(sample)),
         selector=make_selector(threshold=1.0),
-        notion=notion,
+        notion=lambda rep: quantify(rep)[notion],
         decider=lambda rep: rep,
     ).predict(None)
 
@@ -334,13 +341,13 @@ def test_brier_loss_gives_its_scoring_rule_decomposition() -> None:
     np.testing.assert_allclose(result.uncertainty, SecondOrderScoringRuleDecomposition(sample, BrierLoss()).epistemic)
 
 
-def test_no_loss_uses_quantify() -> None:
+def test_no_loss_uses_the_zero_one_decomposition() -> None:
     sample = _random_ensemble_sample()
     result = selective_predictor(
         representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5), notion="epistemic", loss=None
     ).predict(None)
 
-    np.testing.assert_allclose(result.uncertainty, quantify(sample).epistemic)
+    np.testing.assert_allclose(result.uncertainty, SecondOrderZeroOneDecomposition(sample).epistemic)
 
 
 def test_dirichlet_criterion_uses_zero_one_decomposition() -> None:
@@ -580,6 +587,7 @@ def test_pipeline_scoring_rule_on_a_regression_decision_raises() -> None:
     sp = selective_predictor(
         representer(_RepresentationModel(_regression_sample())),
         selector=make_selector(risk=0.5, delta=0.5),
+        notion=lambda r: quantify(r).total,
         decider=lambda r: r,
     )
     with pytest.raises(TypeError, match="A scoring rule needs a categorical decision, got NumpyGaussianDistribution"):
@@ -818,13 +826,13 @@ def test_function_loss_must_return_one_value_per_instance() -> None:
         sp.evaluate(np.zeros(4, dtype=int), None)
 
 
-def test_regression_with_a_function_loss_uses_quantify_and_evaluates() -> None:
+def test_regression_with_a_function_loss_evaluates() -> None:
     sample = _regression_sample()
     y = np.array([0.0, 1.0, 2.0])
     sp = selective_predictor(
         representer(_RepresentationModel(sample)),
         selector=make_selector(threshold=1.0),
-        notion="epistemic",
+        notion=lambda s: quantify(s).epistemic,
         decider=lambda s: s.array.mean.mean(axis=0),
         loss=lambda d, y: (d - y) ** 2,
     )

@@ -153,7 +153,10 @@ def test_regression_ensemble_selects_on_epistemic_uncertainty() -> None:
 
     with torch.no_grad():
         result = selective_predictor(
-            representer(model), selector=make_selector(threshold=0.5), notion="epistemic", decider=lambda rep: rep
+            representer(model),
+            selector=make_selector(threshold=0.5),
+            notion=lambda rep: quantify(rep).epistemic,
+            decider=lambda rep: rep,
         ).predict(x)
         representation = representer(model).represent(x)
 
@@ -167,6 +170,7 @@ def _classifier_base() -> nn.Module:
 
 _ALL_NOTIONS: dict[str, type[Exception] | None] = {"total": None, "aleatoric": None, "epistemic": None}
 _TOTAL_ONLY: dict[str, type[Exception] | None] = {"total": None, "aleatoric": KeyError, "epistemic": KeyError}
+_UNSUPPORTED: dict[str, type[Exception] | None] = dict.fromkeys(_ALL_NOTIONS, NotImplementedError)
 
 # Method name: (transformation, representer kwargs, branch of the default loss, error per notion or None).
 _METHOD_MATRIX: dict[str, tuple[Callable[[nn.Module], Any], dict[str, Any], str, dict[str, type[Exception] | None]]] = {
@@ -233,36 +237,36 @@ _METHOD_MATRIX: dict[str, tuple[Callable[[nn.Module], Any], dict[str, Any], str,
     "credal_ensembling": (
         lambda m: method.credal_ensembling(m, num_members=3, predictor_type="logit_classifier"),
         {},
-        "quantify",
-        _ALL_NOTIONS,
+        "unsupported",
+        _UNSUPPORTED,
     ),
     "credal_wrapper": (
         lambda m: method.credal_wrapper(m, num_members=3, predictor_type="logit_classifier"),
         {},
-        "quantify",
-        _ALL_NOTIONS,
+        "unsupported",
+        _UNSUPPORTED,
     ),
     "credal_relative_likelihood": (
         lambda m: method.credal_relative_likelihood(m, num_members=3, predictor_type="logit_classifier"),
         {},
-        "quantify",
-        _ALL_NOTIONS,
+        "unsupported",
+        _UNSUPPORTED,
     ),
     "credal_dro": (
         lambda m: method.credal_dro(m, num_members=3, predictor_type="logit_classifier"),
         {},
-        "quantify",
-        _ALL_NOTIONS,
+        "unsupported",
+        _UNSUPPORTED,
     ),
-    "credal_net": (lambda m: method.credal_net(m, predictor_type="logit_classifier"), {}, "quantify", _ALL_NOTIONS),
+    "credal_net": (lambda m: method.credal_net(m, predictor_type="logit_classifier"), {}, "unsupported", _UNSUPPORTED),
     "credal_bnn": (
         lambda m: method.credal_bnn(m, num_members=3, predictor_type="logit_classifier"),
         {},
-        "quantify",
-        _ALL_NOTIONS,
+        "unsupported",
+        _UNSUPPORTED,
     ),
-    "duq": (lambda m: method.duq(m, centroid_size=4), {}, "quantify", _TOTAL_ONLY),
-    "ddu": (method.ddu, {}, "quantify", {"total": KeyError, "aleatoric": None, "epistemic": None}),
+    "duq": (lambda m: method.duq(m, centroid_size=4), {}, "unsupported", _UNSUPPORTED),
+    "ddu": (method.ddu, {}, "unsupported", _UNSUPPORTED),
 }
 
 
@@ -273,7 +277,7 @@ def _branch(representation: object) -> str:
         return "categorical"
     if isinstance(representation, DirichletDistribution):
         return "dirichlet"
-    return "quantify"
+    return "unsupported"
 
 
 @pytest.mark.filterwarnings("ignore:No residual connections detected:UserWarning")
@@ -303,9 +307,7 @@ def test_default_predictor_on_method(name: str, notion: str) -> None:
     assert result.uncertainty.shape == (8,)
     assert result.accepted.dtype == torch.bool
     torch.testing.assert_close(result.accepted, result.uncertainty <= 0.5)
-    if branch == "quantify":
-        torch.testing.assert_close(result.uncertainty, quantify(representation)[notion])
-    elif notion == "total":
+    if notion == "total":
         # Chow's criterion: one minus the maximum probability of the decision.
         torch.testing.assert_close(result.uncertainty, 1.0 - result.decision.probabilities.max(dim=-1).values)
 
@@ -318,13 +320,17 @@ def test_non_default_decider_on_credal_model() -> None:
     with torch.no_grad():
         torch.manual_seed(1)
         result = selective_predictor(
-            representer(model), selector=make_selector(threshold=1.0), decider=categorical_from_maximin
+            representer(model),
+            selector=make_selector(threshold=1.0),
+            notion=lambda rep: quantify(rep).total,
+            decider=categorical_from_maximin,
         ).predict(x)
         torch.manual_seed(1)
-        expected = categorical_from_maximin(representer(model).represent(x))
+        representation = representer(model).represent(x)
 
     assert isinstance(result.decision, CategoricalDistribution)
-    torch.testing.assert_close(result.decision.probabilities, expected.probabilities)
+    torch.testing.assert_close(result.decision.probabilities, categorical_from_maximin(representation).probabilities)
+    torch.testing.assert_close(result.uncertainty, quantify(representation).total)
 
 
 @pytest.mark.parametrize("dtype", [torch.float64, torch.float32, torch.float16, torch.bfloat16])

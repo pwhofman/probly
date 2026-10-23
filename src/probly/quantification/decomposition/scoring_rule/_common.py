@@ -79,8 +79,9 @@ def scoring_rule_decomposition(representation: object, loss: ScoringRule) -> Dec
         NotImplementedError: If the scoring rule does not apply to the type of ``representation``.
     """
     msg = (
-        f"{type(loss).__name__} is not supported for {type(representation).__name__}; "
-        "omit loss to use the default decomposition of this representation, or pass loss=None."
+        f"{type(loss).__name__} is not supported for {type(representation).__name__}; no scoring rule induces a "
+        "decomposition of it. Use quantify for its default decomposition, e.g. in a selective predictor "
+        "notion=lambda r: quantify(r).epistemic."
     )
     raise NotImplementedError(msg)
 
@@ -102,6 +103,6 @@ def _(representation: CategoricalDistribution, loss: ScoringRule) -> Decompositi
 @scoring_rule_decomposition.register(DirichletDistribution)
 def _(representation: DirichletDistribution, loss: ScoringRule) -> Decomposition:
     if not isinstance(loss, ZeroOneLoss):
-        msg = f"{type(loss).__name__} is not supported for Dirichlet distributions; use ZeroOneLoss() or loss=None."
+        msg = f"{type(loss).__name__} is not supported for Dirichlet distributions; use ZeroOneLoss()."
         raise NotImplementedError(msg)
     return SecondOrderZeroOneDecomposition(representation)

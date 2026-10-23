@@ -14,12 +14,10 @@ from probly.decider import Decider, categorical_from_mean
 from probly.evaluation.selective_prediction import evaluate_selective_prediction
 from probly.predictor import Predictor, predict
 from probly.quantification import (
-    Decomposition,
     Notion,
     ScoringRule,
     ZeroOneLoss,
     notion_registry,
-    quantify,
     scoring_rule_decomposition,
 )
 from probly.representation.distribution import CategoricalDistribution
@@ -34,7 +32,7 @@ if TYPE_CHECKING:
 
     from probly.quantification.notion import NotionKey, NotionName
 
-# Default loss, told from an explicit ZeroOneLoss() by identity, because only it falls back to quantify.
+# Default loss, and the scoring rule that induces the decomposition for a function loss or loss=None.
 _ZERO_ONE_LOSS = ZeroOneLoss()
 
 
@@ -186,9 +184,6 @@ def _named_criterion(
     representation: Any,  # noqa: ANN401
 ) -> ArrayLikeWithoutSize:
     decomposition = _decomposition(predictor, representation)
-    if not isinstance(decomposition, Decomposition):
-        msg = f"Expected quantify to return a Decomposition, got {type(decomposition).__name__}."
-        raise TypeError(msg)
     try:
         return decomposition[notion]
     except KeyError:
@@ -202,24 +197,9 @@ def _named_criterion(
 
 def _decomposition(predictor: SelectivePredictor[Any, Any], representation: Any) -> Any:  # noqa: ANN401
     loss = predictor.loss
-    if loss is None:
-        return quantify(representation)
-    # The default and a function loss fall back to quantify where the zero-one loss does not apply.
-    fallback = loss is _ZERO_ONE_LOSS or not isinstance(loss, ScoringRule)
     if not isinstance(loss, ScoringRule):
         loss = _ZERO_ONE_LOSS
-    registered = scoring_rule_decomposition.dispatch(
-        type(representation), registry_meta_lookup=representation
-    ) is not scoring_rule_decomposition.dispatch(object)
-    if registered:
-        return scoring_rule_decomposition(representation, loss)
-    if fallback:
-        return quantify(representation)
-    msg = (
-        f"{type(loss).__name__} is not supported for {type(representation).__name__}; "
-        "omit loss to use the default decomposition of this representation, or pass loss=None."
-    )
-    raise NotImplementedError(msg)
+    return scoring_rule_decomposition(representation, loss)
 
 
 @runtime_checkable  # ty:ignore[conflicting-metaclass]
@@ -299,9 +279,9 @@ class _SelectivePredictorBase[**In](ABC):
             The decision, criterion and acceptance mask per instance.
 
         Raises:
-            TypeError: If there is no selector, or :func:`~probly.quantification.quantify` returns no decomposition.
+            TypeError: If there is no selector.
             KeyError: If the decomposition lacks the component named by ``notion``.
-            NotImplementedError: If a scoring rule does not apply to the representation.
+            NotImplementedError: If ``notion`` is a name and the scoring rule does not apply to the representation.
             ValueError: If the selector is not calibrated or the criterion is not one-dimensional.
         """
         return predict(cast("Any", self), *args, **kwargs)
@@ -462,20 +442,21 @@ def selective_predictor[**In](
 
     - a single categorical distribution: the expected loss of the best prediction, a total uncertainty only;
     - Dirichlet distributions: the zero-one decomposition; other scoring rules raise a ``NotImplementedError``;
-    - any other representation, e.g. of a regression model or a credal set: :func:`~probly.quantification.quantify`
-      if ``loss`` is the default or a function; an explicit scoring rule raises a ``NotImplementedError``.
+    - any other representation, e.g. of a regression model, a credal set, DUQ or DDU: a named notion raises a
+      ``NotImplementedError``; pass ``notion`` as a function instead, e.g.
+      ``notion=lambda r: quantify(r).epistemic`` with :func:`~probly.quantification.quantify`.
 
-    A decomposition that a method registers for its own representation (DARE, SNGP, heteroscedastic networks, the
-    vacuity of evidential models) is used only with ``loss=None``. How the arguments are used:
+    A decomposition that a method registers with ``quantify`` for its own representation (DARE, SNGP,
+    heteroscedastic networks, the vacuity of evidential models) is used the same way. How the arguments are used:
 
-    =================  ===============================  =====================  ================
+    =================  ===============================  =====================  =====================
     \                  Scoring rule                     Function loss          ``loss=None``
-    =================  ===============================  =====================  ================
-    criterion, name    decomposition of ``loss``        as the default loss    ``quantify``
+    =================  ===============================  =====================  =====================
+    criterion, name    decomposition of ``loss``        as the default loss    as the default loss
     criterion, func    ``notion(rep)``                  ``notion(rep)``        ``notion(rep)``
     decision           ``decider(rep)``                 ``decider(rep)``       ``decider(rep)``
     losses             ``loss.loss(decision)[i, y_i]``  ``loss(decision, y)``  none
-    =================  ===============================  =====================  ================
+    =================  ===============================  =====================  =====================
 
     Regression needs a function ``notion``, ``decider`` and ``loss``, e.g. for MC dropout
     ``notion=lambda s: s.sample_var().squeeze(-1)``, ``decider=lambda s: s.sample_mean().squeeze(-1)`` and
@@ -493,8 +474,7 @@ def selective_predictor[**In](
         notion: The notion of uncertainty to select on, e.g. ``"total"``, ``"aleatoric"`` or ``"epistemic"``, or a
             function mapping the representation to the criterion per instance, higher meaning more uncertain.
         loss: The task loss: a scoring rule for integer labels (default: zero-one loss), a function
-            ``loss(decision, y)`` returning one loss per instance, e.g. for regression, or ``None`` for
-            :func:`~probly.quantification.quantify` everywhere and no losses.
+            ``loss(decision, y)`` returning one loss per instance, e.g. for regression, or ``None`` for no losses.
         decider: A :class:`~probly.decider.Decider` mapping the representation to the decision. Defaults to
             :func:`~probly.decider.categorical_from_mean`.
 

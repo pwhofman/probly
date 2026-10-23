@@ -133,12 +133,15 @@ class _JaxRegressionModel:
 
 
 @pytest.mark.parametrize("notion", ["total", "aleatoric", "epistemic"])
-def test_regression_criterion_comes_from_quantify(notion: str) -> None:
+def test_regression_criterion_from_a_quantify_notion(notion: str) -> None:
     model = _JaxRegressionModel()
     representation = model.predict_representation(None)
 
     result = selective_predictor(
-        representer(model), selector=make_selector(threshold=1.0), notion=notion, decider=lambda rep: rep
+        representer(model),
+        selector=make_selector(threshold=1.0),
+        notion=lambda rep: quantify(rep)[notion],
+        decider=lambda rep: rep,
     ).predict(None)
 
     assert isinstance(result.uncertainty, jax.Array)
