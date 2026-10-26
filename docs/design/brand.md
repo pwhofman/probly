@@ -27,6 +27,8 @@ The GitHub social preview is not set from the repository; upload the PNG under S
 The two ink colors, as designed, are a red leaning red-pink `#ff2763` and a blue with a hint of violet `#285bff`
 (on light backgrounds multiplied at 85% with a lighter overlap, on dark backgrounds screened at 90%). The red-pink
 is the lead color: the docs use it as their accent (`docs/source/_static/css/brand.css`), with links staying blue.
+The wordmark carries the same two inks as accents: the **l** in blue and the **y** in red-pink, as the shapiq
+wordmark does with its **i** and **q**.
 
 The flat colors used in the files:
 
@@ -37,6 +39,7 @@ The flat colors used in the files:
 | blue | `#4671fd` | `#2755ea` |
 | overlap | `#63338a` | `#ea6aef` |
 | wordmark | `#1a1a1a` | `#e6e6e6` |
+| wordmark accents **l** / **y** | `#285bff` / `#ff2763` | `#285bff` / `#ff2763` |
 | page background (reference) | `#ffffff` | `#16181d` |
 
 ## Usage
