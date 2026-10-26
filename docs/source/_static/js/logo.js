@@ -4,7 +4,8 @@
 // wave keeps at most three observations; a fourth replaces the oldest. A new fit runs along the
 // wave from where it changed and settles like a spring, and the click sends a small ripple along
 // the waves. Hovering pushes the waves away from the pointer, but only where they are uncertain: a
-// wave holds on to its observations. The waves spring back when the pointer leaves.
+// wave holds on to its observations. The waves spring back when the pointer leaves. When the logo
+// is first seen, a ripple runs through it from a random place, a hint that it reacts.
 //
 // The logo is inline in the landing page (index.rst), once for light and once for dark mode, and
 // both copies are drawn from the same state. At rest and without observations they show the
@@ -12,8 +13,9 @@
 // are drawn from their formula (docs/design/brand.md). If the logo's paths no longer follow that
 // formula (a new logo kit), the logo stays still.
 //
-// With reduced motion (macOS "Reduce motion", Windows with "Animation effects" off), the waves do
-// not follow the pointer and glide to a new fit without rippling or swinging.
+// With reduced motion (macOS "Reduce motion", Windows with "Animation effects" off), the logo does
+// not move by itself: no ripple when it is first seen, and the waves do not follow the pointer. They
+// glide to a new fit without rippling or swinging.
 (() => {
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -66,6 +68,9 @@
   const WOBBLE_TRAIN = 14; // how long the train is, about a crest and a trough (units, a standard deviation)
   const WOBBLE_FADE = 0.45; // time constant of its fading (s)
   const WOBBLE_REACH = 45; // how far above or below the click a wave ripples (units, a standard deviation)
+  const INTRO_DELAY = 600; // from when the logo is first seen to its ripple (ms)
+  const INTRO_SPAN = [40, 160]; // where along the logo the ripple can start (units)
+  const INTRO_HEIGHT = 1.5; // its height relative to a click's ripple: a little more, to be noticed
 
   // below these, a fraction of a pixel and too slow to see, a wave counts as at rest
   const REST_OFFSET = 0.02; // units
@@ -547,6 +552,29 @@
       });
     }
     reducedMotion.addEventListener("change", () => animate(m)); // a dent glides back at once
+
+    // a ripple through both waves when the logo is first seen, from a random place, with no ring
+    // and no observation: a hint that the logo reacts. It waits until the logo has been in view for
+    // a moment, as a page opened at an anchor further down starts out at the top
+    const inView = new Set(); // only the copy on show can be
+    let intro = null;
+    const seen = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) entry.isIntersecting ? inView.add(entry.target) : inView.delete(entry.target);
+        clearTimeout(intro);
+        if (reducedMotion.matches) seen.disconnect();
+        if (!inView.size || reducedMotion.matches) return;
+        intro = setTimeout(() => {
+          seen.disconnect();
+          const x = INTRO_SPAN[0] + Math.random() * (INTRO_SPAN[1] - INTRO_SPAN[0]);
+          const near = m.waves.map(() => INTRO_HEIGHT);
+          m.ripples.push({ x, y: DISK.y, near, born: performance.now(), marks: [], ringDone: true });
+          animate(m);
+        }, INTRO_DELAY);
+      },
+      { threshold: 0.5 },
+    );
+    for (const view of views) seen.observe(view.svg);
   }
 
   document.addEventListener("DOMContentLoaded", () => {
