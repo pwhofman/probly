@@ -4,5 +4,5 @@ Quantification
 --------------
 
 Examples concerning the :mod:`probly.quantification` module.
-// try by nujin
+// trying by nujin
 print("Hello, World!")
