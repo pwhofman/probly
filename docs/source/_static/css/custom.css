@@ -68,17 +68,50 @@ section:has(> .probly-hero) > h1::after {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
-  margin: 1.75rem 0 2rem 0;
+  margin: 1.75rem 0 1rem 0;
 }
 
 .probly-hero-buttons p {
   margin: 0;
 }
 
-.probly-hero-buttons .sd-btn {
+/* Only the main button is colored; the others are neutral and take the red border on hover. */
+.probly-button.sd-btn {
   border-radius: 999px;
-  padding: 0.45rem 1.15rem;
+  padding: 0.5rem 1.15rem;
   font-weight: 600;
+  transition:
+    transform var(--probly-duration) var(--probly-ease),
+    box-shadow var(--probly-duration) var(--probly-ease),
+    background-color var(--probly-duration) var(--probly-ease);
+}
+
+.probly-button.sd-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--probly-shadow);
+}
+
+/* sphinx-design colors its outline buttons with !important: override it for the hero's buttons. */
+.probly-button.sd-btn-outline-secondary {
+  color: var(--color-foreground-primary) !important;
+  border-color: var(--probly-border) !important;
+  background: var(--probly-surface);
+}
+
+.probly-button.sd-btn-outline-secondary:hover,
+.probly-button.sd-btn-outline-secondary:focus {
+  color: var(--color-foreground-primary) !important;
+  border-color: var(--sd-color-primary) !important;
+  background-color: var(--probly-surface-raised) !important;
+}
+
+.probly-button .sd-octicon {
+  margin-right: 0.3rem;
+}
+
+.probly-hero-meta p {
+  font-size: 0.85rem;
+  color: var(--probly-text-muted);
 }
 
 /* The sections after the hero start below the logo. */
@@ -101,6 +134,16 @@ section:has(> .probly-hero) > section {
 
   .probly-tagline {
     font-size: 1.15rem;
+  }
+
+  .probly-hero-buttons {
+    gap: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .probly-button.sd-btn:hover {
+    transform: none;
   }
 }
 

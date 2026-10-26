@@ -33,30 +33,38 @@ Uncertainty Quantification for Machine Learning
       .. button-ref:: getting_started
          :ref-type: doc
          :color: primary
-         :shadow:
+         :class: probly-button
 
          Get started
 
-      .. button-ref:: user_guide
-         :ref-type: doc
-         :color: primary
-         :outline:
-
-         User guide
-
       .. button-ref:: auto_examples/index
          :ref-type: doc
-         :color: primary
+         :color: secondary
          :outline:
+         :class: probly-button
 
-         Browse examples
+         Examples
 
       .. button-ref:: api
          :ref-type: doc
-         :color: primary
+         :color: secondary
          :outline:
+         :class: probly-button
 
          API reference
+
+      .. button-link:: https://github.com/pwhofman/probly
+         :color: secondary
+         :outline:
+         :class: probly-button
+
+         :octicon:`mark-github` GitHub
+
+   .. container:: probly-hero-meta
+
+      Python 3.12+ |middot| MIT license |middot| Published at NeurIPS 2026 (oral presentation)
+
+.. |middot| unicode:: U+00B7
 
 Uncertainty in a few lines
 --------------------------
