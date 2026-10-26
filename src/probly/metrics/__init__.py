@@ -9,11 +9,10 @@ from . import numpy as numpy
 # eagerly register numpy (always available)
 from ._common import (
     ScoringRule,
-    _brier_loss_vector,
     _expected_loss,
-    _log_loss_vector,
-    _spherical_loss_vector,
-    _zero_one_loss_vector,
+    _log_probabilities,
+    _one_hot_argmax,
+    _probabilities,
     accuracy,
     auc,
     average_interval_width,
@@ -39,11 +38,10 @@ from ._common import (
 )
 
 
-@_brier_loss_vector.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @_expected_loss.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@_log_loss_vector.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@_spherical_loss_vector.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@_zero_one_loss_vector.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@_log_probabilities.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@_one_hot_argmax.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@_probabilities.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @accuracy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @auc.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @average_interval_width.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
@@ -62,11 +60,10 @@ def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-@_brier_loss_vector.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @_expected_loss.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@_log_loss_vector.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@_spherical_loss_vector.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@_zero_one_loss_vector.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@_log_probabilities.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@_one_hot_argmax.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@_probabilities.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @accuracy.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @auc.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @average_interval_width.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any, NoReturn, cast
+from typing import TYPE_CHECKING, NoReturn
 
 import numpy as np
 from scipy.optimize import linprog
@@ -21,12 +21,11 @@ from probly.representation.sample import Sample
 
 from ._common import (
     CREDAL_ROUND_DECIMALS,
-    _brier_loss_vector,
     _expected_loss,
-    _log_loss_vector,
-    _spherical_loss_vector,
+    _log_probabilities,
+    _one_hot_argmax,
+    _probabilities,
     _validate_labels,
-    _zero_one_loss_vector,
     accuracy,
     auc,
     average_interval_width,
@@ -693,65 +692,42 @@ def _numpy_singleton_convex_hull_coverage(
     return np.mean(l1_dist <= epsilon)
 
 
-@_log_loss_vector.register
-def numpy_log_loss_vector(probabilities: np.ndarray) -> np.ndarray:
-    """Compute the per-label log loss vector for a NumPy array."""
+@_probabilities.register
+def numpy_probabilities(probabilities: np.ndarray) -> np.ndarray:
+    """Return a NumPy array of probabilities unchanged."""
+    return probabilities
+
+
+@_log_probabilities.register
+def numpy_log_probabilities(probabilities: np.ndarray) -> np.ndarray:
+    """Compute the log probabilities of a NumPy array."""
     # A zero probability has an infinite log loss; the inf is the exact value, so the warning is noise.
     with np.errstate(divide="ignore"):
-        return -np.log(probabilities)
+        return np.log(probabilities)
 
 
-@_brier_loss_vector.register
-def numpy_brier_loss_vector(probabilities: np.ndarray) -> np.ndarray:
-    """Compute the per-label Brier loss vector for a NumPy array."""
-    squared_norm = np.sum(probabilities**2, axis=-1, keepdims=True)
-    return squared_norm - 2.0 * probabilities + 1.0
-
-
-@_zero_one_loss_vector.register
-def numpy_zero_one_loss_vector(probabilities: np.ndarray) -> np.ndarray:
-    """Compute the per-label zero-one loss vector for a NumPy array."""
+@_one_hot_argmax.register
+def numpy_one_hot_argmax(probabilities: np.ndarray) -> np.ndarray:
+    """One-hot encode the first maximum of each probability vector of a NumPy array."""
     num_classes = probabilities.shape[-1]
     argmax = np.argmax(probabilities, axis=-1)
-    one_hot = np.eye(num_classes, dtype=probabilities.dtype)[argmax]
-    return 1.0 - one_hot
+    return np.eye(num_classes, dtype=probabilities.dtype)[argmax]
 
 
-@_spherical_loss_vector.register
-def numpy_spherical_loss_vector(probabilities: np.ndarray) -> np.ndarray:
-    """Compute the per-label spherical loss vector for a NumPy array."""
-    norm = np.sqrt(np.sum(probabilities**2, axis=-1, keepdims=True))
-    return 1.0 - probabilities / norm
-
-
-@_log_loss_vector.register(CategoricalDistribution)
+@_probabilities.register(CategoricalDistribution)
 def _(y_prob: CategoricalDistribution) -> object:
-    """Compute the per-label log loss from the log probabilities, exact for logit-parameterized distributions."""
-    return -cast("Any", y_prob.log_probabilities)
+    """Unwrap the normalized probabilities of a categorical distribution."""
+    return y_prob.probabilities
 
 
-@_brier_loss_vector.register(CategoricalDistribution)
+@_log_probabilities.register(CategoricalDistribution)
 def _(y_prob: CategoricalDistribution) -> object:
-    """Compute the per-label Brier loss from normalized categorical probabilities."""
-    return _brier_loss_vector(y_prob.probabilities)
+    """Unwrap the log probabilities of a categorical distribution, exact for logit-parameterized ones."""
+    return y_prob.log_probabilities
 
 
-@_zero_one_loss_vector.register(CategoricalDistribution)
-def _(y_prob: CategoricalDistribution) -> object:
-    """Compute the per-label zero-one loss from normalized categorical probabilities."""
-    return _zero_one_loss_vector(y_prob.probabilities)
-
-
-@_spherical_loss_vector.register(CategoricalDistribution)
-def _(y_prob: CategoricalDistribution) -> object:
-    """Compute the per-label spherical loss from normalized categorical probabilities."""
-    return _spherical_loss_vector(y_prob.probabilities)
-
-
-@_log_loss_vector.register(Sample)
-@_brier_loss_vector.register(Sample)
-@_zero_one_loss_vector.register(Sample)
-@_spherical_loss_vector.register(Sample)
+@_log_probabilities.register(Sample)
+@_probabilities.register(Sample)
 def _(y_prob: Sample) -> NoReturn:
     """Reject samples, whose members would otherwise be scored as separate predictions."""
     msg = (

@@ -28,12 +28,11 @@ from probly.representation.credal_set.jax import (
 from probly.representation.distribution._common import CategoricalDistribution
 
 from ._common import (
-    _brier_loss_vector,
     _expected_loss,
-    _log_loss_vector,
-    _spherical_loss_vector,
+    _log_probabilities,
+    _one_hot_argmax,
+    _probabilities,
     _validate_labels,
-    _zero_one_loss_vector,
     accuracy,
     auc,
     average_interval_width,
@@ -559,33 +558,24 @@ def _jax_convex_convex_hull_coverage(
     return _numpy_convex_hull_lp_coverage(vertices, targets, epsilon, **linprog_kwargs)
 
 
-@_log_loss_vector.register
-def jax_log_loss_vector(probabilities: jnp.ndarray) -> jnp.ndarray:
-    """Compute the per-label log loss vector for a JAX array."""
-    return -jnp.log(probabilities)
+@_probabilities.register
+def jax_probabilities(probabilities: jnp.ndarray) -> jnp.ndarray:
+    """Return a JAX array of probabilities unchanged."""
+    return probabilities
 
 
-@_brier_loss_vector.register
-def jax_brier_loss_vector(probabilities: jnp.ndarray) -> jnp.ndarray:
-    """Compute the per-label Brier loss vector for a JAX array."""
-    squared_norm = jnp.sum(probabilities**2, axis=-1, keepdims=True)
-    return squared_norm - 2.0 * probabilities + 1.0
+@_log_probabilities.register
+def jax_log_probabilities(probabilities: jnp.ndarray) -> jnp.ndarray:
+    """Compute the log probabilities of a JAX array."""
+    return jnp.log(probabilities)
 
 
-@_zero_one_loss_vector.register
-def jax_zero_one_loss_vector(probabilities: jnp.ndarray) -> jnp.ndarray:
-    """Compute the per-label zero-one loss vector for a JAX array."""
+@_one_hot_argmax.register
+def jax_one_hot_argmax(probabilities: jnp.ndarray) -> jnp.ndarray:
+    """One-hot encode the first maximum of each probability vector of a JAX array."""
     num_classes = probabilities.shape[-1]
     argmax = jnp.argmax(probabilities, axis=-1)
-    one_hot = jnp.eye(num_classes, dtype=probabilities.dtype)[argmax]
-    return 1.0 - one_hot
-
-
-@_spherical_loss_vector.register
-def jax_spherical_loss_vector(probabilities: jnp.ndarray) -> jnp.ndarray:
-    """Compute the per-label spherical loss vector for a JAX array."""
-    norm = jnp.sqrt(jnp.sum(probabilities**2, axis=-1, keepdims=True))
-    return 1.0 - probabilities / norm
+    return jnp.eye(num_classes, dtype=probabilities.dtype)[argmax]
 
 
 @_expected_loss.register(jax.Array)

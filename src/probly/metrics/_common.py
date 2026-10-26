@@ -388,31 +388,26 @@ def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.000
     raise NotImplementedError(msg)
 
 
+# Only these three primitives differ per backend. The rules below combine them with operators and last-axis
+# reductions, which numpy, torch and jax arrays share.
 @flexdispatch
-def _log_loss_vector(y_prob: object) -> object:
-    """Per-label log loss vector ``-log(p)``."""
-    msg = f"log_loss_per_instance is not implemented for type {type(y_prob).__name__}."
+def _probabilities(y_prob: object) -> object:
+    """Return the probabilities ``(..., K)`` of a prediction, unwrapping categorical distributions."""
+    msg = f"Scoring rules are not implemented for type {type(y_prob).__name__}."
     raise NotImplementedError(msg)
 
 
 @flexdispatch
-def _brier_loss_vector(y_prob: object) -> object:
-    """Per-label Brier loss vector ``||p||^2 - 2 p + 1``."""
-    msg = f"brier_loss_per_instance is not implemented for type {type(y_prob).__name__}."
+def _log_probabilities(y_prob: object) -> object:
+    """Return the log probabilities ``(..., K)`` of a prediction, exact for logit-parameterized distributions."""
+    msg = f"Scoring rules are not implemented for type {type(y_prob).__name__}."
     raise NotImplementedError(msg)
 
 
 @flexdispatch
-def _zero_one_loss_vector(y_prob: object) -> object:
-    """Per-label zero-one loss vector ``1 - onehot(argmax p)``."""
-    msg = f"zero_one_loss_per_instance is not implemented for type {type(y_prob).__name__}."
-    raise NotImplementedError(msg)
-
-
-@flexdispatch
-def _spherical_loss_vector(y_prob: object) -> object:
-    """Per-label spherical loss vector ``1 - p / ||p||_2``."""
-    msg = f"spherical_loss_per_instance is not implemented for type {type(y_prob).__name__}."
+def _one_hot_argmax(probabilities: object) -> object:
+    """One-hot encode the first maximum of each probability vector ``(..., K)`` in the probabilities' dtype."""
+    msg = f"Scoring rules are not implemented for type {type(probabilities).__name__}."
     raise NotImplementedError(msg)
 
 
@@ -454,7 +449,7 @@ def log_loss_per_instance(y_prob: object, y_true: object) -> object:
         ValueError: If ``y_true`` has neither shape or its labels are not integers.
         TypeError: If ``y_prob`` is a sample of predictions.
     """
-    return _expected_loss(_log_loss_vector(y_prob), y_true)
+    return _expected_loss(-cast("Any", _log_probabilities(y_prob)), y_true)
 
 
 def brier_loss_per_instance(y_prob: object, y_true: object) -> object:
@@ -472,7 +467,9 @@ def brier_loss_per_instance(y_prob: object, y_true: object) -> object:
         ValueError: If ``y_true`` has neither shape or its labels are not integers.
         TypeError: If ``y_prob`` is a sample of predictions.
     """
-    return _expected_loss(_brier_loss_vector(y_prob), y_true)
+    probabilities = cast("Any", _probabilities(y_prob))
+    loss_vector = (probabilities**2).sum(axis=-1, keepdims=True) - 2.0 * probabilities + 1.0
+    return _expected_loss(loss_vector, y_true)
 
 
 def zero_one_loss_per_instance(y_prob: object, y_true: object) -> object:
@@ -490,7 +487,7 @@ def zero_one_loss_per_instance(y_prob: object, y_true: object) -> object:
         ValueError: If ``y_true`` has neither shape or its labels are not integers.
         TypeError: If ``y_prob`` is a sample of predictions.
     """
-    return _expected_loss(_zero_one_loss_vector(y_prob), y_true)
+    return _expected_loss(1.0 - cast("Any", _one_hot_argmax(_probabilities(y_prob))), y_true)
 
 
 def spherical_loss_per_instance(y_prob: object, y_true: object) -> object:
@@ -508,7 +505,9 @@ def spherical_loss_per_instance(y_prob: object, y_true: object) -> object:
         ValueError: If ``y_true`` has neither shape or its labels are not integers.
         TypeError: If ``y_prob`` is a sample of predictions.
     """
-    return _expected_loss(_spherical_loss_vector(y_prob), y_true)
+    probabilities = cast("Any", _probabilities(y_prob))
+    norm = (probabilities**2).sum(axis=-1, keepdims=True) ** 0.5
+    return _expected_loss(1.0 - probabilities / norm, y_true)
 
 
 def log_loss(y_prob: object, y_true: object) -> object:
