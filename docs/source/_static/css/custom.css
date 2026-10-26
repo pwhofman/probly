@@ -114,6 +114,87 @@ section:has(> .probly-hero) > h1::after {
   color: var(--probly-text-muted);
 }
 
+/* The libraries probly works with (_includes/works_with.html), right under the
+   hero: one row per group, each library a pill like the hero's neutral buttons.
+   The marks sit in a light circle so that dark ones stay visible in dark mode. */
+.probly-works-with {
+  display: grid;
+  gap: 0.9rem;
+  margin: 1.5rem 0 2rem 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-background-border);
+}
+
+.probly-works-with__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.probly-works-with__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--probly-text-muted);
+}
+
+.probly-works-with__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.probly-works-with__list li {
+  margin: 0;
+}
+
+.probly-lib {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0.75rem 0.2rem 0.25rem;
+  border: 1px solid var(--probly-border);
+  border-radius: 999px;
+  background: var(--probly-surface);
+  color: var(--color-foreground-primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    transform var(--probly-duration) var(--probly-ease),
+    box-shadow var(--probly-duration) var(--probly-ease),
+    border-color var(--probly-duration) var(--probly-ease);
+}
+
+.probly-lib:hover,
+.probly-lib:focus-visible {
+  color: var(--color-foreground-primary);
+  text-decoration: none;
+  border-color: var(--sd-color-primary);
+  box-shadow: var(--probly-shadow);
+  transform: translateY(-1px);
+}
+
+.probly-lib__logo {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: #eef1f6;
+}
+
+.probly-lib__logo img {
+  width: calc(var(--logo-fill, 0.62) * 100%);
+  height: calc(var(--logo-fill, 0.62) * 100%);
+  object-fit: contain;
+}
+
 /* The sections after the hero start below the logo. */
 section:has(> .probly-hero) > section {
   clear: both;
@@ -142,7 +223,9 @@ section:has(> .probly-hero) > section {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .probly-button.sd-btn:hover {
+  .probly-button.sd-btn:hover,
+  .probly-lib:hover,
+  .probly-lib:focus-visible {
     transform: none;
   }
 }

@@ -64,6 +64,9 @@ Uncertainty Quantification for Machine Learning
 
       Python 3.12+ |middot| MIT license |middot| Published at NeurIPS 2026 (oral presentation)
 
+   .. raw:: html
+      :file: _includes/works_with.html
+
 .. |middot| unicode:: U+00B7
 
 Uncertainty in a few lines

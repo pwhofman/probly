@@ -30,6 +30,12 @@ and **decompose** its predictive uncertainty into **aleatoric** and **epistemic*
 It ships 40+ methods ranging from Bayesian nets and deep ensembles to evidential, credal, and
 conformal prediction, all accessible via the same unified API.
 
+- **Native backends:** [PyTorch](https://docs.pytorch.org/docs/stable/), [Flax / JAX](https://flax.readthedocs.io/en/latest/),
+  [scikit-learn](https://scikit-learn.org/stable/), [River](https://riverml.xyz/latest/),
+  [Hugging Face](https://huggingface.co/docs/transformers/index), [NumPy](https://numpy.org/doc/stable/)
+- **Integrations:** [Lightning](https://lightning.ai/docs/pytorch/stable/), [torch-uncertainty](https://torch-uncertainty.github.io/),
+  [PyTorch Geometric](https://pytorch-geometric.readthedocs.io/en/latest/), [laplace-torch](https://aleximmer.github.io/Laplace/)
+
 
 ## 🛠️ Install
 `probly` is intended to work with **Python 3.12 and above**. Installation can be done via `pip` and
