@@ -130,7 +130,7 @@ def test_coverage_of_empty_batch_is_nan() -> None:
 
 def test_predictor_rejects_criterion_with_extra_axes() -> None:
     predictor = selective_predictor(
-        representer(_model()), selector=make_selector(threshold=0.5), notion=lambda rep: rep.probabilities
+        representer(_model()), selector=make_selector(threshold=0.5, notion=lambda rep: rep.probabilities)
     )
 
     with pytest.raises(ValueError, match=r"shape \(4, 2\)"):
@@ -141,7 +141,7 @@ def test_predictor_rejects_criterion_with_extra_axes() -> None:
 def test_notion_selects_component_of_decomposition(notion: str) -> None:
     sample = _ensemble_sample()
     predictor = selective_predictor(
-        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.2), notion=notion
+        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.2, notion=notion)
     )
 
     result = predictor.predict(None)
@@ -151,7 +151,7 @@ def test_notion_selects_component_of_decomposition(notion: str) -> None:
 
 def test_epistemic_notion_separates_disagreement_from_noise() -> None:
     result = selective_predictor(
-        representer(_RepresentationModel(_ensemble_sample())), selector=make_selector(threshold=0.1), notion="epistemic"
+        representer(_RepresentationModel(_ensemble_sample())), selector=make_selector(threshold=0.1, notion="epistemic")
     ).predict(None)
 
     assert result.uncertainty[0] > 0.1
@@ -162,7 +162,7 @@ def test_epistemic_notion_separates_disagreement_from_noise() -> None:
 @pytest.mark.parametrize("notion", ["EU", "eu", EpistemicUncertainty])
 def test_notion_accepts_aliases_and_classes(notion: Any) -> None:  # noqa: ANN401
     predictor = selective_predictor(
-        representer(_RepresentationModel(_ensemble_sample())), selector=make_selector(threshold=0.2), notion=notion
+        representer(_RepresentationModel(_ensemble_sample())), selector=make_selector(threshold=0.2, notion=notion)
     )
 
     assert predictor.notion is EpistemicUncertainty
@@ -172,14 +172,26 @@ def test_default_notion_is_total() -> None:
     assert selective_predictor(representer(_model()), selector=make_selector(threshold=0.2)).notion is TotalUncertainty
 
 
+def test_notion_is_read_from_the_selector() -> None:
+    rule = make_selector(threshold=0.2)
+    predictor = selective_predictor(representer(_model()), selector=rule)
+    rule.notion = EpistemicUncertainty
+
+    assert predictor.notion is EpistemicUncertainty
+
+
+def test_notion_without_selector_is_total() -> None:
+    assert selective_predictor(representer(_model())).notion is TotalUncertainty
+
+
 def test_invalid_notion_raises() -> None:
     with pytest.raises(ValueError, match=r"notion must be one of .*'tu', 'TU', got 'bogus'"):
-        selective_predictor(representer(_model()), selector=make_selector(threshold=0.2), notion="bogus")
+        selective_predictor(representer(_model()), selector=make_selector(threshold=0.2, notion="bogus"))
 
 
 def test_class_that_is_not_a_notion_raises() -> None:
     with pytest.raises(TypeError, match="subclass of Notion"):
-        selective_predictor(representer(_model()), selector=make_selector(threshold=0.2), notion=int)
+        selective_predictor(representer(_model()), selector=make_selector(threshold=0.2, notion=int))
 
 
 def test_callable_notion_computes_criterion_from_representation() -> None:
@@ -191,7 +203,7 @@ def test_callable_notion_computes_criterion_from_representation() -> None:
         return 1.0 - representation.probabilities.max(axis=-1)
 
     result = selective_predictor(
-        representer(model), selector=make_selector(threshold=0.3), notion=one_minus_max_probability
+        representer(model), selector=make_selector(threshold=0.3, notion=one_minus_max_probability)
     ).predict(None)
 
     assert seen == [model.representation]
@@ -210,7 +222,7 @@ def test_callable_notion_skips_the_decomposition(monkeypatch: pytest.MonkeyPatch
 
     monkeypatch.setattr("probly.selective_prediction._common.scoring_rule_decomposition", fail)
     result = selective_predictor(
-        representer(_model()), selector=make_selector(threshold=0.5), notion=lambda _rep: np.array([0.1, 0.9, 0.5, 0.6])
+        representer(_model()), selector=make_selector(threshold=0.5, notion=lambda _rep: np.array([0.1, 0.9, 0.5, 0.6]))
     ).predict(None)
 
     np.testing.assert_array_equal(result.accepted, [True, False, True, False])
@@ -218,11 +230,11 @@ def test_callable_notion_skips_the_decomposition(monkeypatch: pytest.MonkeyPatch
 
 def test_non_callable_notion_raises() -> None:
     with pytest.raises(TypeError, match="notion"):
-        selective_predictor(representer(_model()), selector=make_selector(threshold=0.2), notion=0.5)
+        selective_predictor(representer(_model()), selector=make_selector(threshold=0.2, notion=0.5))
 
 
 def test_notion_missing_from_decomposition_raises() -> None:
-    predictor = selective_predictor(representer(_model()), selector=make_selector(threshold=0.2), notion="epistemic")
+    predictor = selective_predictor(representer(_model()), selector=make_selector(threshold=0.2, notion="epistemic"))
 
     with pytest.raises(KeyError, match=r"Probability\w* has no EpistemicUncertainty .* only: TotalUncertainty"):
         predictor.predict(None)
@@ -248,8 +260,7 @@ def test_regression_criterion_from_a_quantify_notion(notion: str) -> None:
     sample = _regression_sample()
     result = selective_predictor(
         representer(_RepresentationModel(sample)),
-        selector=make_selector(threshold=1.0),
-        notion=lambda rep: quantify(rep)[notion],
+        selector=make_selector(threshold=1.0, notion=lambda rep: quantify(rep)[notion]),
         decider=lambda rep: rep,
     ).predict(None)
 
@@ -282,7 +293,7 @@ def test_default_decomposition_is_additive() -> None:
     sample = _random_ensemble_sample()
     components = {
         notion: selective_predictor(
-            representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5), notion=notion
+            representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5, notion=notion)
         )
         .predict(None)
         .uncertainty
@@ -304,7 +315,7 @@ def test_default_epistemic_is_exactly_zero_where_members_agree() -> None:
     )
 
     result = selective_predictor(
-        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.0), notion="epistemic"
+        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.0, notion="epistemic")
     ).predict(None)
 
     np.testing.assert_array_equal(result.uncertainty, 0.0)
@@ -315,7 +326,7 @@ def test_default_epistemic_is_exactly_zero_where_members_agree() -> None:
 def test_log_loss_gives_entropy_decomposition(notion: str) -> None:
     sample = _random_ensemble_sample()
     result = selective_predictor(
-        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5), notion=notion, loss=LogLoss()
+        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5, notion=notion), loss=LogLoss()
     ).predict(None)
 
     np.testing.assert_allclose(result.uncertainty, quantify(sample)[notion])
@@ -333,8 +344,7 @@ def test_brier_loss_gives_its_scoring_rule_decomposition() -> None:
     sample = _random_ensemble_sample()
     result = selective_predictor(
         representer(_RepresentationModel(sample)),
-        selector=make_selector(threshold=0.5),
-        notion="epistemic",
+        selector=make_selector(threshold=0.5, notion="epistemic"),
         loss=BrierLoss(),
     ).predict(None)
 
@@ -344,7 +354,7 @@ def test_brier_loss_gives_its_scoring_rule_decomposition() -> None:
 def test_no_loss_uses_the_zero_one_decomposition() -> None:
     sample = _random_ensemble_sample()
     result = selective_predictor(
-        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5), notion="epistemic", loss=None
+        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5, notion="epistemic"), loss=None
     ).predict(None)
 
     np.testing.assert_allclose(result.uncertainty, SecondOrderZeroOneDecomposition(sample).epistemic)
@@ -391,12 +401,11 @@ def test_explicit_loss_raises_for_representation_it_does_not_apply_to(loss: Any)
 def test_explicit_zero_one_loss_matches_default_where_it_applies() -> None:
     sample = _random_ensemble_sample()
     default = selective_predictor(
-        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5), notion="epistemic"
+        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5, notion="epistemic")
     )
     explicit = selective_predictor(
         representer(_RepresentationModel(sample)),
-        selector=make_selector(threshold=0.5),
-        notion="epistemic",
+        selector=make_selector(threshold=0.5, notion="epistemic"),
         loss=ZeroOneLoss(),
     )
 
@@ -411,8 +420,7 @@ def test_invalid_loss_raises() -> None:
 def test_callable_notion_ignores_loss() -> None:
     result = selective_predictor(
         representer(_model()),
-        selector=make_selector(threshold=0.5),
-        notion=lambda rep: 1.0 - rep.probabilities.max(axis=-1),
+        selector=make_selector(threshold=0.5, notion=lambda rep: 1.0 - rep.probabilities.max(axis=-1)),
         loss=LogLoss(),
     ).predict(None)
 
@@ -494,7 +502,7 @@ def test_pipeline_calibrate_matches_selector_on_predicted_criterion() -> None:
 
 def test_pipeline_calibrate_uses_callable_notion() -> None:
     sp = selective_predictor(
-        representer(_model()), selector=make_selector(coverage=0.5), notion=lambda _rep: np.array([4.0, 3.0, 2.0, 1.0])
+        representer(_model()), selector=make_selector(coverage=0.5, notion=lambda _rep: np.array([4.0, 3.0, 2.0, 1.0]))
     )
     sp.calibrate(None, None)
     assert sp.selector.threshold == 3.0
@@ -586,8 +594,7 @@ def test_pipeline_rejects_invalid_labels(labels: np.ndarray, match: str) -> None
 def test_pipeline_scoring_rule_on_a_regression_decision_raises() -> None:
     sp = selective_predictor(
         representer(_RepresentationModel(_regression_sample())),
-        selector=make_selector(risk=0.5, delta=0.5),
-        notion=lambda r: quantify(r).total,
+        selector=make_selector(risk=0.5, delta=0.5, notion=lambda r: quantify(r).total),
         decider=lambda r: r,
     )
     with pytest.raises(TypeError, match="A scoring rule needs a categorical decision, got NumpyGaussianDistribution"):
@@ -669,8 +676,7 @@ def test_reassigned_selector_that_needs_losses_meets_loss_none_in_calibrate() ->
 def test_criterion_with_extra_axes_hint_names_the_predictor_type() -> None:
     predictor = selective_predictor(
         representer(_model()),
-        selector=make_selector(threshold=0.5),
-        notion=lambda _representation: np.zeros((4, 4)),
+        selector=make_selector(threshold=0.5, notion=lambda _representation: np.zeros((4, 4))),
     )
 
     with pytest.raises(ValueError, match="one-dimensional") as info:
@@ -763,8 +769,7 @@ def test_evaluate_without_loss_suggests_a_loss() -> None:
 def test_criterion_that_is_not_an_array_is_rejected_by_predict_and_evaluate() -> None:
     sp = selective_predictor(
         representer(_model()),
-        selector=make_selector(threshold=0.3),
-        notion=lambda rep: list(1 - rep.probabilities.max(-1)),
+        selector=make_selector(threshold=0.3, notion=lambda rep: list(1 - rep.probabilities.max(-1))),
     )
 
     with pytest.raises(TypeError, match="must be an array"):
@@ -791,7 +796,7 @@ def test_function_loss_keeps_the_zero_one_criterion() -> None:
     # quantify would decompose a sample of categorical distributions by entropy instead.
     sample = _random_ensemble_sample()
     sp = selective_predictor(
-        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5), notion="epistemic", loss=_cost
+        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5, notion="epistemic"), loss=_cost
     )
 
     result = sp.predict(None)
@@ -831,8 +836,7 @@ def test_regression_with_a_function_loss_evaluates() -> None:
     y = np.array([0.0, 1.0, 2.0])
     sp = selective_predictor(
         representer(_RepresentationModel(sample)),
-        selector=make_selector(threshold=1.0),
-        notion=lambda s: quantify(s).epistemic,
+        selector=make_selector(threshold=1.0, notion=lambda s: quantify(s).epistemic),
         decider=lambda s: s.array.mean.mean(axis=0),
         loss=lambda d, y: (d - y) ** 2,
     )
@@ -862,7 +866,7 @@ def _raise_value_error(*_arguments: object) -> None:
     [
         (
             lambda: selective_predictor(
-                representer(_model()), selector=make_selector(threshold=0.5), notion=_raise_value_error
+                representer(_model()), selector=make_selector(threshold=0.5, notion=_raise_value_error)
             ),
             lambda sp: sp.predict(None),
             "notion receives the representation (NumpyProbabilityCategoricalDistribution), not the model output.",
@@ -929,9 +933,7 @@ def test_evaluate_runs_the_model_once() -> None:
 
 
 def test_evaluate_without_a_rule_reports_only_ranking_metrics() -> None:
-    result = selective_predictor(representer(_model()), notion=lambda _r: np.array([0.1, 0.2, 0.3, 0.4])).evaluate(
-        _LABELS, None
-    )
+    result = selective_predictor(representer(_model())).evaluate(_LABELS, None)
 
     assert not any(key.startswith("selected:") for key in result)
 
@@ -956,7 +958,7 @@ def test_evaluate_with_a_calibrated_rule() -> None:
 def test_evaluate_maps_nan_criterion_to_inf_for_metrics_only() -> None:
     criterion = np.array([0.1, np.nan, 0.3, 0.2])
     sp = selective_predictor(
-        representer(_model()), selector=make_selector(threshold=np.inf), notion=lambda _r: criterion
+        representer(_model()), selector=make_selector(threshold=np.inf, notion=lambda _r: criterion)
     )
 
     result = sp.evaluate(_LABELS, None)

@@ -11,8 +11,14 @@ from flextype import flexdispatch, switch
 import numpy as np
 from scipy.special import betaincinv
 
+from probly.quantification import Notion, TotalUncertainty, notion_registry
+
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from ndlike.array_like import ArrayLikeWithoutSize
+
+    from probly.quantification.notion import NotionKey, NotionName
 
 type SelectorName = Literal["threshold", "coverage", "risk"]
 
@@ -32,11 +38,14 @@ class Selector(ABC):
 
     Attributes:
         takes_losses: Whether ``calibrate`` takes the losses of the calibration predictions as its second argument.
+        notion: The notion class or the function that gives the criterion, read by
+            :class:`~probly.selective_prediction.SelectivePredictor`. Defaults to the total uncertainty.
         threshold: The fixed or fitted threshold on the criterion, or ``None`` if there is none (yet).
         bound: The certified bound on the risk, or ``None`` if there is none (yet).
     """
 
     takes_losses: ClassVar[bool] = False
+    notion: type[Notion] | Callable[[Any], Any] = TotalUncertainty
     threshold: float | None = None
     bound: float | None = None
 
@@ -59,6 +68,26 @@ class Selector(ABC):
 
 selector_registry = switch[SelectorName, type[Selector]]()
 """Registry of the selection rules by the :func:`~probly.selective_prediction.selector` keyword that names them."""
+
+
+def _check_notion(notion: object) -> type[Notion] | Callable[[Any], Any]:
+    """Resolve a notion name to its class and check the notion."""
+    if isinstance(notion, str):
+        try:
+            return notion_registry[cast("NotionName", notion)]
+        except KeyError:
+            names = ", ".join(repr(name) for name in notion_registry)
+            msg = f"notion must be one of {names}, got {notion!r}."
+            raise ValueError(msg) from None
+    if isinstance(notion, type):
+        if not issubclass(notion, Notion):
+            msg = f"notion must be a subclass of Notion if it is a class, got {notion.__name__}."
+            raise TypeError(msg)
+        return notion
+    if not callable(notion):
+        msg = f"notion must be a string, a notion class, or a callable, got {type(notion).__name__}."
+        raise TypeError(msg)
+    return notion
 
 
 def _check_per_instance[U](values: U, name: str = "uncertainty") -> U:
@@ -274,6 +303,7 @@ def selector(
     coverage: float | None = None,
     risk: float | None = None,
     delta: float | None = None,
+    notion: NotionKey | Callable[[Any], Any] = "total",
     **options: Any,  # noqa: ANN401
 ) -> Selector:
     """Build the selection rule for a :class:`~probly.selective_prediction.SelectivePredictor` from its guarantee.
@@ -308,6 +338,10 @@ def selector(
     thresholds depend on the labels seen in earlier steps, which the paper's union bound treats as fixed, so the
     guarantee is not rigorous in general.
 
+    The selector also holds the notion of uncertainty that
+    :class:`~probly.selective_prediction.SelectivePredictor` computes the criterion from; a selector applied to
+    criteria computed by hand ignores it.
+
     The fitted rules work on a float64 NumPy copy of the criterion, so the threshold is the same on every backend and
     precision; gradients are not tracked.
 
@@ -317,6 +351,9 @@ def selector(
         coverage: Target fraction of accepted predictions, in ``(0, 1]``.
         risk: Target selective risk, in ``(0, 1)``. Needs ``delta``.
         delta: Probability with which the bound on the risk may fail, in ``(0, 1)``. Needs ``risk``.
+        notion: The notion of uncertainty to select on, e.g. ``"total"``, ``"aleatoric"`` or ``"epistemic"``, or a
+            function mapping the representation to the criterion per instance, higher meaning more uncertain. See
+            :func:`~probly.selective_prediction.selective_predictor` for how it is computed.
         **options: Keywords of a rule registered in
             :data:`~probly.selective_prediction.selectors.selector_registry`, passed on to its class.
 
@@ -329,8 +366,10 @@ def selector(
     Raises:
         TypeError: If not exactly one rule is given, ``risk`` and ``delta`` are not given together, or the rule does
             not take a keyword.
-        ValueError: If a value is outside its range or ``threshold`` is NaN.
+        ValueError: If a value is outside its range, ``threshold`` is NaN, or ``notion`` is a string that is not a
+            notion of uncertainty.
     """
+    checked_notion = _check_notion(notion)
     given = {
         name: value
         for name, value in (("threshold", threshold), ("coverage", coverage), ("risk", risk), ("delta", delta))
@@ -348,7 +387,7 @@ def selector(
     rule = rules[0]
     rule_class = selector_registry[rule]
     try:
-        return rule_class(**given)
+        built = rule_class(**given)
     except TypeError as error:
         accepted = set(inspect.signature(rule_class).parameters)
         unexpected = sorted(set(given) - accepted)
@@ -356,3 +395,5 @@ def selector(
             msg = f"{unexpected[0]!r} is not an option of the {rule!r} rule."
             raise TypeError(msg) from None
         raise error from None
+    built.notion = checked_notion
+    return built

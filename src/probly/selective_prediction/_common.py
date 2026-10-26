@@ -16,8 +16,8 @@ from probly.predictor import Predictor, predict
 from probly.quantification import (
     Notion,
     ScoringRule,
+    TotalUncertainty,
     ZeroOneLoss,
-    notion_registry,
     scoring_rule_decomposition,
 )
 from probly.representation.distribution import CategoricalDistribution
@@ -29,8 +29,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from ndlike.array_like import ArrayLikeWithoutSize
-
-    from probly.quantification.notion import NotionKey, NotionName
 
 # Default loss, and the scoring rule that induces the decomposition for a function loss or loss=None.
 _ZERO_ONE_LOSS = ZeroOneLoss()
@@ -61,26 +59,6 @@ class SelectivePrediction[D]:
         if num_instances == 0:
             return math.nan
         return float(accepted.sum()) / num_instances
-
-
-def _check_notion(notion: object) -> type[Notion] | Callable[[Any], Any]:
-    """Resolve a notion name to its class and check the notion."""
-    if isinstance(notion, str):
-        try:
-            return notion_registry[cast("NotionName", notion)]
-        except KeyError:
-            names = ", ".join(repr(name) for name in notion_registry)
-            msg = f"notion must be one of {names}, got {notion!r}."
-            raise ValueError(msg) from None
-    if isinstance(notion, type):
-        if not issubclass(notion, Notion):
-            msg = f"notion must be a subclass of Notion if it is a class, got {notion.__name__}."
-            raise TypeError(msg)
-        return notion
-    if not callable(notion):
-        msg = f"notion must be a string, a notion class, or a callable, got {type(notion).__name__}."
-        raise TypeError(msg)
-    return notion
 
 
 def _check_loss(loss: Any, selector: Selector | None) -> Any:  # noqa: ANN401
@@ -172,7 +150,7 @@ def _criterion(predictor: SelectivePredictor[Any, Any], representation: Any) -> 
         error.add_note(
             "For a classifier, build the representer from a model with a predictor_type, e.g. "
             "representer(cast(model, predictor_type='logit_classifier')). "
-            "For regression, pass notion as a function that reduces the criterion, e.g. "
+            "For regression, pass the notion of the selector as a function that reduces the criterion, e.g. "
             "lambda s: s.sample_var().squeeze(-1) for a one-output regression model."
         )
         raise
@@ -216,16 +194,20 @@ class SelectivePredictor[**In, D](
     Attributes:
         selector: The selection rule, or ``None``. Its ``threshold`` and ``bound`` show its state.
         representer: The :class:`~probly.representer.Representer` that maps the inputs to the representation.
-        notion: The notion class or the function that gives the criterion.
+        notion: The notion class or the function that gives the criterion, from the selector if there is one.
         loss: The task loss: a scoring rule, a function, or ``None``.
         decider: The :class:`~probly.decider.Decider` mapping a representation to the decision.
     """
 
     selector: Selector | None
     representer: Representer[Any, In, Any, Any]
-    notion: type[Notion] | Callable[[Any], Any]
     loss: ScoringRule | Callable[[Any, Any], Any] | None
     decider: Decider[Any, Any]
+
+    @property
+    def notion(self) -> type[Notion] | Callable[[Any], Any]:
+        """The notion class or the function that gives the criterion."""
+        ...
 
     def calibrate(self, y_calib: Any, *calib_args: In.args, **calib_kwargs: In.kwargs) -> Self:  # noqa: ANN401
         """Fit the selector on calibration data."""
@@ -238,7 +220,6 @@ class _SelectivePredictorBase[**In](ABC):
 
     selector: Selector | None
     representer: Representer[Any, In, Any, Any]
-    notion: type[Notion] | Callable[[Any], Any]
     loss: ScoringRule | Callable[[Any, Any], Any] | None
     decider: Decider[Any, Any]
 
@@ -247,7 +228,6 @@ class _SelectivePredictorBase[**In](ABC):
         base: Representer[Any, In, Any, Any],
         *,
         selector: Selector | None = None,
-        notion: NotionKey | Callable[[Any], Any] = "total",
         loss: ScoringRule | Callable[[Any, Any], Any] | None = _ZERO_ONE_LOSS,
         decider: Decider[Any, Any] | None = None,
     ) -> None:
@@ -264,9 +244,13 @@ class _SelectivePredictorBase[**In](ABC):
             raise TypeError(msg)
         self.selector = selector
         self.representer = base
-        self.notion = _check_notion(notion)
         self.loss = _check_loss(loss, selector)
         self.decider = categorical_from_mean if decider is None else decider
+
+    @property
+    def notion(self) -> type[Notion] | Callable[[Any], Any]:
+        """The notion of the selector, or the total uncertainty if there is no selector."""
+        return TotalUncertainty if self.selector is None else self.selector.notion
 
     def predict(self, *args: In.args, **kwargs: In.kwargs) -> SelectivePrediction[Any]:
         """Predict and decide per instance whether to abstain, as :func:`~probly.predictor.predict` does.
@@ -414,7 +398,6 @@ def selective_predictor[**In](
     base: Representer[Any, In, Any, Any],
     *,
     selector: Selector | None = None,
-    notion: NotionKey | Callable[[Any], Any] = "total",
     loss: ScoringRule | Callable[[Any, Any], Any] | None = _ZERO_ONE_LOSS,
     decider: Decider[Any, Any] | None = None,
 ) -> SelectivePredictor[In, Any]:
@@ -422,7 +405,7 @@ def selective_predictor[**In](
 
     The selection rule is a :class:`~probly.selective_prediction.selectors.Selector` built with
     :func:`~probly.selective_prediction.selector`; rules fitted on data are fitted with ``calibrate``. Without a
-    selector, predicting raises and ``evaluate`` reports only the ranking metrics.
+    selector, predicting raises and ``evaluate`` reports only the ranking metrics of the total uncertainty.
 
     The representer is built with :func:`~probly.representer.representer` from a model probly can represent, e.g. an
     ensemble, an MC-dropout model, an evidential model, an object with ``predict_proba``, or a plain classifier declared
@@ -430,7 +413,8 @@ def selective_predictor[**In](
     ``representer(model, num_samples=100)``. The criterion and the decision come from the same representation. For
     other models, apply a :func:`~probly.selective_prediction.selector` to a criterion computed by hand.
 
-    The criterion is the component of the uncertainty decomposition selected by ``notion``: the total uncertainty by
+    The criterion is the component of the uncertainty decomposition selected by the notion of the selector, e.g.
+    ``selector(coverage=0.9, notion="epistemic")``: the total uncertainty by
     default, recommended for selective prediction :cite:`hofmanAdjustingMeasures2025`, or its aleatoric or epistemic
     part; the epistemic part suits the rejection of out-of-distribution instances. For samples of categorical
     distributions, the task loss ``loss`` induces the decomposition, see
@@ -443,8 +427,8 @@ def selective_predictor[**In](
     - a single categorical distribution: the expected loss of the best prediction, a total uncertainty only;
     - Dirichlet distributions: the zero-one decomposition; other scoring rules raise a ``NotImplementedError``;
     - any other representation, e.g. of a regression model, a credal set, DUQ or DDU: a named notion raises a
-      ``NotImplementedError``; pass ``notion`` as a function instead, e.g.
-      ``notion=lambda r: quantify(r).epistemic`` with :func:`~probly.quantification.quantify`.
+      ``NotImplementedError``; pass the notion as a function instead, e.g.
+      ``selector(..., notion=lambda r: quantify(r).epistemic)`` with :func:`~probly.quantification.quantify`.
 
     A decomposition that a method registers with ``quantify`` for its own representation (DARE, SNGP,
     heteroscedastic networks, the vacuity of evidential models) is used the same way. How the arguments are used:
@@ -458,7 +442,7 @@ def selective_predictor[**In](
     losses             ``loss.loss(decision)[i, y_i]``  ``loss(decision, y)``  none
     =================  ===============================  =====================  =====================
 
-    Regression needs a function ``notion``, ``decider`` and ``loss``, e.g. for MC dropout
+    Regression needs a function notion, ``decider`` and ``loss``, e.g. for MC dropout
     ``notion=lambda s: s.sample_var().squeeze(-1)``, ``decider=lambda s: s.sample_mean().squeeze(-1)`` and
     ``loss=lambda d, y: (d - y) ** 2``. For large data, concatenate precomputed representations on the instance axis,
     keeping their type (``torch.cat``, ``np.concatenate`` or
@@ -471,8 +455,6 @@ def selective_predictor[**In](
             :func:`~probly.representer.representer`.
         selector: The selection rule, built with :func:`~probly.selective_prediction.selector`, or ``None``.
             ``calibrate`` fits it in place, so predictors sharing a selector share its state.
-        notion: The notion of uncertainty to select on, e.g. ``"total"``, ``"aleatoric"`` or ``"epistemic"``, or a
-            function mapping the representation to the criterion per instance, higher meaning more uncertain.
         loss: The task loss: a scoring rule for integer labels (default: zero-one loss), a function
             ``loss(decision, y)`` returning one loss per instance, e.g. for regression, or ``None`` for no losses.
         decider: A :class:`~probly.decider.Decider` mapping the representation to the decision. Defaults to
@@ -483,14 +465,12 @@ def selective_predictor[**In](
 
     Raises:
         TypeError: If ``selector`` is not a :class:`~probly.selective_prediction.selectors.Selector` or ``None``,
-            ``base`` is not a :class:`~probly.representer.Representer`, or a selector that needs losses meets
+            ``base`` is not a :class:`~probly.representer.Representer`, a selector that needs losses meets
             ``loss=None``.
-        ValueError: If ``notion`` is a string that is not a notion of uncertainty.
     """
     return _SelectivePredictorBase(
         base,
         selector=selector,
-        notion=notion,
         loss=loss,
         decider=decider,
     )

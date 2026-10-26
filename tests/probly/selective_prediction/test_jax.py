@@ -87,7 +87,7 @@ def test_sample_criterion_is_zero_one_decomposition(notion: str) -> None:
     model = _JaxSampleModel()
     representation = model.predict_representation(None)
 
-    result = selective_predictor(representer(model), selector=make_selector(threshold=0.5), notion=notion).predict(None)
+    result = selective_predictor(representer(model), selector=make_selector(threshold=0.5, notion=notion)).predict(None)
 
     assert isinstance(result.uncertainty, jax.Array)
     np.testing.assert_allclose(
@@ -103,7 +103,7 @@ def test_sample_log_loss_matches_quantify(notion: str) -> None:
     representation = model.predict_representation(None)
 
     result = selective_predictor(
-        representer(model), selector=make_selector(threshold=0.5), notion=notion, loss=LogLoss()
+        representer(model), selector=make_selector(threshold=0.5, notion=notion), loss=LogLoss()
     ).predict(None)
 
     np.testing.assert_allclose(
@@ -139,8 +139,7 @@ def test_regression_criterion_from_a_quantify_notion(notion: str) -> None:
 
     result = selective_predictor(
         representer(model),
-        selector=make_selector(threshold=1.0),
-        notion=lambda rep: quantify(rep)[notion],
+        selector=make_selector(threshold=1.0, notion=lambda rep: quantify(rep)[notion]),
         decider=lambda rep: rep,
     ).predict(None)
 
@@ -209,10 +208,10 @@ def test_jax_concatenated_representations_on_an_identity_model_match_one_batch()
     identity = cast(lambda r: r, predictor_type=RepresentationPredictor)
 
     result = selective_predictor(
-        representer(identity), selector=make_selector(threshold=0.5), notion="epistemic"
+        representer(identity), selector=make_selector(threshold=0.5, notion="epistemic")
     ).predict(concatenated)
     expected = selective_predictor(
-        representer(_JaxSampleModel()), selector=make_selector(threshold=0.5), notion="epistemic"
+        representer(_JaxSampleModel()), selector=make_selector(threshold=0.5, notion="epistemic")
     ).predict(None)
 
     assert type(concatenated) is type(representation)
