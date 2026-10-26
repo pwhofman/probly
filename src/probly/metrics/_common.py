@@ -14,19 +14,18 @@ type ScoringRule = Callable[[object, object], object]
 """A per-instance scoring rule ``(y_prob, y_true) -> losses``, such as :func:`log_loss_per_instance`."""
 
 
-@flexdispatch
 def auc(x: object, y: object) -> object:
     """Compute area under a curve using the trapezoid rule.
 
     Args:
-        x: x-coordinates (must be monotonic).
-        y: y-coordinates.
+        x: x-coordinates of shape ``(..., n)``, monotonic along the last axis.
+        y: y-coordinates of shape ``(..., n)``.
 
     Returns:
-        Area under the curve.
+        Area under the curve of shape ``(...)``.
     """
-    msg = f"No auc implementation registered for type {type(x)}"
-    raise NotImplementedError(msg)
+    xs, ys = cast("Any", x), cast("Any", y)
+    return ((xs[..., 1:] - xs[..., :-1]) * (ys[..., 1:] + ys[..., :-1]) / 2.0).sum(axis=-1)
 
 
 @flexdispatch
@@ -63,7 +62,6 @@ def precision_recall_curve(y_true: object, y_score: object) -> tuple[object, obj
     raise NotImplementedError(msg)
 
 
-@flexdispatch
 def roc_auc_score(y_true: object, y_score: object) -> object:
     """Compute area under the ROC curve.
 
@@ -74,11 +72,10 @@ def roc_auc_score(y_true: object, y_score: object) -> object:
     Returns:
         AUROC value.
     """
-    msg = f"No roc_auc_score implementation registered for type {type(y_true)}"
-    raise NotImplementedError(msg)
+    fpr, tpr, _ = roc_curve(y_true, y_score)
+    return auc(fpr, tpr)
 
 
-@flexdispatch
 def average_precision_score(y_true: object, y_score: object) -> object:
     """Compute average precision (area under the precision-recall curve).
 
@@ -91,11 +88,10 @@ def average_precision_score(y_true: object, y_score: object) -> object:
     Returns:
         Average precision value.
     """
-    msg = f"No average_precision_score implementation registered for type {type(y_true)}"
-    raise NotImplementedError(msg)
+    precision, recall, _ = cast("Any", precision_recall_curve(y_true, y_score))
+    return -((recall[..., 1:] - recall[..., :-1]) * precision[..., :-1]).sum(axis=-1)
 
 
-@flexdispatch
 def accuracy(y_pred: object, y_true: object) -> object:
     """Compute top-1 classification accuracy.
 
@@ -109,9 +105,22 @@ def accuracy(y_pred: object, y_true: object) -> object:
 
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``y_pred``.
+        TypeError: If ``y_pred`` is a sample of predictions.
     """
-    msg = f"No accuracy implementation registered for type {type(y_pred)}"
-    raise NotImplementedError(msg)
+    predicted = cast("Any", _probabilities(y_pred))
+    labels = cast("Any", y_true).reshape(-1)
+    if predicted.ndim == 2:
+        predicted = predicted.argmax(axis=-1)
+    elif predicted.ndim != 1:
+        msg = f"accuracy expects predictions of shape (n,) or (n, k), got shape {tuple(predicted.shape)}."
+        raise ValueError(msg)
+    if predicted.shape[0] != labels.shape[0]:
+        msg = (
+            "accuracy labels must match predictions batch size. "
+            f"Got {labels.shape[0]} labels for {predicted.shape[0]} predictions."
+        )
+        raise ValueError(msg)
+    return (predicted == labels).sum() / labels.shape[0]
 
 
 @flexdispatch
@@ -137,7 +146,6 @@ def expected_calibration_error(y_prob: object, y_true: object, *, num_bins: int 
     raise NotImplementedError(msg)
 
 
-@flexdispatch
 def false_positive_rate(y_pred: object, y_true: object) -> object:
     """Compute the false positive rate ``FP / (FP + TN)`` of binary predictions.
 
@@ -149,13 +157,20 @@ def false_positive_rate(y_pred: object, y_true: object) -> object:
         The fraction of true negatives that are predicted positive, or NaN if there are no negative samples.
 
     Raises:
-        NotImplementedError: If no implementation is registered for the type of ``y_pred``.
+        ValueError: If ``y_pred`` and ``y_true`` differ in batch size.
     """
-    msg = f"No false_positive_rate implementation registered for type {type(y_pred)}"
-    raise NotImplementedError(msg)
+    y = cast("Any", y_true).reshape(-1)
+    p = cast("Any", y_pred).reshape(-1)
+    if p.shape[0] != y.shape[0]:
+        msg = f"false_positive_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
+        raise ValueError(msg)
+    negatives = (y == 0).sum()
+    if negatives == 0:
+        # A NaN of the input's array type; dividing zero by zero would warn under numpy.
+        return negatives * float("nan")
+    return ((p == 1) & (y == 0)).sum() / negatives
 
 
-@flexdispatch
 def false_negative_rate(y_pred: object, y_true: object) -> object:
     """Compute the false negative rate ``FN / (FN + TP)`` of binary predictions.
 
@@ -167,10 +182,18 @@ def false_negative_rate(y_pred: object, y_true: object) -> object:
         The fraction of true positives that are predicted negative, or NaN if there are no positive samples.
 
     Raises:
-        NotImplementedError: If no implementation is registered for the type of ``y_pred``.
+        ValueError: If ``y_pred`` and ``y_true`` differ in batch size.
     """
-    msg = f"No false_negative_rate implementation registered for type {type(y_pred)}"
-    raise NotImplementedError(msg)
+    y = cast("Any", y_true).reshape(-1)
+    p = cast("Any", y_pred).reshape(-1)
+    if p.shape[0] != y.shape[0]:
+        msg = f"false_negative_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
+        raise ValueError(msg)
+    positives = (y == 1).sum()
+    if positives == 0:
+        # A NaN of the input's array type; dividing zero by zero would warn under numpy.
+        return positives * float("nan")
+    return ((p == 0) & (y == 1)).sum() / positives
 
 
 # --- Predicted-set metrics ----------------------------------------------------
@@ -388,26 +411,26 @@ def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.000
     raise NotImplementedError(msg)
 
 
-# Only these three primitives differ per backend. The rules below combine them with operators and last-axis
-# reductions, which numpy, torch and jax arrays share.
+# Only these primitives differ per backend. The metrics written generically in this module combine them with
+# operators and last-axis reductions, which numpy, torch and jax arrays share.
 @flexdispatch
 def _probabilities(y_prob: object) -> object:
     """Return the probabilities ``(..., K)`` of a prediction, unwrapping categorical distributions."""
-    msg = f"Scoring rules are not implemented for type {type(y_prob).__name__}."
+    msg = f"No probabilities implementation registered for type {type(y_prob).__name__}."
     raise NotImplementedError(msg)
 
 
 @flexdispatch
 def _log_probabilities(y_prob: object) -> object:
     """Return the log probabilities ``(..., K)`` of a prediction, exact for logit-parameterized distributions."""
-    msg = f"Scoring rules are not implemented for type {type(y_prob).__name__}."
+    msg = f"No log probabilities implementation registered for type {type(y_prob).__name__}."
     raise NotImplementedError(msg)
 
 
 @flexdispatch
 def _one_hot_argmax(probabilities: object) -> object:
     """One-hot encode the first maximum of each probability vector ``(..., K)`` in the probabilities' dtype."""
-    msg = f"Scoring rules are not implemented for type {type(probabilities).__name__}."
+    msg = f"No one-hot argmax implementation registered for type {type(probabilities).__name__}."
     raise NotImplementedError(msg)
 
 

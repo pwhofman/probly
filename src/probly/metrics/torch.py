@@ -16,19 +16,13 @@ from typing import TYPE_CHECKING
 import torch
 
 from probly.metrics import (
-    accuracy,
-    auc,
     average_interval_width,
-    average_precision_score,
     classwise_ece,
     convex_hull_coverage,
     coverage,
     efficiency,
     expected_calibration_error,
-    false_negative_rate,
-    false_positive_rate,
     precision_recall_curve,
-    roc_auc_score,
     roc_curve,
 )
 from probly.metrics._common import (
@@ -51,38 +45,6 @@ from probly.representation.distribution._common import CategoricalDistribution
 
 if TYPE_CHECKING:
     from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
-
-
-@accuracy.register(torch.Tensor)
-def torch_accuracy(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
-    """Compute top-1 classification accuracy for PyTorch tensors."""
-    labels = y_true.reshape(-1)
-    predicted = y_pred
-    if predicted.ndim == 2:
-        predicted = torch.argmax(predicted, dim=-1)
-    elif predicted.ndim != 1:
-        msg = f"accuracy expects predictions of shape (n,) or (n, k), got shape {tuple(predicted.shape)}."
-        raise ValueError(msg)
-    if predicted.shape[0] != labels.shape[0]:
-        msg = (
-            "accuracy labels must match predictions batch size. "
-            f"Got {labels.shape[0]} labels for {predicted.shape[0]} predictions."
-        )
-        raise ValueError(msg)
-    return (predicted == labels).float().mean()
-
-
-@auc.register(torch.Tensor)
-def torch_auc(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    """Compute area under a curve using the trapezoid rule."""
-    return torch.trapezoid(y, x, dim=-1)
-
-
-@average_precision_score.register(torch.Tensor)
-def torch_average_precision_score(y_true: torch.Tensor, y_score: torch.Tensor) -> torch.Tensor:
-    """Compute average precision for PyTorch tensors."""
-    precision, recall, _ = precision_recall_curve(y_true, y_score)
-    return -torch.sum(torch.diff(recall, dim=-1) * precision[..., :-1], dim=-1)  # ty:ignore[invalid-argument-type, not-subscriptable]
 
 
 def _binary_clf_curve(y_true: torch.Tensor, y_score: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -211,41 +173,6 @@ def torch_expected_calibration_error(y_prob: torch.Tensor, y_true: torch.Tensor,
         conf_bin = (conf * mask).sum() / safe_count
         total = total + count / n * (acc_bin - conf_bin).abs()
     return total
-
-
-@false_positive_rate.register(torch.Tensor)
-def torch_false_positive_rate(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
-    """Compute the false positive rate for PyTorch tensors."""
-    y = y_true.reshape(-1)
-    p = y_pred.reshape(-1)
-    if p.shape[0] != y.shape[0]:
-        msg = f"false_positive_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
-        raise ValueError(msg)
-    negatives = (y == 0).float()
-    false_positives = (p == 1).float() * negatives
-    # 0/0 yields NaN when there are no negative samples.
-    return false_positives.sum() / negatives.sum()
-
-
-@false_negative_rate.register(torch.Tensor)
-def torch_false_negative_rate(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
-    """Compute the false negative rate for PyTorch tensors."""
-    y = y_true.reshape(-1)
-    p = y_pred.reshape(-1)
-    if p.shape[0] != y.shape[0]:
-        msg = f"false_negative_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
-        raise ValueError(msg)
-    positives = (y == 1).float()
-    false_negatives = (p == 0).float() * positives
-    # 0/0 yields NaN when there are no positive samples.
-    return false_negatives.sum() / positives.sum()
-
-
-@roc_auc_score.register(torch.Tensor)
-def torch_roc_auc_score(y_true: torch.Tensor, y_score: torch.Tensor) -> torch.Tensor:
-    """Compute area under the ROC curve for PyTorch tensors."""
-    fpr, tpr, _ = roc_curve(y_true, y_score)
-    return auc(fpr, tpr)  # ty:ignore[invalid-return-type]
 
 
 @roc_curve.register(torch.Tensor)
