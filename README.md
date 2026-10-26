@@ -199,7 +199,6 @@ Instead of committing to a single second-order distribution, credal methods repr
 <summary><strong>Show all 12 methods</strong></summary>
 
 <a id="credal-table"></a>
-
 | Method                                                                                          | Reference | Backends |
 |:------------------------------------------------------------------------------------------------| :--- | :--- |
 | Credal wrapper (`credal_wrapper`)[¹](#fn-credal-1)                                              | [Wang et al., 2025](https://openreview.net/forum?id=cv2iMNWCsh) | torch |
