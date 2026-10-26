@@ -1,53 +1,62 @@
+.. The logo comes before the title so that it floats next to it; the labels stay on the title.
+
+.. image:: _static/logo/probly-logo-stacked-light.svg
+   :class: probly-hero-logo only-light
+   :alt: probly
+
+.. image:: _static/logo/probly-logo-stacked-dark.svg
+   :class: probly-hero-logo only-dark
+   :alt: probly
+
 .. _nn-init-doc:
 .. _locally-disable-grad-doc:
 .. _index:
 
-``probly``
-==========
+Uncertainty Quantification for Machine Learning
+===============================================
 
-.. raw:: html
-   :file: _includes/ecosystem_ring.html
+.. container:: probly-hero
 
-.. rst-class:: probly-tagline
+   .. rst-class:: probly-tagline
 
    Turn any model into one that knows what it doesn't know.
 
-``probly`` is a **library-agnostic** toolkit for **uncertainty representation and quantification**
-in machine learning. Make any PyTorch, Flax/JAX, scikit-learn, River, or Hugging Face model
-uncertainty-aware in a single line, then **represent**, **quantify**, and **decompose** its
-predictive uncertainty into **aleatoric** and **epistemic** components. It ships 40+ methods,
-from Bayesian nets and deep ensembles to evidential, credal, and conformal prediction, all behind
-the same unified API.
+   ``probly`` is a **library-agnostic** toolkit for **uncertainty representation and quantification**
+   in machine learning. Make any PyTorch, Flax/JAX, scikit-learn, River, or Hugging Face model
+   uncertainty-aware in a single line, then **represent**, **quantify**, and **decompose** its
+   predictive uncertainty into **aleatoric** and **epistemic** components. It ships 40+ methods,
+   from Bayesian nets and deep ensembles to evidential, credal, and conformal prediction, all behind
+   the same unified API.
 
-.. container:: probly-hero-buttons
+   .. container:: probly-hero-buttons
 
-   .. button-ref:: getting_started
-      :ref-type: doc
-      :color: primary
-      :shadow:
+      .. button-ref:: getting_started
+         :ref-type: doc
+         :color: primary
+         :shadow:
 
-      Get started
+         Get started
 
-   .. button-ref:: user_guide
-      :ref-type: doc
-      :color: primary
-      :outline:
+      .. button-ref:: user_guide
+         :ref-type: doc
+         :color: primary
+         :outline:
 
-      User guide
+         User guide
 
-   .. button-ref:: auto_examples/index
-      :ref-type: doc
-      :color: primary
-      :outline:
+      .. button-ref:: auto_examples/index
+         :ref-type: doc
+         :color: primary
+         :outline:
 
-      Browse examples
+         Browse examples
 
-   .. button-ref:: api
-      :ref-type: doc
-      :color: primary
-      :outline:
+      .. button-ref:: api
+         :ref-type: doc
+         :color: primary
+         :outline:
 
-      API reference
+         API reference
 
 Uncertainty in a few lines
 --------------------------

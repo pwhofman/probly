@@ -1,0 +1,30 @@
+/* The colors of the probly logo (see docs/design/brand.md). The red-pink is the accent of
+   the docs: the landing page's buttons and the bar under its title. Links keep furo's blue.
+   Furo switches themes with body[data-theme]; "auto" follows the system setting. */
+:root {
+  --probly-pink: #ff2c7b;
+  --probly-blue: #2464ff;
+  --probly-gradient: linear-gradient(90deg, var(--probly-pink), var(--probly-blue));
+}
+
+/* sphinx-design's primary color. On a light page a deeper pink than the logo's, so that
+   white text on it and pink text next to it stay readable (WCAG AA). */
+body {
+  --sd-color-primary: #db2a6f;
+  --sd-color-primary-highlight: #c01f5f;
+  --sd-color-primary-text: #ffffff;
+}
+
+body[data-theme="dark"] {
+  --sd-color-primary: var(--probly-pink);
+  --sd-color-primary-highlight: #ff5c97;
+  --sd-color-primary-text: #131416;
+}
+
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme="light"]) {
+    --sd-color-primary: var(--probly-pink);
+    --sd-color-primary-highlight: #ff5c97;
+    --sd-color-primary-text: #131416;
+  }
+}
