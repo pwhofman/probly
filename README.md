@@ -6,6 +6,8 @@
   <img src="docs/source/_static/readme/ecosystem_light.png" alt="probly at the center of a ring of the libraries it works with: PyTorch, Flax/JAX, scikit-learn, River, Hugging Face and NumPy as native backends, plus Lightning, torch-uncertainty, PyTorch Geometric and laplace-torch as integrations" width="68%" />
 </picture>
 
+# print
+
 [![PyPI version](https://badge.fury.io/py/probly.svg)](https://badge.fury.io/py/probly)
 [![Python Versions](https://img.shields.io/pypi/pyversions/probly.svg)](https://pypi.org/project/probly)
 [![PyPI status](https://img.shields.io/pypi/status/probly.svg?color=blue)](https://pypi.org/project/probly)
@@ -199,6 +201,7 @@ Instead of committing to a single second-order distribution, credal methods repr
 <summary><strong>Show all 12 methods</strong></summary>
 
 <a id="credal-table"></a>
+
 | Method                                                                                          | Reference | Backends |
 |:------------------------------------------------------------------------------------------------| :--- | :--- |
 | Credal wrapper (`credal_wrapper`)[¹](#fn-credal-1)                                              | [Wang et al., 2025](https://openreview.net/forum?id=cv2iMNWCsh) | torch |
