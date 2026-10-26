@@ -35,8 +35,21 @@
 .probly-hero-logo {
   float: right;
   width: 10rem;
-  height: auto;
   margin: 2.25rem 0 1rem 2.5rem;
+}
+
+.probly-hero-logo svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The waves of the logo react to the pointer and to clicks (_static/js/logo.js). */
+.probly-hero-logo svg.probly-logo-live {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 section:has(> .probly-hero) > h1 {

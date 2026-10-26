@@ -1,12 +1,17 @@
-.. The logo comes before the title so that it floats next to it; the labels stay on the title.
+.. The logo comes before the title so that it floats next to it; the labels stay on the title. It is
+   inline so that _static/js/logo.js can animate its waves.
 
-.. image:: _static/logo/probly-logo-stacked-light.svg
-   :class: probly-hero-logo only-light
-   :alt: probly
+.. container:: probly-hero-logo
 
-.. image:: _static/logo/probly-logo-stacked-dark.svg
-   :class: probly-hero-logo only-dark
-   :alt: probly
+   .. container:: only-light
+
+      .. raw:: html
+         :file: _static/logo/probly-logo-stacked-light.svg
+
+   .. container:: only-dark
+
+      .. raw:: html
+         :file: _static/logo/probly-logo-stacked-dark.svg
 
 .. _nn-init-doc:
 .. _locally-disable-grad-doc:

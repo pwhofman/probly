@@ -71,3 +71,7 @@ under the OFL, also commercially, and no font file is shipped or needed. The lic
 For future edits of the mark: viewBox 200 x 200, disk center (100, 100), r = 92. Each wave has the center line
 `100 + amp * sin(2 * pi * 1.25 * x / 200 + phase)` and the half-width `5 + 22 * (x / 200) ** 1.6`. Red-pink: amp 22,
 phase 0, right end tucked in (top -6, bottom -12, smoothstep from x = 150 to 195). Blue: amp 16, phase 1.2.
+
+The logo on the docs landing page is interactive: `docs/source/_static/js/logo.js` redraws the waves from this formula
+(its `WAVES`) while they move. It checks the formula against the logo's paths, so after a change of the geometry it
+leaves the logo still until `WAVES` is updated too.

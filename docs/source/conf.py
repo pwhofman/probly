@@ -384,6 +384,7 @@ html_theme = "furo"
 
 html_static_path = ["_static"]
 html_css_files = ["css/brand.css", "css/custom.css", "css/jupyter.css"]
+html_js_files = ["js/logo.js"]
 pygments_dark_style = "monokai"
 
 html_theme_options = {
