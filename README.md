@@ -189,7 +189,6 @@ These methods transform a point predictor into a model that outputs a distributi
 | Dirichlet activations & NIG heads (`dirichlet_*`, `normal_inverse_gamma_head`) | [Malinin et al., 2020](https://arxiv.org/abs/2006.11590) | torch |
 
 <a id="fn-so-1"></a>¹ Built on the `ensemble` transformation and is applicable in the same context as `ensemble`. [↩](#second-order-table)
-
 </details>
 
 #### ☁️ Credal sets
