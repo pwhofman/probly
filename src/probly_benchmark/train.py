@@ -1344,6 +1344,12 @@ def _(
     )
 
 
+def _laplace_validation_nll(probs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+    """Mean NLL of predicted class probabilities; the per-candidate score of the Laplace prior gridsearch."""
+    eps = torch.finfo(probs.dtype).eps
+    return nn.functional.nll_loss(torch.log(probs.clamp(min=eps)), targets)
+
+
 @train_model.register(BaseLaplace)
 def _(
     model: BaseLaplace,
@@ -1406,11 +1412,15 @@ def _(
             # ImageNet's native batch size (2048 * 1000 * 1000 floats = 8 GB).
             assert val_loader is not None  # Guarded by the marglik fallback above. # noqa: S101
             prior_eval_loader = data.build_laplace_prior_eval_loader(val_loader, train_kwargs)
+            # Score each candidate with the evaluation-time predictive and a plain callable loss:
+            # laplace-torch's default RunningNLLMetric is never reset between grid points and always picks 1e4.
             model.optimize_prior_precision(
                 method="gridsearch",
-                pred_type="glm",
-                link_approx="probit",
+                pred_type=train_kwargs.get("pred_type", "glm"),
+                link_approx=train_kwargs.get("link_approx", "probit"),
                 val_loader=prior_eval_loader,  # ty: ignore[invalid-argument-type]
+                # laplace-torch annotates ``loss`` with one argument but calls it as ``loss(preds, targets)``.
+                loss=_laplace_validation_nll,  # ty: ignore[invalid-argument-type]
                 grid_size=train_kwargs.get("prior_grid_size", 100),
             )
         else:  # "marglik" — known to under-regularize last-layer + KFAC; kept for opt-in compatibility.
