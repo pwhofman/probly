@@ -170,7 +170,7 @@ sphinx_gallery_conf = {
         "_sphinx_helpers.seed_gallery_rngs",
         "_sphinx_helpers.apply_gallery_plot_style",
     ),
-    "default_thumb_file": str(REPO_ROOT / "docs" / "source" / "_static" / "logo" / "logo_light.png"),
+    "default_thumb_file": str(REPO_ROOT / "docs" / "source" / "_static" / "logo" / "probly-mark-light-512.png"),
 }
 
 # loky recycles a worker by design when its memory use grows more than
@@ -383,14 +383,14 @@ linkcode_resolve = make_linkcode_resolve(REPO_ROOT)
 html_theme = "furo"
 
 html_static_path = ["_static"]
-html_css_files = ["css/custom.css", "css/ecosystem.css", "css/jupyter.css"]
-html_js_files = ["js/ecosystem.js"]
+html_css_files = ["css/brand.css", "css/custom.css", "css/jupyter.css"]
+html_js_files = ["js/logo.js"]
 pygments_dark_style = "monokai"
 
 html_theme_options = {
     "sidebar_hide_name": True,
-    "light_logo": "logo/logo_light.png",
-    "dark_logo": "logo/logo_dark.png",
+    "light_logo": "logo/probly-logo-stacked-light.svg",
+    "dark_logo": "logo/probly-logo-stacked-dark.svg",
 }
 
 if _DOCS_FLAVOR == "latest":

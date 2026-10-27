@@ -108,7 +108,7 @@ are checked for protected-shape and batch-shape preservation before
 ``with_protected_values(values, func)`` reconstructs the representation.
 
 Sample operators and pytree fields
-=================================
+==================================
 
 ``JaxSample`` also dispatches elementwise operators through these wrappers.
 Broadcasting tracks the sample axis and retains weights; conflicting sample
