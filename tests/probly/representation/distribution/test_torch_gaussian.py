@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import fields
+
 import pytest
 
 pytest.importorskip("torch")
@@ -21,6 +23,7 @@ def test_torch_gaussian_initialization_valid() -> None:
     torch.testing.assert_close(dist.mean, mean)
     torch.testing.assert_close(dist.var, var)
     assert dist.type == "gaussian"
+    assert "type" not in {item.name for item in fields(dist)}
     assert dist.mean.dtype == torch.float32
     assert dist.var.dtype == torch.float32
 

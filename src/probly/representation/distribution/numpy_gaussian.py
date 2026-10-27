@@ -27,7 +27,7 @@ class NumpyGaussianDistribution(NumpyAxisProtected[np.ndarray], GaussianDistribu
     mean: np.ndarray = field()
     var: np.ndarray = field()
 
-    type: Literal["gaussian"] = "gaussian"
+    type: ClassVar[Literal["gaussian"]] = "gaussian"
     protected_axes: ClassVar[dict[str, int]] = {"mean": 0, "var": 0}
     allowed_types: ClassVar[tuple[type[np.ndarray] | type[np.generic] | type[float] | type[int], ...]] = (
         np.ndarray,
