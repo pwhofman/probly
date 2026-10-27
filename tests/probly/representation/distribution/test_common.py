@@ -29,7 +29,9 @@ from probly.representation.distribution._common import (
     ],
 )
 def test_distribution_type_is_class_metadata(distribution_class) -> None:
-    assert get_origin(get_type_hints(distribution_class, localns={"type": type})["type"]) is ClassVar
+    # Older Python 3.12 releases need explicit PEP 695 type-parameter bindings.
+    localns = {"type": type, **{param.__name__: param for param in distribution_class.__type_params__}}
+    assert get_origin(get_type_hints(distribution_class, localns=localns)["type"]) is ClassVar
 
 
 class TestDistributionFactoryFallbacks:
