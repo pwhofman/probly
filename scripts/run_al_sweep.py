@@ -236,6 +236,10 @@ def load_seed_file(
         msg = f"Unsupported seed-file extension: {path.suffix} ({path})"
         raise ValueError(msg)
 
+    if df.empty:
+        # A refreshed cache of a project without finished runs has no columns at all.
+        print(f"  [{path}] loaded 0 finished combos for {dataset_full}")
+        return set()
     required = {"method", "strategy", "seed", "state", "dataset"}
     missing = required - set(df.columns)
     if missing:

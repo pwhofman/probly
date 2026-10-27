@@ -313,3 +313,4 @@ paper_artifacts/
 scripts/al_analysis_out/
 .mplcache/
 src/probly/_version.py
+logs/

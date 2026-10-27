@@ -28,7 +28,7 @@ from typing import cast
 import pandas as pd
 
 # Sibling script; resolvable because the interpreter puts scripts/ first on sys.path.
-from run_al_sweep import CIFAR10_METHOD_NOTIONS
+from run_al_sweep import CIFAR10_METHOD_NOTIONS, DATASET_PROJECTS, WANDB_ENTITY
 
 DEFAULT_INPUT = "scripts/al_analysis_out/wandb_cache_runs.pkl"
 
@@ -91,8 +91,20 @@ def cell_notion(method: str, column: str) -> tuple[str, str | None]:
     return column, None
 
 
+def effective_source(dataset: str, source: str | None) -> str | None:
+    """The wandb project to read: the given one, else the dataset's campaign project, else every source."""
+    if source is None and dataset in DATASET_PROJECTS:
+        return f"{WANDB_ENTITY}/{DATASET_PROJECTS[dataset]}"
+    return source
+
+
 def load_runs(path: Path, dataset: str, source: str | None = None) -> pd.DataFrame:
-    """Load finished runs of ``dataset`` (optionally of one ``source`` project) from the cache."""
+    """Load finished runs of ``dataset`` from the cache, from the effective source project only.
+
+    Without ``source`` a dataset with a campaign project in ``DATASET_PROJECTS`` reads that project
+    alone, so pilot runs from other projects never fill a cell.
+    """
+    source = effective_source(dataset, source)
     df = cast("pd.DataFrame", pd.read_pickle(path))  # noqa: S301
     required = {"method", "dataset", "strategy", "seed", "state"}
     missing = required - set(df.columns)
@@ -174,7 +186,11 @@ def main() -> int:
     print(build_table(df, args.metric, args.decimals, args.expected_seeds))
     n_runs = len(df)
     seeds = sorted(int(s) for s in df["seed"].dropna().unique())
-    print(f"\n{args.metric} mean ± std over seeds {seeds} ({n_runs} finished {args.dataset} runs; '-' = not run).")
+    where = effective_source(args.dataset, args.source) or "all sources"
+    print(
+        f"\n{args.metric} mean ± std over seeds {seeds} "
+        f"({n_runs} finished {args.dataset} runs from {where}; '-' = not run)."
+    )
     return 0
 
 
