@@ -30,6 +30,7 @@ from probly_benchmark import utils
 from probly_benchmark.al_estimators import BaseEstimator, UncertaintyEstimator
 from probly_benchmark.data import get_data_al
 from probly_benchmark.metadata import AL_DATASETS
+from probly_benchmark.train import SUPERVISED_LOSS_METHODS, _validate_supervised_loss_config
 from probly_benchmark.uncertainty import SUPPORTED_DECOMPOSITIONS
 
 if TYPE_CHECKING:
@@ -84,6 +85,10 @@ def _build_estimator(
     # Loading pre-trained weights from wandb is not supported in the AL loop
     # (each iteration retrains from scratch).
     train_kwargs.pop("load_from", None)
+    # Forwarded exactly as train.py does; without it the base variants with label
+    # smoothing or label relaxation silently train with plain cross-entropy.
+    if method in SUPERVISED_LOSS_METHODS:
+        train_kwargs["supervised_loss"] = OmegaConf.to_container(cfg.supervised_loss, resolve=True)
     rep_kwargs: dict[str, Any] = al_block
 
     needs_conformal = cfg.conformal.name != "none"
@@ -161,6 +166,7 @@ def _append_result(results_file: Path, result: dict[str, Any]) -> None:
 def main(cfg: DictConfig) -> float:
     """Run a single active learning experiment."""
     utils.set_seed(cfg.seed)
+    _validate_supervised_loss_config(cfg)
     device = utils.get_device(cfg.get("device", None))
 
     # --- Data ---

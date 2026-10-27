@@ -1,0 +1,4 @@
+# @package _global_
+# Active learning on CIFAR-10 composes the supervised ResNet18/CIFAR-10 override.
+defaults:
+  - credal_bnn_resnet18_cifar10

@@ -6,11 +6,10 @@ dataset:
 # Random crop + horizontal flip matches the supervised recipe and the standard
 # AL-on-CIFAR-10 protocol (Yoo and Kweon, CVPR 2019; Beck et al., arXiv:2106.15324).
 train_augmentation: true
-# 50 epochs per refit for compute (tabular AL configs use 100; the supervised
-# recipe and Yoo and Kweon use 200). The shortening applies equally to every
-# method, so the comparison stays internally fair -- absolute accuracies sit
-# below the literature curves and early-round uncertainty is somewhat noisier.
-epochs: 50
+# 200 epochs per refit, the standard for ResNet-18 active learning on CIFAR-10
+# (Yoo and Kweon, arXiv:1905.03677; Lueth et al., arXiv:2301.10625), with the
+# supervised recipe's gradient clipping.
+epochs: 200
 batch_size: 128
 optimizer:
   name: "sgd"
@@ -21,8 +20,17 @@ optimizer:
 scheduler:
   name: "cosine"
   params: {}
+grad_clip_norm: 1.0
+# The last incomplete mini-batch (8 images at 5000 labels) is dropped: BatchNorm on
+# such a batch at lr 0.1 produced a systematic accuracy dip in the rebuttal pilot.
+drop_last: true
+# Held-out fractions of the labeled set: calibration rows fit the calibrator on 10%,
+# Laplace and DARE validate on 10% (the supervised recipe's val_split).
+calibration_size: 0.1
+validation_size: 0.1
 
-# CIFAR-10 has 50k train samples — can start with more labels
+# 1000 initial labels + 9 queries of 1000, ending at 10,000 labels as in Yoo and
+# Kweon and Lueth et al.
 initial_size: 1000
 query_size: 1000
-n_iterations: 10
+n_iterations: 9

@@ -308,3 +308,8 @@ scratch/
 # Paper (synced via Overleaf git)
 paper/
 paper_artifacts/
+
+# Generated active learning artifacts and caches
+scripts/al_analysis_out/
+.mplcache/
+src/probly/_version.py

@@ -5,6 +5,9 @@ defaults:
   - al_strategy: uncertainty
   - conformal: none
   - al_dataset: ???
+  # Per-method settings of the supervised runs (configs/override/<method>_<dataset>.yaml,
+  # e.g. bayesian_cifar10 -> bayesian_resnet18_cifar10); skipped when no file exists.
+  - optional override: ${method}_${al_dataset}
   - supervised_loss: cross_entropy
 
 # AL loop
@@ -41,6 +44,12 @@ scheduler:
 early_stopping:
   patience: 0
 grad_clip_norm: null
+# Drop the last incomplete mini-batch of every epoch. Off by default (the tabular
+# protocol behind the paper's Table 10 kept it); al_dataset/cifar10.yaml turns it on.
+drop_last: false
+# Fraction of the labeled set held out as validation data for the methods in
+# al_estimators.VALIDATION_METHODS (Laplace, DARE); 0 disables the split.
+validation_size: 0.0
 model_type: "logit_classifier"
 amp: true
 

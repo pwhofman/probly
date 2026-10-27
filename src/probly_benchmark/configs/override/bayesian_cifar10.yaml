@@ -1,0 +1,4 @@
+# @package _global_
+# Active learning on CIFAR-10 composes the supervised ResNet18/CIFAR-10 override.
+defaults:
+  - bayesian_resnet18_cifar10

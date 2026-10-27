@@ -61,7 +61,13 @@ import wandb
 # probly/rebuttal-runs holds the CIFAR-10 rebuttal campaign (launched by
 # src/probly_benchmark/runner.sh). Create it on the wandb website (or log one
 # run) before a --refresh, otherwise the fetch errors on the missing project.
-DEFAULT_SOURCES: tuple[str, ...] = ("speyewear/jakubpaplham-al", "probly/max-test", "probly/rebuttal-runs")
+DEFAULT_SOURCES: tuple[str, ...] = (
+    "speyewear/jakubpaplham-al",
+    "probly/max-test",
+    "probly/rebuttal-runs",
+    # CIFAR-10 camera-ready campaign (launched by src/probly_benchmark/runner.sh lanes).
+    "probly/crv-al-cifar10",
+)
 DEFAULT_OUT = "scripts/al_analysis_out"
 HISTORY_KEYS = ("iteration", "labeled_size", "test_accuracy")
 PROGRESS_EVERY = 25
@@ -195,6 +201,10 @@ def _flat_record(run: Any, source: str) -> dict[str, Any]:
         "initial_size": cfg.get("initial_size"),
         "query_size": cfg.get("query_size"),
         "n_iterations": cfg.get("n_iterations"),
+        # Protocol fields: run_al_sweep.py counts a CIFAR-10 run as finished only when they match.
+        "epochs": cfg.get("epochs"),
+        "grad_clip_norm": cfg.get("grad_clip_norm"),
+        "drop_last": cfg.get("drop_last"),
         "calibration": (cfg.get("calibration") or {}).get("name"),
         "conformal": (cfg.get("conformal") or {}).get("name"),
         "supervised_loss": (cfg.get("supervised_loss") or {}).get("name"),

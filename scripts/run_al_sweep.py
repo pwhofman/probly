@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 r"""Run the AL sweep for one dataset, skipping anything already finished — fully offline.
 
-Covers all settings of the AL benchmark (no conformal-prediction blocks):
+Covers all settings of the AL benchmark (no conformal-prediction blocks). For
+``--dataset cifar10`` the grid is the camera-ready one (``CIFAR10_METHOD_NOTIONS``,
+``CIFAR10_BASE_VARIANTS``); every other dataset uses the published tabular grid:
 
 - Baselines:        ``method=base`` x {margin, entropy, least_confident} x 10 seeds
 - Calibration:      ``method=base`` + {temperature_scaling, vector_scaling}
@@ -54,9 +56,11 @@ Seed-file schema (CSV or pickled DataFrame):
 Only rows with ``state == "finished"`` and a ``dataset`` matching ``--dataset``
 are counted.
 
-New runs are launched with ``wandb.project=max-test`` and ``+wandb.entity=probly``;
-edit the ``WANDB_PROJECT`` / ``WANDB_ENTITY`` constants if you want to redirect.
-Default is dry-run; pass ``--execute`` to actually launch missing combos.
+New runs are launched into the dataset's project (``DATASET_PROJECTS``: ``crv-al-cifar10``
+for CIFAR-10, ``max-test`` otherwise) with ``wandb.entity=probly``; ``--wandb-project``
+redirects. A cached CIFAR-10 run counts as finished only when it comes from that project
+with the protocol in ``DATASET_PROTOCOL``. Default is dry-run; pass ``--execute`` to
+actually launch missing combos.
 """
 # ruff: noqa: T201, ANN401, D103
 
@@ -114,6 +118,50 @@ SUPERVISED_LOSSES: tuple[str, ...] = ("label_smoothing", "label_relaxation")
 WANDB_PROJECT = "max-test"
 WANDB_ENTITY = "probly"
 
+# ---- CIFAR-10 camera-ready grid --------------------------------------------------
+
+# Notions each method's decomposition exposes (probly's decomposition classes). A method
+# with one notion runs once; the table shows that value in both the TU and EU columns.
+CIFAR10_METHOD_NOTIONS: dict[str, tuple[str, ...]] = {
+    "dropout": ("total", "epistemic"),
+    "dropconnect": ("total", "epistemic"),
+    "bayesian": ("total", "epistemic"),
+    "laplace": ("total", "epistemic"),
+    "vbll": ("total", "epistemic"),
+    "ensemble": ("total", "epistemic"),
+    "batchensemble": ("total", "epistemic"),
+    "subensemble": ("total", "epistemic"),
+    "credal_wrapper": ("total", "epistemic"),
+    "credal_ensembling": ("total", "epistemic"),
+    "credal_bnn": ("total", "epistemic"),
+    "credal_relative_likelihood": ("total", "epistemic"),
+    "efficient_credal_prediction": ("total", "epistemic"),
+    "ddu": ("aleatoric", "epistemic"),
+    "posterior_network": ("aleatoric", "epistemic"),
+    "evidential_classification": ("epistemic",),
+    "sngp": ("epistemic",),
+    "dare": ("epistemic",),
+    "het_net": ("aleatoric",),
+    "duq": ("total",),
+}
+# ``(supervised_loss, calibration, strategy)`` of the base rows: base with margin and random,
+# then the label-smoothing, label-relaxation, temperature- and vector-scaling variants with
+# margin, as in the paper's Table 10.
+CIFAR10_BASE_VARIANTS: tuple[tuple[str | None, str | None, str], ...] = (
+    (None, None, "margin"),
+    (None, None, "random"),
+    ("label_smoothing", None, "margin"),
+    ("label_relaxation", None, "margin"),
+    (None, "temperature_scaling", "margin"),
+    (None, "vector_scaling", "margin"),
+)
+# Extra Hydra overrides appended to every CIFAR-10 command of a method (top-level keys such
+# as ``optimizer.params.lr=0.01``); empty unless the pre-launch checks require one.
+CIFAR10_EXTRA_OVERRIDES: dict[str, tuple[str, ...]] = {}
+# Per-dataset wandb project, and the protocol a cached run must match to count as finished.
+DATASET_PROJECTS: dict[str, str] = {"cifar10": "crv-al-cifar10"}
+DATASET_PROTOCOL: dict[str, dict[str, int]] = {"cifar10": {"epochs": 200, "n_iterations": 9}}
+
 Combo = dict[str, Any]
 
 
@@ -165,11 +213,19 @@ def _row_value(row: pd.Series, col: str) -> Any:
     return None if pd.isna(v) else v
 
 
-def load_seed_file(path: Path, dataset_full: str) -> set[tuple[Any, ...]]:
+def load_seed_file(
+    path: Path,
+    dataset_full: str,
+    *,
+    project: str | None = None,
+    protocol: dict[str, int] | None = None,
+) -> set[tuple[Any, ...]]:
     """Load finished combos from a .pkl or .csv with the inspect_al_runs cache schema.
 
     Required columns: ``method``, ``strategy``, ``seed``, ``state``, ``dataset``.
-    Optional: ``notion``, ``calibration``, ``supervised_loss``.
+    Optional: ``notion``, ``calibration``, ``supervised_loss``. With ``project`` only rows
+    whose ``source`` is ``WANDB_ENTITY/project`` count; with ``protocol`` only rows carrying
+    those column values count; a file lacking such a column counts nothing.
     """
     if path.suffix == ".pkl":
         df = cast("pd.DataFrame", pd.read_pickle(path))  # noqa: S301
@@ -187,6 +243,10 @@ def load_seed_file(path: Path, dataset_full: str) -> set[tuple[Any, ...]]:
         raise ValueError(msg)
 
     df = df[(df["state"] == "finished") & (df["dataset"] == dataset_full)]
+    if project is not None:
+        df = df[df["source"] == f"{WANDB_ENTITY}/{project}"] if "source" in df.columns else df.iloc[0:0]
+    for key, value in (protocol or {}).items():
+        df = df[df[key] == value] if key in df.columns else df.iloc[0:0]
     keys: set[tuple[Any, ...]] = set()
     for _, row in df.iterrows():
         strategy = _row_value(row, "strategy")
@@ -214,7 +274,40 @@ def load_seed_file(path: Path, dataset_full: str) -> set[tuple[Any, ...]]:
 # ---- Block definitions -------------------------------------------------------------
 
 
-def block_combos() -> Iterator[tuple[str, list[Combo]]]:
+def _cifar10_block_combos() -> Iterator[tuple[str, list[Combo]]]:
+    yield (
+        "CIFAR-10 base rows",
+        [
+            {"method": "base", "strategy": strategy, "seed": seed, "supervised_loss": loss, "calibration": cal}
+            for loss, cal, strategy in CIFAR10_BASE_VARIANTS
+            for seed in SEEDS
+        ],
+    )
+    yield (
+        "CIFAR-10 UQ margin + random",
+        [
+            {"method": m, "strategy": s, "seed": seed}
+            for m in CIFAR10_METHOD_NOTIONS
+            for s in ("margin", "random")
+            for seed in SEEDS
+        ],
+    )
+    yield (
+        "CIFAR-10 UQ uncertainty",
+        [
+            {"method": m, "strategy": "uncertainty", "notion": notion, "seed": seed}
+            for m, notions in CIFAR10_METHOD_NOTIONS.items()
+            for notion in notions
+            for seed in SEEDS
+        ],
+    )
+
+
+def block_combos(dataset: str) -> Iterator[tuple[str, list[Combo]]]:
+    """Yield ``(block name, combos)``: the camera-ready grid for CIFAR-10, the tabular grid otherwise."""
+    if dataset == "cifar10":
+        yield from _cifar10_block_combos()
+        return
     yield (
         "Baselines (base, 3 strategies, 10 seeds)",
         [{"method": "base", "strategy": s, "seed": seed} for s in BASE_STRATEGIES for seed in SEEDS],
@@ -358,6 +451,8 @@ def make_command(combo: Combo, dataset: str, *, device: str | None, project: str
         cmd.append(f"calibration={combo['calibration']}")
     if combo.get("supervised_loss"):
         cmd.append(f"supervised_loss={combo['supervised_loss']}")
+    if dataset == "cifar10":
+        cmd.extend(CIFAR10_EXTRA_OVERRIDES.get(combo["method"], ()))
     return cmd
 
 
@@ -366,6 +461,7 @@ def collect_missing(
     dataset: str,
     *,
     device: str | None,
+    project: str,
     finished: set[tuple[Any, ...]],
 ) -> tuple[list[tuple[str, Combo]], int]:
     """Print the per-block plan and return ``(missing_combos, total_after_filters)``.
@@ -379,7 +475,7 @@ def collect_missing(
 
     missing: list[tuple[str, Combo]] = []
     grand_total = 0
-    for block_name, all_combos in block_combos():
+    for block_name, all_combos in block_combos(dataset):
         if blocks and not any(b in block_name.lower() for b in blocks):
             continue
         combos = filter_combos(
@@ -398,7 +494,7 @@ def collect_missing(
             print(f"  {summarize(block_missing)}")
         if args.show_commands:
             for c in block_missing:
-                print("  $", shlex.join(make_command(c, dataset, device=device, project=args.wandb_project)))
+                print("  $", shlex.join(make_command(c, dataset, device=device, project=project)))
         missing.extend((block_name, c) for c in block_missing)
         grand_total += len(combos)
         print()
@@ -439,9 +535,12 @@ def main(argv: Iterable[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
     )
     p.add_argument(
         "--wandb-project",
-        default=WANDB_PROJECT,
+        default=None,
         metavar="NAME",
-        help=f"wandb project for launched runs (entity stays {WANDB_ENTITY!r}). Default: {WANDB_PROJECT!r}.",
+        help=(
+            f"wandb project for launched runs (entity stays {WANDB_ENTITY!r}). "
+            f"Default: the dataset's entry in DATASET_PROJECTS, else {WANDB_PROJECT!r}."
+        ),
     )
     p.add_argument(
         "--method",
@@ -499,6 +598,7 @@ def main(argv: Iterable[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
 
     dataset: str = args.dataset
     device: str | None = args.device if args.device is not None else DATASET_DEVICES.get(dataset)
+    project: str = args.wandb_project or DATASET_PROJECTS.get(dataset, WANDB_PROJECT)
 
     # An explicitly passed --seed-file that is missing is a typo: fail loudly. The
     # default cache merely may not exist yet (fresh campaign) -- treat that as
@@ -514,7 +614,12 @@ def main(argv: Iterable[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
     if seed_files:
         print(f"Reading {len(seed_files)} seed file(s) (no wandb roundtrip):")
         for sf in seed_files:
-            finished |= load_seed_file(sf, dataset)
+            finished |= load_seed_file(
+                sf,
+                dataset,
+                project=project if dataset in DATASET_PROJECTS else None,
+                protocol=DATASET_PROTOCOL.get(dataset),
+            )
     else:
         print(
             f"No seed file at {DEFAULT_SEED_FILE}; assuming nothing has finished yet.\n"
@@ -522,16 +627,20 @@ def main(argv: Iterable[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
         )
     print(f"Total finished {dataset} combos: {len(finished)}\n")
 
-    missing, grand_total = collect_missing(args, dataset, device=device, finished=finished)
+    missing, grand_total = collect_missing(args, dataset, device=device, project=project, finished=finished)
 
     if not grand_total:
         print("No combos matched the given --method/--strategy/--seeds/--block filters.")
         return 1
 
     print(f"Summary: {len(missing)} of {grand_total} combos still need to run.")
-    est = len(missing) * (11 if dataset == "cifar10" else 1)
-    if dataset == "cifar10" and missing:
-        print(f"         ~{est} from-scratch ResNet-18 fits (11 per run at n_iterations=10).")
+    protocol = DATASET_PROTOCOL.get(dataset)
+    if protocol is not None and missing:
+        refits = protocol["n_iterations"] + 1
+        print(
+            f"         ~{len(missing) * refits} from-scratch ResNet-18 fits "
+            f"({refits} per run at n_iterations={protocol['n_iterations']})."
+        )
 
     if not args.execute:
         print("Dry run; pass --execute to launch them. Add --show-commands to see each command.")
@@ -549,7 +658,7 @@ def main(argv: Iterable[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
 
     failures: list[tuple[Combo, int]] = []
     for i, (block_name, combo) in enumerate(missing, start=1):
-        cmd = make_command(combo, dataset, device=device, project=args.wandb_project)
+        cmd = make_command(combo, dataset, device=device, project=project)
         print(f"\n[{i}/{len(missing)}] {block_name}")
         print("  $", shlex.join(cmd), flush=True)
         rc = subprocess.run(cmd, check=False).returncode  # noqa: S603

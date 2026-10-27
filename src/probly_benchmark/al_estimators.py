@@ -22,6 +22,10 @@ from probly_benchmark.decision import decide
 from probly_benchmark.train import _move_to_device, train_model
 from probly_benchmark.uncertainty import select_uncertainty
 
+# Methods whose trainer needs validation data (Laplace's prior gridsearch, DARE's automatic
+# threshold); ``fit_model`` holds out ``cfg.validation_size`` of the labeled set for them.
+VALIDATION_METHODS: frozenset[str] = frozenset({"laplace", "dare"})
+
 
 def _eval_mode(model: nn.Module | EnsemblePredictor | BaseLaplace) -> None:
     """Set model to eval mode, handling Laplace and ensemble containers.
@@ -239,8 +243,19 @@ class BaseEstimator:
 
         Raises:
             ValueError: If ``cfg.train_augmentation`` is true but no AL train
-                transform is registered for the dataset.
+                transform is registered for the dataset, or if ``cfg.drop_last``
+                leaves no full mini-batch.
         """
+        val_loader: DataLoader | None = None
+        validation_size = float(self.cfg.get("validation_size", 0.0))
+        if validation_size > 0 and self.method_name in VALIDATION_METHODS:
+            x, y, x_val, y_val = self.split_calibration_data(x, y, validation_size, seed=self.cfg.seed)
+            val_loader = DataLoader(
+                TensorDataset(x_val.float(), y_val.long()),
+                batch_size=self.cfg.batch_size,
+                shuffle=False,
+                pin_memory=self.device.type == "cuda",
+            )
         train_ds: Dataset = TensorDataset(x.float(), y.long())
         if self.cfg.get("train_augmentation", False):
             transform = TRANSFORMS_AL_TRAIN.get(self.cfg.dataset.name)
@@ -255,8 +270,15 @@ class BaseEstimator:
             train_ds,
             batch_size=self.cfg.batch_size,
             shuffle=True,
+            drop_last=bool(self.cfg.get("drop_last", False)),
             pin_memory=self.device.type == "cuda",
         )
+        if len(train_loader) == 0:
+            msg = (
+                f"drop_last=True leaves no full mini-batch: {len(train_ds)} labeled samples "
+                f"< batch_size {self.cfg.batch_size}."
+            )
+            raise ValueError(msg)
         ctx = BuildContext(
             base_model_name=self.base_model_name,
             model_type=self.cfg.model_type,
@@ -271,7 +293,7 @@ class BaseEstimator:
         tk.setdefault("num_classes", self.num_classes)
         tk.setdefault("base_model_name", self.base_model_name)
         tk.setdefault("in_features", self.in_features)
-        train_model(model, train_loader, None, self.cfg, self.device, _NoOpRun(), tk)
+        train_model(model, train_loader, val_loader, self.cfg, self.device, _NoOpRun(), tk)
         return model
 
     @torch.no_grad()
