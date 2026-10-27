@@ -155,3 +155,20 @@ class TestScoringRuleInputs:
         sample = NumpySample(np.array([[[0.7, 0.3]], [[0.4, 0.6]]]), sample_axis=0)
         with pytest.raises(TypeError, match="sample_mean"):
             brier_loss_per_instance(sample, np.array([0]))
+
+    def test_log_loss_uses_composed_fallback(self, monkeypatch):
+        import probly.metrics._common as common  # noqa: PLC0415
+        from probly.metrics._common import _log_probabilities  # noqa: PLC0415
+
+        calls = []
+
+        def log_probabilities(predictions):
+            calls.append(predictions)
+            return _log_probabilities(predictions)
+
+        monkeypatch.setattr(common, "_log_probabilities", log_probabilities)
+        probabilities = np.array([[0.7, 0.3]])
+        result = common.log_loss_per_instance(probabilities, np.array([0]))
+        np.testing.assert_allclose(result, [-np.log(0.7)])
+        assert len(calls) == 1
+        assert calls[0] is probabilities

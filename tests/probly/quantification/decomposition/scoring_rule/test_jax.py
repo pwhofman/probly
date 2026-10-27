@@ -5,7 +5,9 @@ from __future__ import annotations
 import pytest
 
 pytest.importorskip("jax")
+import jax
 from jax import numpy as jnp
+from jax.experimental import checkify
 
 from probly.metrics import (
     brier_loss,
@@ -103,3 +105,21 @@ def test_jax_averaged_rule_is_rejected() -> None:
     sr = SecondOrderScoringRuleDecomposition(_sample(), brier_loss)
     with pytest.raises(ValueError, match="one loss per instance"):
         _ = sr.total
+
+
+@pytest.mark.parametrize(
+    "rule", [log_loss_per_instance, brier_loss_per_instance, spherical_loss_per_instance, zero_one_loss_per_instance]
+)
+def test_jax_decomposition_supports_jit_and_grad(rule):
+    def components(probabilities):
+        sample = JaxCategoricalDistributionSample(JaxProbabilityCategoricalDistribution(probabilities), sample_axis=0)
+        decomposition = SecondOrderScoringRuleDecomposition(sample, rule)
+        return decomposition.total, decomposition.aleatoric, decomposition.epistemic
+
+    error, actual = jax.jit(checkify.checkify(components))(_PROBS)
+    error.throw()
+    expected = components(_PROBS)
+    assert all(jnp.allclose(a, e, atol=1e-6) for a, e in zip(actual, expected, strict=True))
+    error, gradient = jax.jit(checkify.checkify(jax.grad(lambda p: components(p)[0].sum())))(_PROBS)
+    error.throw()
+    assert jnp.isfinite(gradient).all()

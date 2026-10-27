@@ -388,8 +388,8 @@ def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.000
     raise NotImplementedError(msg)
 
 
-# Only these three primitives differ per backend. The rules below combine them with operators and last-axis
-# reductions, which numpy, torch and jax arrays share.
+# These primitives provide composed defaults. Individual rules can specialize dispatch where a backend needs
+# a more efficient or numerically stable implementation.
 @flexdispatch
 def _probabilities(y_prob: object) -> object:
     """Return the probabilities ``(..., K)`` of a prediction, unwrapping categorical distributions."""
@@ -431,6 +431,7 @@ def _validate_labels(labels_shape: tuple[int, ...], loss_shape: tuple[int, ...],
         raise ValueError(msg)
 
 
+@flexdispatch
 def log_loss_per_instance(y_prob: object, y_true: object) -> object:
     """Compute the log loss ``-log(p_y)`` of each prediction.
 

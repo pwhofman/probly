@@ -11,8 +11,6 @@ Note:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import torch
 
 from probly.metrics import (
@@ -38,6 +36,7 @@ from probly.metrics._common import (
     _one_hot_argmax,
     _probabilities,
     _validate_labels,
+    log_loss_per_instance,
 )
 from probly.metrics.numpy import _numpy_convex_hull_lp_coverage
 from probly.representation.conformal_set.torch import TorchIntervalConformalSet, TorchOneHotConformalSet
@@ -48,9 +47,10 @@ from probly.representation.credal_set.torch import (
     TorchProbabilityIntervalsCredalSet,
 )
 from probly.representation.distribution._common import CategoricalDistribution
-
-if TYPE_CHECKING:
-    from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.distribution.torch_categorical import (
+    TorchCategoricalDistribution,
+    TorchProbabilityCategoricalDistribution,
+)
 
 
 @accuracy.register(torch.Tensor)
@@ -562,6 +562,44 @@ def torch_log_probabilities(probabilities: torch.Tensor) -> torch.Tensor:
     return torch.log(probabilities)
 
 
+def _torch_scoring_target(y_true: object, reference: torch.Tensor) -> torch.Tensor:
+    """Convert targets and validate labels without changing their dtype."""
+    target = y_true.probabilities if isinstance(y_true, CategoricalDistribution) else y_true
+    target = torch.as_tensor(target, device=reference.device)
+    if target.shape != reference.shape:
+        _validate_labels(
+            tuple(target.shape),
+            tuple(reference.shape),
+            is_integer=not (target.is_floating_point() or target.is_complex()),
+        )
+    return target
+
+
+@log_loss_per_instance.register(torch.Tensor)
+def torch_log_loss_per_instance(y_prob: torch.Tensor, y_true: object) -> torch.Tensor:
+    """Compute log loss without logging zero probabilities of classes with no target mass."""
+    target = _torch_scoring_target(y_true, y_prob)
+    if target.shape == y_prob.shape:
+        safe_probabilities = torch.where(target > 0, y_prob, torch.ones_like(y_prob))
+        return -(target * torch.log(safe_probabilities)).sum(dim=-1)
+    selected = torch.gather(y_prob, -1, target.long().unsqueeze(-1)).squeeze(-1)
+    return -torch.log(selected)
+
+
+@log_loss_per_instance.register(TorchCategoricalDistribution)
+def torch_categorical_log_loss_per_instance(y_prob: TorchCategoricalDistribution, y_true: object) -> torch.Tensor:
+    """Score categorical log probabilities directly, preserving extreme logits."""
+    return _torch_expected_loss(-y_prob.log_probabilities, y_true)
+
+
+@log_loss_per_instance.register(TorchProbabilityCategoricalDistribution)
+def torch_probability_categorical_log_loss_per_instance(
+    y_prob: TorchProbabilityCategoricalDistribution, y_true: object
+) -> torch.Tensor:
+    """Score normalized categorical probabilities with target-aware logarithms."""
+    return torch_log_loss_per_instance(y_prob.probabilities, y_true)
+
+
 @_one_hot_argmax.register
 def torch_one_hot_argmax(probabilities: torch.Tensor) -> torch.Tensor:
     """One-hot encode the first maximum of each probability vector of a torch tensor."""
@@ -573,14 +611,8 @@ def torch_one_hot_argmax(probabilities: torch.Tensor) -> torch.Tensor:
 @_expected_loss.register(torch.Tensor)
 def _torch_expected_loss(loss_vector: torch.Tensor, y_true: object) -> torch.Tensor:
     """Reduce a per-label loss vector to the loss under integer labels or target probabilities."""
-    target = y_true.probabilities if isinstance(y_true, CategoricalDistribution) else y_true
-    target = torch.as_tensor(target, device=loss_vector.device)
+    target = _torch_scoring_target(y_true, loss_vector)
     if target.shape == loss_vector.shape:
         # A class without target mass never occurs, so it adds no loss even where that loss is infinite.
         return torch.where(target > 0, target * loss_vector, loss_vector.new_zeros(())).sum(dim=-1)
-    _validate_labels(
-        tuple(target.shape),
-        tuple(loss_vector.shape),
-        is_integer=not (target.is_floating_point() or target.is_complex()),
-    )
     return torch.gather(loss_vector, -1, target.long().unsqueeze(-1)).squeeze(-1)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import SKLEARN_MODULE, TORCH_MODULE, TORCH_TENSOR, TORCH_TENSOR_LIKE
+from probly.lazy_types import SKLEARN_MODULE, TORCH_MODULE, TORCH_TENSOR, TORCH_VALUE
 
 from . import numpy as numpy
 from ._common import (
@@ -17,7 +17,7 @@ from ._common import (
 
 
 @mahalanobis_generator.delayed_register(TORCH_MODULE)
-@create_mahalanobis_representation.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@create_mahalanobis_representation.delayed_register(TORCH_VALUE)
 @combine_layer_scores.delayed_register(TORCH_TENSOR)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self, override
 
 import jax
 from jax import numpy as jnp
+from jax.core import Tracer
 from jax.experimental import checkify
 from ndlike.jax_functions import jax_add, jax_average, jax_mean, jax_subtract, jax_sum
 from ndlike.protected_axis.jax import JaxAxisProtected
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
     from jax.typing import DTypeLike
 
 
-@create_dirichlet_distribution_from_alphas.register(jax.Array)
+@create_dirichlet_distribution_from_alphas.register((jax.Array, Tracer))
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class JaxDirichletDistribution(
     JaxAxisProtected[jax.Array],

@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import jax
+from jax.core import Tracer
 import jax.numpy as jnp
 
 from ._common import selective_prediction
 
 
-@selective_prediction.register(jax.Array)
+@selective_prediction.register((jax.Array, Tracer))
 def jax_selective_prediction(criterion: jax.Array, losses: jax.Array, n_bins: int = 50) -> tuple[jax.Array, jax.Array]:
     """Perform selective prediction for JAX arrays."""
     if n_bins > losses.shape[0]:
