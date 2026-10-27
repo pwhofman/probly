@@ -258,20 +258,6 @@ body[data-theme="dark"] .milton-demo {
   pointer-events: none;
 }
 
-/* shaded or contour lines, in the map's corner */
-.milton-demo-style {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  padding: 2px;
-  background: var(--md-surface);
-}
-
-.milton-demo-style .milton-demo-option {
-  padding: 0.22rem 0.6rem;
-  font-size: 0.74rem;
-}
-
 .milton-demo-tip {
   position: absolute;
   z-index: 2;
@@ -552,20 +538,6 @@ body[data-theme="dark"] .milton-demo {
   opacity: 0.28;
 }
 
-.milton-demo-chart .run-split {
-  fill: none;
-  stroke: var(--md-red);
-  stroke-width: 1;
-  opacity: 0.4;
-}
-
-.milton-demo-chart .model-mean {
-  fill: none;
-  stroke: var(--md-blue);
-  stroke-width: 2.25;
-  stroke-linecap: round;
-}
-
 .milton-demo-chart .line {
   fill: none;
   stroke: var(--md-ink);
@@ -579,31 +551,12 @@ body[data-theme="dark"] .milton-demo {
   opacity: 0.12;
 }
 
-.milton-demo-chart .band-conformal {
-  fill: none;
-  stroke: var(--md-ink);
-  stroke-width: 1.25;
-  stroke-dasharray: 4 3;
-}
-
 .milton-demo-chart .truth {
   fill: none;
   stroke: var(--md-text);
   stroke-width: 2;
   stroke-dasharray: 1 4;
   stroke-linecap: round;
-}
-
-.milton-demo-chart .miss {
-  fill: var(--md-red);
-  stroke: var(--md-raised);
-  stroke-width: 2;
-}
-
-.milton-demo-chart .hit {
-  fill: var(--md-raised);
-  stroke: var(--md-text);
-  stroke-width: 1.5;
 }
 
 .milton-demo-chart .aleatoric {

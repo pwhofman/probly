@@ -41,7 +41,6 @@ LON = (-97.0, -72.0)  # the map: the Gulf of Mexico, Florida and the western Atl
 LAT = (18.0, 33.0)
 KNOT = 0.514444  # m/s
 GALE = 34 * KNOT  # tropical-storm-force wind, NHC's lowest wind speed probability threshold
-ALPHA = 0.1  # the conformal intervals cover 90%
 
 PLACES = [  # the places the demo offers, west to east
     ("Mérida", 20.97, -89.62),
@@ -294,27 +293,6 @@ def encode(values: np.ndarray, scale: float) -> str:
     return base64.b64encode(np.clip(np.round(values * scale), 0, 255).astype(np.uint8).tobytes()).decode()
 
 
-def conformal(lower: np.ndarray, upper: np.ndarray, truth: np.ndarray, rows: int, cols: int) -> dict:
-    """CQR on the runs' 5-95% range, calibrated on half of the map's blocks of 5 x 5 cells."""
-    block = (np.arange(rows)[:, None] // 5 + np.arange(cols)[None, :] // 5) % 2 == 0
-    calibration, test = block.ravel(), ~block.ravel()
-    corrections, raw, corrected = [], [], []
-    for lo, hi, y in zip(lower, upper, truth, strict=True):
-        scores = np.maximum(lo - y, y - hi)[calibration]
-        n = len(scores)
-        level = min(np.ceil((n + 1) * (1 - ALPHA)) / n, 1.0)
-        q = float(np.quantile(scores, level, method="higher"))
-        corrections.append(round(q, 2))
-        raw.append(float(np.mean(((lo <= y) & (y <= hi))[test])))
-        corrected.append(float(np.mean(((lo - q <= y) & (y <= hi + q))[test])))
-    return {
-        "alpha": ALPHA,
-        "q": corrections,
-        "coverage_raw": [round(c, 3) for c in raw],
-        "coverage_conformal": [round(c, 3) for c in corrected],
-    }
-
-
 def windows(winds: np.ndarray, tracks: list[np.ndarray], step: float, size: int) -> dict:
     """Every run's wind near the storm, for the contours of every run.
 
@@ -440,7 +418,6 @@ def build_model(key: str, rings: list[np.ndarray], observed: list) -> dict:
             for g, track in zip(groups, tracks, strict=True)
         ],
         "places": places,
-        "conformal": conformal(lower[:, grid], upper[:, grid], truth[:, grid], rows, cols),
     }
 
 

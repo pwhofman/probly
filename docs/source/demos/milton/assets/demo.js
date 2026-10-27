@@ -5,13 +5,13 @@
 // own: the runs of one model scatter as the atmosphere might (aleatoric uncertainty), and the
 // models' disagreement shows what they do not know (epistemic uncertainty), as in its paper
 // (Alet et al., 2025). The data (data.js, written by the scripts in ../compute) holds the runs'
-// tracks, fields on a grid every 6 hours, and the runs at a few places; the page interpolates
-// between the 6-hourly steps and only looks values up.
+// tracks, fields on a grid every 6 hours, every run's wind near the storm, and the runs at a few
+// places; the page interpolates between the 6-hourly steps and only looks values up.
 //
-// Four views: one run of the model, taken as the forecast; all runs, with the chance of
-// tropical-storm-force wind; the spread split into its aleatoric and epistemic parts by the law of
-// total variance; and conformal intervals that cover what happened as often as they promise.
-// Pointing at the map shows the values there; clicking it, or a place, shows that spot over time.
+// Three views: one run of the model, taken as the forecast; all runs, with the chance of
+// tropical-storm-force wind and the outline of every run's; and the runs' spread, split into its
+// aleatoric and epistemic parts by the law of total variance. Pointing at the map shows the values
+// there; clicking it, or a place, shows that spot over time.
 //
 // Without JavaScript, the static figure in the <noscript> shows; when the data does not load, the
 // script shows that figure itself.
@@ -32,7 +32,6 @@
     ["one", "One run", "One"],
     ["ensemble", "All runs", "All"],
     ["split", "Chaos or models?", "Split"],
-    ["conformal", "Conformal", "Conformal"],
   ];
   const WIND = new Set(["single", "mean", "lower", "upper", "truth"]);
   const HOURS_PER_SECOND = 10; // the speed of playback
@@ -88,8 +87,6 @@
       truth: false,
       place: "Tampa",
       spot: null, // a cell picked on the map: {lat, lon}
-      conformal: "conformal", // or "raw": the runs' own 90% range
-      style: "contours", // or "shaded"
       playing: false,
     };
     const model = () => data.models[state.model];
@@ -101,6 +98,7 @@
       const hour = String(date.getUTCHours()).padStart(2, "0");
       return `${DAYS[date.getUTCDay()]} ${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]}, ${hour} UTC`;
     };
+    const day = (hours) => when(hours).split(",")[0].replace(/ [A-Z][a-z]{2}$/, "");
     const ahead = (hours) => `+${Math.round(hours)} h`;
     // a value of a 6-hourly series at any hour
     const sample = (series, hours) => {
@@ -130,36 +128,54 @@
       for (let c = 0; c < a.length; c += 1) out[c] = ((1 - w) * a[c] + w * b[c]) / factor;
       return out;
     };
-    const correction = (hours, key = state.model) => sample(data.models[key].conformal.q, hours);
-    // the scale of the colors: a high percentile over all frames, so that one cell does not decide
-    const caps = new Map();
-    const cap = (name, key = state.model) => {
+    // the range of a field's colors over all frames: below the median, a value is too common to
+    // stand out; above the 99.5th percentile, all is full
+    const ranges = new Map();
+    const range = (name, key = state.model) => {
       const id = `${key}/${name}`;
-      if (!caps.has(id)) {
+      if (!ranges.has(id)) {
         const values = [];
-        data.times.forEach((hours) => {
-          if (name === "width") {
-            const low = field("lower", hours, key);
-            const high = field("upper", hours, key);
-            const q = Math.max(correction(hours, key), 0);
-            low.forEach((value, c) => values.push(high[c] - value + 2 * q));
-          } else {
-            values.push(...field(name, hours, key));
-          }
-        });
-        // below the median, a spread is too common to stand out; above the 99.5th percentile, all is full
+        data.times.forEach((hours) => values.push(...field(name, hours, key)));
         const high = Math.max(quantile(values, 0.995), 1);
-        caps.set(id, { low: Math.min(quantile(values, 0.5), high * 0.5), high });
+        ranges.set(id, { low: Math.min(quantile(values, 0.5), high * 0.5), high });
       }
-      return caps.get(id);
+      return ranges.get(id);
     };
-    const strength = (value, range) => clamp((value - range.low) / (range.high - range.low), 0, 1);
+    const strength = (value, { low, high }) => clamp((value - low) / (high - low), 0, 1);
     const cellOf = (lat, lon, key = state.model) => {
       const grid = data.models[key].grid;
       const row = Math.round((grid.north - lat) / grid.step);
       const col = Math.round((lon - grid.west) / grid.step);
       if (row < 0 || col < 0 || row >= grid.rows || col >= grid.cols) return -1;
       return row * grid.cols + col;
+    };
+    // the wind of one run near the storm (its square of cells), interpolated between 6-hourly steps
+    const runFrames = new Map();
+    const runField = (run, hours) => {
+      const m = model();
+      const windows = m.run_fields;
+      const size = windows.size;
+      const n = size * size;
+      if (!runFrames.has(state.model)) runFrames.set(state.model, windows.fields.map(decode));
+      const list = runFrames.get(state.model);
+      const x = clamp(hours / step, 0, list.length - 1);
+      const i = Math.min(Math.floor(x), list.length - 2);
+      const w = x - i;
+      const [r0, c0] = windows.origins[i];
+      const [r1, c1] = windows.origins[i + 1];
+      const a = list[i];
+      const b = list[i + 1];
+      const values = new Float32Array(n);
+      for (let r = 0; r < size; r += 1) {
+        for (let c = 0; c < size; c += 1) {
+          const va = a[run * n + r * size + c];
+          const rb = r + r0 - r1;
+          const cb = c + c0 - c1;
+          const vb = rb >= 0 && rb < size && cb >= 0 && cb < size ? b[run * n + rb * size + cb] : va;
+          values[r * size + c] = lerp(va, vb, w) / m.scales.wind;
+        }
+      }
+      return { values, size, origin: [r0, c0] };
     };
 
     // -- the tracks -----------------------------------------------------------------------------------
@@ -334,24 +350,6 @@
     tip.hidden = true;
     map.append(canvas, tip);
     if (data.mock) map.append(el("span", "milton-demo-badge", "Mock data"));
-    const styleSwitch = el("div", "milton-demo-switch milton-demo-style");
-    styleSwitch.setAttribute("role", "group");
-    styleSwitch.setAttribute("aria-label", "Map style");
-    const styleButtons = new Map();
-    for (const [key, text] of [
-      ["shaded", "Shaded"],
-      ["contours", "Contours"],
-    ]) {
-      const button = el("button", "milton-demo-option", text);
-      button.type = "button";
-      button.addEventListener("click", () => {
-        state.style = key;
-        update();
-      });
-      styleButtons.set(key, button);
-      styleSwitch.append(button);
-    }
-    map.append(styleSwitch);
 
     const time = el("div", "milton-demo-time");
     const play = el("button", "milton-demo-play");
@@ -366,9 +364,9 @@
     slider.setAttribute("aria-label", "Hours after the forecast starts");
     const days = el("div", "milton-demo-days");
     for (let hours = 0; hours <= last; hours += 24) {
-      const day = el("span", "", when(hours).split(",")[0].replace(/ [A-Z][a-z]{2}$/, ""));
-      day.style.left = `${(hours / last) * 100}%`;
-      days.append(day);
+      const tick = el("span", "", day(hours));
+      tick.style.left = `${(hours / last) * 100}%`;
+      days.append(tick);
     }
     track.append(slider, days);
     const now = el("div", "milton-demo-now");
@@ -403,27 +401,10 @@
     spotHead.append(spotName, spotUnit);
     const chart = svg("svg", { class: "milton-demo-chart", role: "img" });
     const stats = el("dl", "milton-demo-stats");
-    const modeSwitch = el("div", "milton-demo-switch");
-    modeSwitch.setAttribute("role", "group");
-    modeSwitch.setAttribute("aria-label", "Interval");
-    const modeButtons = new Map();
-    for (const [key, label] of [
-      ["raw", "Runs' 90% range"],
-      ["conformal", "Conformal 90%"],
-    ]) {
-      const button = el("button", "milton-demo-option", label);
-      button.type = "button";
-      button.addEventListener("click", () => {
-        state.conformal = key;
-        update();
-      });
-      modeButtons.set(key, button);
-      modeSwitch.append(button);
-    }
     spot.append(spotHead, chart, stats);
     const legend = el("div", "milton-demo-legend");
     const note = el("p", "milton-demo-note");
-    panel.append(title, lead, modeSwitch, chips, spot, legend, note);
+    panel.append(title, lead, chips, spot, legend, note);
     body.append(stage, panel);
     root.append(bar, about, body);
 
@@ -456,8 +437,6 @@
         surface: token("--md-surface"),
         text: token("--md-text"),
         muted: token("--md-muted"),
-        redText: token("--md-red-text"),
-        blueText: token("--md-blue-text"),
       };
     };
     const rgba = ([r, g, b], alpha) => `rgba(${r}, ${g}, ${b}, ${alpha})`;
@@ -484,23 +463,13 @@
       if (state.view === "one") {
         field("single", hours).forEach((v, c) => paint(c, colors.ink, Math.pow(clamp((v - 5) / 28, 0, 1), 0.85) * 0.85));
       } else if (state.view === "ensemble") {
-        field("gale", hours).forEach((p, c) => paint(c, colors.ink, p * 0.72));
-      } else if (state.view === "split") {
-        const share = field("epistemic", hours);
-        const range = cap("spread");
-        field("spread", hours).forEach((s, c) => paint(c, split(share[c]), Math.pow(strength(s, range), 0.9) * 0.88));
+        field("gale", hours).forEach((p, c) => paint(c, colors.ink, p * 0.6));
       } else {
-        const low = field("lower", hours);
-        const high = field("upper", hours);
-        const q = state.conformal === "conformal" ? correction(hours) : 0;
-        const range = cap("width");
-        low.forEach((v, c) => paint(c, colors.ink, Math.pow(strength(high[c] - v + 2 * q, range), 0.9) * 0.6));
+        const share = field("epistemic", hours);
+        const spread = range("spread");
+        field("spread", hours).forEach((s, c) => paint(c, split(share[c]), Math.pow(strength(s, spread), 0.9) * 0.88));
       }
       offscreen.getContext("2d").putImageData(image, 0, 0);
-      blit(grid);
-    };
-    // the offscreen image onto the map, over the grid's cells
-    const blit = (grid) => {
       const half = grid.step / 2;
       context.save();
       context.imageSmoothingEnabled = true;
@@ -515,7 +484,7 @@
       context.restore();
     };
 
-    // -- contours: marching squares on the grid, joined into lines and smoothed ----------------------
+    // -- the outline of a run's tropical-storm-force wind: marching squares, smoothed ------------------
     // the lines where ``values`` (rows x cols, row-major) crosses ``level``, in fractional (row, col)
     const isolines = (values, rows, cols, level) => {
       const points = new Map(); // a cell edge's id -> where the line crosses it
@@ -603,231 +572,29 @@
       }
       return { points: out, closed };
     };
-    const contour = (values, rows, cols, level) => isolines(values, rows, cols, level).map(smooth);
-    // from a grid's fractional (row, col) to the map, for a part of the grid that starts at (row0, col0)
-    const onMap =
-      (grid, row0 = 0, col0 = 0) =>
-      ([r, c]) => [x(grid.west + (c + col0) * grid.step), y(grid.north - (r + row0) * grid.step)];
-    const stroke = (lines, toMap, color, lineWidth, dash = []) => {
+    // every run's outline of tropical-storm-force wind
+    const outlines = () => {
+      const m = model();
+      const grid = m.grid;
       context.beginPath();
-      for (const line of lines) {
-        line.points.forEach((point, i) => {
-          const [px, py] = toMap(point);
-          if (i) context.lineTo(px, py);
-          else context.moveTo(px, py);
-        });
-        if (line.closed) context.closePath();
+      for (let run = 0; run < m.tracks.length; run += 1) {
+        const { values, size, origin } = runField(run, state.hours);
+        for (const line of isolines(values, size, size, data.gale).map(smooth)) {
+          line.points.forEach(([r, c], i) => {
+            const px = x(grid.west + (c + origin[1]) * grid.step);
+            const py = y(grid.north - (r + origin[0]) * grid.step);
+            if (i) context.lineTo(px, py);
+            else context.moveTo(px, py);
+          });
+          if (line.closed) context.closePath();
+        }
       }
-      context.lineCap = "round";
       context.lineJoin = "round";
-      context.lineWidth = lineWidth;
-      context.strokeStyle = color;
-      context.setLineDash(dash);
+      context.lineWidth = 1;
+      context.strokeStyle = rgba(colors.ink, 0.5);
       context.stroke();
-      context.setLineDash([]);
     };
-    // a level's label on its longest line, where it keeps clear of the other labels
-    const labelled = [];
-    const tag = (lines, toMap, text, color) => {
-      let best = null;
-      let longest = 50;
-      for (const line of lines) {
-        const xy = line.points.map(toMap);
-        let length = 0;
-        for (let i = 1; i < xy.length; i += 1) length += Math.hypot(xy[i][0] - xy[i - 1][0], xy[i][1] - xy[i - 1][1]);
-        if (length > longest) {
-          best = xy;
-          longest = length;
-        }
-      }
-      if (!best) return;
-      for (const share of [0.5, 0.3, 0.7, 0.15, 0.85]) {
-        let rest = longest * share;
-        let at = best[0];
-        for (let i = 1; i < best.length; i += 1) {
-          const piece = Math.hypot(best[i][0] - best[i - 1][0], best[i][1] - best[i - 1][1]);
-          if (rest <= piece) {
-            at = [lerp(best[i - 1][0], best[i][0], rest / piece), lerp(best[i - 1][1], best[i][1], rest / piece)];
-            break;
-          }
-          rest -= piece;
-        }
-        const [px, py] = at;
-        if (px < 24 || px > width - 24 || py < 10 || py > height - 16) continue;
-        if (labelled.some(([qx, qy]) => Math.hypot(qx - px, qy - py) < 38)) continue;
-        labelled.push([px, py]);
-        context.font = `650 10px system-ui, -apple-system, "Segoe UI", sans-serif`;
-        context.textAlign = "center";
-        context.textBaseline = "middle";
-        context.lineJoin = "round";
-        context.lineWidth = 4;
-        context.strokeStyle = colors.surface;
-        context.strokeText(text, px, py);
-        context.fillStyle = color;
-        context.fillText(text, px, py);
-        return;
-      }
-    };
-    // filled bands between levels, at BAND times the grid's resolution, bilinear in between
-    const BAND = 4;
-    const bands = (values, grid, levels, alphas, rgb = colors.ink) => {
-      const w = grid.cols * BAND;
-      const h = grid.rows * BAND;
-      offscreen.width = w;
-      offscreen.height = h;
-      const image = offscreen.getContext("2d").createImageData(w, h);
-      const pixels = image.data;
-      for (let j = 0; j < h; j += 1) {
-        const gr = clamp((j + 0.5) / BAND - 0.5, 0, grid.rows - 1);
-        const r0 = Math.min(Math.floor(gr), grid.rows - 2);
-        const wr = gr - r0;
-        for (let i = 0; i < w; i += 1) {
-          const gc = clamp((i + 0.5) / BAND - 0.5, 0, grid.cols - 1);
-          const c0 = Math.min(Math.floor(gc), grid.cols - 2);
-          const wc = gc - c0;
-          const k = r0 * grid.cols + c0;
-          const v = lerp(lerp(values[k], values[k + 1], wc), lerp(values[k + grid.cols], values[k + grid.cols + 1], wc), wr);
-          let band = 0;
-          while (band < levels.length && v >= levels[band]) band += 1;
-          const p = (j * w + i) * 4;
-          pixels[p] = rgb[0];
-          pixels[p + 1] = rgb[1];
-          pixels[p + 2] = rgb[2];
-          pixels[p + 3] = Math.round(alphas[band] * 255);
-        }
-      }
-      offscreen.getContext("2d").putImageData(image, 0, 0);
-      blit(grid);
-    };
-    // round levels for a field's range: about a quarter, a half and three quarters of its top
-    const NICE = [0.25, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40];
-    const levelsFor = (range) => {
-      const levels = [0.25, 0.5, 0.75].map((share) => {
-        const target = range.high * share;
-        return NICE.reduce((best, v) => (Math.abs(v - target) < Math.abs(best - target) ? v : best));
-      });
-      return [...new Set(levels)];
-    };
-    const unit = (value) => `${Number.isInteger(value) ? value : value.toFixed(1)} m/s`;
-    // the wind of one run near the storm (its square of cells), interpolated between 6-hourly steps
-    const runFrames = new Map();
-    const runField = (run, hours) => {
-      const m = model();
-      const windows = m.run_fields;
-      const size = windows.size;
-      const n = size * size;
-      if (!runFrames.has(state.model)) runFrames.set(state.model, windows.fields.map(decode));
-      const list = runFrames.get(state.model);
-      const xs = clamp(hours / step, 0, list.length - 1);
-      const i = Math.min(Math.floor(xs), list.length - 2);
-      const w = xs - i;
-      const [r0, c0] = windows.origins[i];
-      const [r1, c1] = windows.origins[i + 1];
-      const a = list[i];
-      const b = list[i + 1];
-      const values = new Float32Array(n);
-      for (let r = 0; r < size; r += 1) {
-        for (let c = 0; c < size; c += 1) {
-          const va = a[run * n + r * size + c];
-          const rb = r + r0 - r1;
-          const cb = c + c0 - c1;
-          const vb = rb >= 0 && rb < size && cb >= 0 && cb < size ? b[run * n + rb * size + cb] : va;
-          values[r * size + c] = lerp(va, vb, w) / m.scales.wind;
-        }
-      }
-      return { values, size, origin: [r0, c0] };
-    };
-    // NHC's wind radii: tropical-storm force, 50 knots, and hurricane force
-    const KNOTS = [
-      [34, 34 * 0.514444],
-      [50, 50 * 0.514444],
-      [64, 64 * 0.514444],
-    ];
-    // the contour style: fills first (under the coastline), and a function that draws the lines
-    const contours = () => {
-      const m = model();
-      const grid = m.grid;
-      const hours = state.hours;
-      const toMap = onMap(grid);
-      const ink = (alpha) => rgba(colors.ink, alpha);
-      labelled.length = 0;
-      if (state.view === "one") {
-        const values = field("single", hours);
-        bands(values, grid, KNOTS.map(([, v]) => v), [0, 0.08, 0.17, 0.28]);
-        return () =>
-          KNOTS.forEach(([knots, v], i) => {
-            const lines = contour(values, grid.rows, grid.cols, v);
-            stroke(lines, toMap, ink(0.9), 1.1 + i * 0.5);
-            tag(lines, toMap, `${knots} kt`, colors.text);
-          });
-      }
-      if (state.view === "ensemble") {
-        const chance = field("gale", hours);
-        bands(chance, grid, [0.1, 0.5, 0.9], [0, 0.06, 0.12, 0.2]);
-        return () => {
-          for (let run = 0; run < m.tracks.length; run += 1) {
-            const { values, size, origin } = runField(run, hours);
-            stroke(contour(values, size, size, data.gale), onMap(grid, ...origin), ink(0.5), 1);
-          }
-          const half = contour(chance, grid.rows, grid.cols, 0.5);
-          stroke(half, toMap, colors.surface, 4.5);
-          stroke(half, toMap, ink(1), 2);
-          tag(half, toMap, "50%", colors.text);
-        };
-      }
-      if (state.view === "split") {
-        const spread = field("spread", hours);
-        const share = field("epistemic", hours);
-        const aleatoric = spread.map((s, c) => s * Math.sqrt(1 - share[c]));
-        const epistemic = spread.map((s, c) => s * Math.sqrt(share[c]));
-        const levels = levelsFor(cap("spread"));
-        return () =>
-          levels.forEach((level, i) => {
-            const red = contour(aleatoric, grid.rows, grid.cols, level);
-            stroke(red, toMap, rgba(colors.red, 0.9), 1.1 + i * 0.55);
-            tag(red, toMap, unit(level), colors.redText);
-            if (!splittable(state.model)) return;
-            const blue = contour(epistemic, grid.rows, grid.cols, level);
-            stroke(blue, toMap, rgba(colors.blue, 0.95), 1.1 + i * 0.55);
-            tag(blue, toMap, unit(level), colors.blueText);
-          });
-      }
-      const low = field("lower", hours);
-      const high = field("upper", hours);
-      const q = state.conformal === "conformal" ? correction(hours) : 0;
-      const widths = low.map((v, c) => high[c] - v + 2 * q);
-      const levels = levelsFor(cap("width"));
-      bands(widths, grid, levels, [0, 0.07, 0.14, 0.22]);
-      return () =>
-        levels.forEach((level, i) => {
-          const lines = contour(widths, grid.rows, grid.cols, level);
-          stroke(lines, toMap, ink(0.75), 1 + i * 0.45);
-          tag(lines, toMap, unit(level), colors.text);
-        });
-    };
-    const misses = () => {
-      const m = model();
-      const grid = m.grid;
-      const hours = state.hours;
-      const low = field("lower", hours);
-      const high = field("upper", hours);
-      const truth = field("truth", hours);
-      const q = state.conformal === "conformal" ? correction(hours) : 0;
-      const radius = clamp((x(grid.west + grid.step) - x(grid.west)) * 0.2, 1.3, 3.2);
-      context.fillStyle = rgba(colors.red, 0.9);
-      let missed = 0;
-      truth.forEach((value, c) => {
-        if (value < low[c] - q || value > high[c] + q) {
-          missed += 1;
-          const row = Math.floor(c / grid.cols);
-          const col = c % grid.cols;
-          context.beginPath();
-          context.arc(x(grid.west + col * grid.step), y(grid.north - row * grid.step), radius, 0, Math.PI * 2);
-          context.fill();
-        }
-      });
-      return missed / truth.length;
-    };
+
     const path = (points, from, to) => {
       // a track from one hour to another, through its 6-hourly points
       context.beginPath();
@@ -865,7 +632,6 @@
     const tracks = () => {
       const m = model();
       const hours = state.hours;
-      const fade = state.style === "contours" ? 0.45 : 1; // the tracks recede behind contour lines
       context.lineCap = "round";
       context.lineJoin = "round";
       if (state.view === "one") {
@@ -895,27 +661,27 @@
         const [lat, lon] = position(run.points, hours);
         dot(lat, lon, 5.5, rgba(colors.ink, 1), colors.surface);
       } else if (state.view === "ensemble") {
+        // the tracks recede a little behind the runs' outlines
         for (const run of m.tracks) {
           context.lineWidth = 1;
-          context.strokeStyle = rgba(colors.ink, 0.14 * fade);
+          context.strokeStyle = rgba(colors.ink, 0.1);
           path(run.points, hours, last);
           context.stroke();
-          context.lineWidth = 1.15;
-          context.strokeStyle = rgba(colors.ink, 0.5 * fade);
+          context.strokeStyle = rgba(colors.ink, 0.32);
           path(run.points, 0, hours);
           context.stroke();
         }
         for (const run of m.tracks) {
           const [lat, lon] = position(run.points, hours);
-          dot(lat, lon, 2.4, rgba(colors.ink, 0.9));
+          dot(lat, lon, 2.2, rgba(colors.ink, 0.9));
         }
-      } else if (state.view === "split") {
+      } else {
         for (const run of m.tracks) {
           context.lineWidth = 1;
-          context.strokeStyle = rgba(colors.red, 0.13 * fade);
+          context.strokeStyle = rgba(colors.red, 0.13);
           path(run.points, hours, last);
           context.stroke();
-          context.strokeStyle = rgba(colors.red, 0.45 * fade);
+          context.strokeStyle = rgba(colors.red, 0.45);
           path(run.points, 0, hours);
           context.stroke();
         }
@@ -923,12 +689,12 @@
         for (const mean of means) {
           context.setLineDash([3, 4]);
           context.lineWidth = 1.5;
-          context.strokeStyle = rgba(colors.blue, 0.6 * fade);
+          context.strokeStyle = rgba(colors.blue, 0.6);
           path(mean, hours, last);
           context.stroke();
           context.setLineDash([]);
           context.lineWidth = 2.25;
-          context.strokeStyle = rgba(colors.blue, fade);
+          context.strokeStyle = rgba(colors.blue, 1);
           path(mean, 0, hours);
           context.stroke();
         }
@@ -1056,11 +822,10 @@
       context.fillRect(0, 0, width, height);
       graticule();
       land(true);
-      const lines = state.style === "contours" ? contours() : raster();
+      raster();
       land(false);
-      if (state.view === "conformal") misses();
       tracks();
-      lines?.();
+      if (state.view === "ensemble") outlines();
       if (state.truth) observed();
       pins();
       graticuleLabels();
@@ -1096,11 +861,7 @@
           lines.push(`${percent(1 - share)} from run to run, ${percent(share)} between models`);
         }
       }
-      if (state.view === "conformal") {
-        const q = state.conformal === "conformal" ? correction(hours) : 0;
-        lines.push(`90% range: ${(value("lower") - q).toFixed(1)}–${(value("upper") + q).toFixed(1)} m/s`);
-      }
-      if (state.truth || state.view === "conformal") lines.push(`What happened: ${ms(value("truth"))}`);
+      if (state.truth) lines.push(`What happened: ${ms(value("truth"))}`);
       return { head: `${Math.abs(lat).toFixed(1)}° N, ${Math.abs(lon).toFixed(1)}° W · ${ahead(hours)}`, lines };
     };
     const nearestPlace = (px, py) => {
@@ -1186,8 +947,7 @@
       if (view === "split") {
         top = Math.max(...s.aleatoric.map((a, t) => a + s.epistemic[t]), 1);
       } else {
-        const q = view === "conformal" ? Math.max(...data.models[state.model].conformal.q, 0) : 0;
-        const values = [data.gale * 1.25, ...s.single, ...s.upper.map((v) => v + q), ...(state.truth || view === "conformal" ? s.truth : [])];
+        const values = [data.gale * 1.25, ...s.single, ...s.upper, ...(state.truth ? s.truth : [])];
         if (s.runs && view === "ensemble") values.push(...s.runs.flat());
         top = Math.max(...values);
       }
@@ -1216,7 +976,7 @@
       }
       for (let h = 0; h <= last; h += 24) {
         const text = svg("text", { x: chartX(h), y: chartHeight - 5, "text-anchor": h === 0 ? "start" : h === last ? "end" : "middle" });
-        text.textContent = when(h).split(",")[0].replace(/ [A-Z][a-z]{2}$/, "");
+        text.textContent = day(h);
         chart.append(text);
       }
       if (view !== "split") {
@@ -1231,28 +991,11 @@
         area(s.lower, s.upper, "band");
         if (s.runs) s.runs.forEach((run) => line(run, "run"));
         line(s.mean, "line");
-      } else if (view === "split") {
+      } else {
         area(s.aleatoric.map(() => 0), s.aleatoric, "aleatoric");
         area(s.aleatoric, s.aleatoric.map((a, t) => a + s.epistemic[t]), "epistemic");
-      } else {
-        const q = data.models[state.model].conformal.q;
-        area(s.lower, s.upper, "band");
-        if (state.conformal === "conformal") {
-          line(s.lower.map((v, t) => Math.max(v - q[t], 0)), "band-conformal");
-          line(s.upper.map((v, t) => v + q[t]), "band-conformal");
-        }
       }
-      if (state.truth || view === "conformal") {
-        if (view !== "split") line(s.truth, "truth");
-        if (view === "conformal") {
-          const q = data.models[state.model].conformal.q;
-          s.truth.forEach((v, t) => {
-            const shift = state.conformal === "conformal" ? q[t] : 0;
-            const inside = v >= s.lower[t] - shift && v <= s.upper[t] + shift;
-            chart.append(svg("circle", { cx: chartX(hours[t]), cy: chartY(v), r: inside ? 2.5 : 3.5, class: inside ? "hit" : "miss" }));
-          });
-        }
-      }
+      if (state.truth && view !== "split") line(s.truth, "truth");
       cursor = svg("line", { y1: pad.top - 2, y2: pad.top + innerH, class: "cursor" });
       chart.append(cursor);
       placeCursor();
@@ -1319,34 +1062,18 @@
             strong(coastName(ashore[0].lat, ashore[0].lon)),
             " to ",
             strong(coastName(ashore[ashore.length - 1].lat, ashore[ashore.length - 1].lon)),
-            `, ${Math.min(...times)} to ${Math.max(...times)} hours ahead. The shading is the chance of tropical-storm-force wind.`,
+            `, ${Math.min(...times)} to ${Math.max(...times)} hours ahead. Every outline is where one run has tropical-storm-force wind.`,
           );
         } else {
           sentence(`${runs} runs from ${models}. None of them brings Milton ashore.`);
         }
-      } else if (state.view === "split") {
+      } else {
         title.textContent = "Chaos, or what the models don't know?";
         sentence(
           "The runs of one model scatter as the atmosphere might: that part of the spread is ",
           strong("aleatoric", "milton-demo-aleatoric"),
           ", and more training data would not remove it. Where the four models disagree, they lack knowledge: that part is ",
           strong("epistemic", "milton-demo-epistemic"),
-          ".",
-        );
-      } else {
-        title.textContent = "Ranges that keep their promise";
-        const c = m.conformal;
-        const t = Math.round(state.hours / step);
-        const q = c.q[t];
-        const raw = c.coverage_raw[t];
-        const fixed = c.coverage_conformal[t];
-        sentence(
-          `At ${ahead(data.times[t])}, the runs' 90% range covers what happened in `,
-          strong(percent(raw)),
-          " of the map. Conformal prediction ",
-          q >= 0 ? `widens it by ${q.toFixed(1)} m/s` : `narrows it by ${(-q).toFixed(1)} m/s`,
-          ", calibrated on half of the map, and the other half is then covered ",
-          strong(percent(fixed)),
           ".",
         );
       }
@@ -1364,13 +1091,13 @@
       const items = [];
       if (state.view === "one") {
         const peak = Math.max(...s.single);
-        const when_ = data.times[s.single.indexOf(peak)];
-        items.push(stat("This run", ms(at(s.single))), stat("Its peak", `${ms(peak)}, ${ahead(when_)}`));
+        const peakAt = data.times[s.single.indexOf(peak)];
+        items.push(stat("This run", ms(at(s.single))), stat("Its peak", `${ms(peak)}, ${ahead(peakAt)}`));
         items.push(state.truth ? stat("What happened", ms(at(s.truth))) : stat("Runs shown", `1 of ${model().tracks.length}`));
       } else if (state.view === "ensemble") {
         items.push(stat("Chance of 34 kt", percent(at(s.gale))), stat("5–95% of the runs", `${at(s.lower).toFixed(0)}–${at(s.upper).toFixed(0)} m/s`));
         items.push(state.truth ? stat("What happened", ms(at(s.truth))) : stat("Mean of the runs", ms(at(s.mean))));
-      } else if (state.view === "split") {
+      } else {
         const a = at(s.aleatoric);
         const e = at(s.epistemic);
         const total = a + e;
@@ -1381,17 +1108,6 @@
             stat("Between models", total > 0 ? percent(e / total) : "–", "milton-demo-epistemic"),
           );
         }
-      } else {
-        const q = state.conformal === "conformal" ? correction(hours) : 0;
-        const low = Math.max(at(s.lower) - q, 0);
-        const high = at(s.upper) + q;
-        const truth = at(s.truth);
-        const inside = truth >= low && truth <= high;
-        items.push(
-          stat(state.conformal === "conformal" ? "Conformal 90%" : "Runs' 90% range", `${low.toFixed(0)}–${high.toFixed(0)} m/s`),
-          stat("What happened", ms(truth)),
-          stat("Covered?", inside ? "✓ inside" : "✗ outside", inside ? "" : "milton-demo-aleatoric"),
-        );
       }
       stats.replaceChildren(...items);
     };
@@ -1406,46 +1122,31 @@
         if (background) i.style.background = background;
         return i;
       };
-      const ink = (alpha) => rgba(colors.ink, alpha);
-      const ramp = `linear-gradient(90deg, ${ink(0.04)}, ${ink(0.8)})`;
       const line = (color, thin = false) => {
         const i = el("i", thin ? "line thin" : "line");
         i.style.borderTopColor = color;
         return i;
       };
+      const ink = (alpha) => rgba(colors.ink, alpha);
       const items = [];
-      if (state.style === "contours") {
-        if (state.view === "one") {
-          items.push(item(line(ink(0.9)), "wind of this run at 34, 50 and 64 kt"), item(swatch("ramp", ramp), "stronger inside"));
-        } else if (state.view === "ensemble") {
-          items.push(
-            item(line(ink(0.55), true), "where a run has 34-kt wind"),
-            item(line(ink(1)), "half of the runs have it"),
-          );
-        } else if (state.view === "split") {
-          items.push(item(line(rgba(colors.red, 0.9)), "spread from run to run (aleatoric)"));
-          if (splittable(state.model)) items.push(item(line(rgba(colors.blue, 0.95)), "spread between the models (epistemic)"));
-        } else {
-          items.push(item(line(ink(0.75)), "width of the 90% range"), item(swatch("", rgba(colors.red, 0.95)), "what happened is outside it"));
-        }
-        if (state.truth && state.view !== "conformal") items.push(item(swatch("dashed"), "what happened"));
-        legend.replaceChildren(...items);
-        return;
-      }
       if (state.view === "one") {
-        items.push(item(swatch("ramp", ramp), "wind of this run, up to 33 m/s"), item(swatch("line"), "its track, ahead dashed"));
+        items.push(
+          item(swatch("ramp", `linear-gradient(90deg, ${ink(0.04)}, ${ink(0.8)})`), "wind of this run, up to 33 m/s"),
+          item(line(ink(0.95)), "its track, ahead dashed"),
+        );
       } else if (state.view === "ensemble") {
-        items.push(item(swatch("ramp", ramp), "chance of tropical-storm-force wind (34 kt)"), item(swatch("line"), "a run's track"));
-      } else if (state.view === "split") {
+        items.push(
+          item(swatch("ramp", `linear-gradient(90deg, ${ink(0.03)}, ${ink(0.6)})`), "chance of tropical-storm-force wind (34 kt)"),
+          item(line(ink(0.5), true), "where one run has it"),
+        );
+      } else {
         items.push(
           item(swatch("", rgba(colors.red, 0.85)), "spread from run to run (aleatoric)"),
           item(swatch("", rgba(colors.mix, 0.85)), "both"),
           item(swatch("", rgba(colors.blue, 0.85)), "the models disagree (epistemic)"),
         );
-      } else {
-        items.push(item(swatch("ramp", ramp), "width of the 90% range"), item(swatch("", rgba(colors.red, 0.95)), "what happened is outside it"));
       }
-      if (state.truth && state.view !== "conformal") items.push(item(swatch("dashed"), "what happened"));
+      if (state.truth) items.push(item(swatch("dashed"), "what happened"));
       legend.replaceChildren(...items);
     };
     const footnote = () => {
@@ -1467,21 +1168,14 @@
         button.title = disabled ? `${model().label} is a single model: there is no second model to disagree with.` : "";
       }
       for (const [key, button] of modelButtons) button.setAttribute("aria-pressed", String(key === state.model));
-      for (const [key, button] of modeButtons) button.setAttribute("aria-pressed", String(key === state.conformal));
-      for (const [key, button] of styleButtons) button.setAttribute("aria-pressed", String(key === state.style));
       for (const [name, chip] of chipButtons) chip.setAttribute("aria-pressed", String(!state.spot && name === state.place));
-      modeSwitch.hidden = state.view !== "conformal";
       truthBox.checked = state.truth;
       slider.value = String(Math.round(state.hours));
       slider.setAttribute("aria-valuetext", `${ahead(state.hours)}, ${when(state.hours)}`);
       clock.replaceChildren(document.createTextNode(`${ahead(state.hours)} `), el("span", "", `· ${when(state.hours)}`));
-      play.replaceChildren(
-        (() => {
-          const icon = svg("svg", { viewBox: "0 0 10 10", "aria-hidden": "true" });
-          icon.append(svg("path", { d: state.playing ? "M1.5 1h2.5v8H1.5zM6 1h2.5v8H6z" : "M2 1l7 4-7 4z" }));
-          return icon;
-        })(),
-      );
+      const icon = svg("svg", { viewBox: "0 0 10 10", "aria-hidden": "true" });
+      icon.append(svg("path", { d: state.playing ? "M1.5 1h2.5v8H1.5zM6 1h2.5v8H6z" : "M2 1l7 4-7 4z" }));
+      play.replaceChildren(icon);
       play.setAttribute("aria-label", state.playing ? "Pause" : "Play the four days");
       if (what === "all") {
         current = buildChart();
@@ -1491,7 +1185,6 @@
         canvas.setAttribute("aria-label", `${title.textContent}. Map of the Gulf of Mexico and Florida, ${ahead(state.hours)}.`);
       } else {
         placeCursor();
-        if (state.view === "conformal") texts();
       }
       updateStats();
       draw();
@@ -1526,7 +1219,6 @@
       if (next >= last) {
         state.hours = last;
         stop();
-        update("time");
         return;
       }
       state.hours = next;

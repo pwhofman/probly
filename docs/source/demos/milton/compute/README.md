@@ -2,8 +2,8 @@
 
 The Milton demo (`../assets/`: `demo.js`, `demo.css` and `data.js`) shows WeatherNext's runs of
 Hurricane Milton, initialized on 7 October 2024, 00 UTC, over four days, and what probly makes of
-their spread: the split into aleatoric and epistemic uncertainty, and conformal ranges. The data is
-computed once, by hand, and committed; the page only looks values up.
+their spread: the split into aleatoric and epistemic uncertainty. The data is computed once, by
+hand, and committed; the page only looks values up.
 
 **For now, the data is mock data.** `mock.py` writes `../assets/data.js` with invented runs around
 Milton's real track, in the format the real pipeline will write, so that the demo can be designed and
@@ -34,11 +34,10 @@ coastlines, the places, Milton's observed track, and per model (`full`, `mini`):
   (`spread`, the standard deviation of the runs), the epistemic share of its variance
   (`epistemic`), the runs' 5% and 95% quantiles (`lower`, `upper`), and what happened (`truth`);
 - `run_fields`: every run's wind near the storm, per lead time a square of cells that follows the
-  runs' mean position (`origins`: its first row and column), for the contour lines of every run;
+  runs' mean position (`origins`: its first row and column), for the outline of every run's
+  tropical-storm-force wind;
 - `tracks`: every run's track and where it comes ashore in Florida;
-- `places`: every run's wind at the demo's places, with the aleatoric and epistemic variance;
-- `conformal`: the CQR correction of the runs' 90% range per lead time, calibrated on half of the
-  map, and the coverage on the other half before and after.
+- `places`: every run's wind at the demo's places, with the aleatoric and epistemic variance.
 
 The real data will come from WeatherNext's public checkpoints and Milton's public initial
 conditions (`gs://dm_graphcast/weathernext2/`), through probly's WeatherNext integration (PR #594):
