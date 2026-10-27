@@ -54,6 +54,7 @@ from probly_benchmark.paths import CHECKPOINT_PATH
 from probly_benchmark.train_funcs import (
     BestModelTracker,
     EarlyStopping,
+    FinalModelTracker,
     ThresholdModelTracker,
     ValidationMetrics,
     evaluate,
@@ -334,7 +335,8 @@ def _training_loop(  # noqa: PLR0912, PLR0915
         extra_metrics: Optional dict of additional fixed metrics logged every epoch
             alongside the standard loss/accuracy keys (e.g. ``{"member_0/relative_likelihood": 1.0}``).
         model_tracker: Optional tracker deciding which epoch's weights are restored after training.
-            Defaults to the lowest validation loss; DARE passes a :class:`ThresholdModelTracker`.
+            Defaults to the lowest validation loss; DARE passes a :class:`ThresholdModelTracker` and the
+            CreRL reference member a :class:`FinalModelTracker`.
     """
     _maybe_compile_forward(model, device)
 
@@ -902,6 +904,8 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
     log_prefix: str = "",
 ) -> None:
     """Training loop that stops when the relative likelihood reaches ``alpha``."""
+    _maybe_compile_forward(model, device)
+
     optimizer = get_optimizer(
         cfg.optimizer.name,
         model.parameters(),
@@ -1125,7 +1129,9 @@ def _(
     batch_check = train_kwargs.get("batch_check", False)
     num_remaining = len(members) - 1
 
-    # Train first member fully; relative_likelihood is 1.0 by definition for the reference model
+    # The reference member stands in for the maximum-likelihood model, so it keeps its final
+    # weights: restoring the best validation epoch would lower the likelihood every threshold
+    # is measured against and let the biased members exceed a relative likelihood of 1.
     _training_loop(
         members[0],
         train_loader,
@@ -1138,6 +1144,7 @@ def _(
         val_fn=validate_cross_entropy,
         log_prefix="member_0/",
         extra_metrics={"member_0/relative_likelihood": 1.0},
+        model_tracker=FinalModelTracker(),
     )
 
     # Compute reference log-likelihood from the fully trained first member

@@ -1701,3 +1701,11 @@ class ThresholdModelTracker(BestModelTracker):
         self.best_state_dict = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
         self.kept_epoch = self.epoch
         return True
+
+
+class FinalModelTracker(BestModelTracker):
+    """Keep the final weights by never storing a state, so the training loop restores nothing."""
+
+    def update(self, val_loss: float, model: nn.Module) -> bool:  # noqa: ARG002
+        """Ignore the epoch; the final weights are the ones that count."""
+        return False
