@@ -547,21 +547,7 @@ def _(
 
     for i, member in enumerate(model):
         if i > 0 and isinstance(cfg.get("dataset"), str):
-            # Long imagenet subensemble runs accumulate worker shared-memory / FD
-            # state in the parent process; new workers forked between members can
-            # then SIGABRT during validation. Shut down the previous loaders'
-            # persistent workers and rebuild fresh loaders before the next head.
-            # The explicit worker release matters because ``main`` still holds
-            # references to the original (member-0) loaders, so ``del`` alone
-            # cannot free them; ``gc.collect`` mops up cyclic refs of the rebuilt
-            # loaders; ``empty_cache`` is belt-and-braces for GPU memory.
-            # Skipped in the AL flow where the estimator provides the loader directly.
-            _release_persistent_workers(train_loader)
-            _release_persistent_workers(val_loader)
-            del train_loader, val_loader
-            gc.collect()
-            torch.cuda.empty_cache()
-            train_loader, val_loader = _rebuild_subensemble_loaders(cfg, i)
+            train_loader, val_loader = _refresh_member_loaders(cfg, i, train_loader, val_loader)
 
         trainable = [p for p in member.parameters() if p.requires_grad]
         _training_loop(
@@ -604,12 +590,36 @@ def _release_persistent_workers(loader: DataLoader | None) -> None:
         shutdown()
 
 
-def _rebuild_subensemble_loaders(cfg: DictConfig, member_idx: int) -> tuple[DataLoader, DataLoader | None]:
-    """Build fresh train / val loaders for the next subensemble member.
+def _refresh_member_loaders(
+    cfg: DictConfig,
+    member_idx: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+) -> tuple[DataLoader, DataLoader | None]:
+    """Shut down the previous member's loader workers and build fresh loaders for the next member."""
+    # Long imagenet subensemble runs accumulate worker shared-memory / FD
+    # state in the parent process; new workers forked between members can
+    # then SIGABRT during validation. The relative-likelihood trainer hit the
+    # same abort on cifar10 at the first validation of its second biased member.
+    # The explicit worker release matters because ``main`` still holds
+    # references to the original (member-0) loaders, so ``del`` alone
+    # cannot free them; ``gc.collect`` mops up cyclic refs of the rebuilt
+    # loaders; ``empty_cache`` is belt-and-braces for GPU memory.
+    # Callers skip this in the AL flow, where the estimator provides the loader directly.
+    _release_persistent_workers(train_loader)
+    _release_persistent_workers(val_loader)
+    del train_loader, val_loader
+    gc.collect()
+    torch.cuda.empty_cache()
+    return _rebuild_member_loaders(cfg, member_idx)
+
+
+def _rebuild_member_loaders(cfg: DictConfig, member_idx: int) -> tuple[DataLoader, DataLoader | None]:
+    """Build fresh train / val loaders for the next ensemble member.
 
     For datasets whose train shuffle is driven by an explicit seed (imagenet's
     webdataset, where ``loader_seed`` is plumbed into ``wds.WebDataset`` and
-    ``wds.detshuffle``), we offset the seed by ``member_idx`` so each head sees
+    ``wds.detshuffle``), we offset the seed by ``member_idx`` so each member sees
     a different data ordering -- imagenet's shard allocation is deterministic
     on the sorted shard list regardless of seed, so this changes shuffling only,
     not which shards are in train/val/cal/test. For other datasets the same
@@ -1142,6 +1152,8 @@ def _(
 
     # Train remaining members with per-member relative likelihood thresholds
     for i, (member, threshold) in enumerate(zip(members[1:], thresholds, strict=True), start=1):
+        if isinstance(cfg.get("dataset"), str):
+            train_loader, val_loader = _refresh_member_loaders(cfg, i, train_loader, val_loader)
         _training_loop_relative_likelihood(
             member,
             train_loader,
