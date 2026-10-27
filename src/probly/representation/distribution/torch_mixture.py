@@ -37,7 +37,7 @@ class TorchMixtureDistribution[D: Distribution, T: TorchLike](
     components: D = field()
     mixture_weights: torch.Tensor = field()
 
-    type: Literal["mixture"] = "mixture"
+    type: ClassVar[Literal["mixture"]] = "mixture"
     protected_axes: ClassVar[dict[str, int]] = {"components": 1, "mixture_weights": 1}
 
     def __post_init__(self) -> None:

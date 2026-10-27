@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Self, cast, override
+from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, override
 
 import jax
 import jax.numpy as jnp
@@ -43,6 +43,7 @@ class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
     array: D
     sample_axis: int
     weights: jax.Array | None = None
+    pytree_children: ClassVar[tuple[str, ...]] = ("array", "weights")
 
     def __post_init__(self) -> None:
         """Validate the sample_axis."""

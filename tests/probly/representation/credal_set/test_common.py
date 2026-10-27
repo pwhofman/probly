@@ -2,7 +2,16 @@
 
 from __future__ import annotations
 
+from typing import ClassVar, get_origin, get_type_hints
+
 import pytest
+
+from probly.representation.credal_set._common import CategoricalCredalSet, CredalSet
+
+
+@pytest.mark.parametrize("credal_set_class", [CredalSet, CategoricalCredalSet])
+def test_credal_set_type_is_class_metadata(credal_set_class) -> None:
+    assert get_origin(get_type_hints(credal_set_class)["type"]) is ClassVar
 
 
 class TestCredalSetCommonFallbacks:

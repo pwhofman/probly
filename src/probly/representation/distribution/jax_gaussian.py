@@ -35,7 +35,7 @@ class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[
     mean: jax.Array = field()
     var: jax.Array = field()
 
-    type: Literal["gaussian"] = "gaussian"
+    type: ClassVar[Literal["gaussian"]] = "gaussian"
     protected_axes: ClassVar[dict[str, int]] = {"mean": 0, "var": 0}
     permitted_functions: ClassVar[set[Callable]] = {jax_add, jax_subtract}
 

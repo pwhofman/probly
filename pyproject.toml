@@ -15,7 +15,7 @@ dependencies = [
     "numpy>=2.1.0", # first cp313 wheels
     "tqdm>=4.25.0",
     "flextype>=0.3.0",
-    "ndlike>=0.1.1",
+    "ndlike>=0.2.4",
 ]
 authors = [
     { name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de" },

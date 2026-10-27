@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+import operator
+
 import numpy as np
 import pytest
 
@@ -9,6 +12,7 @@ from probly.representation.distribution.numpy_categorical import (
     NumpyCategoricalDistribution,
     NumpyProbabilityCategoricalDistribution,
 )
+from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
 from probly.representation.sample import NumpySample
 from probly.representation.sample.numpy_functions import numpy_sample_internals
 
@@ -19,6 +23,74 @@ def assert_weights_equal(sample: NumpySample, expected: object) -> None:
 
 
 class TestNumpySample:
+    @pytest.mark.parametrize("operation", [operator.add, operator.sub, operator.mul, operator.truediv])
+    @pytest.mark.parametrize("reflected", [False, True])
+    @pytest.mark.parametrize("sample_axis", [0, 1])
+    def test_array_operators_track_broadcast_sample_axis(self, operation, reflected, sample_axis) -> None:
+        array = np.arange(1.0, 13.0).reshape(3, 4)
+        weights = np.arange(1.0, array.shape[sample_axis] + 1)
+        sample = NumpySample(array, sample_axis, weights)
+        other = np.full((2, 3, 4), 2.0)
+
+        result = operation(other, sample) if reflected else operation(sample, other)
+        expected = operation(other, array) if reflected else operation(array, other)
+
+        assert isinstance(result, NumpySample)
+        assert result.sample_axis == sample_axis + 1
+        np.testing.assert_allclose(result.array, expected)
+        np.testing.assert_array_equal(result.weights, weights)
+
+    def test_elementwise_operations_preserve_nested_representation(self) -> None:
+        sample = NumpySample(NumpyDirichletDistribution(np.ones((3, 4, 2))), 1, np.ones(4))
+
+        result = sample + 2
+
+        assert isinstance(result, NumpySample)
+        assert isinstance(result.array, NumpyDirichletDistribution)
+        assert result.sample_axis == 1
+        np.testing.assert_array_equal(result.array.alphas, np.full((3, 4, 2), 3.0))
+        np.testing.assert_array_equal(result.weights, sample.weights)
+
+    def test_elementwise_operations_reject_conflicting_weights(self) -> None:
+        left = NumpySample(np.ones((3, 4)), 1, np.arange(1.0, 5.0))
+        right = NumpySample(np.ones((3, 4)), 1, np.ones(4))
+
+        with pytest.raises(ValueError, match="matching sample weights"):
+            operator.mul(left, right)
+
+    def test_elementwise_operations_drop_ambiguous_sample_axes(self) -> None:
+        array = np.ones((3, 4))
+
+        result = NumpySample(array, 0) * NumpySample(array, 1)
+
+        assert isinstance(result, np.ndarray)
+        np.testing.assert_array_equal(result, array)
+
+    def test_broadcasting_single_sample_expands_weights(self) -> None:
+        sample = NumpySample(np.ones((3, 1)), 1, np.array([0.5]))
+
+        result = sample * np.ones((3, 4))
+
+        assert isinstance(result, NumpySample)
+        assert result.sample_axis == 1
+        np.testing.assert_array_equal(result.weights, np.full(4, 0.5))
+
+    @pytest.mark.parametrize("operation", [operator.add, operator.sub, operator.mul, operator.eq, operator.ne])
+    def test_dataclass_subclass_inherits_array_operators(self, operation) -> None:
+        @dataclass(frozen=True)
+        class _Sample(NumpySample[np.ndarray]):
+            pass
+
+        array = np.arange(12).reshape(3, 4)
+        sample = _Sample.from_iterable(array.T, sample_axis=1, weights=np.arange(1.0, 5.0))
+
+        result = operation(sample, 2)
+
+        assert isinstance(result, _Sample)
+        assert result.sample_axis == 1
+        np.testing.assert_array_equal(result.array, operation(array, 2))
+        np.testing.assert_array_equal(result.weights, sample.weights)
+
     def test_from_iterable_axis_zero_applies_requested_dtype(self) -> None:
         values = np.arange(6, dtype=np.int64).reshape(2, 3)
         sample = NumpySample.from_iterable(values, sample_axis=0, dtype=np.float32)
@@ -488,6 +560,38 @@ class TestNumpySampleValidation:
 
 class TestNumpySampleArrayFunctions:
     """Verify sample_axis tracking under numpy operations."""
+
+    @pytest.mark.parametrize("function", [np.mean, np.sum, np.std, np.var, np.average])
+    @pytest.mark.parametrize("axis", [1, -2, (0, 1), None])
+    @pytest.mark.parametrize("keepdims", [False, True])
+    @pytest.mark.parametrize("weighted", [False, True])
+    def test_reducing_sample_axis_drops_wrapper_independently_of_keepdims(
+        self, function, axis, keepdims, weighted
+    ) -> None:
+        array = np.arange(24.0).reshape(2, 3, 4)
+        sample = NumpySample(array, 1, np.arange(1.0, 4.0) if weighted else None)
+
+        result = function(sample, axis=axis, keepdims=keepdims)
+        expected = function(array, axis=axis, keepdims=keepdims)
+
+        assert not isinstance(result, NumpySample)
+        assert np.shape(result) == np.shape(expected)
+        np.testing.assert_allclose(result, expected)
+
+    @pytest.mark.parametrize("axis", [0, 2, (0, 2), ()])
+    @pytest.mark.parametrize("keepdims", [False, True])
+    def test_reducing_other_axes_preserves_weights(self, axis, keepdims) -> None:
+        array = np.arange(24.0).reshape(2, 3, 4)
+        weights = np.arange(1.0, 4.0)
+        sample = NumpySample(array, 1, weights)
+
+        result = np.mean(sample, axis=axis, keepdims=keepdims)
+        expected = np.mean(array, axis=axis, keepdims=keepdims)
+
+        assert isinstance(result, NumpySample)
+        assert result.sample_axis == (1 if keepdims or axis in (2, ()) else 0)
+        np.testing.assert_allclose(result.array, expected)
+        np.testing.assert_array_equal(result.weights, weights)
 
     def test_copy_with_subok_true_preserves_sample_axis(self) -> None:
         # np.copy defaults to subok=False, so we must pass subok=True to keep
