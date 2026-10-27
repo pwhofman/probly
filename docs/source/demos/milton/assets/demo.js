@@ -89,6 +89,7 @@
       place: "Tampa",
       spot: null, // a cell picked on the map: {lat, lon}
       conformal: "conformal", // or "raw": the runs' own 90% range
+      style: "contours", // or "shaded"
       playing: false,
     };
     const model = () => data.models[state.model];
@@ -333,6 +334,24 @@
     tip.hidden = true;
     map.append(canvas, tip);
     if (data.mock) map.append(el("span", "milton-demo-badge", "Mock data"));
+    const styleSwitch = el("div", "milton-demo-switch milton-demo-style");
+    styleSwitch.setAttribute("role", "group");
+    styleSwitch.setAttribute("aria-label", "Map style");
+    const styleButtons = new Map();
+    for (const [key, text] of [
+      ["shaded", "Shaded"],
+      ["contours", "Contours"],
+    ]) {
+      const button = el("button", "milton-demo-option", text);
+      button.type = "button";
+      button.addEventListener("click", () => {
+        state.style = key;
+        update();
+      });
+      styleButtons.set(key, button);
+      styleSwitch.append(button);
+    }
+    map.append(styleSwitch);
 
     const time = el("div", "milton-demo-time");
     const play = el("button", "milton-demo-play");
@@ -437,6 +456,8 @@
         surface: token("--md-surface"),
         text: token("--md-text"),
         muted: token("--md-muted"),
+        redText: token("--md-red-text"),
+        blueText: token("--md-blue-text"),
       };
     };
     const rgba = ([r, g, b], alpha) => `rgba(${r}, ${g}, ${b}, ${alpha})`;
@@ -476,6 +497,10 @@
         low.forEach((v, c) => paint(c, colors.ink, Math.pow(strength(high[c] - v + 2 * q, range), 0.9) * 0.6));
       }
       offscreen.getContext("2d").putImageData(image, 0, 0);
+      blit(grid);
+    };
+    // the offscreen image onto the map, over the grid's cells
+    const blit = (grid) => {
       const half = grid.step / 2;
       context.save();
       context.imageSmoothingEnabled = true;
@@ -488,6 +513,297 @@
         y(grid.north - (grid.rows - 0.5) * grid.step) - y(grid.north + half),
       );
       context.restore();
+    };
+
+    // -- contours: marching squares on the grid, joined into lines and smoothed ----------------------
+    // the lines where ``values`` (rows x cols, row-major) crosses ``level``, in fractional (row, col)
+    const isolines = (values, rows, cols, level) => {
+      const points = new Map(); // a cell edge's id -> where the line crosses it
+      const links = new Map(); // a cell edge's id -> the edges it is joined to
+      const vertical = rows * (cols - 1); // the ids of vertical edges follow those of horizontal ones
+      const value = (r, c) => values[r * cols + c];
+      const cross = (id, r0, c0, r1, c1) => {
+        if (!points.has(id)) {
+          const a = value(r0, c0);
+          const w = (level - a) / (value(r1, c1) - a);
+          points.set(id, [lerp(r0, r1, w), lerp(c0, c1, w)]);
+        }
+        return id;
+      };
+      const join = (a, b) => {
+        if (!links.has(a)) links.set(a, []);
+        if (!links.has(b)) links.set(b, []);
+        links.get(a).push(b);
+        links.get(b).push(a);
+      };
+      for (let r = 0; r < rows - 1; r += 1) {
+        for (let c = 0; c < cols - 1; c += 1) {
+          const index =
+            ((value(r, c) >= level) << 3) |
+            ((value(r, c + 1) >= level) << 2) |
+            ((value(r + 1, c + 1) >= level) << 1) |
+            (value(r + 1, c) >= level);
+          if (index === 0 || index === 15) continue;
+          const top = () => cross(r * (cols - 1) + c, r, c, r, c + 1);
+          const bottom = () => cross((r + 1) * (cols - 1) + c, r + 1, c, r + 1, c + 1);
+          const left = () => cross(vertical + r * cols + c, r, c, r + 1, c);
+          const right = () => cross(vertical + r * cols + c + 1, r, c + 1, r + 1, c + 1);
+          // a saddle is resolved by the cell's mean
+          const center = (value(r, c) + value(r, c + 1) + value(r + 1, c + 1) + value(r + 1, c)) / 4 >= level;
+          if (index === 1 || index === 14) join(left(), bottom());
+          else if (index === 2 || index === 13) join(bottom(), right());
+          else if (index === 3 || index === 12) join(left(), right());
+          else if (index === 4 || index === 11) join(top(), right());
+          else if (index === 6 || index === 9) join(top(), bottom());
+          else if (index === 7 || index === 8) join(left(), top());
+          else if ((index === 5) === center) {
+            join(left(), top());
+            join(bottom(), right());
+          } else {
+            join(left(), bottom());
+            join(top(), right());
+          }
+        }
+      }
+      const lines = [];
+      const seen = new Set();
+      const follow = (start) => {
+        const ids = [start];
+        seen.add(start);
+        let previous = -1;
+        let current = start;
+        for (;;) {
+          const next = links.get(current).find((id) => id !== previous && !seen.has(id));
+          if (next === undefined) break;
+          ids.push(next);
+          seen.add(next);
+          previous = current;
+          current = next;
+        }
+        return { points: ids.map((id) => points.get(id)), closed: ids.length > 2 && links.get(current).includes(start) };
+      };
+      // the lines that end at the grid's border first, then the closed ones
+      for (const [id, next] of links) if (next.length === 1 && !seen.has(id)) lines.push(follow(id));
+      for (const id of links.keys()) if (!seen.has(id)) lines.push(follow(id));
+      return lines;
+    };
+    // two rounds of Chaikin's corner cutting, so that a line on a coarse grid reads as a curve
+    const smooth = ({ points, closed }) => {
+      let out = points;
+      for (let round = 0; round < 2 && out.length > 2; round += 1) {
+        const next = closed ? [] : [out[0]];
+        const n = out.length;
+        for (let i = 0; i < (closed ? n : n - 1); i += 1) {
+          const a = out[i];
+          const b = out[(i + 1) % n];
+          next.push([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]], [0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]]);
+        }
+        if (!closed) next.push(out[n - 1]);
+        out = next;
+      }
+      return { points: out, closed };
+    };
+    const contour = (values, rows, cols, level) => isolines(values, rows, cols, level).map(smooth);
+    // from a grid's fractional (row, col) to the map, for a part of the grid that starts at (row0, col0)
+    const onMap =
+      (grid, row0 = 0, col0 = 0) =>
+      ([r, c]) => [x(grid.west + (c + col0) * grid.step), y(grid.north - (r + row0) * grid.step)];
+    const stroke = (lines, toMap, color, lineWidth, dash = []) => {
+      context.beginPath();
+      for (const line of lines) {
+        line.points.forEach((point, i) => {
+          const [px, py] = toMap(point);
+          if (i) context.lineTo(px, py);
+          else context.moveTo(px, py);
+        });
+        if (line.closed) context.closePath();
+      }
+      context.lineCap = "round";
+      context.lineJoin = "round";
+      context.lineWidth = lineWidth;
+      context.strokeStyle = color;
+      context.setLineDash(dash);
+      context.stroke();
+      context.setLineDash([]);
+    };
+    // a level's label on its longest line, where it keeps clear of the other labels
+    const labelled = [];
+    const tag = (lines, toMap, text, color) => {
+      let best = null;
+      let longest = 50;
+      for (const line of lines) {
+        const xy = line.points.map(toMap);
+        let length = 0;
+        for (let i = 1; i < xy.length; i += 1) length += Math.hypot(xy[i][0] - xy[i - 1][0], xy[i][1] - xy[i - 1][1]);
+        if (length > longest) {
+          best = xy;
+          longest = length;
+        }
+      }
+      if (!best) return;
+      for (const share of [0.5, 0.3, 0.7, 0.15, 0.85]) {
+        let rest = longest * share;
+        let at = best[0];
+        for (let i = 1; i < best.length; i += 1) {
+          const piece = Math.hypot(best[i][0] - best[i - 1][0], best[i][1] - best[i - 1][1]);
+          if (rest <= piece) {
+            at = [lerp(best[i - 1][0], best[i][0], rest / piece), lerp(best[i - 1][1], best[i][1], rest / piece)];
+            break;
+          }
+          rest -= piece;
+        }
+        const [px, py] = at;
+        if (px < 24 || px > width - 24 || py < 10 || py > height - 16) continue;
+        if (labelled.some(([qx, qy]) => Math.hypot(qx - px, qy - py) < 38)) continue;
+        labelled.push([px, py]);
+        context.font = `650 10px system-ui, -apple-system, "Segoe UI", sans-serif`;
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.lineJoin = "round";
+        context.lineWidth = 4;
+        context.strokeStyle = colors.surface;
+        context.strokeText(text, px, py);
+        context.fillStyle = color;
+        context.fillText(text, px, py);
+        return;
+      }
+    };
+    // filled bands between levels, at BAND times the grid's resolution, bilinear in between
+    const BAND = 4;
+    const bands = (values, grid, levels, alphas, rgb = colors.ink) => {
+      const w = grid.cols * BAND;
+      const h = grid.rows * BAND;
+      offscreen.width = w;
+      offscreen.height = h;
+      const image = offscreen.getContext("2d").createImageData(w, h);
+      const pixels = image.data;
+      for (let j = 0; j < h; j += 1) {
+        const gr = clamp((j + 0.5) / BAND - 0.5, 0, grid.rows - 1);
+        const r0 = Math.min(Math.floor(gr), grid.rows - 2);
+        const wr = gr - r0;
+        for (let i = 0; i < w; i += 1) {
+          const gc = clamp((i + 0.5) / BAND - 0.5, 0, grid.cols - 1);
+          const c0 = Math.min(Math.floor(gc), grid.cols - 2);
+          const wc = gc - c0;
+          const k = r0 * grid.cols + c0;
+          const v = lerp(lerp(values[k], values[k + 1], wc), lerp(values[k + grid.cols], values[k + grid.cols + 1], wc), wr);
+          let band = 0;
+          while (band < levels.length && v >= levels[band]) band += 1;
+          const p = (j * w + i) * 4;
+          pixels[p] = rgb[0];
+          pixels[p + 1] = rgb[1];
+          pixels[p + 2] = rgb[2];
+          pixels[p + 3] = Math.round(alphas[band] * 255);
+        }
+      }
+      offscreen.getContext("2d").putImageData(image, 0, 0);
+      blit(grid);
+    };
+    // round levels for a field's range: about a quarter, a half and three quarters of its top
+    const NICE = [0.25, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40];
+    const levelsFor = (range) => {
+      const levels = [0.25, 0.5, 0.75].map((share) => {
+        const target = range.high * share;
+        return NICE.reduce((best, v) => (Math.abs(v - target) < Math.abs(best - target) ? v : best));
+      });
+      return [...new Set(levels)];
+    };
+    const unit = (value) => `${Number.isInteger(value) ? value : value.toFixed(1)} m/s`;
+    // the wind of one run near the storm (its square of cells), interpolated between 6-hourly steps
+    const runFrames = new Map();
+    const runField = (run, hours) => {
+      const m = model();
+      const windows = m.run_fields;
+      const size = windows.size;
+      const n = size * size;
+      if (!runFrames.has(state.model)) runFrames.set(state.model, windows.fields.map(decode));
+      const list = runFrames.get(state.model);
+      const xs = clamp(hours / step, 0, list.length - 1);
+      const i = Math.min(Math.floor(xs), list.length - 2);
+      const w = xs - i;
+      const [r0, c0] = windows.origins[i];
+      const [r1, c1] = windows.origins[i + 1];
+      const a = list[i];
+      const b = list[i + 1];
+      const values = new Float32Array(n);
+      for (let r = 0; r < size; r += 1) {
+        for (let c = 0; c < size; c += 1) {
+          const va = a[run * n + r * size + c];
+          const rb = r + r0 - r1;
+          const cb = c + c0 - c1;
+          const vb = rb >= 0 && rb < size && cb >= 0 && cb < size ? b[run * n + rb * size + cb] : va;
+          values[r * size + c] = lerp(va, vb, w) / m.scales.wind;
+        }
+      }
+      return { values, size, origin: [r0, c0] };
+    };
+    // NHC's wind radii: tropical-storm force, 50 knots, and hurricane force
+    const KNOTS = [
+      [34, 34 * 0.514444],
+      [50, 50 * 0.514444],
+      [64, 64 * 0.514444],
+    ];
+    // the contour style: fills first (under the coastline), and a function that draws the lines
+    const contours = () => {
+      const m = model();
+      const grid = m.grid;
+      const hours = state.hours;
+      const toMap = onMap(grid);
+      const ink = (alpha) => rgba(colors.ink, alpha);
+      labelled.length = 0;
+      if (state.view === "one") {
+        const values = field("single", hours);
+        bands(values, grid, KNOTS.map(([, v]) => v), [0, 0.08, 0.17, 0.28]);
+        return () =>
+          KNOTS.forEach(([knots, v], i) => {
+            const lines = contour(values, grid.rows, grid.cols, v);
+            stroke(lines, toMap, ink(0.9), 1.1 + i * 0.5);
+            tag(lines, toMap, `${knots} kt`, colors.text);
+          });
+      }
+      if (state.view === "ensemble") {
+        const chance = field("gale", hours);
+        bands(chance, grid, [0.1, 0.5, 0.9], [0, 0.06, 0.12, 0.2]);
+        return () => {
+          for (let run = 0; run < m.tracks.length; run += 1) {
+            const { values, size, origin } = runField(run, hours);
+            stroke(contour(values, size, size, data.gale), onMap(grid, ...origin), ink(0.5), 1);
+          }
+          const half = contour(chance, grid.rows, grid.cols, 0.5);
+          stroke(half, toMap, colors.surface, 4.5);
+          stroke(half, toMap, ink(1), 2);
+          tag(half, toMap, "50%", colors.text);
+        };
+      }
+      if (state.view === "split") {
+        const spread = field("spread", hours);
+        const share = field("epistemic", hours);
+        const aleatoric = spread.map((s, c) => s * Math.sqrt(1 - share[c]));
+        const epistemic = spread.map((s, c) => s * Math.sqrt(share[c]));
+        const levels = levelsFor(cap("spread"));
+        return () =>
+          levels.forEach((level, i) => {
+            const red = contour(aleatoric, grid.rows, grid.cols, level);
+            stroke(red, toMap, rgba(colors.red, 0.9), 1.1 + i * 0.55);
+            tag(red, toMap, unit(level), colors.redText);
+            if (!splittable(state.model)) return;
+            const blue = contour(epistemic, grid.rows, grid.cols, level);
+            stroke(blue, toMap, rgba(colors.blue, 0.95), 1.1 + i * 0.55);
+            tag(blue, toMap, unit(level), colors.blueText);
+          });
+      }
+      const low = field("lower", hours);
+      const high = field("upper", hours);
+      const q = state.conformal === "conformal" ? correction(hours) : 0;
+      const widths = low.map((v, c) => high[c] - v + 2 * q);
+      const levels = levelsFor(cap("width"));
+      bands(widths, grid, levels, [0, 0.07, 0.14, 0.22]);
+      return () =>
+        levels.forEach((level, i) => {
+          const lines = contour(widths, grid.rows, grid.cols, level);
+          stroke(lines, toMap, ink(0.75), 1 + i * 0.45);
+          tag(lines, toMap, unit(level), colors.text);
+        });
     };
     const misses = () => {
       const m = model();
@@ -549,6 +865,7 @@
     const tracks = () => {
       const m = model();
       const hours = state.hours;
+      const fade = state.style === "contours" ? 0.45 : 1; // the tracks recede behind contour lines
       context.lineCap = "round";
       context.lineJoin = "round";
       if (state.view === "one") {
@@ -580,11 +897,11 @@
       } else if (state.view === "ensemble") {
         for (const run of m.tracks) {
           context.lineWidth = 1;
-          context.strokeStyle = rgba(colors.ink, 0.14);
+          context.strokeStyle = rgba(colors.ink, 0.14 * fade);
           path(run.points, hours, last);
           context.stroke();
           context.lineWidth = 1.15;
-          context.strokeStyle = rgba(colors.ink, 0.5);
+          context.strokeStyle = rgba(colors.ink, 0.5 * fade);
           path(run.points, 0, hours);
           context.stroke();
         }
@@ -595,10 +912,10 @@
       } else if (state.view === "split") {
         for (const run of m.tracks) {
           context.lineWidth = 1;
-          context.strokeStyle = rgba(colors.red, 0.13);
+          context.strokeStyle = rgba(colors.red, 0.13 * fade);
           path(run.points, hours, last);
           context.stroke();
-          context.strokeStyle = rgba(colors.red, 0.45);
+          context.strokeStyle = rgba(colors.red, 0.45 * fade);
           path(run.points, 0, hours);
           context.stroke();
         }
@@ -606,12 +923,12 @@
         for (const mean of means) {
           context.setLineDash([3, 4]);
           context.lineWidth = 1.5;
-          context.strokeStyle = rgba(colors.blue, 0.6);
+          context.strokeStyle = rgba(colors.blue, 0.6 * fade);
           path(mean, hours, last);
           context.stroke();
           context.setLineDash([]);
           context.lineWidth = 2.25;
-          context.strokeStyle = rgba(colors.blue, 1);
+          context.strokeStyle = rgba(colors.blue, fade);
           path(mean, 0, hours);
           context.stroke();
         }
@@ -739,10 +1056,11 @@
       context.fillRect(0, 0, width, height);
       graticule();
       land(true);
-      raster();
+      const lines = state.style === "contours" ? contours() : raster();
       land(false);
       if (state.view === "conformal") misses();
       tracks();
+      lines?.();
       if (state.truth) observed();
       pins();
       graticuleLabels();
@@ -1090,7 +1408,30 @@
       };
       const ink = (alpha) => rgba(colors.ink, alpha);
       const ramp = `linear-gradient(90deg, ${ink(0.04)}, ${ink(0.8)})`;
+      const line = (color, thin = false) => {
+        const i = el("i", thin ? "line thin" : "line");
+        i.style.borderTopColor = color;
+        return i;
+      };
       const items = [];
+      if (state.style === "contours") {
+        if (state.view === "one") {
+          items.push(item(line(ink(0.9)), "wind of this run at 34, 50 and 64 kt"), item(swatch("ramp", ramp), "stronger inside"));
+        } else if (state.view === "ensemble") {
+          items.push(
+            item(line(ink(0.55), true), "where a run has 34-kt wind"),
+            item(line(ink(1)), "half of the runs have it"),
+          );
+        } else if (state.view === "split") {
+          items.push(item(line(rgba(colors.red, 0.9)), "spread from run to run (aleatoric)"));
+          if (splittable(state.model)) items.push(item(line(rgba(colors.blue, 0.95)), "spread between the models (epistemic)"));
+        } else {
+          items.push(item(line(ink(0.75)), "width of the 90% range"), item(swatch("", rgba(colors.red, 0.95)), "what happened is outside it"));
+        }
+        if (state.truth && state.view !== "conformal") items.push(item(swatch("dashed"), "what happened"));
+        legend.replaceChildren(...items);
+        return;
+      }
       if (state.view === "one") {
         items.push(item(swatch("ramp", ramp), "wind of this run, up to 33 m/s"), item(swatch("line"), "its track, ahead dashed"));
       } else if (state.view === "ensemble") {
@@ -1127,6 +1468,7 @@
       }
       for (const [key, button] of modelButtons) button.setAttribute("aria-pressed", String(key === state.model));
       for (const [key, button] of modeButtons) button.setAttribute("aria-pressed", String(key === state.conformal));
+      for (const [key, button] of styleButtons) button.setAttribute("aria-pressed", String(key === state.style));
       for (const [name, chip] of chipButtons) chip.setAttribute("aria-pressed", String(!state.spot && name === state.place));
       modeSwitch.hidden = state.view !== "conformal";
       truthBox.checked = state.truth;

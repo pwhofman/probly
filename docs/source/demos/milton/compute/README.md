@@ -33,6 +33,8 @@ coastlines, the places, Milton's observed track, and per model (`full`, `mini`):
   wind (`single`), the runs' mean, the chance of tropical-storm-force wind (`gale`), the spread
   (`spread`, the standard deviation of the runs), the epistemic share of its variance
   (`epistemic`), the runs' 5% and 95% quantiles (`lower`, `upper`), and what happened (`truth`);
+- `run_fields`: every run's wind near the storm, per lead time a square of cells that follows the
+  runs' mean position (`origins`: its first row and column), for the contour lines of every run;
 - `tracks`: every run's track and where it comes ashore in Florida;
 - `places`: every run's wind at the demo's places, with the aleatoric and epistemic variance;
 - `conformal`: the CQR correction of the runs' 90% range per lead time, calibrated on half of the

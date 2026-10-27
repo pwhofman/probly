@@ -84,6 +84,7 @@ MODELS = {
         "strength": [0.94, 1.05, 0.97, 1.08],
         "trades": [-1.4, 0.6, 1.5, -0.7],
         "runs": 8,
+        "window": 24,
         "run_along": 70.0,
         "run_left": 55.0,
         "run_strength": 0.08,
@@ -100,6 +101,7 @@ MODELS = {
         "strength": [1.0],
         "trades": [0.0],
         "runs": 8,
+        "window": 14,
         "run_along": 95.0,
         "run_left": 75.0,
         "run_strength": 0.1,
@@ -313,6 +315,23 @@ def conformal(lower: np.ndarray, upper: np.ndarray, truth: np.ndarray, rows: int
     }
 
 
+def windows(winds: np.ndarray, tracks: list[np.ndarray], step: float, size: int) -> dict:
+    """Every run's wind near the storm, for the contours of every run.
+
+    A square of ``size`` x ``size`` cells per lead time that follows the runs' mean position; ``winds``
+    has the shape (runs, times, rows, cols).
+    """
+    rows, cols = winds.shape[2:]
+    origins, fields = [], []
+    for t in range(len(TIMES)):
+        center = np.mean([track[t] for track in tracks], axis=0)
+        row = int(np.clip(round((LAT[1] - center[0]) / step) - size // 2, 0, rows - size))
+        col = int(np.clip(round((center[1] - LON[0]) / step) - size // 2, 0, cols - size))
+        origins.append([row, col])
+        fields.append(encode(winds[:, t, row : row + size, col : col + size], 4))
+    return {"size": size, "origins": origins, "fields": fields}
+
+
 def build_model(key: str, rings: list[np.ndarray], observed: list) -> dict:
     """The runs of one made-up model, summarized as the demo needs them."""
     spec = MODELS[key]
@@ -390,6 +409,7 @@ def build_model(key: str, rings: list[np.ndarray], observed: list) -> dict:
         "upper": [encode(upper[t, grid], 4) for t in range(len(TIMES))],
         "truth": [encode(truth[t, grid], 4) for t in range(len(TIMES))],
     }
+    rows, cols = grid_lat.shape
     places = {}
     for p, (name, _, _) in enumerate(PLACES):
         column = cells + p
@@ -399,7 +419,6 @@ def build_model(key: str, rings: list[np.ndarray], observed: list) -> dict:
             "aleatoric": np.round(aleatoric[:, column], 2).tolist(),
             "epistemic": np.round(epistemic[:, column], 2).tolist(),
         }
-    rows, cols = grid_lat.shape
     return {
         "name": spec["name"],
         "label": spec["label"],
@@ -409,6 +428,9 @@ def build_model(key: str, rings: list[np.ndarray], observed: list) -> dict:
         "grid": {"west": LON[0], "north": LAT[1], "step": step, "rows": rows, "cols": cols},
         "scales": {"wind": 4, "gale": 255, "spread": 20, "epistemic": 255},
         "fields": fields,
+        "run_fields": windows(
+            winds[:, :, grid].reshape(len(winds), len(TIMES), rows, cols), tracks, step, spec["window"]
+        ),
         "tracks": [
             {
                 "model": int(g),

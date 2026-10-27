@@ -258,6 +258,20 @@ body[data-theme="dark"] .milton-demo {
   pointer-events: none;
 }
 
+/* shaded or contour lines, in the map's corner */
+.milton-demo-style {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 2px;
+  background: var(--md-surface);
+}
+
+.milton-demo-style .milton-demo-option {
+  padding: 0.22rem 0.6rem;
+  font-size: 0.74rem;
+}
+
 .milton-demo-tip {
   position: absolute;
   z-index: 2;
@@ -654,6 +668,10 @@ body[data-theme="dark"] .milton-demo {
   height: 0;
   border-top: 2px solid var(--md-ink);
   border-radius: 0;
+}
+
+.milton-demo-legend i.line.thin {
+  border-top-width: 1px;
 }
 
 .milton-demo-legend i.dashed {
