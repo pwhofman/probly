@@ -1,0 +1,9 @@
+# @package _global_
+
+# The method default N(1, 0.5) for r and s is the reference's from-scratch init. Applied on top of the
+# pretrained ResNet-50 it wipes out the pretrained function before training starts; 0.1 keeps part of it
+# while the members still differ.
+method:
+  params:
+    r_std: 0.1
+    s_std: 0.1
