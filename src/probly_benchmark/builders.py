@@ -14,7 +14,7 @@ import copy
 from dataclasses import dataclass
 import inspect
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 import warnings
 
 from laplace import Laplace
@@ -30,7 +30,7 @@ from probly.method.credal_ensembling import credal_ensembling
 from probly.method.credal_net import credal_net
 from probly.method.credal_relative_likelihood import credal_relative_likelihood
 from probly.method.credal_wrapper import credal_wrapper
-from probly.method.dare import dare
+from probly.method.dare import DarePredictor
 from probly.method.ddu import ddu
 from probly.method.deup import deup
 from probly.method.dropconnect import dropconnect
@@ -43,8 +43,10 @@ from probly.method.het_net import het_net
 from probly.method.natural_posterior_network import natural_posterior_network
 from probly.method.posterior_network import posterior_network
 from probly.method.sngp import sngp
-from probly.method.subensemble import subensemble
+from probly.method.subensemble import subensemble, subensemble_generator
 from probly.method.vbll import vbll
+from probly.transformation.ensemble import register_ensemble_members
+from probly.transformation.transformation import predictor_transformation
 from probly.traverse_nn.utils import get_output_dim
 from probly_benchmark import models
 from probly_benchmark.base import base
@@ -55,11 +57,33 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
+@predictor_transformation(permitted_predictor_types=None, post_transform=register_ensemble_members)
+@DarePredictor.register_factory(autocast_builtins=True)
+def _dare_head_ensemble(
+    base: nn.Module,
+    num_heads: int,
+    head: nn.Module,
+    reset_params: bool = True,
+) -> nn.Module:
+    """Build DARE in its classification form: ``num_heads`` independent heads on a shared frozen backbone.
+
+    This is the setup of the classification experiments in :cite:`demathelinDeepAntiRegularized2023`, where
+    the anti-regularized members are fully-connected networks on top of pretrained features. The module
+    structure is the subensemble one, but the result is typed as a DARE predictor so that training,
+    evaluation, decisions and the uncertainty score dispatch to the DARE handlers.
+    """
+    return cast(
+        "nn.Module",
+        subensemble_generator(base, num_heads=num_heads, head=head, reset_params=reset_params, head_layer=None),
+    )
+
+
 METHODS = {
     "base": base,
     "batchensemble": batchensemble,
     "bayesian": bayesian,
-    "dare": dare,
+    "dare": _dare_head_ensemble,
     "ddu": ddu,
     "deup": deup,
     "dropout": dropout,
@@ -289,6 +313,7 @@ def _laplace_builder(
 
 
 BUILDERS: dict[str, Builder] = {
+    "dare": _subensemble_builder,
     "laplace": _laplace_builder,
     "natural_posterior_network": _natural_posterior_network_builder,
     "posterior_network": _posterior_network_builder,

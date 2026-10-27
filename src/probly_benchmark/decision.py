@@ -12,10 +12,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from flextype import flexdispatch
+import torch
 
 from probly.decider import categorical_from_mean
 from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
+from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
 from probly.method.efficient_credal_prediction import EfficientCredalPredictor
 from probly.method.subensemble import SubensemblePredictor
@@ -27,10 +29,28 @@ from probly.representation.distribution import (
 from probly.representer import representer
 
 if TYPE_CHECKING:
-    import torch
     from torch import nn
 
     from probly.representation.distribution import CategoricalDistribution
+
+
+def dare_probabilities(outputs: torch.Tensor) -> torch.Tensor:
+    """Class probabilities of DARE head outputs: clipped at zero and normalized per instance.
+
+    The heads regress onto one-hot targets scaled by a constant with a linear output, so their outputs
+    estimate the class posterior up to that scale; the paper reports accuracy and AUROC only and defines
+    no predictive distribution. An instance whose outputs are all non-positive gets the uniform distribution.
+
+    Args:
+        outputs: Head outputs of shape ``(..., num_classes)``.
+
+    Returns:
+        Probabilities of the same shape.
+    """
+    clipped = outputs.float().clamp(min=0.0)
+    total = clipped.sum(dim=-1, keepdim=True)
+    uniform = torch.full_like(clipped, 1.0 / clipped.shape[-1])
+    return torch.where(total > 0, clipped / total.clamp(min=torch.finfo(torch.float32).eps), uniform)
 
 
 @flexdispatch
@@ -97,6 +117,17 @@ def _decide_subensemble(
     member_dists = [create_categorical_distribution_from_logits(predict(member, x)) for member in model]
     avg_probs = sum(d.probabilities for d in member_dists) / len(member_dists)
     return create_categorical_distribution(avg_probs)
+
+
+@decide.register(DarePredictor)
+def _decide_dare(
+    model: DarePredictor,
+    x: torch.Tensor,
+    rep_kwargs: dict[str, Any] | None = None,  # noqa: ARG001
+) -> CategoricalDistribution:
+    """Average the clipped, normalized head outputs across all DARE members."""
+    member_probs = [dare_probabilities(member(x)) for member in model]
+    return create_categorical_distribution(torch.stack(member_probs).mean(dim=0))
 
 
 @decide.register(BatchEnsemblePredictor)

@@ -1,8 +1,21 @@
 # @package method
 name: "dare"
 label: "DARE"
+# Classification form of DARE (arXiv:2304.04042, Section 6.2): fully-connected heads with a linear
+# output on a shared frozen backbone, trained with squared error minus the anti-regularizer.
 params:
-  num_members: 10
+  num_heads: 10
+  # Heads start from independent random init; the backbone is shared and frozen.
   reset_params: true
+  # Head name resolved by `models.get_encoder_head`; the same head as the subensemble so the two
+  # methods differ only in the training objective (the paper uses a three-layer ReLU network).
+  head: "mlp_small"
 train:
-  threshold: 1.0  # threshold below which the anti-regularizer activates (in paper 0.25, for imagenet 1 more suitable)
+  # "auto" follows the paper: tau = (1 + threshold_delta) * best validation loss of a probe head
+  # trained without the anti-regularizer. A number fixes tau directly.
+  threshold: "auto"
+  threshold_delta: 0.25
+  # Head optimization as in the paper: Adam, no weight decay, no schedule, at most 50 epochs.
+  head_epochs: 50
+  head_lr: 0.001
+  head_batch_size: 128

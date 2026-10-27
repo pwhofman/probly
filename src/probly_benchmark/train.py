@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from probly.transformation.subensemble.torch import _FrozenBackbone
 
 
+import copy
 import gc
 import pathlib
 import tempfile
@@ -53,6 +54,7 @@ from probly_benchmark.paths import CHECKPOINT_PATH
 from probly_benchmark.train_funcs import (
     BestModelTracker,
     EarlyStopping,
+    ThresholdModelTracker,
     ValidationMetrics,
     evaluate,
     train_epoch,
@@ -63,6 +65,7 @@ from probly_benchmark.train_funcs import (
     validate,
     validate_batchensemble,
     validate_cross_entropy,
+    validate_dare,
     validate_deup,
 )
 
@@ -308,6 +311,7 @@ def _training_loop(  # noqa: PLR0912, PLR0915
     log_prefix: str = "",
     param_groups: list[dict[str, Any]] | None = None,
     extra_metrics: dict[str, Any] | None = None,
+    model_tracker: BestModelTracker | None = None,
 ) -> None:
     """Run the training loop for a single model.
 
@@ -329,6 +333,8 @@ def _training_loop(  # noqa: PLR0912, PLR0915
             BatchEnsemble to apply a slower lr and disable weight decay on fast weights.
         extra_metrics: Optional dict of additional fixed metrics logged every epoch
             alongside the standard loss/accuracy keys (e.g. ``{"member_0/relative_likelihood": 1.0}``).
+        model_tracker: Optional tracker deciding which epoch's weights are restored after training.
+            Defaults to the lowest validation loss; DARE passes a :class:`ThresholdModelTracker`.
     """
     _maybe_compile_forward(model, device)
 
@@ -351,7 +357,10 @@ def _training_loop(  # noqa: PLR0912, PLR0915
         if cfg.early_stopping.patience
         else None
     )
-    best_tracker = BestModelTracker(min_delta=min_delta) if val_loader is not None else None
+    if model_tracker is not None:
+        best_tracker: BestModelTracker | None = model_tracker
+    else:
+        best_tracker = BestModelTracker(min_delta=min_delta) if val_loader is not None else None
 
     grad_clip_norm = cfg.get("grad_clip_norm", None)
     amp_enabled = cfg.get("amp", False)
@@ -696,6 +705,35 @@ def _(
     )
 
 
+def _cache_dare_features(
+    backbone: nn.Module,
+    loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool,
+    batch_size: int,
+    shuffle: bool,
+) -> DataLoader:
+    """Run ``loader`` once through the frozen backbone and return a loader over the cached features.
+
+    The heads then train on in-memory tensors instead of re-running the backbone every epoch, which
+    freezes data augmentation to this single pass. Features keep the autocast dtype to halve memory.
+    """
+    backbone.eval()
+    features: list[torch.Tensor] = []
+    targets: list[torch.Tensor] = []
+    with torch.no_grad():
+        for inputs_, targets_ in tqdm(loader, desc="Caching DARE features"):
+            inputs = inputs_.to(device, non_blocking=True)
+            if device.type == "cuda" and inputs.ndim >= 4:
+                inputs = inputs.contiguous(memory_format=torch.channels_last)
+            with torch.amp.autocast(device.type, enabled=amp_enabled):
+                feats = backbone(inputs)
+            features.append(feats.cpu())
+            targets.append(targets_.clone())
+    dataset = torch.utils.data.TensorDataset(torch.cat(features), torch.cat(targets))
+    return torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+
+
 @train_model.register(DarePredictor)
 def _(
     model: DarePredictor,
@@ -706,20 +744,117 @@ def _(
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
 ) -> None:
-    """Train a DARE ensemble: each member with cross-entropy minus the anti-regularizer."""
-    for i, member in enumerate(model):
+    """Train a DARE head ensemble as in the classification experiments of :cite:`demathelinDeepAntiRegularized2023`.
+
+    The members share a frozen backbone and differ in their fully-connected heads, which regress onto
+    scaled one-hot targets with a linear output under the anti-regularized objective of Algorithm 1.
+    Without pretrained weights the backbone is first trained end-to-end with cross-entropy, as in the
+    subensemble handler. The heads train on cached backbone features with the paper's optimization (Adam
+    at ``head_lr``, batches of ``head_batch_size``, at most ``head_epochs`` epochs, no weight decay, no
+    schedule, no gradient clipping) and keep the latest epoch whose validation loss is at or below the
+    threshold tau (:class:`ThresholdModelTracker`). ``threshold: "auto"`` applies the paper's heuristic
+    ``tau = (1 + threshold_delta) * best validation loss`` of a probe head trained without the
+    anti-regularizer, i.e. a vanilla deep ensemble member; the probe is discarded afterwards.
+    """
+    frozen_backbone = cast("_FrozenBackbone", next(model[0].children()))
+    if not cfg.get("pretrained", False):
+        num_classes = train_kwargs["num_classes"]
+        in_features = train_kwargs.get("in_features")
+        extra = {"in_features": in_features} if in_features is not None else {}
+        warmup_encoder = models.get_base_model(
+            f"{train_kwargs['base_model_name']}_encoder",
+            num_classes,
+            pretrained=False,
+            **extra,
+        ).to(device)
+        warmup_head = nn.Linear(get_output_dim(warmup_encoder), num_classes).to(device)
         _training_loop(
-            member,
+            nn.Sequential(warmup_encoder, warmup_head),
             train_loader,
             val_loader,
             cfg,
             device,
             run,
             train_kwargs,
-            train_fn=train_epoch_dare,
+            train_fn=train_epoch_cross_entropy,
             val_fn=validate_cross_entropy,
-            log_prefix=f"member_{i}/",
+            log_prefix="backbone/",
         )
+        frozen_backbone.module.load_state_dict(warmup_encoder.state_dict())
+        del warmup_encoder, warmup_head
+
+    amp_enabled = cfg.get("amp", False)
+    head_batch_size = int(train_kwargs.get("head_batch_size", 128))
+    head_train_loader = _cache_dare_features(
+        frozen_backbone, train_loader, device, amp_enabled, head_batch_size, shuffle=True
+    )
+    head_val_loader = (
+        _cache_dare_features(frozen_backbone, val_loader, device, amp_enabled, head_batch_size, shuffle=False)
+        if val_loader is not None
+        else None
+    )
+
+    # The recipe's optimizer, schedule and clipping are tuned for the backbone; the heads use the paper's.
+    head_cfg = cast("DictConfig", OmegaConf.create(OmegaConf.to_container(cfg, resolve=True)))
+    head_cfg.epochs = int(train_kwargs.get("head_epochs", 50))
+    head_cfg.optimizer = OmegaConf.create({"name": "adam", "params": {"lr": float(train_kwargs.get("head_lr", 1e-3))}})
+    head_cfg.scheduler = OmegaConf.create({"name": "none"})
+    head_cfg.grad_clip_norm = None
+
+    heads = [cast("nn.Sequential", member)[1] for member in model]
+    for head in heads:
+        # Compiling a dozen tiny heads costs more than it saves.
+        head._probly_skip_compile = True  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+
+    threshold_cfg = train_kwargs.get("threshold", "auto")
+    if threshold_cfg == "auto":
+        if head_val_loader is None:
+            msg = "DARE threshold 'auto' needs a validation split to measure the probe loss (val_split > 0)."
+            raise ValueError(msg)
+        delta = float(train_kwargs.get("threshold_delta", 0.25))
+        probe = copy.deepcopy(heads[0])
+        probe_tracker = BestModelTracker()
+        _training_loop(
+            probe,
+            head_train_loader,
+            head_val_loader,
+            head_cfg,
+            device,
+            run,
+            {**train_kwargs, "threshold": float("-inf")},
+            train_fn=train_epoch_dare,
+            val_fn=validate_dare,
+            log_prefix="probe/",
+            model_tracker=probe_tracker,
+        )
+        threshold = (1.0 + delta) * probe_tracker.best_loss
+        print(f"DARE threshold: tau = (1 + {delta}) * {probe_tracker.best_loss:.4f} = {threshold:.4f}")
+        run.summary["dare/probe_val_loss"] = probe_tracker.best_loss
+        del probe
+    else:
+        threshold = float(threshold_cfg)
+    run.summary["dare/threshold"] = threshold
+    head_kwargs = {**train_kwargs, "threshold": threshold}
+
+    for i, head in enumerate(heads):
+        tracker = ThresholdModelTracker(threshold) if head_val_loader is not None else None
+        _training_loop(
+            head,
+            head_train_loader,
+            head_val_loader,
+            head_cfg,
+            device,
+            run,
+            head_kwargs,
+            train_fn=train_epoch_dare,
+            val_fn=validate_dare,
+            log_prefix=f"member_{i}/",
+            model_tracker=tracker,
+        )
+        if tracker is not None:
+            if tracker.kept_epoch is None:
+                print(f"member_{i}: no epoch reached validation loss <= {threshold:.4f}; keeping the final weights")
+            run.summary[f"member_{i}/kept_epoch"] = tracker.kept_epoch
 
 
 @torch.no_grad()

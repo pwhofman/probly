@@ -49,8 +49,11 @@ from probly.train.vbll import vbll_loss
 from probly.transformation.batchensemble.torch import tile_inputs as tile_be_inputs
 from probly.utils.torch import intersection_probability
 from probly_benchmark.base import BasePredictor
+from probly_benchmark.decision import dare_probabilities
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from torch.utils.data import DataLoader
 
     from probly.predictor import Predictor
@@ -298,31 +301,45 @@ def train_epoch_het_net(
     return loss.item()
 
 
+def _dare_squared_error(
+    outputs: torch.Tensor,
+    targets: torch.Tensor,
+    num_classes: int,
+    target_scale: float | None,
+) -> torch.Tensor:
+    """Mean squared error to one-hot targets scaled by ``target_scale``, or by ``num_classes`` if ``None``."""
+    scale = float(num_classes) if target_scale is None else float(target_scale)
+    scaled_one_hot = F.one_hot(targets, num_classes).float() * scale
+    # Squared errors grow with scale**2, so keep the loss in fp32 under AMP.
+    return F.mse_loss(outputs.float(), scaled_one_hot)
+
+
 def train_epoch_dare(
     model: nn.Module,
     inputs: torch.Tensor,
     targets: torch.Tensor,
     optimizer: optim.Optimizer,
     threshold: float,
+    num_classes: int,
+    target_scale: float | None = None,
     grad_clip_norm: float | None = None,
     amp_enabled: bool = False,
     scaler: GradScaler | None = None,
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> float:
-    """Train a DARE ensemble member for one step with cross-entropy minus the anti-regularizer.
+    """Train a DARE head for one step with squared error minus the anti-regularizer.
 
-    Backward target is ``CE(outputs, targets) - dare_regularizer(model, ..., threshold)``;
-    the regularizer activates only when the current CE is at or below ``threshold``
-    (Algorithm 1 of arXiv:2304.04042). Returns raw CE so logged training loss is
-    comparable across methods.
+    The head has a linear output and regresses onto one-hot targets scaled by ``target_scale``, the
+    reference vector of the DARE OOD score. Backward target is ``MSE - dare_regularizer(model, ..., threshold)``;
+    the regularizer activates only when the batch loss is at or below ``threshold`` (Algorithm 1 of
+    arXiv:2304.04042). Returns the plain squared error.
     """
-    criterion = nn.CrossEntropyLoss()
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
         outputs = model(inputs)
-        loss = criterion(outputs, targets)
-        reg = dare_regularizer(model, inputs.device, loss.detach(), threshold)
-        total = loss - reg
+    loss = _dare_squared_error(outputs, targets, num_classes, target_scale)
+    reg = dare_regularizer(model, inputs.device, loss.detach(), threshold)
+    total = loss - reg
     if scaler is not None:
         scaler.scale(total).backward()
         if grad_clip_norm is not None:
@@ -336,6 +353,32 @@ def train_epoch_dare(
             nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
         optimizer.step()
     return loss.item()
+
+
+@torch.no_grad()
+def validate_dare(
+    model: nn.Module,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    *,
+    num_classes: int,
+    target_scale: float | None = None,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> ValidationMetrics:
+    """Validate a DARE head with the squared error against the scaled one-hot targets and argmax accuracy."""
+    model.eval()
+    val_loss = 0.0
+    val_acc = 0.0
+    num_instances = 0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            outputs = model(inputs)
+        val_loss += _dare_squared_error(outputs, targets, num_classes, target_scale).item()
+        val_acc += _accuracy(outputs, targets) * inputs.shape[0]
+        num_instances += inputs.shape[0]
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
 @train_epoch.register(PosteriorNetworkPredictor)
@@ -1372,26 +1415,15 @@ def evaluate_batchensemble(
     return metrics
 
 
-@evaluate.register(
-    (
-        EnsemblePredictor,
-        CredalEnsemblingPredictor,
-        CredalRelativeLikelihoodPredictor,
-        CredalWrapperPredictor,
-        DarePredictor,
-        SubensemblePredictor,
-    )
-)
-@torch.no_grad()
-def evaluate_ensemble(
+def _evaluate_members(
     model: EnsemblePredictor,
     test_loader: DataLoader,
     device: torch.device,
-    amp_enabled: bool = False,
-    n_bins: int = 10,
-    **kwargs: Any,  # noqa: ANN401, ARG001
+    amp_enabled: bool,
+    n_bins: int,
+    to_probabilities: Callable[[torch.Tensor], torch.Tensor],
 ) -> dict[str, float]:
-    """Evaluate an ensemble by averaging member softmax outputs.
+    """Evaluate an ensemble by averaging the member probabilities given by ``to_probabilities``.
 
     Returns ensemble-level metrics and per-member metrics keyed as
     ``member_<i>/accuracy``, ``member_<i>/nll``, ``member_<i>/ece``.
@@ -1406,7 +1438,7 @@ def evaluate_ensemble(
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
             for j, member in enumerate(members):
-                all_member_probs[j].append(F.softmax(member(inputs), dim=1))
+                all_member_probs[j].append(to_probabilities(member(inputs)))
         all_labels.append(targets)
 
     labels = torch.cat(all_labels)
@@ -1425,6 +1457,42 @@ def evaluate_ensemble(
     metrics.update(_compute_metrics(ensemble_probs, labels, n_bins))
 
     return metrics
+
+
+@evaluate.register(
+    (
+        EnsemblePredictor,
+        CredalEnsemblingPredictor,
+        CredalRelativeLikelihoodPredictor,
+        CredalWrapperPredictor,
+        SubensemblePredictor,
+    )
+)
+@torch.no_grad()
+def evaluate_ensemble(
+    model: EnsemblePredictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate an ensemble by averaging member softmax outputs."""
+    return _evaluate_members(model, test_loader, device, amp_enabled, n_bins, lambda logits: F.softmax(logits, dim=1))
+
+
+@evaluate.register(DarePredictor)
+@torch.no_grad()
+def evaluate_dare(
+    model: DarePredictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate a DARE head ensemble by averaging the clipped, normalized head outputs of the members."""
+    return _evaluate_members(model, test_loader, device, amp_enabled, n_bins, dare_probabilities)
 
 
 def _maybe_reset_sngp_precision_for_new_epoch(model: nn.Module, epoch: int) -> None:
@@ -1600,3 +1668,36 @@ class BestModelTracker:
             self.best_state_dict = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
             return True
         return False
+
+
+class ThresholdModelTracker(BestModelTracker):
+    """Keep the latest epoch whose validation loss is at or below ``threshold``.
+
+    The DARE checkpoint rule (Section 6 of arXiv:2304.04042): the anti-regularizer raises the validation
+    loss on purpose, so restoring the lowest-loss epoch would undo the weight increase. The newest state
+    that still meets the performance threshold is kept instead; if no epoch qualifies, nothing is stored
+    and the final weights stay in place.
+
+    Args:
+        threshold: Validation loss that a kept epoch may not exceed.
+    """
+
+    def __init__(self, threshold: float) -> None:
+        """Initialize the threshold tracker."""
+        super().__init__()
+        self.threshold = threshold
+        self.epoch = -1
+        self.kept_epoch: int | None = None
+
+    def update(self, val_loss: float, model: nn.Module) -> bool:
+        """Store a CPU clone of ``model.state_dict()`` if ``val_loss`` is at or below the threshold.
+
+        Returns whether the stored state was updated.
+        """
+        self.epoch += 1
+        if val_loss > self.threshold:
+            return False
+        self.best_loss = val_loss
+        self.best_state_dict = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+        self.kept_epoch = self.epoch
+        return True
