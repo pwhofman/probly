@@ -18,6 +18,20 @@ if TYPE_CHECKING:
 type SampleAxis = int | Literal["auto"]
 
 
+def track_sample_axis_after_broadcast(axes: Iterable[tuple[int, int]], result_ndim: int) -> int | None:
+    """Track aligned sample axes through elementwise broadcasting.
+
+    Args:
+        axes: Pairs of sample axis and dimensionality for the sample operands.
+        result_ndim: The dimensionality of the broadcast result.
+
+    Returns:
+        The broadcast sample axis, or None if the operands disagree.
+    """
+    result_axes = {result_ndim - ndim + axis for axis, ndim in axes}
+    return result_axes.pop() if len(result_axes) == 1 else None
+
+
 class SampleFactory[T, S: Sample](Protocol):
     """Protocol for the creation of samples."""
 

@@ -2179,15 +2179,15 @@ wheels = [
 
 [[package]]
 name = "ndlike"
-version = "0.1.1"
+version = "0.2.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "flextype" },
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6a/30/9570eb3bb7eb93b0c30286eee673a26c745136827cedef69c78c5821b838/ndlike-0.1.1.tar.gz", hash = "sha256:c2bc1afac4e5b60a4cdaa76fa2e6e443c73d73f95e45da60e01c70f99fdb3eb9", size = 49475, upload-time = "2026-10-20T21:39:51.8Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b7/8e/51da76f535301f17e3b46e03f15a0c49ff260ef1b15c5596a8b1ebc14a37/ndlike-0.2.4.tar.gz", hash = "sha256:2356ddb76340c87830c99e4c051df12056784b5f4c4410d84330510cd6b46f5f", size = 54958, upload-time = "2026-10-26T23:36:54.288Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/61/4b/b244c5de15f4733dc681f69d2ea56ee2fe3ec7e45816943c11bfb9868061/ndlike-0.1.1-py3-none-any.whl", hash = "sha256:e37273e2857418a5d93f9577c9fd788c03d10c5f329b10a6ca9a3c8be599e1bd", size = 55476, upload-time = "2026-10-20T21:39:50.179Z" },
+    { url = "https://files.pythonhosted.org/packages/84/be/c853597540d0a5f3f9d8c5f5ec48d10a9cc258ed41e84ee7fc4dc0e36248/ndlike-0.2.4-py3-none-any.whl", hash = "sha256:83053a010f2e7b268f323d4e4fba7fde24e39b182a7897d84bd042e424442267", size = 60907, upload-time = "2026-10-26T23:36:52.825Z" },
 ]
 
 [[package]]
@@ -2872,7 +2872,7 @@ requires-dist = [
     { name = "flextype", specifier = ">=0.3.0" },
     { name = "matplotlib", specifier = ">=3.9.2" },
     { name = "mpltern", specifier = ">=0.6.0" },
-    { name = "ndlike", specifier = ">=0.1.1" },
+    { name = "ndlike", specifier = ">=0.2.4" },
     { name = "numpy", specifier = ">=2.1.0" },
     { name = "scipy", specifier = ">=1.14.1" },
     { name = "tqdm", specifier = ">=4.25.0" },

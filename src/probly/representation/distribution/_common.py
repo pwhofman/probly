@@ -28,7 +28,7 @@ type DistributionType = Literal[
 class Distribution[T](Representation, ABC):
     """Base class for distributions."""
 
-    type: DistributionType
+    type: ClassVar[DistributionType]
 
     def entropy(self) -> ArrayLike:
         """Compute entropy."""
@@ -44,7 +44,7 @@ class Distribution[T](Representation, ABC):
 class MixtureDistribution[D: Distribution, T](Distribution[T], ABC):
     """Base class for mixture distributions."""
 
-    type: Literal["mixture"] = "mixture"
+    type: ClassVar[Literal["mixture"]] = "mixture"
     _running_instancehook: ClassVar[ContextVar[object]] = ContextVar(
         "MixtureDistribution._running_instancehook", default=NotImplemented
     )
@@ -76,7 +76,7 @@ class MixtureDistribution[D: Distribution, T](Distribution[T], ABC):
 class CategoricalDistribution[T](Distribution[T]):
     """Base class for categorical distributions."""
 
-    type: Literal["categorical"] = "categorical"
+    type: ClassVar[Literal["categorical"]] = "categorical"
 
     @property
     @abstractmethod
@@ -111,7 +111,7 @@ class BernoulliDistribution[T](CategoricalDistribution[T]):
     can be viewed as two-class categorical distributions.
     """
 
-    type: Literal["bernoulli"] = "bernoulli"
+    type: ClassVar[Literal["bernoulli"]] = "bernoulli"
 
     @property
     def num_classes(self) -> int:
@@ -160,7 +160,7 @@ class SecondOrderDistribution[T: Distribution](Distribution[T]):
 class DirichletDistribution[T: CategoricalDistribution](SecondOrderDistribution[T]):
     """Base class for Dirichlet distributions."""
 
-    type: Literal["dirichlet"] = "dirichlet"
+    type: ClassVar[Literal["dirichlet"]] = "dirichlet"
 
     @property
     @abstractmethod
@@ -186,7 +186,7 @@ class DirichletMixtureDistribution[D: DirichletDistribution, T: CategoricalDistr
 class GaussianDistribution[D](Distribution[D], ABC):
     """Base class for Gaussian distributions."""
 
-    type: Literal["gaussian"] = "gaussian"
+    type: ClassVar[Literal["gaussian"]] = "gaussian"
 
     @property
     @abstractmethod
