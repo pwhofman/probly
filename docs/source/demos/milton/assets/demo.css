@@ -1,0 +1,684 @@
+/* The interactive Milton forecast (demo.js; see demos/milton/index.rst): WeatherNext's runs of
+   Hurricane Milton on a map, over four days, and what probly makes of their spread. */
+
+.milton-demo {
+  /* the docs' tokens (brand.css, furo), with fallbacks for a page without them */
+  --md-surface: var(--probly-surface, #ffffff);
+  --md-raised: var(--probly-surface-raised, #f7f8fc);
+  --md-border: var(--probly-border, #e2e6f3);
+  --md-muted: var(--probly-text-muted, #5b6275);
+  --md-text: var(--color-foreground-primary, #1a1c23);
+  --md-shadow: var(--probly-shadow, 0 1px 2px rgba(20, 28, 60, 0.06), 0 4px 16px rgba(20, 28, 60, 0.06));
+  --md-ease: var(--probly-ease, cubic-bezier(0.2, 0.7, 0.2, 1));
+  --md-duration: var(--probly-duration, 220ms);
+  --md-radius: 14px;
+  --md-radius-small: 9px;
+  /* the map: what a run forecasts is ink, what probly says about the runs is color */
+  --md-ink: #1b2340;
+  --md-ocean: #edf2f9;
+  --md-land: #dde2ea;
+  --md-coast: #8d97ac;
+  --md-graticule: #d3dae6;
+  /* the logo's two inks and their overlap: aleatoric, both, epistemic */
+  --md-red: #ff2763;
+  --md-mix: #7a43ad;
+  --md-blue: #285bff;
+  /* the same, dark enough to read as text */
+  --md-red-text: #d3134b;
+  --md-blue-text: #1f4fe0;
+
+  clear: both;
+  margin: 1.5rem 0 0.75rem;
+  padding: 1rem 1.25rem 1.25rem;
+  border: 1px solid var(--md-border);
+  border-radius: var(--md-radius);
+  background: var(--md-surface);
+  box-shadow: var(--md-shadow);
+  color: var(--md-text);
+  container-type: inline-size; /* the layout follows the demo's width, not the window's */
+  font-variant-numeric: tabular-nums;
+}
+
+body[data-theme="dark"] .milton-demo {
+  --md-ink: #e9edf7;
+  --md-ocean: #12161e;
+  --md-land: #262c37;
+  --md-coast: #5b6478;
+  --md-graticule: #232936;
+  --md-mix: #bf55cf;
+  --md-blue: #4a74ff;
+  --md-red-text: #ff5c88;
+  --md-blue-text: #8aa6ff;
+}
+
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme="light"]) .milton-demo {
+    --md-ink: #e9edf7;
+    --md-ocean: #12161e;
+    --md-land: #262c37;
+    --md-coast: #5b6478;
+    --md-graticule: #232936;
+    --md-mix: #bf55cf;
+    --md-blue: #4a74ff;
+    --md-red-text: #ff5c88;
+    --md-blue-text: #8aa6ff;
+  }
+}
+
+/* while the script builds the demo, it keeps about the demo's room, so the page does not jump */
+@media (scripting: enabled) {
+  .milton-demo:not(.milton-demo-ready, .milton-demo-failed) {
+    min-height: 36rem;
+  }
+}
+
+.milton-demo-fallback {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--md-radius-small);
+}
+
+.milton-demo-aleatoric {
+  color: var(--md-red-text);
+}
+
+.milton-demo-epistemic {
+  color: var(--md-blue-text);
+}
+
+/* -- the bar: the views, the models, the note ---------------------------------------------------- */
+
+.milton-demo-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.milton-demo-switches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.milton-demo-switch {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--md-border);
+  border-radius: 999px;
+  background: var(--md-raised);
+}
+
+.milton-demo-option {
+  padding: 0.38rem 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--md-muted);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--md-duration) var(--md-ease), color var(--md-duration) var(--md-ease);
+}
+
+.milton-demo-option:hover:not(:disabled) {
+  color: var(--md-text);
+}
+
+.milton-demo-option[aria-pressed="true"],
+.milton-demo-option[aria-pressed="true"]:hover {
+  background: var(--md-text);
+  color: var(--md-surface);
+}
+
+.milton-demo-option:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.milton-demo-option:focus-visible,
+.milton-demo-info:focus-visible,
+.milton-demo-play:focus-visible,
+.milton-demo-chip:focus-visible,
+.milton-demo-toggle input:focus-visible + span,
+.milton-demo-map canvas:focus-visible {
+  outline: 2px solid var(--md-blue);
+  outline-offset: 2px;
+}
+
+.milton-demo-short {
+  display: none;
+}
+
+@container (max-width: 40rem) {
+  .milton-demo-long {
+    display: none;
+  }
+
+  .milton-demo-short {
+    display: inline;
+  }
+
+  .milton-demo-option {
+    padding: 0.38rem 0.7rem;
+  }
+}
+
+.milton-demo-info {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--md-border);
+  border-radius: 50%;
+  background: var(--md-raised);
+  color: var(--md-muted);
+  font: italic 600 0.95rem/1 Georgia, "Times New Roman", serif;
+  cursor: pointer;
+}
+
+.milton-demo-info[aria-expanded="true"] {
+  background: var(--md-text);
+  color: var(--md-surface);
+}
+
+.milton-demo-about {
+  margin: -0.3rem 0 0.9rem;
+  padding: 0.75rem 0.95rem;
+  border-radius: var(--md-radius-small);
+  background: var(--md-raised);
+  color: var(--md-muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.milton-demo-about p {
+  margin: 0;
+}
+
+.milton-demo-about p + p {
+  margin-top: 0.45rem;
+}
+
+/* -- the layout: the map and its timeline, and the panel ------------------------------------------- */
+
+.milton-demo-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@container (max-width: 46rem) {
+  .milton-demo-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.milton-demo-stage {
+  display: grid;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.milton-demo-map {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--md-radius-small);
+  background: var(--md-ocean);
+  touch-action: manipulation;
+}
+
+.milton-demo-map canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+}
+
+.milton-demo-badge {
+  position: absolute;
+  top: 0.55rem;
+  left: 0.55rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px dashed var(--md-coast);
+  border-radius: 999px;
+  background: var(--md-surface);
+  color: var(--md-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.milton-demo-tip {
+  position: absolute;
+  z-index: 2;
+  min-width: 10rem;
+  max-width: 15rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--md-border);
+  border-radius: var(--md-radius-small);
+  background: var(--md-surface);
+  box-shadow: var(--md-shadow);
+  color: var(--md-text);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  pointer-events: none;
+}
+
+.milton-demo-tip strong {
+  display: block;
+  margin-bottom: 0.1rem;
+  color: var(--md-muted);
+  font-weight: 600;
+}
+
+/* the timeline under the map */
+.milton-demo-time {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.25rem 0.7rem;
+}
+
+.milton-demo-play {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--md-text);
+  color: var(--md-surface);
+  cursor: pointer;
+}
+
+.milton-demo-play svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  fill: currentColor;
+}
+
+.milton-demo-track {
+  position: relative;
+  min-width: 0;
+}
+
+.milton-demo-slider {
+  display: block;
+  width: 100%;
+  margin: 0;
+  accent-color: var(--md-text);
+  cursor: pointer;
+}
+
+.milton-demo-days {
+  position: relative;
+  height: 1.1rem;
+  margin-top: 0.15rem;
+  color: var(--md-muted);
+  font-size: 0.72rem;
+}
+
+.milton-demo-days span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.milton-demo-days span:first-child {
+  transform: none;
+}
+
+.milton-demo-days span:last-child {
+  transform: translateX(-100%);
+}
+
+.milton-demo-days .milton-demo-landfall-tick {
+  top: -0.05rem;
+  color: var(--md-text);
+  font-weight: 600;
+}
+
+.milton-demo-now {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+  grid-column: 1 / -1;
+  font-size: 0.86rem;
+}
+
+.milton-demo-clock {
+  color: var(--md-text);
+  font-weight: 600;
+}
+
+.milton-demo-clock span {
+  color: var(--md-muted);
+  font-weight: 400;
+}
+
+.milton-demo-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--md-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.milton-demo-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.milton-demo-toggle span {
+  position: relative;
+  width: 2rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: var(--md-border);
+  transition: background var(--md-duration) var(--md-ease);
+}
+
+.milton-demo-toggle span::after {
+  content: "";
+  position: absolute;
+  top: 0.15rem;
+  left: 0.15rem;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background: var(--md-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform var(--md-duration) var(--md-ease);
+}
+
+.milton-demo-toggle input:checked + span {
+  background: var(--md-text);
+}
+
+.milton-demo-toggle input:checked + span::after {
+  transform: translateX(0.85rem);
+}
+
+.milton-demo-toggle:has(input:checked) {
+  color: var(--md-text);
+}
+
+/* -- the panel -------------------------------------------------------------------------------------- */
+
+.milton-demo-panel {
+  display: grid;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.milton-demo-title {
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.milton-demo-lead {
+  margin: -0.35rem 0 0;
+  color: var(--md-muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.milton-demo-lead strong {
+  color: var(--md-text);
+}
+
+.milton-demo-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.milton-demo-chip {
+  padding: 0.22rem 0.6rem;
+  border: 1px solid var(--md-border);
+  border-radius: 999px;
+  background: var(--md-surface);
+  color: var(--md-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color var(--md-duration) var(--md-ease), color var(--md-duration) var(--md-ease);
+}
+
+.milton-demo-chip:hover {
+  color: var(--md-text);
+}
+
+.milton-demo-chip[aria-pressed="true"] {
+  border-color: var(--md-text);
+  color: var(--md-text);
+  font-weight: 600;
+}
+
+.milton-demo-spot {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.75rem 0.8rem 0.6rem;
+  border: 1px solid var(--md-border);
+  border-radius: var(--md-radius-small);
+  background: var(--md-raised);
+}
+
+.milton-demo-spot-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.2rem 0.75rem;
+}
+
+.milton-demo-spot-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.milton-demo-spot-unit {
+  color: var(--md-muted);
+  font-size: 0.75rem;
+}
+
+.milton-demo-chart {
+  display: block;
+  width: 100%;
+  height: 9.5rem;
+  overflow: visible;
+  touch-action: pan-y;
+  cursor: ew-resize;
+}
+
+.milton-demo-chart text {
+  fill: var(--md-muted);
+  font-size: 10px;
+}
+
+.milton-demo-chart .axis {
+  stroke: var(--md-border);
+  stroke-width: 1;
+}
+
+.milton-demo-chart .threshold {
+  stroke: var(--md-coast);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.milton-demo-chart .cursor {
+  stroke: var(--md-text);
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+.milton-demo-chart .run {
+  fill: none;
+  stroke: var(--md-ink);
+  stroke-width: 1;
+  opacity: 0.28;
+}
+
+.milton-demo-chart .run-split {
+  fill: none;
+  stroke: var(--md-red);
+  stroke-width: 1;
+  opacity: 0.4;
+}
+
+.milton-demo-chart .model-mean {
+  fill: none;
+  stroke: var(--md-blue);
+  stroke-width: 2.25;
+  stroke-linecap: round;
+}
+
+.milton-demo-chart .line {
+  fill: none;
+  stroke: var(--md-ink);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.milton-demo-chart .band {
+  fill: var(--md-ink);
+  opacity: 0.12;
+}
+
+.milton-demo-chart .band-conformal {
+  fill: none;
+  stroke: var(--md-ink);
+  stroke-width: 1.25;
+  stroke-dasharray: 4 3;
+}
+
+.milton-demo-chart .truth {
+  fill: none;
+  stroke: var(--md-text);
+  stroke-width: 2;
+  stroke-dasharray: 1 4;
+  stroke-linecap: round;
+}
+
+.milton-demo-chart .miss {
+  fill: var(--md-red);
+  stroke: var(--md-raised);
+  stroke-width: 2;
+}
+
+.milton-demo-chart .hit {
+  fill: var(--md-raised);
+  stroke: var(--md-text);
+  stroke-width: 1.5;
+}
+
+.milton-demo-chart .aleatoric {
+  fill: var(--md-red);
+  opacity: 0.75;
+}
+
+.milton-demo-chart .epistemic {
+  fill: var(--md-blue);
+  opacity: 0.8;
+}
+
+.milton-demo-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0.15rem 0 0;
+}
+
+.milton-demo-stats div {
+  min-width: 0;
+}
+
+.milton-demo-stats dt {
+  color: var(--md-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+}
+
+.milton-demo-stats dd {
+  margin: 0.1rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.milton-demo-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  color: var(--md-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.milton-demo-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.milton-demo-legend i {
+  flex: none;
+  display: inline-block;
+  width: 1.1rem;
+  height: 0.7rem;
+  border-radius: 3px;
+}
+
+.milton-demo-legend i.line {
+  height: 0;
+  border-top: 2px solid var(--md-ink);
+  border-radius: 0;
+}
+
+.milton-demo-legend i.dashed {
+  height: 0;
+  border-top: 2px dotted var(--md-text);
+  border-radius: 0;
+}
+
+.milton-demo-legend i.ramp {
+  width: 3.2rem;
+}
+
+.milton-demo-note {
+  margin: 0;
+  color: var(--md-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.milton-demo-note a {
+  color: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .milton-demo * {
+    transition: none !important;
+  }
+}
