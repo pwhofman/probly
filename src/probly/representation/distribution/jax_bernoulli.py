@@ -8,6 +8,7 @@ from typing import ClassVar, override
 
 import jax
 from jax import numpy as jnp
+from jax.core import Tracer
 from jax.experimental import checkify
 from jax.scipy.special import logit
 from ndlike.jax_functions import jax_stack
@@ -95,14 +96,14 @@ class JaxBernoulliDistributionSample(  # ty:ignore[conflicting-metaclass]
     sample_space: ClassVar[type[BernoulliDistribution]] = JaxBernoulliDistribution
 
 
-@create_bernoulli_distribution.register(jax.Array)
+@create_bernoulli_distribution.register((jax.Array, Tracer))
 def _jax_create_bernoulli_distribution(data: jax.Array) -> BernoulliDistribution:
     if data.ndim >= 2 and data.shape[-1] <= 2:
         data = data[..., -1]
     return JaxProbabilityBernoulliDistribution(data)
 
 
-@create_bernoulli_distribution_from_logits.register(jax.Array)
+@create_bernoulli_distribution_from_logits.register((jax.Array, Tracer))
 def _jax_create_bernoulli_distribution_from_logits(data: jax.Array) -> BernoulliDistribution:
     if data.ndim >= 2 and data.shape[-1] == 2:
         data = data[..., -1] - data[..., 0]

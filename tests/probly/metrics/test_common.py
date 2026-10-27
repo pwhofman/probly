@@ -85,3 +85,18 @@ class TestMetricFallbacks:
 
         with pytest.raises(NotImplementedError, match="convex_hull_coverage"):
             convex_hull_coverage(object(), object())
+
+    @pytest.mark.parametrize(
+        "rule",
+        [
+            "log_loss_per_instance",
+            "brier_loss_per_instance",
+            "zero_one_loss_per_instance",
+            "spherical_loss_per_instance",
+        ],
+    )
+    def test_scoring_rule_raises(self, rule: str) -> None:
+        import probly.metrics._common as metrics_common  # noqa: PLC0415
+
+        with pytest.raises(NotImplementedError, match="Scoring rules"):
+            getattr(metrics_common, rule)(object(), object())

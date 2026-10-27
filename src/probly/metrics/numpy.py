@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NoReturn
 
 import numpy as np
 from scipy.optimize import linprog
@@ -17,9 +17,15 @@ from probly.representation.credal_set.numpy import (
     NumpySingletonCredalSet,
 )
 from probly.representation.distribution._common import CategoricalDistribution
+from probly.representation.sample import Sample
 
 from ._common import (
     CREDAL_ROUND_DECIMALS,
+    _expected_loss,
+    _log_probabilities,
+    _one_hot_argmax,
+    _probabilities,
+    _validate_labels,
     accuracy,
     auc,
     average_interval_width,
@@ -684,3 +690,61 @@ def _numpy_singleton_convex_hull_coverage(
     targets = np.asarray(y_true.probabilities)
     l1_dist = np.abs(predicted - targets).sum(axis=-1)
     return np.mean(l1_dist <= epsilon)
+
+
+@_probabilities.register
+def numpy_probabilities(probabilities: np.ndarray) -> np.ndarray:
+    """Return a NumPy array of probabilities unchanged."""
+    return probabilities
+
+
+@_log_probabilities.register
+def numpy_log_probabilities(probabilities: np.ndarray) -> np.ndarray:
+    """Compute the log probabilities of a NumPy array."""
+    # A zero probability has an infinite log loss; the inf is the exact value, so the warning is noise.
+    with np.errstate(divide="ignore"):
+        return np.log(probabilities)
+
+
+@_one_hot_argmax.register
+def numpy_one_hot_argmax(probabilities: np.ndarray) -> np.ndarray:
+    """One-hot encode the first maximum of each probability vector of a NumPy array."""
+    num_classes = probabilities.shape[-1]
+    argmax = np.argmax(probabilities, axis=-1)
+    return np.eye(num_classes, dtype=probabilities.dtype)[argmax]
+
+
+@_probabilities.register(CategoricalDistribution)
+def _(y_prob: CategoricalDistribution) -> object:
+    """Unwrap the normalized probabilities of a categorical distribution."""
+    return y_prob.probabilities
+
+
+@_log_probabilities.register(CategoricalDistribution)
+def _(y_prob: CategoricalDistribution) -> object:
+    """Unwrap the log probabilities of a categorical distribution, exact for logit-parameterized ones."""
+    return y_prob.log_probabilities
+
+
+@_log_probabilities.register(Sample)
+@_probabilities.register(Sample)
+def _(y_prob: Sample) -> NoReturn:
+    """Reject samples, whose members would otherwise be scored as separate predictions."""
+    msg = (
+        f"Scoring rules take one prediction per instance, got a {type(y_prob).__name__}. Reduce the sample "
+        "first, e.g. with sample_mean()."
+    )
+    raise TypeError(msg)
+
+
+@_expected_loss.register(np.ndarray)
+def _numpy_expected_loss(loss_vector: np.ndarray, y_true: object) -> np.ndarray:
+    """Reduce a per-label loss vector to the loss under integer labels or target probabilities."""
+    target = np.asarray(y_true.probabilities if isinstance(y_true, CategoricalDistribution) else y_true)
+    if target.shape == loss_vector.shape:
+        # A class without target mass never occurs, so it adds no loss even where that loss is infinite.
+        with np.errstate(invalid="ignore"):
+            weighted = target * loss_vector
+        return np.where(target > 0, weighted, 0.0).sum(axis=-1)
+    _validate_labels(target.shape, loss_vector.shape, is_integer=np.issubdtype(target.dtype, np.integer))
+    return np.take_along_axis(loss_vector, target[..., np.newaxis], axis=-1).squeeze(-1)

@@ -275,7 +275,7 @@ The preceding methods produce a **representation**. To interpret these, `quantif
 - **Credal sets**: `upper_entropy`, `lower_entropy`, `generalized_hartley`, `min_expected_total_variation`
 - **Conformal sets**: `conformal_set_size`
 - **Embeddings and text**: `spectral_entropy`, `semantic_entropy`
-- **Scoring rules**: `BrierLoss`, `LogLoss`, `SphericalLoss`, `ZeroOneLoss`
+- **Scoring rules** (from `probly.metrics`, for `SecondOrderScoringRuleDecomposition`): `brier_loss_per_instance`, `log_loss_per_instance`, `spherical_loss_per_instance`, `zero_one_loss_per_instance`
 
 Browse the full [API reference](https://pwhofman.github.io/probly/stable/api.html) and the [examples gallery](https://pwhofman.github.io/probly/stable/examples.html) for the complete picture.
 
