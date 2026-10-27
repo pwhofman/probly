@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any, cast
+
 from flextype import flexdispatch
 
 # Number of decimal places used when rounding lower/upper bounds in credal-set coverage and efficiency.
 CREDAL_ROUND_DECIMALS: int = 3
+
+type ScoringRule = Callable[[object, object], object]
+"""A per-instance scoring rule ``(y_prob, y_true) -> losses``, such as :func:`log_loss_per_instance`."""
 
 
 @flexdispatch
@@ -380,3 +386,198 @@ def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.000
     """
     msg = f"convex_hull_coverage is not implemented for type {type(y_pred).__name__}."
     raise NotImplementedError(msg)
+
+
+# These primitives provide composed defaults. Individual rules can specialize dispatch where a backend needs
+# a more efficient or numerically stable implementation.
+@flexdispatch
+def _probabilities(y_prob: object) -> object:
+    """Return the probabilities ``(..., K)`` of a prediction, unwrapping categorical distributions."""
+    msg = f"Scoring rules are not implemented for type {type(y_prob).__name__}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def _log_probabilities(y_prob: object) -> object:
+    """Return the log probabilities ``(..., K)`` of a prediction, exact for logit-parameterized distributions."""
+    msg = f"Scoring rules are not implemented for type {type(y_prob).__name__}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def _one_hot_argmax(probabilities: object) -> object:
+    """One-hot encode the first maximum of each probability vector ``(..., K)`` in the probabilities' dtype."""
+    msg = f"Scoring rules are not implemented for type {type(probabilities).__name__}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def _expected_loss(loss_vector: object, y_true: object) -> object:
+    """Reduce a per-label loss vector of shape ``(..., K)`` to the loss of each instance under ``y_true``."""
+    msg = f"Scoring rules are not implemented for type {type(loss_vector).__name__}."
+    raise NotImplementedError(msg)
+
+
+def _validate_labels(labels_shape: tuple[int, ...], loss_shape: tuple[int, ...], *, is_integer: bool) -> None:
+    """Raise unless ``y_true`` holds integer labels for per-label losses of shape ``loss_shape``."""
+    if labels_shape != loss_shape[:-1]:
+        msg = (
+            f"y_true must be integer labels of shape {loss_shape[:-1]} or target probabilities of shape "
+            f"{loss_shape}, got shape {labels_shape}."
+        )
+        raise ValueError(msg)
+    if not is_integer:
+        msg = "y_true of the predictions' batch shape must hold integer class labels."
+        raise ValueError(msg)
+
+
+@flexdispatch
+def log_loss_per_instance(y_prob: object, y_true: object) -> object:
+    """Compute the log loss ``-log(p_y)`` of each prediction.
+
+    No clipping is applied, so the loss is ``inf`` where the true class has probability zero.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution, whose log
+            probabilities are used directly so that logit-parameterized distributions stay exact.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)`` (array or
+            categorical distribution) under which the expected loss is taken.
+
+    Returns:
+        The loss of each prediction, of shape ``(...)``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    return _expected_loss(-cast("Any", _log_probabilities(y_prob)), y_true)
+
+
+def brier_loss_per_instance(y_prob: object, y_true: object) -> object:
+    """Compute the Brier loss ``sum_k (p_k - [k == y])^2`` of each prediction.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)`` (array or
+            categorical distribution) under which the expected loss is taken.
+
+    Returns:
+        The loss of each prediction in ``[0, 2]``, of shape ``(...)``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    probabilities = cast("Any", _probabilities(y_prob))
+    loss_vector = (probabilities**2).sum(axis=-1, keepdims=True) - 2.0 * probabilities + 1.0
+    return _expected_loss(loss_vector, y_true)
+
+
+def zero_one_loss_per_instance(y_prob: object, y_true: object) -> object:
+    """Compute the zero-one loss ``1 - [argmax_k p_k == y]`` of each prediction.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)`` (array or
+            categorical distribution) under which the expected loss is taken.
+
+    Returns:
+        The loss of each prediction in ``[0, 1]``, of shape ``(...)``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    return _expected_loss(1.0 - cast("Any", _one_hot_argmax(_probabilities(y_prob))), y_true)
+
+
+def spherical_loss_per_instance(y_prob: object, y_true: object) -> object:
+    """Compute the spherical loss ``1 - p_y / ||p||_2`` of each prediction.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)`` (array or
+            categorical distribution) under which the expected loss is taken.
+
+    Returns:
+        The loss of each prediction in ``[0, 1]``, of shape ``(...)``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    probabilities = cast("Any", _probabilities(y_prob))
+    norm = (probabilities**2).sum(axis=-1, keepdims=True) ** 0.5
+    return _expected_loss(1.0 - probabilities / norm, y_true)
+
+
+def log_loss(y_prob: object, y_true: object) -> object:
+    """Compute the mean log loss of the predictions, the average of :func:`log_loss_per_instance`.
+
+    No clipping is applied, so the mean is ``inf`` if any true class has probability zero.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)``.
+
+    Returns:
+        The mean log loss.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    return cast("Any", log_loss_per_instance(y_prob, y_true)).mean()
+
+
+def brier_loss(y_prob: object, y_true: object) -> object:
+    """Compute the mean Brier loss of the predictions, the average of :func:`brier_loss_per_instance`.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)``.
+
+    Returns:
+        The mean Brier loss in ``[0, 2]``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    return cast("Any", brier_loss_per_instance(y_prob, y_true)).mean()
+
+
+def zero_one_loss(y_prob: object, y_true: object) -> object:
+    """Compute the mean zero-one loss of the predictions, the average of :func:`zero_one_loss_per_instance`.
+
+    With integer labels this is the error rate, ``1 - accuracy``.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)``.
+
+    Returns:
+        The mean zero-one loss in ``[0, 1]``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    return cast("Any", zero_one_loss_per_instance(y_prob, y_true)).mean()
+
+
+def spherical_loss(y_prob: object, y_true: object) -> object:
+    """Compute the mean spherical loss of the predictions, the average of :func:`spherical_loss_per_instance`.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)``.
+
+    Returns:
+        The mean spherical loss in ``[0, 1]``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    return cast("Any", spherical_loss_per_instance(y_prob, y_true)).mean()

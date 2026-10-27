@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import jax
+from jax.core import Tracer
 import jax.numpy as jnp
 
 from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
@@ -11,7 +12,7 @@ from probly.representation.sample.jax import JaxSample
 from ._common import dirichlet_rl_score_func
 
 
-@dirichlet_rl_score_func.register(jax.Array)
+@dirichlet_rl_score_func.register((jax.Array, Tracer))
 def jax_compute_dirichlet_rl_score(alphas: jax.Array, y_true: jax.Array) -> jax.Array:
     """Compute the Dirichlet relative likelihood score using JAX Arrays.
 

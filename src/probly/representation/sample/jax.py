@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Self, cast, override
 
 import jax
+from jax.core import Tracer
 import jax.numpy as jnp
 from ndlike.array_like import ToIndices, to_numpy_like
 from ndlike.jax_functions import (
@@ -511,6 +512,6 @@ def _(sample: JaxSample) -> JaxSampleInternals[jax.Array]:
 
 
 create_sample.register(
-    jax.Array | JaxLikeImplementation,
+    jax.Array | Tracer | JaxLikeImplementation,
     JaxSample.from_iterable,
 )

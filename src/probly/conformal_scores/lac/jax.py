@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from jax.core import Tracer
 import jax.numpy as jnp
 
 from probly.representation.distribution.jax_categorical import JaxCategoricalDistribution
@@ -10,7 +11,7 @@ from probly.representation.sample.jax import JaxSample
 from ._common import lac_score
 
 
-@lac_score.register(jnp.ndarray)
+@lac_score.register((jnp.ndarray, Tracer))
 def jax_compute_lac_score(probs: jnp.ndarray, y_cal: jnp.ndarray | None = None) -> jnp.ndarray:
     """Compute the LAC score."""
     probs_jnp = jnp.asarray(probs, dtype=float)

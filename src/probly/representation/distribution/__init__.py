@@ -1,6 +1,6 @@
 """Distribution subpackage."""
 
-from probly.lazy_types import JAX_ARRAY, TORCH_TENSOR
+from probly.lazy_types import JAX_ARRAY, JAX_TRACER, TORCH_TENSOR
 
 from ._common import (
     BernoulliDistribution,
@@ -69,24 +69,24 @@ def _(_: type) -> None:
 
 
 ## Jax
-@create_categorical_distribution.delayed_register(JAX_ARRAY)
-@create_categorical_distribution_from_logits.delayed_register(JAX_ARRAY)
+@create_categorical_distribution.delayed_register((JAX_ARRAY, JAX_TRACER))
+@create_categorical_distribution_from_logits.delayed_register((JAX_ARRAY, JAX_TRACER))
 def _(_: type) -> None:
     from . import jax_categorical as jax_categorical  # noqa: PLC0415
 
 
-@create_bernoulli_distribution.delayed_register(JAX_ARRAY)
-@create_bernoulli_distribution_from_logits.delayed_register(JAX_ARRAY)
+@create_bernoulli_distribution.delayed_register((JAX_ARRAY, JAX_TRACER))
+@create_bernoulli_distribution_from_logits.delayed_register((JAX_ARRAY, JAX_TRACER))
 def _(_: type) -> None:
     from . import jax_bernoulli as jax_bernoulli  # noqa: PLC0415
 
 
-@create_dirichlet_distribution_from_alphas.delayed_register(JAX_ARRAY)
+@create_dirichlet_distribution_from_alphas.delayed_register((JAX_ARRAY, JAX_TRACER))
 def _(_: type) -> None:
     from . import jax_dirichlet as jax_dirichlet  # noqa: PLC0415
 
 
-@create_gaussian_distribution.delayed_register(JAX_ARRAY)
+@create_gaussian_distribution.delayed_register((JAX_ARRAY, JAX_TRACER))
 def _(_: type) -> None:
     from . import jax_gaussian as jax_gaussian  # noqa: PLC0415
 
