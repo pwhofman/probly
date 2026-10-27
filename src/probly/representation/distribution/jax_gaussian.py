@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Literal, override
 
 import jax
 from jax import numpy as jnp
+from jax.core import Tracer
 from jax.experimental import checkify
 from jax.scipy.stats import norm
 from ndlike.jax_functions import jax_add, jax_stack, jax_subtract
@@ -35,7 +36,7 @@ class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[
     mean: jax.Array = field()
     var: jax.Array = field()
 
-    type: Literal["gaussian"] = "gaussian"
+    type: ClassVar[Literal["gaussian"]] = "gaussian"
     protected_axes: ClassVar[dict[str, int]] = {"mean": 0, "var": 0}
     permitted_functions: ClassVar[set[Callable]] = {jax_add, jax_subtract}
 
@@ -123,7 +124,7 @@ class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[
         return object.__hash__(self)
 
 
-@create_gaussian_distribution.register(jax.Array)
+@create_gaussian_distribution.register((jax.Array, Tracer))
 def _(mean: jax.Array, var: jax.Array | None = None) -> JaxGaussianDistribution:
     """Create a JaxGaussianDistribution from jax arrays."""
     if var is None:

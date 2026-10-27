@@ -14,6 +14,7 @@ type ScoringRule = Callable[[object, object], object]
 """A per-instance scoring rule ``(y_prob, y_true) -> losses``, such as :func:`log_loss_per_instance`."""
 
 
+@flexdispatch
 def auc(x: object, y: object) -> object:
     """Compute area under a curve using the trapezoid rule.
 
@@ -62,6 +63,7 @@ def precision_recall_curve(y_true: object, y_score: object) -> tuple[object, obj
     raise NotImplementedError(msg)
 
 
+@flexdispatch
 def roc_auc_score(y_true: object, y_score: object) -> object:
     """Compute area under the ROC curve.
 
@@ -76,6 +78,7 @@ def roc_auc_score(y_true: object, y_score: object) -> object:
     return auc(fpr, tpr)
 
 
+@flexdispatch
 def average_precision_score(y_true: object, y_score: object) -> object:
     """Compute average precision (area under the precision-recall curve).
 
@@ -92,6 +95,7 @@ def average_precision_score(y_true: object, y_score: object) -> object:
     return -((recall[..., 1:] - recall[..., :-1]) * precision[..., :-1]).sum(axis=-1)
 
 
+@flexdispatch
 def accuracy(y_pred: object, y_true: object) -> object:
     """Compute top-1 classification accuracy.
 
@@ -146,6 +150,7 @@ def expected_calibration_error(y_prob: object, y_true: object, *, num_bins: int 
     raise NotImplementedError(msg)
 
 
+@flexdispatch
 def false_positive_rate(y_pred: object, y_true: object) -> object:
     """Compute the false positive rate ``FP / (FP + TN)`` of binary predictions.
 
@@ -165,12 +170,11 @@ def false_positive_rate(y_pred: object, y_true: object) -> object:
         msg = f"false_positive_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
         raise ValueError(msg)
     negatives = (y == 0).sum()
-    if negatives == 0:
-        # A NaN of the input's array type; dividing zero by zero would warn under numpy.
-        return negatives * float("nan")
+    # 0/0 yields NaN when there are no negative samples; a Python branch would break jax.jit tracing.
     return ((p == 1) & (y == 0)).sum() / negatives
 
 
+@flexdispatch
 def false_negative_rate(y_pred: object, y_true: object) -> object:
     """Compute the false negative rate ``FN / (FN + TP)`` of binary predictions.
 
@@ -190,9 +194,7 @@ def false_negative_rate(y_pred: object, y_true: object) -> object:
         msg = f"false_negative_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
         raise ValueError(msg)
     positives = (y == 1).sum()
-    if positives == 0:
-        # A NaN of the input's array type; dividing zero by zero would warn under numpy.
-        return positives * float("nan")
+    # 0/0 yields NaN when there are no positive samples; a Python branch would break jax.jit tracing.
     return ((p == 0) & (y == 1)).sum() / positives
 
 
@@ -411,8 +413,8 @@ def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.000
     raise NotImplementedError(msg)
 
 
-# Only these primitives differ per backend. The metrics written generically in this module combine them with
-# operators and last-axis reductions, which numpy, torch and jax arrays share.
+# These primitives provide composed defaults. Individual rules can specialize dispatch where a backend needs
+# a more efficient or numerically stable implementation.
 @flexdispatch
 def _probabilities(y_prob: object) -> object:
     """Return the probabilities ``(..., K)`` of a prediction, unwrapping categorical distributions."""
@@ -454,6 +456,7 @@ def _validate_labels(labels_shape: tuple[int, ...], loss_shape: tuple[int, ...],
         raise ValueError(msg)
 
 
+@flexdispatch
 def log_loss_per_instance(y_prob: object, y_true: object) -> object:
     """Compute the log loss ``-log(p_y)`` of each prediction.
 

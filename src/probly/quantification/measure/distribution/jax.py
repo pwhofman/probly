@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import jax
 from jax import numpy as jnp
+from jax.core import Tracer
 from jax.scipy import special
 from ndlike.jax_functions import (
     jax_mean,
@@ -53,7 +54,7 @@ if TYPE_CHECKING:
 # Entropy
 
 
-@entropy.register
+@entropy.register((JaxCategoricalDistribution, jax.Array, Tracer))
 def jax_categorical_entropy(distribution: JaxCategoricalDistribution | jax.Array, base: LogBase = None) -> jax.Array:
     """Compute the entropy of a categorical distribution represented as a jax array."""
     if isinstance(distribution, JaxCategoricalDistribution):

@@ -11,9 +11,8 @@ Note:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import jax
+from jax.core import Tracer
 import jax.numpy as jnp
 
 from probly.metrics._common import CREDAL_ROUND_DECIMALS
@@ -26,6 +25,10 @@ from probly.representation.credal_set.jax import (
     JaxProbabilityIntervalsCredalSet,
 )
 from probly.representation.distribution._common import CategoricalDistribution
+from probly.representation.distribution.jax_categorical import (
+    JaxCategoricalDistribution,
+    JaxProbabilityCategoricalDistribution,
+)
 
 from ._common import (
     _expected_loss,
@@ -39,15 +42,13 @@ from ._common import (
     coverage,
     efficiency,
     expected_calibration_error,
+    log_loss_per_instance,
     precision_recall_curve,
     roc_curve,
 )
 
-if TYPE_CHECKING:
-    from probly.representation.distribution.jax_categorical import JaxCategoricalDistribution
 
-
-@classwise_ece.register(jax.Array)
+@classwise_ece.register((jax.Array, Tracer))
 def jax_classwise_ece(y_prob: jax.Array, y_true: jax.Array, *, num_bins: int = 15) -> jax.Array:
     """Compute the classwise expected calibration error for JAX arrays."""
     probs = y_prob.astype(jnp.float32)
@@ -77,7 +78,7 @@ def jax_classwise_ece(y_prob: jax.Array, y_true: jax.Array, *, num_bins: int = 1
     return total / k
 
 
-@expected_calibration_error.register(jax.Array)
+@expected_calibration_error.register((jax.Array, Tracer))
 def jax_expected_calibration_error(y_prob: jax.Array, y_true: jax.Array, *, num_bins: int = 15) -> jax.Array:
     """Compute the confidence expected calibration error for JAX arrays."""
     probs = y_prob.astype(jnp.float32)
@@ -151,7 +152,7 @@ def _binary_clf_curve(y_true: jax.Array, y_score: jax.Array) -> tuple[jax.Array,
     return fps, tps, y_score
 
 
-@precision_recall_curve.register(jax.Array)
+@precision_recall_curve.register((jax.Array, Tracer))
 def jax_precision_recall_curve(y_true: jax.Array, y_score: jax.Array) -> tuple[jax.Array, jax.Array, jax.Array]:
     """Compute precision-recall curve along the last axis."""
     y_true = y_true.astype(jnp.float32)
@@ -171,7 +172,7 @@ def jax_precision_recall_curve(y_true: jax.Array, y_score: jax.Array) -> tuple[j
     return precision, recall, thresholds
 
 
-@roc_curve.register(jax.Array)
+@roc_curve.register((jax.Array, Tracer))
 def jax_roc_curve(y_true: jax.Array, y_score: jax.Array) -> tuple[jax.Array, jax.Array, jax.Array]:
     """Compute ROC curve along the last axis."""
     y_true = y_true.astype(jnp.float32)
@@ -485,19 +486,52 @@ def _jax_convex_convex_hull_coverage(
     return _numpy_convex_hull_lp_coverage(vertices, targets, epsilon, **linprog_kwargs)
 
 
-@_probabilities.register
+@_probabilities.register((jax.Array, Tracer))
 def jax_probabilities(probabilities: jnp.ndarray) -> jnp.ndarray:
     """Return a JAX array of probabilities unchanged."""
     return probabilities
 
 
-@_log_probabilities.register
+@_log_probabilities.register((jax.Array, Tracer))
 def jax_log_probabilities(probabilities: jnp.ndarray) -> jnp.ndarray:
     """Compute the log probabilities of a JAX array."""
     return jnp.log(probabilities)
 
 
-@_one_hot_argmax.register
+def _jax_scoring_target(y_true: object, reference: jax.Array) -> jax.Array:
+    """Convert targets and validate labels without changing their dtype."""
+    target = jnp.asarray(y_true.probabilities if isinstance(y_true, CategoricalDistribution) else y_true)
+    if target.shape != reference.shape:
+        _validate_labels(target.shape, reference.shape, is_integer=bool(jnp.issubdtype(target.dtype, jnp.integer)))
+    return target
+
+
+@log_loss_per_instance.register((jax.Array, Tracer))
+def jax_log_loss_per_instance(y_prob: jax.Array, y_true: object) -> jax.Array:
+    """Compute log loss without logging zero probabilities of classes with no target mass."""
+    target = _jax_scoring_target(y_true, y_prob)
+    if target.shape == y_prob.shape:
+        safe_probabilities = jnp.where(target > 0, y_prob, jnp.ones_like(y_prob))
+        return -(target * jnp.log(safe_probabilities)).sum(axis=-1)
+    selected = jnp.take_along_axis(y_prob, target[..., None], axis=-1).squeeze(-1)
+    return -jnp.log(selected)
+
+
+@log_loss_per_instance.register(JaxCategoricalDistribution)
+def jax_categorical_log_loss_per_instance(y_prob: JaxCategoricalDistribution, y_true: object) -> jax.Array:
+    """Score categorical log probabilities directly, preserving extreme logits."""
+    return _jax_expected_loss(-y_prob.log_probabilities, y_true)
+
+
+@log_loss_per_instance.register(JaxProbabilityCategoricalDistribution)
+def jax_probability_categorical_log_loss_per_instance(
+    y_prob: JaxProbabilityCategoricalDistribution, y_true: object
+) -> jax.Array:
+    """Score normalized categorical probabilities with target-aware logarithms."""
+    return jax_log_loss_per_instance(y_prob.probabilities, y_true)
+
+
+@_one_hot_argmax.register((jax.Array, Tracer))
 def jax_one_hot_argmax(probabilities: jnp.ndarray) -> jnp.ndarray:
     """One-hot encode the first maximum of each probability vector of a JAX array."""
     num_classes = probabilities.shape[-1]
@@ -505,12 +539,11 @@ def jax_one_hot_argmax(probabilities: jnp.ndarray) -> jnp.ndarray:
     return jnp.eye(num_classes, dtype=probabilities.dtype)[argmax]
 
 
-@_expected_loss.register(jax.Array)
+@_expected_loss.register((jax.Array, Tracer))
 def _jax_expected_loss(loss_vector: jax.Array, y_true: object) -> jax.Array:
     """Reduce a per-label loss vector to the loss under integer labels or target probabilities."""
-    target = jnp.asarray(y_true.probabilities if isinstance(y_true, CategoricalDistribution) else y_true)
+    target = _jax_scoring_target(y_true, loss_vector)
     if target.shape == loss_vector.shape:
         # A class without target mass never occurs, so it adds no loss even where that loss is infinite.
         return jnp.where(target > 0, target * loss_vector, 0.0).sum(axis=-1)
-    _validate_labels(target.shape, loss_vector.shape, is_integer=bool(jnp.issubdtype(target.dtype, jnp.integer)))
     return jnp.take_along_axis(loss_vector, target[..., None], axis=-1).squeeze(-1)

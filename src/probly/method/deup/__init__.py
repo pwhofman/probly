@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import TORCH_MODULE, TORCH_TENSOR, TORCH_TENSOR_LIKE
+from probly.lazy_types import TORCH_MODULE, TORCH_VALUE
 
 from ._common import (
     DEUPDecomposition,
@@ -15,7 +15,7 @@ from ._common import (
 
 
 @deup_generator.delayed_register(TORCH_MODULE)
-@create_deup_representation.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@create_deup_representation.delayed_register(TORCH_VALUE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 

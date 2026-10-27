@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import cast
 
 from jax import Array
+from jax.core import Tracer
 import jax.numpy as jnp
 
 from probly.representation.sample.jax import JaxSample
@@ -12,7 +13,7 @@ from probly.representation.sample.jax import JaxSample
 from ._common import absolute_error_score
 
 
-@absolute_error_score.register(Array)
+@absolute_error_score.register((Array, Tracer))
 def _(y_pred: Array, y_true: Array) -> Array:
     """Absolute error for JAX arrays."""
     y_pred_j = jnp.asarray(y_pred, dtype=float)

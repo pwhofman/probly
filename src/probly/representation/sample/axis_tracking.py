@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, cast
 from flextype import flexdispatch
 import numpy as np
 
-from probly.lazy_types import JAX_ARRAY, TORCH_TENSOR
+from probly.lazy_types import JAX_ARRAY, JAX_TRACER, TORCH_TENSOR
 
 if TYPE_CHECKING:
     from ndlike.array_like import ToIndex, ToIndices
@@ -69,7 +69,7 @@ def _(_: type) -> None:
     from . import torch_axis_tracking  # noqa: F401, PLC0415
 
 
-@convert_idx.delayed_register(JAX_ARRAY)
+@convert_idx.delayed_register((JAX_ARRAY, JAX_TRACER))
 def _(_: type) -> None:
     from . import jax_axis_tracking  # noqa: F401, PLC0415
 

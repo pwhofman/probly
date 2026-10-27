@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from probly.representation.sample._common import Sample
 
 from jax import numpy as jnp
+from jax.core import Tracer
 from jax.experimental import checkify
 from ndlike.protected_axis.jax import JaxAxisProtected
 
@@ -122,7 +123,7 @@ class JaxIntervalConformalSet(JaxAxisProtected[Any], IntervalConformalSet):
         return self.array[..., 1] - self.array[..., 0]
 
 
-create_onehot_conformal_set.register(jnp.ndarray)(JaxOneHotConformalSet.from_array)
+create_onehot_conformal_set.register((jnp.ndarray, Tracer))(JaxOneHotConformalSet.from_array)
 create_onehot_conformal_set.register(JaxSample)(JaxOneHotConformalSet.from_sample)
-create_interval_conformal_set.register(jnp.ndarray)(JaxIntervalConformalSet.from_arrays)
+create_interval_conformal_set.register((jnp.ndarray, Tracer))(JaxIntervalConformalSet.from_arrays)
 create_interval_conformal_set.register(JaxSample)(JaxIntervalConformalSet.from_samples)

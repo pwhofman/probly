@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
+from probly.lazy_types import JAX_VALUE, TORCH_VALUE
 
 from . import numpy as numpy
 
@@ -38,34 +38,36 @@ from ._common import (
 )
 
 
-@_expected_loss.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@_log_probabilities.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@_one_hot_argmax.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@_probabilities.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@average_interval_width.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@classwise_ece.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@convex_hull_coverage.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@coverage.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@efficiency.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@expected_calibration_error.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@precision_recall_curve.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@roc_curve.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@log_loss_per_instance.delayed_register(TORCH_VALUE)
+@_expected_loss.delayed_register(TORCH_VALUE)
+@_log_probabilities.delayed_register(TORCH_VALUE)
+@_one_hot_argmax.delayed_register(TORCH_VALUE)
+@_probabilities.delayed_register(TORCH_VALUE)
+@average_interval_width.delayed_register(TORCH_VALUE)
+@classwise_ece.delayed_register(TORCH_VALUE)
+@convex_hull_coverage.delayed_register(TORCH_VALUE)
+@coverage.delayed_register(TORCH_VALUE)
+@efficiency.delayed_register(TORCH_VALUE)
+@expected_calibration_error.delayed_register(TORCH_VALUE)
+@precision_recall_curve.delayed_register(TORCH_VALUE)
+@roc_curve.delayed_register(TORCH_VALUE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-@_expected_loss.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@_log_probabilities.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@_one_hot_argmax.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@_probabilities.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@average_interval_width.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@classwise_ece.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@convex_hull_coverage.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@coverage.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@efficiency.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@expected_calibration_error.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@precision_recall_curve.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@roc_curve.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@log_loss_per_instance.delayed_register(JAX_VALUE)
+@_expected_loss.delayed_register(JAX_VALUE)
+@_log_probabilities.delayed_register(JAX_VALUE)
+@_one_hot_argmax.delayed_register(JAX_VALUE)
+@_probabilities.delayed_register(JAX_VALUE)
+@average_interval_width.delayed_register(JAX_VALUE)
+@classwise_ece.delayed_register(JAX_VALUE)
+@convex_hull_coverage.delayed_register(JAX_VALUE)
+@coverage.delayed_register(JAX_VALUE)
+@efficiency.delayed_register(JAX_VALUE)
+@expected_calibration_error.delayed_register(JAX_VALUE)
+@precision_recall_curve.delayed_register(JAX_VALUE)
+@roc_curve.delayed_register(JAX_VALUE)
 def _(_: type) -> None:
     from . import jax as jax  # noqa: PLC0415
 

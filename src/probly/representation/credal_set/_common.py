@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Literal, Protocol, Self
+from typing import TYPE_CHECKING, ClassVar, Literal, Protocol, Self
 
 from flextype import flexdispatch
 from ndlike.array_like import ArrayLike
@@ -21,13 +21,13 @@ type CredalSetType = Literal["categorical", "gaussian", "dirichlet"]
 class CredalSet(Representation):
     """Base class for credal sets."""
 
-    type: CredalSetType
+    type: ClassVar[CredalSetType]
 
 
 class CategoricalCredalSet[T: CategoricalDistribution](CredalSet, ABC):
     """Base class for credal sets."""
 
-    type = "categorical"
+    type: ClassVar[Literal["categorical"]] = "categorical"
 
     @classmethod
     @abstractmethod

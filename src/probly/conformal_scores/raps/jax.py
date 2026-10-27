@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from jax import Array
+from jax.core import Tracer
 import jax.numpy as jnp
 import jax.random
 
@@ -12,7 +13,7 @@ from probly.representation.sample.jax import JaxSample
 from ._common import _raps_score_dispatch
 
 
-@_raps_score_dispatch.register(Array)
+@_raps_score_dispatch.register((Array, Tracer))
 def _(
     probs: Array,
     y_cal: Array | None = None,

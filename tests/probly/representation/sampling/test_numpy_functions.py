@@ -38,8 +38,10 @@ class TestTrackSampleAxisAfterReduction:
     def test_keepdims_preserves_axis(self) -> None:
         assert track_sample_axis_after_reduction(2, 4, axis=1, keepdims=True) == 2
 
-    def test_reduction_along_sample_axis_returns_none(self) -> None:
-        assert track_sample_axis_after_reduction(1, 3, axis=1, keepdims=False) is None
+    @pytest.mark.parametrize("axis", [1, -2, (0, 1), None])
+    @pytest.mark.parametrize("keepdims", [False, True])
+    def test_reduction_along_sample_axis_returns_none(self, axis, keepdims) -> None:
+        assert track_sample_axis_after_reduction(1, 3, axis=axis, keepdims=keepdims) is None
 
     def test_reduction_before_sample_axis_shifts(self) -> None:
         # Sample at axis 2; reduce axis 0; new sample axis is 1.

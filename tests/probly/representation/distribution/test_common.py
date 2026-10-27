@@ -2,8 +2,36 @@
 
 from __future__ import annotations
 
+from typing import ClassVar, get_origin, get_type_hints
+
 import numpy as np
 import pytest
+
+from probly.representation.distribution._common import (
+    BernoulliDistribution,
+    CategoricalDistribution,
+    DirichletDistribution,
+    Distribution,
+    GaussianDistribution,
+    MixtureDistribution,
+)
+
+
+@pytest.mark.parametrize(
+    "distribution_class",
+    [
+        Distribution,
+        MixtureDistribution,
+        CategoricalDistribution,
+        BernoulliDistribution,
+        DirichletDistribution,
+        GaussianDistribution,
+    ],
+)
+def test_distribution_type_is_class_metadata(distribution_class) -> None:
+    # Older Python 3.12 releases need explicit PEP 695 type-parameter bindings.
+    localns = {"type": type, **{param.__name__: param for param in distribution_class.__type_params__}}
+    assert get_origin(get_type_hints(distribution_class, localns=localns)["type"]) is ClassVar
 
 
 class TestDistributionFactoryFallbacks:

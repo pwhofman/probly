@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import TORCH_MODULE, TORCH_TENSOR, TORCH_TENSOR_LIKE
+from probly.lazy_types import TORCH_MODULE, TORCH_VALUE
 
 from . import numpy as numpy
 from ._common import (
@@ -16,7 +16,7 @@ from ._common import (
 
 ## Torch
 @efficient_credal_prediction_generator.delayed_register(TORCH_MODULE)
-@compute_efficient_credal_prediction_bounds.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@compute_efficient_credal_prediction_bounds.delayed_register(TORCH_VALUE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
