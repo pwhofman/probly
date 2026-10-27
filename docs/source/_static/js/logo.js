@@ -5,7 +5,8 @@
 // wave from where it changed and settles like a spring, and the click sends a small ripple along
 // the waves. Hovering pushes the waves away from the pointer, but only where they are uncertain: a
 // wave holds on to its observations. The waves spring back when the pointer leaves. When the logo
-// is first seen, a ripple runs through it from a random place, a hint that it reacts.
+// is first seen, a ripple runs through it from a random place, a hint that it reacts; when it is
+// scrolled back into view quickly, the waves swing on in the direction it travelled and settle.
 //
 // The logo is inline in the landing page (index.rst), once for light and once for dark mode, and
 // both copies are drawn from the same state. At rest and without observations they show the
@@ -14,8 +15,8 @@
 // formula (a new logo kit), the logo stays still.
 //
 // With reduced motion (macOS "Reduce motion", Windows with "Animation effects" off), the logo does
-// not move by itself: no ripple when it is first seen, and the waves do not follow the pointer. They
-// glide to a new fit without rippling or swinging.
+// not move by itself: no ripple when it is first seen, no swing when it is scrolled into view, and
+// the waves do not follow the pointer. They glide to a new fit without rippling or swinging.
 (() => {
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -71,6 +72,13 @@
   const INTRO_DELAY = 600; // from when the logo is first seen to its ripple (ms)
   const INTRO_SPAN = [40, 160]; // where along the logo the ripple can start (units)
   const INTRO_HEIGHT = 1.5; // its height relative to a click's ripple: a little more, to be noticed
+
+  // the swing of the waves when the logo is scrolled back into view quickly, as on the shapiq docs
+  const FAST_SCROLL = 1000; // scrolling faster than this swings the waves (px/s), as on shapiq's
+  // the speed the waves are given (units/s): shapiq's 130 for its logo, at the same speed on screen
+  // (its logo is 282.5 units on 12.5rem, this one 184 units on 10rem)
+  const BUMP = 105;
+  const BUMP_LENGTH = 120; // along a wave, some places swing up to 1.3 times as much, some 0.7 (units)
 
   // below these, a fraction of a pixel and too slow to see, a wave counts as at rest
   const REST_OFFSET = 0.02; // units
@@ -453,6 +461,36 @@
     });
   }
 
+  // the speed of the page's scrolling (px/s, positive downwards), 0 once it has stopped; as on the
+  // shapiq docs
+  const scrolling = { y: window.scrollY, time: performance.now(), speed: 0 };
+  window.addEventListener(
+    "scroll",
+    () => {
+      const time = performance.now();
+      const y = window.scrollY;
+      const speed = ((y - scrolling.y) / Math.max(time - scrolling.time, 1)) * 1000;
+      scrolling.speed = time - scrolling.time > 100 ? speed : 0.5 * scrolling.speed + 0.5 * speed;
+      Object.assign(scrolling, { y, time });
+    },
+    { passive: true },
+  );
+  const scrollSpeed = () => (performance.now() - scrolling.time < 150 ? scrolling.speed : 0);
+
+  // a swing in the direction the logo travels on the screen, as if it had been carried there: the
+  // waves are given a speed and their springs bring them back. Where a wave is observed, it holds
+  function bump(m, speed) {
+    const along = -Math.sign(speed); // scrolling up carries the logo down
+    for (const w of m.waves) {
+      const phase = Math.random() * 2 * Math.PI;
+      w.xs.forEach((x, i) => {
+        const share = 1 + 0.3 * Math.sin((2 * Math.PI * x) / BUMP_LENGTH + phase);
+        w.dentSpeed[i] += along * BUMP * share * (1 - w.certain[i]);
+      });
+    }
+    animate(m);
+  }
+
   function animate(m) {
     if (m.running) return;
     m.running = true;
@@ -575,6 +613,25 @@
       { threshold: 0.5 },
     );
     for (const view of views) seen.observe(view.svg);
+
+    // the swing when the logo comes back into view quickly; the first time, it greets with its
+    // ripple instead. As on the shapiq docs, the logo counts as in view when 30% of it is
+    const showing = new Set();
+    let shown = false;
+    const back = new IntersectionObserver(
+      (entries) => {
+        const before = showing.size > 0;
+        for (const entry of entries) entry.isIntersecting ? showing.add(entry.target) : showing.delete(entry.target);
+        if (before || !showing.size) return;
+        if (!shown) {
+          shown = true;
+          return;
+        }
+        if (!reducedMotion.matches && Math.abs(scrollSpeed()) > FAST_SCROLL) bump(m, scrollSpeed());
+      },
+      { threshold: 0.3 },
+    );
+    for (const view of views) back.observe(view.svg);
   }
 
   document.addEventListener("DOMContentLoaded", () => {
