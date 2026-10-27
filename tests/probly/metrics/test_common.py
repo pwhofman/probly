@@ -8,12 +8,6 @@ import pytest
 class TestMetricFallbacks:
     """Each top-level metric raises NotImplementedError for unregistered types."""
 
-    def test_auc_raises(self) -> None:
-        from probly.metrics._common import auc  # noqa: PLC0415
-
-        with pytest.raises(NotImplementedError, match="auc"):
-            auc(object(), object())
-
     def test_roc_curve_raises(self) -> None:
         from probly.metrics._common import roc_curve  # noqa: PLC0415
 
@@ -26,41 +20,11 @@ class TestMetricFallbacks:
         with pytest.raises(NotImplementedError, match="precision_recall_curve"):
             precision_recall_curve(object(), object())
 
-    def test_roc_auc_score_raises(self) -> None:
-        from probly.metrics._common import roc_auc_score  # noqa: PLC0415
-
-        with pytest.raises(NotImplementedError, match="roc_auc_score"):
-            roc_auc_score(object(), object())
-
-    def test_average_precision_score_raises(self) -> None:
-        from probly.metrics._common import average_precision_score  # noqa: PLC0415
-
-        with pytest.raises(NotImplementedError, match="average_precision_score"):
-            average_precision_score(object(), object())
-
-    def test_accuracy_raises(self) -> None:
-        from probly.metrics._common import accuracy  # noqa: PLC0415
-
-        with pytest.raises(NotImplementedError, match="accuracy"):
-            accuracy(object(), object())
-
     def test_expected_calibration_error_raises(self) -> None:
         from probly.metrics._common import expected_calibration_error  # noqa: PLC0415
 
         with pytest.raises(NotImplementedError, match="expected_calibration_error"):
             expected_calibration_error(object(), object())
-
-    def test_false_positive_rate_raises(self) -> None:
-        from probly.metrics._common import false_positive_rate  # noqa: PLC0415
-
-        with pytest.raises(NotImplementedError, match="false_positive_rate"):
-            false_positive_rate(object(), object())
-
-    def test_false_negative_rate_raises(self) -> None:
-        from probly.metrics._common import false_negative_rate  # noqa: PLC0415
-
-        with pytest.raises(NotImplementedError, match="false_negative_rate"):
-            false_negative_rate(object(), object())
 
     def test_coverage_raises(self) -> None:
         from probly.metrics._common import coverage  # noqa: PLC0415
@@ -87,16 +51,17 @@ class TestMetricFallbacks:
             convex_hull_coverage(object(), object())
 
     @pytest.mark.parametrize(
-        "rule",
+        "metric",
         [
+            "accuracy",
             "log_loss_per_instance",
             "brier_loss_per_instance",
             "zero_one_loss_per_instance",
             "spherical_loss_per_instance",
         ],
     )
-    def test_scoring_rule_raises(self, rule: str) -> None:
+    def test_probability_metric_raises(self, metric: str) -> None:
         import probly.metrics._common as metrics_common  # noqa: PLC0415
 
-        with pytest.raises(NotImplementedError, match="Scoring rules"):
-            getattr(metrics_common, rule)(object(), object())
+        with pytest.raises(NotImplementedError, match="implementation registered"):
+            getattr(metrics_common, metric)(object(), object())

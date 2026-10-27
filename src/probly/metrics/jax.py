@@ -36,41 +36,16 @@ from ._common import (
     _one_hot_argmax,
     _probabilities,
     _validate_labels,
-    accuracy,
-    auc,
     average_interval_width,
-    average_precision_score,
     classwise_ece,
     convex_hull_coverage,
     coverage,
     efficiency,
     expected_calibration_error,
-    false_negative_rate,
-    false_positive_rate,
     log_loss_per_instance,
     precision_recall_curve,
-    roc_auc_score,
     roc_curve,
 )
-
-
-@accuracy.register((jax.Array, Tracer))
-def jax_accuracy(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
-    """Compute top-1 classification accuracy for JAX arrays."""
-    labels = y_true.reshape(-1)
-    predicted = y_pred
-    if predicted.ndim == 2:
-        predicted = jnp.argmax(predicted, axis=-1)
-    elif predicted.ndim != 1:
-        msg = f"accuracy expects predictions of shape (n,) or (n, k), got shape {predicted.shape}."
-        raise ValueError(msg)
-    if predicted.shape[0] != labels.shape[0]:
-        msg = (
-            "accuracy labels must match predictions batch size. "
-            f"Got {labels.shape[0]} labels for {predicted.shape[0]} predictions."
-        )
-        raise ValueError(msg)
-    return (predicted == labels).astype(jnp.float32).mean()
 
 
 @classwise_ece.register((jax.Array, Tracer))
@@ -135,47 +110,6 @@ def jax_expected_calibration_error(y_prob: jax.Array, y_true: jax.Array, *, num_
         conf_bin = (conf * mask).sum() / safe_count
         total = total + count / n * jnp.abs(acc_bin - conf_bin)
     return total
-
-
-@false_positive_rate.register((jax.Array, Tracer))
-def jax_false_positive_rate(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
-    """Compute the false positive rate for JAX arrays."""
-    y = y_true.reshape(-1)
-    p = y_pred.reshape(-1)
-    if p.shape[0] != y.shape[0]:
-        msg = f"false_positive_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
-        raise ValueError(msg)
-    negatives = (y == 0).astype(jnp.float32)
-    false_positives = (p == 1).astype(jnp.float32) * negatives
-    # 0/0 yields NaN when there are no negative samples.
-    return false_positives.sum() / negatives.sum()
-
-
-@false_negative_rate.register((jax.Array, Tracer))
-def jax_false_negative_rate(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
-    """Compute the false negative rate for JAX arrays."""
-    y = y_true.reshape(-1)
-    p = y_pred.reshape(-1)
-    if p.shape[0] != y.shape[0]:
-        msg = f"false_negative_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
-        raise ValueError(msg)
-    positives = (y == 1).astype(jnp.float32)
-    false_negatives = (p == 0).astype(jnp.float32) * positives
-    # 0/0 yields NaN when there are no positive samples.
-    return false_negatives.sum() / positives.sum()
-
-
-@auc.register((jax.Array, Tracer))
-def jax_auc(x: jax.Array, y: jax.Array) -> jax.Array:
-    """Compute area under a curve using the trapezoid rule."""
-    return jnp.trapezoid(y, x, axis=-1)
-
-
-@average_precision_score.register((jax.Array, Tracer))
-def jax_average_precision_score(y_true: jax.Array, y_score: jax.Array) -> jax.Array:
-    """Compute average precision for JAX arrays."""
-    precision, recall, _ = precision_recall_curve(y_true, y_score)
-    return -jnp.sum(jnp.diff(recall, axis=-1) * precision[..., :-1], axis=-1)  # ty:ignore[invalid-argument-type, not-subscriptable]
 
 
 def _binary_clf_curve(y_true: jax.Array, y_score: jax.Array) -> tuple[jax.Array, jax.Array, jax.Array]:
@@ -257,13 +191,6 @@ def jax_roc_curve(y_true: jax.Array, y_score: jax.Array) -> tuple[jax.Array, jax
     thresholds = jnp.concatenate([thresholds[..., :1] + 1, thresholds], axis=-1)
 
     return fpr, tpr, thresholds
-
-
-@roc_auc_score.register((jax.Array, Tracer))
-def jax_roc_auc_score(y_true: jax.Array, y_score: jax.Array) -> jax.Array:
-    """Compute area under the ROC curve for JAX arrays."""
-    fpr, tpr, _ = roc_curve(y_true, y_score)
-    return auc(fpr, tpr)  # ty:ignore[invalid-return-type]
 
 
 # --- Predicted-set metrics ----------------------------------------------------
