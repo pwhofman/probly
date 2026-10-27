@@ -32,10 +32,19 @@
 
 /* Landing page (index.rst): the logo next to the title, the tagline, the
    call-to-action buttons, and the example cards. */
+/* Below furo's icons at the top right, not beside them: the theme toggle among them only shows
+   once furo's script has run, and a logo beside them would jump sideways when it does. */
 .probly-hero-logo {
   float: right;
+  clear: right;
   width: 10rem;
-  margin: 2.25rem 0 1rem 2.5rem;
+  margin: 0 0 1rem 2.5rem;
+}
+
+/* The icons keep their height while furo's script has not shown them yet, so the logo below them
+   does not move down when they appear. */
+body:has(.probly-hero-logo) .content-icon-container {
+  min-height: 1.25rem;
 }
 
 .probly-hero-logo svg {
