@@ -11,6 +11,7 @@
   --md-shadow: var(--probly-shadow, 0 1px 2px rgba(20, 28, 60, 0.06), 0 4px 16px rgba(20, 28, 60, 0.06));
   --md-ease: var(--probly-ease, cubic-bezier(0.2, 0.7, 0.2, 1));
   --md-duration: var(--probly-duration, 220ms);
+  --md-glide: cubic-bezier(0.45, 0, 0.15, 1); /* for what moves a distance: the pill, the about text */
   --md-radius: 14px;
   --md-control: 2.35rem; /* the height of the switches and the info button */
   --md-radius-small: 9px;
@@ -23,9 +24,6 @@
   /* the logo's two inks: epistemic red, aleatoric blue */
   --md-red: #ff2763;
   --md-blue: #285bff;
-  /* the same, dark enough to read as text */
-  --md-red-text: #d3134b;
-  --md-blue-text: #1f4fe0;
 
   clear: both;
   margin: 1.5rem 0 0.75rem;
@@ -39,7 +37,16 @@
   font-variant-numeric: tabular-nums;
 }
 
-body[data-theme="dark"] .milton-demo {
+/* the logo's inks, dark enough to read as text: for the words aleatoric and epistemic, in the demo
+   and in the text under it */
+.milton-demo,
+.milton-demo-caption-text {
+  --md-red-text: #d3134b;
+  --md-blue-text: #1f4fe0;
+}
+
+body[data-theme="dark"] .milton-demo,
+body[data-theme="dark"] .milton-demo-caption-text {
   --md-ink: #e9edf7;
   --md-ocean: #12161e;
   --md-land: #262c37;
@@ -51,13 +58,14 @@ body[data-theme="dark"] .milton-demo {
 }
 
 @media (prefers-color-scheme: dark) {
-  body:not([data-theme="light"]) .milton-demo {
+  body:not([data-theme="light"]) .milton-demo,
+  body:not([data-theme="light"]) .milton-demo-caption-text {
     --md-ink: #e9edf7;
     --md-ocean: #12161e;
     --md-land: #262c37;
     --md-coast: #5b6478;
     --md-graticule: #232936;
-      --md-blue: #4a74ff;
+    --md-blue: #4a74ff;
     --md-red-text: #ff5c88;
     --md-blue-text: #8aa6ff;
   }
@@ -77,12 +85,19 @@ body[data-theme="dark"] .milton-demo {
   border-radius: var(--md-radius-small);
 }
 
-.milton-demo-aleatoric {
+.milton-demo .milton-demo-aleatoric,
+.milton-demo-caption-text .milton-demo-aleatoric {
   color: var(--md-blue-text);
 }
 
-.milton-demo-epistemic {
+.milton-demo .milton-demo-epistemic,
+.milton-demo-caption-text .milton-demo-epistemic {
   color: var(--md-red-text);
+}
+
+span.milton-demo-aleatoric,
+span.milton-demo-epistemic {
+  font-weight: 600;
 }
 
 /* -- the bar: the views, the models, the note ---------------------------------------------------- */
@@ -161,8 +176,8 @@ body[data-theme="dark"] .milton-demo {
   background: var(--md-text);
   pointer-events: none;
   transition:
-    transform 380ms cubic-bezier(0.45, 0, 0.15, 1),
-    width 380ms cubic-bezier(0.45, 0, 0.15, 1);
+    transform 380ms var(--md-glide),
+    width 380ms var(--md-glide);
 }
 
 .milton-demo-thumb.milton-demo-still {
@@ -234,11 +249,42 @@ body[data-theme="dark"] .milton-demo {
   color: var(--md-surface);
 }
 
+/* the about text opens smoothly: its grid row grows from nothing to the text's height; closed, it
+   is hidden once it has closed */
 .milton-demo-about {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 360ms var(--md-glide),
+    margin 360ms var(--md-glide),
+    opacity 200ms var(--md-ease),
+    visibility 0s 360ms;
+}
+
+.milton-demo-about.milton-demo-open {
+  grid-template-rows: 1fr;
   margin: -0.3rem 0 0.9rem;
-  padding: 0.75rem 0.95rem;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows 360ms var(--md-glide),
+    margin 360ms var(--md-glide),
+    opacity 280ms var(--md-ease) 60ms,
+    visibility 0s;
+}
+
+.milton-demo-about-box {
+  min-height: 0;
+  overflow: hidden;
   border-radius: var(--md-radius-small);
   background: var(--md-raised);
+}
+
+.milton-demo-about-text {
+  padding: 0.75rem 0.95rem;
   color: var(--md-muted);
   font-size: 0.86rem;
   line-height: 1.55;
@@ -522,6 +568,10 @@ body[data-theme="dark"] .milton-demo {
   stroke: var(--md-coast);
 }
 
+.milton-demo-shore-split .milton-demo-shore-chart .run:not(.ahead) {
+  fill: var(--md-blue);
+}
+
 .milton-demo-shore-chart .milton line {
   stroke: var(--md-text);
   stroke-width: 1.5;
@@ -713,7 +763,7 @@ body[data-theme="dark"] .milton-demo {
   line-height: 1.35;
 }
 
-.milton-demo-legend span {
+.milton-demo-legend > span {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;

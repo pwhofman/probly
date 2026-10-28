@@ -86,11 +86,17 @@ Forecasting a Hurricane
    :fallback: demos/milton.png
    :alt: The runs of WeatherNext's forecast of Hurricane Milton over the Gulf of Mexico, with their spread split into the part that varies from run to run (aleatoric, blue) and the part where the models disagree (epistemic, red).
 
+.. role:: aleatoric
+   :class: milton-demo-aleatoric
+
+.. role:: epistemic
+   :class: milton-demo-epistemic
+
 .. container:: milton-demo-caption-text
 
    How sure is a weather model of a hurricane's path, and why? ``probly`` splits the spread of
    WeatherNext's forecast of Hurricane Milton :cite:`aletSkillfulJoint2025` into what varies from run
-   to run of one model (aleatoric) and where its models disagree (epistemic).
+   to run of one model (:aleatoric:`aleatoric`) and where its models disagree (:epistemic:`epistemic`).
    :doc:`More about this demo <demos/milton/index>`.
 
 Uncertainty in a few lines

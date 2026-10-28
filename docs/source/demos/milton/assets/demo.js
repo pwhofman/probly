@@ -52,6 +52,8 @@
   const clamp = (value, low, high) => Math.min(Math.max(value, low), high);
   const lerp = (a, b, w) => a + (b - a) * w;
   const percent = (share) => `${Math.round(share * 100)}%`;
+  // "aleatoric" or "epistemic", in its color
+  const word = (kind) => el("span", `milton-demo-${kind}`, kind);
   const ms = (value) => `${value.toFixed(value < 10 ? 1 : 0)} m/s`;
   const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const decode = (text) => {
@@ -338,31 +340,41 @@
     switches.append(modelSwitch, info);
     bar.append(viewSwitch, switches);
 
+    // the about text slides open: a grid row that grows to the text's height, with the text clipped
     const about = el("div", "milton-demo-about");
-    about.hidden = true;
     about.id = "milton-demo-about";
     info.setAttribute("aria-controls", about.id);
-    about.append(
-      el(
-        "p",
-        "",
+    const aboutBox = el("div", "milton-demo-about-box");
+    const aboutText = el("div", "milton-demo-about-text");
+    aboutBox.append(aboutText);
+    about.append(aboutBox);
+    const paragraph = (...parts) => {
+      const p = el("p");
+      p.append(...parts);
+      return p;
+    };
+    aboutText.append(
+      paragraph(
         "WeatherNext 2 (Google DeepMind) forecasts the weather of the whole globe in steps of 6 hours. " +
           "It is four models, trained independently, and every run of a model draws its own random noise. " +
-          "The runs of one model scatter as the atmosphere might: that spread is aleatoric uncertainty. " +
-          "Where the four models disagree, they lack knowledge: that is epistemic uncertainty " +
-          "(Alet et al., 2025).",
+          "The runs of one model scatter as the atmosphere might: that spread is ",
+        word("aleatoric"),
+        " uncertainty. Where the four models disagree, they lack knowledge: that is ",
+        word("epistemic"),
+        " uncertainty (Alet et al., 2025).",
       ),
-      el(
-        "p",
-        "",
+      paragraph(
         "probly takes the runs as a second-order sample and splits their variance by the law of total " +
-          "variance: the mean variance within a model (aleatoric) plus the variance of the models' means " +
-          "(epistemic). Mini is a smaller version at 1°; the note under the demo says which runs it shows.",
+          "variance: the mean variance within a model (",
+        word("aleatoric"),
+        ") plus the variance of the models' means (",
+        word("epistemic"),
+        "). Mini is a smaller version at 1°; the note under the demo says which runs it shows.",
       ),
     );
     info.addEventListener("click", () => {
-      about.hidden = !about.hidden;
-      info.setAttribute("aria-expanded", String(!about.hidden));
+      const open = about.classList.toggle("milton-demo-open");
+      info.setAttribute("aria-expanded", String(open));
     });
 
     const body = el("div", "milton-demo-body");
@@ -968,7 +980,7 @@
         const share = value("epistemic");
         lines.push(`Total spread: ±${ms(value("spread"))}`);
         if (splittable(state.model)) {
-          lines.push(`${percent(1 - share)} aleatoric, ${percent(share)} epistemic`);
+          lines.push([`${percent(1 - share)} `, word("aleatoric"), `, ${percent(share)} `, word("epistemic")]);
         }
       }
       if (state.truth && withTruth()) lines.push(`What happened: ${ms(value("truth"))}`);
@@ -1000,7 +1012,11 @@
         return;
       }
       tip.replaceChildren(el("strong", "", place ? `${place.name} · ${ahead(state.hours)}` : text.head));
-      for (const line of text.lines) tip.append(el("div", "", line));
+      for (const line of text.lines) {
+        const row = el("div");
+        row.append(...[line].flat()); // a line is text, or text and colored words
+        tip.append(row);
+      }
       tip.hidden = false;
       const left = pointer.x + 14 + tip.offsetWidth > width ? pointer.x - 14 - tip.offsetWidth : pointer.x + 14;
       const top = clamp(pointer.y - tip.offsetHeight / 2, 4, height - tip.offsetHeight - 4);
@@ -1151,7 +1167,8 @@
     let shoreMarks = []; // the runs' dots and Milton's mark, with the hour they come ashore
     let shoreSummary = "";
     const buildShore = () => {
-      shore.hidden = state.view !== "ensemble";
+      shore.hidden = state.view === "one";
+      shore.classList.toggle("milton-demo-shore-split", state.view === "split"); // the runs are blue there
       shoreMarks = [];
       if (shore.hidden) return;
       const m = model();
@@ -1293,7 +1310,7 @@
     };
     const stat = (term, value, className = "") => {
       const item = el("div");
-      item.append(el("dt", "", term), el("dd", className, value));
+      item.append(el("dt", className, term), el("dd", className, value));
       return item;
     };
     const updateStats = () => {
@@ -1326,8 +1343,10 @@
     };
     const legends = () => {
       const item = (swatch, text) => {
+        const label = el("span");
+        label.append(...[text].flat()); // text, or text and colored words
         const span = el("span");
-        span.append(swatch, document.createTextNode(text));
+        span.append(swatch, label);
         return span;
       };
       const swatch = (className, background) => {
@@ -1354,9 +1373,9 @@
         );
       } else {
         items.push(
-          item(swatch("", rgba(colors.blue, 0.85)), "aleatoric: the runs of one model scatter"),
-          item(swatch("", rgba(colors.red, 0.85)), `epistemic: the ${groups()} disagree`),
-          item(line(ink(0.9)), "total: sum of aleatoric and epistemic"),
+          item(swatch("", rgba(colors.blue, 0.85)), [word("aleatoric"), ": the runs of one model scatter"]),
+          item(swatch("", rgba(colors.red, 0.85)), [word("epistemic"), `: the ${groups()} disagree`]),
+          item(line(ink(0.9)), ["total: sum of ", word("aleatoric"), " and ", word("epistemic")]),
         );
       }
       if (state.truth) items.push(item(swatch("dashed"), withTruth() ? "what happened" : "Milton's observed track"));
