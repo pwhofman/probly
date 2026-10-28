@@ -574,10 +574,6 @@ span.milton-demo-epistemic {
   stroke: var(--md-coast);
 }
 
-.milton-demo-shore-split .milton-demo-shore-chart .run:not(.ahead) {
-  fill: var(--md-blue);
-}
-
 .milton-demo-shore-chart .milton line {
   stroke: var(--md-text);
   stroke-width: 1.5;

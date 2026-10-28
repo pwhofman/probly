@@ -750,8 +750,8 @@
         }
         const [lat, lon] = position(run.points, hours);
         dot(lat, lon, 5.5, rgba(colors.ink, 1), colors.surface);
-      } else if (state.view === "ensemble") {
-        // the tracks recede a little behind the outline
+      } else {
+        // every run in ink, in All runs and in Decomposition alike, where the map's color is the uncertainty's
         for (const run of m.tracks) {
           context.lineWidth = 1;
           context.strokeStyle = rgba(colors.ink, 0.1);
@@ -761,6 +761,21 @@
           path(run.points, 0, hours);
           context.stroke();
         }
+        // every model's average track, dashed all along: an average of runs, which no run need follow;
+        // how far the models' averages lie apart is what they disagree on
+        const means = state.view === "split" ? meanTracks() : [];
+        context.setLineDash([4, 4]);
+        for (const mean of means) {
+          context.lineWidth = 1.5;
+          context.strokeStyle = rgba(colors.red, 0.55);
+          path(mean, hours, last);
+          context.stroke();
+          context.lineWidth = 2;
+          context.strokeStyle = rgba(colors.red, 1);
+          path(mean, 0, hours);
+          context.stroke();
+        }
+        context.setLineDash([]);
         for (const run of m.tracks) {
           const [lat, lon] = position(run.points, hours);
           dot(lat, lon, 2.2, rgba(colors.ink, 0.9));
@@ -769,39 +784,6 @@
         for (const run of m.tracks) {
           if (run.landfall && hours >= run.landfall.hours) {
             dot(run.landfall.lat, run.landfall.lon, 3, rgba(colors.ink, 1), colors.surface);
-          }
-        }
-      } else {
-        for (const run of m.tracks) {
-          context.lineWidth = 1;
-          context.strokeStyle = rgba(colors.blue, 0.13);
-          path(run.points, hours, last);
-          context.stroke();
-          context.strokeStyle = rgba(colors.blue, 0.45);
-          path(run.points, 0, hours);
-          context.stroke();
-        }
-        const means = meanTracks();
-        for (const mean of means) {
-          context.setLineDash([3, 4]);
-          context.lineWidth = 1.5;
-          context.strokeStyle = rgba(colors.red, 0.6);
-          path(mean, hours, last);
-          context.stroke();
-          context.setLineDash([]);
-          context.lineWidth = 2.25;
-          context.strokeStyle = rgba(colors.red, 1);
-          path(mean, 0, hours);
-          context.stroke();
-        }
-        for (const run of m.tracks) {
-          const [lat, lon] = position(run.points, hours);
-          dot(lat, lon, 1.9, rgba(colors.blue, 0.95));
-        }
-        // where the runs have come ashore so far
-        for (const run of m.tracks) {
-          if (run.landfall && hours >= run.landfall.hours) {
-            dot(run.landfall.lat, run.landfall.lon, 3, rgba(colors.blue, 1), colors.surface);
           }
         }
         for (const mean of means) {
@@ -1241,7 +1223,6 @@
     let shoreSummary = "";
     const buildShore = () => {
       shore.hidden = state.view === "one";
-      shore.classList.toggle("milton-demo-shore-split", state.view === "split"); // the runs are blue there
       shoreMarks = [];
       if (shore.hidden) return;
       const m = model();
@@ -1434,9 +1415,10 @@
         if (background) i.style.background = background;
         return i;
       };
-      const line = (color, thin = false) => {
+      const line = (color, thin = false, dashed = false) => {
         const i = el("i", thin ? "line thin" : "line");
         i.style.borderTopColor = color;
+        if (dashed) i.style.borderTopStyle = "dashed";
         return i;
       };
       const ink = (alpha) => rgba(colors.ink, alpha);
@@ -1461,17 +1443,20 @@
         // the map's shade: how large the uncertainty is, and its color, which kind it mostly is
         const ramp = `linear-gradient(90deg, ${rgba(colors.blue, 0.85)}, ${rgba(split(0.5), 0.85)}, ${rgba(colors.red, 0.85)})`;
         items.push(
-          item(swatch("ramp", ramp), ["map: the uncertainty, stronger where larger, from ", word("aleatoric"), " to ", word("epistemic")]),
-          item(swatch("", rgba(colors.blue, 0.85)), [word("aleatoric"), ": the runs of one model scatter"]),
-          item(swatch("", rgba(colors.red, 0.85)), [word("epistemic"), `: the ${groups()} disagree`]),
+          item(swatch("ramp", ramp), ["source of uncertainty (stronger where larger, from ", word("aleatoric"), " to ", word("epistemic"), ")"]),
+          item(line(rgba(colors.red, 1), false, true), "each model's average track"),
         );
         if (state.wind) items.push(item(line(ink(0.42)), "where any run has tropical-storm-force wind (34 kt)"));
       }
       if (state.truth) items.push(item(swatch("dashed"), "Milton's observed track"));
       legend.replaceChildren(...items);
-      // the chart's line in Decomposition; elsewhere, its numbers say what its lines are
+      // the chart's areas and line in Decomposition; elsewhere, its numbers say what its lines are
       chartKey.hidden = state.view !== "split";
-      chartKey.replaceChildren(item(line(ink(0.9)), ["the line: total, the sum of ", word("aleatoric"), " and ", word("epistemic")]));
+      chartKey.replaceChildren(
+        item(swatch("", rgba(colors.blue, 0.85)), [word("aleatoric"), ": the runs of one model scatter"]),
+        item(swatch("", rgba(colors.red, 0.85)), [word("epistemic"), `: the ${groups()} disagree`]),
+        item(line(ink(0.9)), ["total: sum of ", word("aleatoric"), " and ", word("epistemic")]),
+      );
     };
     const footnote = () => {
       const m = model();
