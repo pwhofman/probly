@@ -1,16 +1,16 @@
-Hurricane Milton: Chaos, or What the Models Don't Know?
-=======================================================
+Hurricane Milton: Where the Uncertainty Comes From
+==================================================
 
 How sure is a weather model of a hurricane's path, and why? This demo shows Google DeepMind's
 WeatherNext forecasting Hurricane Milton from 7 October 2024, 00 UTC, three days before it came
-ashore in Florida, and splits the spread of its runs, with ``probly``, into the atmosphere's chaos
-and what the models do not know.
+ashore in Florida, and splits the spread of its runs, with ``probly``, into what varies from run to
+run of one model and what the models do not know.
 
 .. probly-demo:: milton
    :fallback: demos/milton.png
    :alt: The runs of WeatherNext's forecast of Hurricane Milton over the Gulf of Mexico, with their
-         spread split into the part that changes from run to run (red-pink) and the part where the
-         models disagree (blue).
+         spread split into the part that varies from run to run (aleatoric, blue) and the part where
+         the models disagree (epistemic, red).
 
 What You See
 ------------
@@ -29,8 +29,8 @@ each. All checkpoints were trained on data from before 2024, so none of them has
 - *All runs* shows every run's track, the chance of tropical-storm-force wind (34 kt, the lowest
   threshold of the US National Hurricane Center's wind probabilities), and the outline of every
   run's tropical-storm-force wind.
-- *Chaos or models?* splits the spread of the runs: red-pink where the runs of one model scatter
-  (aleatoric), blue where the models disagree (epistemic), and purple where both do.
+- *Decomposition* splits the spread of the runs: blue where the runs of one model scatter
+  (aleatoric), red where the models disagree (epistemic). Together, they make up the total spread.
 
 **Time and places.** Play the four days or drag through them, and pick a place, or click the map, to
 see it over time. *Show what happened* draws Milton's observed track, from IBTrACS
@@ -92,7 +92,7 @@ mean and variance:
    split.epistemic  # the variance of the models' means: the models disagree
 
 The demo shows the square root of the total variance as the spread, and the epistemic share of the
-variance as the color between red-pink and blue. Every run's track is the lowest sea-level pressure
+variance as the color between blue and red. Every run's track is the lowest sea-level pressure
 near its last position, and a run comes ashore where its track first crosses Florida's coast.
 
 Run It Again

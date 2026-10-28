@@ -31,7 +31,7 @@
     // the view, its label, and the label on small screens
     ["one", "One run", "One"],
     ["ensemble", "All runs", "All"],
-    ["split", "Chaos or models?", "Split"],
+    ["split", "Decomposition", "Split"],
   ];
   const WIND = new Set(["single", "mean", "lower", "upper", "truth"]);
   const HOURS_PER_SECOND = 10; // the speed of playback
@@ -432,7 +432,6 @@
       colors = {
         ink: hex(token("--md-ink")),
         red: hex(token("--md-red")),
-        mix: hex(token("--md-mix")),
         blue: hex(token("--md-blue")),
         ocean: token("--md-ocean"),
         land: token("--md-land"),
@@ -444,10 +443,8 @@
       };
     };
     const rgba = ([r, g, b], alpha) => `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    const split = (share) =>
-      share <= 0.5
-        ? colors.red.map((c, i) => lerp(c, colors.mix[i], share / 0.5))
-        : colors.mix.map((c, i) => lerp(c, colors.blue[i], (share - 0.5) / 0.5));
+    // the epistemic share of the variance: blue where it is aleatoric, red where it is epistemic
+    const split = (share) => colors.blue.map((c, i) => lerp(c, colors.red[i], share));
 
     const offscreen = document.createElement("canvas");
     const raster = () => {
@@ -683,10 +680,10 @@
       } else {
         for (const run of m.tracks) {
           context.lineWidth = 1;
-          context.strokeStyle = rgba(colors.red, 0.13);
+          context.strokeStyle = rgba(colors.blue, 0.13);
           path(run.points, hours, last);
           context.stroke();
-          context.strokeStyle = rgba(colors.red, 0.45);
+          context.strokeStyle = rgba(colors.blue, 0.45);
           path(run.points, 0, hours);
           context.stroke();
         }
@@ -694,22 +691,22 @@
         for (const mean of means) {
           context.setLineDash([3, 4]);
           context.lineWidth = 1.5;
-          context.strokeStyle = rgba(colors.blue, 0.6);
+          context.strokeStyle = rgba(colors.red, 0.6);
           path(mean, hours, last);
           context.stroke();
           context.setLineDash([]);
           context.lineWidth = 2.25;
-          context.strokeStyle = rgba(colors.blue, 1);
+          context.strokeStyle = rgba(colors.red, 1);
           path(mean, 0, hours);
           context.stroke();
         }
         for (const run of m.tracks) {
           const [lat, lon] = position(run.points, hours);
-          dot(lat, lon, 1.9, rgba(colors.red, 0.95));
+          dot(lat, lon, 1.9, rgba(colors.blue, 0.95));
         }
         for (const mean of means) {
           const [lat, lon] = position(mean, hours);
-          dot(lat, lon, 4, rgba(colors.blue, 1), colors.surface);
+          dot(lat, lon, 4, rgba(colors.red, 1), colors.surface);
         }
       }
     };
@@ -834,6 +831,35 @@
       if (state.truth) observed();
       pins();
       graticuleLabels();
+      if (fade.start) {
+        // the map before a switch, fading out over the new one
+        const t = clamp((performance.now() - fade.start) / FADE, 0, 1);
+        context.save();
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.globalAlpha = 1 - t * (2 - t);
+        context.drawImage(fade.image, 0, 0);
+        context.restore();
+      }
+    };
+    // a cross-fade from the map as it is to the one after a switch of view or model
+    const FADE = 420; // ms
+    const fade = { image: document.createElement("canvas"), start: 0 };
+    const crossfade = () => {
+      if (reducedMotion() || !width) return;
+      fade.image.width = canvas.width;
+      fade.image.height = canvas.height;
+      fade.image.getContext("2d").drawImage(canvas, 0, 0);
+      fade.start = performance.now();
+      const step = () => {
+        if (performance.now() - fade.start >= FADE) fade.start = 0;
+        draw();
+        if (fade.start) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+      // and the panel's new content fades in
+      panel.classList.remove("milton-demo-enter");
+      void panel.offsetWidth; // restart the animation
+      panel.classList.add("milton-demo-enter");
     };
     const resize = () => {
       const next = map.clientWidth;
@@ -861,9 +887,9 @@
       }
       if (state.view === "split") {
         const share = value("epistemic");
-        lines.push(`Spread: ±${ms(value("spread"))}`);
+        lines.push(`Total spread: ±${ms(value("spread"))}`);
         if (splittable(state.model)) {
-          lines.push(`${percent(1 - share)} from run to run, ${percent(share)} between ${groups()}`);
+          lines.push(`${percent(1 - share)} aleatoric, ${percent(share)} epistemic`);
         }
       }
       if (state.truth && withTruth()) lines.push(`What happened: ${ms(value("truth"))}`);
@@ -938,6 +964,15 @@
     const pad = { left: 30, right: 10, top: 8, bottom: 20 };
     let cursor = null;
     let chartX = () => 0;
+    // the charts' scales, the same for every place and model, so that switching shows which is higher
+    const limits = { wind: data.gale * 1.25, variance: 1 };
+    for (const m of Object.values(data.models)) {
+      for (const place of Object.values(m.places)) {
+        for (const run of place.runs) limits.wind = Math.max(limits.wind, ...run);
+        if (place.truth) limits.wind = Math.max(limits.wind, ...place.truth);
+        place.aleatoric.forEach((a, t) => (limits.variance = Math.max(limits.variance, a + place.epistemic[t])));
+      }
+    }
     const buildChart = () => {
       chartWidth = chart.clientWidth || 320;
       chart.setAttribute("viewBox", `0 0 ${chartWidth} ${chartHeight}`);
@@ -948,11 +983,12 @@
       const innerH = chartHeight - pad.top - pad.bottom;
       chartX = (h) => pad.left + (h / last) * innerW;
       const view = state.view;
+      // a spot on the map may go higher than the places
       let top;
       if (view === "split") {
-        top = Math.max(...s.aleatoric.map((a, t) => a + s.epistemic[t]), 1);
+        top = Math.max(limits.variance, ...s.aleatoric.map((a, t) => a + s.epistemic[t]));
       } else {
-        const values = [data.gale * 1.25, ...s.single, ...s.upper, ...(state.truth && s.truth ? s.truth : [])];
+        const values = [limits.wind, ...s.single, ...s.upper, ...(state.truth && s.truth ? s.truth : [])];
         if (s.runs && view === "ensemble") values.push(...s.runs.flat());
         top = Math.max(...values);
       }
@@ -997,8 +1033,10 @@
         if (s.runs) s.runs.forEach((run) => line(run, "run"));
         line(s.mean, "line");
       } else {
+        const total = s.aleatoric.map((a, t) => a + s.epistemic[t]);
         area(s.aleatoric.map(() => 0), s.aleatoric, "aleatoric");
-        area(s.aleatoric, s.aleatoric.map((a, t) => a + s.epistemic[t]), "epistemic");
+        area(s.aleatoric, total, "epistemic");
+        line(total, "total");
       }
       if (state.truth && s.truth && view !== "split") line(s.truth, "truth");
       cursor = svg("line", { y1: pad.top - 2, y2: pad.top + innerH, class: "cursor" });
@@ -1073,13 +1111,15 @@
           sentence(`${runs} runs from ${models}. None of them brings Milton ashore.`);
         }
       } else {
-        title.textContent = "Chaos, or what the models don't know?";
+        title.textContent = "Where the spread comes from";
         sentence(
           "The runs of one model scatter as the atmosphere might: that part of the spread is ",
           strong("aleatoric", "milton-demo-aleatoric"),
-          `, and more training data would not remove it. Where the ${counted()} disagree, they lack knowledge: that part is `,
+          ", and more training data would ",
+          el("em", "", "not"),
+          ` remove it. Where the ${counted()} disagree, they lack knowledge: that part is `,
           strong("epistemic", "milton-demo-epistemic"),
-          ".",
+          ". Together, they make up the total spread.",
         );
       }
     };
@@ -1106,11 +1146,11 @@
         const a = at(s.aleatoric);
         const e = at(s.epistemic);
         const total = a + e;
-        items.push(stat("Spread", `±${ms(Math.sqrt(total))}`));
+        items.push(stat("Total spread", `±${ms(Math.sqrt(total))}`));
         if (splittable(state.model)) {
           items.push(
-            stat("From run to run", total > 0 ? percent(a / total) : "–", "milton-demo-aleatoric"),
-            stat(`Between ${groups()}`, total > 0 ? percent(e / total) : "–", "milton-demo-epistemic"),
+            stat("Aleatoric", total > 0 ? percent(a / total) : "–", "milton-demo-aleatoric"),
+            stat("Epistemic", total > 0 ? percent(e / total) : "–", "milton-demo-epistemic"),
           );
         }
       }
@@ -1146,9 +1186,9 @@
         );
       } else {
         items.push(
-          item(swatch("", rgba(colors.red, 0.85)), "spread from run to run (aleatoric)"),
-          item(swatch("", rgba(colors.mix, 0.85)), "both"),
-          item(swatch("", rgba(colors.blue, 0.85)), `the ${groups()} disagree (epistemic)`),
+          item(swatch("", rgba(colors.blue, 0.85)), "aleatoric: the runs of one model scatter"),
+          item(swatch("", rgba(colors.red, 0.85)), `epistemic: the ${groups()} disagree`),
+          item(line(ink(0.9)), "total spread, the sum of both"),
         );
       }
       if (state.truth) items.push(item(swatch("dashed"), withTruth() ? "what happened" : "Milton's observed track"));
@@ -1195,10 +1235,14 @@
     };
     const setView = (view) => {
       if (view === "split" && !splittable(state.model)) return;
+      if (view === state.view) return;
+      crossfade();
       state.view = view;
       update();
     };
     const setModel = (key) => {
+      if (key === state.model) return;
+      crossfade();
       state.model = key;
       if (state.view === "split" && !splittable(key)) state.view = "ensemble";
       update();

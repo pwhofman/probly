@@ -74,6 +74,25 @@ Uncertainty Quantification for Machine Learning
 
 .. |middot| unicode:: U+00B7
 
+.. the Milton demo of demos/milton, in a section that the README can link to (#interactive-demo); the
+   static figure shows without JavaScript
+
+.. _interactive-demo:
+
+Forecasting a Hurricane
+-----------------------
+
+.. probly-demo:: milton
+   :fallback: demos/milton.png
+   :alt: The runs of WeatherNext's forecast of Hurricane Milton over the Gulf of Mexico, with their spread split into the part that varies from run to run (aleatoric, blue) and the part where the models disagree (epistemic, red).
+
+.. container:: milton-demo-caption-text
+
+   How sure is a weather model of a hurricane's path, and why? ``probly`` splits the spread of
+   WeatherNext's forecast of Hurricane Milton :cite:`aletSkillfulJoint2025` into what varies from run
+   to run of one model (aleatoric) and where its models disagree (epistemic).
+   :doc:`More about this demo <demos/milton/index>`.
+
 Uncertainty in a few lines
 --------------------------
 
