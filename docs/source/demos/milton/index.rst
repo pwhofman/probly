@@ -28,7 +28,8 @@ each. All checkpoints were trained on data from before 2024, so none of them has
   how sure it is.
 - *All runs* shows every run's track, the chance of tropical-storm-force wind (34 kt, the lowest
   threshold of the US National Hurricane Center's wind probabilities), and the outline of every
-  run's tropical-storm-force wind.
+  run's tropical-storm-force wind. A strip along Florida's Gulf coast shows where the runs come
+  ashore, each run's dot filled once it has.
 - *Decomposition* splits the spread of the runs: blue where the runs of one model scatter
   (aleatoric), red where the models disagree (epistemic). Together, they make up the total spread.
 

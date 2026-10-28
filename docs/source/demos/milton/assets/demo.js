@@ -387,6 +387,10 @@
     const panel = el("div", "milton-demo-panel");
     const title = el("h3", "milton-demo-title");
     const lead = el("p", "milton-demo-lead");
+    const shore = el("div", "milton-demo-shore");
+    const shoreChart = svg("svg", { class: "milton-demo-shore-chart", role: "img" });
+    const shoreNote = el("p", "milton-demo-shore-note");
+    shore.append(el("div", "milton-demo-shore-head", "Where the runs come ashore"), shoreChart, shoreNote);
     const chips = el("div", "milton-demo-chips");
     chips.setAttribute("role", "group");
     chips.setAttribute("aria-label", "Place");
@@ -408,7 +412,7 @@
     spot.append(spotHead, chart, stats);
     const legend = el("div", "milton-demo-legend");
     const note = el("p", "milton-demo-note");
-    panel.append(title, lead, chips, spot, legend, note);
+    panel.append(title, lead, shore, chips, spot, legend, note);
     body.append(stage, panel);
     root.append(bar, about, body);
 
@@ -676,6 +680,12 @@
         for (const run of m.tracks) {
           const [lat, lon] = position(run.points, hours);
           dot(lat, lon, 2.2, rgba(colors.ink, 0.9));
+        }
+        // where the runs have come ashore so far
+        for (const run of m.tracks) {
+          if (run.landfall && hours >= run.landfall.hours) {
+            dot(run.landfall.lat, run.landfall.lon, 3, rgba(colors.ink, 1), colors.surface);
+          }
         }
       } else {
         for (const run of m.tracks) {
@@ -1068,6 +1078,95 @@
       if (chart.hasPointerCapture(event.pointerId)) scrub(event);
     });
 
+    // -- where the runs come ashore: a strip along Florida's Gulf coast, south to north ----------------
+    let shoreMarks = []; // the runs' dots and Milton's mark, with the hour they come ashore
+    let shoreSummary = "";
+    const buildShore = () => {
+      shore.hidden = state.view !== "ensemble";
+      shoreMarks = [];
+      if (shore.hidden) return;
+      const m = model();
+      const runs = m.tracks
+        .map((run, index) => ({ index, landfall: run.landfall }))
+        .filter((run) => run.landfall)
+        .sort((a, b) => a.landfall.lat - b.landfall.lat);
+      const observed = data.observed.landfall;
+      const lats = [...runs.map((run) => run.landfall.lat), observed.lat];
+      const south = Math.min(26.1, ...lats) - 0.15;
+      const north = Math.max(29.1, ...lats) + 0.15;
+      const width = shoreChart.clientWidth || 320;
+      const radius = 3.6;
+      const pitch = 2 * radius + 1.5;
+      const x = (lat) => 8 + ((lat - south) / (north - south)) * (width - 16);
+      // a dot plot: the runs in columns as wide as a dot, stacked up from the coast's line
+      const heights = new Map();
+      for (const run of runs) {
+        const column = Math.round(x(run.landfall.lat) / pitch);
+        run.cx = column * pitch;
+        run.level = heights.get(column) ?? 0;
+        heights.set(column, run.level + 1);
+      }
+      const top = state.truth ? 14 : 4; // room for Milton's label
+      const coast = top + Math.max(3, ...heights.values()) * pitch + 2;
+      const height = coast + 22;
+      shoreChart.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      shoreChart.style.height = `${height}px`;
+      shoreChart.replaceChildren(svg("line", { x1: 2, x2: width - 2, y1: coast, y2: coast, class: "coast" }));
+      // the coast's places under the line, as many as fit
+      let free = 0;
+      for (const place of [...data.coast].sort((a, b) => a.lat - b.lat)) {
+        const px = x(place.lat);
+        const half = place.name.length * 2.75;
+        if (place.lat < south || place.lat > north || px - half < free || px + half > width) continue;
+        shoreChart.append(svg("line", { x1: px, x2: px, y1: coast, y2: coast + 4, class: "tick" }));
+        const text = svg("text", { x: px, y: coast + 15, "text-anchor": "middle" });
+        text.textContent = place.name;
+        shoreChart.append(text);
+        free = px + half + 10;
+      }
+      for (const run of runs) {
+        const dot = svg("circle", { cx: run.cx, cy: coast - radius - 1.5 - run.level * pitch, r: radius, class: "run" });
+        const tip = svg("title");
+        tip.textContent = `A run comes ashore near ${coastName(run.landfall.lat, run.landfall.lon)}, ${ahead(run.landfall.hours)}`;
+        dot.append(tip);
+        shoreChart.append(dot);
+        shoreMarks.push({ node: dot, hours: run.landfall.hours, hide: false });
+      }
+      if (state.truth) {
+        // where Milton came ashore, once it has
+        const mark = svg("g", { class: "milton" });
+        const px = x(observed.lat);
+        mark.append(svg("line", { x1: px, x2: px, y1: 11, y2: coast }));
+        const text = svg("text", { x: px, y: 8, "text-anchor": "middle" });
+        text.textContent = `Milton, ${ahead(observed.hours)}`;
+        mark.append(text);
+        shoreChart.append(mark);
+        shoreMarks.push({ node: mark, hours: observed.hours, hide: true });
+      }
+      // the places where the most runs come ashore
+      const counts = new Map();
+      for (const run of runs) {
+        const name = coastName(run.landfall.lat, run.landfall.lon);
+        counts.set(name, (counts.get(name) ?? 0) + 1);
+      }
+      const most = [...counts].sort((a, b) => b[1] - a[1]).slice(0, 3);
+      const named = most.map(([name, count], i) => (i ? `${name} (${count})` : `${name} (${count} of ${m.tracks.length})`));
+      shoreSummary = runs.length
+        ? `Most come ashore near ${named.length > 1 ? `${named.slice(0, -1).join(", ")} and ${named.at(-1)}` : named[0]}.`
+        : "No run comes ashore.";
+      shoreChart.setAttribute("aria-label", `Where the runs come ashore, south to north. ${shoreSummary}`);
+    };
+    // the runs come ashore as time goes by: until then, a dot is an outline
+    const placeShore = () => {
+      if (shore.hidden) return;
+      let ashore = 0;
+      for (const { node, hours, hide } of shoreMarks) {
+        node.classList.toggle(hide ? "later" : "ahead", state.hours < hours);
+        if (!hide && state.hours >= hours) ashore += 1;
+      }
+      shoreNote.textContent = `By ${ahead(state.hours)}, ${ashore} of ${model().tracks.length} runs are ashore. ${shoreSummary}`;
+    };
+
     // -- the texts --------------------------------------------------------------------------------------
     let current = null; // the series of the spot shown
     const strong = (text, className = "") => el("strong", className, text);
@@ -1222,6 +1321,7 @@
       play.setAttribute("aria-label", state.playing ? "Pause" : "Play the four days");
       if (what === "all") {
         current = buildChart();
+        buildShore();
         texts();
         legends();
         footnote();
@@ -1230,6 +1330,7 @@
         placeCursor();
       }
       updateStats();
+      placeShore();
       draw();
       if (pointer) showTip();
     };
