@@ -34,7 +34,7 @@ data from before 2024, so none of them has seen Milton.
 **Time and places.** Play the four days or drag through them, and pick a place, or click the map, to
 see it over time. *Show wind* draws where the run, or any run, has tropical-storm-force wind (34 kt,
 the lowest threshold of the US National Hurricane Center's wind probabilities), and in *All runs*
-the chance of it. *Show what happened* draws Milton's observed track, from IBTrACS
+the chance of it. *Show Milton's track* draws its observed track, from IBTrACS
 :cite:`knappInternationalBest2010`.
 
 How It Was Computed

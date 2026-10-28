@@ -753,8 +753,8 @@ span.milton-demo-epistemic {
   line-height: 1.3;
 }
 
-.milton-demo-stats dd {
-  margin: 0.1rem 0 0;
+.milton-demo .milton-demo-stats dd {
+  margin: 0.1rem 0 0; /* not the theme's indent of a definition */
   font-size: 0.95rem;
   font-weight: 700;
   line-height: 1.25;
@@ -767,6 +767,10 @@ span.milton-demo-epistemic {
   color: var(--md-muted);
   font-size: 0.78rem;
   line-height: 1.35;
+}
+
+.milton-demo-chart-key {
+  margin-top: 0.1rem;
 }
 
 .milton-demo-legend > span {
@@ -804,7 +808,7 @@ span.milton-demo-epistemic {
 }
 
 .milton-demo-note {
-  margin: 0;
+  margin: 1rem 0 0;
   color: var(--md-muted);
   font-size: 0.78rem;
   line-height: 1.5;

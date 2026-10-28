@@ -415,12 +415,13 @@
       return { label, box };
     };
     const { label: windToggle, box: windBox } = switchFor("wind", "Show wind");
-    const { label: truthToggle, box: truthBox } = switchFor("truth", "Show what happened");
+    const { label: truthToggle, box: truthBox } = switchFor("truth", "Show Milton's track");
     const toggles = el("div", "milton-demo-toggles");
     toggles.append(windToggle, truthToggle);
     now.append(clock, toggles);
     time.append(play, track, now);
-    stage.append(map, time);
+    const legend = el("div", "milton-demo-legend"); // the map's
+    stage.append(map, legend, time);
 
     const panel = el("div", "milton-demo-panel");
     const title = el("p", "milton-demo-title"); // not a heading: the page's headings stay in order
@@ -447,12 +448,12 @@
     spotHead.append(spotName, spotUnit);
     const chart = svg("svg", { class: "milton-demo-chart", role: "img" });
     const stats = el("dl", "milton-demo-stats");
-    spot.append(spotHead, chart, stats);
-    const legend = el("div", "milton-demo-legend");
+    const chartKey = el("div", "milton-demo-legend milton-demo-chart-key"); // the chart's, where it needs one
+    spot.append(spotHead, chart, stats, chartKey);
     const note = el("p", "milton-demo-note");
-    panel.append(title, lead, shore, chips, spot, legend, note);
+    panel.append(title, lead, shore, chips, spot);
     body.append(stage, panel);
-    root.append(bar, about, body);
+    root.append(bar, about, body, note);
 
     // -- the map ---------------------------------------------------------------------------------------
     const extent = data.extent;
@@ -1459,12 +1460,14 @@
           item(swatch("ramp", ramp), ["map: the uncertainty, stronger where larger, from ", word("aleatoric"), " to ", word("epistemic")]),
           item(swatch("", rgba(colors.blue, 0.85)), [word("aleatoric"), ": the runs of one model scatter"]),
           item(swatch("", rgba(colors.red, 0.85)), [word("epistemic"), `: the ${groups()} disagree`]),
-          item(line(ink(0.9)), ["total: sum of ", word("aleatoric"), " and ", word("epistemic")]),
         );
         if (state.wind) items.push(item(line(ink(0.42)), "where any run has tropical-storm-force wind (34 kt)"));
       }
-      if (state.truth) items.push(item(swatch("dashed"), withTruth() ? "what happened" : "Milton's observed track"));
+      if (state.truth) items.push(item(swatch("dashed"), "Milton's observed track"));
       legend.replaceChildren(...items);
+      // the chart's line in Decomposition; elsewhere, its numbers say what its lines are
+      chartKey.hidden = state.view !== "split";
+      chartKey.replaceChildren(item(line(ink(0.9)), ["the line: total, the sum of ", word("aleatoric"), " and ", word("epistemic")]));
     };
     const footnote = () => {
       const m = model();
