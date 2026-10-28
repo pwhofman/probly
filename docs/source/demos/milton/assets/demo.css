@@ -475,6 +475,11 @@ span.milton-demo-epistemic {
   user-select: none;
 }
 
+.milton-demo-toggle:has(input:disabled) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .milton-demo-toggle input {
   position: absolute;
   opacity: 0;
@@ -738,6 +743,13 @@ span.milton-demo-epistemic {
 .milton-demo-chart .epistemic {
   fill: var(--md-red);
   opacity: 0.8;
+}
+
+.milton-demo-chart .removed {
+  fill: none;
+  stroke: var(--md-red-text);
+  stroke-width: 1.25;
+  stroke-dasharray: 3 3;
 }
 
 .milton-demo-chart .total {

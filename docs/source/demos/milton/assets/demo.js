@@ -8,8 +8,9 @@
 // tracks, fields on a grid every 6 hours, every run's wind near the storm, and the runs at a few
 // places; the page interpolates between the 6-hourly steps and only looks values up.
 //
-// Three views: one run of the model, taken as the forecast; all runs; and the uncertainty of the
-// runs, split into its aleatoric and epistemic parts by the law of total variance. A toggle adds the
+// Four views: one run of the model, taken as the forecast; all runs; the uncertainty of the runs,
+// split into its aleatoric and epistemic parts by the law of total variance; and what better models
+// would change: if the models agreed, the epistemic part would go and the aleatoric part stay. A toggle adds the
 // wind: where the run, or any run, has tropical-storm-force wind, and in all runs the chance of it.
 // Pointing at the map shows the values there; clicking it, or a place, shows that spot over time.
 //
@@ -38,6 +39,7 @@
     ["one", "One run", "One"],
     ["ensemble", "All runs", "All"],
     ["split", "Decomposition", "Split"],
+    ["agree", "Better models", "Better"],
   ];
   const WIND = new Set(["single", "mean", "lower", "upper", "truth"]);
   const HOURS_PER_SECOND = 10; // the speed of playback
@@ -226,6 +228,61 @@
         modelMeans.set(key, means);
       }
       return modelMeans.get(key);
+    };
+    // every model's offset from the models' common average track, per 6-hourly step: moving a model's
+    // runs by it makes the models agree and keeps how its runs scatter (the law of total variance, for
+    // the storm's position: the within-model scatter stays, the between-model one goes)
+    const offsets = new Map();
+    const offsetsOf = (key = state.model) => {
+      if (!offsets.has(key)) {
+        const means = meanTracks(key);
+        const common = data.times.map((_, t) => [0, 1].map((k) => means.reduce((sum, mean) => sum + mean[t][k], 0) / means.length));
+        offsets.set(key, means.map((mean) => mean.map((point, t) => [common[t][0] - point[0], common[t][1] - point[1]])));
+      }
+      return offsets.get(key);
+    };
+    // a model's track moved by a share of the model's offset (1: all of it)
+    const moved = (points, group, share) => {
+      if (!share) return points;
+      const offset = offsetsOf()[group];
+      return points.map((point, t) => [point[0] + share * offset[t][0], point[1] + share * offset[t][1]]);
+    };
+    // whether a point (lon, lat) lies within a ring of the land
+    const inside = (ring, lon, lat) => {
+      let within = false;
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i, i += 1) {
+        const [xi, yi] = ring[i];
+        const [xj, yj] = ring[j];
+        if (yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) within = !within;
+      }
+      return within;
+    };
+    // where and when a track first comes ashore in Florida, half-hourly, as compute/common.py finds it
+    let mainland = null; // the land around Orlando
+    const landfallOf = (points) => {
+      if (!mainland) {
+        const orlando = data.places.find((place) => place.name === "Orlando");
+        mainland = data.land.find((ring) => inside(ring, orlando.lon, orlando.lat)) ?? [];
+      }
+      for (let hours = 0; hours <= last; hours += 0.5) {
+        const [lat, lon] = position(points, hours);
+        if (lon > -87.6 && lat > 24.6 && lat < 31 && inside(mainland, lon, lat)) return { hours, lat, lon };
+      }
+      return null;
+    };
+    // the runs as if the models agreed: moved onto the models' common average, with their landfalls
+    const agreedRuns = new Map();
+    const agreedTracks = (key = state.model) => {
+      if (!agreedRuns.has(key)) {
+        agreedRuns.set(
+          key,
+          data.models[key].tracks.map((run) => {
+            const points = moved(run.points, run.model, 1);
+            return { model: run.model, points, landfall: landfallOf(points) };
+          }),
+        );
+      }
+      return agreedRuns.get(key);
     };
     // the observed track (IBTrACS) at any hour, from its irregular times
     const observedAt = (hours) => {
@@ -523,10 +580,15 @@
         pixels[c * 4 + 2] = rgb[2];
         pixels[c * 4 + 3] = Math.round(clamp(alpha, 0, 1) * 255);
       };
-      if (state.view === "split") {
+      if (state.view === "split" || state.view === "agree") {
+        // as the models come to agree (Better models), the epistemic part of the variance goes
+        const gone = state.view === "agree" ? agree : 0;
         const share = field("epistemic", hours);
         const spread = range("spread");
-        field("spread", hours).forEach((s, c) => paint(c, split(share[c]), Math.pow(strength(s, spread), 0.9) * 0.88));
+        field("spread", hours).forEach((s, c) => {
+          const left = 1 - gone * share[c]; // the share of the variance that remains
+          paint(c, split(left > 0 ? (share[c] * (1 - gone)) / left : 0), Math.pow(strength(s * Math.sqrt(left), spread), 0.9) * 0.88);
+        });
       } else if (state.wind && state.view === "ensemble") {
         field("gale", hours).forEach((p, c) => paint(c, colors.ink, p * 0.6));
       } else if (state.wind) {
@@ -767,8 +829,11 @@
         const [lat, lon] = position(run.points, hours);
         dot(lat, lon, 5.5, rgba(colors.ink, 1), colors.surface);
       } else {
-        // every run in ink, in All runs and in Decomposition alike, where the map's color is the uncertainty's
-        for (const run of m.tracks) {
+        // every run in ink, in All runs and in Decomposition alike, where the map's color is the uncertainty's;
+        // in Better models, every model's runs move with its average onto the models' common one
+        const share = state.view === "agree" ? agree : 0;
+        const runs = m.tracks.map((run) => ({ ...run, points: moved(run.points, run.model, share) }));
+        for (const run of runs) {
           context.lineWidth = 1;
           context.strokeStyle = rgba(colors.ink, 0.1);
           path(run.points, hours, last);
@@ -779,7 +844,7 @@
         }
         // every model's average track, dashed all along: an average of runs, which no run need follow;
         // how far the models' averages lie apart is what they disagree on
-        const means = state.view === "split" ? meanTracks() : [];
+        const means = state.view === "ensemble" ? [] : meanTracks().map((mean, group) => moved(mean, group, share));
         context.setLineDash([4, 4]);
         for (const mean of means) {
           context.lineWidth = 1.5;
@@ -792,12 +857,13 @@
           context.stroke();
         }
         context.setLineDash([]);
-        for (const run of m.tracks) {
+        for (const run of runs) {
           const [lat, lon] = position(run.points, hours);
           dot(lat, lon, 2.2, rgba(colors.ink, 0.9));
         }
-        // where the runs have come ashore so far
-        for (const run of m.tracks) {
+        // where the runs have come ashore so far (in Better models, once the models agree)
+        const ashore = state.view !== "agree" ? m.tracks : share === 1 ? agreedTracks() : [];
+        for (const run of ashore) {
           if (run.landfall && hours >= run.landfall.hours) {
             dot(run.landfall.lat, run.landfall.lon, 3, rgba(colors.ink, 1), colors.surface);
           }
@@ -946,7 +1012,7 @@
       raster();
       land(false);
       sea();
-      if (state.wind) outline();
+      if (state.wind && state.view !== "agree") outline();
       tracks();
       if (state.truth) observed();
       pins();
@@ -960,6 +1026,30 @@
         context.drawImage(fade.image, 0, 0, canvas.width, canvas.height);
         context.restore();
       }
+    };
+    // Better models: how far the models have come to agree, from 0 (as they are) to 1 (agreeing); between
+    // Decomposition and Better models, the map and the chart turn into each other instead of fading
+    const AGREE_MS = 1200;
+    let agree = 0;
+    const morph = { from: 0, to: 0, start: 0 };
+    const morphTo = (to) => {
+      if (reducedMotion() || !width) {
+        agree = to;
+        return;
+      }
+      const running = morph.start > 0;
+      morph.from = agree;
+      morph.to = to;
+      morph.start = performance.now();
+      const step = () => {
+        const t = clamp((performance.now() - morph.start) / AGREE_MS, 0, 1);
+        agree = lerp(morph.from, morph.to, t < 0.5 ? 2 * t * t : 1 - (2 - 2 * t) ** 2 / 2);
+        if (t >= 1) morph.start = 0;
+        buildChart();
+        draw();
+        if (morph.start) requestAnimationFrame(step);
+      };
+      if (!running) requestAnimationFrame(step);
     };
     // a cross-fade from the map as it is to the one after a switch of view
     const FADE = 420; // ms
@@ -977,7 +1067,11 @@
         if (fade.start) requestAnimationFrame(step);
       };
       if (!running) requestAnimationFrame(step);
-      // and the panel's new content fades in
+      enter();
+    };
+    // the panel's new content fades in
+    const enter = () => {
+      if (reducedMotion()) return;
       panel.classList.remove("milton-demo-enter");
       void panel.offsetWidth; // restart the animation
       panel.classList.add("milton-demo-enter");
@@ -1012,6 +1106,11 @@
         const share = value("epistemic");
         lines.push(`Total uncertainty: ±${ms(value("spread"))}`);
         lines.push([`${percent(1 - share)} `, word("aleatoric"), `, ${percent(share)} `, word("epistemic")]);
+      }
+      if (state.view === "agree") {
+        const share = value("epistemic");
+        lines.push(`Total uncertainty: ±${ms(value("spread"))}`);
+        lines.push(["If the models agreed: ±", ms(value("spread") * Math.sqrt(1 - share)), " (", word("aleatoric"), ")"]);
       }
       if (state.truth && withTruth()) lines.push(`What happened: ${ms(value("truth"))}`);
       return { head: `${Math.abs(lat).toFixed(1)}° N, ${Math.abs(lon).toFixed(1)}° W · ${ahead(hours)}`, lines };
@@ -1150,7 +1249,7 @@
       const view = state.view;
       // a spot on the map may go higher than the places
       let top;
-      if (view === "split") {
+      if (view === "split" || view === "agree") {
         top = Math.max(limits.variance, ...s.aleatoric.map((a, t) => a + s.epistemic[t]));
       } else {
         const values = [limits.wind, ...s.single, ...s.upper, ...(state.truth && s.truth ? s.truth : [])];
@@ -1185,7 +1284,7 @@
         text.textContent = day(h);
         chart.append(text);
       }
-      if (view !== "split") {
+      if (view === "one" || view === "ensemble") {
         chart.append(svg("line", { x1: pad.left, x2: chartWidth - pad.right, y1: chartY(data.gale), y2: chartY(data.gale), class: "threshold" }));
         const text = svg("text", { x: chartWidth - pad.right, y: chartY(data.gale) - 4, "text-anchor": "end" });
         text.textContent = "34 kt";
@@ -1198,16 +1297,20 @@
         if (s.runs) s.runs.forEach((run) => line(run, "run"));
         line(s.mean, "line");
       } else {
-        const total = s.aleatoric.map((a, t) => a + s.epistemic[t]);
+        // in Better models, the epistemic part goes as the models come to agree; its line stays, dashed
+        const gone = view === "agree" ? agree : 0;
+        const before = s.aleatoric.map((a, t) => a + s.epistemic[t]);
+        const total = s.aleatoric.map((a, t) => a + (1 - gone) * s.epistemic[t]);
         area(s.aleatoric.map(() => 0), s.aleatoric, "aleatoric");
         area(s.aleatoric, total, "epistemic");
+        if (gone > 0) line(before, "removed");
         line(total, "total");
       }
-      if (state.truth && s.truth && view !== "split") line(s.truth, "truth");
+      if (state.truth && s.truth && (view === "one" || view === "ensemble")) line(s.truth, "truth");
       cursor = svg("line", { y1: pad.top - 2, y2: pad.top + innerH, class: "cursor" });
       chart.append(cursor);
       placeCursor();
-      const unit = view === "split" ? "variance of the wind, (m/s)²" : "wind at 10 m, m/s";
+      const unit = view === "split" || view === "agree" ? "variance of the wind, (m/s)²" : "wind at 10 m, m/s";
       spotUnit.textContent = unit;
       spotName.textContent = s.name;
       chart.setAttribute("aria-label", `${s.name}: ${unit}, over four days`);
@@ -1241,7 +1344,7 @@
       shoreMarks = [];
       if (shore.hidden) return;
       const m = model();
-      const runs = m.tracks
+      const runs = (state.view === "agree" ? agreedTracks() : m.tracks)
         .map((run, index) => ({ index, landfall: run.landfall }))
         .filter((run) => run.landfall)
         .sort((a, b) => a.landfall.lat - b.landfall.lat);
@@ -1372,6 +1475,19 @@
           sentence(`${runs} runs from ${models}. None of them brings Milton ashore. ${outline}`.trim());
         }
       } else {
+        if (state.view === "agree") {
+          title.textContent = "Reduce one, plan for the other";
+          sentence(
+            "What if better models and more data made the four models agree? Here, every model's runs move onto the models' common average: the ",
+            strong("epistemic", "milton-demo-epistemic"),
+            " part is gone. What remains is ",
+            strong("aleatoric", "milton-demo-aleatoric"),
+            ": even a perfect model's runs scatter, as the atmosphere might. That uncertainty is ",
+            el("em", "", "fine to have"),
+            ": it is the weather's own, so plan for its range. The epistemic part is the one worth reducing.",
+          );
+          return;
+        }
         title.textContent = "Where the uncertainty comes from";
         sentence(
           "The runs of one model scatter as the atmosphere might: that part of the uncertainty is ",
@@ -1408,10 +1524,17 @@
         const e = at(s.epistemic);
         const total = a + e;
         items.push(stat("Total uncertainty", `±${ms(Math.sqrt(total))}`));
-        items.push(
-          stat("Aleatoric", total > 0 ? percent(a / total) : "–", "milton-demo-aleatoric"),
-          stat("Epistemic", total > 0 ? percent(e / total) : "–", "milton-demo-epistemic"),
-        );
+        if (state.view === "agree") {
+          items.push(
+            stat("What remains", `±${ms(Math.sqrt(a))}`, "milton-demo-aleatoric"),
+            stat("Reducible", total > 0 ? percent(e / total) : "–", "milton-demo-epistemic"),
+          );
+        } else {
+          items.push(
+            stat("Aleatoric", total > 0 ? percent(a / total) : "–", "milton-demo-aleatoric"),
+            stat("Epistemic", total > 0 ? percent(e / total) : "–", "milton-demo-epistemic"),
+          );
+        }
       }
       stats.replaceChildren(...items);
     };
@@ -1452,6 +1575,16 @@
           );
         }
         items.push(item(line(ink(0.32), true), "every run's track; a dot where it came ashore"));
+      } else if (state.view === "agree") {
+        // what remains when the models agree: the aleatoric part, in its blue
+        items.push(
+          item(swatch("ramp", `linear-gradient(90deg, ${rgba(colors.blue, 0.1)}, ${rgba(colors.blue, 0.85)})`), [
+            "what remains: ",
+            word("aleatoric"),
+            " uncertainty, stronger where larger",
+          ]),
+          item(line(rgba(colors.red, 1), false, true), "the four models' averages, made to agree"),
+        );
       } else {
         // the map's shade: how large the uncertainty is, and its color, which kind it mostly is
         const ramp = `linear-gradient(90deg, ${rgba(colors.blue, 0.85)}, ${rgba(split(0.5), 0.85)}, ${rgba(colors.red, 0.85)})`;
@@ -1463,12 +1596,21 @@
       }
       if (state.truth) items.push(item(swatch("dashed"), "Milton's observed track"));
       legend.replaceChildren(...items);
-      // the chart's areas and line in Decomposition; elsewhere, its numbers say what its lines are
-      chartKey.hidden = state.view !== "split";
+      // the chart's areas and lines in Decomposition and Better models; elsewhere, its numbers say what
+      // its lines are
+      chartKey.hidden = state.view !== "split" && state.view !== "agree";
       chartKey.replaceChildren(
-        item(swatch("", rgba(colors.blue, 0.85)), [word("aleatoric"), ": the runs of one model scatter"]),
-        item(swatch("", rgba(colors.red, 0.85)), [word("epistemic"), `: the ${groups()} disagree`]),
-        item(line(ink(0.9)), ["total: sum of ", word("aleatoric"), " and ", word("epistemic")]),
+        ...(state.view === "agree"
+          ? [
+              item(swatch("", rgba(colors.blue, 0.85)), [word("aleatoric"), ": remains"]),
+              item(line(rgba(colors.red, 1), false, true), [word("epistemic"), ": gone once the models agree"]),
+              item(line(ink(0.9)), "total: what remains"),
+            ]
+          : [
+              item(swatch("", rgba(colors.blue, 0.85)), [word("aleatoric"), ": the runs of one model scatter"]),
+              item(swatch("", rgba(colors.red, 0.85)), [word("epistemic"), `: the ${groups()} disagree`]),
+              item(line(ink(0.9)), ["total: sum of ", word("aleatoric"), " and ", word("epistemic")]),
+            ]),
       );
     };
     const footnote = () => {
@@ -1487,6 +1629,8 @@
       for (const [name, chip] of chipButtons) chip.setAttribute("aria-pressed", String(!state.spot && name === state.place));
       truthBox.checked = state.truth;
       windBox.checked = state.wind;
+      windBox.disabled = state.view === "agree";
+      windToggle.title = windBox.disabled ? "Better models moves the runs, not their wind" : "";
       slider.value = String(Math.round(state.hours));
       slider.setAttribute("aria-valuetext", `${ahead(state.hours)}, ${when(state.hours)}`);
       clock.replaceChildren(document.createTextNode(`${ahead(state.hours)} `), el("span", "", `· ${when(state.hours)}`));
@@ -1513,9 +1657,15 @@
     };
     const setView = (view) => {
       if (view === state.view) return;
-      crossfade();
+      // Decomposition and Better models turn into each other; the other views fade
+      const turns = [state.view, view].every((key) => key === "split" || key === "agree");
+      if (turns) enter();
+      else crossfade();
       state.view = view;
+      if (!turns) agree = 0;
       update();
+      if (view === "agree") morphTo(1);
+      else if (turns) morphTo(0);
     };
     const setPlace = (name) => {
       state.place = name;

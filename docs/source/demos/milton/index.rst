@@ -30,6 +30,10 @@ data from before 2024, so none of them has seen Milton.
 - *Decomposition* splits the uncertainty of the runs: blue where the runs of one model scatter
   (aleatoric), red where the models disagree (epistemic). Together, they make up the total
   uncertainty.
+- *Better models* shows what better models and more data would change. If the four models agreed,
+  the epistemic part would go: every model's runs move onto the models' common average, which keeps
+  how they scatter. The aleatoric part stays. It is the weather's own and fine to have: plan for its
+  range, and work on the epistemic part.
 
 **Time and places.** Play the four days or drag through them, and pick a place, or click the map, to
 see it over time. *Show wind* draws where the run, or any run, has tropical-storm-force wind (34 kt,
