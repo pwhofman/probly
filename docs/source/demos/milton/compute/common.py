@@ -38,9 +38,9 @@ MILTON = "2024279N21265"  # Milton's IBTrACS storm id
 INIT = datetime(2024, 10, 7, tzinfo=UTC)  # the initialization of the public WeatherNext data
 TIMES = np.arange(0, 97, 6)  # lead times in hours, every 6 h for four days
 LON = (-94.5, -72.0)  # the map: the Gulf of Mexico, Florida and the western Atlantic
-LAT = (19.5, 33.0)
+LAT = (20.3, 33.0)  # just north of 20° N, so that its line is not drawn at the map's edge
 GRID_LON = (-95.0, -72.0)  # the grid of the fields: the map, out to whole degrees
-GRID_LAT = (19.0, 33.0)
+GRID_LAT = (20.0, 33.0)
 KNOT = 0.514444  # m/s
 GALE = 34 * KNOT  # tropical-storm-force wind, NHC's lowest wind speed probability threshold
 
