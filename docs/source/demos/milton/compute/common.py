@@ -37,8 +37,10 @@ MILTON = "2024279N21265"  # Milton's IBTrACS storm id
 
 INIT = datetime(2024, 10, 7, tzinfo=UTC)  # the initialization of the public WeatherNext data
 TIMES = np.arange(0, 97, 6)  # lead times in hours, every 6 h for four days
-LON = (-97.0, -72.0)  # the map: the Gulf of Mexico, Florida and the western Atlantic
-LAT = (18.0, 33.0)
+LON = (-94.5, -72.0)  # the map: the Gulf of Mexico, Florida and the western Atlantic
+LAT = (19.5, 33.0)
+GRID_LON = (-95.0, -72.0)  # the grid of the fields: the map, out to whole degrees
+GRID_LAT = (19.0, 33.0)
 KNOT = 0.514444  # m/s
 GALE = 34 * KNOT  # tropical-storm-force wind, NHC's lowest wind speed probability threshold
 
@@ -59,7 +61,7 @@ COAST = [  # places on Florida's Gulf coast, south to north, to name where a run
     ("Siesta Key", 27.27, -82.55),
     ("Longboat Key", 27.41, -82.66),
     ("Anna Maria Island", 27.53, -82.73),
-    ("St. Petersburg", 27.77, -82.68),
+    ("Tampa Bay", 27.77, -82.68),  # at its mouth, by St. Petersburg
     ("Clearwater", 27.97, -82.80),
     ("Tarpon Springs", 28.15, -82.76),
     ("Hernando Beach", 28.48, -82.66),
@@ -165,9 +167,9 @@ def on_land(rings: list[np.ndarray], lat: np.ndarray, lon: np.ndarray) -> np.nda
 
 def grid(step: float) -> dict:
     """The demo's grid at a resolution: its first cell (north-west), its step, its rows and columns."""
-    rows = round((LAT[1] - LAT[0]) / step) + 1
-    cols = round((LON[1] - LON[0]) / step) + 1
-    return {"west": LON[0], "north": LAT[1], "step": step, "rows": rows, "cols": cols}
+    rows = round((GRID_LAT[1] - GRID_LAT[0]) / step) + 1
+    cols = round((GRID_LON[1] - GRID_LON[0]) / step) + 1
+    return {"west": GRID_LON[0], "north": GRID_LAT[1], "step": step, "rows": rows, "cols": cols}
 
 
 def points(spec: dict) -> tuple[np.ndarray, np.ndarray]:
