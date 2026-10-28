@@ -91,6 +91,12 @@
     };
     const model = () => data.models[state.model];
     const splittable = (key) => data.models[key].models > 1;
+    // what a model's groups of runs are: WeatherNext's models, or checkpoints that stand in for them
+    const NUMBERS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight"];
+    const groups = (m = model()) => (m.group ?? ["model", "models"])[m.models === 1 ? 0 : 1];
+    const counted = (m = model()) => `${NUMBERS[m.models] ?? m.models} ${groups(m)}`;
+    // whether the model has what happened to its wind (the observed track is always there)
+    const withTruth = () => Boolean(model().fields.truth);
 
     // -- time -----------------------------------------------------------------------------------
     const when = (hours) => {
@@ -253,7 +259,7 @@
           gale: times.map((values) => values.filter((v) => v >= data.gale).length / values.length),
           aleatoric: place.aleatoric,
           epistemic: place.epistemic,
-          truth: place.truth,
+          truth: place.truth ?? null,
         };
       }
       const spot = state.spot ?? { lat: 27.3, lon: -82.6 };
@@ -272,7 +278,7 @@
         gale: values("gale"),
         aleatoric: spread.map((s, t) => s * s * (1 - share[t])),
         epistemic: spread.map((s, t) => s * s * share[t]),
-        truth: values("truth"),
+        truth: withTruth() ? values("truth") : null,
       };
     };
 
@@ -300,8 +306,7 @@
       const m = data.models[key];
       const button = el("button", "milton-demo-option");
       button.type = "button";
-      const count = m.models > 1 ? `${m.models} models` : "1 model";
-      button.append(el("span", "milton-demo-long", `${m.label} · ${count}`), el("span", "milton-demo-short", m.label));
+      button.append(el("span", "milton-demo-long", `${m.label} · ${m.models} ${groups(m)}`), el("span", "milton-demo-short", m.label));
       button.addEventListener("click", () => setModel(key));
       modelButtons.set(key, button);
       modelSwitch.append(button);
@@ -332,7 +337,7 @@
         "",
         "probly takes the runs as a second-order sample and splits their variance by the law of total " +
           "variance: the mean variance within a model (aleatoric) plus the variance of the models' means " +
-          "(epistemic). Mini is a smaller version at 1°, a single model, so its spread cannot be split.",
+          "(epistemic). Mini is a smaller version at 1°; the note under the demo says which runs it shows.",
       ),
     );
     info.addEventListener("click", () => {
@@ -349,7 +354,8 @@
     const tip = el("div", "milton-demo-tip");
     tip.hidden = true;
     map.append(canvas, tip);
-    if (data.mock) map.append(el("span", "milton-demo-badge", "Mock data"));
+    const badge = el("span", "milton-demo-badge", "Mock data");
+    map.append(badge);
 
     const time = el("div", "milton-demo-time");
     const play = el("button", "milton-demo-play");
@@ -461,7 +467,8 @@
         pixels[c * 4 + 3] = Math.round(clamp(alpha, 0, 1) * 255);
       };
       if (state.view === "one") {
-        field("single", hours).forEach((v, c) => paint(c, colors.ink, Math.pow(clamp((v - 5) / 28, 0, 1), 0.85) * 0.85));
+        // calm wind stays clear: the shading starts at 8 m/s and is full at 33 m/s
+        field("single", hours).forEach((v, c) => paint(c, colors.ink, Math.pow(clamp((v - 8) / 25, 0, 1), 0.85) * 0.85));
       } else if (state.view === "ensemble") {
         field("gale", hours).forEach((p, c) => paint(c, colors.ink, p * 0.6));
       } else {
@@ -858,10 +865,10 @@
         const share = value("epistemic");
         lines.push(`Spread: ±${ms(value("spread"))}`);
         if (splittable(state.model)) {
-          lines.push(`${percent(1 - share)} from run to run, ${percent(share)} between models`);
+          lines.push(`${percent(1 - share)} from run to run, ${percent(share)} between ${groups()}`);
         }
       }
-      if (state.truth) lines.push(`What happened: ${ms(value("truth"))}`);
+      if (state.truth && withTruth()) lines.push(`What happened: ${ms(value("truth"))}`);
       return { head: `${Math.abs(lat).toFixed(1)}° N, ${Math.abs(lon).toFixed(1)}° W · ${ahead(hours)}`, lines };
     };
     const nearestPlace = (px, py) => {
@@ -947,7 +954,7 @@
       if (view === "split") {
         top = Math.max(...s.aleatoric.map((a, t) => a + s.epistemic[t]), 1);
       } else {
-        const values = [data.gale * 1.25, ...s.single, ...s.upper, ...(state.truth ? s.truth : [])];
+        const values = [data.gale * 1.25, ...s.single, ...s.upper, ...(state.truth && s.truth ? s.truth : [])];
         if (s.runs && view === "ensemble") values.push(...s.runs.flat());
         top = Math.max(...values);
       }
@@ -995,7 +1002,7 @@
         area(s.aleatoric.map(() => 0), s.aleatoric, "aleatoric");
         area(s.aleatoric, s.aleatoric.map((a, t) => a + s.epistemic[t]), "epistemic");
       }
-      if (state.truth && view !== "split") line(s.truth, "truth");
+      if (state.truth && s.truth && view !== "split") line(s.truth, "truth");
       cursor = svg("line", { y1: pad.top - 2, y2: pad.top + innerH, class: "cursor" });
       chart.append(cursor);
       placeCursor();
@@ -1054,7 +1061,7 @@
       } else if (state.view === "ensemble") {
         title.textContent = `${runs} runs, many answers`;
         const ashore = landfalls();
-        const models = m.models > 1 ? `${m.models} models with ${m.runs_per_model} runs each` : `one model`;
+        const models = m.models > 1 ? `${counted(m)} with ${m.runs_per_model} runs each` : `one model`;
         if (ashore.length) {
           const times = ashore.map((l) => l.hours);
           sentence(
@@ -1072,7 +1079,7 @@
         sentence(
           "The runs of one model scatter as the atmosphere might: that part of the spread is ",
           strong("aleatoric", "milton-demo-aleatoric"),
-          ", and more training data would not remove it. Where the four models disagree, they lack knowledge: that part is ",
+          `, and more training data would not remove it. Where the ${counted()} disagree, they lack knowledge: that part is `,
           strong("epistemic", "milton-demo-epistemic"),
           ".",
         );
@@ -1093,10 +1100,10 @@
         const peak = Math.max(...s.single);
         const peakAt = data.times[s.single.indexOf(peak)];
         items.push(stat("This run", ms(at(s.single))), stat("Its peak", `${ms(peak)}, ${ahead(peakAt)}`));
-        items.push(state.truth ? stat("What happened", ms(at(s.truth))) : stat("Runs shown", `1 of ${model().tracks.length}`));
+        items.push(state.truth && s.truth ? stat("What happened", ms(at(s.truth))) : stat("Runs shown", `1 of ${model().tracks.length}`));
       } else if (state.view === "ensemble") {
         items.push(stat("Chance of 34 kt", percent(at(s.gale))), stat("5–95% of the runs", `${at(s.lower).toFixed(0)}–${at(s.upper).toFixed(0)} m/s`));
-        items.push(state.truth ? stat("What happened", ms(at(s.truth))) : stat("Mean of the runs", ms(at(s.mean))));
+        items.push(state.truth && s.truth ? stat("What happened", ms(at(s.truth))) : stat("Mean of the runs", ms(at(s.mean))));
       } else {
         const a = at(s.aleatoric);
         const e = at(s.epistemic);
@@ -1105,7 +1112,7 @@
         if (splittable(state.model)) {
           items.push(
             stat("From run to run", total > 0 ? percent(a / total) : "–", "milton-demo-aleatoric"),
-            stat("Between models", total > 0 ? percent(e / total) : "–", "milton-demo-epistemic"),
+            stat(`Between ${groups()}`, total > 0 ? percent(e / total) : "–", "milton-demo-epistemic"),
           );
         }
       }
@@ -1131,7 +1138,7 @@
       const items = [];
       if (state.view === "one") {
         items.push(
-          item(swatch("ramp", `linear-gradient(90deg, ${ink(0.04)}, ${ink(0.8)})`), "wind of this run, up to 33 m/s"),
+          item(swatch("ramp", `linear-gradient(90deg, ${ink(0.04)}, ${ink(0.8)})`), "wind of this run, 8 to 33 m/s"),
           item(line(ink(0.95)), "its track, ahead dashed"),
         );
       } else if (state.view === "ensemble") {
@@ -1143,20 +1150,18 @@
         items.push(
           item(swatch("", rgba(colors.red, 0.85)), "spread from run to run (aleatoric)"),
           item(swatch("", rgba(colors.mix, 0.85)), "both"),
-          item(swatch("", rgba(colors.blue, 0.85)), "the models disagree (epistemic)"),
+          item(swatch("", rgba(colors.blue, 0.85)), `the ${groups()} disagree (epistemic)`),
         );
       }
-      if (state.truth) items.push(item(swatch("dashed"), "what happened"));
+      if (state.truth) items.push(item(swatch("dashed"), withTruth() ? "what happened" : "Milton's observed track"));
       legend.replaceChildren(...items);
     };
     const footnote = () => {
       const m = model();
-      const count = m.models > 1 ? `${m.models} models × ${m.runs_per_model} runs` : `${m.runs_per_model} runs`;
-      const parts = [
-        `${m.name} (${m.detail}), ${count}, from ${when(0)}. Observed track: ${data.observed.source}. Coastlines: Natural Earth.`,
-      ];
-      if (data.mock) parts.push(" Mock data: the runs are invented around Milton's real track, to try out the design.");
-      note.textContent = parts.join("");
+      const count = m.models > 1 ? `${m.models} ${groups(m)} × ${m.runs_per_model} runs` : `${m.runs_per_model} runs`;
+      note.textContent =
+        `${m.name} (${m.detail}), ${count}, from ${when(0)}. ${m.about ?? ""} ` +
+        `Observed track: ${data.observed.source}. Coastlines: Natural Earth.`;
     };
 
     // -- state -----------------------------------------------------------------------------------------
@@ -1168,6 +1173,7 @@
         button.title = disabled ? `${model().label} is a single model: there is no second model to disagree with.` : "";
       }
       for (const [key, button] of modelButtons) button.setAttribute("aria-pressed", String(key === state.model));
+      badge.hidden = !model().mock;
       for (const [name, chip] of chipButtons) chip.setAttribute("aria-pressed", String(!state.spot && name === state.place));
       truthBox.checked = state.truth;
       slider.value = String(Math.round(state.hours));
