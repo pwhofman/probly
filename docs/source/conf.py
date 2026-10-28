@@ -84,7 +84,11 @@ extensions = [
     "jupyter_sphinx",  # executes narrative code blocks so their printed output regenerates
     "sphinx_codeautolink",  # links names in all code blocks to their API reference
     "_probly_demos",  # the demos (demos/): computed once, shown on their pages, see demos/README.md
+    "sphinx.ext.extlinks",  # :source:`path` links to a file or folder of the repo at the docs' ref
 ]
+
+# A path in the repository on GitHub, at the ref the docs are built from (the tag for stable docs).
+extlinks = {"source": (f"https://github.com/pwhofman/probly/tree/{_DOCS_SOURCE_REF or 'main'}/%s", "%s")}
 
 suppress_warnings = []
 

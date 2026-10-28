@@ -16,14 +16,14 @@
 // Without JavaScript, the static figure in the <noscript> shows; when the data does not load, the
 // script shows that figure itself.
 (() => {
-  const root = document.querySelector(".milton-demo");
-  if (!root) return;
+  const roots = [...document.querySelectorAll(".milton-demo")];
+  if (!roots.length) return;
   // with scripts on, a <noscript>'s content is its HTML as text
-  const fallback = root.querySelector("noscript")?.textContent ?? "";
-  const showFallback = () => {
+  const fallbacks = new Map(roots.map((root) => [root, root.querySelector("noscript")?.textContent ?? ""]));
+  const showFallback = (root) => {
     root.classList.remove("milton-demo-ready");
     root.classList.add("milton-demo-failed");
-    root.innerHTML = fallback;
+    root.innerHTML = fallbacks.get(root);
   };
 
   const SVG = "http://www.w3.org/2000/svg";
@@ -76,7 +76,8 @@
     return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
   };
 
-  function start(data) {
+  // a demo in its container; ``id`` is unique on the page, for the ids of the demo's elements
+  function start(root, data, id) {
     if (!data || !data.models || !data.times) throw new Error("no data");
     const init = Date.parse(data.init);
     const last = data.times[data.times.length - 1];
@@ -157,33 +158,41 @@
       if (row < 0 || col < 0 || row >= grid.rows || col >= grid.cols) return -1;
       return row * grid.cols + col;
     };
-    // the wind of one run near the storm (its square of cells), interpolated between 6-hourly steps
+    // every run's wind near the storm, interpolated between 6-hourly steps, on a grid ``factor`` times
+    // as fine (upsample, below); the runs' windows follow the storm, so the values cover the windows
+    // of both steps, and a window's cells outside the other's count as calm (a window holds all of the
+    // runs' tropical-storm-force wind, with a cell to spare)
     const runFrames = new Map();
-    const runField = (run, hours) => {
+    const runFields = (hours, factor) => {
       const m = model();
       const windows = m.run_fields;
-      const size = windows.size;
-      const n = size * size;
+      const rows = windows.rows ?? windows.size;
+      const cols = windows.cols ?? windows.size;
+      const n = rows * cols;
       if (!runFrames.has(state.model)) runFrames.set(state.model, windows.fields.map(decode));
       const list = runFrames.get(state.model);
-      const x = clamp(hours / step, 0, list.length - 1);
-      const i = Math.min(Math.floor(x), list.length - 2);
-      const w = x - i;
+      const at = clamp(hours / step, 0, list.length - 1);
+      const i = Math.min(Math.floor(at), list.length - 2);
+      const w = at - i;
       const [r0, c0] = windows.origins[i];
       const [r1, c1] = windows.origins[i + 1];
-      const a = list[i];
-      const b = list[i + 1];
-      const values = new Float32Array(n);
-      for (let r = 0; r < size; r += 1) {
-        for (let c = 0; c < size; c += 1) {
-          const va = a[run * n + r * size + c];
-          const rb = r + r0 - r1;
-          const cb = c + c0 - c1;
-          const vb = rb >= 0 && rb < size && cb >= 0 && cb < size ? b[run * n + rb * size + cb] : va;
-          values[r * size + c] = lerp(va, vb, w) / m.scales.wind;
+      const top = Math.min(r0, r1);
+      const left = Math.min(c0, c1);
+      const height = Math.max(r0, r1) + rows - top;
+      const width = Math.max(c0, c1) + cols - left;
+      const value = (frame, run, r, c) => (r >= 0 && r < rows && c >= 0 && c < cols ? frame[run * n + r * cols + c] : 0);
+      const fields = m.tracks.map((_, run) => {
+        const values = new Float32Array(height * width);
+        for (let r = 0; r < height; r += 1) {
+          for (let c = 0; c < width; c += 1) {
+            const va = value(list[i], run, r + top - r0, c + left - c0);
+            const vb = value(list[i + 1], run, r + top - r1, c + left - c1);
+            values[r * width + c] = lerp(va, vb, w) / m.scales.wind;
+          }
         }
-      }
-      return { values, size, origin: [r0, c0] };
+        return upsample(values, height, width, factor);
+      });
+      return { fields, rows: (height - 1) * factor + 1, cols: (width - 1) * factor + 1, origin: [top, left] };
     };
 
     // -- the tracks -----------------------------------------------------------------------------------
@@ -342,7 +351,7 @@
 
     // the about text slides open: a grid row that grows to the text's height, with the text clipped
     const about = el("div", "milton-demo-about");
-    about.id = "milton-demo-about";
+    about.id = `${id}-about`;
     info.setAttribute("aria-controls", about.id);
     const aboutBox = el("div", "milton-demo-about-box");
     const aboutText = el("div", "milton-demo-about-text");
@@ -355,8 +364,9 @@
     };
     aboutText.append(
       paragraph(
-        "WeatherNext 2 (Google DeepMind) forecasts the weather of the whole globe in steps of 6 hours. " +
-          "It is four models, trained independently, and every run of a model draws its own random noise. " +
+        "WeatherNext 2 (Google DeepMind) forecasts the weather of the whole globe in steps of 6 hours; " +
+          "the demo shows WeatherNext Cyclones, its version for tropical cyclones. It is four models, " +
+          "trained independently, and every run of a model draws its own random noise. " +
           "The runs of one model scatter as the atmosphere might: that spread is ",
         word("aleatoric"),
         " uncertainty. Where the four models disagree, they lack knowledge: that is ",
@@ -369,7 +379,8 @@
         word("aleatoric"),
         ") plus the variance of the models' means (",
         word("epistemic"),
-        "). Mini is a smaller version at 1°; the note under the demo says which runs it shows.",
+        "). Mini is a smaller version at 1°, whose two public checkpoints stand in for the four models; " +
+          "the note under the demo says which runs it shows.",
       ),
     );
     info.addEventListener("click", () => {
@@ -396,7 +407,7 @@
     slider.min = "0";
     slider.max = String(last);
     slider.step = "1";
-    slider.id = "milton-demo-hours";
+    slider.id = `${id}-hours`;
     slider.setAttribute("aria-label", "Hours after the forecast starts");
     const days = el("div", "milton-demo-days");
     for (let hours = 0; hours <= last; hours += 24) {
@@ -410,14 +421,14 @@
     const toggle = el("label", "milton-demo-toggle");
     const truthBox = el("input");
     truthBox.type = "checkbox";
-    truthBox.id = "milton-demo-truth";
+    truthBox.id = `${id}-truth`;
     toggle.append(truthBox, el("span"), document.createTextNode("Show what happened"));
     now.append(clock, toggle);
     time.append(play, track, now);
     stage.append(map, time);
 
     const panel = el("div", "milton-demo-panel");
-    const title = el("h3", "milton-demo-title");
+    const title = el("p", "milton-demo-title"); // not a heading: the page's headings stay in order
     const lead = el("p", "milton-demo-lead");
     const shore = el("div", "milton-demo-shore");
     const shoreChart = svg("svg", { class: "milton-demo-shore-chart", role: "img" });
@@ -613,34 +624,29 @@
     // a window's values on a grid ``factor`` times as fine, by Catmull-Rom splines, along the rows and
     // then along the columns, so that the lines and shades of a coarse grid come out round
     const spline = (p0, p1, p2, p3, t) => p1 + 0.5 * t * (p2 - p0 + t * (2 * p0 - 5 * p1 + 4 * p2 - p3 + t * (3 * (p1 - p2) + p3 - p0)));
-    const upsample = (values, size, factor) => {
+    const upsample = (values, rows, cols, factor) => {
       if (factor === 1) return values;
-      const n = (size - 1) * factor + 1;
-      const taps = []; // per fine index: the four coarse ones around it, and where it is between them
-      for (let k = 0; k < n; k += 1) {
-        const i = Math.min(Math.floor(k / factor), size - 2);
-        taps.push([Math.max(i - 1, 0), i, i + 1, Math.min(i + 2, size - 1), k / factor - i]);
+      // per fine index: the four coarse ones around it, and where it is between them
+      const taps = (size) =>
+        Array.from({ length: (size - 1) * factor + 1 }, (_, k) => {
+          const i = Math.min(Math.floor(k / factor), size - 2);
+          return [Math.max(i - 1, 0), i, i + 1, Math.min(i + 2, size - 1), k / factor - i];
+        });
+      const across = taps(cols);
+      const down = taps(rows);
+      const wide = new Float32Array(rows * across.length);
+      for (let r = 0; r < rows; r += 1) {
+        const row = r * cols;
+        across.forEach(([a, b, c, d, t], k) => {
+          wide[r * across.length + k] = spline(values[row + a], values[row + b], values[row + c], values[row + d], t);
+        });
       }
-      const rows = new Float32Array(size * n);
-      for (let r = 0; r < size; r += 1) {
-        for (let k = 0; k < n; k += 1) {
-          const [a, b, c, d, t] = taps[k];
-          rows[r * n + k] = spline(values[r * size + a], values[r * size + b], values[r * size + c], values[r * size + d], t);
-        }
-      }
-      const out = new Float32Array(n * n);
-      for (let k = 0; k < n; k += 1) {
-        const [a, b, c, d, t] = taps[k];
-        for (let j = 0; j < n; j += 1) out[k * n + j] = spline(rows[a * n + j], rows[b * n + j], rows[c * n + j], rows[d * n + j], t);
-      }
+      const n = across.length;
+      const out = new Float32Array(down.length * n);
+      down.forEach(([a, b, c, d, t], k) => {
+        for (let j = 0; j < n; j += 1) out[k * n + j] = spline(wide[a * n + j], wide[b * n + j], wide[c * n + j], wide[d * n + j], t);
+      });
       return out;
-    };
-    // every run's wind near the storm on a grid ``factor`` times as fine; the runs' windows all have
-    // the same cells
-    const runFields = (hours, factor) => {
-      const runs = model().tracks.map((_, run) => runField(run, hours));
-      const { size, origin } = runs[0];
-      return { fields: runs.map((run) => upsample(run.values, size, factor)), size: (size - 1) * factor + 1, origin };
     };
     // lines on such a grid (fractional row, column), on the map
     const trace = (lines, origin, factor) => {
@@ -659,11 +665,11 @@
     // by cell), on a grid of about a quarter degree; quiet, under the tracks
     const outline = () => {
       const factor = Math.max(1, Math.round(model().grid.step / 0.25));
-      const { fields, size, origin } = runFields(state.hours, factor);
+      const { fields, rows, cols, origin } = runFields(state.hours, factor);
       const most = fields[0].slice();
       for (const values of fields) for (let c = 0; c < most.length; c += 1) most[c] = Math.max(most[c], values[c]);
       context.beginPath();
-      trace(isolines(most, size, size, data.gale).map(smooth), origin, factor);
+      trace(isolines(most, rows, cols, data.gale).map(smooth), origin, factor);
       context.lineJoin = "round";
       context.lineWidth = 1.25;
       context.strokeStyle = rgba(colors.ink, 0.42);
@@ -849,9 +855,19 @@
       context.font = `500 10px system-ui, -apple-system, "Segoe UI", sans-serif`;
       context.fillStyle = colors.muted;
       context.textBaseline = "bottom";
-      context.textAlign = "left"; // right of their meridians
+      // right of their meridians, or left of them where a place's pin would be under the label
+      const free = (from, to) =>
+        !data.places.some((place) => x(place.lon) > from - 6 && x(place.lon) < to + 6 && y(place.lat) > height - 20);
       for (let lon = Math.ceil(extent.west / 5) * 5; lon < extent.east; lon += 5) {
-        context.fillText(`${-lon}° W`, x(lon) + 4, height - 4);
+        const text = `${-lon}° W`;
+        const size = context.measureText(text).width;
+        if (free(x(lon) + 4, x(lon) + 4 + size)) {
+          context.textAlign = "left";
+          context.fillText(text, x(lon) + 4, height - 4);
+        } else if (free(x(lon) - 4 - size, x(lon) - 4)) {
+          context.textAlign = "right";
+          context.fillText(text, x(lon) - 4, height - 4);
+        }
       }
       context.textAlign = "right";
       context.textBaseline = "middle";
@@ -952,9 +968,11 @@
       void panel.offsetWidth; // restart the animation
       panel.classList.add("milton-demo-enter");
     };
+    let sized = ""; // the width and pixel ratio the canvas is drawn at
     const resize = () => {
       const next = map.clientWidth;
-      if (!next) return;
+      if (!next || `${next}@${window.devicePixelRatio || 1}` === sized) return;
+      sized = `${next}@${window.devicePixelRatio || 1}`;
       width = next;
       height = Math.round(width * ratio);
       const ratioPx = window.devicePixelRatio || 1;
@@ -1025,6 +1043,7 @@
     };
     canvas.addEventListener("pointermove", (event) => {
       if (event.pointerType === "touch") return;
+      keyed = false;
       const box = canvas.getBoundingClientRect();
       pointer = { x: event.clientX - box.left, y: event.clientY - box.top };
       showTip();
@@ -1043,14 +1062,52 @@
         return;
       }
       const { lat, lon } = unproject(px, py);
+      pick(lat, lon);
+    });
+    // the cell of the grid nearest to a point, as the spot shown over time
+    const pick = (lat, lon) => {
       const grid = model().grid;
       const snapped = {
         lat: grid.north - Math.round((grid.north - lat) / grid.step) * grid.step,
         lon: grid.west + Math.round((lon - grid.west) / grid.step) * grid.step,
       };
-      if (cellOf(snapped.lat, snapped.lon) < 0) return;
+      if (cellOf(snapped.lat, snapped.lon) < 0) return false;
       state.spot = snapped;
       update();
+      return true;
+    };
+    // the keyboard: the arrows move the spot by a cell of the grid, from the place shown, and Escape
+    // goes back to the place; the tip shows the values there
+    let keyed = false; // whether the tip follows the keyboard
+    const keyTip = () => {
+      const at = state.spot ?? data.places.find((place) => place.name === state.place);
+      keyed = true;
+      pointer = { x: x(at.lon), y: y(at.lat) };
+      showTip();
+    };
+    canvas.addEventListener("keydown", (event) => {
+      const moves = { ArrowUp: [1, 0], ArrowDown: [-1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+      if (event.key === "Escape" && state.spot) {
+        event.preventDefault();
+        setPlace(state.place);
+        keyTip();
+        return;
+      }
+      const move = moves[event.key];
+      if (!move) return;
+      event.preventDefault();
+      const grid = model().grid;
+      const from = state.spot ?? data.places.find((place) => place.name === state.place);
+      if (pick(from.lat + move[0] * grid.step, from.lon + move[1] * grid.step)) keyTip();
+    });
+    canvas.addEventListener("focus", () => {
+      if (canvas.matches(":focus-visible")) keyTip();
+    });
+    canvas.addEventListener("blur", () => {
+      if (!keyed) return;
+      keyed = false;
+      pointer = null;
+      showTip();
     });
 
     // -- the chart of a spot over time ------------------------------------------------------------------
@@ -1283,14 +1340,21 @@
         title.textContent = `${runs} runs, many answers`;
         const ashore = landfalls();
         const models = m.models > 1 ? `${counted(m)} with ${m.runs_per_model} runs each` : `one model`;
-        if (ashore.length) {
-          const times = ashore.map((l) => l.hours);
+        const outline = "The outline is where at least one run has tropical-storm-force wind.";
+        if (ashore.length === 1) {
+          sentence(
+            `${runs} runs from ${models}. One of them brings Milton ashore, near `,
+            strong(coastName(ashore[0].lat, ashore[0].lon)),
+            `, ${Math.round(ashore[0].hours)} hours ahead. ${outline}`,
+          );
+        } else if (ashore.length) {
+          const times = ashore.map((l) => Math.round(l.hours));
           sentence(
             `${runs} runs from ${models}. ${ashore.length} of them bring Milton ashore, from `,
             strong(coastName(ashore[0].lat, ashore[0].lon)),
             " to ",
             strong(coastName(ashore[ashore.length - 1].lat, ashore[ashore.length - 1].lon)),
-            `, ${Math.min(...times)} to ${Math.max(...times)} hours ahead. The outline is where at least one run has tropical-storm-force wind.`,
+            `, ${Math.min(...times)} to ${Math.max(...times)} hours ahead. ${outline}`,
           );
         } else {
           sentence(`${runs} runs from ${models}. None of them brings Milton ashore.`);
@@ -1414,7 +1478,10 @@
         texts();
         legends();
         footnote();
-        canvas.setAttribute("aria-label", `${title.textContent}. Map of the Gulf of Mexico and Florida, ${ahead(state.hours)}.`);
+        canvas.setAttribute(
+          "aria-label",
+          `${title.textContent}. Map of the Gulf of Mexico and Florida. The arrow keys pick a spot to show over time, Escape goes back to the place.`,
+        );
       } else {
         placeCursor();
       }
@@ -1450,7 +1517,7 @@
     let previous = 0;
     const tick = (stamp) => {
       if (!state.playing) return;
-      const seconds = previous ? (stamp - previous) / 1000 : 0;
+      const seconds = previous ? Math.min((stamp - previous) / 1000, 0.1) : 0; // after a hidden tab, go on
       previous = stamp;
       const next = state.hours + seconds * HOURS_PER_SECOND;
       if (next >= last) {
@@ -1462,9 +1529,24 @@
       update("time");
       frame = requestAnimationFrame(tick);
     };
+    // under reduced motion, playback steps from one 6-hourly step to the next
+    const STEP_MS = 700;
+    let timer = 0;
+    const stepOn = () => {
+      if (!state.playing) return;
+      const next = (Math.floor(state.hours / step + 1e-6) + 1) * step;
+      state.hours = Math.min(next, last);
+      if (state.hours >= last) {
+        stop();
+        return;
+      }
+      update("time");
+      timer = setTimeout(stepOn, STEP_MS);
+    };
     const stop = () => {
       state.playing = false;
       cancelAnimationFrame(frame);
+      clearTimeout(timer);
       previous = 0;
       update("time");
     };
@@ -1475,7 +1557,10 @@
       }
       if (state.hours >= last) state.hours = 0;
       state.playing = true;
-      if (reducedMotion()) state.hours = Math.ceil((state.hours + 1) / step) * step; // step by 6 h
+      if (reducedMotion()) {
+        stepOn();
+        return;
+      }
       previous = 0;
       update("time");
       frame = requestAnimationFrame(tick);
@@ -1508,20 +1593,38 @@
   }
 
   const boot = () => {
-    try {
-      start(window.PROBLY_DEMO_MILTON);
-    } catch (error) {
-      console.error("The Milton demo could not start:", error);
-      showFallback();
-    }
+    roots.forEach((root, index) => {
+      try {
+        start(root, window.PROBLY_DEMO_MILTON, index ? `milton-demo-${index + 1}` : "milton-demo");
+      } catch (error) {
+        console.error("The Milton demo could not start:", error);
+        showFallback(root);
+      }
+    });
+  };
+  // the data, by its version (a checksum), past browsers' caches
+  const load = () => {
+    const { root: base = "", version } = roots[0].dataset;
+    const loader = document.createElement("script");
+    loader.src = `${base}data.js${version ? `?v=${version}` : ""}`;
+    loader.onload = boot;
+    loader.onerror = () => roots.forEach(showFallback);
+    document.head.appendChild(loader);
   };
   if (window.PROBLY_DEMO_MILTON) {
     boot();
+  } else if ("IntersectionObserver" in window) {
+    // the data is large: it loads once a demo comes near the screen
+    const watcher = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        watcher.disconnect();
+        load();
+      },
+      { rootMargin: "800px 0px" },
+    );
+    roots.forEach((root) => watcher.observe(root));
   } else {
-    const loader = document.createElement("script");
-    loader.src = `${root.dataset.root ?? ""}data.js`;
-    loader.onload = boot;
-    loader.onerror = showFallback;
-    document.head.appendChild(loader);
+    load();
   }
 })();

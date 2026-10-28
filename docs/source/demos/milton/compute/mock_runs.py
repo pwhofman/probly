@@ -175,7 +175,11 @@ def build_model(key: str, rings: list[np.ndarray], observed: list) -> dict:
         "detail": spec["detail"],
         "mock": True,
         "group": ["model", "models"],
-        "about": "8 runs of each of WeatherNext's four models, trained on data through 2023, before Milton.",
+        "about": (
+            f"{spec['runs']} runs of each of WeatherNext's four models, trained on data through 2023, before Milton."
+            if len(spec["along"]) > 1
+            else f"{spec['runs']} runs of one model, trained on data through 2023, before Milton."
+        ),
         **summary,
     }
 

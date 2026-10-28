@@ -29,7 +29,7 @@ each. All checkpoints were trained on data from before 2024, so none of them has
 - *All runs* shows every run's track, the chance of tropical-storm-force wind (34 kt, the lowest
   threshold of the US National Hurricane Center's wind probabilities), and an outline around where
   at least one run has it. A strip along Florida's Gulf coast shows where the runs come ashore,
-  each run's dot filled once it has.
+  each run's dot filled once it has; *Decomposition* shows it too.
 - *Decomposition* splits the spread of the runs: blue where the runs of one model scatter
   (aleatoric), red where the models disagree (epistemic). Together, they make up the total spread.
 
@@ -76,9 +76,9 @@ mean and variance:
    )
    from probly.representer import representer
 
-   # every model as a predictor; ensemble_fn rolls out the runs of the seeds it is given
-   # (WeatherNext's own code, in compute/forecast.py)
-   models = [WeatherNextPredictor(ensemble_fn=ensemble_of(params)) for params in checkpoints]
+   # every model as a predictor; ensemble_fn rolls out the runs of the seeds it is given, with
+   # WeatherNext's own code and a model's forward pass (apply) and weights (compute/forecast.py)
+   models = [WeatherNextPredictor(ensemble_fn=ensemble_of(apply, params)) for params in checkpoints]
    runs = [representer(model, num_samples=8).represent(inputs, targets_template, forcings) for model in models]
 
    # the 10 m wind of every run: (models, runs, time, lat, lon)
@@ -86,8 +86,9 @@ mean and variance:
        [np.hypot(r["10m_u_component_of_wind"].array, r["10m_v_component_of_wind"].array) for r in runs]
    )
 
-   # every model's runs as a Gaussian, the models as a sample of them
-   gaussians = NumpyGaussianDistribution(mean=wind.mean(axis=1), var=wind.var(axis=1))
+   # every model's runs as a Gaussian, the models as a sample of them; at the start, all runs are the
+   # same analysis, and a Gaussian takes no zero variance, so the variance gets a tiny floor
+   gaussians = NumpyGaussianDistribution(mean=wind.mean(axis=1), var=np.maximum(wind.var(axis=1), 1e-9))
    split = SecondOrderVarianceDecomposition(NumpyGaussianDistributionSample(array=gaussians, sample_axis=0))
    split.aleatoric  # the mean variance within a model: the runs scatter as the atmosphere might
    split.epistemic  # the variance of the models' means: the models disagree
@@ -99,8 +100,7 @@ near its last position, and a run comes ashore where its track first crosses Flo
 Run It Again
 ------------
 
-The scripts that computed the demo's data are in
-`docs/source/demos/milton/compute <https://github.com/pwhofman/probly/tree/main/docs/source/demos/milton/compute>`__.
+The scripts that computed the demo's data are in :source:`docs/source/demos/milton/compute`.
 Each downloads WeatherNext's public initial conditions and checkpoints, rolls out the runs through
 ``probly``'s WeatherNext integration, and writes the demo's data; its docstring says what to install
 next to ``probly``:

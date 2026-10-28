@@ -71,6 +71,11 @@ body[data-theme="dark"] .milton-demo-caption-text {
   }
 }
 
+/* what the script hides stays hidden, whatever its display */
+.milton-demo [hidden] {
+  display: none !important;
+}
+
 /* while the script builds the demo, it keeps about the demo's room, so the page does not jump */
 @media (scripting: enabled) {
   .milton-demo:not(.milton-demo-ready, .milton-demo-failed) {
@@ -417,12 +422,6 @@ span.milton-demo-epistemic {
 
 .milton-demo-days span:last-child {
   transform: translateX(-100%);
-}
-
-.milton-demo-days .milton-demo-landfall-tick {
-  top: -0.05rem;
-  color: var(--md-text);
-  font-weight: 600;
 }
 
 .milton-demo-now {
@@ -802,10 +801,6 @@ span.milton-demo-epistemic {
   color: var(--md-muted);
   font-size: 0.78rem;
   line-height: 1.5;
-}
-
-.milton-demo-note a {
-  color: inherit;
 }
 
 /* after a switch of view or model, the panel's new content fades in (the map cross-fades) */

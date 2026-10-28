@@ -38,11 +38,14 @@ MILTON = "2024279N21265"  # Milton's IBTrACS storm id
 INIT = datetime(2024, 10, 7, tzinfo=UTC)  # the initialization of the public WeatherNext data
 TIMES = np.arange(0, 97, 6)  # lead times in hours, every 6 h for four days
 LON = (-94.5, -72.0)  # the map: the Gulf of Mexico, Florida and the western Atlantic
-LAT = (20.3, 33.0)  # just north of 20° N, so that its line is not drawn at the map's edge
+LAT = (20.3, 33.0)  # just north of 20 degrees N, so that its line is not drawn at the map's edge
 GRID_LON = (-95.0, -72.0)  # the grid of the fields: the map, out to whole degrees
 GRID_LAT = (20.0, 33.0)
 KNOT = 0.514444  # m/s
 GALE = 34 * KNOT  # tropical-storm-force wind, NHC's lowest wind speed probability threshold
+# the fields are bytes: value * scale, so wind up to 85 m/s, spread up to 25.5 m/s, shares to 1
+SCALES = {"wind": 3, "gale": 255, "spread": 10, "epistemic": 255}
+FLORIDA = (28.54, -81.38)  # Orlando: the land around it is Florida's mainland
 
 PLACES = [  # the places the demo offers, west to east
     ("Mérida", 20.97, -89.62),
@@ -71,12 +74,14 @@ COAST = [  # places on Florida's Gulf coast, south to north, to name where a run
 
 
 def download(url: str, name: str) -> Path:
-    """Download a file into the cache once."""
+    """Download a file into the cache once (under another name until it is complete)."""
     path = CACHE / name
     if not path.exists():
         CACHE.mkdir(exist_ok=True)
         print(f"downloading {url}")  # noqa: T201
-        urllib.request.urlretrieve(url, path)  # noqa: S310
+        partial = path.with_suffix(path.suffix + ".part")
+        urllib.request.urlretrieve(url, partial)  # noqa: S310
+        partial.replace(path)
     return path
 
 
@@ -183,37 +188,58 @@ def points(spec: dict) -> tuple[np.ndarray, np.ndarray]:
 
 
 def landfall(rings: list[np.ndarray], track: np.ndarray) -> dict | None:
-    """Where and when a track first comes ashore in Florida (half-hourly)."""
+    """Where and when a track first comes ashore in Florida (half-hourly).
+
+    Florida is the mainland (the land around Orlando, not the Keys or the Bahamas) east of Alabama
+    and north of the Yucatan, which is part of the same land.
+    """
+    mainland = next(Polygon(ring) for ring in rings if Polygon(ring).contains_point((FLORIDA[1], FLORIDA[0])))
     hours = np.arange(TIMES[0], TIMES[-1] + 0.25, 0.5)
     lat = np.interp(hours, TIMES, track[:, 0])
     lon = np.interp(hours, TIMES, track[:, 1])
-    ashore = on_land(rings, lat, lon) & (lon > -88) & (lat > 24.6)
+    ashore = mainland.contains_points(np.column_stack([lon, lat])) & (lon > -87.6) & (lat > 24.6)
     if not ashore.any():
         return None
     first = int(np.argmax(ashore))
     return {"hours": float(hours[first]), "lat": round(float(lat[first]), 2), "lon": round(float(lon[first]), 2)}
 
 
-def encode(values: np.ndarray, scale: float) -> str:
-    """Values on the grid as bytes (value * scale, rounded and clipped), in base64."""
-    return base64.b64encode(np.clip(np.round(values * scale), 0, 255).astype(np.uint8).tobytes()).decode()
+def encode(values: np.ndarray, kind: str) -> str:
+    """Values on the grid as bytes (value * the kind's scale, rounded and clipped), in base64."""
+    scaled = np.round(values * SCALES[kind])
+    if scaled.max(initial=0) > 255:
+        print(f"warning: {kind} up to {values.max():.1f} is cut at {255 / SCALES[kind]}")  # noqa: T201
+    return base64.b64encode(np.clip(scaled, 0, 255).astype(np.uint8).tobytes()).decode()
 
 
 def windows(winds: np.ndarray, tracks: list[np.ndarray], spec: dict, size: int) -> dict:
     """Every run's wind near the storm, for the outline around where any run has tropical-storm-force wind.
 
-    A square of ``size`` x ``size`` cells per lead time that follows the runs' mean position; ``winds``
-    has the shape (runs, times, rows, cols).
+    Per lead time a window of cells around where any run has tropical-storm-force wind, with a cell
+    to spare (or around the runs' mean position, where none has), as large as it needs to be at any
+    time and at least ``size`` x ``size`` cells; ``winds`` has the shape (runs, times, rows, cols).
     """
     rows, cols = winds.shape[2:]
-    origins, fields = [], []
+    gale = (winds >= GALE).any(axis=0)
+    boxes = []  # per lead time: first and last row, first and last column
     for t in range(len(TIMES)):
-        center = np.mean([track[t] for track in tracks], axis=0)
-        row = int(np.clip(round((spec["north"] - center[0]) / spec["step"]) - size // 2, 0, rows - size))
-        col = int(np.clip(round((center[1] - spec["west"]) / spec["step"]) - size // 2, 0, cols - size))
+        r, c = np.nonzero(gale[t])
+        if len(r):
+            boxes.append((r.min() - 1, r.max() + 1, c.min() - 1, c.max() + 1))
+        else:
+            lat, lon = np.mean([track[t] for track in tracks], axis=0)[:2]
+            row = round((spec["north"] - lat) / spec["step"])
+            col = round((lon - spec["west"]) / spec["step"])
+            boxes.append((row, row, col, col))
+    height = int(min(rows, max(size, *(last - first + 1 for first, last, _, _ in boxes))))
+    width = int(min(cols, max(size, *(last - first + 1 for _, _, first, last in boxes))))
+    origins, fields = [], []
+    for t, (top, bottom, left, right) in enumerate(boxes):
+        row = int(np.clip((top + bottom + 1) // 2 - height // 2, 0, rows - height))
+        col = int(np.clip((left + right + 1) // 2 - width // 2, 0, cols - width))
         origins.append([row, col])
-        fields.append(encode(winds[:, t, row : row + size, col : col + size], 4))
-    return {"size": size, "origins": origins, "fields": fields}
+        fields.append(encode(winds[:, t, row : row + height, col : col + width], "wind"))
+    return {"rows": height, "cols": width, "origins": origins, "fields": fields}
 
 
 def decompose(winds: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -263,16 +289,16 @@ def summarize(
     on_grid = slice(0, cells)
     frames = range(times)
     fields = {
-        "single": [encode(runs[0, t, on_grid], 4) for t in frames],
-        "mean": [encode(runs[:, t, on_grid].mean(axis=0), 4) for t in frames],
-        "gale": [encode(gale[t, on_grid], 255) for t in frames],
-        "spread": [encode(np.sqrt(total[t, on_grid]), 20) for t in frames],
-        "epistemic": [encode(share[t, on_grid], 255) for t in frames],
-        "lower": [encode(lower[t, on_grid], 4) for t in frames],
-        "upper": [encode(upper[t, on_grid], 4) for t in frames],
+        "single": [encode(runs[0, t, on_grid], "wind") for t in frames],
+        "mean": [encode(runs[:, t, on_grid].mean(axis=0), "wind") for t in frames],
+        "gale": [encode(gale[t, on_grid], "gale") for t in frames],
+        "spread": [encode(np.sqrt(total[t, on_grid]), "spread") for t in frames],
+        "epistemic": [encode(share[t, on_grid], "epistemic") for t in frames],
+        "lower": [encode(lower[t, on_grid], "wind") for t in frames],
+        "upper": [encode(upper[t, on_grid], "wind") for t in frames],
     }
     if truth is not None:
-        fields["truth"] = [encode(truth[t, on_grid], 4) for t in frames]
+        fields["truth"] = [encode(truth[t, on_grid], "wind") for t in frames]
     places = {}
     for p, (name, _, _) in enumerate(PLACES):
         column = cells + p
@@ -287,7 +313,7 @@ def summarize(
         "models": models,
         "runs_per_model": runs_per_model,
         "grid": spec,
-        "scales": {"wind": 4, "gale": 255, "spread": 20, "epistemic": 255},
+        "scales": SCALES,
         "fields": fields,
         "run_fields": windows(
             runs[:, :, on_grid].reshape(len(runs), times, spec["rows"], spec["cols"]),

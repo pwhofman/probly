@@ -24,11 +24,14 @@ The `probly-demo` directive (`../_probly_demos.py`) embeds a demo in a page, its
    :alt: What the fallback image shows.
 ```
 
-It writes `<div class="<name>-demo" data-root="...">`, where `data-root` is the URL of the demo's
-assets relative to the page, and adds `assets/demo.css` and `assets/demo.js` to the page; the build
-copies `assets/` to `_static/demos/<name>/`. The script finds its container by the class, loads its
-data from `data-root`, and fills the container. Without JavaScript, the container shows the fallback
-image, a file of `_static/` (all options are optional).
+It writes `<div class="<name>-demo" data-root="..." data-version="...">`, where `data-root` is the
+URL of the demo's assets relative to the page and `data-version` a checksum of `assets/data.js`, and
+adds `assets/demo.css` and `assets/demo.js` to the page; the build copies `assets/` to
+`_static/demos/<name>/` before it writes the pages, so that their links to the assets carry
+checksums too, and writes the pages with a demo again when its assets change. The script finds its
+container by the class, loads its data from `data-root` (with `?v=` and the version, past browsers'
+caches), and fills the container. Without JavaScript, the container shows the fallback image, a
+file of `_static/` (all options are optional). Builders other than HTML leave demos out.
 
 The folders `assets/` and `compute/` and this README are not pages of the docs (`exclude_patterns` in
 `conf.py`).

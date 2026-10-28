@@ -119,8 +119,11 @@ def build_real(key: str, results: Path, rings: list[np.ndarray], observed: list)
     """The runs of a model from its checkpoints' files, or ``None`` if they are missing."""
     spec = MODELS[key]
     folders = [results / key / checkpoint for checkpoint in spec["checkpoints"]]
-    files = [sorted(folder.glob("member_*.nc")) for folder in folders]
+    # the runs in the order of their seeds (member_<seed>.nc)
+    files = [sorted(folder.glob("member_*.nc"), key=lambda path: int(path.stem.split("_")[1])) for folder in folders]
     if not all(files) or len({len(group) for group in files}) > 1:
+        counts = ", ".join(f"{folder.name}: {len(group)}" for folder, group in zip(folders, files, strict=True))
+        print(f"{spec['name']}: no complete runs in {results / key} ({counts})")  # noqa: T201
         return None
     print(f"{spec['name']}: {sum(map(len, files))} runs in {results / key}")  # noqa: T201
     initial = xr.open_dataset(results / key / "inputs_t0.nc", engine="h5netcdf").isel(time=0, drop=True)
@@ -160,14 +163,28 @@ def existing() -> dict:
     return {key: model for key, model in data["models"].items() if not model.get("mock")}
 
 
-def pack(results: Path) -> None:
-    """Write the demo's data: per model its runs in ``results``, else its real runs so far, else mock runs."""
+def pack(results: Path, require: tuple[str, ...] = ()) -> None:
+    """Write the demo's data: per model its runs in ``results``, else its real runs so far, else mock runs.
+
+    Raises:
+        RuntimeError: If a model in ``require`` has no complete runs in ``results``.
+    """
     observed = observed_track()
     rings = land()
     kept = existing()
     models = {}
     for key in MODELS:
-        models[key] = build_real(key, results, rings, observed) or kept.get(key) or build_model(key, rings, observed)
+        model = build_real(key, results, rings, observed)
+        if model is None and key in require:
+            msg = f"{MODELS[key]['name']}: its runs in {results / key} are missing or incomplete"
+            raise RuntimeError(msg)
+        if model is None and key in kept:
+            print(f"{MODELS[key]['name']}: its runs so far, from {OUT.name}")  # noqa: T201
+            model = kept[key]
+        if model is None:
+            print(f"{MODELS[key]['name']}: MOCK runs, made up by mock_runs.py")  # noqa: T201
+            model = build_model(key, rings, observed)
+        models[key] = model
     real = ", ".join(model["name"] for model in models.values() if not model["mock"]) or "none"
     write(
         models,

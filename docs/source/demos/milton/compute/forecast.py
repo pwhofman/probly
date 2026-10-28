@@ -12,8 +12,16 @@ and ``representer(predictor, num_samples=runs)`` collects its runs, one sample p
 ensemble wrapper is removed from the config, the runs are rolled out with WeatherNext's own
 ``chunked_prediction_generator_multiple_runs``, and run ``seed`` draws its noise from
 ``jax.random.fold_in(jax.random.PRNGKey(0), seed)``. A run is the same for the same seed and the same
-number of steps (WeatherNext's noise also depends on how many steps are rolled out). On CPUs and GPUs,
-the attention is ``triblockdiag_mha`` (the config's default, ``splash_mha``, needs a TPU).
+number of steps (WeatherNext's noise also depends on how many steps are rolled out), up to rounding:
+run on several devices at once, it differs from a run on one in the last digits (about 0.001 m/s of
+wind). Every checkpoint
+draws the same seeds, so its runs get the same noise as the other checkpoints' (common random
+numbers): the checkpoints' means then differ by what the models learned more than by their noise. On
+CPUs and GPUs, the attention is ``triblockdiag_mha`` (the config's default, ``splash_mha``, needs a
+TPU).
+
+The runs go in groups of as many as there are devices (GPUs), one run per device, and every group is
+saved as soon as it is done, so that a restart only repeats the group that was cut off.
 
 This script needs WeatherNext and its dependencies, with probly installed next to them (see
 ``run_mini.py``). The Mini checkpoints run on a CPU (about 12 minutes per run of 20 steps on four
@@ -31,6 +39,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import math
 from pathlib import Path
 import shutil
 import time
@@ -42,7 +51,7 @@ import haiku as hk
 import jax
 import numpy as np
 from pack import pack
-from weathernext.utils import checkpoint, data_utils, fiddle_config_io, rollout
+from weathernext.utils import checkpoint, data_utils, ensemble, fiddle_config_io, rollout
 from weathernext.weathernext2 import fgn
 import xarray
 import xarray_jax
@@ -125,11 +134,11 @@ def save(fields: xarray.Dataset, path: Path, **attrs: object) -> None:
     temporary.replace(path)
 
 
-def run_of(samples: dict[str, NumpySample], template: xarray.Dataset, seed: int) -> xarray.Dataset:
+def run_of(samples: dict[str, NumpySample], template: xarray.Dataset, index: int) -> xarray.Dataset:
     """One run's fields from probly's samples (one per variable, runs first), with the template's coordinates."""
     fields = {}
     for variable in template.data_vars:
-        values = samples[variable].array[seed]
+        values = samples[variable].array[index]
         if values.shape != template[variable].shape:
             msg = f"{variable}: the run has the shape {values.shape}, the template {template[variable].shape}"
             raise ValueError(msg)
@@ -143,6 +152,11 @@ def model(name: str) -> tuple[object, str, Callable[..., object]]:
     transformer = config.predictor_kwargs["noisy_function_kwargs"]["mesh_model_ctor"].keywords["transformer_kwargs"]
     if jax.default_backend() != "tpu":
         transformer["attention_type"] = "triblockdiag_mha"
+    # the last wrapper draws the runs of an ensemble, which the rollout below does instead
+    last = config.predictor_wrappers[-1]
+    if last.get("constructor") is not ensemble.WithSampleDim:
+        msg = f"{name}: expected WeatherNext's ensemble wrapper last, found {last.get('constructor')}"
+        raise ValueError(msg)
     inference = fgn.PredictorConfig(
         task=config.task,
         predictor_constructor=config.predictor_constructor,
@@ -169,8 +183,10 @@ def ensemble_of(apply: Callable[..., object], params: object) -> Callable[..., x
         seeds: list[int], inputs: xarray.Dataset, targets_template: xarray.Dataset, forcings: xarray.Dataset
     ) -> xarray.Dataset:
         chunks = []
-        # the runs go in groups of as many as there are devices, each group step by step
-        total = targets_template.sizes["time"] * -(-len(seeds) // jax.local_device_count())
+        # the runs go in groups of as many devices as divide their number (WeatherNext's rollout needs
+        # that), each group step by step
+        devices = jax.local_devices()[: math.gcd(len(seeds), jax.local_device_count())]
+        total = targets_template.sizes["time"] * len(seeds) // len(devices)
         for chunk in rollout.chunked_prediction_generator_multiple_runs(
             predictor_fn=runs,
             rngs=np.stack([jax.random.fold_in(jax.random.PRNGKey(0), seed) for seed in seeds]),
@@ -179,7 +195,7 @@ def ensemble_of(apply: Callable[..., object], params: object) -> Callable[..., x
             forcings=forcings,
             num_steps_per_chunk=1,
             num_samples=len(seeds),
-            pmap_devices=jax.local_devices(),
+            pmap_devices=devices,
         ):
             # wait for the step, and move it to the host
             jax.block_until_ready([xarray_jax.unwrap_data(chunk[var]) for var in chunk.data_vars])
@@ -201,37 +217,44 @@ def forecast(config: str, data: Path, checkpoints: dict[str, Path], runs: int, s
     out.mkdir(parents=True, exist_ok=True)
     initial = batch.isel(time=[1]).assign_coords(time=np.array([0], dtype="timedelta64[ns]"))
     save(crop(initial, init), out / "inputs_t0.nc", source=data.name, init_time=init)
+    targets = targets * np.nan  # WeatherNext takes the targets as a template only
+    del batch, initial
     log(f"{config} on {jax.default_backend()}: {jax.devices()}")
 
     # every run's fields come back from probly's representer as one sample per variable, without
     # coordinates: the targets' template gives them back
     template = region(targets).isel(batch=0).transpose("time", ..., "lat", "lon")
+    group = jax.local_device_count()  # runs at once, one per device
     for name, path in checkpoints.items():
         (out / name).mkdir(exist_ok=True)
-        files = [out / name / f"member_{seed}.nc" for seed in range(runs)]
-        if all(file.exists() for file in files):
-            log(f"{name}: the runs exist")
-            continue
-        with path.open("rb") as file:
-            predictor = WeatherNextPredictor(
-                ensemble_fn=ensemble_of(apply, checkpoint.load(file, fgn.CheckPoint).params)
-            )
-        start = time.perf_counter()
-        samples = representer(predictor, num_samples=runs).represent(inputs, targets * np.nan, forcings)
-        log(f"{name}: {runs} runs in {time.perf_counter() - start:.0f} s")
-        for seed, file in enumerate(files):
-            save(
-                crop(run_of(samples, template, seed), init),
-                file,
-                model=config,
-                checkpoint=path.name,
-                seed=seed,
-                rng="jax.random.fold_in(jax.random.PRNGKey(0), seed)",
-                attention=attention,
-                init_time=init,
-                initial_conditions=data.name,
-                computed_with="probly.integrations.weathernext.WeatherNextPredictor and probly.representer",
-            )
+        params = None
+        for first in range(0, runs, group):
+            seeds = range(first, min(first + group, runs))
+            files = {seed: out / name / f"member_{seed}.nc" for seed in seeds}
+            if all(file.exists() for file in files.values()):
+                log(f"{name}: runs {seeds[0]} to {seeds[-1]} exist")
+                continue
+            if params is None:
+                with path.open("rb") as file:
+                    params = checkpoint.load(file, fgn.CheckPoint).params
+            # the predictor's runs are the seeds from its own on
+            predictor = WeatherNextPredictor(ensemble_fn=ensemble_of(apply, params), seed=first)
+            start = time.perf_counter()
+            samples = representer(predictor, num_samples=len(seeds)).represent(inputs, targets, forcings)
+            log(f"{name}: runs {seeds[0]} to {seeds[-1]} of {runs} in {time.perf_counter() - start:.0f} s")
+            for index, (seed, file) in enumerate(files.items()):
+                save(
+                    crop(run_of(samples, template, index), init),
+                    file,
+                    model=config,
+                    checkpoint=path.name,
+                    seed=seed,
+                    rng="jax.random.fold_in(jax.random.PRNGKey(0), seed)",
+                    attention=attention,
+                    init_time=init,
+                    initial_conditions=data.name,
+                    computed_with="probly.integrations.weathernext.WeatherNextPredictor and probly.representer",
+                )
 
 
 def run(model: str, config: str, data: str, checkpoints: dict[str, str], description: str) -> None:
@@ -256,7 +279,7 @@ def run(model: str, config: str, data: str, checkpoints: dict[str, str], descrip
         log("the check went through: run the script without --check for the runs")
         return
     forecast(config, initial, files, runs=8, steps=20, out=HERE / "results" / model)
-    pack(HERE / "results")
+    pack(HERE / "results", require=(model,))
     log("done: commit docs/source/demos/milton/assets/data.js")
 
 
