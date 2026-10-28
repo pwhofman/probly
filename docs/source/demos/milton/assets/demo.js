@@ -455,7 +455,8 @@
     const chartKey = el("div", "milton-demo-legend milton-demo-chart-key"); // the chart's, where it needs one
     spot.append(spotHead, chart, stats, chartKey);
     const note = el("p", "milton-demo-note");
-    panel.append(title, lead, shore, chips, spot);
+    stage.append(shore); // under the map, whose landfalls it lines up
+    panel.append(title, lead, chips, spot);
     body.append(stage, panel);
     root.append(bar, about, body, note);
 
@@ -514,10 +515,19 @@
         field("spread", hours).forEach((s, c) => paint(c, split(share[c]), Math.pow(strength(s, spread), 0.9) * 0.88));
       } else if (state.wind && state.view === "ensemble") {
         field("gale", hours).forEach((p, c) => paint(c, colors.ink, p * 0.6));
+      } else if (state.wind) {
+        // one run has its wind or not, everywhere: shaded by how strong it is, from tropical-storm force
+        // to hurricane force (64 kt), within the run's outline, it reads as All runs' chance does
+        const hurricane = 64 * 0.514444;
+        field("single", hours).forEach((v, c) => paint(c, colors.ink, 0.06 + 0.54 * clamp((v - data.gale) / (hurricane - data.gale), 0, 1)));
       }
       offscreen.getContext("2d").putImageData(image, 0, 0);
       const half = grid.step / 2;
       context.save();
+      if (state.wind && state.view === "one") {
+        outlinePath();
+        context.clip("evenodd");
+      }
       context.imageSmoothingEnabled = true;
       context.imageSmoothingQuality = "high";
       context.drawImage(
@@ -677,14 +687,6 @@
       context.strokeStyle = rgba(colors.ink, 0.42);
       context.stroke();
     };
-    // one run's tropical-storm-force wind, shaded as where all runs have it (a chance of 1), under
-    // the coasts as the chance is
-    const fillOne = () => {
-      outlinePath();
-      context.fillStyle = rgba(colors.ink, 0.6);
-      context.fill("evenodd");
-    };
-
     const path = (points, from, to) => {
       // a track from one hour to another, through its 6-hourly points
       context.beginPath();
@@ -928,7 +930,6 @@
       graticule();
       land(true);
       raster();
-      if (state.wind && state.view === "one") fillOne();
       land(false);
       sea();
       if (state.wind) outline();
@@ -1422,14 +1423,14 @@
         return i;
       };
       const ink = (alpha) => rgba(colors.ink, alpha);
-      const outlined = (fill) => {
-        const i = swatch("", fill);
-        i.style.boxShadow = `inset 0 0 0 1.25px ${ink(0.42)}`;
-        return i;
-      };
       const items = [];
       if (state.view === "one") {
-        if (state.wind) items.push(item(outlined(ink(0.6)), "where this run has tropical-storm-force wind (34 kt)"));
+        if (state.wind) {
+          items.push(
+            item(swatch("ramp", `linear-gradient(90deg, ${ink(0.06)}, ${ink(0.6)})`), "this run's wind, from tropical-storm (34 kt) to hurricane force (64 kt)"),
+            item(line(ink(0.42)), "where it has tropical-storm-force wind"),
+          );
+        }
         items.push(item(line(ink(0.95)), "its track, ahead dashed"));
       } else if (state.view === "ensemble") {
         if (state.wind) {
