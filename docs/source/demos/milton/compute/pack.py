@@ -1,34 +1,47 @@
 r"""The data of the Milton demo from WeatherNext's runs: ``../assets/data.js``.
 
-Reads the runs that ``forecast.py`` wrote (``<results>/<checkpoint>/member_<seed>.nc``) and their
-initial fields (``<results>/inputs_t0.nc``), and summarizes them as the demo needs them
-(``common.summarize``): the wind on the demo's grid and at its places every 6 hours, every run's
-track, found as the lowest sea-level pressure near the run's last position, and the split of the
-runs' spread into aleatoric and epistemic variance, with probly. Models whose runs are missing are
-mock data (``mock_runs.py``); for now, these are the full models, which need a larger GPU than we have
-run them on.
+Reads every model's runs that ``forecast.py`` wrote (``<results>/<model>/<checkpoint>/member_<seed>.nc``,
+with the initial fields in ``<results>/<model>/inputs_t0.nc``; the models are ``full`` and ``mini``),
+and summarizes them as the demo needs them (``common.summarize``): the wind on the demo's grid and at
+its places every 6 hours, every run's track, found as the lowest sea-level pressure near the run's
+last position, and the split of the runs' spread into aleatoric and epistemic variance, with probly.
+A model whose runs are missing keeps its real runs from the current ``data.js``, if it has them, and
+else is mock data (``mock_runs.py``). ``run_mini.py`` and ``run_full.py`` call this script after their
+runs.
 
 There is no "what happened" for the wind yet: the targets in WeatherNext's public data are ECMWF's
 HRES forecast from the same start, not observations. Milton's observed track (IBTrACS) is.
 
-Run from the repository's root, with xarray to read the runs (not one of probly's dependencies)::
+Run from the repository's root, in WeatherNext's environment or in probly's with xarray to read the
+runs (not one of probly's dependencies)::
 
-    uv run --with xarray --with h5netcdf --with h5py python docs/source/demos/milton/compute/pack.py \
-        --results path/to/results
+    uv run --with xarray --with h5netcdf --with h5py python docs/source/demos/milton/compute/pack.py
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
-from common import HERE, TIMES, grid, land, observed_track, points, summarize, write
+from common import HERE, OUT, TIMES, grid, land, observed_track, points, summarize, write
 from mock_runs import build_model
 import numpy as np
 import xarray as xr
 
-# The models of the demo whose runs exist, and the checkpoints whose runs stand in for its models.
+# The models of the demo, and the checkpoints whose runs they are.
 MODELS = {
+    "full": {
+        "name": "WeatherNext Cyclones",
+        "label": "Full",
+        "detail": "0.25°, shown at 0.5°",
+        "step": 0.5,
+        "window": 24,
+        # WeatherNext's four models, trained on data through 2023, before Milton
+        "checkpoints": ["model1", "model2", "model3", "model4"],
+        "group": ["model", "models"],
+        "about": "8 runs of each of WeatherNext's four models, trained on data through 2023, before Milton.",
+    },
     "mini": {
         "name": "WeatherNext Cyclones Mini",
         "label": "Mini",
@@ -105,11 +118,12 @@ def track(run: xr.Dataset, start: tuple[float, float]) -> np.ndarray:
 def build_real(key: str, results: Path, rings: list[np.ndarray], observed: list) -> dict | None:
     """The runs of a model from its checkpoints' files, or ``None`` if they are missing."""
     spec = MODELS[key]
-    folders = [results / checkpoint for checkpoint in spec["checkpoints"]]
+    folders = [results / key / checkpoint for checkpoint in spec["checkpoints"]]
     files = [sorted(folder.glob("member_*.nc")) for folder in folders]
     if not all(files) or len({len(group) for group in files}) > 1:
         return None
-    initial = xr.open_dataset(results / "inputs_t0.nc", engine="h5netcdf").isel(time=0, drop=True)
+    print(f"{spec['name']}: {sum(map(len, files))} runs in {results / key}")  # noqa: T201
+    initial = xr.open_dataset(results / key / "inputs_t0.nc", engine="h5netcdf").isel(time=0, drop=True)
     initial = initial.drop_vars("datetime", errors="ignore").load()
     cells = grid(spec["step"])
     lat, lon = points(cells)
@@ -137,16 +151,23 @@ def build_real(key: str, results: Path, rings: list[np.ndarray], observed: list)
     }
 
 
-def main() -> None:
-    """Write the demo's data: the real runs where they exist, mock runs elsewhere."""
-    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--results", type=Path, default=HERE / "results", help="the folder forecast.py wrote")
-    args = parser.parse_args()
+def existing() -> dict:
+    """The models of the current ``../assets/data.js`` whose runs are real."""
+    if not OUT.exists():
+        return {}
+    text = OUT.read_text(encoding="utf-8")
+    data = json.loads(text.split("window.PROBLY_DEMO_MILTON = ", 1)[1].strip().removesuffix(";"))
+    return {key: model for key, model in data["models"].items() if not model.get("mock")}
+
+
+def pack(results: Path) -> None:
+    """Write the demo's data: per model its runs in ``results``, else its real runs so far, else mock runs."""
     observed = observed_track()
     rings = land()
-    models = {"full": build_model("full", rings, observed)}
+    kept = existing()
+    models = {}
     for key in MODELS:
-        models[key] = build_real(key, args.results, rings, observed) or build_model(key, rings, observed)
+        models[key] = build_real(key, results, rings, observed) or kept.get(key) or build_model(key, rings, observed)
     real = ", ".join(model["name"] for model in models.values() if not model["mock"]) or "none"
     write(
         models,
@@ -154,6 +175,13 @@ def main() -> None:
         rings,
         f"The data of the Milton demo, written by compute/pack.py. Runs from WeatherNext: {real}.",
     )
+
+
+def main() -> None:
+    """Write the demo's data from the runs."""
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--results", type=Path, default=HERE / "results", help="the folder of the runs")
+    pack(parser.parse_args().results)
 
 
 if __name__ == "__main__":

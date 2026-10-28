@@ -100,16 +100,16 @@ Run It Again
 ------------
 
 The scripts that computed the demo's data are in
-`docs/source/demos/milton/compute <https://github.com/pwhofman/probly/tree/main/docs/source/demos/milton/compute>`__,
-with a README on how to run them:
+`docs/source/demos/milton/compute <https://github.com/pwhofman/probly/tree/main/docs/source/demos/milton/compute>`__.
+Each downloads WeatherNext's public initial conditions and checkpoints, rolls out the runs through
+``probly``'s WeatherNext integration, and writes the demo's data; its docstring says what to install
+next to ``probly``:
 
 .. code-block:: bash
 
-   python forecast.py --data hres_1deg_steps20.nc \
-       --checkpoint mini_2024=wn_mini_2024.npz --checkpoint mini_2023=wn_mini_2023.npz
-   python pack.py --results results  # the demo's data, ../assets/data.js
+   python docs/source/demos/milton/compute/run_mini.py  # Mini: about 3 hours on four CPU cores
+   python docs/source/demos/milton/compute/run_full.py  # full: a GPU with about 80 GB of memory
 
-``forecast.py`` runs in WeatherNext's environment, with ``probly`` installed next to it. The Mini
-checkpoints run on a CPU, in about 12 minutes per run of 5 days on four cores; the full checkpoints
-need a GPU with about 80 GB of memory, or a TPU. The initial conditions and the checkpoints are
-WeatherNext's public data, and the coastlines are from `Natural Earth <https://www.naturalearthdata.com>`__.
+The Mini checkpoints run on a CPU, in about 12 minutes per run of 5 days on four cores, and in
+minutes on a GPU; the full checkpoints need a GPU with about 80 GB of memory, or a TPU. The
+coastlines are from `Natural Earth <https://www.naturalearthdata.com>`__.

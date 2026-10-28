@@ -14,49 +14,34 @@ coastlines (Natural Earth) are real.
 
 | File | What it does | Environment |
 |---|---|---|
-| `forecast.py` | Rolls out WeatherNext's runs of Milton through probly's `WeatherNextPredictor` and `representer`: `results/<checkpoint>/member_<seed>.nc`. | WeatherNext's, with probly |
-| `pack.py` | Writes `../assets/data.js` from the runs, with mock runs for the models that have none. | probly's, with xarray |
+| `run_mini.py`, `run_full.py` | Start here: download WeatherNext's public files, roll out the Mini or the full model's runs, and write `../assets/data.js`. Their docstrings say what to install and how long it takes. | WeatherNext's, with probly |
+| `forecast.py` | Rolls out WeatherNext's runs of Milton through probly's `WeatherNextPredictor` and `representer`: `results/<model>/<checkpoint>/member_<seed>.nc`. | WeatherNext's, with probly |
+| `pack.py` | Writes `../assets/data.js` from the runs; a model without runs keeps its real runs from `data.js`, or else gets mock runs. | WeatherNext's, or probly's with xarray |
 | `mock_runs.py` | The mock runs; run alone, it writes `../assets/data.js` with mock runs only. | probly's |
 | `common.py` | What the scripts share: the map, the places, the observed track, the data's format. | probly's |
 | `preview.py` | Inlines the assets into one page, `cache/preview.html`, to look at the demo without the docs. | any |
 
 ## Run
 
-**The runs.** WeatherNext is not on PyPI and needs Python 3.12 or newer, in an environment of its own:
+From the repository's root, in one environment with probly, JAX and WeatherNext (the scripts'
+docstrings say how to set it up):
 
 ```bash
-git clone https://github.com/google-deepmind/weathernext
-uv venv --python 3.12 wn-venv && source wn-venv/bin/activate
-uv pip install jax chex dask dinosaur-dycore dm-haiku dm-tree fiddle h5netcdf h5py jraph matplotlib \
-    numpy pandas pyproj rtree scipy trimesh typing_extensions "xarray<=2026.2.0" xarray_tensorstore \
-    "gdm-xarray-jax @ git+https://github.com/google-deepmind/xarray_jax.git@v0.1.1" netcdf4
-uv pip install --no-deps -e weathernext  # use "jax[cuda12]" above on a GPU
-uv pip install -e path/to/probly  # the runs go through probly.integrations.weathernext
-
-BASE=https://storage.googleapis.com/dm_graphcast/weathernext2
-curl -o wn_mini_2024.npz "$BASE/params/WeatherNextCyclones_Mini_%3C2024.npz"
-curl -o wn_mini_2023.npz "$BASE/params/WeatherNextCyclones_Mini_%3C2023.npz"
-curl -o hres_1deg_steps20.nc \
-    "$BASE/dataset/source-hres_forecast_init-2024-10-07%2000%3A00%3A00_res-1.0_levels-13_steps-20.nc"
-
-python forecast.py --data hres_1deg_steps20.nc \
-    --checkpoint mini_2024=wn_mini_2024.npz --checkpoint mini_2023=wn_mini_2023.npz
+python docs/source/demos/milton/compute/run_mini.py --check  # one step of one run, to test the setup
+python docs/source/demos/milton/compute/run_mini.py  # the Mini runs: 3 hours on four CPU cores
+python docs/source/demos/milton/compute/run_full.py --check
+python docs/source/demos/milton/compute/run_full.py  # the full runs: a GPU with 80 GB (an H100 or larger)
+python docs/source/demos/milton/compute/preview.py  # then open cache/preview.html
 ```
 
-On four CPU cores, a Mini run of 20 steps (5 days) takes about 12 minutes and 11 GB of memory, so
-the 16 runs take about 3 hours; on a GPU, they take minutes. The full model runs the same way with
-`--config WeatherNextCyclones`, the 0.25° data and its four checkpoints
-(`WeatherNextCyclones_%3C2024_model{1,2,3,4}.npz`, trained on data through 2023, before Milton).
-
-**The demo's data**, from the repository's root:
+Each script downloads what it needs into `cache/weathernext`, writes its runs to `results/mini` or
+`results/full`, skips what already exists when restarted, and writes `../assets/data.js` at the end,
+with the other model's real runs kept. `results/` and `cache/` are not part of the repository; commit
+`../assets/data.js`. To pack the runs again without rolling them out:
 
 ```bash
-uv run --with xarray --with h5netcdf --with h5py python docs/source/demos/milton/compute/pack.py \
-    --results docs/source/demos/milton/compute/results
-uv run python docs/source/demos/milton/compute/preview.py  # then open cache/preview.html
+uv run --with xarray --with h5netcdf --with h5py python docs/source/demos/milton/compute/pack.py
 ```
-
-`results/` and `cache/` are not part of the repository.
 
 ## The data
 
