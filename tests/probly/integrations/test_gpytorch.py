@@ -14,10 +14,18 @@ pytest.importorskip("gpytorch")
 
 import gpytorch
 from gpytorch.distributions import MultitaskMultivariateNormal, MultivariateNormal
-from gpytorch.likelihoods import BernoulliLikelihood, GaussianLikelihood, MultitaskGaussianLikelihood, SoftmaxLikelihood
+from gpytorch.likelihoods import (
+    BernoulliLikelihood,
+    DirichletClassificationLikelihood,
+    GaussianLikelihood,
+    MultitaskGaussianLikelihood,
+    SoftmaxLikelihood,
+    StudentTLikelihood,
+)
+from gpytorch.models import IndependentModelList
 import torch
 
-from probly.integrations.gpytorch import GpytorchClassificationRepresenter, GpytorchGaussianRepresenter
+from probly.integrations.gpytorch import GpytorchGaussianRepresenter, GpytorchSampler
 from probly.predictor import GaussianDistributionPredictor, predict
 from probly.quantification import SecondOrderEntropyDecomposition, SecondOrderVarianceDecomposition
 from probly.quantification.measure.variance import variance
@@ -27,6 +35,7 @@ from probly.representation.distribution.torch_gaussian import (
     TorchGaussianDistribution,
     TorchGaussianDistributionSample,
 )
+from probly.representation.sample.torch import TorchSample
 from probly.representer import representer
 
 NUM_TRAIN = 24
@@ -38,6 +47,20 @@ class _ExactGP(gpytorch.models.ExactGP):
         super().__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ConstantMean()
         self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
+
+    def forward(self, x: torch.Tensor) -> MultivariateNormal:
+        return MultivariateNormal(self.mean_module(x), self.covar_module(x))
+
+
+class _BatchExactGP(gpytorch.models.ExactGP):
+    """One independent GP per batch entry, the GPyTorch recipe for Dirichlet classification."""
+
+    def __init__(
+        self, train_x: torch.Tensor, train_y: torch.Tensor, likelihood: DirichletClassificationLikelihood, batch: int
+    ) -> None:
+        super().__init__(train_x, train_y, likelihood)
+        self.mean_module = gpytorch.means.ConstantMean(batch_shape=torch.Size([batch]))
+        self.covar_module = gpytorch.kernels.RBFKernel(batch_shape=torch.Size([batch]))
 
     def forward(self, x: torch.Tensor) -> MultivariateNormal:
         return MultivariateNormal(self.mean_module(x), self.covar_module(x))
@@ -108,6 +131,14 @@ def exact_gp(train_data: tuple[torch.Tensor, torch.Tensor]) -> _ExactGP:
     return model.eval()
 
 
+@pytest.fixture
+def multitask_gp() -> _MultitaskExactGP:
+    torch.manual_seed(0)
+    x = torch.linspace(0.0, 1.0, NUM_TRAIN)
+    y = torch.stack([torch.sin(x), torch.cos(x)], dim=-1)
+    return _MultitaskExactGP(x, y, MultitaskGaussianLikelihood(num_tasks=2)).eval()
+
+
 def test_exact_gp_is_gaussian_distribution_predictor(exact_gp: _ExactGP) -> None:
     assert isinstance(exact_gp, GaussianDistributionPredictor)
 
@@ -138,13 +169,9 @@ def test_approximate_gp_predict_returns_latent_posterior() -> None:
     assert torch.allclose(prediction.var, latent.variance)
 
 
-def test_multitask_exact_gp_predict_keeps_task_axis() -> None:
-    torch.manual_seed(0)
-    x = torch.linspace(0.0, 1.0, NUM_TRAIN)
-    y = torch.stack([torch.sin(x), torch.cos(x)], dim=-1)
-    model = _MultitaskExactGP(x, y, MultitaskGaussianLikelihood(num_tasks=2)).eval()
+def test_multitask_exact_gp_predict_keeps_task_axis(multitask_gp: _MultitaskExactGP) -> None:
     with torch.no_grad():
-        prediction = predict(model, torch.tensor([0.1, 0.9]))
+        prediction = predict(multitask_gp, torch.tensor([0.1, 0.9]))
 
     assert prediction.mean.shape == (2, 2)
     assert prediction.var.shape == (2, 2)
@@ -184,6 +211,13 @@ def test_stacked_exact_gps_form_gaussian_sample(train_data: tuple[torch.Tensor, 
     assert torch.all(decomposition.epistemic >= 0.0)
 
 
+def test_predict_rejects_model_list(train_data: tuple[torch.Tensor, torch.Tensor]) -> None:
+    x, y = train_data
+    models = IndependentModelList(_ExactGP(x, y, GaussianLikelihood()), _ExactGP(x, -y, GaussianLikelihood())).eval()
+    with pytest.raises(NotImplementedError, match="MultivariateNormal"):
+        predict(models, torch.tensor([0.5]), torch.tensor([0.5]))
+
+
 def test_gpytorch_is_not_imported_eagerly() -> None:
     code = """
 import sys
@@ -195,6 +229,65 @@ assert 'gpytorch' not in sys.modules, 'gpytorch was imported eagerly'
 """
     result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=False)  # noqa: S603
     assert result.returncode == 0, result.stderr
+
+
+def test_gaussian_sampler_separates_posterior_spread_from_noise(exact_gp: _ExactGP) -> None:
+    x = torch.tensor([0.25, 0.5, 1.5])
+    rep = representer(exact_gp, num_samples=4000)
+    with torch.no_grad():
+        sample = rep.represent(x)
+        latent = exact_gp(x)
+
+    assert isinstance(rep, GpytorchSampler)
+    assert isinstance(sample, TorchGaussianDistributionSample)
+    assert sample.sample_dim == 1
+    assert sample.tensor.mean.shape == (3, 4000)
+    decomposition = SecondOrderVarianceDecomposition(sample)
+    assert torch.allclose(decomposition.aleatoric, cast("Any", exact_gp).likelihood.noise.expand(3))
+    assert torch.allclose(decomposition.epistemic, latent.variance, rtol=0.15)
+
+
+def test_multitask_gaussian_sampler_keeps_task_axis(multitask_gp: _MultitaskExactGP) -> None:
+    with torch.no_grad():
+        sample = representer(multitask_gp, num_samples=8).represent(torch.tensor([0.1, 0.9]))
+
+    assert isinstance(sample, TorchGaussianDistributionSample)
+    assert sample.sample_dim == 2
+    assert sample.tensor.mean.shape == (2, 2, 8)
+    assert sample.tensor.var.shape == (2, 2, 8)
+
+
+def test_sampler_without_likelihood_returns_latent_draws() -> None:
+    torch.manual_seed(0)
+    model = _ScalarSVGP(torch.randn(6, 2)).eval()
+    with torch.no_grad():
+        sample = representer(model, num_samples=8, sample_axis=0).represent(torch.randn(4, 2))
+
+    assert isinstance(sample, TorchSample)
+    assert isinstance(sample.tensor, torch.Tensor)
+    assert sample.sample_dim == 0
+    assert sample.tensor.shape == (8, 4)
+
+
+def test_sampler_rejects_unsupported_likelihood(exact_gp: _ExactGP) -> None:
+    rep = representer(exact_gp, num_samples=4, likelihood=StudentTLikelihood())
+    with pytest.raises(NotImplementedError, match="StudentT"):
+        rep.represent(torch.tensor([0.25, 0.75]))
+
+
+def test_dirichlet_classification_sampler_returns_categorical_sample() -> None:
+    torch.manual_seed(0)
+    x = torch.linspace(0.0, 1.0, NUM_TRAIN)
+    likelihood = DirichletClassificationLikelihood(torch.arange(NUM_TRAIN) % NUM_CLASSES, learn_additional_noise=True)
+    model = _BatchExactGP(x, likelihood.transformed_targets, likelihood, NUM_CLASSES).eval()
+    with torch.no_grad():
+        sample = representer(model, num_samples=8).represent(torch.tensor([0.2, 0.5, 0.8, 0.9]))
+
+    assert isinstance(sample, TorchCategoricalDistributionSample)
+    assert sample.sample_dim == 1
+    probabilities = sample.tensor.probabilities
+    assert probabilities.shape == (4, 8, NUM_CLASSES)
+    assert torch.allclose(probabilities.sum(dim=-1), torch.ones(4, 8))
 
 
 @pytest.fixture
@@ -305,18 +398,6 @@ def test_bernoulli_representer_with_two_draws_keeps_sample_axis() -> None:
     assert sample.tensor.tensor.shape == (4, 2)
 
 
-def test_representer_predict_lists_one_distribution_per_draw(
-    softmax_svgp: tuple[_MultitaskSVGP, SoftmaxLikelihood],
-) -> None:
-    model, likelihood = softmax_svgp
-    rep = representer(model, num_samples=3, likelihood=likelihood)
-    with torch.no_grad():
-        draws = list(rep._predict(torch.randn(4, 2)))  # noqa: SLF001
-
-    assert len(draws) == 3
-    assert all(draw.probabilities.shape == (4, NUM_CLASSES) for draw in draws)
-
-
 def test_representer_on_gaussian_gp_passes_through_predict(exact_gp: _ExactGP) -> None:
     x = torch.tensor([0.25, 0.75])
     rep = representer(exact_gp)
@@ -357,13 +438,3 @@ def test_representer_requires_num_samples_for_classification(
     model, likelihood = softmax_svgp
     with pytest.raises(TypeError, match="num_samples"):
         representer(model, likelihood=likelihood)
-
-
-def test_representer_rejects_num_samples_for_gaussian_gp(exact_gp: _ExactGP) -> None:
-    with pytest.raises(TypeError, match="num_samples"):
-        representer(exact_gp, num_samples=4)
-
-
-def test_classification_representer_validates_likelihood(exact_gp: _ExactGP) -> None:
-    with pytest.raises(NotImplementedError, match="GaussianLikelihood"):
-        GpytorchClassificationRepresenter(exact_gp, 4, GaussianLikelihood())

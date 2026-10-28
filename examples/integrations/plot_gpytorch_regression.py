@@ -3,10 +3,12 @@ GPyTorch regression with probly
 =====================================================
 
 Train an exact Gaussian process with GPyTorch, read its predictive
-distribution through :func:`~probly.predictor.predict`, quantify the
-predictive variance, and wrap the model with
+distribution through :func:`~probly.predictor.predict`, split the predictive
+variance into epistemic and aleatoric parts with
+:func:`~probly.representer.representer`, and wrap the model with
 :func:`~probly.method.conformal.conformal_absolute_error` to obtain
-intervals with a coverage guarantee.
+intervals with a coverage guarantee. The bindings live in
+:obj:`probly.integrations.gpytorch`.
 """
 
 from __future__ import annotations
@@ -20,6 +22,7 @@ from probly.calibrator import calibrate
 from probly.method.conformal import conformal_absolute_error
 from probly.metrics import coverage, efficiency
 from probly.predictor import predict
+from probly.quantification import SecondOrderVarianceDecomposition
 from probly.quantification.measure.variance import variance
 from probly.representer import representer
 
@@ -29,6 +32,7 @@ NUM_TRAIN = 60
 NUM_CALIB = 40
 NUM_TEST = 1000
 NUM_GRID = 150
+NUM_SAMPLES = 1024
 
 # %%
 # Data
@@ -95,6 +99,22 @@ with torch.no_grad():
 
 print(f"prediction type: {type(prediction).__name__}")
 print(f"variance at x=0.5: {predictive_variance[NUM_GRID // 3]:.3f}, at x=1.5: {predictive_variance[-1]:.3f}")
+
+# %%
+# Epistemic and aleatoric variance
+# --------------------------------
+# A GP is a posterior over functions. ``representer`` with ``num_samples`` draws latent functions from it and
+# pushes each through the likelihood, giving a sample of Gaussians that share the observation noise. The variance
+# decomposition then attributes the spread between the draws to epistemic uncertainty and the noise to aleatoric
+# uncertainty, so the epistemic part grows away from the data while the aleatoric part stays flat.
+
+x_points = torch.tensor([0.5, 1.5])
+with torch.no_grad():
+    sample = representer(model, num_samples=NUM_SAMPLES).represent(x_points)
+decomposition = SecondOrderVarianceDecomposition(sample)
+
+print(f"epistemic variance at x=0.5: {decomposition.epistemic[0]:.3f}, at x=1.5: {decomposition.epistemic[1]:.3f}")
+print(f"aleatoric variance (the likelihood noise): {decomposition.aleatoric[0]:.3f}")
 
 # %%
 # Conformal intervals

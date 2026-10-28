@@ -5,7 +5,8 @@ GPyTorch classification with probly
 Train a sparse variational Gaussian process classifier with GPyTorch, turn it
 into a categorical sample with :func:`~probly.representer.representer`, and
 split its predictive entropy into aleatoric and epistemic parts with
-:class:`~probly.quantification.SecondOrderEntropyDecomposition`.
+:class:`~probly.quantification.SecondOrderEntropyDecomposition`. The bindings
+live in :obj:`probly.integrations.gpytorch`.
 """
 
 from __future__ import annotations
