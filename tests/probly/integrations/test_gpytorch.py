@@ -17,12 +17,14 @@ from gpytorch.distributions import MultitaskMultivariateNormal, MultivariateNorm
 from gpytorch.likelihoods import (
     BernoulliLikelihood,
     DirichletClassificationLikelihood,
+    FixedNoiseGaussianLikelihood,
     GaussianLikelihood,
     MultitaskGaussianLikelihood,
     SoftmaxLikelihood,
     StudentTLikelihood,
 )
 from gpytorch.models import IndependentModelList
+from gpytorch.models.deep_gps import DeepGP, DeepGPLayer
 import torch
 
 from probly.integrations.gpytorch import GpytorchGaussianRepresenter, GpytorchSampler
@@ -43,7 +45,12 @@ NUM_CLASSES = 3
 
 
 class _ExactGP(gpytorch.models.ExactGP):
-    def __init__(self, train_x: torch.Tensor, train_y: torch.Tensor, likelihood: GaussianLikelihood) -> None:
+    def __init__(
+        self,
+        train_x: torch.Tensor,
+        train_y: torch.Tensor,
+        likelihood: GaussianLikelihood | FixedNoiseGaussianLikelihood,
+    ) -> None:
         super().__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ConstantMean()
         self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
@@ -438,3 +445,132 @@ def test_representer_requires_num_samples_for_classification(
     model, likelihood = softmax_svgp
     with pytest.raises(TypeError, match="num_samples"):
         representer(model, likelihood=likelihood)
+
+
+class _DeepGPLayer(DeepGPLayer):
+    """A layer of the GPyTorch deep GP tutorial with a handful of inducing points."""
+
+    def __init__(self, input_dims: int, output_dims: int | None) -> None:
+        batch_shape = torch.Size([]) if output_dims is None else torch.Size([output_dims])
+        inducing_points = torch.randn(*batch_shape, 8, input_dims)
+        variational_distribution = gpytorch.variational.CholeskyVariationalDistribution(8, batch_shape=batch_shape)
+        variational_strategy = gpytorch.variational.VariationalStrategy(self, inducing_points, variational_distribution)
+        super().__init__(variational_strategy, input_dims, output_dims)
+        self.mean_module = gpytorch.means.ConstantMean(batch_shape=batch_shape)
+        self.covar_module = gpytorch.kernels.RBFKernel(batch_shape=batch_shape)
+
+    def forward(self, x: torch.Tensor) -> MultivariateNormal:
+        return MultivariateNormal(self.mean_module(x), self.covar_module(x))
+
+
+class _DeepGP(DeepGP):
+    """Two-layer deep GP that owns its likelihood, as in the GPyTorch tutorial."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.hidden_layer = _DeepGPLayer(input_dims=2, output_dims=2)
+        self.last_layer = _DeepGPLayer(input_dims=2, output_dims=None)
+        self.likelihood = GaussianLikelihood()
+
+    def forward(self, x: torch.Tensor) -> MultivariateNormal:
+        return self.last_layer(self.hidden_layer(x))
+
+
+@pytest.fixture
+def deep_gp() -> _DeepGP:
+    torch.manual_seed(0)
+    model = _DeepGP().eval()
+    with torch.no_grad():
+        model(torch.zeros(1, 2))  # Initializing the variational distributions on the first call draws random numbers.
+    return model
+
+
+def test_deep_gp_predict_returns_gaussian_batched_over_hidden_draws(deep_gp: _DeepGP) -> None:
+    x = torch.rand(5, 2)
+    with torch.no_grad():
+        prediction = predict(deep_gp, x)
+
+    assert isinstance(prediction, TorchGaussianDistribution)
+    assert prediction.mean.shape == (gpytorch.settings.num_likelihood_samples.value(), 5)
+    assert prediction.var.shape == prediction.mean.shape
+
+
+def test_deep_gp_sampler_draws_one_last_layer_function_per_hidden_draw(deep_gp: _DeepGP) -> None:
+    x = torch.rand(5, 2)
+    rep = representer(deep_gp, num_samples=7)
+    with torch.no_grad():
+        torch.manual_seed(1)
+        sample = rep.represent(x)
+        torch.manual_seed(1)
+        with gpytorch.settings.num_likelihood_samples(7):
+            draws = cast("Any", deep_gp)(x).rsample()
+
+    assert isinstance(rep, GpytorchSampler)
+    assert isinstance(sample, TorchGaussianDistributionSample)
+    assert sample.sample_dim == 1
+    assert draws.shape == (7, 5)
+    assert torch.allclose(sample.tensor.mean, draws.movedim(0, -1))
+    assert torch.allclose(sample.tensor.var, cast("Any", deep_gp).likelihood.noise.expand(5, 7))
+
+
+def test_deep_gp_sampler_without_likelihood_returns_latent_draws(deep_gp: _DeepGP) -> None:
+    x = torch.rand(3, 2)
+    with torch.no_grad():
+        torch.manual_seed(1)
+        sample = GpytorchSampler(deep_gp, num_samples=4, sample_axis=0).represent(x)
+        torch.manual_seed(1)
+        with gpytorch.settings.num_likelihood_samples(4):
+            draws = cast("Any", deep_gp)(x).rsample()
+
+    assert isinstance(sample, TorchSample)
+    assert isinstance(sample.tensor, torch.Tensor)
+    assert sample.sample_dim == 0
+    assert torch.allclose(sample.tensor, draws)
+
+
+def test_deep_gp_sampler_maps_draws_through_bernoulli_likelihood(deep_gp: _DeepGP) -> None:
+    rep = representer(deep_gp, num_samples=4, likelihood=BernoulliLikelihood())
+    with torch.no_grad():
+        sample = rep.represent(torch.rand(3, 2))
+
+    assert isinstance(sample, TorchBernoulliDistributionSample)
+    assert sample.sample_dim == 1
+    assert sample.tensor.tensor.shape == (3, 4)
+
+
+@pytest.fixture
+def fixed_noise_gp(train_data: tuple[torch.Tensor, torch.Tensor]) -> _ExactGP:
+    x, y = train_data
+    return _ExactGP(x, y, FixedNoiseGaussianLikelihood(noise=torch.full((NUM_TRAIN,), 0.01))).eval()
+
+
+def test_predict_forwards_likelihood_kwargs(fixed_noise_gp: _ExactGP) -> None:
+    x = torch.tensor([0.25, 0.5, 1.5])
+    noise = torch.tensor([0.2, 0.3, 0.4])
+    with torch.no_grad():
+        prediction = predict(fixed_noise_gp, x, likelihood_kwargs={"noise": noise})
+        latent = fixed_noise_gp(x)
+
+    assert torch.allclose(prediction.mean, latent.mean)
+    assert torch.allclose(prediction.var, latent.variance + noise)
+
+
+def test_gaussian_representer_forwards_likelihood_kwargs(fixed_noise_gp: _ExactGP) -> None:
+    x = torch.tensor([0.25, 0.5, 1.5])
+    noise = torch.tensor([0.2, 0.3, 0.4])
+    with torch.no_grad():
+        represented = representer(fixed_noise_gp, likelihood_kwargs={"noise": noise}).represent(x)
+        latent = fixed_noise_gp(x)
+
+    assert torch.allclose(represented.var, latent.variance + noise)
+
+
+def test_sampler_forwards_likelihood_kwargs(fixed_noise_gp: _ExactGP) -> None:
+    x = torch.tensor([0.25, 0.5, 1.5])
+    noise = torch.tensor([0.2, 0.3, 0.4])
+    with torch.no_grad():
+        sample = representer(fixed_noise_gp, num_samples=8, likelihood_kwargs={"noise": noise}).represent(x)
+
+    assert isinstance(sample, TorchGaussianDistributionSample)
+    assert sample.tensor.var.shape == (3, 8)
+    assert torch.allclose(sample.tensor.var, noise[:, None].expand(3, 8))

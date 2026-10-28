@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from typing import Any, cast, override
 
+from gpytorch import settings
 from gpytorch.distributions import MultivariateNormal
 from gpytorch.likelihoods import BernoulliLikelihood, DirichletClassificationLikelihood, Likelihood, SoftmaxLikelihood
 from gpytorch.models import GP
+from gpytorch.models.deep_gps import DeepGP
 import torch  # noqa: BKN002  # GPyTorch models are torch modules; this module is their torch bridge.
 
 from probly.predictor import predict, predict_raw
@@ -52,7 +54,12 @@ def _posterior(model: GP, *args: object, **kwargs: object) -> MultivariateNormal
 
 @predict_raw.register(GP)
 def gpytorch_predict_raw(
-    model: GP, /, *args: object, likelihood: Likelihood | None = None, **kwargs: object
+    model: GP,
+    /,
+    *args: object,
+    likelihood: Likelihood | None = None,
+    likelihood_kwargs: dict[str, Any] | None = None,
+    **kwargs: object,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Return the predictive mean and variance of a GPyTorch model.
 
@@ -63,7 +70,9 @@ def gpytorch_predict_raw(
 
     The model must be in evaluation mode; GPyTorch raises its own error otherwise. Shapes
     pass through unchanged, so multitask models return ``(n, tasks)`` tensors and batched
-    models keep their leading batch dimensions.
+    models keep their leading batch dimensions. A deep GP draws its hidden layers
+    ``gpytorch.settings.num_likelihood_samples()`` times inside the call, so its predictive
+    Gaussian carries that many leading batch entries, one last-layer Gaussian per draw.
 
     Args:
         model: A GPyTorch model in evaluation mode.
@@ -71,6 +80,8 @@ def gpytorch_predict_raw(
         likelihood: Likelihood applied to the posterior. Only likelihoods with a Gaussian
             marginal are supported; use :func:`probly.representer.representer` with
             ``num_samples`` for the others.
+        likelihood_kwargs: Keyword arguments of the likelihood call, such as the ``noise`` a
+            ``FixedNoiseGaussianLikelihood`` needs on inputs other than the training inputs.
         **kwargs: Forwarded to the model call.
 
     Returns:
@@ -83,7 +94,7 @@ def gpytorch_predict_raw(
     resolved = _resolve_likelihood(model, likelihood)
     if resolved is not None:
         # GPyTorch types ``__call__`` narrowly; cast once.
-        posterior = cast("Any", resolved)(posterior)
+        posterior = cast("Any", resolved)(posterior, **(likelihood_kwargs or {}))
         if not isinstance(posterior, MultivariateNormal):
             msg = (
                 f"predict returns the predictive Gaussian of a GP, but {type(resolved).__name__} has a "
@@ -104,33 +115,40 @@ class GpytorchGaussianRepresenter[**In](Representer[Any, In, Any, TorchGaussianD
     Args:
         predictor: A GPyTorch model in evaluation mode.
         likelihood: Likelihood forwarded to ``predict``; None uses the model's own, if any.
+        likelihood_kwargs: Keyword arguments of the likelihood call, forwarded to ``predict``.
     """
 
     likelihood: Likelihood | None
+    likelihood_kwargs: dict[str, Any]
 
-    def __init__(self, predictor: GP, likelihood: Likelihood | None = None) -> None:
-        """Store the model and the likelihood to apply."""
+    def __init__(
+        self, predictor: GP, likelihood: Likelihood | None = None, likelihood_kwargs: dict[str, Any] | None = None
+    ) -> None:
+        """Store the model, the likelihood to apply, and the likelihood's keyword arguments."""
         super().__init__(cast("Any", predictor))
         self.likelihood = likelihood
+        self.likelihood_kwargs = {} if likelihood_kwargs is None else likelihood_kwargs
 
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> TorchGaussianDistribution:
         """Return the predictive Gaussian for the given inputs."""
-        return cast("Any", predict)(self.predictor, *args, likelihood=self.likelihood, **kwargs)
+        return cast("Any", predict)(
+            self.predictor, *args, likelihood=self.likelihood, likelihood_kwargs=self.likelihood_kwargs, **kwargs
+        )
 
 
-def _softmax_logits(likelihood: SoftmaxLikelihood, draws: torch.Tensor) -> torch.Tensor:
+def _softmax_logits(likelihood: SoftmaxLikelihood, draws: torch.Tensor, **kwargs: object) -> torch.Tensor:
     """Map latent draws through a softmax likelihood, sidestepping its legacy layout check.
 
     ``SoftmaxLikelihood.forward`` treats inputs whose data axis equals ``num_features`` as legacy
     ``(num_features, num_data)`` tensors and silently transposes them, so one data row is duplicated
-    to break the tie and dropped again afterwards.
+    to break the tie and dropped again afterwards. ``kwargs`` go to the likelihood call.
     """
     num_data = draws.shape[-2]
     padded = num_data == likelihood.num_features
     if padded:
         draws = torch.cat([draws, draws[..., :1, :]], dim=-2)
-    logits = cast("Any", likelihood)(draws).logits
+    logits = cast("Any", likelihood)(draws, **kwargs).logits
     return logits[..., :num_data, :] if padded else logits
 
 
@@ -155,10 +173,16 @@ class GpytorchSampler[**In, S: Sample](Representer[Any, In, Any, S]):
     GPyTorch's ``IndependentMultitaskVariationalStrategy`` produces; Dirichlet classification
     likelihoods expect ``(num_samples, num_classes, n)``, the output of a batch-independent exact GP.
 
+    A deep GP draws its hidden layers inside the model call, so ``num_samples`` is set as GPyTorch's
+    ``num_likelihood_samples`` for that call and one draw of the last layer per hidden-layer draw
+    completes the latent functions. The draws then pass through the likelihood as for any other GP.
+
     Args:
         predictor: A GPyTorch model in evaluation mode.
         num_samples: Number of latent function draws.
         likelihood: Likelihood applied to the draws; None keeps the latent function values.
+        likelihood_kwargs: Keyword arguments of the likelihood call, such as the ``noise`` a
+            ``FixedNoiseGaussianLikelihood`` needs on inputs other than the training inputs.
         sample_axis: Axis along which draws are stacked in the returned sample. Negative values
             count from the last batch axis, so the default ``-1`` puts draws after the inputs.
 
@@ -169,6 +193,7 @@ class GpytorchSampler[**In, S: Sample](Representer[Any, In, Any, S]):
 
     num_samples: int
     likelihood: Likelihood | None
+    likelihood_kwargs: dict[str, Any]
     sample_axis: int
 
     def __init__(
@@ -176,12 +201,14 @@ class GpytorchSampler[**In, S: Sample](Representer[Any, In, Any, S]):
         predictor: GP,
         num_samples: int,
         likelihood: Likelihood | None = None,
+        likelihood_kwargs: dict[str, Any] | None = None,
         sample_axis: int = -1,
     ) -> None:
         """Store the model, the likelihood, and the sampling configuration."""
         super().__init__(cast("Any", predictor))
         self.num_samples = num_samples
         self.likelihood = likelihood
+        self.likelihood_kwargs = {} if likelihood_kwargs is None else likelihood_kwargs
         self.sample_axis = sample_axis
 
     def _stack(self, *parameters: torch.Tensor, num_class_axes: int = 0) -> tuple[list[torch.Tensor], int]:
@@ -197,10 +224,11 @@ class GpytorchSampler[**In, S: Sample](Representer[Any, In, Any, S]):
             (values,), sample_dim = self._stack(draws)
             return TorchSample(values, sample_dim)
         if isinstance(likelihood, BernoulliLikelihood):
-            (probabilities,), sample_dim = self._stack(likelihood(draws).probs)
+            (probabilities,), sample_dim = self._stack(likelihood(draws, **self.likelihood_kwargs).probs)
             return TorchBernoulliDistributionSample(TorchProbabilityBernoulliDistribution(probabilities), sample_dim)
         if isinstance(likelihood, SoftmaxLikelihood):
-            (logits,), sample_dim = self._stack(_softmax_logits(likelihood, draws), num_class_axes=1)
+            logits = _softmax_logits(likelihood, draws, **self.likelihood_kwargs)
+            (logits,), sample_dim = self._stack(logits, num_class_axes=1)
             return TorchCategoricalDistributionSample(TorchLogitCategoricalDistribution(logits), sample_dim)
         if isinstance(likelihood, DirichletClassificationLikelihood):
             # The draws are (num_samples, num_classes, n): normalize the exponentiated draws over the
@@ -210,7 +238,7 @@ class GpytorchSampler[**In, S: Sample](Representer[Any, In, Any, S]):
             return TorchCategoricalDistributionSample(
                 TorchProbabilityCategoricalDistribution(probabilities), sample_dim
             )
-        conditional = likelihood(draws)
+        conditional = likelihood(draws, **self.likelihood_kwargs)
         base = conditional.base_dist if isinstance(conditional, torch.distributions.Independent) else conditional
         if not isinstance(base, torch.distributions.Normal):
             msg = (
@@ -225,8 +253,15 @@ class GpytorchSampler[**In, S: Sample](Representer[Any, In, Any, S]):
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> S:
         """Sample latent functions and stack their first-order distributions."""
-        posterior = _posterior(cast("Any", self.predictor), *args, **kwargs)
-        return cast("Any", self._sample(posterior.rsample(torch.Size([self.num_samples]))))
+        if isinstance(self.predictor, DeepGP):
+            # The hidden layers are drawn inside the call; one last-layer draw per hidden draw completes the paths.
+            with settings.num_likelihood_samples(self.num_samples):
+                posterior = _posterior(cast("Any", self.predictor), *args, **kwargs)
+            draws = posterior.rsample()
+        else:
+            posterior = _posterior(cast("Any", self.predictor), *args, **kwargs)
+            draws = posterior.rsample(torch.Size([self.num_samples]))
+        return cast("Any", self._sample(draws))
 
 
 @representer.register(GP)
@@ -234,6 +269,7 @@ def gpytorch_representer(
     predictor: GP,
     num_samples: int | None = None,
     likelihood: Likelihood | None = None,
+    likelihood_kwargs: dict[str, Any] | None = None,
     sample_axis: int = -1,
 ) -> Representer[Any, Any, Any, Any]:
     """Select the representer that matches the likelihood and the requested number of draws.
@@ -248,6 +284,8 @@ def gpytorch_representer(
         predictor: A GPyTorch model in evaluation mode.
         num_samples: Number of latent draws; required for classification likelihoods.
         likelihood: Likelihood to apply; None uses the model's own, if any.
+        likelihood_kwargs: Keyword arguments of the likelihood call, such as the ``noise`` a
+            ``FixedNoiseGaussianLikelihood`` needs on inputs other than the training inputs.
         sample_axis: Sample axis of the sample built from the draws; ignored for Gaussian outputs.
 
     Raises:
@@ -255,8 +293,8 @@ def gpytorch_representer(
     """
     resolved = _resolve_likelihood(predictor, likelihood)
     if num_samples is not None:
-        return GpytorchSampler(predictor, num_samples, resolved, sample_axis)
+        return GpytorchSampler(predictor, num_samples, resolved, likelihood_kwargs, sample_axis)
     if isinstance(resolved, _CLASSIFICATION_LIKELIHOODS):
         msg = f"num_samples is required to represent a GP with a {type(resolved).__name__}."
         raise TypeError(msg)
-    return GpytorchGaussianRepresenter(predictor, likelihood)
+    return GpytorchGaussianRepresenter(predictor, likelihood, likelihood_kwargs)
