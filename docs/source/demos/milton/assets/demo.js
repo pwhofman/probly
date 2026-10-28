@@ -317,17 +317,21 @@
       pill.setAttribute("aria-hidden", "true");
       group.prepend(pill);
       group.classList.add("milton-demo-sliding");
-      thumbs.set(group, { pill, under: null });
+      thumbs.set(group, { pill, under: null, place: "" });
     }
     const placeThumbs = () => {
       for (const [group, thumb] of thumbs) {
         const pressed = group.querySelector('[aria-pressed="true"]');
         if (!pressed || !pressed.offsetWidth) continue;
+        // where the option is in its switch; if nothing moved, a slide under way goes on
+        const place = `${pressed.offsetLeft}/${pressed.offsetWidth}`;
+        if (pressed === thumb.under && place === thumb.place) continue;
         // to another option, the pill slides; under the same one (after a resize), it moves at once
         thumb.pill.classList.toggle("milton-demo-still", thumb.under === null || thumb.under === pressed);
         thumb.pill.style.width = `${pressed.offsetWidth}px`;
         thumb.pill.style.transform = `translateX(${pressed.offsetLeft}px)`;
         thumb.under = pressed;
+        thumb.place = place;
       }
     };
     const info = el("button", "milton-demo-info", "i");
@@ -951,12 +955,12 @@
       pins();
       graticuleLabels();
       if (fade.start) {
-        // the map before a switch, fading out over the new one
+        // the map before a switch, fading out over the new one (scaled, if the map's size changed since)
         const t = clamp((performance.now() - fade.start) / FADE, 0, 1);
         context.save();
         context.setTransform(1, 0, 0, 1, 0, 0);
         context.globalAlpha = 1 - t * (2 - t);
-        context.drawImage(fade.image, 0, 0);
+        context.drawImage(fade.image, 0, 0, canvas.width, canvas.height);
         context.restore();
       }
     };

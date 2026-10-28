@@ -22,6 +22,7 @@ PAGE = """<!doctype html>
 <title>Milton demo preview</title>
 <style>
 :root {{
+  scrollbar-gutter: stable; /* a scrollbar that comes and goes would change the demo's width */
   --probly-red: #ff2763;
   --probly-blue: #285bff;
   --page: #ffffff;
