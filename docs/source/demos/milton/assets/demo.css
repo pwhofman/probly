@@ -444,6 +444,12 @@ span.milton-demo-epistemic {
   font-weight: 400;
 }
 
+.milton-demo-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.1rem;
+}
+
 .milton-demo-toggle {
   display: inline-flex;
   align-items: center;
@@ -503,6 +509,7 @@ span.milton-demo-epistemic {
 
 .milton-demo-title {
   margin: 0;
+  padding: 0; /* no heading style of the page's theme */
   font-size: 1.12rem;
   font-weight: 700;
   line-height: 1.3;

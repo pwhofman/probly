@@ -4,8 +4,7 @@ Rolls out runs (ensemble members) of WeatherNext checkpoints from Milton's publi
 conditions (2024-10-07, 00 UTC) and saves every run's fields over the demo's region:
 ``<out>/<checkpoint>/member_<seed>.nc``, with the initial fields in ``<out>/inputs_t0.nc``.
 A checkpoint whose runs all exist is skipped, so the script can be restarted. ``pack.py`` turns the
-runs into the demo's data. ``run_mini.py`` and ``run_full.py`` do both, with the public files: start
-there.
+runs into the demo's data. ``run_full.py`` does both, with the public files: start there.
 
 The runs go through probly's WeatherNext integration: every checkpoint is a ``WeatherNextPredictor``,
 and ``representer(predictor, num_samples=runs)`` collects its runs, one sample per variable. The
@@ -24,14 +23,11 @@ The runs go in groups of as many as there are devices (GPUs), one run per device
 saved as soon as it is done, so that a restart only repeats the group that was cut off.
 
 This script needs WeatherNext and its dependencies, with probly installed next to them (see
-``run_mini.py``). The Mini checkpoints run on a CPU (about 12 minutes per run of 20 steps on four
-cores, 11 GB of memory) and on any GPU; the full ones need a GPU with about 80 GB of memory (an H100
-or larger) or a TPU::
+``run_full.py``). The full checkpoints need a GPU with about 80 GB of memory (an H100 or larger) or a
+TPU; WeatherNext's small model, ``--config WeatherNextCyclones_Mini`` with its 1-degree data and
+checkpoints, also runs on a CPU (about 12 minutes per run of 20 steps on four cores)::
 
-    python forecast.py --data hres_1deg_steps20.nc --out results/mini \
-        --checkpoint mini_2024=wn_mini_2024.npz --checkpoint mini_2023=wn_mini_2023.npz
-
-    python forecast.py --config WeatherNextCyclones --data hres_0p25deg_steps20.nc --out results/full \
+    python forecast.py --data hres_0p25deg_steps20.nc --out results/full \
         --checkpoint model1=WeatherNextCyclones_2024_model1.npz ...  # four checkpoints
 """
 
@@ -286,12 +282,12 @@ def run(model: str, config: str, data: str, checkpoints: dict[str, str], descrip
 def main() -> None:
     """Roll out and save the runs."""
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--config", default="WeatherNextCyclones_Mini", help="a config of weathernext2/configs")
+    parser.add_argument("--config", default="WeatherNextCyclones", help="a config of weathernext2/configs")
     parser.add_argument("--data", type=Path, required=True, help="WeatherNext's public initial conditions")
     parser.add_argument("--checkpoint", action="append", required=True, help="name=path, once per checkpoint")
     parser.add_argument("--runs", type=int, default=8, help="runs per checkpoint (seeds 0, 1, ...)")
     parser.add_argument("--steps", type=int, default=20, help="steps of 6 hours")
-    parser.add_argument("--out", type=Path, required=True, help="the folder of the runs, e.g. results/mini")
+    parser.add_argument("--out", type=Path, required=True, help="the folder of the runs, e.g. results/full")
     args = parser.parse_args()
     checkpoints = {name: Path(path) for name, path in (entry.split("=", 1) for entry in args.checkpoint)}
     forecast(args.config, args.data, checkpoints, args.runs, args.steps, args.out)

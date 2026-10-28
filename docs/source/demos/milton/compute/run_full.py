@@ -4,9 +4,9 @@ Downloads WeatherNext's public initial conditions of 7 October 2024, 00 UTC (0.2
 and the four public checkpoints of WeatherNext Cyclones (0.7 GB each; four models trained
 independently on data through 2023, before Milton), rolls out 8 runs of 5 days of each model through
 probly's WeatherNext integration, and writes the demo's data,
-``docs/source/demos/milton/assets/data.js`` (the Mini model's runs already there stay). The runs
-land in ``compute/results/full`` and the downloads in ``compute/cache/weathernext``; git ignores
-both. If the script stops, run it again: it skips the runs it already has.
+``docs/source/demos/milton/assets/data.js``. The runs land in ``compute/results/full`` and the
+downloads in ``compute/cache/weathernext``; git ignores both. If the script stops, run it again: it
+skips the runs it already has.
 
 What to install next to probly
 ------------------------------

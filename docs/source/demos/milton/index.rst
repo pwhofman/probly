@@ -3,14 +3,14 @@ Hurricane Milton: Where the Uncertainty Comes From
 
 How sure is a weather model of a hurricane's path, and why? This demo shows Google DeepMind's
 WeatherNext forecasting Hurricane Milton from 7 October 2024, 00 UTC, three days before it came
-ashore in Florida, and splits the spread of its runs, with ``probly``, into what varies from run to
-run of one model and what the models do not know.
+ashore in Florida, and splits the uncertainty of its runs, with ``probly``, into what varies from
+run to run of one model and what the models do not know.
 
 .. probly-demo:: milton
    :fallback: demos/milton.png
    :alt: The runs of WeatherNext's forecast of Hurricane Milton over the Gulf of Mexico, with their
-         spread split into the part that varies from run to run (aleatoric, blue) and the part where
-         the models disagree (epistemic, red).
+         uncertainty split into the part that varies from run to run (aleatoric, blue) and the part
+         where the models disagree (epistemic, red).
 
 What You See
 ------------
@@ -18,23 +18,23 @@ What You See
 **The forecast.** WeatherNext 2 :cite:`aletSkillfulJoint2025` and WeatherNext Cyclones
 :cite:`aletOperationalTropical2026` forecast the weather of the whole globe in steps of 6 hours. Each
 is four models, trained independently, and every run of a model draws random noise of its own. The
-demo shows WeatherNext Cyclones at 0.25° (*Full*), with 8 runs of each of its four models, and its
-small version at 1° (*Mini*), whose two public checkpoints stand in for the four models, with 8 runs
-each. All checkpoints were trained on data from before 2024, so none of them has seen Milton.
+demo shows WeatherNext Cyclones at 0.25°, with 8 runs of each of its four models, all trained on
+data from before 2024, so none of them has seen Milton.
 
 **The views.**
 
 - *One run* shows a single run as if it were the forecast: one track, one landfall, and no hint of
   how sure it is.
-- *All runs* shows every run's track, the chance of tropical-storm-force wind (34 kt, the lowest
-  threshold of the US National Hurricane Center's wind probabilities), and an outline around where
-  at least one run has it. A strip along Florida's Gulf coast shows where the runs come ashore,
-  each run's dot filled once it has; *Decomposition* shows it too.
-- *Decomposition* splits the spread of the runs: blue where the runs of one model scatter
-  (aleatoric), red where the models disagree (epistemic). Together, they make up the total spread.
+- *All runs* shows every run's track, and a strip along Florida's Gulf coast shows where the runs
+  come ashore, each run's dot filled once it has; *Decomposition* shows it too.
+- *Decomposition* splits the uncertainty of the runs: blue where the runs of one model scatter
+  (aleatoric), red where the models disagree (epistemic). Together, they make up the total
+  uncertainty.
 
 **Time and places.** Play the four days or drag through them, and pick a place, or click the map, to
-see it over time. *Show what happened* draws Milton's observed track, from IBTrACS
+see it over time. *Show wind* draws where the run, or any run, has tropical-storm-force wind (34 kt,
+the lowest threshold of the US National Hurricane Center's wind probabilities), and in *All runs*
+the chance of it. *Show what happened* draws Milton's observed track, from IBTrACS
 :cite:`knappInternationalBest2010`.
 
 How It Was Computed
@@ -93,23 +93,22 @@ mean and variance:
    split.aleatoric  # the mean variance within a model: the runs scatter as the atmosphere might
    split.epistemic  # the variance of the models' means: the models disagree
 
-The demo shows the square root of the total variance as the spread, and the epistemic share of the
-variance as the color between blue and red. Every run's track is the lowest sea-level pressure
+The demo shows the square root of the total variance as the total uncertainty, and the epistemic
+share of the variance as the color between blue and red. Every run's track is the lowest sea-level pressure
 near its last position, and a run comes ashore where its track first crosses Florida's coast.
 
 Run It Again
 ------------
 
 The scripts that computed the demo's data are in :source:`docs/source/demos/milton/compute`.
-Each downloads WeatherNext's public initial conditions and checkpoints, rolls out the runs through
-``probly``'s WeatherNext integration, and writes the demo's data; its docstring says what to install
-next to ``probly``:
+``run_full.py`` downloads WeatherNext's public initial conditions and checkpoints, rolls out the runs
+through ``probly``'s WeatherNext integration, and writes the demo's data; its docstring says what to
+install next to ``probly``:
 
 .. code-block:: bash
 
-   python docs/source/demos/milton/compute/run_mini.py  # Mini: about 3 hours on four CPU cores
-   python docs/source/demos/milton/compute/run_full.py  # full: a GPU with about 80 GB of memory
+   python docs/source/demos/milton/compute/run_full.py --check  # one step of one run, to test the setup
+   python docs/source/demos/milton/compute/run_full.py
 
-The Mini checkpoints run on a CPU, in about 12 minutes per run of 5 days on four cores, and in
-minutes on a GPU; the full checkpoints need a GPU with about 80 GB of memory, or a TPU. The
-coastlines are from `Natural Earth <https://www.naturalearthdata.com>`__.
+The checkpoints need a GPU with about 80 GB of memory, or a TPU. The coastlines are from
+`Natural Earth <https://www.naturalearthdata.com>`__.

@@ -8,10 +8,10 @@
 // tracks, fields on a grid every 6 hours, every run's wind near the storm, and the runs at a few
 // places; the page interpolates between the 6-hourly steps and only looks values up.
 //
-// Three views: one run of the model, taken as the forecast; all runs, with the chance of
-// tropical-storm-force wind and an outline around where any run has it; and the runs' spread,
-// split into its aleatoric and epistemic parts by the law of total variance. Pointing at the map
-// shows the values there; clicking it, or a place, shows that spot over time.
+// Three views: one run of the model, taken as the forecast; all runs; and the uncertainty of the
+// runs, split into its aleatoric and epistemic parts by the law of total variance. A toggle adds the
+// wind: where the run, or any run, has tropical-storm-force wind, and in all runs the chance of it.
+// Pointing at the map shows the values there; clicking it, or a place, shows that spot over time.
 //
 // Without JavaScript, the static figure in the <noscript> shows; when the data does not load, the
 // script shows that figure itself.
@@ -88,6 +88,7 @@
       model: keys[0],
       hours: 66,
       truth: false,
+      wind: false, // where the runs have tropical-storm-force wind, on the map
       place: "Tampa",
       spot: null, // a cell picked on the map: {lat, lon}
       playing: false,
@@ -163,7 +164,7 @@
     // of both steps, and a window's cells outside the other's count as calm (a window holds all of the
     // runs' tropical-storm-force wind, with a cell to spare)
     const runFrames = new Map();
-    const runFields = (hours, factor) => {
+    const runFields = (hours, factor, runs) => {
       const m = model();
       const windows = m.run_fields;
       const rows = windows.rows ?? windows.size;
@@ -181,7 +182,7 @@
       const height = Math.max(r0, r1) + rows - top;
       const width = Math.max(c0, c1) + cols - left;
       const value = (frame, run, r, c) => (r >= 0 && r < rows && c >= 0 && c < cols ? frame[run * n + r * cols + c] : 0);
-      const fields = m.tracks.map((_, run) => {
+      const fields = runs.map((run) => {
         const values = new Float32Array(height * width);
         for (let r = 0; r < height; r += 1) {
           for (let c = 0; c < width; c += 1) {
@@ -309,22 +310,9 @@
       viewButtons.set(key, button);
       viewSwitch.append(button);
     }
-    const modelSwitch = el("div", "milton-demo-switch");
-    modelSwitch.setAttribute("role", "group");
-    modelSwitch.setAttribute("aria-label", "Model");
-    const modelButtons = new Map();
-    for (const key of keys) {
-      const m = data.models[key];
-      const button = el("button", "milton-demo-option");
-      button.type = "button";
-      button.append(el("span", "milton-demo-long", `${m.label} · ${m.models} ${groups(m)}`), el("span", "milton-demo-short", m.label));
-      button.addEventListener("click", () => setModel(key));
-      modelButtons.set(key, button);
-      modelSwitch.append(button);
-    }
     // a pill under each switch's pressed option, which slides to the next one pressed
     const thumbs = new Map(); // a switch -> its pill and the option it is under
-    for (const group of [viewSwitch, modelSwitch]) {
+    for (const group of [viewSwitch]) {
       const pill = el("span", "milton-demo-thumb");
       pill.setAttribute("aria-hidden", "true");
       group.prepend(pill);
@@ -346,7 +334,7 @@
     info.type = "button";
     info.setAttribute("aria-expanded", "false");
     info.setAttribute("aria-label", "About WeatherNext and this demo");
-    switches.append(modelSwitch, info);
+    switches.append(info);
     bar.append(viewSwitch, switches);
 
     // the about text slides open: a grid row that grows to the text's height, with the text clipped
@@ -367,7 +355,7 @@
         "WeatherNext 2 (Google DeepMind) forecasts the weather of the whole globe in steps of 6 hours; " +
           "the demo shows WeatherNext Cyclones, its version for tropical cyclones. It is four models, " +
           "trained independently, and every run of a model draws its own random noise. " +
-          "The runs of one model scatter as the atmosphere might: that spread is ",
+          "The runs of one model scatter as the atmosphere might: that uncertainty is ",
         word("aleatoric"),
         " uncertainty. Where the four models disagree, they lack knowledge: that is ",
         word("epistemic"),
@@ -379,8 +367,8 @@
         word("aleatoric"),
         ") plus the variance of the models' means (",
         word("epistemic"),
-        "). Mini is a smaller version at 1°, whose two public checkpoints stand in for the four models; " +
-          "the note under the demo says which runs it shows.",
+        "). The demo shows 8 runs of each of the four models, at 0.25°, from 7 October 2024, before " +
+          "Milton came ashore; the note under the demo says more about them.",
       ),
     );
     info.addEventListener("click", () => {
@@ -418,12 +406,19 @@
     track.append(slider, days);
     const now = el("div", "milton-demo-now");
     const clock = el("div", "milton-demo-clock");
-    const toggle = el("label", "milton-demo-toggle");
-    const truthBox = el("input");
-    truthBox.type = "checkbox";
-    truthBox.id = `${id}-truth`;
-    toggle.append(truthBox, el("span"), document.createTextNode("Show what happened"));
-    now.append(clock, toggle);
+    const switchFor = (key, text) => {
+      const label = el("label", "milton-demo-toggle");
+      const box = el("input");
+      box.type = "checkbox";
+      box.id = `${id}-${key}`;
+      label.append(box, el("span"), document.createTextNode(text));
+      return { label, box };
+    };
+    const { label: windToggle, box: windBox } = switchFor("wind", "Show wind");
+    const { label: truthToggle, box: truthBox } = switchFor("truth", "Show what happened");
+    const toggles = el("div", "milton-demo-toggles");
+    toggles.append(windToggle, truthToggle);
+    now.append(clock, toggles);
     time.append(play, track, now);
     stage.append(map, time);
 
@@ -508,15 +503,12 @@
         pixels[c * 4 + 2] = rgb[2];
         pixels[c * 4 + 3] = Math.round(clamp(alpha, 0, 1) * 255);
       };
-      if (state.view === "one") {
-        // calm wind stays clear: the shading starts at 8 m/s and is full at 33 m/s
-        field("single", hours).forEach((v, c) => paint(c, colors.ink, Math.pow(clamp((v - 8) / 25, 0, 1), 0.85) * 0.85));
-      } else if (state.view === "ensemble") {
-        field("gale", hours).forEach((p, c) => paint(c, colors.ink, p * 0.6));
-      } else {
+      if (state.view === "split") {
         const share = field("epistemic", hours);
         const spread = range("spread");
         field("spread", hours).forEach((s, c) => paint(c, split(share[c]), Math.pow(strength(s, spread), 0.9) * 0.88));
+      } else if (state.wind && state.view === "ensemble") {
+        field("gale", hours).forEach((p, c) => paint(c, colors.ink, p * 0.6));
       }
       offscreen.getContext("2d").putImageData(image, 0, 0);
       const half = grid.step / 2;
@@ -661,19 +653,31 @@
         if (line.closed) context.closePath();
       }
     };
-    // the outline around where any run has tropical-storm-force wind (the most wind of all runs, cell
-    // by cell), on a grid of about a quarter degree; quiet, under the tracks
-    const outline = () => {
+    // the outline around where the run shown, or any run, has tropical-storm-force wind (the most
+    // wind of the runs, cell by cell), on a grid of about a quarter degree, as a path
+    const outlinePath = () => {
       const factor = Math.max(1, Math.round(model().grid.step / 0.25));
-      const { fields, rows, cols, origin } = runFields(state.hours, factor);
+      const runs = state.view === "one" ? [0] : model().tracks.map((_, run) => run);
+      const { fields, rows, cols, origin } = runFields(state.hours, factor, runs);
       const most = fields[0].slice();
       for (const values of fields) for (let c = 0; c < most.length; c += 1) most[c] = Math.max(most[c], values[c]);
       context.beginPath();
       trace(isolines(most, rows, cols, data.gale).map(smooth), origin, factor);
+    };
+    // the outline: quiet, under the tracks
+    const outline = () => {
+      outlinePath();
       context.lineJoin = "round";
       context.lineWidth = 1.25;
       context.strokeStyle = rgba(colors.ink, 0.42);
       context.stroke();
+    };
+    // one run's tropical-storm-force wind, shaded as where all runs have it (a chance of 1), under
+    // the coasts as the chance is
+    const fillOne = () => {
+      outlinePath();
+      context.fillStyle = rgba(colors.ink, 0.6);
+      context.fill("evenodd");
     };
 
     const path = (points, from, to) => {
@@ -788,6 +792,12 @@
         for (const run of m.tracks) {
           const [lat, lon] = position(run.points, hours);
           dot(lat, lon, 1.9, rgba(colors.blue, 0.95));
+        }
+        // where the runs have come ashore so far
+        for (const run of m.tracks) {
+          if (run.landfall && hours >= run.landfall.hours) {
+            dot(run.landfall.lat, run.landfall.lon, 3, rgba(colors.blue, 1), colors.surface);
+          }
         }
         for (const mean of means) {
           const [lat, lon] = position(mean, hours);
@@ -931,9 +941,10 @@
       graticule();
       land(true);
       raster();
+      if (state.wind && state.view === "one") fillOne();
       land(false);
       sea();
-      if (state.view === "ensemble") outline();
+      if (state.wind) outline();
       tracks();
       if (state.truth) observed();
       pins();
@@ -996,7 +1007,7 @@
       }
       if (state.view === "split") {
         const share = value("epistemic");
-        lines.push(`Total spread: ±${ms(value("spread"))}`);
+        lines.push(`Total uncertainty: ±${ms(value("spread"))}`);
         if (splittable(state.model)) {
           lines.push([`${percent(1 - share)} `, word("aleatoric"), `, ${percent(share)} `, word("epistemic")]);
         }
@@ -1340,12 +1351,12 @@
         title.textContent = `${runs} runs, many answers`;
         const ashore = landfalls();
         const models = m.models > 1 ? `${counted(m)} with ${m.runs_per_model} runs each` : `one model`;
-        const outline = "The outline is where at least one run has tropical-storm-force wind.";
+        const outline = state.wind ? "The outline is where at least one run has tropical-storm-force wind." : "";
         if (ashore.length === 1) {
           sentence(
             `${runs} runs from ${models}. One of them brings Milton ashore, near `,
             strong(coastName(ashore[0].lat, ashore[0].lon)),
-            `, ${Math.round(ashore[0].hours)} hours ahead. ${outline}`,
+            `, ${Math.round(ashore[0].hours)} hours ahead. ${outline}`.trim(),
           );
         } else if (ashore.length) {
           const times = ashore.map((l) => Math.round(l.hours));
@@ -1354,21 +1365,21 @@
             strong(coastName(ashore[0].lat, ashore[0].lon)),
             " to ",
             strong(coastName(ashore[ashore.length - 1].lat, ashore[ashore.length - 1].lon)),
-            `, ${Math.min(...times)} to ${Math.max(...times)} hours ahead. ${outline}`,
+            `, ${Math.min(...times)} to ${Math.max(...times)} hours ahead. ${outline}`.trim(),
           );
         } else {
           sentence(`${runs} runs from ${models}. None of them brings Milton ashore.`);
         }
       } else {
-        title.textContent = "Where the spread comes from";
+        title.textContent = "Where the uncertainty comes from";
         sentence(
-          "The runs of one model scatter as the atmosphere might: that part of the spread is ",
+          "The runs of one model scatter as the atmosphere might: that part of the uncertainty is ",
           strong("aleatoric", "milton-demo-aleatoric"),
           ", and more training data would ",
           el("em", "", "not"),
           ` remove it. Where the ${counted()} disagree, they lack knowledge: that part is `,
           strong("epistemic", "milton-demo-epistemic"),
-          ". Together, they make up the total spread.",
+          ". Together, they make up the total uncertainty.",
         );
       }
     };
@@ -1395,7 +1406,7 @@
         const a = at(s.aleatoric);
         const e = at(s.epistemic);
         const total = a + e;
-        items.push(stat("Total spread", `±${ms(Math.sqrt(total))}`));
+        items.push(stat("Total uncertainty", `±${ms(Math.sqrt(total))}`));
         if (splittable(state.model)) {
           items.push(
             stat("Aleatoric", total > 0 ? percent(a / total) : "–", "milton-demo-aleatoric"),
@@ -1424,23 +1435,33 @@
         return i;
       };
       const ink = (alpha) => rgba(colors.ink, alpha);
+      const outlined = (fill) => {
+        const i = swatch("", fill);
+        i.style.boxShadow = `inset 0 0 0 1.25px ${ink(0.42)}`;
+        return i;
+      };
       const items = [];
       if (state.view === "one") {
-        items.push(
-          item(swatch("ramp", `linear-gradient(90deg, ${ink(0.04)}, ${ink(0.8)})`), "wind of this run, 8 to 33 m/s"),
-          item(line(ink(0.95)), "its track, ahead dashed"),
-        );
+        if (state.wind) items.push(item(outlined(ink(0.6)), "where this run has tropical-storm-force wind (34 kt)"));
+        items.push(item(line(ink(0.95)), "its track, ahead dashed"));
       } else if (state.view === "ensemble") {
-        items.push(
-          item(swatch("ramp", `linear-gradient(90deg, ${ink(0.03)}, ${ink(0.6)})`), "chance of tropical-storm-force wind (34 kt)"),
-          item(line(ink(0.5), true), "where any run has it"),
-        );
+        if (state.wind) {
+          items.push(
+            item(swatch("ramp", `linear-gradient(90deg, ${ink(0.03)}, ${ink(0.6)})`), "chance of tropical-storm-force wind (34 kt)"),
+            item(line(ink(0.42)), "where any run has it"),
+          );
+        }
+        items.push(item(line(ink(0.32), true), "every run's track; a dot where it came ashore"));
       } else {
+        // the map's shade: how large the uncertainty is, and its color, which kind it mostly is
+        const ramp = `linear-gradient(90deg, ${rgba(colors.blue, 0.85)}, ${rgba(split(0.5), 0.85)}, ${rgba(colors.red, 0.85)})`;
         items.push(
+          item(swatch("ramp", ramp), ["map: the uncertainty, stronger where larger, from ", word("aleatoric"), " to ", word("epistemic")]),
           item(swatch("", rgba(colors.blue, 0.85)), [word("aleatoric"), ": the runs of one model scatter"]),
           item(swatch("", rgba(colors.red, 0.85)), [word("epistemic"), `: the ${groups()} disagree`]),
           item(line(ink(0.9)), ["total: sum of ", word("aleatoric"), " and ", word("epistemic")]),
         );
+        if (state.wind) items.push(item(line(ink(0.42)), "where any run has tropical-storm-force wind (34 kt)"));
       }
       if (state.truth) items.push(item(swatch("dashed"), withTruth() ? "what happened" : "Milton's observed track"));
       legend.replaceChildren(...items);
@@ -1461,9 +1482,9 @@
         button.disabled = disabled;
         button.title = disabled ? `${model().label} is a single model: there is no second model to disagree with.` : "";
       }
-      for (const [key, button] of modelButtons) button.setAttribute("aria-pressed", String(key === state.model));
       for (const [name, chip] of chipButtons) chip.setAttribute("aria-pressed", String(!state.spot && name === state.place));
       truthBox.checked = state.truth;
+      windBox.checked = state.wind;
       slider.value = String(Math.round(state.hours));
       slider.setAttribute("aria-valuetext", `${ahead(state.hours)}, ${when(state.hours)}`);
       clock.replaceChildren(document.createTextNode(`${ahead(state.hours)} `), el("span", "", `· ${when(state.hours)}`));
@@ -1495,13 +1516,6 @@
       if (view === state.view) return;
       crossfade();
       state.view = view;
-      update();
-    };
-    const setModel = (key) => {
-      if (key === state.model) return;
-      crossfade();
-      state.model = key;
-      if (state.view === "split" && !splittable(key)) state.view = "ensemble";
       update();
     };
     const setPlace = (name) => {
@@ -1571,6 +1585,10 @@
     });
     truthBox.addEventListener("change", () => {
       state.truth = truthBox.checked;
+      update();
+    });
+    windBox.addEventListener("change", () => {
+      state.wind = windBox.checked;
       update();
     });
 

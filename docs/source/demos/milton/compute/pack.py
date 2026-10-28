@@ -1,13 +1,13 @@
 r"""The data of the Milton demo from WeatherNext's runs: ``../assets/data.js``.
 
-Reads every model's runs that ``forecast.py`` wrote (``<results>/<model>/<checkpoint>/member_<seed>.nc``,
-with the initial fields in ``<results>/<model>/inputs_t0.nc``; the models are ``full`` and ``mini``),
-and summarizes them as the demo needs them (``common.summarize``): the wind on the demo's grid and at
-its places every 6 hours, every run's track, found as the lowest sea-level pressure near the run's
-last position, and the split of the runs' spread into aleatoric and epistemic variance, with probly.
-A model whose runs are missing keeps its real runs from the current ``data.js``, if it has them, and
-else is mock data (``mock_runs.py``). ``run_mini.py`` and ``run_full.py`` call this script after their
-runs.
+Reads the runs that ``forecast.py`` wrote (``<results>/<model>/<checkpoint>/member_<seed>.nc``, with
+the initial fields in ``<results>/<model>/inputs_t0.nc``; the demo's model is ``full``, WeatherNext
+Cyclones), and summarizes them as the demo needs them (``common.summarize``): the wind on the demo's
+grid and at its places every 6 hours, every run's track, found as the lowest sea-level pressure near
+the run's last position, and the split of the runs' uncertainty into aleatoric and epistemic
+variance, with probly. A model whose runs are missing keeps its real runs from the current
+``data.js``, if it has them, and else is mock data (``mock_runs.py``). ``run_full.py`` calls this
+script after its runs.
 
 There is no "what happened" for the wind yet: the targets in WeatherNext's public data are ECMWF's
 HRES forecast from the same start, not observations. Milton's observed track (IBTrACS) is.
@@ -29,7 +29,7 @@ from mock_runs import build_model
 import numpy as np
 import xarray as xr
 
-# The models of the demo, and the checkpoints whose runs they are.
+# The model of the demo, and the checkpoints whose runs it is (the code takes several models).
 MODELS = {
     "full": {
         "name": "WeatherNext Cyclones",
@@ -41,20 +41,6 @@ MODELS = {
         "checkpoints": ["model1", "model2", "model3", "model4"],
         "group": ["model", "models"],
         "about": "8 runs of each of WeatherNext's four models, trained on data through 2023, before Milton.",
-    },
-    "mini": {
-        "name": "WeatherNext Cyclones Mini",
-        "label": "Mini",
-        "detail": "1°",
-        "step": 1.0,
-        "window": 14,
-        # trained on data through 2023 and through 2022, both before Milton
-        "checkpoints": ["mini_2024", "mini_2023"],
-        "group": ["checkpoint", "checkpoints"],
-        "about": (
-            "8 runs of each of the two public Mini checkpoints, trained on data through 2023 and through "
-            "2022, before Milton; they stand in for WeatherNext's four models."
-        ),
     },
 }
 WIND = ("10m_u_component_of_wind", "10m_v_component_of_wind")

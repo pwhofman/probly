@@ -19,11 +19,11 @@ large a model to run with the docs, and its page shows what comes out of it.
       :link-type: doc
       :img-top: /_static/demos/milton.png
       :img-alt: The Milton demo: the runs of WeatherNext's forecast of Hurricane Milton over the Gulf of
-                Mexico, with their spread split into the part that varies from run to run (aleatoric,
-                blue) and the part where the models disagree (epistemic, red).
+                Mexico, with their uncertainty split into the part that varies from run to run
+                (aleatoric, blue) and the part where the models disagree (epistemic, red).
 
-      WeatherNext's forecast of Hurricane Milton, four days ahead: ``probly`` splits the spread of its
-      runs into what varies from run to run (aleatoric) and where its models disagree (epistemic).
+      WeatherNext's forecast of Hurricane Milton, four days ahead: ``probly`` splits the uncertainty of
+      its runs into what varies from run to run (aleatoric) and where its models disagree (epistemic).
 
 .. toctree::
    :hidden:

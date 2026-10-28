@@ -36,23 +36,6 @@ MODELS = {
         "run_left": 55.0,
         "run_strength": 0.08,
     },
-    "mini": {
-        "name": "WeatherNext Cyclones Mini",
-        "label": "Mini",
-        "detail": "1°",
-        "step": 1.0,
-        "rmax": 110.0,
-        "intensity": 0.42,
-        "along": [20.0],
-        "left": [45.0],
-        "strength": [1.0],
-        "trades": [0.0],
-        "runs": 8,
-        "window": 14,
-        "run_along": 95.0,
-        "run_left": 75.0,
-        "run_strength": 0.1,
-    },
 }
 
 
@@ -175,11 +158,8 @@ def build_model(key: str, rings: list[np.ndarray], observed: list) -> dict:
         "detail": spec["detail"],
         "mock": True,
         "group": ["model", "models"],
-        "about": (
-            f"{spec['runs']} runs of each of WeatherNext's four models, trained on data through 2023, before Milton."
-            if len(spec["along"]) > 1
-            else f"{spec['runs']} runs of one model, trained on data through 2023, before Milton."
-        ),
+        "about": f"{spec['runs']} runs of each of WeatherNext's four models, trained on data through 2023, "
+        "before Milton.",
         **summary,
     }
 
