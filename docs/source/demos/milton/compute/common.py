@@ -32,7 +32,7 @@ IBTRACS_URL = (
     "https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/"
     "v04r01/access/csv/ibtracs.NA.list.v04r01.csv"
 )
-LAND_URL = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_land.geojson"
+LAND_URL = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_50m_land.geojson"
 MILTON = "2024279N21265"  # Milton's IBTrACS storm id
 
 INIT = datetime(2024, 10, 7, tzinfo=UTC)  # the initialization of the public WeatherNext data
@@ -190,14 +190,14 @@ def points(spec: dict) -> tuple[np.ndarray, np.ndarray]:
 def landfall(rings: list[np.ndarray], track: np.ndarray) -> dict | None:
     """Where and when a track first comes ashore in Florida (half-hourly).
 
-    Florida is the mainland (the land around Orlando, not the Keys or the Bahamas) east of Alabama
-    and north of the Yucatan, which is part of the same land.
+    Florida is the mainland (the land around Orlando, not the Keys or the Bahamas) east of Alabama,
+    south of Georgia (31 degrees N) and north of the Yucatan, which are part of the same land.
     """
     mainland = next(Polygon(ring) for ring in rings if Polygon(ring).contains_point((FLORIDA[1], FLORIDA[0])))
     hours = np.arange(TIMES[0], TIMES[-1] + 0.25, 0.5)
     lat = np.interp(hours, TIMES, track[:, 0])
     lon = np.interp(hours, TIMES, track[:, 1])
-    ashore = mainland.contains_points(np.column_stack([lon, lat])) & (lon > -87.6) & (lat > 24.6)
+    ashore = mainland.contains_points(np.column_stack([lon, lat])) & (lon > -87.6) & (lat > 24.6) & (lat < 31)
     if not ashore.any():
         return None
     first = int(np.argmax(ashore))
@@ -269,7 +269,7 @@ def summarize(
         winds: The runs' wind speed (m/s) of shape (models, runs, times, cells + places), at the
             cells of ``spec`` (north to south, west to east) and then at the places.
         truth: What happened, of shape (times, cells + places), or ``None`` if there is no truth.
-        tracks: The runs' tracks of shape (models, runs, times, 3): latitude, longitude (east of
+        tracks: The runs' tracks of shape (models, runs, times, 3): latitude, longitude (west of
             Greenwich negative) and the maximum wind near the center.
         rings: The land, for the landfalls.
         spec: The grid (:func:`grid`).

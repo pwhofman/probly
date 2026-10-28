@@ -21,7 +21,6 @@ import numpy as np
 MODELS = {
     "full": {
         "name": "WeatherNext Cyclones",
-        "label": "Full",
         "detail": "0.25°, shown at 0.5°",
         "step": 0.5,
         "rmax": 55.0,
@@ -122,7 +121,7 @@ def build_model(key: str, rings: list[np.ndarray], observed: list) -> dict:
     base = interpolate_track(observed, hours)
     base[:, 2] *= spec["intensity"]
     growth = TIMES / 72.0
-    rng = np.random.default_rng(7 if key == "full" else 11)
+    rng = np.random.default_rng(7)
 
     tracks, winds = [], []
     for along, left, strength, trades in zip(
@@ -154,7 +153,6 @@ def build_model(key: str, rings: list[np.ndarray], observed: list) -> dict:
     summary = summarize(np.array(winds), truth, np.array(tracks), rings, cells, spec["window"])
     return {
         "name": spec["name"],
-        "label": spec["label"],
         "detail": spec["detail"],
         "mock": True,
         "group": ["model", "models"],

@@ -2,11 +2,12 @@ r"""Run WeatherNext Cyclones on Hurricane Milton, and write the Milton demo's da
 
 Downloads WeatherNext's public initial conditions of 7 October 2024, 00 UTC (0.25 degrees, 9.2 GB)
 and the four public checkpoints of WeatherNext Cyclones (0.7 GB each; four models trained
-independently on data through 2023, before Milton), rolls out 8 runs of 5 days of each model through
+independently on data through 2023, before Milton), rolls out 8 runs of 4 days of each model through
 probly's WeatherNext integration, and writes the demo's data,
-``docs/source/demos/milton/assets/data.js``. The runs land in ``compute/results/full`` and the
-downloads in ``compute/cache/weathernext``; git ignores both. If the script stops, run it again: it
-skips the runs it already has.
+``docs/source/demos/milton/assets/data.js``, for which it also downloads Milton's observed track
+(IBTrACS, 57 MB) and the coastlines (Natural Earth, 2 MB) into ``compute/cache``. The runs land in
+``compute/results/full`` and the downloads in ``compute/cache/weathernext``; git ignores both. If the
+script stops, run it again: it skips the runs it already has.
 
 What to install next to probly
 ------------------------------
@@ -14,9 +15,9 @@ One environment, Python 3.12 or newer, with probly from this branch, JAX for the
 WeatherNext with its dependencies. WeatherNext is not on PyPI, and its ``colabtools`` dependency is
 only for Colab, so it goes in without its dependencies, which are listed here instead, in the
 versions the demo's runs were made with (JAX and Haiku break each other's newer releases now and
-then). From the repository's root::
+then). From the repository's root, with the environment next to the repository::
 
-    uv venv --python 3.12 .venv-weathernext && source .venv-weathernext/bin/activate
+    uv venv --python 3.12 ../.venv-weathernext && source ../.venv-weathernext/bin/activate
     uv pip install -e .  # probly
     uv pip install "jax[cuda12]==0.12.0.1"  # JAX for NVIDIA GPUs, with its own CUDA libraries (12.9)
     uv pip install chex==0.1.92 dask==2026.8.0 dinosaur-dycore==1.2.1 dm-haiku==0.0.17 dm-tree==0.1.10 \
@@ -43,14 +44,14 @@ and compiling the model takes more.
 
 Run
 ---
-From the repository's root, first a check (one step of one run: the downloads, then the model's
-compilation and its first step; it shows whether the model fits and how long a step takes), then the
-runs::
+From the repository's root, first a check (two steps of one run: the downloads, then the model's
+compilation with the first step, then the second step; it shows whether the model fits and how long
+a step takes), then the runs::
 
     python docs/source/demos/milton/compute/run_full.py --check
     python docs/source/demos/milton/compute/run_full.py
 
-The runs are 4 models x 8 runs x 20 steps of 6 hours, 640 steps on one GPU; the script prints every
+The runs are 4 models x 8 runs x 16 steps of 6 hours, 512 steps on one GPU; the script prints every
 step with the time, and saves the runs as they are done. When it is done, commit
 ``docs/source/demos/milton/assets/data.js``. To look at the demo without building the docs,
 ``python docs/source/demos/milton/compute/preview.py`` writes ``compute/cache/preview.html``.

@@ -79,7 +79,7 @@ body[data-theme="dark"] .milton-demo-caption-text {
 /* while the script builds the demo, it keeps about the demo's room, so the page does not jump */
 @media (scripting: enabled) {
   .milton-demo:not(.milton-demo-ready, .milton-demo-failed) {
-    min-height: 36rem;
+    min-height: 78rem; /* one column; demo.js sets less where there are two */
   }
 }
 
@@ -105,7 +105,7 @@ span.milton-demo-epistemic {
   font-weight: 600;
 }
 
-/* -- the bar: the views, the models, the note ---------------------------------------------------- */
+/* -- the bar: the views and the info button ------------------------------------------------------ */
 
 .milton-demo-bar {
   display: flex;
@@ -212,6 +212,21 @@ span.milton-demo-epistemic {
 .milton-demo-map canvas:focus-visible {
   outline: 2px solid var(--md-blue);
   outline-offset: 2px;
+}
+
+/* the map clips what lies outside it: its ring goes inside */
+.milton-demo-map canvas:focus-visible {
+  outline-offset: -2px;
+}
+
+/* for screen readers only */
+.milton-demo-said {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .milton-demo-short {
@@ -386,6 +401,7 @@ span.milton-demo-epistemic {
   width: 0.85rem;
   height: 0.85rem;
   fill: currentColor;
+  pointer-events: none; /* a click is the button's, wherever it lands */
 }
 
 .milton-demo-track {
@@ -527,7 +543,7 @@ span.milton-demo-epistemic {
   color: var(--md-text);
 }
 
-/* where the runs come ashore, in the view of all runs */
+/* where the runs come ashore, under the map in All runs and Decomposition */
 .milton-demo-shore {
   display: grid;
   gap: 0.2rem;
@@ -810,7 +826,7 @@ span.milton-demo-epistemic {
   line-height: 1.5;
 }
 
-/* after a switch of view or model, the panel's new content fades in (the map cross-fades) */
+/* after a switch of view, the panel's new content fades in (the map cross-fades) */
 @keyframes milton-demo-enter {
   from {
     opacity: 0;

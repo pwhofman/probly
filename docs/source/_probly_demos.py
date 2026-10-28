@@ -38,6 +38,7 @@ import zlib
 
 from docutils import nodes
 from docutils.parsers.rst import directives
+from sphinx.util import logging
 from sphinx.util.docutils import SphinxDirective
 from sphinx.util.osutil import relative_uri
 
@@ -48,6 +49,7 @@ if TYPE_CHECKING:
 
 _ASSETS = ("demo.js", "demo.css")  # the files that every demo's assets folder has
 _DATA = "data.js"  # the demo's data, which its script loads, if it has any
+logger = logging.getLogger(__name__)
 
 
 class DemoNode(nodes.General, nodes.Element):
@@ -76,7 +78,12 @@ class DemoDirective(SphinxDirective):
                 self.env.note_dependency(str(assets / file))
         data = assets / _DATA
         version = f"{zlib.crc32(data.read_bytes()):08x}" if data.is_file() else ""
-        node = DemoNode(demo=name, fallback=self.options.get("fallback"), version=version)
+        fallback = self.options.get("fallback")
+        if fallback and not (Path(self.env.srcdir) / "_static" / fallback).is_file():
+            logger.warning(
+                "the demo %r's fallback image _static/%s does not exist", name, fallback, location=self.get_location()
+            )
+        node = DemoNode(demo=name, fallback=fallback, version=version)
         node["alt"] = self.options.get("alt", "")
         if "anchor" in self.options:
             node["ids"].append(self.options["anchor"])
@@ -91,7 +98,7 @@ def _visit_demo(self: HTML5Translator, node: DemoNode) -> None:
     if node["fallback"]:
         src = relative_uri(page, f"_static/{node['fallback']}")
         self.body.append(
-            f'<noscript><img class="{node["demo"]}-demo-fallback" src="{escape(src)}"'
+            f'<noscript><img class="{escape(node["demo"])}-demo-fallback" src="{escape(src)}"'
             f' alt="{escape(node["alt"])}"></noscript>'
         )
 

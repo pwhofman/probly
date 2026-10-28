@@ -13,21 +13,22 @@ ensemble wrapper is removed from the config, the runs are rolled out with Weathe
 ``jax.random.fold_in(jax.random.PRNGKey(0), seed)``. A run is the same for the same seed and the same
 number of steps (WeatherNext's noise also depends on how many steps are rolled out), up to rounding:
 run on several devices at once, it differs from a run on one in the last digits (about 0.001 m/s of
-wind). Every checkpoint
-draws the same seeds, so its runs get the same noise as the other checkpoints' (common random
-numbers): the checkpoints' means then differ by what the models learned more than by their noise. On
-CPUs and GPUs, the attention is ``triblockdiag_mha`` (the config's default, ``splash_mha``, needs a
-TPU).
+wind). Every checkpoint draws the same seeds, so its runs get the same noise as the other
+checkpoints' (common random numbers): the checkpoints' means then differ by what the models learned
+more than by their noise. On CPUs and GPUs, the attention is ``triblockdiag_mha`` (the config's
+default, ``splash_mha``, needs a TPU).
 
 The runs go in groups of as many as there are devices (GPUs), one run per device, and every group is
-saved as soon as it is done, so that a restart only repeats the group that was cut off.
+saved as soon as it is done, so that a restart only repeats the group that was cut off. The model is
+compiled once per checkpoint.
 
 This script needs WeatherNext and its dependencies, with probly installed next to them (see
 ``run_full.py``). The checkpoints need a GPU with about 80 GB of memory (an H100 or larger) or a
 TPU::
 
-    python forecast.py --data hres_0p25deg_steps20.nc --out results/full \
-        --checkpoint model1=WeatherNextCyclones_2024_model1.npz ...  # four checkpoints
+    python forecast.py --out results/full --steps 16 \
+        --data cache/weathernext/dataset/source-hres_forecast_init-2024-10-07_000000_res-0.25_levels-13_steps-20.nc \
+        --checkpoint model1=cache/weathernext/params/WeatherNextCyclones_2024_model1.npz ...  # four checkpoints
 """
 
 from __future__ import annotations
@@ -178,9 +179,10 @@ def ensemble_of(apply: Callable[..., object], params: object) -> Callable[..., x
         seeds: list[int], inputs: xarray.Dataset, targets_template: xarray.Dataset, forcings: xarray.Dataset
     ) -> xarray.Dataset:
         chunks = []
-        # the runs go in groups of as many devices as divide their number (WeatherNext's rollout needs
-        # that), each group step by step
-        devices = jax.local_devices()[: math.gcd(len(seeds), jax.local_device_count())]
+        # one run per device; more runs than devices go in groups of as many devices as divide their
+        # number (WeatherNext's rollout needs that), each group step by step
+        count = jax.local_device_count()
+        devices = jax.local_devices()[: len(seeds) if len(seeds) <= count else math.gcd(len(seeds), count)]
         total = targets_template.sizes["time"] * len(seeds) // len(devices)
         for chunk in rollout.chunked_prediction_generator_multiple_runs(
             predictor_fn=runs,
@@ -222,18 +224,18 @@ def forecast(config: str, data: Path, checkpoints: dict[str, Path], runs: int, s
     group = jax.local_device_count()  # runs at once, one per device
     for name, path in checkpoints.items():
         (out / name).mkdir(exist_ok=True)
-        params = None
+        ensemble = None  # the checkpoint's ensemble function, compiled on its first use
         for first in range(0, runs, group):
             seeds = range(first, min(first + group, runs))
             files = {seed: out / name / f"member_{seed}.nc" for seed in seeds}
             if all(file.exists() for file in files.values()):
                 log(f"{name}: runs {seeds[0]} to {seeds[-1]} exist")
                 continue
-            if params is None:
+            if ensemble is None:
                 with path.open("rb") as file:
-                    params = checkpoint.load(file, fgn.CheckPoint).params
+                    ensemble = ensemble_of(apply, checkpoint.load(file, fgn.CheckPoint).params)
             # the predictor's runs are the seeds from its own on
-            predictor = WeatherNextPredictor(ensemble_fn=ensemble_of(apply, params), seed=first)
+            predictor = WeatherNextPredictor(ensemble_fn=ensemble, seed=first)
             start = time.perf_counter()
             samples = representer(predictor, num_samples=len(seeds)).represent(inputs, targets, forcings)
             log(f"{name}: runs {seeds[0]} to {seeds[-1]} of {runs} in {time.perf_counter() - start:.0f} s")
@@ -252,29 +254,30 @@ def forecast(config: str, data: Path, checkpoints: dict[str, Path], runs: int, s
                 )
 
 
-def run(model: str, config: str, data: str, checkpoints: dict[str, str], description: str) -> None:
+def run(key: str, config: str, data: str, checkpoints: dict[str, str], description: str) -> None:
     """Roll out a model of the demo from WeatherNext's public files, and write the demo's data.
 
     Downloads the initial conditions ``data`` and the checkpoints (name: file in WeatherNext's bucket),
-    rolls out 8 runs of 20 steps of every checkpoint into ``results/<model>``, and writes the demo's data
-    with ``pack.py``. With ``--check``, rolls out one step of one run of the first checkpoint into
-    ``cache/check/<model>`` instead, to see that the model fits and how long a step takes.
+    rolls out 8 runs of 16 steps (the demo's four days) of every checkpoint into ``results/<key>``, and
+    writes the demo's data with ``pack.py``. With ``--check``, rolls out two steps of one run of the
+    first checkpoint into ``cache/check/<key>`` instead, to see that the model fits and how long a step
+    takes (the first step includes the model's compilation).
     """
     parser = argparse.ArgumentParser(description=description.split("\n\n", maxsplit=1)[0])
-    parser.add_argument("--check", action="store_true", help="roll out one step of one run only, to test the setup")
+    parser.add_argument("--check", action="store_true", help="roll out two steps of one run only, to test the setup")
     parser.add_argument("--downloads", type=Path, default=DOWNLOADS, help="where to keep WeatherNext's public files")
     args = parser.parse_args()
     initial = public_file(data, args.downloads)
     files = {name: public_file(path, args.downloads) for name, path in checkpoints.items()}
     if args.check:
         first = next(iter(files))
-        check = HERE / "cache" / "check" / model
+        check = HERE / "cache" / "check" / key
         shutil.rmtree(check, ignore_errors=True)  # a check always runs
-        forecast(config, initial, {first: files[first]}, runs=1, steps=1, out=check)
-        log("the check went through: run the script without --check for the runs")
+        forecast(config, initial, {first: files[first]}, runs=1, steps=2, out=check)
+        log("the check went through (the second step's time is a step's): run the script without --check")
         return
-    forecast(config, initial, files, runs=8, steps=20, out=HERE / "results" / model)
-    pack(HERE / "results", require=(model,))
+    forecast(config, initial, files, runs=8, steps=16, out=HERE / "results" / key)
+    pack(HERE / "results", require=(key,))
     log("done: commit docs/source/demos/milton/assets/data.js")
 
 
@@ -285,7 +288,7 @@ def main() -> None:
     parser.add_argument("--data", type=Path, required=True, help="WeatherNext's public initial conditions")
     parser.add_argument("--checkpoint", action="append", required=True, help="name=path, once per checkpoint")
     parser.add_argument("--runs", type=int, default=8, help="runs per checkpoint (seeds 0, 1, ...)")
-    parser.add_argument("--steps", type=int, default=20, help="steps of 6 hours")
+    parser.add_argument("--steps", type=int, default=16, help="steps of 6 hours (16: the demo's four days)")
     parser.add_argument("--out", type=Path, required=True, help="the folder of the runs, e.g. results/full")
     args = parser.parse_args()
     checkpoints = {name: Path(path) for name, path in (entry.split("=", 1) for entry in args.checkpoint)}

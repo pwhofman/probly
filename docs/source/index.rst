@@ -74,7 +74,7 @@ Uncertainty Quantification for Machine Learning
 
 .. |middot| unicode:: U+00B7
 
-.. the Milton demo of demos/milton, in a section that the README can link to (#interactive-demo); the
+.. the Milton demo of demos/milton, in a section that can be linked to (#interactive-demo); the
    static figure shows without JavaScript
 
 .. _interactive-demo:

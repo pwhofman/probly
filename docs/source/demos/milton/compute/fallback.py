@@ -2,7 +2,8 @@
 
 The image shows where the demo cannot run (without JavaScript, or when its data does not load), and
 on the card of the Demos page. Run it after the demo or its data changed: it writes the preview
-(``preview.py``) and photographs the demo in it, as it opens, in light mode at 1200 pixels wide.
+(``preview.py``) and photographs the demo in it, as it opens, in light mode at 1200 pixels wide and
+twice the pixels, so that it stays sharp where the docs show it smaller.
 
 It needs Playwright for Python and its Chromium. From the repository's root::
 
@@ -32,7 +33,7 @@ def main() -> None:
     write_preview()
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(executable_path=args.browser)
-        page = browser.new_page(viewport={"width": 1200, "height": 900}, color_scheme="light")
+        page = browser.new_page(viewport={"width": 1200, "height": 900}, color_scheme="light", device_scale_factor=2)
         page.emulate_media(reduced_motion="reduce")  # no transitions under way
         page.goto(PREVIEW.as_uri())
         page.locator(".milton-demo-ready").wait_for()

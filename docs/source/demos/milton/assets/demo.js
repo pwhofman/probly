@@ -18,9 +18,15 @@
 (() => {
   const roots = [...document.querySelectorAll(".milton-demo")];
   if (!roots.length) return;
+  // until the data is in, a demo keeps about its room (demo.css), less where it has two columns
+  for (const root of roots) {
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    if (root.clientWidth >= 49 * rem) root.style.minHeight = "50rem";
+  }
   // with scripts on, a <noscript>'s content is its HTML as text
   const fallbacks = new Map(roots.map((root) => [root, root.querySelector("noscript")?.textContent ?? ""]));
   const showFallback = (root) => {
+    root.style.minHeight = "";
     root.classList.remove("milton-demo-ready");
     root.classList.add("milton-demo-failed");
     root.innerHTML = fallbacks.get(root);
@@ -94,8 +100,7 @@
       playing: false,
     };
     const model = () => data.models[state.model];
-    const splittable = (key) => data.models[key].models > 1;
-    // what a model's groups of runs are: WeatherNext's models, or checkpoints that stand in for them
+    // what a model's groups of runs are called: WeatherNext's models
     const NUMBERS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight"];
     const groups = (m = model()) => (m.group ?? ["model", "models"])[m.models === 1 ? 0 : 1];
     const counted = (m = model()) => `${NUMBERS[m.models] ?? m.models} ${groups(m)}`;
@@ -234,9 +239,11 @@
       const end = points[points.length - 1];
       return [end[1], end[2]];
     };
+    // the place on Florida's Gulf coast nearest to a landfall; farther than half a degree from all of
+    // them (the Panhandle, the Atlantic coast), the landfall's latitude and longitude
     const coastName = (lat, lon) => {
       let best = null;
-      let distance = Infinity;
+      let distance = 0.5;
       for (const place of data.coast ?? []) {
         const d = Math.hypot(place.lat - lat, (place.lon - lon) * Math.cos((lat * Math.PI) / 180));
         if (d < distance) {
@@ -244,7 +251,7 @@
           distance = d;
         }
       }
-      return best ?? `${lat.toFixed(1)}° N`;
+      return best ?? `${lat.toFixed(1)}° N, ${Math.abs(lon).toFixed(1)}° W`;
     };
 
     // -- a spot over time: a place with its runs, or a cell of the grid ------------------------------
@@ -296,6 +303,7 @@
 
     // -- the page ------------------------------------------------------------------------------------
     root.innerHTML = "";
+    root.style.minHeight = "";
     const bar = el("div", "milton-demo-bar");
     const switches = el("div", "milton-demo-switches");
     const viewSwitch = el("div", "milton-demo-switch");
@@ -388,11 +396,17 @@
     canvas.setAttribute("role", "img");
     const tip = el("div", "milton-demo-tip");
     tip.hidden = true;
-    map.append(canvas, tip);
+    const said = el("div", "milton-demo-said"); // for screen readers: the values at a spot picked by keyboard
+    said.setAttribute("aria-live", "polite");
+    map.append(canvas, tip, said);
 
     const time = el("div", "milton-demo-time");
     const play = el("button", "milton-demo-play");
     play.type = "button";
+    const playIcon = svg("path");
+    const playSvg = svg("svg", { viewBox: "0 0 10 10", "aria-hidden": "true" });
+    playSvg.append(playIcon);
+    play.append(playSvg);
     const track = el("div", "milton-demo-track");
     const slider = el("input", "milton-demo-slider");
     slider.type = "range";
@@ -947,7 +961,7 @@
         context.restore();
       }
     };
-    // a cross-fade from the map as it is to the one after a switch of view or model
+    // a cross-fade from the map as it is to the one after a switch of view
     const FADE = 420; // ms
     const fade = { image: document.createElement("canvas"), start: 0 };
     const crossfade = () => {
@@ -955,13 +969,14 @@
       fade.image.width = canvas.width;
       fade.image.height = canvas.height;
       fade.image.getContext("2d").drawImage(canvas, 0, 0);
+      const running = fade.start > 0; // a fade under way goes on from the new start
       fade.start = performance.now();
       const step = () => {
         if (performance.now() - fade.start >= FADE) fade.start = 0;
         draw();
         if (fade.start) requestAnimationFrame(step);
       };
-      requestAnimationFrame(step);
+      if (!running) requestAnimationFrame(step);
       // and the panel's new content fades in
       panel.classList.remove("milton-demo-enter");
       void panel.offsetWidth; // restart the animation
@@ -996,9 +1011,7 @@
       if (state.view === "split") {
         const share = value("epistemic");
         lines.push(`Total uncertainty: ±${ms(value("spread"))}`);
-        if (splittable(state.model)) {
-          lines.push([`${percent(1 - share)} `, word("aleatoric"), `, ${percent(share)} `, word("epistemic")]);
-        }
+        lines.push([`${percent(1 - share)} `, word("aleatoric"), `, ${percent(share)} `, word("epistemic")]);
       }
       if (state.truth && withTruth()) lines.push(`What happened: ${ms(value("truth"))}`);
       return { head: `${Math.abs(lat).toFixed(1)}° N, ${Math.abs(lon).toFixed(1)}° W · ${ahead(hours)}`, lines };
@@ -1083,6 +1096,7 @@
       keyed = true;
       pointer = { x: x(at.lon), y: y(at.lat) };
       showTip();
+      said.textContent = tip.hidden ? "" : [...tip.children].map((line) => line.textContent).join(". ");
     };
     canvas.addEventListener("keydown", (event) => {
       const moves = { ArrowUp: [1, 0], ArrowDown: [-1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
@@ -1355,7 +1369,7 @@
             `, ${Math.min(...times)} to ${Math.max(...times)} hours ahead. ${outline}`.trim(),
           );
         } else {
-          sentence(`${runs} runs from ${models}. None of them brings Milton ashore.`);
+          sentence(`${runs} runs from ${models}. None of them brings Milton ashore. ${outline}`.trim());
         }
       } else {
         title.textContent = "Where the uncertainty comes from";
@@ -1394,12 +1408,10 @@
         const e = at(s.epistemic);
         const total = a + e;
         items.push(stat("Total uncertainty", `±${ms(Math.sqrt(total))}`));
-        if (splittable(state.model)) {
-          items.push(
-            stat("Aleatoric", total > 0 ? percent(a / total) : "–", "milton-demo-aleatoric"),
-            stat("Epistemic", total > 0 ? percent(e / total) : "–", "milton-demo-epistemic"),
-          );
-        }
+        items.push(
+          stat("Aleatoric", total > 0 ? percent(a / total) : "–", "milton-demo-aleatoric"),
+          stat("Epistemic", total > 0 ? percent(e / total) : "–", "milton-demo-epistemic"),
+        );
       }
       stats.replaceChildren(...items);
     };
@@ -1471,9 +1483,6 @@
     const update = (what = "all") => {
       for (const [key, button] of viewButtons) {
         button.setAttribute("aria-pressed", String(key === state.view));
-        const disabled = key === "split" && !splittable(state.model);
-        button.disabled = disabled;
-        button.title = disabled ? `${model().label} is a single model: there is no second model to disagree with.` : "";
       }
       for (const [name, chip] of chipButtons) chip.setAttribute("aria-pressed", String(!state.spot && name === state.place));
       truthBox.checked = state.truth;
@@ -1481,9 +1490,7 @@
       slider.value = String(Math.round(state.hours));
       slider.setAttribute("aria-valuetext", `${ahead(state.hours)}, ${when(state.hours)}`);
       clock.replaceChildren(document.createTextNode(`${ahead(state.hours)} `), el("span", "", `· ${when(state.hours)}`));
-      const icon = svg("svg", { viewBox: "0 0 10 10", "aria-hidden": "true" });
-      icon.append(svg("path", { d: state.playing ? "M1.5 1h2.5v8H1.5zM6 1h2.5v8H6z" : "M2 1l7 4-7 4z" }));
-      play.replaceChildren(icon);
+      playIcon.setAttribute("d", state.playing ? "M1.5 1h2.5v8H1.5zM6 1h2.5v8H6z" : "M2 1l7 4-7 4z");
       play.setAttribute("aria-label", state.playing ? "Pause" : "Play the four days");
       if (what === "all") {
         placeThumbs();
@@ -1505,7 +1512,6 @@
       if (pointer) showTip();
     };
     const setView = (view) => {
-      if (view === "split" && !splittable(state.model)) return;
       if (view === state.view) return;
       crossfade();
       state.view = view;
@@ -1565,7 +1571,8 @@
       if (state.hours >= last) state.hours = 0;
       state.playing = true;
       if (reducedMotion()) {
-        stepOn();
+        update("time");
+        timer = setTimeout(stepOn, STEP_MS);
         return;
       }
       previous = 0;
@@ -1592,6 +1599,18 @@
       resize();
       if (Math.abs((chart.clientWidth || 0) - chartWidth) > 1) update();
     }).observe(root);
+    // moved to a screen of another pixel ratio, without a resize: the map is drawn again, sharp
+    const watchRatio = () => {
+      window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`).addEventListener(
+        "change",
+        () => {
+          resize();
+          watchRatio();
+        },
+        { once: true },
+      );
+    };
+    watchRatio();
     const retheme = () => {
       readColors();
       update();

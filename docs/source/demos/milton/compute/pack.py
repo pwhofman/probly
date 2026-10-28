@@ -33,7 +33,6 @@ import xarray as xr
 MODELS = {
     "full": {
         "name": "WeatherNext Cyclones",
-        "label": "Full",
         "detail": "0.25°, shown at 0.5°",
         "step": 0.5,
         "window": 24,
@@ -82,7 +81,7 @@ def track(run: xr.Dataset, start: tuple[float, float]) -> np.ndarray:
     """A run's track: per lead time the lowest pressure near its last position, and its maximum wind.
 
     The lowest pressure is refined between grid points by a parabola in each direction. Returns the
-    latitude, the longitude (east of Greenwich negative) and the maximum wind within ``CORE`` degrees.
+    latitude, the longitude (west of Greenwich negative) and the maximum wind within ``CORE`` degrees.
     """
     lats, lons = run.lat.values, run.lon.values
     pressure = run[PRESSURE].values
@@ -131,7 +130,6 @@ def build_real(key: str, results: Path, rings: list[np.ndarray], observed: list)
     summary = summarize(np.array(winds), None, np.array(tracks), rings, cells, spec["window"])
     return {
         "name": spec["name"],
-        "label": spec["label"],
         "detail": spec["detail"],
         "mock": False,
         "group": spec["group"],
