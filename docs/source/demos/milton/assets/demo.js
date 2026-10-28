@@ -9,9 +9,9 @@
 // places; the page interpolates between the 6-hourly steps and only looks values up.
 //
 // Three views: one run of the model, taken as the forecast; all runs, with the chance of
-// tropical-storm-force wind and the outline of every run's; and the runs' spread, split into its
-// aleatoric and epistemic parts by the law of total variance. Pointing at the map shows the values
-// there; clicking it, or a place, shows that spot over time.
+// tropical-storm-force wind and an outline around where any run has it; and the runs' spread,
+// split into its aleatoric and epistemic parts by the law of total variance. Pointing at the map
+// shows the values there; clicking it, or a place, shows that spot over time.
 //
 // Without JavaScript, the static figure in the <noscript> shows; when the data does not load, the
 // script shows that figure itself.
@@ -90,11 +90,6 @@
       playing: false,
     };
     const model = () => data.models[state.model];
-    // how every run's tropical-storm-force wind shows in "All runs", for now to compare: "lines",
-    // every run's outline; "faint", the same, quieter; "heat", shaded by how many runs have it;
-    // "union", one outline around where any run has it; "hull", the convex hull of that
-    const OUTLINES = new Set(["lines", "faint", "heat", "union", "hull"]);
-    const outlineStyle = () => (OUTLINES.has(root.dataset.outline) ? root.dataset.outline : "lines");
     const splittable = (key) => data.models[key].models > 1;
     // what a model's groups of runs are: WeatherNext's models, or checkpoints that stand in for them
     const NUMBERS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight"];
@@ -494,7 +489,7 @@
         // calm wind stays clear: the shading starts at 8 m/s and is full at 33 m/s
         field("single", hours).forEach((v, c) => paint(c, colors.ink, Math.pow(clamp((v - 8) / 25, 0, 1), 0.85) * 0.85));
       } else if (state.view === "ensemble") {
-        if (outlineStyle() !== "heat") field("gale", hours).forEach((p, c) => paint(c, colors.ink, p * 0.6));
+        field("gale", hours).forEach((p, c) => paint(c, colors.ink, p * 0.6));
       } else {
         const share = field("epistemic", hours);
         const spread = range("spread");
@@ -515,7 +510,7 @@
       context.restore();
     };
 
-    // -- the outline of a run's tropical-storm-force wind: marching squares, smoothed ------------------
+    // -- the outline of the runs' tropical-storm-force wind: marching squares, smoothed -----------------
     // the lines where ``values`` (rows x cols, row-major) crosses ``level``, in fractional (row, col)
     const isolines = (values, rows, cols, level) => {
       const points = new Map(); // a cell edge's id -> where the line crosses it
@@ -648,86 +643,19 @@
         if (line.closed) context.closePath();
       }
     };
-    // the convex hull of points (Andrew's monotone chain), as a closed line
-    const hull = (points) => {
-      const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-      const turn = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
-      const half = (list) => {
-        const out = [];
-        for (const point of list) {
-          while (out.length >= 2 && turn(out[out.length - 2], out[out.length - 1], point) <= 0) out.pop();
-          out.push(point);
-        }
-        out.pop();
-        return out;
-      };
-      return { points: [...half(sorted), ...half([...sorted].reverse())], closed: true };
-    };
-    // the runs' tropical-storm-force wind as lines, on a grid of about a quarter degree: every run's
-    // outline, or one around all of them
-    const outlines = (style) => {
+    // the outline around where any run has tropical-storm-force wind (the most wind of all runs, cell
+    // by cell), on a grid of about a quarter degree; quiet, under the tracks
+    const outline = () => {
       const factor = Math.max(1, Math.round(model().grid.step / 0.25));
       const { fields, size, origin } = runFields(state.hours, factor);
-      context.lineJoin = "round";
-      context.beginPath();
-      if (style === "lines" || style === "faint") {
-        for (const values of fields) trace(isolines(values, size, size, data.gale).map(smooth), origin, factor);
-        context.lineWidth = style === "faint" ? 0.75 : 1;
-        context.strokeStyle = rgba(colors.ink, style === "faint" ? 0.2 : 0.5);
-        context.stroke();
-        return;
-      }
-      // where any run has it: the most wind of all runs, cell by cell
       const most = fields[0].slice();
       for (const values of fields) for (let c = 0; c < most.length; c += 1) most[c] = Math.max(most[c], values[c]);
-      const lines = isolines(most, size, size, data.gale);
-      if (!lines.length) return;
-      trace(style === "hull" ? [smooth(hull(lines.flatMap((line) => line.points)))] : lines.map(smooth), origin, factor);
-      context.lineWidth = 4;
-      context.strokeStyle = colors.surface;
-      context.globalAlpha = 0.7;
+      context.beginPath();
+      trace(isolines(most, size, size, data.gale).map(smooth), origin, factor);
+      context.lineJoin = "round";
+      context.lineWidth = 1.25;
+      context.strokeStyle = rgba(colors.ink, 0.42);
       context.stroke();
-      context.globalAlpha = 1;
-      context.lineWidth = 1.75;
-      context.strokeStyle = rgba(colors.ink, 0.85);
-      context.stroke();
-    };
-    // how many runs have tropical-storm-force wind, shaded as one run's wind is, on a grid of an
-    // eighth of a degree, so that every run's edge shows
-    const fine = document.createElement("canvas");
-    const heat = () => {
-      const grid = model().grid;
-      const factor = Math.max(2, Math.round(grid.step / 0.125));
-      const { fields, size, origin } = runFields(state.hours, factor);
-      fine.width = size;
-      fine.height = size;
-      const image = fine.getContext("2d").createImageData(size, size);
-      const pixels = image.data;
-      for (let p = 0; p < size * size; p += 1) {
-        let count = 0;
-        for (const values of fields) if (values[p] >= data.gale) count += 1;
-        if (!count) continue;
-        pixels[p * 4] = colors.ink[0];
-        pixels[p * 4 + 1] = colors.ink[1];
-        pixels[p * 4 + 2] = colors.ink[2];
-        pixels[p * 4 + 3] = Math.round((0.07 + 0.73 * Math.pow(count / fields.length, 0.9)) * 255);
-      }
-      fine.getContext("2d").putImageData(image, 0, 0);
-      const half = 0.5 / factor;
-      const span = (size - 1) / factor;
-      const left = x(grid.west + (origin[1] - half) * grid.step);
-      const top = y(grid.north - (origin[0] - half) * grid.step);
-      context.save();
-      context.imageSmoothingEnabled = true;
-      context.imageSmoothingQuality = "high";
-      context.drawImage(
-        fine,
-        left,
-        top,
-        x(grid.west + (origin[1] + span + half) * grid.step) - left,
-        y(grid.north - (origin[0] + span + half) * grid.step) - top,
-      );
-      context.restore();
     };
 
     const path = (points, from, to) => {
@@ -796,7 +724,7 @@
         const [lat, lon] = position(run.points, hours);
         dot(lat, lon, 5.5, rgba(colors.ink, 1), colors.surface);
       } else if (state.view === "ensemble") {
-        // the tracks recede a little behind the runs' outlines
+        // the tracks recede a little behind the outline
         for (const run of m.tracks) {
           context.lineWidth = 1;
           context.strokeStyle = rgba(colors.ink, 0.1);
@@ -975,13 +903,10 @@
       graticule();
       land(true);
       raster();
-      const style = state.view === "ensemble" ? outlineStyle() : null;
-      if (style === "heat") heat();
       land(false);
       sea();
-      if (style === "faint") outlines(style); // under the tracks
+      if (state.view === "ensemble") outline();
       tracks();
-      if (style && style !== "heat" && style !== "faint") outlines(style);
       if (state.truth) observed();
       pins();
       graticuleLabels();
@@ -1322,13 +1247,6 @@
         .tracks.map((run) => run.landfall)
         .filter(Boolean)
         .sort((a, b) => a.lat - b.lat);
-    const OUTLINE_TEXTS = {
-      lines: "Every outline is where one run has tropical-storm-force wind.",
-      faint: "Every outline is where one run has tropical-storm-force wind.",
-      heat: "The darker, the more runs have tropical-storm-force wind there.",
-      union: "The outline is where at least one run has tropical-storm-force wind.",
-      hull: "The outline wraps every run's tropical-storm-force wind.",
-    };
     const texts = () => {
       const m = model();
       const runs = m.tracks.length;
@@ -1355,7 +1273,7 @@
             strong(coastName(ashore[0].lat, ashore[0].lon)),
             " to ",
             strong(coastName(ashore[ashore.length - 1].lat, ashore[ashore.length - 1].lon)),
-            `, ${Math.min(...times)} to ${Math.max(...times)} hours ahead. ${OUTLINE_TEXTS[outlineStyle()]}`,
+            `, ${Math.min(...times)} to ${Math.max(...times)} hours ahead. The outline is where at least one run has tropical-storm-force wind.`,
           );
         } else {
           sentence(`${runs} runs from ${models}. None of them brings Milton ashore.`);
@@ -1430,14 +1348,10 @@
           item(line(ink(0.95)), "its track, ahead dashed"),
         );
       } else if (state.view === "ensemble") {
-        const style = outlineStyle();
-        if (style === "heat") {
-          items.push(item(swatch("ramp", `linear-gradient(90deg, ${ink(0.07)}, ${ink(0.8)})`), "runs with tropical-storm-force wind (34 kt), one to all"));
-        } else {
-          items.push(item(swatch("ramp", `linear-gradient(90deg, ${ink(0.03)}, ${ink(0.6)})`), "chance of tropical-storm-force wind (34 kt)"));
-          if (style === "lines" || style === "faint") items.push(item(line(ink(style === "faint" ? 0.25 : 0.5), true), "where one run has it"));
-          else items.push(item(line(ink(0.85)), style === "union" ? "where any run has it" : "around every run's"));
-        }
+        items.push(
+          item(swatch("ramp", `linear-gradient(90deg, ${ink(0.03)}, ${ink(0.6)})`), "chance of tropical-storm-force wind (34 kt)"),
+          item(line(ink(0.5), true), "where any run has it"),
+        );
       } else {
         items.push(
           item(swatch("", rgba(colors.blue, 0.85)), "aleatoric: the runs of one model scatter"),
@@ -1567,10 +1481,6 @@
       readColors();
       update();
     };
-    new MutationObserver(() => {
-      crossfade();
-      update();
-    }).observe(root, { attributes: true, attributeFilter: ["data-outline"] });
     window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retheme);
     new MutationObserver(retheme).observe(document.body, { attributes: true, attributeFilter: ["data-theme"] });
     root.classList.add("milton-demo-ready");

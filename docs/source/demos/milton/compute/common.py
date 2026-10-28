@@ -200,7 +200,7 @@ def encode(values: np.ndarray, scale: float) -> str:
 
 
 def windows(winds: np.ndarray, tracks: list[np.ndarray], spec: dict, size: int) -> dict:
-    """Every run's wind near the storm, for the outline of every run's tropical-storm-force wind.
+    """Every run's wind near the storm, for the outline around where any run has tropical-storm-force wind.
 
     A square of ``size`` x ``size`` cells per lead time that follows the runs' mean position; ``winds``
     has the shape (runs, times, rows, cols).

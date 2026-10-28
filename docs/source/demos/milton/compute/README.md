@@ -55,8 +55,8 @@ whether its runs are invented:
   (`epistemic`), the runs' 5% and 95% quantiles (`lower`, `upper`) and, where there is one, what
   happened (`truth`);
 - `run_fields`: every run's wind near the storm, per lead time a square of cells that follows the
-  runs' mean position (`origins`: its first row and column), for the outline of every run's
-  tropical-storm-force wind;
+  runs' mean position (`origins`: its first row and column), for the outline around where any
+  run has tropical-storm-force wind;
 - `tracks`: every run's track (the lowest sea-level pressure near its last position) and where it
   comes ashore in Florida;
 - `places`: every run's wind at the demo's places, with the aleatoric and epistemic variance.
