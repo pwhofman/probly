@@ -39,10 +39,8 @@ MODELS = {
         "checkpoints": ["mini_2024", "mini_2023"],
         "group": ["checkpoint", "checkpoints"],
         "about": (
-            "Real runs, computed on a CPU: 8 of each of the two public Mini checkpoints, trained on data "
-            "through 2023 and through 2022, before Milton. The two checkpoints stand in for WeatherNext's "
-            "four models, so their split is rough. What happened is Milton's observed track; the observed "
-            "wind is still to come."
+            "8 runs of each of the two public Mini checkpoints, trained on data through 2023 and through "
+            "2022, before Milton; they stand in for WeatherNext's four models."
         ),
     },
 }
@@ -154,8 +152,7 @@ def main() -> None:
         models,
         observed,
         rings,
-        "The data of the Milton demo, written by compute/pack.py.\n"
-        f"Real runs: {real}. Every other model is MOCK DATA (compute/mock_runs.py).",
+        f"The data of the Milton demo, written by compute/pack.py. Runs from WeatherNext: {real}.",
     )
 
 

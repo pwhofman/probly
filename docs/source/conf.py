@@ -83,6 +83,7 @@ extensions = [
     "sphinx_design",  # grid and card directives used by the methods guide
     "jupyter_sphinx",  # executes narrative code blocks so their printed output regenerates
     "sphinx_codeautolink",  # links names in all code blocks to their API reference
+    "_probly_demos",  # the demos (demos/): computed once, shown on their pages, see demos/README.md
 ]
 
 suppress_warnings = []
@@ -133,6 +134,10 @@ exclude_patterns = [
     "sg_execution_times.rst",
     # Hidden setup snippets pulled in with ``.. include::``; not pages of their own.
     "_includes/**",
+    # the demos' notes for maintainers, assets and scripts, which are not pages
+    "demos/README.md",
+    "demos/*/assets/**",
+    "demos/*/compute/**",
 ]
 
 

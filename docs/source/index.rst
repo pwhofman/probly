@@ -281,6 +281,7 @@ Philosophy
    installation
    user_guide
    examples
+   demos/index
    api
    contributing/index
    references

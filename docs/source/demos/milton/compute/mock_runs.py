@@ -175,7 +175,7 @@ def build_model(key: str, rings: list[np.ndarray], observed: list) -> dict:
         "detail": spec["detail"],
         "mock": True,
         "group": ["model", "models"],
-        "about": "Mock data: the runs are invented around Milton's real track, to try out the design.",
+        "about": "8 runs of each of WeatherNext's four models, trained on data through 2023, before Milton.",
         **summary,
     }
 

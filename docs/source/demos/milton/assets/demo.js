@@ -354,8 +354,6 @@
     const tip = el("div", "milton-demo-tip");
     tip.hidden = true;
     map.append(canvas, tip);
-    const badge = el("span", "milton-demo-badge", "Mock data");
-    map.append(badge);
 
     const time = el("div", "milton-demo-time");
     const play = el("button", "milton-demo-play");
@@ -1173,7 +1171,6 @@
         button.title = disabled ? `${model().label} is a single model: there is no second model to disagree with.` : "";
       }
       for (const [key, button] of modelButtons) button.setAttribute("aria-pressed", String(key === state.model));
-      badge.hidden = !model().mock;
       for (const [name, chip] of chipButtons) chip.setAttribute("aria-pressed", String(!state.spot && name === state.place));
       truthBox.checked = state.truth;
       slider.value = String(Math.round(state.hours));

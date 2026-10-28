@@ -242,22 +242,6 @@ body[data-theme="dark"] .milton-demo {
   cursor: crosshair;
 }
 
-.milton-demo-badge {
-  position: absolute;
-  top: 0.55rem;
-  left: 0.55rem;
-  padding: 0.2rem 0.55rem;
-  border: 1px dashed var(--md-coast);
-  border-radius: 999px;
-  background: var(--md-surface);
-  color: var(--md-muted);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  pointer-events: none;
-}
-
 .milton-demo-tip {
   position: absolute;
   z-index: 2;
