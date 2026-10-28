@@ -780,9 +780,9 @@
       context.font = `500 10px system-ui, -apple-system, "Segoe UI", sans-serif`;
       context.fillStyle = colors.muted;
       context.textBaseline = "bottom";
-      context.textAlign = "center";
+      context.textAlign = "left"; // right of their meridians
       for (let lon = Math.ceil(extent.west / 5) * 5; lon < extent.east; lon += 5) {
-        context.fillText(`${-lon}° W`, x(lon), height - 4);
+        context.fillText(`${-lon}° W`, x(lon) + 4, height - 4);
       }
       context.textAlign = "right";
       context.textBaseline = "middle";
