@@ -765,6 +765,17 @@
       }
       context.stroke();
     };
+    // the sea's name, in the empty water north of Milton's path, under the runs
+    const sea = () => {
+      context.save();
+      context.font = `italic 500 ${clamp(width / 48, 10, 13)}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+      context.letterSpacing = "0.12em";
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillStyle = colors.coast;
+      context.fillText("Gulf of Mexico", x(-90.2), y(26.6));
+      context.restore();
+    };
     const graticuleLabels = () => {
       context.font = `500 10px system-ui, -apple-system, "Segoe UI", sans-serif`;
       context.fillStyle = colors.muted;
@@ -836,6 +847,7 @@
       land(true);
       raster();
       land(false);
+      sea();
       tracks();
       if (state.view === "ensemble") outlines();
       if (state.truth) observed();
@@ -1287,7 +1299,7 @@
         items.push(
           item(swatch("", rgba(colors.blue, 0.85)), "aleatoric: the runs of one model scatter"),
           item(swatch("", rgba(colors.red, 0.85)), `epistemic: the ${groups()} disagree`),
-          item(line(ink(0.9)), "total spread, the sum of both"),
+          item(line(ink(0.9)), "total: sum of aleatoric and epistemic"),
         );
       }
       if (state.truth) items.push(item(swatch("dashed"), withTruth() ? "what happened" : "Milton's observed track"));
