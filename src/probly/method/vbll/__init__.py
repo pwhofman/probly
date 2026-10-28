@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import TORCH_MODULE, TORCH_TENSOR, TORCH_TENSOR_LIKE
+from probly.lazy_types import TORCH_MODULE, TORCH_VALUE
 
 from ._common import (
     VBLLPredictor,
@@ -16,7 +16,7 @@ from ._common import (
 
 ## Torch
 @vbll_traverser.delayed_register(TORCH_MODULE)
-@compute_vbll_categorical_sample.delayed_register((TORCH_TENSOR_LIKE, TORCH_TENSOR))
+@compute_vbll_categorical_sample.delayed_register(TORCH_VALUE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 

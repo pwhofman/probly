@@ -5,6 +5,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from probly.representation.credal_set import (
+    create_discrete_credal_set,
+    create_probability_intervals_from_lower_upper_array,
+    create_singleton_credal_set,
+)
 from probly.representation.credal_set.numpy import (
     NumpyConvexCredalSet,
     NumpyDiscreteCredalSet,
@@ -69,6 +74,17 @@ class TestNumpyDiscreteCredalSet:
         )
         credal = NumpyDiscreteCredalSet.from_numpy_sample(sample)
         assert isinstance(credal, NumpyDiscreteCredalSet)
+
+    def test_factory_from_numpy_sample(self) -> None:
+        sample = NumpySample(
+            array=NumpyProbabilityCategoricalDistribution(
+                array=np.array([[[0.5, 0.5]], [[0.3, 0.7]]]),
+            ),
+            sample_axis=0,
+        )
+        credal = create_discrete_credal_set(sample)
+        assert isinstance(credal, NumpyDiscreteCredalSet)
+        np.testing.assert_allclose(credal.array.probabilities, [[[0.5, 0.5], [0.3, 0.7]]])
 
     def test_lower_upper_barycenter(self) -> None:
         # Build a discrete credal set with two members.
@@ -179,6 +195,13 @@ class TestNumpyProbabilityIntervalsCredalSet:
         np.testing.assert_allclose(credal.lower_bounds, [[0.3, 0.5]])
         np.testing.assert_allclose(credal.upper_bounds, [[0.5, 0.7]])
 
+    def test_factory_from_lower_upper_array(self) -> None:
+        bounds = np.array([[0.1, 0.2, 0.3, 0.4, 0.5, 0.6]])
+        cred = create_probability_intervals_from_lower_upper_array(bounds)
+        assert isinstance(cred, NumpyProbabilityIntervalsCredalSet)
+        np.testing.assert_allclose(cred.lower(), [[0.1, 0.2, 0.3]])
+        np.testing.assert_allclose(cred.upper(), [[0.4, 0.5, 0.6]])
+
     def test_shape_mismatch_raises(self) -> None:
         with pytest.raises(ValueError, match="same shape"):
             NumpyProbabilityIntervalsCredalSet(
@@ -234,6 +257,14 @@ class TestNumpySingletonCredalSet:
         )
         cred = NumpySingletonCredalSet.from_numpy_sample(sample)
         assert isinstance(cred, NumpySingletonCredalSet)
+
+    @pytest.mark.parametrize("wrap", [False, True])
+    def test_factory(self, *, wrap: bool) -> None:
+        probs = np.array([[0.4, 0.6]])
+        distribution = NumpyProbabilityCategoricalDistribution(array=probs) if wrap else probs
+        cred = create_singleton_credal_set(distribution)
+        assert isinstance(cred, NumpySingletonCredalSet)
+        np.testing.assert_allclose(cred.lower(), probs)
 
     def test_lower_eq_upper(self) -> None:
         arr = NumpyProbabilityCategoricalDistribution(array=np.array([[0.4, 0.6]]))

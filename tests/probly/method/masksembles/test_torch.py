@@ -306,3 +306,42 @@ class TestWrapMasksemblesLogits:
         assert isinstance(out, TorchCategoricalDistributionSample)
         assert out.sample_dim == 1
         assert out.tensor.tensor.shape == (5, NUM_MASKS, 10)
+
+
+class TestLastLayer:
+    """The last layer, which gets no mask, is the last layer with parameters."""
+
+    def test_parameter_free_modules_after_the_output_layer_are_ignored(
+        self, torch_trailing_activation_model: nn.Module
+    ) -> None:
+        model = masksembles(
+            torch_trailing_activation_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier"
+        )
+
+        assert [type(m) for m in model.fc1] == [nn.Linear, MasksemblesLinear]
+        assert [type(m) for m in model.fc2] == [nn.Linear, MasksemblesLinear]
+        assert isinstance(model.fc3, nn.Linear)
+
+    def test_output_logits_are_not_masked(self, torch_trailing_activation_model: nn.Module) -> None:
+        model = masksembles(
+            torch_trailing_activation_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier"
+        )
+
+        x = torch.randn(5, 4)
+        with torch.no_grad():
+            sample = predict(model, x)
+            fc1, fc1_mask = model.fc1
+            fc2, fc2_mask = model.fc2
+            for i in range(NUM_MASKS):
+                # predict runs in eval mode, so the model's own dropout is the identity.
+                h = torch.relu(fc1(x) * fc1_mask.masks[i])
+                h = torch.relu(fc2(h) * fc2_mask.masks[i])
+                torch.testing.assert_close(sample.tensor[i], model.fc3(h))
+        assert not (sample.tensor == 0).any()
+
+    def test_trailing_softmax_is_ignored(self, torch_custom_model: nn.Module) -> None:
+        """The fixture registers ``nn.Softmax`` after its output layer with 4 classes."""
+        model = masksembles(torch_custom_model, num_masks=NUM_MASKS, scale=SCALE, predictor_type="logit_classifier")
+
+        assert [type(m) for m in model.linear1] == [nn.Linear, MasksemblesLinear]
+        assert isinstance(model.linear2, nn.Linear)

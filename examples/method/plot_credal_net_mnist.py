@@ -19,7 +19,7 @@ from probly.predictor import predict_raw
 from probly.quantification import quantify
 from probly.representer import representer
 from probly.losses.torch import intersection_probability_ce_loss
-from probly.utils.torch import torch_intersection_probability
+from probly.utils import intersection_probability
 from probly_benchmark.data import load_mnist
 
 from examples.utils.model import MLPClassifier
@@ -57,7 +57,7 @@ credal_model = credal_net(
 # --------
 #
 # Train the wrapped credal net directly with the intersection-probability
-# cross-entropy loss (Eq. 14 of :cite:`wangCredalDeepEnsembles2024`), which operates on
+# cross-entropy loss (Eq. 14 of :cite:`wangCreINNsCredalSet2025`), which operates on
 # the packed ``(lower, upper)`` interval output produced by ``predict_raw``.
 
 opt = torch.optim.Adam(credal_model.parameters(), lr=1e-3)
@@ -99,7 +99,7 @@ if uncertainty.ndim > 1:
 with torch.no_grad():
     raw = predict_raw(credal_model, X_test)
     n_classes = raw.shape[-1] // 2
-    mean_probs = torch_intersection_probability(raw[..., :n_classes], raw[..., n_classes:]).numpy()
+    mean_probs = intersection_probability(raw[..., :n_classes], raw[..., n_classes:]).numpy()
 
 accuracy = (mean_probs.argmax(-1) == y_test.numpy()).mean() * 100
 print(f"Test accuracy: {accuracy:.1f}%")

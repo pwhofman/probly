@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import jax
+from jax.core import Tracer
 import jax.numpy as jnp
 
 from probly.representation.sample.axis_tracking import ArrayIndex, convert_idx
 
 
-@convert_idx.register(jax.Array)
+@convert_idx.register((jax.Array, Tracer))
 def _jax_convert_array_idx(idx: jax.Array) -> ArrayIndex | bool | int:
     if idx.ndim == 0:
         if idx.dtype == jnp.bool_:

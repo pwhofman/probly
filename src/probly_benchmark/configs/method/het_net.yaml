@@ -5,11 +5,4 @@ params:
   num_factors: 15
   temperature: 0.9
   is_parameter_efficient: false
-train:
-  samples: 100
-selective_prediction:
-  num_samples: 100
-ood_detection:
-  num_samples: 100
-active_learning:
   num_samples: 100

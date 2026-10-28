@@ -9,6 +9,7 @@ import pytest
 pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
+from ndlike.jax_functions import jax_expand_dims, jax_mean, jax_moveaxis, jax_sum, jax_take_along_axis
 from scipy.special import digamma, polygamma
 from scipy.stats import dirichlet, entropy as scipy_entropy, norm
 
@@ -30,10 +31,18 @@ from probly.representation.distribution.jax_categorical import (
 )
 from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
 from probly.representation.distribution.jax_gaussian import JaxGaussianDistribution
-from probly.representation.jax_functions import jax_expand_dims, jax_mean, jax_moveaxis, jax_sum, jax_take_along_axis
 
 CATEGORICAL_BASES: tuple[float | Literal["normalize"] | None, ...] = (None, 2.0, "normalize")
 NUMERIC_BASES: tuple[float | None, ...] = (None, 2.0, 10.0)
+
+
+def test_array_entropy_supports_jit_vmap_and_grad():
+    probabilities = jnp.array([[0.7, 0.3], [0.2, 0.8]])
+    expected = -jnp.sum(probabilities * jnp.log(probabilities), axis=-1)
+    assert jnp.allclose(jax.jit(entropy)(probabilities), expected)
+    assert jnp.allclose(jax.jit(jax.vmap(entropy))(probabilities), expected)
+    gradient = jax.jit(jax.grad(lambda p: jnp.sum(entropy(p))))(probabilities)
+    assert jnp.allclose(gradient, -jnp.log(probabilities) - 1.0)
 
 
 def _resolve_categorical_base(base: float | Literal["normalize"] | None, num_classes: int) -> float | None:

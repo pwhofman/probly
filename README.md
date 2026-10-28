@@ -1,9 +1,9 @@
 # probly: Uncertainty Representation and Quantification for Machine Learning
 <div align="center">
 <picture>
-  <source srcset="docs/source/_static/readme/ecosystem_dark.png" media="(prefers-color-scheme: dark)">
-  <source srcset="docs/source/_static/readme/ecosystem_light.png" media="(prefers-color-scheme: light)">
-  <img src="docs/source/_static/readme/ecosystem_light.png" alt="probly at the center of a ring of the libraries it works with: PyTorch, Flax/JAX, scikit-learn, River, Hugging Face and NumPy as native backends, plus Lightning, torch-uncertainty, PyTorch Geometric, laplace-torch and GPyTorch as integrations" width="68%" />
+  <source srcset="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/logo/probly-logo-stacked-dark.svg" media="(prefers-color-scheme: dark)">
+  <source srcset="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/logo/probly-logo-stacked-light.svg" media="(prefers-color-scheme: light)">
+  <img src="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/logo/probly-logo-stacked-light.svg" alt="probly logo" width="180" />
 </picture>
 
 [![PyPI version](https://badge.fury.io/py/probly.svg)](https://badge.fury.io/py/probly)
@@ -15,7 +15,7 @@
 [![Tests](https://github.com/pwhofman/probly/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/pwhofman/probly/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/pwhofman/probly/branch/main/graph/badge.svg)](https://codecov.io/gh/pwhofman/probly)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://pwhofman.github.io/probly)
-[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](.github/CONTRIBUTING.md)
+[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](https://github.com/pwhofman/probly/blob/main/.github/CONTRIBUTING.md)
 [![Last Commit](https://img.shields.io/github/last-commit/pwhofman/probly)](https://github.com/pwhofman/probly/commits/main)
 </div>
 
@@ -29,6 +29,13 @@ Hugging Face model uncertainty-aware in a single line, then **represent**, **qua
 and **decompose** its predictive uncertainty into **aleatoric** and **epistemic** components.
 It ships 40+ methods ranging from Bayesian nets and deep ensembles to evidential, credal, and
 conformal prediction, all accessible via the same unified API.
+
+- **Native backends:** [PyTorch](https://docs.pytorch.org/docs/stable/), [Flax / JAX](https://flax.readthedocs.io/en/latest/),
+  [scikit-learn](https://scikit-learn.org/stable/), [River](https://riverml.xyz/latest/),
+  [Hugging Face](https://huggingface.co/docs/transformers/index), [NumPy](https://numpy.org/doc/stable/)
+- **Integrations:** [Lightning](https://lightning.ai/docs/pytorch/stable/), [torch-uncertainty](https://torch-uncertainty.github.io/),
+  [PyTorch Geometric](https://pytorch-geometric.readthedocs.io/en/latest/), [laplace-torch](https://aleximmer.github.io/Laplace/),
+  [GPyTorch](https://gpytorch.ai/)
 
 
 ## 🛠️ Install
@@ -83,9 +90,9 @@ Swap `dropout` for `ensemble`, `bayesian`, `laplace`, or any other method listed
 
 <div align="center">
   <picture>
-    <source srcset="docs/source/_static/readme/from_paper/paper_benchmark_dark.png" media="(prefers-color-scheme: dark)">
-    <source srcset="docs/source/_static/readme/from_paper/paper_benchmark_light.png" media="(prefers-color-scheme: light)">
-    <img src="docs/source/_static/readme/from_paper/paper_benchmark_light.png" alt="Bar charts of out-of-distribution detection AUROC for 20+ uncertainty methods on ImageNet with a ResNet50, far-OoD on the left and near-OoD on the right" width="100%" />
+    <source srcset="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/from_paper/paper_benchmark_dark.png" media="(prefers-color-scheme: dark)">
+    <source srcset="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/from_paper/paper_benchmark_light.png" media="(prefers-color-scheme: light)">
+    <img src="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/from_paper/paper_benchmark_light.png" alt="Bar charts of out-of-distribution detection AUROC for 20+ uncertainty methods on ImageNet with a ResNet50, far-OoD on the left and near-OoD on the right" width="100%" />
   </picture>
   <br />
   <em>Out-of-distribution detection on ImageNet, far and near, mean over three runs.</em>
@@ -93,9 +100,9 @@ Swap `dropout` for `ensemble`, `bayesian`, `laplace`, or any other method listed
 
 <div align="center">
   <picture>
-    <source srcset="docs/source/_static/readme/from_paper/paper_ood_histogram_dark.png" media="(prefers-color-scheme: dark)">
-    <source srcset="docs/source/_static/readme/from_paper/paper_ood_histogram_light.png" media="(prefers-color-scheme: light)">
-    <img src="docs/source/_static/readme/from_paper/paper_ood_histogram_light.png" alt="Histogram of the uncertainty scores a credal Bayesian neural network assigns to in-distribution ImageNet images and to out-of-distribution iNaturalist images, with the ImageNet scores piling up near zero" width="55%" />
+    <source srcset="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/from_paper/paper_ood_histogram_dark.png" media="(prefers-color-scheme: dark)">
+    <source srcset="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/from_paper/paper_ood_histogram_light.png" media="(prefers-color-scheme: light)">
+    <img src="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/from_paper/paper_ood_histogram_light.png" alt="Histogram of the uncertainty scores a credal Bayesian neural network assigns to in-distribution ImageNet images and to out-of-distribution iNaturalist images, with the ImageNet scores piling up near zero" width="55%" />
   </picture>
   <br />
   <em>The same result up close: a credal BNN scores in-distribution ImageNet near zero and out-of-distribution iNaturalist much higher.<br />See the <a href="https://pwhofman.github.io/probly">docs</a> for the full benchmark.</em>
@@ -124,9 +131,9 @@ collecting more samples won’t help. A single confidence score cannot distingui
 
 <div align="center">
   <picture>
-    <source srcset="docs/source/_static/readme/from_paper/paper_workflow_dark.png" media="(prefers-color-scheme: dark)">
-    <source srcset="docs/source/_static/readme/from_paper/paper_workflow_light.png" media="(prefers-color-scheme: light)">
-    <img src="docs/source/_static/readme/from_paper/paper_workflow_light.png" alt="The four-stage probly workflow: transform a model to make it uncertainty-aware, represent its predictive uncertainty, quantify and decompose it into total, epistemic and aleatoric parts, decide based on it, and evaluate the result in a downstream task" width="100%" />
+    <source srcset="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/from_paper/paper_workflow_dark.png" media="(prefers-color-scheme: dark)">
+    <source srcset="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/from_paper/paper_workflow_light.png" media="(prefers-color-scheme: light)">
+    <img src="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/from_paper/paper_workflow_light.png" alt="The four-stage probly workflow: transform a model to make it uncertainty-aware, represent its predictive uncertainty, quantify and decompose it into total, epistemic and aleatoric parts, decide based on it, and evaluate the result in a downstream task" width="100%" />
   </picture>
   <br />
   <em><strong>transform</strong> a model to carry uncertainty, <strong>represent</strong> its predictions, <strong>quantify</strong> and <strong>decide</strong>, then <strong>evaluate</strong> on a task.</em>
@@ -144,9 +151,9 @@ What differs between each method is how it represents uncertainty. `probly` cove
 
 <div align="center">
   <picture>
-    <source srcset="docs/source/_static/readme/from_paper/paper_representations_dark.png" media="(prefers-color-scheme: dark)">
-    <source srcset="docs/source/_static/readme/from_paper/paper_representations_light.png" media="(prefers-color-scheme: light)">
-    <img src="docs/source/_static/readme/from_paper/paper_representations_light.png" alt="Uncertainty representations arranged from zeroth to second order, shown for classification on a probability simplex over dog, fox and cat, and for regression in the mean-standard-deviation plane: single outcome, set of outcomes, probability distribution, samples of a distribution over distributions, a distribution over distributions, and a set of distributions" width="100%" />
+    <source srcset="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/from_paper/paper_representations_dark.png" media="(prefers-color-scheme: dark)">
+    <source srcset="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/from_paper/paper_representations_light.png" media="(prefers-color-scheme: light)">
+    <img src="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/from_paper/paper_representations_light.png" alt="Uncertainty representations arranged from zeroth to second order, shown for classification on a probability simplex over dog, fox and cat, and for regression in the mean-standard-deviation plane: single outcome, set of outcomes, probability distribution, samples of a distribution over distributions, a distribution over distributions, and a set of distributions" width="100%" />
   </picture>
   <br />
   <em>Range of uncertainty representations: single outcome to set of probability distributions. All methods implemented in probly fall along this range.</em>
@@ -157,7 +164,7 @@ What differs between each method is how it represents uncertainty. `probly` cove
 These methods transform a point predictor into a model that outputs a distribution over possible distributions. Instead of returning a single prediction, they learn a higher-order probabilistic model where predictions are expressed as probability distributions. This can be achieved by stochastic sampling, ensembling, estimating feature-space distance to training data, or by parameterizing it with an evidential output head.
 
 <details>
-<summary><strong>Show all 23 methods</strong></summary>
+<summary><strong>Show all 24 methods</strong></summary>
 
 <a id="second-order-table"></a>
 
@@ -171,6 +178,7 @@ These methods transform a point predictor into a model that outputs a distributi
 | Deep ensembles (`ensemble`) | [Lakshminarayanan et al., 2017](https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html) | torch · flax · sklearn · river |
 | BatchEnsemble (`batchensemble`) | [Wen et al., 2020](https://openreview.net/forum?id=Sklf1yrYDr) | torch · flax |
 | Sub-ensembles (`subensemble`) | [Valdenegro-Toro, 2019](https://arxiv.org/abs/1910.08168) | torch · flax |
+| Masksembles (`masksembles`) | [Durasov et al., 2021](https://doi.org/10.1109/CVPR46437.2021.01333) | torch |
 | Deep anti-regularized ensembles (`dare`)[¹](#fn-so-1) | [de Mathelin et al., 2023](https://doi.org/10.48550/arXiv.2304.04042) | torch |
 | Deterministic uncertainty quantification (`duq`) | [van Amersfoort et al., 2020](http://proceedings.mlr.press/v119/van-amersfoort20a.html) | torch |
 | Deep deterministic uncertainty (`ddu`) | [Mukhoti et al., 2023](https://doi.org/10.1109/CVPR52729.2023.02336) | torch |
@@ -205,7 +213,7 @@ Instead of committing to a single second-order distribution, credal methods repr
 | Credal wrapper (`credal_wrapper`)[¹](#fn-credal-1)                                              | [Wang et al., 2025](https://openreview.net/forum?id=cv2iMNWCsh) | torch |
 | Credal ensembling (`credal_ensembling`)[¹](#fn-credal-1)                                        | [Nguyen et al., 2025](https://doi.org/10.1007/s10994-024-06703-y) | torch |
 | Credal Bayesian deep learning (`credal_bnn`)[¹](#fn-credal-1)                                   | [Caprio et al., 2024](https://openreview.net/forum?id=4NHF9AC5ui) | torch |
-| Credal nets (`credal_net`)[¹](#fn-credal-1)                                                     | [Sale et al., 2024](https://openreview.net/forum?id=VJjjNrUi8j) | torch |
+| Credal nets (`credal_net`)[¹](#fn-credal-1)                                                     | [Wang et al., 2025](https://doi.org/10.1016/j.neunet.2025.107198) | torch |
 | Relative-likelihood credal prediction (`credal_relative_likelihood`)[¹](#fn-credal-1)           | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | torch |
 | Class-bias ensembles (`class_bias_ensemble`)[²](#fn-credal-2)                                   | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | torch |
 | Efficient credal prediction (`efficient_credal_prediction`)[³](#fn-credal-3)                    | [Hofman et al., 2026](https://doi.org/10.48550/arXiv.2603.08495) | torch |
@@ -268,7 +276,7 @@ The preceding methods produce a **representation**. To interpret these, `quantif
 - **Credal sets**: `upper_entropy`, `lower_entropy`, `generalized_hartley`, `min_expected_total_variation`
 - **Conformal sets**: `conformal_set_size`
 - **Embeddings and text**: `spectral_entropy`, `semantic_entropy`
-- **Scoring rules**: `BrierLoss`, `LogLoss`, `SphericalLoss`, `ZeroOneLoss`
+- **Scoring rules** (from `probly.metrics`, for `SecondOrderScoringRuleDecomposition`): `brier_loss_per_instance`, `log_loss_per_instance`, `spherical_loss_per_instance`, `zero_one_loss_per_instance`
 
 Browse the full [API reference](https://pwhofman.github.io/probly/stable/api.html) and the [examples gallery](https://pwhofman.github.io/probly/stable/examples.html) for the complete picture.
 
@@ -278,9 +286,9 @@ The same machinery applies to text generation. Sample several answers to a quest
 
 <div align="center">
   <picture>
-    <source srcset="docs/source/_static/readme/llm_uncertainty_demo_dark.svg" media="(prefers-color-scheme: dark)">
-    <source srcset="docs/source/_static/readme/llm_uncertainty_demo_light.svg" media="(prefers-color-scheme: light)">
-    <img src="docs/source/_static/readme/llm_uncertainty_demo_light.svg" alt="Animated demo: a factual question collapses to one meaning with zero uncertainty, while a trick question scatters into seven meanings with high uncertainty, flagging a likely hallucination" width="100%" />
+    <source srcset="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/llm_uncertainty_demo_dark.svg" media="(prefers-color-scheme: dark)">
+    <source srcset="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/llm_uncertainty_demo_light.svg" media="(prefers-color-scheme: light)">
+    <img src="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/llm_uncertainty_demo_light.svg" alt="Animated demo: a factual question collapses to one meaning with zero uncertainty, while a trick question scatters into seven meanings with high uncertainty, flagging a likely hallucination" width="100%" />
   </picture>
 </div>
 
@@ -309,7 +317,7 @@ for question, tu, au, eu in zip(questions, uq.total, uq.aleatoric, uq.epistemic)
     print(f"{question:<45} TU={tu:.3f}  AU={au:.3f}  EU={eu:.3f}")
 ```
 
-The factual question collapses into a single semantic cluster, so the entropy is near zero. The trick question scatters across many clusters, which flags a likely hallucination. See [`examples/llm/semantic_entropy.py`](examples/llm/semantic_entropy.py) for the full pipeline and [`examples/llm/spectral_uncertainty.py`](examples/llm/spectral_uncertainty.py) for an embedding-based alternative.
+The factual question collapses into a single semantic cluster, so the entropy is near zero. The trick question scatters across many clusters, which flags a likely hallucination. See [`examples/llm/semantic_entropy.py`](https://github.com/pwhofman/probly/blob/main/examples/llm/semantic_entropy.py) for the full pipeline and [`examples/llm/spectral_uncertainty.py`](https://github.com/pwhofman/probly/blob/main/examples/llm/spectral_uncertainty.py) for an embedding-based alternative.
 
 ## 📈 Uncertainty for regression
 
@@ -317,9 +325,9 @@ For regression, epistemic uncertainty shows up as a band around the prediction. 
 
 <div align="center">
   <picture>
-    <source srcset="docs/source/_static/readme/regression_uncertainty_dark.svg" media="(prefers-color-scheme: dark)">
-    <source srcset="docs/source/_static/readme/regression_uncertainty_light.svg" media="(prefers-color-scheme: light)">
-    <img src="docs/source/_static/readme/regression_uncertainty_light.svg" alt="Deep-ensemble regression on a 1D sine dataset with a gap in the middle: the predicted mean tracks the data while the uncertainty band stays tight over the two training regions and balloons in the central gap and beyond the data range" width="100%" />
+    <source srcset="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/regression_uncertainty_dark.svg" media="(prefers-color-scheme: dark)">
+    <source srcset="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/regression_uncertainty_light.svg" media="(prefers-color-scheme: light)">
+    <img src="https://raw.githubusercontent.com/pwhofman/probly/main/docs/source/_static/readme/regression_uncertainty_light.svg" alt="Deep-ensemble regression on a 1D sine dataset with a gap in the middle: the predicted mean tracks the data while the uncertainty band stays tight over the two training regions and balloons in the central gap and beyond the data range" width="100%" />
   </picture>
 </div>
 
@@ -359,14 +367,14 @@ std = unc.epistemic.sqrt()  # wide where members disagree, i.e. away from data
 # plot mean ± 2 * std to reproduce the band above
 ```
 
-The band is tight where the model has seen data and wide in the gap and past the edges, which is exactly where an ensemble should be unsure. `SecondOrderVarianceDecomposition` also exposes `.total` and `.aleatoric`, so you can separate disagreement between members (epistemic) from irreducible noise (aleatoric). See [`examples/quantification/plot_ensemble_regression.py`](examples/quantification/plot_ensemble_regression.py) for the full walkthrough.
+The band is tight where the model has seen data and wide in the gap and past the edges, which is exactly where an ensemble should be unsure. `SecondOrderVarianceDecomposition` also exposes `.total` and `.aleatoric`, so you can separate disagreement between members (epistemic) from irreducible noise (aleatoric). See [`examples/quantification/plot_ensemble_regression.py`](https://github.com/pwhofman/probly/blob/main/examples/quantification/plot_ensemble_regression.py) for the full walkthrough.
 
 ## 📖 Documentation with tutorials
 
 New to `probly`? Start with the [user guide](https://pwhofman.github.io/probly/stable/user_guide.html) and the [examples gallery](https://pwhofman.github.io/probly/stable/examples.html). The full [documentation](https://pwhofman.github.io/probly) covers the entire workflow, including the [API reference](https://pwhofman.github.io/probly/stable/api.html).
 
 ## 🤝 Contributing
-Contributions are welcome - see [CONTRIBUTING.md](.github/CONTRIBUTING.md) for guidelines on adding methods, representations, or evaluation protocols.
+Contributions are welcome - see [CONTRIBUTING.md](https://github.com/pwhofman/probly/blob/main/.github/CONTRIBUTING.md) for guidelines on adding methods, representations, or evaluation protocols.
 
 ## 📜 License
 This project is licensed under the [MIT License](https://github.com/pwhofman/probly/blob/main/LICENSE).

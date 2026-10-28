@@ -7,13 +7,7 @@ import pytest
 pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
-import numpy as np
-
-from probly.representation.distribution.jax_categorical import (
-    JaxLogitCategoricalDistribution,
-    JaxProbabilityCategoricalDistribution,
-)
-from probly.representation.jax_functions import (
+from ndlike.jax_functions import (
     jax_average,
     jax_concatenate,
     jax_conj,
@@ -32,7 +26,13 @@ from probly.representation.jax_functions import (
     jax_transpose,
     jax_var,
 )
-from probly.representation.jax_like import JaxLikeImplementation, to_jax_like
+from ndlike.jax_like import JaxLikeImplementation, to_jax_like
+import numpy as np
+
+from probly.representation.distribution.jax_categorical import (
+    JaxLogitCategoricalDistribution,
+    JaxProbabilityCategoricalDistribution,
+)
 from probly.representation.sample.jax import JaxSample
 from probly.representation.sample.numpy import NumpySample
 
@@ -240,6 +240,16 @@ class TestJaxSampleEdgeCases:
 
         s = JaxSample(jnp.arange(6).reshape(2, 3), sample_axis=0)
         assert s.device is not None
+
+    @pytest.mark.parametrize("wrapped", [False, True])
+    def test_sharding_and_devices_delegate_to_array(self, wrapped: bool) -> None:
+        array = jnp.ones((2, 3))
+        if wrapped:
+            array = JaxProbabilityCategoricalDistribution(array)
+        sample = JaxSample(array, sample_axis=0)
+
+        assert sample.sharding is array.sharding
+        assert sample.devices() == array.devices()
 
     def test_array_namespace(self) -> None:
         _, jnp = _jax_modules()
@@ -556,6 +566,47 @@ class TestJaxSampleIsJaxLike:
 
 class TestJaxFunctionReductions:
     """``__jax_function__`` keeps the sample axis in sync across reductions."""
+
+    @pytest.mark.parametrize("function", [jax_mean, jax_sum, jax_std, jax_var, jax_average])
+    @pytest.mark.parametrize("axis", [1, -2, (0, 1), None])
+    @pytest.mark.parametrize("keepdims", [False, True])
+    @pytest.mark.parametrize("weighted", [False, True])
+    def test_reducing_sample_axis_drops_wrapper_independently_of_keepdims(
+        self, function, axis, keepdims, weighted
+    ) -> None:
+        array = jnp.arange(24.0).reshape(2, 3, 4)
+        sample = JaxSample(array, 1, jnp.arange(1.0, 4.0) if weighted else None)
+
+        result = function(sample, axis=axis, keepdims=keepdims)
+        expected = function(array, axis=axis, keepdims=keepdims)
+
+        assert isinstance(result, jax.Array)
+        np.testing.assert_allclose(result, expected, rtol=1e-6)
+        assert result.shape == expected.shape
+
+    @pytest.mark.parametrize("axis", [0, 2, (0, 2), ()])
+    @pytest.mark.parametrize("keepdims", [False, True])
+    def test_reducing_other_axes_preserves_weights(self, axis, keepdims) -> None:
+        array = jnp.arange(24.0).reshape(2, 3, 4)
+        weights = jnp.arange(1.0, 4.0)
+        sample = JaxSample(array, 1, weights)
+
+        result = jax_mean(sample, axis=axis, keepdims=keepdims)
+        expected = jnp.mean(array, axis=axis, keepdims=keepdims)
+
+        assert isinstance(result, JaxSample)
+        assert result.sample_axis == (1 if keepdims or axis in (2, ()) else 0)
+        np.testing.assert_allclose(result.array, expected)
+        np.testing.assert_array_equal(result.weights, weights)
+
+    def test_jit_reduction_drops_wrapper_but_keeps_shape(self) -> None:
+        sample = JaxSample(jnp.arange(24.0).reshape(2, 3, 4), 1, jnp.arange(1.0, 4.0))
+
+        result = jax.jit(lambda value: jax_mean(value, axis=1, keepdims=True))(sample)
+
+        assert isinstance(result, jax.Array)
+        np.testing.assert_allclose(result, jnp.mean(sample.array, axis=1, keepdims=True))
+        assert result.shape == (2, 1, 4)
 
     @pytest.mark.parametrize("func", [jax_mean, jax_sum, jax_std, jax_var, jax_average])
     def test_reduction_over_other_axis_shifts_sample_axis(self, sample_3d: JaxSample, func: object) -> None:

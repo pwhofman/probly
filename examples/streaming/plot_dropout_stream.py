@@ -3,7 +3,7 @@ MC-Dropout uncertainty on a 2-D stream
 =========================================
 
 A tiny PyTorch MLP trained one sample at a time on a 2-D classification
-stream. Wrapping the network with :func:`~probly.method.dropout.dropout`
+stream. Wrapping the network with :func:`~probly.method.dropout`
 makes dropout layers active during inference, so a single
 :func:`~probly.representer.representer` + :func:`~probly.quantification.quantify`
 call gives an MC-Dropout uncertainty decomposition on every step.
@@ -23,10 +23,7 @@ from torch import nn
 
 from probly.method.dropout import dropout
 from probly.quantification import quantify
-from probly.representation.distribution.torch_categorical import (
-    TorchCategoricalDistribution,
-    TorchProbabilityCategoricalDistribution,
-)
+from probly.representation.distribution import CategoricalDistribution, create_categorical_distribution
 from probly.representer import representer
 
 torch.manual_seed(0)
@@ -47,8 +44,8 @@ class TinyNet(nn.Module):
             nn.Linear(16, 2),
         )
 
-    def forward(self, x: torch.Tensor) -> TorchCategoricalDistribution:
-        return TorchProbabilityCategoricalDistribution(torch.softmax(self.net(x), dim=-1))
+    def forward(self, x: torch.Tensor) -> CategoricalDistribution:
+        return create_categorical_distribution(torch.softmax(self.net(x), dim=-1))
 
 
 base = TinyNet()

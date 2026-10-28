@@ -1,6 +1,6 @@
 """Measures for distributions."""
 
-from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
+from probly.lazy_types import JAX_VALUE, TORCH_VALUE
 
 from ._common import (
     DEFAULT_MEAN_FIELD_FACTOR,
@@ -31,34 +31,34 @@ from .numpy import (
 )
 
 
-@entropy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@entropy_of_expected_predictive_distribution.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@conditional_entropy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@mutual_information.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@generalized_entropy_of_expected.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@expected_generalized_entropy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@max_probability_complement_of_expected.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@expected_max_probability_complement.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@max_disagreement.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@min_expected_total_variation.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@vacuity.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@dempster_shafer_uncertainty.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@entropy.delayed_register(TORCH_VALUE)
+@entropy_of_expected_predictive_distribution.delayed_register(TORCH_VALUE)
+@conditional_entropy.delayed_register(TORCH_VALUE)
+@mutual_information.delayed_register(TORCH_VALUE)
+@generalized_entropy_of_expected.delayed_register(TORCH_VALUE)
+@expected_generalized_entropy.delayed_register(TORCH_VALUE)
+@max_probability_complement_of_expected.delayed_register(TORCH_VALUE)
+@expected_max_probability_complement.delayed_register(TORCH_VALUE)
+@max_disagreement.delayed_register(TORCH_VALUE)
+@min_expected_total_variation.delayed_register(TORCH_VALUE)
+@vacuity.delayed_register(TORCH_VALUE)
+@dempster_shafer_uncertainty.delayed_register(TORCH_VALUE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-@entropy.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@entropy_of_expected_predictive_distribution.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@conditional_entropy.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@mutual_information.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@generalized_entropy_of_expected.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@expected_generalized_entropy.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@max_probability_complement_of_expected.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@expected_max_probability_complement.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@max_disagreement.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@min_expected_total_variation.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@vacuity.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@dempster_shafer_uncertainty.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@entropy.delayed_register(JAX_VALUE)
+@entropy_of_expected_predictive_distribution.delayed_register(JAX_VALUE)
+@conditional_entropy.delayed_register(JAX_VALUE)
+@mutual_information.delayed_register(JAX_VALUE)
+@generalized_entropy_of_expected.delayed_register(JAX_VALUE)
+@expected_generalized_entropy.delayed_register(JAX_VALUE)
+@max_probability_complement_of_expected.delayed_register(JAX_VALUE)
+@expected_max_probability_complement.delayed_register(JAX_VALUE)
+@max_disagreement.delayed_register(JAX_VALUE)
+@min_expected_total_variation.delayed_register(JAX_VALUE)
+@vacuity.delayed_register(JAX_VALUE)
+@dempster_shafer_uncertainty.delayed_register(JAX_VALUE)
 def _(_: type) -> None:
     from . import jax as jax  # noqa: PLC0415
 

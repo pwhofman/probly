@@ -4,6 +4,9 @@ in many forms. If you have an idea for a new feature, a bug fix, or
 any other suggestion for improvement, please open an issue on GitHub.
 If you would like to contribute code, keep reading!
 
+The [contributing section of the documentation](https://pwhofman.github.io/probly/stable/contributing/index.html)
+goes further: a step-by-step recipe for adding a new method, and the design it plugs into.
+
 ## What to work on ❓
 We want to offer support for PyTorch, HuggingFace, and sklearn models. We are interested in
 any contributions that translate existing features to these libraries. Furthermore, we are
@@ -41,7 +44,7 @@ Here are some guidelines to follow when contributing to probly.
 ### General
 If you use code from other sources, make sure to carefully look at the license and give credit to the original author(s).
 If the feature you are implementing is based on a paper, make sure to include a reference
-in the docstring.
+in the docstring. Please make sure to follow the [design principles](../docs/design/principles.md).
 
 ### Code style
 We use [Ruff](https://docs.astral.sh/ruff/) for linting and formatting, the rules of which can be found in the [pyproject.toml](https://github.com/pwhofman/probly/blob/main/pyproject.toml) file.

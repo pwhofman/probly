@@ -10,6 +10,7 @@ pytest.importorskip("jax")
 import jax
 from jax.experimental import checkify
 import jax.numpy as jnp
+from ndlike.jax_functions import jax_expand_dims, jax_matrix_transpose
 
 from probly.representation.credal_set._common import (
     create_distance_based_credal_set_from_center_and_radius,
@@ -24,7 +25,6 @@ from probly.representation.distribution.jax_categorical import (
     JaxLogitCategoricalDistribution,
     JaxProbabilityCategoricalDistribution,
 )
-from probly.representation.jax_functions import jax_expand_dims, jax_matrix_transpose
 from probly.representation.sample.jax import JaxSample
 
 

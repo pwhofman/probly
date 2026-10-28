@@ -107,7 +107,7 @@ def cvar_ce_loss(output: Tensor, targets: Tensor, delta: float) -> Tensor:
 
 
 def intersection_probability_ce_loss(output: Tensor, targets: Tensor) -> Tensor:
-    """Intersection-probability cross-entropy loss from :cite:`wangCredalDeepEnsembles2024`.
+    """Intersection-probability cross-entropy loss from :cite:`wangCreINNsCredalSet2025`.
 
     Implements Eq. 14 for interval-valued predictions. Splits the packed
     ``(B, 2C)`` interval output into ``(lower, upper)``, computes the

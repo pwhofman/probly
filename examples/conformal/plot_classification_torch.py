@@ -3,10 +3,10 @@ Classification Conformal Prediction — PyTorch
 =============================================
 
 Demonstrate all four classification non-conformity scores
-(:func:`~probly.conformal.scores.lac_score`,
-:class:`~probly.conformal.scores.APSScore`,
-:class:`~probly.conformal.scores.RAPSScore`,
-:class:`~probly.conformal.scores.SAPSScore`)
+(:func:`~probly.conformal_scores.lac_score`,
+:class:`~probly.conformal_scores.aps.APSScore`,
+:class:`~probly.conformal_scores.raps.RAPSScore`,
+:class:`~probly.conformal_scores.saps.SAPSScore`)
 using a small :class:`~torch.nn.Module` on the Iris dataset.
 
 Each score uses its own conformal wrapper. During calibration the conformal quantile

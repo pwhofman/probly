@@ -26,13 +26,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from probly.plot import PlotConfig, plot_credal_set
-from probly.representation.credal_set.numpy import (
-    NumpyConvexCredalSet,
-    NumpyDiscreteCredalSet,
-    NumpyDistanceBasedCredalSet,
-    NumpyProbabilityIntervalsCredalSet,
-    NumpySingletonCredalSet,
+from probly.representation.credal_set import (
+    create_convex_credal_set,
+    create_discrete_credal_set,
+    create_distance_based_credal_set_from_center_and_radius,
+    create_probability_intervals_from_lower_upper_array,
+    create_singleton_credal_set,
 )
+from probly.representation.distribution import create_categorical_distribution
+from probly.representation.sample import create_sample
 
 # %%
 # Singleton credal set
@@ -40,9 +42,7 @@ from probly.representation.credal_set.numpy import (
 # A single probability distribution per instance, shown as a point on the
 # line.
 
-singleton = NumpySingletonCredalSet(
-    array=np.array([[0.3, 0.7], [0.6, 0.4]]),
-)
+singleton = create_singleton_credal_set(np.array([[0.3, 0.7], [0.6, 0.4]]))
 plot_credal_set(singleton, title="Singleton (binary)")
 plt.show()
 
@@ -51,9 +51,10 @@ plt.show()
 # ---------------------
 # Per-class lower and upper bounds define a feasible interval on the line.
 
-intervals = NumpyProbabilityIntervalsCredalSet(
-    lower_bounds=np.array([[0.2, 0.4], [0.5, 0.1]]),
-    upper_bounds=np.array([[0.6, 0.8], [0.9, 0.5]]),
+lower_bounds = np.array([[0.2, 0.4], [0.5, 0.1]])
+upper_bounds = np.array([[0.6, 0.8], [0.9, 0.5]])
+intervals = create_probability_intervals_from_lower_upper_array(
+    np.concatenate([lower_bounds, upper_bounds], axis=-1),
 )
 plot_credal_set(intervals, title="Probability Intervals (binary)")
 plt.show()
@@ -64,9 +65,9 @@ plt.show()
 # A nominal distribution and a radius.  The shaded band covers all
 # distributions within total-variation distance; the marker shows the nominal.
 
-distance_based = NumpyDistanceBasedCredalSet(
-    nominal=np.array([[0.4, 0.6], [0.7, 0.3]]),
-    radius=np.array([0.15, 0.15]),
+distance_based = create_distance_based_credal_set_from_center_and_radius(
+    create_categorical_distribution(np.array([[0.4, 0.6], [0.7, 0.3]])),
+    np.array([0.15, 0.15]),
 )
 plot_credal_set(distance_based, title="Distance-Based (binary)")
 plt.show()
@@ -77,14 +78,13 @@ plt.show()
 # Explicit vertex distributions.  The band spans from the minimum to the
 # maximum P(class 2) across vertices, with markers at each vertex.
 
-convex = NumpyConvexCredalSet(
-    array=np.array(
-        [
-            [[0.7, 0.3], [0.2, 0.8], [0.5, 0.5]],
-            [[0.4, 0.6], [0.1, 0.9], [0.3, 0.7]],
-        ]
-    ),
-)
+# Each vertex is given for both instances.
+vertices = [
+    create_categorical_distribution(np.array([[0.7, 0.3], [0.4, 0.6]])),
+    create_categorical_distribution(np.array([[0.2, 0.8], [0.1, 0.9]])),
+    create_categorical_distribution(np.array([[0.5, 0.5], [0.3, 0.7]])),
+]
+convex = create_convex_credal_set(create_sample(vertices, sample_axis=0))
 plot_credal_set(convex, title="Convex (binary)")
 plt.show()
 
@@ -94,21 +94,19 @@ plt.show()
 # Like the convex case but represents a finite set of distributions rather
 # than their convex hull.
 
-discrete = NumpyDiscreteCredalSet(
-    array=np.array(
-        [
-            [[0.8, 0.2], [0.3, 0.7]],
-            [[0.6, 0.4], [0.4, 0.6]],
-        ]
-    ),
-)
+# Each member is given for both instances.
+members = [
+    create_categorical_distribution(np.array([[0.8, 0.2], [0.6, 0.4]])),
+    create_categorical_distribution(np.array([[0.3, 0.7], [0.4, 0.6]])),
+]
+discrete = create_discrete_credal_set(create_sample(members, sample_axis=0))
 plot_credal_set(discrete, title="Discrete (binary)")
 plt.show()
 
 # %%
 # Custom labels and configuration
 # --------------------------------
-# Pass class labels and a :class:`~probly.plot.PlotConfig` to customise the
+# Pass class labels and a :class:`~probly.plot.config.PlotConfig` to customise the
 # appearance.
 
 config = PlotConfig(fill_alpha=0.5, line_width=2.5, marker_size=60)

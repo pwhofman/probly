@@ -6,6 +6,8 @@ the Gaussian Mixture head used by DDU and DEUP, and the spectral-norm helpers.
 
 from __future__ import annotations
 
+import math
+
 import pytest
 
 
@@ -113,6 +115,62 @@ class TestIntLinear:
         lo, hi = out[..., :3], out[..., 3:]
         assert torch.all(lo <= hi + 1e-6)
 
+    def test_radii_receive_gradient_at_initialization(self) -> None:
+        """Every weight and bias radius of a fresh layer gets the gradient of the interval width."""
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntLinear, pack_interval  # noqa: PLC0415
+
+        torch.manual_seed(0)
+        layer = IntLinear(in_features=4, out_features=3)
+        x = torch.rand(5, 4) + 0.1
+        out = layer(pack_interval(x, channel_dim=1))
+        (out[..., 3:] - out[..., :3]).sum().backward()
+        # For a point input x >= 0 the width is 2 * (radius_weight @ x + radius_bias), summed over 5 samples.
+        torch.testing.assert_close(layer.radius_bias.grad, torch.full((3,), 2.0 * 5))
+        torch.testing.assert_close(layer.radius_weight.grad, (2.0 * x.sum(0)).expand(3, 4))
+
+    def test_radius_parameter_at_exactly_zero_still_trains(self) -> None:
+        """A radius parameter at exactly 0 gets the gradient of the interval width, so it can move away from 0."""
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntLinear, pack_interval  # noqa: PLC0415
+
+        layer = IntLinear(in_features=2, out_features=1)
+        with torch.no_grad():
+            layer.center_weight.fill_(1.0)
+            layer.radius_weight.zero_()
+            layer.center_bias.zero_()
+            layer.radius_bias.zero_()
+        x = torch.tensor([[1.0, 2.0]])
+        out = layer(pack_interval(x, channel_dim=1))
+        # All radii are 0, so the interval is the point 1 * 1 + 1 * 2 = 3.
+        torch.testing.assert_close(out, torch.tensor([[3.0, 3.0]]))
+        (out[..., 1] - out[..., 0]).sum().backward()
+        # The width 2 * (|radius_weight| @ x + |radius_bias|) grows from 0 with slopes 2 * x and 2.
+        torch.testing.assert_close(layer.radius_weight.grad, torch.tensor([[2.0, 4.0]]))
+        torch.testing.assert_close(layer.radius_bias.grad, torch.tensor([2.0]))
+
+    def test_negative_radius_parameter_is_set_to_zero_before_use(self) -> None:
+        """A radius parameter below zero is projected to zero, and it can still grow again."""
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntLinear, pack_interval  # noqa: PLC0415
+
+        layer = IntLinear(in_features=2, out_features=1)
+        with torch.no_grad():
+            layer.center_weight.fill_(1.0)
+            layer.radius_weight.fill_(-0.5)
+            layer.center_bias.zero_()
+            layer.radius_bias.fill_(-0.25)
+        x = torch.tensor([[1.0, 2.0]])
+        out = layer(pack_interval(x, channel_dim=1))
+        # The radii are zero now, so the interval is the point 1 * 1 + 1 * 2 = 3.
+        torch.testing.assert_close(layer.radius_weight.detach(), torch.zeros(1, 2))
+        torch.testing.assert_close(layer.radius_bias.detach(), torch.zeros(1))
+        torch.testing.assert_close(out, torch.tensor([[3.0, 3.0]]))
+        (out[..., 1] - out[..., 0]).sum().backward()
+        # d(width)/d(radius) = 2 * x and 2, so the radii receive a gradient at zero.
+        torch.testing.assert_close(layer.radius_weight.grad, torch.tensor([[2.0, 4.0]]))
+        torch.testing.assert_close(layer.radius_bias.grad, torch.tensor([2.0]))
+
 
 class TestIntConv2d:
     """Interval-arithmetic 2D convolution."""
@@ -174,6 +232,65 @@ class TestIntConv2d:
         assert layer.kernel_size == (3, 5)
         assert layer.padding == (1, 2)
         assert layer.stride == (2, 1)
+
+    def test_radii_receive_gradient_at_initialization(self) -> None:
+        """Every weight and bias radius of a fresh layer gets the gradient of the interval width."""
+        torch, _ = _torch_modules()
+        import torch.nn.functional as F  # noqa: PLC0415
+
+        from probly.layers.torch import IntConv2d, pack_interval  # noqa: PLC0415
+
+        torch.manual_seed(0)
+        layer = IntConv2d(in_channels=2, out_channels=3, kernel_size=2)
+        x = torch.rand(2, 2, 4, 4) + 0.1
+        out = layer(pack_interval(x))
+        (out[:, 3:] - out[:, :3]).sum().backward()
+        # For a point input x >= 0 the width is 2 * (conv(x, radius_weight) + radius_bias). Each bias
+        # radius is used at 2 samples * 3 * 3 positions; each kernel entry sees the sum of its input patches.
+        torch.testing.assert_close(layer.radius_bias.grad, torch.full((3,), 2.0 * 2 * 3 * 3))
+        patch_sums = F.unfold(x, kernel_size=2).sum(dim=(0, 2)).reshape(2, 2, 2)
+        torch.testing.assert_close(layer.radius_weight.grad, (2.0 * patch_sums).expand(3, 2, 2, 2))
+
+    def test_radius_parameter_at_exactly_zero_still_trains(self) -> None:
+        """A radius parameter at exactly 0 gets the gradient of the interval width, so it can move away from 0."""
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntConv2d, pack_interval  # noqa: PLC0415
+
+        layer = IntConv2d(in_channels=1, out_channels=1, kernel_size=1)
+        with torch.no_grad():
+            layer.center_weight.fill_(1.0)
+            layer.radius_weight.zero_()
+            layer.center_bias.zero_()
+            layer.radius_bias.zero_()
+        x = torch.full((1, 1, 1, 1), 2.0)
+        out = layer(pack_interval(x))
+        # All radii are 0, so the interval is the point 1 * 2 = 2.
+        torch.testing.assert_close(out, torch.full((1, 2, 1, 1), 2.0))
+        (out[:, 1] - out[:, 0]).sum().backward()
+        # The width 2 * (|radius_weight| * x + |radius_bias|) grows from 0 with slopes 2 * x and 2.
+        torch.testing.assert_close(layer.radius_weight.grad, torch.full((1, 1, 1, 1), 4.0))
+        torch.testing.assert_close(layer.radius_bias.grad, torch.tensor([2.0]))
+
+    def test_negative_radius_parameter_is_set_to_zero_before_use(self) -> None:
+        """A radius parameter below zero is projected to zero, and it can still grow again."""
+        torch, _ = _torch_modules()
+        from probly.layers.torch import IntConv2d, pack_interval  # noqa: PLC0415
+
+        layer = IntConv2d(in_channels=1, out_channels=1, kernel_size=1)
+        with torch.no_grad():
+            layer.center_weight.fill_(1.0)
+            layer.radius_weight.fill_(-0.5)
+            layer.center_bias.zero_()
+            layer.radius_bias.fill_(-0.25)
+        x = torch.full((1, 1, 1, 1), 2.0)
+        out = layer(pack_interval(x))
+        # The radii are zero now, so the interval is the point 1 * 2 = 2.
+        torch.testing.assert_close(layer.radius_weight.detach(), torch.zeros(1, 1, 1, 1))
+        torch.testing.assert_close(layer.radius_bias.detach(), torch.zeros(1))
+        torch.testing.assert_close(out, torch.tensor([2.0, 2.0]).reshape(1, 2, 1, 1))
+        (out[:, 1] - out[:, 0]).sum().backward()
+        torch.testing.assert_close(layer.radius_weight.grad, torch.full((1, 1, 1, 1), 4.0))
+        torch.testing.assert_close(layer.radius_bias.grad, torch.tensor([2.0]))
 
 
 class TestIntBatchNorm1d:
@@ -305,7 +422,6 @@ class TestGaussianMixtureHead:
 
     def test_init_uniform_priors(self) -> None:
         torch, _ = _torch_modules()
-        import math  # noqa: PLC0415
 
         from probly.layers.torch import GaussianMixtureHead  # noqa: PLC0415
 
@@ -778,19 +894,21 @@ class TestIRDHead:
 class TestHeteroscedasticLayer:
     """Forward paths of the heteroscedastic logits layer."""
 
-    def test_single_sample_full_routing(self) -> None:
+    def test_returns_log_probabilities(self) -> None:
         torch, _ = _torch_modules()
         from probly.layers.torch import HeteroscedasticLayer  # noqa: PLC0415
 
         torch.manual_seed(0)
-        layer = HeteroscedasticLayer(in_features=8, num_classes=3, num_factors=4)
-        # Default training_samples == 1 returns scaled logits.
+        layer = HeteroscedasticLayer(in_features=8, num_classes=3, num_factors=4, num_samples=4)
         x = torch.randn(5, 8)
         out = layer(x)
+        # The output is the log of the averaged probabilities, so exp(out) sums to one per input.
         assert out.shape == (5, 3)
         assert torch.isfinite(out).all()
+        torch.testing.assert_close(out.exp().sum(-1), torch.ones(5), atol=1e-5, rtol=1e-5)
+        assert torch.all(out <= 1e-6)
 
-    def test_single_sample_parameter_efficient(self) -> None:
+    def test_parameter_efficient_routing(self) -> None:
         torch, _ = _torch_modules()
         from probly.layers.torch import HeteroscedasticLayer  # noqa: PLC0415
 
@@ -800,6 +918,7 @@ class TestHeteroscedasticLayer:
             num_classes=3,
             num_factors=4,
             is_parameter_efficient=True,
+            num_samples=4,
         )
         # The parameter-efficient routing introduces a global V_matrix.
         assert hasattr(layer, "V_matrix")
@@ -807,40 +926,25 @@ class TestHeteroscedasticLayer:
         x = torch.randn(5, 8)
         out = layer(x)
         assert out.shape == (5, 3)
-        assert torch.isfinite(out).all()
+        torch.testing.assert_close(out.exp().sum(-1), torch.ones(5), atol=1e-5, rtol=1e-5)
 
-    def test_multi_sample_full_routing_returns_log_probs(self) -> None:
+    def test_single_sample_is_the_log_softmax_of_one_draw(self) -> None:
         torch, _ = _torch_modules()
         from probly.layers.torch import HeteroscedasticLayer  # noqa: PLC0415
 
-        torch.manual_seed(0)
-        layer = HeteroscedasticLayer(in_features=8, num_classes=3, num_factors=4)
-        layer.training_samples = 4
+        layer = HeteroscedasticLayer(in_features=8, num_classes=3, num_factors=4, num_samples=1)
         x = torch.randn(5, 8)
         out = layer(x)
-        # Output is log of softmax-averaged probabilities -> sum_class exp(out) == 1.
         assert out.shape == (5, 3)
-        probs = out.exp()
-        torch.testing.assert_close(probs.sum(-1), torch.ones(5), atol=1e-5, rtol=1e-5)
-        assert torch.all(out <= 0.0 + 1e-6)  # log-probability <= 0
+        torch.testing.assert_close(out.exp().sum(-1), torch.ones(5), atol=1e-5, rtol=1e-5)
 
-    def test_multi_sample_parameter_efficient_routing(self) -> None:
-        torch, _ = _torch_modules()
+    def test_num_samples_is_fixed_at_construction(self) -> None:
+        _, _ = _torch_modules()
         from probly.layers.torch import HeteroscedasticLayer  # noqa: PLC0415
 
-        torch.manual_seed(0)
-        layer = HeteroscedasticLayer(
-            in_features=8,
-            num_classes=3,
-            num_factors=4,
-            is_parameter_efficient=True,
-        )
-        layer.training_samples = 4
-        x = torch.randn(5, 8)
-        out = layer(x)
-        assert out.shape == (5, 3)
-        probs = out.exp()
-        torch.testing.assert_close(probs.sum(-1), torch.ones(5), atol=1e-5, rtol=1e-5)
+        assert HeteroscedasticLayer(in_features=8, num_classes=3).num_samples == 100
+        assert HeteroscedasticLayer(in_features=8, num_classes=3, num_samples=7).num_samples == 7
+        assert not hasattr(HeteroscedasticLayer(in_features=8, num_classes=3), "training_samples")
 
 
 class TestKLDivergenceHelper:

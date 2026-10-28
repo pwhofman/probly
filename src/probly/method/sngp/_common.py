@@ -119,7 +119,7 @@ def sngp[**In, Out: GaussianDistribution](
     momentum: float = -1.0,
     random_feature_init_std: float = 1.0,
 ) -> SNGPPredictor[In, Out]:
-    """Wrap a model with SNGP (Spectral-normalized Neural Gaussian Process).
+    """Wrap a model with SNGP (Spectral-normalized Neural Gaussian Process) based on :cite:`liuSimplePrincipled2020`.
 
     Replaces the last ``nn.Linear`` with an :class:`SNGPLayer` (random
     Fourier features + Laplace-approximated Gaussian process) and registers

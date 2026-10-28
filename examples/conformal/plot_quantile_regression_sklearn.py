@@ -2,8 +2,8 @@
 Quantile Regression Conformal Prediction — sklearn
 ==================================================
 
-Demonstrate :func:`~probly.conformal.scores.cqr_score` and
-:func:`~probly.conformal.scores.cqr_r_score` using a custom
+Demonstrate :func:`~probly.conformal_scores.cqr_score` and
+:func:`~probly.conformal_scores.cqr_r_score` using a custom
 ``DualQuantileRegressor`` wrapper on the Diabetes dataset.
 
 sklearn's :class:`~sklearn.linear_model.QuantileRegressor` predicts a

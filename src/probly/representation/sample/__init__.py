@@ -2,18 +2,18 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
+from probly.lazy_types import JAX_VALUE, TORCH_VALUE
 
 from ._common import ListSample, RepresentationSample, Sample, SampleAxis, SampleFactory, create_sample
 from .numpy import NumpySample
 
 
-@create_sample.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@create_sample.delayed_register(TORCH_VALUE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-@create_sample.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@create_sample.delayed_register(JAX_VALUE)
 def _(_: type) -> None:
     from . import jax as jax  # noqa: PLC0415
 

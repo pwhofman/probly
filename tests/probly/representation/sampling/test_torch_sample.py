@@ -6,16 +6,16 @@ import numpy as np
 import pytest
 
 pytest.importorskip("torch")
+from ndlike.array_like import to_numpy_like
+from ndlike.torch_functions import torch_average
 import torch
 
-from probly.representation.array_like import to_numpy_array_like
 from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistribution,
     TorchProbabilityCategoricalDistribution,
 )
 from probly.representation.sample.numpy import NumpySample
 from probly.representation.sample.torch import TorchSample
-from probly.representation.torch_functions import torch_average
 
 
 def _torch():
@@ -29,6 +29,46 @@ def assert_weights_equal(sample: TorchSample, expected: torch.Tensor) -> None:
 
 
 class TestTorchSample:
+    @pytest.mark.parametrize("function", [torch.mean, torch.sum])
+    @pytest.mark.parametrize("dim", [1, -2, (0, 1), None, (), []])
+    @pytest.mark.parametrize("keepdim", [False, True])
+    @pytest.mark.parametrize("weighted", [False, True])
+    def test_reducing_sample_dim_drops_wrapper_independently_of_keepdim(self, function, dim, keepdim, weighted) -> None:
+        tensor = torch.arange(24.0).reshape(2, 3, 4)
+        sample = TorchSample(tensor, 1, torch.arange(1.0, 4.0) if weighted else None)
+
+        result = function(sample, dim=dim, keepdim=keepdim)
+        expected = function(tensor, dim=dim, keepdim=keepdim)
+
+        assert isinstance(result, torch.Tensor)
+        torch.testing.assert_close(result, expected)
+
+    @pytest.mark.parametrize("dim", [0, 2, (0, 2)])
+    @pytest.mark.parametrize("keepdim", [False, True])
+    def test_reducing_other_dims_preserves_weights(self, dim, keepdim) -> None:
+        tensor = torch.arange(24.0).reshape(2, 3, 4)
+        weights = torch.arange(1.0, 4.0)
+        sample = TorchSample(tensor, 1, weights)
+
+        result = torch.mean(sample, dim=dim, keepdim=keepdim)
+        expected = torch.mean(tensor, dim=dim, keepdim=keepdim)
+
+        assert isinstance(result, TorchSample)
+        assert result.sample_dim == (1 if keepdim or dim == 2 else 0)
+        torch.testing.assert_close(result.tensor, expected)
+        torch.testing.assert_close(result.weights, weights)
+
+    @pytest.mark.parametrize("keepdim", [False, True])
+    def test_weighted_average_over_samples_drops_wrapper(self, keepdim) -> None:
+        tensor = torch.arange(24.0).reshape(2, 3, 4)
+        weights = torch.arange(1.0, 4.0)
+        sample = TorchSample(tensor, 1, weights)
+
+        result = torch_average(sample, dim=1, weights=weights, keepdim=keepdim)
+
+        assert isinstance(result, torch.Tensor)
+        torch.testing.assert_close(result, torch_average(tensor, dim=1, weights=weights, keepdim=keepdim))
+
     def test_sample_internal_array(self, torch_tensor_sample_2d: TorchSample) -> None:
         assert isinstance(torch_tensor_sample_2d.tensor, torch.Tensor)
 
@@ -336,8 +376,8 @@ class TestTorchSample:
         with pytest.raises(ValueError, match="ddof"):
             sample.sample_var(ddof=1)
 
-    def test_to_numpy_array_like_uses_array_like(self, torch_tensor_sample_2d: TorchSample) -> None:
-        converted = to_numpy_array_like(torch_tensor_sample_2d)
+    def test_to_numpy_like_uses_array_like(self, torch_tensor_sample_2d: TorchSample) -> None:
+        converted = to_numpy_like(torch_tensor_sample_2d)
 
         assert isinstance(converted, NumpySample)
         assert converted.sample_axis == torch_tensor_sample_2d.sample_dim

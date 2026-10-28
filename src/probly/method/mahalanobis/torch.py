@@ -5,12 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar
 
+from ndlike.protected_axis.torch import TorchAxisProtected
 import torch
 from torch import nn
 import torch.nn.functional as F
 
 from probly.layers.torch import MahalanobisHead
-from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistribution,
     TorchProbabilityCategoricalDistribution,

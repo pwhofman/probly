@@ -6,7 +6,7 @@ import pytraverse as t
 
 LAYER_COUNT = t.GlobalVariable[int](
     "LAYER_COUNT",
-    "The DFS index of the current layer/module.",
+    "The number of layers, i.e. modules with parameters, traversed so far.",
     default=0,
 )
 FLATTEN_SEQUENTIAL = t.StackVariable[bool](

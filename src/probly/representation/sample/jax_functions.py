@@ -7,9 +7,11 @@ from functools import singledispatch, wraps
 import math
 from typing import TYPE_CHECKING, Any, Protocol, overload
 
+from flextype import switchdispatch
+from jax.experimental import checkify
 import jax.numpy as jnp
-
-from probly.representation.jax_functions import (
+from ndlike import jax_functions as jf
+from ndlike.jax_functions import (
     jax_average,
     jax_concatenate,
     jax_conj,
@@ -28,15 +30,15 @@ from probly.representation.jax_functions import (
     jax_transpose,
     jax_var,
 )
+
+from probly.representation.sample._common import track_sample_axis_after_broadcast
 from probly.representation.sample.numpy_functions import track_sample_axis_after_reduction
-from probly.utils import switchdispatch
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
     import jax
-
-    from probly.representation.jax_like import JaxLike
+    from ndlike.jax_like import JaxLike
 
 
 class JaxSampleCreator[D: JaxLike | jax.Array](Protocol):
@@ -124,6 +126,87 @@ def jax_function_override(
         return jax_func(func, args, kwargs)
 
     return wrapper
+
+
+@jax_function.multi_register(
+    [
+        jf.jax_add,
+        jf.jax_subtract,
+        jf.jax_multiply,
+        jf.jax_true_divide,
+        jf.jax_floor_divide,
+        jf.jax_remainder,
+        jf.jax_divmod,
+        jf.jax_power,
+        jf.jax_bitwise_and,
+        jf.jax_bitwise_or,
+        jf.jax_bitwise_xor,
+        jf.jax_left_shift,
+        jf.jax_right_shift,
+        jf.jax_equal,
+        jf.jax_not_equal,
+        jf.jax_less,
+        jf.jax_less_equal,
+        jf.jax_greater,
+        jf.jax_greater_equal,
+        jf.jax_positive,
+        jf.jax_negative,
+        jf.jax_absolute,
+        jf.jax_invert,
+    ],
+)
+@jax_function_override
+def jax_elementwise_function(
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> Any:  # noqa: ANN401
+    """Apply elementwise operations while preserving aligned sample axes and weights.
+
+    Args:
+        func: The JAX wrapper to apply.
+        args: Positional arguments to the function.
+        kwargs: Keyword arguments to the function.
+
+    Returns:
+        Samples when sample axes align, or native results otherwise.
+    """
+    samples: list[JaxSampleInternals] = []
+
+    def unwrap(value: object) -> Any:  # noqa: ANN401
+        internals = jax_sample_internals(value)
+        if internals is None:
+            return value
+        samples.append(internals)
+        return internals.array
+
+    mutable_args = tuple(unwrap(value) for value in args)
+    mutable_kwargs = {name: unwrap(value) for name, value in kwargs.items()}
+    if not samples:
+        return NotImplemented
+
+    result = func(*mutable_args, **mutable_kwargs)
+
+    def wrap(array: Any) -> Any:  # noqa: ANN401
+        sample_axis = track_sample_axis_after_broadcast(
+            ((sample.sample_axis, sample.array.ndim) for sample in samples), array.ndim
+        )
+        if sample_axis is None:
+            return array
+
+        weights = None
+        for sample in samples:
+            if sample.weights is not None:
+                candidate = jnp.broadcast_to(sample.weights, (array.shape[sample_axis],))
+                if weights is not None and sample.weights is not weights:
+                    checkify.check(
+                        jnp.all(weights == candidate), "Elementwise operands must have matching sample weights."
+                    )
+                weights = candidate
+
+        return samples[0].create(array, sample_axis=sample_axis, weights=weights)
+
+    return tuple(wrap(array) for array in result) if isinstance(result, tuple) else wrap(result)
 
 
 @overload

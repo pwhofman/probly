@@ -3,10 +3,10 @@ Classification Conformal Prediction — sklearn
 ==============================================
 
 Demonstrate all four classification non-conformity scores
-(:func:`~probly.conformal.scores.lac_score`,
-:class:`~probly.conformal.scores.APSScore`,
-:class:`~probly.conformal.scores.RAPSScore`,
-:class:`~probly.conformal.scores.SAPSScore`)
+(:func:`~probly.conformal_scores.lac_score`,
+:class:`~probly.conformal_scores.aps.APSScore`,
+:class:`~probly.conformal_scores.raps.RAPSScore`,
+:class:`~probly.conformal_scores.saps.SAPSScore`)
 using a :class:`~sklearn.tree.DecisionTreeClassifier` on the Iris dataset.
 
 The workflow is the same for every score:

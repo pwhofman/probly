@@ -201,7 +201,7 @@ def conformal_total_variation[**In, Out: DistanceBasedCredalSet](
 ) -> TVConformalCredalSetPredictor[In, Out]:
     """Create a credal predictor with TV-ball conformal sets.
 
-    Based on :cite:`saleSecondOrder2024` and :cite:`angelopoulosGentleIntroduction2021`.
+    Based on :cite:`javanmardiConformalizedCredal2024` and :cite:`angelopoulosGentleIntroduction2021`.
     """
     return conformal_credal_set_generator(base, tv_score)
 
@@ -213,7 +213,7 @@ def conformal_wasserstein_distance[**In, Out: DistanceBasedCredalSet](
 ) -> WassersteinConformalCredalSetPredictor[In, Out]:
     """Create a credal predictor with Wasserstein-ball conformal sets.
 
-    Based on :cite:`saleSecondOrder2024` and :cite:`angelopoulosGentleIntroduction2021`.
+    Based on :cite:`javanmardiConformalizedCredal2024` and :cite:`angelopoulosGentleIntroduction2021`.
     """
     return conformal_credal_set_generator(base, wasserstein_distance_score)
 
@@ -225,7 +225,7 @@ def conformal_inner_product[**In, Out: DistanceBasedCredalSet](
 ) -> InnerProductConformalCredalSetPredictor[In, Out]:
     """Create a credal predictor with inner-product-ball conformal sets.
 
-    Based on :cite:`saleSecondOrder2024` and :cite:`angelopoulosGentleIntroduction2021`.
+    Based on :cite:`javanmardiConformalizedCredal2024` and :cite:`angelopoulosGentleIntroduction2021`.
     """
     return conformal_credal_set_generator(base, inner_product_score)
 
@@ -237,7 +237,7 @@ def conformal_kullback_leibler[**In, Out: DistanceBasedCredalSet](
 ) -> KullbackLeiblerConformalCredalSetPredictor[In, Out]:
     """Create a credal predictor with KL-ball conformal sets.
 
-    Based on :cite:`saleSecondOrder2024` and :cite:`angelopoulosGentleIntroduction2021`.
+    Based on :cite:`javanmardiConformalizedCredal2024` and :cite:`angelopoulosGentleIntroduction2021`.
     """
     return conformal_credal_set_generator(base, kl_divergence_score)
 
@@ -249,7 +249,7 @@ def conformal_dirichlet_relative_likelihood[**In, Out: DirichletLevelSetCredalSe
 ) -> DirichletConformalCredalSetPredictor[In, Out]:
     """Create a credal predictor with Dirichlet level-set conformal sets.
 
-    Based on :cite:`saleSecondOrder2024` and :cite:`angelopoulosGentleIntroduction2021`.
+    Based on :cite:`javanmardiConformalizedCredal2024` and :cite:`angelopoulosGentleIntroduction2021`.
     """
     return conformal_credal_set_generator(base, dirichlet_rl_score)
 

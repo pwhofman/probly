@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 from scipy import stats
 
+from probly.representation.distribution import create_dirichlet_distribution_from_alphas
 from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
 from probly.representation.sample import NumpySample
 
@@ -22,6 +23,16 @@ def test_numpy_dirichlet_initialization_valid() -> None:
     assert dist.shape == ()
     assert dist.ndim == 0
     assert dist.size == 1
+
+
+def test_numpy_dirichlet_factory_from_alphas() -> None:
+    """Test that the generic factory dispatches numpy arrays to the numpy Dirichlet."""
+    alphas = np.array([[1.0, 2.0, 3.0]])
+
+    dist = create_dirichlet_distribution_from_alphas(alphas)
+
+    assert isinstance(dist, NumpyDirichletDistribution)
+    assert dist.alphas is alphas
 
 
 def test_from_array_basic() -> None:
@@ -79,7 +90,7 @@ def test_numpy_properties_batched() -> None:
 def test_len_behaviour() -> None:
     """Test __len__ behaviour (like "unsized vs sized" containers)."""
     dist_single = NumpyDirichletDistribution.from_array([1.0, 2.0, 3.0])
-    with pytest.raises(TypeError, match="len\\(\\) of unsized representation"):
+    with pytest.raises(TypeError, match=r"len\(\) of unsized object"):
         _ = len(dist_single)
 
     dist_batch = NumpyDirichletDistribution.from_array(np.ones((5, 3)))

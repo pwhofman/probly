@@ -7,13 +7,13 @@ dataset using a bare :class:`~sklearn.linear_model.LogisticRegression`.
 
 No wrapper class is needed: sklearn classifiers already implement
 ``fit``, ``predict``, and ``predict_proba``, which is all the
-:class:`~probly.evaluation.active_learning.Estimator` protocol requires.
+:class:`~probly.evaluation.active_learning.strategies.Estimator` protocol requires.
 
 The workflow is:
 
 1. Create an active learning pool with :func:`~probly.evaluation.active_learning.from_dataset`.
-2. Pick a query strategy (:class:`~probly.evaluation.active_learning.MarginSampling`
-   or :class:`~probly.evaluation.active_learning.RandomQuery`).
+2. Pick a query strategy (:class:`~probly.evaluation.active_learning.strategies.MarginSampling`
+   or :class:`~probly.evaluation.active_learning.strategies.RandomQuery`).
 3. Iterate with :func:`~probly.evaluation.active_learning.active_learning_steps`.
 4. Evaluate with :func:`~probly.evaluation.active_learning.compute_accuracy`,
    :func:`~probly.evaluation.active_learning.compute_ece`, and
@@ -131,16 +131,16 @@ plt.show()
 # %%
 # Next steps
 # ----------
-# This example uses :class:`~probly.evaluation.active_learning.MarginSampling`
+# This example uses :class:`~probly.evaluation.active_learning.strategies.MarginSampling`
 # which only needs ``predict_proba``. For richer strategies:
 #
-# - :class:`~probly.evaluation.active_learning.UncertaintyQuery` delegates
+# - :class:`~probly.evaluation.active_learning.strategies.UncertaintyQuery` delegates
 #   scoring to the estimator's ``uncertainty_scores`` method, letting you plug
 #   in any UQ measure (entropy, mutual information, etc.). Implement the
-#   :class:`~probly.evaluation.active_learning.UncertaintyEstimator` protocol.
-# - :class:`~probly.evaluation.active_learning.BADGEQuery` selects diverse
+#   :class:`~probly.evaluation.active_learning.strategies.UncertaintyEstimator` protocol.
+# - :class:`~probly.evaluation.active_learning.strategies.BADGEQuery` selects diverse
 #   uncertain batches using gradient embeddings. Implement the
-#   :class:`~probly.evaluation.active_learning.BadgeEstimator` protocol to
+#   :class:`~probly.evaluation.active_learning.strategies.BadgeEstimator` protocol to
 #   provide penultimate-layer features.
 #
 # Combine these with probly's UQ transformations (dropout, ensemble, evidential)

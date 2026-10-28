@@ -14,14 +14,16 @@ from probly.quantification.decomposition.decomposition import (
 from probly.quantification.measure.credal_set import lower_entropy, upper_entropy
 from probly.quantification.measure.distribution import (
     conditional_entropy,
+    entropy,
     entropy_of_expected_predictive_distribution,
     mutual_information,
 )
 from probly.representation.credal_set import CategoricalCredalSet
-from probly.representation.distribution import DistributionSample, SecondOrderDistribution
+from probly.representation.distribution import CategoricalDistribution, DistributionSample, SecondOrderDistribution
 from probly.representation.distribution._common import DirichletMixtureDistribution
 
 if TYPE_CHECKING:
+    from probly.quantification.measure.credal_set._common import Approximate
     from probly.quantification.measure.distribution import SecondOrderDistributionLike
     from probly.quantification.measure.distribution._common import LogBase
 
@@ -60,10 +62,15 @@ class CredalSetEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
 
     Total uncertainty is the upper entropy; aleatoric uncertainty is the lower
     entropy; epistemic uncertainty is their difference (upper minus lower).
+    ``approximate`` selects how the lower entropy is computed, see
+    :func:`~probly.quantification.measure.credal_set.lower_entropy`. The default
+    ``"auto"`` computes it exactly when that is feasible and approximates it with
+    a warning otherwise.
     """
 
     credal_set: CategoricalCredalSet
     base: LogBase = None
+    approximate: Approximate = "auto"
 
     @override
     @property
@@ -73,7 +80,7 @@ class CredalSetEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
     @override
     @property
     def _aleatoric(self) -> T:
-        return lower_entropy(self.credal_set, base=self.base)  # ty:ignore[invalid-return-type]
+        return lower_entropy(self.credal_set, base=self.base, approximate=self.approximate)  # ty:ignore[invalid-return-type]
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
@@ -83,11 +90,11 @@ class LabelNoiseEntropyDecomposition[T](CachingDecomposition, AleatoricDecomposi
     HetNets only capture aleatoric uncertainty.
     """
 
-    distribution: SecondOrderDistributionLike
+    distribution: CategoricalDistribution
     base: LogBase = None
 
     @override
     @property
     def _aleatoric(self) -> T:
         """The aleatoric uncertainty of the decomposition."""
-        return conditional_entropy(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
+        return entropy(self.distribution, base=self.base)

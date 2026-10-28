@@ -1,4 +1,4 @@
-"""Conformalized Credal Set Prediction implementation."""
+"""Conformalized credal set prediction."""
 
 from __future__ import annotations
 

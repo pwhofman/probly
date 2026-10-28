@@ -2,7 +2,16 @@
 
 from __future__ import annotations
 
+from typing import ClassVar, get_origin, get_type_hints
+
 import pytest
+
+from probly.representation.credal_set._common import CategoricalCredalSet, CredalSet
+
+
+@pytest.mark.parametrize("credal_set_class", [CredalSet, CategoricalCredalSet])
+def test_credal_set_type_is_class_metadata(credal_set_class) -> None:
+    assert get_origin(get_type_hints(credal_set_class)["type"]) is ClassVar
 
 
 class TestCredalSetCommonFallbacks:
@@ -53,3 +62,15 @@ class TestCredalSetCommonFallbacks:
 
         with pytest.raises(NotImplementedError, match="Dirichlet"):
             create_dirichlet_level_set_credal_set(object(), 0.5)
+
+    def test_create_discrete_credal_set_raises(self) -> None:
+        from probly.representation.credal_set._common import create_discrete_credal_set  # noqa: PLC0415
+
+        with pytest.raises(NotImplementedError, match="discrete"):
+            create_discrete_credal_set(object())
+
+    def test_create_singleton_credal_set_raises(self) -> None:
+        from probly.representation.credal_set._common import create_singleton_credal_set  # noqa: PLC0415
+
+        with pytest.raises(NotImplementedError, match="singleton"):
+            create_singleton_credal_set(object())

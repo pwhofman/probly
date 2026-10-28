@@ -24,7 +24,7 @@ def entropy(p: object) -> object:
 
 @flexdispatch
 def intersection_probability(lower: object, upper: object) -> object:
-    """Reduce probability intervals to their intersection probability :cite:`wangCredalDeepEnsembles2024`.
+    """Reduce probability intervals to their intersection probability :cite:`wangCreINNsCredalSet2025`.
 
     Args:
         lower: Lower bounds of shape ``(..., num_classes)`` as a torch tensor or a jax array.

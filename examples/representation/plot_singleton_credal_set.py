@@ -2,7 +2,7 @@
 Singleton credal set
 ========================
 
-A :class:`~probly.representation.credal_set.numpy.NumpySingletonCredalSet`
+A :class:`~probly.representation.credal_set.SingletonCredalSet`
 contains exactly **one** probability distribution per instance — there is no
 epistemic uncertainty.  Because the set has a single member, both the lower
 and upper envelopes are identical to that distribution.
@@ -17,11 +17,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from probly.plot import plot_credal_set
-from probly.representation.credal_set.numpy import NumpySingletonCredalSet
+from probly.representation.credal_set import SingletonCredalSet, create_singleton_credal_set
 
 # A batch of 3 instances over 3 classes, each with one precise distribution.
-singleton = NumpySingletonCredalSet(
-    array=np.array(
+singleton: SingletonCredalSet = create_singleton_credal_set(
+    np.array(
         [
             [0.7, 0.2, 0.1],
             [0.2, 0.5, 0.3],

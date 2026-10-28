@@ -7,7 +7,6 @@ from typing import Literal, SupportsIndex
 
 import torch
 import torch.nn.functional as F
-from tqdm import tqdm
 
 from ._common import entropy, intersection_probability
 
@@ -35,49 +34,6 @@ def torch_head_dimension(head: torch.nn.Module, name: Literal["in_features", "ou
     return index(value)
 
 
-@torch.no_grad()
-def torch_collect_outputs(
-    model: torch.nn.Module,
-    loader: torch.utils.data.DataLoader,
-    device: torch.device,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Collect outputs and targets from a model for a given data loader.
-
-    Args:
-        model: Model to collect outputs from.
-        loader: Data loader to collect outputs from.
-        device: Device to move data to.
-
-    Returns:
-        A tuple containing:
-            - outputs: Model outputs of shape (n_instances, n_classes).
-            - targets: Target labels of shape (n_instances,).
-
-    """
-    outputs = torch.empty(0, device=device)
-    targets = torch.empty(0, device=device)
-    for inpt, target in tqdm(loader, desc="Batches"):
-        outputs = torch.cat((outputs, model(inpt.to(device))), dim=0)
-        targets = torch.cat((targets, target.to(device)), dim=0)
-    return outputs, targets
-
-
-def torch_reset_all_parameters(module: torch.nn.Module) -> None:
-    """Reset all parameters of a torch module.
-
-    Args:
-        module: Module to reset parameters.
-
-    """
-    reset = getattr(module, "reset_parameters", None)
-    if callable(reset):
-        reset()
-    for child in module.children():
-        reset = getattr(child, "reset_parameters", None)
-        if callable(reset):
-            reset()
-
-
 def torch_temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor) -> torch.Tensor:
     """Compute the softmax of logits with temperature scaling applied.
 
@@ -100,20 +56,23 @@ def torch_temperature_softmax(logits: torch.Tensor, temperature: float | torch.T
 def torch_entropy(p: torch.Tensor) -> torch.Tensor:
     """Shannon entropy H(p) computed in torch along the last dim; 0*log(0) treated as 0.
 
+    The logarithm is fed with the zeros replaced by ones instead of masking its result, so the
+    gradient stays finite for probability vectors that contain exact zeros.
+
     Args:
         p: Probabilities to compute entropy of.
 
     Returns:
         Entropy of probabilities p
     """
-    log_p = torch.where(p > 0, p.log(), p.new_zeros(()))
-    result = -(p * log_p).sum(-1)
+    safe_p = torch.where(p > 0, p, torch.ones_like(p))
+    result = -(p * safe_p.log()).sum(-1)
     return torch.clamp_min(result, 0.0) + 0.0  # Ensure non-negativity
 
 
 @intersection_probability.register(torch.Tensor)
 def torch_intersection_probability(lower: torch.Tensor, upper: torch.Tensor) -> torch.Tensor:
-    """Intersection probability of a probability interval, per :cite:`wangCredalDeepEnsembles2024` Section 3.4.
+    """Intersection probability of a probability interval, per :cite:`wangCreINNsCredalSet2025` Section 3.4.
 
     Reduces an interval credal set ``[lower, upper]`` to a single probability
     vector by ``q_int_k = lower_k + alpha * (upper_k - lower_k)`` with

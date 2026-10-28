@@ -1,0 +1,53 @@
+/* Theme-aware overrides for jupyter-sphinx cells.
+
+jupyter-sphinx ships hardcoded light backgrounds (#f7f7f7, white), which stay
+light in Furo's dark mode while the text turns light, so the code vanishes.
+These rules map the cells onto Furo's color variables instead, so executed
+blocks look like regular code blocks in both themes. The `body` prefix wins
+over jupyter-sphinx.css regardless of load order. */
+
+body div.jupyter_container {
+  background-color: transparent;
+  border: 1px solid var(--color-background-border);
+  border-radius: 0.2rem;
+  box-shadow: none;
+  margin: 0 0 1rem 0;
+  overflow: hidden;
+}
+
+body div.jupyter_container + div.jupyter_container {
+  margin: 0 0 1rem 0;
+}
+
+body .jupyter_container div.code_cell,
+body .jupyter_container div.code_cell pre,
+body div.jupyter_container div.highlight {
+  background-color: var(--color-code-background);
+  color: var(--color-code-foreground);
+  border: none;
+  border-radius: 0;
+}
+
+body .jupyter_container div.code_cell pre {
+  padding: 0.625rem 0.875rem;
+}
+
+body .jupyter_container .output {
+  border-top: 1px solid var(--color-background-border);
+  background-color: var(--color-background-secondary);
+}
+
+body .jupyter_container .output .highlight,
+body .jupyter_container div.output pre {
+  background-color: transparent;
+  color: var(--color-foreground-primary);
+}
+
+body .jupyter_container div.output pre {
+  padding: 0.625rem 0.875rem;
+}
+
+body .jupyter_container .stderr {
+  background-color: var(--color-admonition-title-background--error, rgba(255, 82, 82, 0.1));
+  color: var(--color-foreground-primary);
+}

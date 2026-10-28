@@ -45,3 +45,34 @@ class TestDareTorch:
         loss = torch.tensor(0.5)
         result = dare_anti_regularization(model, device="cpu", loss=loss, threshold=1.0)
         assert torch.isfinite(result)
+
+
+class TestDareDecompositionTorch:
+    """DARE decomposition reproduces the OOD score of Eq. 35."""
+
+    def test_epistemic_matches_eq_35(self) -> None:
+        torch, nn = _torch_nn()
+        from probly.method.dare import DAREDecomposition  # noqa: PLC0415
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchCategoricalDistributionSample,
+            TorchLogitCategoricalDistribution,
+        )
+
+        # 3 members, batch of 2, 3 classes.
+        logits = torch.tensor(
+            [
+                [[2.0, 0.5, -1.0], [0.0, 1.0, 0.0]],
+                [[1.0, 1.5, -0.5], [0.5, -1.0, 2.0]],
+                [[-0.5, 0.0, 1.0], [1.0, 0.0, -1.0]],
+            ]
+        )
+        dist = TorchLogitCategoricalDistribution(tensor=logits)
+        sample = TorchCategoricalDistributionSample(tensor=dist, sample_dim=0)
+
+        num_members, _, num_classes = logits.shape
+        # One-hot of each member's predicted class, scaled by the number of classes.
+        target = num_classes * nn.functional.one_hot(logits.argmax(dim=-1), num_classes)
+        fit = ((logits - target) ** 2).sum(dim=-1).sum(dim=0) / num_members
+        dispersion = ((logits - logits.mean(dim=0)) ** 2).sum(dim=-1).sum(dim=0) / num_members
+
+        assert torch.allclose(DAREDecomposition(sample).epistemic, fit + dispersion)

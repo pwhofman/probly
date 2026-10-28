@@ -8,13 +8,13 @@ pytest.importorskip("jax")
 import jax
 from jax.experimental import checkify
 import jax.numpy as jnp
+from ndlike.jax_functions import jax_mean
 
 from probly.representation.conformal_set.jax import JaxOneHotConformalSet
 from probly.representation.distribution.jax_bernoulli import JaxProbabilityBernoulliDistribution
 from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
 from probly.representation.distribution.jax_dirichlet import JaxDirichletDistribution
 from probly.representation.distribution.jax_gaussian import JaxGaussianDistribution
-from probly.representation.jax_functions import jax_mean
 
 
 @pytest.mark.parametrize(
@@ -58,7 +58,9 @@ def test_categorical_reconstruction_and_gradient():
     def mean_probability(values):
         distribution = JaxProbabilityCategoricalDistribution(values)
         reshaped = distribution.reshape((2, 1))
-        return jax_mean(reshaped[:, 0], axis=0).probabilities[0]
+        mean = jax_mean(reshaped[:, 0], axis=0)
+        assert isinstance(mean, JaxProbabilityCategoricalDistribution)
+        return mean.probabilities[0]
 
     values = jnp.array([[0.2, 0.8], [0.4, 0.6]])
     error, result = jax.jit(checkify.checkify(mean_probability))(values)

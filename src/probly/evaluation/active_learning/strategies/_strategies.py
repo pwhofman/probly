@@ -10,8 +10,9 @@ from ._scores import entropy_score, least_confident_score, margin_score
 from ._selection import random_select, topk_select
 
 if TYPE_CHECKING:
+    from ndlike.array_like import ArrayLike
+
     from probly.evaluation.active_learning.pool import ActiveLearningPool
-    from probly.representation.array_like import ArrayLike
 
     from ._protocols import Estimator, UncertaintyEstimator
 

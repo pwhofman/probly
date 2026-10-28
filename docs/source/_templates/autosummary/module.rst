@@ -1,5 +1,10 @@
 {% set _parts = fullname.split('.') %}
 {% set _short = (_parts[2:] | join('.')) or _parts[-1] %}
+{# Public API re-exported from private submodules; autosummary's own lists skip
+   these because they are imported members. See _sphinx_helpers.reexported_members. #}
+{% set _reexported = reexported_members.get(fullname, {'classes': [], 'functions': []}) %}
+{% set _classes = (classes + _reexported['classes']) | unique | sort | list %}
+{% set _functions = (functions + _reexported['functions']) | unique | sort | list %}
 {{ _short | escape | underline }}
 
 .. automodule:: {{ fullname }}
@@ -19,7 +24,7 @@ Submodules
 {%- endfor %}
 {% endif %}
 
-{% if classes %}
+{% if _classes %}
 Classes
 -------
 
@@ -28,12 +33,12 @@ Classes
 .. autosummary::
    :toctree:
    :nosignatures:
-{% for item in classes %}
+{% for item in _classes %}
    {{ item }}
 {%- endfor %}
 {% endif %}
 
-{% if functions %}
+{% if _functions %}
 Functions
 ---------
 
@@ -42,7 +47,7 @@ Functions
 .. autosummary::
    :toctree:
    :nosignatures:
-{% for item in functions %}
+{% for item in _functions %}
    {{ item }}
 {%- endfor %}
 {% endif %}

@@ -12,7 +12,7 @@ from flextype import flexdispatch
 from probly.quantification.measure.distribution import entropy
 
 if TYPE_CHECKING:
-    from probly.representation.array_like import ArrayLike
+    from ndlike.array_like import ArrayLike
 
 
 entropy_score = entropy

@@ -17,7 +17,9 @@ from probly.transformation.transformation import predictor_transformation
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from probly.representation.array_like import ArrayLike
+    from ndlike.array_like import ArrayLike
+    import numpy as np
+
     from probly.representation.distribution._common import CategoricalDistribution
 
 type FeatureNodes = Sequence[str] | None
@@ -52,9 +54,9 @@ class MahalanobisRepresentation(Representation, Protocol):
 @flexdispatch
 def create_mahalanobis_representation(
     softmax: CategoricalDistribution,
-    layer_scores: ArrayLike,
-    weight: ArrayLike,
-    bias: ArrayLike,
+    layer_scores: ArrayLike | np.ndarray,
+    weight: ArrayLike | np.ndarray,
+    bias: ArrayLike | np.ndarray,
 ) -> MahalanobisRepresentation:
     """Create a Mahalanobis representation from softmax, layer scores and combiner weights."""
     msg = f"No Mahalanobis representation factory registered for softmax type {type(softmax)}"
@@ -87,9 +89,9 @@ def mahalanobis[**In, Out: MahalanobisRepresentation](
     feature_nodes: FeatureNodes = None,
     input_preprocessing_eps: float = 0.0,
 ) -> MahalanobisPredictor[In, Out]:
-    """Turn a classifier into a Mahalanobis-distance OOD detector.
+    """Turn a classifier into a Mahalanobis-distance OOD detector based on :cite:`leeSimpleUnifiedFramework2018`.
 
-    Based on :cite:`leeSimpleUnifiedFramework2018`.  The final linear head is
+    The final linear head is
     stripped to expose penultimate features, class-conditional Gaussians with a
     tied covariance are fitted on those features (and, optionally, on extra
     intermediate layers), and the per-layer Mahalanobis confidence is combined

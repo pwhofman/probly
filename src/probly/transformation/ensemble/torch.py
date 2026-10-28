@@ -14,7 +14,7 @@ from pytraverse import CLONE, traverse
 from ._common import ensemble_generator
 
 if TYPE_CHECKING:
-    from probly.representation.torch_like import TorchLike
+    from ndlike.torch_like import TorchLike
 
 
 def _reset_copy(module: nn.Module) -> nn.Module:

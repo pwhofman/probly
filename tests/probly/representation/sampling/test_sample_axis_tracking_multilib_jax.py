@@ -9,8 +9,8 @@ import pytest
 pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
+from ndlike.array_like import ToIndices
 
-from probly.representation.array_like import ToIndices
 from probly.representation.sample.axis_tracking import track_axis as track_axis_result
 
 

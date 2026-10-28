@@ -2,62 +2,72 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
+from probly.lazy_types import JAX_VALUE, TORCH_VALUE
 
 from ._common import (
     CategoricalCredalSet,
+    ConvexCredalSet,
     CredalSet,
     CredalSetType,
     DirichletLevelSetCredalSet,
     DiscreteCredalSet,
+    DistanceBasedCredalSet,
     ProbabilityIntervalsCredalSet,
+    SingletonCredalSet,
     create_convex_credal_set,
     create_dirichlet_level_set_credal_set,
+    create_discrete_credal_set,
     create_distance_based_credal_set,
     create_distance_based_credal_set_from_center_and_radius,
     create_probability_intervals,
     create_probability_intervals_from_bounds,
     create_probability_intervals_from_lower_upper_array,
+    create_singleton_credal_set,
 )
 from .numpy import NumpyCategoricalCredalSet, NumpyDiscreteCredalSet
 
 
-@create_probability_intervals.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@create_probability_intervals_from_lower_upper_array.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@create_convex_credal_set.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@create_probability_intervals_from_bounds.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@create_distance_based_credal_set.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@create_distance_based_credal_set_from_center_and_radius.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@create_dirichlet_level_set_credal_set.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@create_probability_intervals.delayed_register(TORCH_VALUE)
+@create_probability_intervals_from_lower_upper_array.delayed_register(TORCH_VALUE)
+@create_convex_credal_set.delayed_register(TORCH_VALUE)
+@create_probability_intervals_from_bounds.delayed_register(TORCH_VALUE)
+@create_distance_based_credal_set.delayed_register(TORCH_VALUE)
+@create_distance_based_credal_set_from_center_and_radius.delayed_register(TORCH_VALUE)
+@create_dirichlet_level_set_credal_set.delayed_register(TORCH_VALUE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-@create_probability_intervals.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@create_probability_intervals_from_lower_upper_array.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@create_convex_credal_set.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@create_probability_intervals_from_bounds.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@create_distance_based_credal_set.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@create_distance_based_credal_set_from_center_and_radius.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@create_dirichlet_level_set_credal_set.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@create_probability_intervals.delayed_register(JAX_VALUE)
+@create_probability_intervals_from_lower_upper_array.delayed_register(JAX_VALUE)
+@create_convex_credal_set.delayed_register(JAX_VALUE)
+@create_probability_intervals_from_bounds.delayed_register(JAX_VALUE)
+@create_distance_based_credal_set.delayed_register(JAX_VALUE)
+@create_distance_based_credal_set_from_center_and_radius.delayed_register(JAX_VALUE)
+@create_dirichlet_level_set_credal_set.delayed_register(JAX_VALUE)
 def _jax(_: type) -> None:
     from . import jax as jax  # noqa: PLC0415
 
 
 __all__ = [
     "CategoricalCredalSet",
+    "ConvexCredalSet",
     "CredalSet",
     "CredalSetType",
     "DirichletLevelSetCredalSet",
     "DiscreteCredalSet",
+    "DistanceBasedCredalSet",
     "NumpyCategoricalCredalSet",
     "NumpyDiscreteCredalSet",
     "ProbabilityIntervalsCredalSet",
+    "SingletonCredalSet",
     "create_convex_credal_set",
     "create_dirichlet_level_set_credal_set",
+    "create_discrete_credal_set",
     "create_distance_based_credal_set",
     "create_distance_based_credal_set_from_center_and_radius",
     "create_probability_intervals",
     "create_probability_intervals_from_bounds",
     "create_probability_intervals_from_lower_upper_array",
+    "create_singleton_credal_set",
 ]

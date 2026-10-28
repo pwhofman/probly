@@ -5,14 +5,13 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Self, cast, override
+from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, override
 
 import jax
+from jax.core import Tracer
 import jax.numpy as jnp
-import numpy as np
-
-from probly.representation.array_like import ToIndices, to_numpy_array_like
-from probly.representation.jax_functions import (
+from ndlike.array_like import ToIndices, to_numpy_like
+from ndlike.jax_functions import (
     jax_average,
     jax_concatenate,
     jax_mean,
@@ -21,7 +20,9 @@ from probly.representation.jax_functions import (
     jax_std,
     jax_var,
 )
-from probly.representation.jax_like import JaxLike, JaxLikeImplementation, to_jax_like
+from ndlike.jax_like import JaxLike, JaxLikeImplementation, to_jax_like
+import numpy as np
+
 from probly.representation.sample._common import Sample, SampleAxis, create_sample
 from probly.representation.sample.axis_tracking import track_axis
 from probly.representation.sample.jax_functions import JaxSampleInternals, jax_function, jax_sample_internals
@@ -43,6 +44,7 @@ class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
     array: D
     sample_axis: int
     weights: jax.Array | None = None
+    pytree_children: ClassVar[tuple[str, ...]] = ("array", "weights")
 
     def __post_init__(self) -> None:
         """Validate the sample_axis."""
@@ -172,6 +174,15 @@ class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
     def device(self) -> Any:  # noqa: ANN401
         """The device of the underlying array."""
         return self.array.device  # ty: ignore[invalid-attribute-access]
+
+    @property
+    def sharding(self) -> Sharding:
+        """The sharding of the underlying array."""
+        return cast("Any", self.array).sharding
+
+    def devices(self) -> set[Device]:
+        """Return the set of devices the underlying array lives on."""
+        return cast("Any", self.array).devices()
 
     @property
     def ndim(self) -> int:
@@ -472,7 +483,7 @@ class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
         )
 
     def __array_like__(self, dtype: npt.DTypeLike | None = None, /, *, copy: bool | None = None) -> NumpySample[Any]:
-        """Convert to a NumpyArrayLike.
+        """Convert to a NumpyLike.
 
         Args:
             dtype: The desired data type of the underlying array.
@@ -481,7 +492,7 @@ class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
         Returns:
             An NumpySample wrapping the converted array.
         """
-        array = to_numpy_array_like(self.array, dtype=dtype, copy=copy)
+        array = to_numpy_like(self.array, dtype=dtype, copy=copy)
 
         return NumpySample(
             cast("Any", array),
@@ -502,6 +513,6 @@ def _(sample: JaxSample) -> JaxSampleInternals[jax.Array]:
 
 
 create_sample.register(
-    jax.Array | JaxLikeImplementation,
+    jax.Array | Tracer | JaxLikeImplementation,
     JaxSample.from_iterable,
 )

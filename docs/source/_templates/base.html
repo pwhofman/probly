@@ -1,0 +1,14 @@
+{#- Furo's base.html plus the favicons and the link preview (og:image) of the probly
+    logo; see docs/design/brand.md. The SVG favicon switches to dark by itself, the
+    .ico is the fallback for browsers without SVG favicons. -#}
+{% extends "!base.html" %}
+{% block extrahead %}
+  {{- super() }}
+  <link rel="icon" href="{{ pathto('_static/logo/favicon.ico', 1) }}" sizes="48x48">
+  <link rel="icon" href="{{ pathto('_static/logo/favicon.svg', 1) }}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{{ pathto('_static/logo/apple-touch-icon.png', 1) }}">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{ title|striptags|e }}">
+  <meta property="og:image" content="{{ pages_root }}/{{ docs_flavor }}/_static/logo/probly-social-preview-light-1280x640.png">
+  <meta name="twitter:card" content="summary_large_image">
+{% endblock %}

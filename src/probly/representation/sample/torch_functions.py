@@ -6,15 +6,16 @@ from dataclasses import dataclass
 from functools import singledispatch, wraps
 from typing import TYPE_CHECKING, Any, Protocol, overload
 
+from flextype import switchdispatch
+from ndlike.torch_functions import torch_average
 import torch
 
-from probly.representation.torch_functions import torch_average
-from probly.utils import switchdispatch
+from probly.representation.sample._common import track_sample_axis_after_broadcast
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from probly.representation.torch_like import TorchLike
+    from ndlike.torch_like import TorchLike
 
 
 class TorchSampleCreator[D: TorchLike](Protocol):
@@ -222,13 +223,16 @@ def track_sample_dim_after_reduction(
         return None
 
     dims: tuple[int, ...] = tuple(dim) if isinstance(dim, (tuple, list, torch.Size)) else (dim,)
+    # Torch treats an empty dimension sequence as a reduction over all dimensions.
+    if not dims:
+        return None
     dims = tuple(d if d >= 0 else original_ndim + d for d in dims)
-
-    if keepdim:
-        return original_sample_dim
 
     if original_sample_dim in dims:
         return None
+
+    if keepdim:
+        return original_sample_dim
 
     new_sample_dim = original_sample_dim
     for d in dims:
@@ -247,6 +251,102 @@ def _torch_reduction_input(args: tuple[Any, ...], kwargs: dict[str, Any]) -> tup
     if "tensor" in kwargs:
         return kwargs["tensor"], "tensor"
     return None
+
+
+_TORCH_ELEMENTWISE_FUNCTIONS = (
+    torch.add,
+    torch.sub,
+    torch.subtract,
+    torch.mul,
+    torch.multiply,
+    torch.div,
+    torch.divide,
+    torch.true_divide,
+    torch.floor_divide,
+    torch.remainder,
+    torch.pow,
+    torch.bitwise_and,
+    torch.bitwise_or,
+    torch.bitwise_xor,
+    torch.bitwise_left_shift,
+    torch.bitwise_right_shift,
+    torch.eq,
+    torch.ne,
+    torch.lt,
+    torch.le,
+    torch.gt,
+    torch.ge,
+    torch.positive,
+    torch.neg,
+    torch.abs,
+    torch.bitwise_not,
+)
+
+
+@torch_function.multi_register(
+    [
+        *_TORCH_ELEMENTWISE_FUNCTIONS,
+        *(getattr(torch.Tensor, function.__name__) for function in _TORCH_ELEMENTWISE_FUNCTIONS),
+    ]
+)
+@torch_function_override
+def torch_elementwise_function(
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> Any:  # noqa: ANN401
+    """Apply elementwise operations while preserving aligned sample axes and weights.
+
+    Args:
+        func: The torch function to apply.
+        args: Positional arguments to the function.
+        kwargs: Keyword arguments to the function.
+
+    Returns:
+        A sample when sample axes align, a native result otherwise, or the out buffer.
+
+    Raises:
+        ValueError: If aligned operands have conflicting sample weights.
+    """
+    samples: list[TorchSampleInternals] = []
+
+    def unwrap(value: object) -> Any:  # noqa: ANN401
+        internals = torch_sample_internals(value)
+        if internals is None:
+            return value
+        samples.append(internals)
+        return internals.tensor
+
+    mutable_args = tuple(unwrap(value) for value in args)
+    mutable_kwargs = {name: unwrap(value) for name, value in kwargs.items() if name != "out"}
+    out = kwargs.get("out")
+    if out is not None:
+        out_internals = torch_sample_internals(out)
+        mutable_kwargs["out"] = out if out_internals is None else out_internals.tensor
+
+    if not samples and torch_sample_internals(out) is None:
+        return NotImplemented
+
+    result = func(*mutable_args, **mutable_kwargs)
+    if out is not None or not samples:
+        return out if out is not None else result
+
+    sample_dim = track_sample_axis_after_broadcast(
+        ((sample.sample_dim, sample.tensor.ndim) for sample in samples), result.ndim
+    )
+    if sample_dim is None:
+        return result
+
+    weights = None
+    for sample in samples:
+        if sample.weights is not None:
+            candidate = torch.broadcast_to(sample.weights, (result.shape[sample_dim],))
+            if weights is not None and not torch.equal(weights, candidate):
+                msg = "Elementwise operands must have matching sample weights."
+                raise ValueError(msg)
+            weights = candidate
+
+    return samples[0].create(result, sample_dim=sample_dim, weights=weights)
 
 
 @torch_function.multi_register(

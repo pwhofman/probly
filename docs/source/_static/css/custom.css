@@ -1,3 +1,9 @@
+/* The stacked logo at the top of the sidebar: furo would stretch it to the
+   full sidebar width. */
+.sidebar-logo {
+  max-width: 7rem;
+}
+
 /* Version switcher dropdown (sidebar/versions.html), themed via furo's
    CSS variables so it follows light and dark mode. */
 .sidebar-versions {
@@ -22,4 +28,248 @@
   background: var(--color-sidebar-search-background);
   color: var(--color-sidebar-search-text);
   font-size: var(--font-size--small);
+}
+
+/* Landing page (index.rst): the logo next to the title, the tagline, the
+   call-to-action buttons, and the example cards. */
+/* Below furo's icons at the top right, not beside them: the theme toggle among them only shows
+   once furo's script has run, and a logo beside them would jump sideways when it does. */
+.probly-hero-logo {
+  float: right;
+  clear: right;
+  width: 10rem;
+  margin: 0 0 1rem 2.5rem;
+}
+
+/* The icons keep their height while furo's script has not shown them yet, so the logo below them
+   does not move down when they appear. */
+body:has(.probly-hero-logo) .content-icon-container {
+  min-height: 1.25rem;
+}
+
+.probly-hero-logo svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The waves of the logo react to the pointer and to clicks (_static/js/logo.js). */
+.probly-hero-logo svg.probly-logo-live {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+section:has(> .probly-hero) > h1 {
+  font-size: clamp(2.1rem, 1.4rem + 2.6vw, 3rem);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  margin-top: 2rem;
+}
+
+/* The colors of the logo under the title. */
+section:has(> .probly-hero) > h1::after {
+  content: "";
+  display: block;
+  width: 4.5rem;
+  height: 0.3rem;
+  margin-top: 1.1rem;
+  border-radius: 999px;
+  background: var(--probly-gradient);
+}
+
+.probly-tagline {
+  font-size: 1.3rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.probly-hero-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1.75rem 0 1rem 0;
+}
+
+.probly-hero-buttons p {
+  margin: 0;
+}
+
+/* Only the main button is colored; the others are neutral and take the red border on hover. */
+.probly-button.sd-btn {
+  border-radius: 999px;
+  padding: 0.5rem 1.15rem;
+  font-weight: 600;
+  transition:
+    transform var(--probly-duration) var(--probly-ease),
+    box-shadow var(--probly-duration) var(--probly-ease),
+    background-color var(--probly-duration) var(--probly-ease);
+}
+
+.probly-button.sd-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--probly-shadow);
+}
+
+/* sphinx-design colors its outline buttons with !important: override it for the hero's buttons. */
+.probly-button.sd-btn-outline-secondary {
+  color: var(--color-foreground-primary) !important;
+  border-color: var(--probly-border) !important;
+  background: var(--probly-surface);
+}
+
+.probly-button.sd-btn-outline-secondary:hover,
+.probly-button.sd-btn-outline-secondary:focus {
+  color: var(--color-foreground-primary) !important;
+  border-color: var(--sd-color-primary) !important;
+  background-color: var(--probly-surface-raised) !important;
+}
+
+.probly-button .sd-octicon {
+  margin-right: 0.3rem;
+}
+
+.probly-hero-meta p {
+  font-size: 0.85rem;
+  color: var(--probly-text-muted);
+}
+
+/* The libraries probly works with (_includes/works_with.html), right under the
+   hero: one row per group, each library a pill like the hero's neutral buttons.
+   The marks sit in a light circle so that dark ones stay visible in dark mode. */
+.probly-works-with {
+  display: grid;
+  gap: 0.9rem;
+  margin: 1.5rem 0 2rem 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-background-border);
+}
+
+.probly-works-with__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.probly-works-with__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--probly-text-muted);
+}
+
+.probly-works-with__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.probly-works-with__list li {
+  margin: 0;
+}
+
+.probly-lib {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0.75rem 0.2rem 0.25rem;
+  border: 1px solid var(--probly-border);
+  border-radius: 999px;
+  background: var(--probly-surface);
+  color: var(--color-foreground-primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    transform var(--probly-duration) var(--probly-ease),
+    box-shadow var(--probly-duration) var(--probly-ease),
+    border-color var(--probly-duration) var(--probly-ease);
+}
+
+.probly-lib:hover,
+.probly-lib:focus-visible {
+  color: var(--color-foreground-primary);
+  text-decoration: none;
+  border-color: var(--sd-color-primary);
+  box-shadow: var(--probly-shadow);
+  transform: translateY(-1px);
+}
+
+.probly-lib__logo {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: #eef1f6;
+}
+
+.probly-lib__logo img {
+  width: calc(var(--logo-fill, 0.62) * 100%);
+  height: calc(var(--logo-fill, 0.62) * 100%);
+  object-fit: contain;
+}
+
+/* The sections after the hero start below the logo. */
+section:has(> .probly-hero) > section {
+  clear: both;
+}
+
+@media (max-width: 46em) {
+  .probly-hero-logo {
+    float: none;
+    display: block;
+    width: 8rem;
+    margin: 1.5rem auto 0;
+  }
+
+  section:has(> .probly-hero) > h1 {
+    margin-top: 1.5rem;
+    font-size: 2rem;
+  }
+
+  .probly-tagline {
+    font-size: 1.15rem;
+  }
+
+  .probly-hero-buttons {
+    gap: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .probly-button.sd-btn:hover,
+  .probly-lib:hover,
+  .probly-lib:focus-visible {
+    transform: none;
+  }
+}
+
+.sd-card-body img {
+  width: 100%;
+  height: auto;
+}
+
+.sd-card-img-top,
+.sd-card-img-bottom {
+  background: #fff;
+  padding: 0.25rem;
+  height: 11rem;
+  object-fit: contain;
+}
+
+.probly-method-strip .sd-card-title {
+  margin-bottom: 0.25rem;
+}
+
+/* Toctree without bullet markers (e.g. the User Guide page), keeping the nesting. */
+.toctree-wrapper.no-bullets ul {
+  list-style: none;
 }

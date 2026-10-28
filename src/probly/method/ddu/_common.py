@@ -18,7 +18,8 @@ from probly.transformation.transformation import predictor_transformation
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from probly.representation.array_like import ArrayLike
+    from ndlike.array_like import ArrayLike
+
     from probly.representation.distribution._common import CategoricalDistribution
 
 
@@ -73,9 +74,7 @@ def ddu[**In, Out: DDURepresentation](
     base: Predictor[In, Out],
     sn_coeff: float = 3.0,
 ) -> DDUPredictor[In, Out]:
-    """Apply spectral normalization and add a Gaussian-mixture density head.
-
-    Based on :cite:`mukhotiDeepDeterministicUncertainty2023`.
+    """Add spectral normalization and a Gaussian density head based on :cite:`mukhotiDeepDeterministicUncertainty2023`.
 
     Args:
         base: Base classification model to be transformed.

@@ -8,7 +8,6 @@ from ._common import (
     HetNetPredictor,
     HetNetRepresentation,
     HetNetRepresenter,
-    create_het_net_sample,
     het_net,
     het_net_traverser,
 )
@@ -23,6 +22,5 @@ __all__ = [
     "HetNetPredictor",
     "HetNetRepresentation",
     "HetNetRepresenter",
-    "create_het_net_sample",
     "het_net",
 ]

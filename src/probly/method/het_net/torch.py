@@ -12,6 +12,7 @@ from ._common import (
     IS_PARAMETER_EFFICIENT,
     LAST_LAYER,
     NUM_FACTORS,
+    NUM_SAMPLES,
     TEMPERATURE,
     het_net_traverser,
 )
@@ -37,6 +38,7 @@ def drop_in_place_het_layer(obj: nn.Linear, state: State) -> tuple[nn.Module, St
             num_factors=state[NUM_FACTORS],
             temperature=state[TEMPERATURE],
             is_parameter_efficient=state[IS_PARAMETER_EFFICIENT],
+            num_samples=state[NUM_SAMPLES],
         ), state
     return obj, state
 

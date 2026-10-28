@@ -2,7 +2,7 @@
 Ensemble Ordinal Classification Uncertainty
 ===========================================
 
-Demonstrate :func:`~probly.method.ensemble.ensemble`
+Demonstrate :func:`~probly.method.ensemble`
 using a PyTorch multi-layer perceptron classifier on a dummy ordinal dataset.
 
 This example computes epistemic, aleatoric, and total variance uncertainty

@@ -12,7 +12,7 @@ from torch import nn, optim
 from torch.amp import GradScaler, autocast
 import torch.nn.functional as F
 
-from probly.layers.torch import HeteroscedasticLayer, SNGPLayer
+from probly.layers.torch import SNGPLayer
 from probly.losses.torch import (
     elbo_loss,
     evidential_ce_loss,
@@ -214,45 +214,36 @@ def train_epoch_cross_entropy(
 
 @train_epoch.register(HetNetPredictor)
 def train_epoch_het_net(
-    model: Predictor,
+    model: HetNetPredictor,
     inputs: torch.Tensor,
     targets: torch.Tensor,
     optimizer: optim.Optimizer,
     grad_clip_norm: float | None = None,
     amp_enabled: bool = False,
     scaler: GradScaler | None = None,
-    samples: int = 1,
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> float:
-    """Train a HetNet predictor by averaging softmax probabilities over MC samples.
+    """Train a HetNet predictor with the negative log-likelihood of its averaged prediction.
 
-    Sets ``training_samples`` on every HeteroscedasticLayer so sampling is vectorized
-    inside a single forward pass: the backbone runs once and the het layer draws S noise
-    samples in one GPU op, following :cite:`collierCorrelatedInputDependent2021`.
+    The heteroscedastic layer draws its Monte Carlo samples inside the forward pass and returns
+    log-probabilities, following :cite:`collierCorrelatedInputDependent2021`.
     """
-    het_layers = [m for m in cast("nn.Module", model).modules() if isinstance(m, HeteroscedasticLayer)]
-    for layer in het_layers:
-        layer.training_samples = samples
-    try:
-        optimizer.zero_grad()
-        with autocast(inputs.device.type, enabled=amp_enabled):
-            output = model(inputs)  # ty: ignore[call-non-callable]
-            loss = F.cross_entropy(output, targets) if samples == 1 else F.nll_loss(output, targets)
-        if scaler is not None:
-            scaler.scale(loss).backward()
-            if grad_clip_norm is not None:
-                scaler.unscale_(optimizer)
-                nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
-            scaler.step(optimizer)
-            scaler.update()
-        else:
-            loss.backward()
-            if grad_clip_norm is not None:
-                nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
-            optimizer.step()
-    finally:
-        for layer in het_layers:
-            layer.training_samples = 1
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        output = model(inputs)
+        loss = F.cross_entropy(output, targets)
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        optimizer.step()
     return loss.item()
 
 

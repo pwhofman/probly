@@ -7,17 +7,18 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self, overload, override
 
 import jax
+from jax.core import Tracer
 from jax.experimental import checkify
 import jax.numpy as jnp
+from ndlike.jax_functions import jax_average, jax_mean
+from ndlike.protected_axis.jax import JaxAxisProtected
 
-from probly.representation._protected_axis.jax import JaxAxisProtected
 from probly.representation.distribution._common import (
     CategoricalDistribution,
     CategoricalDistributionSample,
     create_categorical_distribution,
     create_categorical_distribution_from_logits,
 )
-from probly.representation.jax_functions import jax_average, jax_mean
 from probly.representation.sample.jax import JaxSample
 from probly.utils.jax import jax_fresh_prng_key
 
@@ -114,7 +115,7 @@ class JaxCategoricalDistribution(CategoricalDistribution, JaxAxisProtected[jax.A
         return JaxSample(array=samples, sample_axis=0)
 
 
-@create_categorical_distribution.register(jax.Array)
+@create_categorical_distribution.register((jax.Array, Tracer))
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class JaxProbabilityCategoricalDistribution(JaxCategoricalDistribution):
     """A categorical distribution represented by unnormalized probabilities."""
@@ -158,7 +159,7 @@ class JaxProbabilityCategoricalDistribution(JaxCategoricalDistribution):
         return object.__hash__(self)
 
 
-@create_categorical_distribution_from_logits.register(jax.Array)
+@create_categorical_distribution_from_logits.register((jax.Array, Tracer))
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class JaxLogitCategoricalDistribution(JaxCategoricalDistribution):
     """A categorical distribution represented by logits."""

@@ -6,9 +6,10 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self, overload, override
 
+from ndlike.protected_axis.torch import TorchAxisProtected
+from ndlike.torch_functions import torch_average
 import torch
 
-from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.distribution._common import (
     CategoricalDistribution,
     CategoricalDistributionSample,
@@ -16,7 +17,6 @@ from probly.representation.distribution._common import (
     create_categorical_distribution_from_logits,
 )
 from probly.representation.sample.torch import TorchSample
-from probly.representation.torch_functions import torch_average
 
 if TYPE_CHECKING:
     from collections.abc import Callable

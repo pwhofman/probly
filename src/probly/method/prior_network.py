@@ -17,9 +17,8 @@ class PriorNetworkPredictor[**In, Out: DirichletDistribution](DirichletExpActiva
 
 
 prior_network = PriorNetworkPredictor.register_factory(dirichlet_exp_activation)
-prior_network.__doc__ = """Create a Prior Network predictor from a base predictor.
-
-Based on :cite:`malininPredictiveUncertaintyEstimation2018`.
+prior_network.__doc__ = """\
+Create a Prior Network predictor from a base predictor based on :cite:`malininPredictiveUncertaintyEstimation2018`.
 
 Args:
     base: The base logit classifier to be wrapped with a Dirichlet exp activation.

@@ -16,7 +16,6 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 
-from probly.layers.torch import HeteroscedasticLayer
 from probly.method.het_net import het_net
 from probly.representer import representer
 
@@ -56,41 +55,32 @@ y_tensor = torch.from_numpy(y).long()
 # with the backbone and captures input-dependent (aleatoric) uncertainty.
 
 base_model = SequentialModel()
-het_net_model = het_net(base_model, predictor_type="logit_classifier")
+het_net_model = het_net(base_model, num_samples=100, predictor_type="logit_classifier")
 
 # %%
 # Training
 # --------
 #
-# Setting ``training_samples = S`` on every ``HeteroscedasticLayer`` makes the
-# head draw S noise samples per input in a single vectorized forward pass and
-# return the log of the softmax-averaged probabilities, optimized with NLL.
+# The heteroscedastic head draws ``num_samples`` noise samples per input in a
+# single vectorized forward pass and returns the log of the averaged
+# probabilities, which cross-entropy turns into the negative log-likelihood.
 
 opt = torch.optim.Adam(het_net_model.parameters(), lr=1e-3)
-training_samples = 4
-
-het_layers = [m for m in het_net_model.modules() if isinstance(m, HeteroscedasticLayer)]
-for layer in het_layers:
-    layer.training_samples = training_samples
 
 het_net_model.train()
-try:
-    for _epoch in range(500):
-        opt.zero_grad()
-        log_probs = het_net_model(X_tensor)
-        loss = F.nll_loss(log_probs, y_tensor)
-        loss.backward()
-        opt.step()
-finally:
-    for layer in het_layers:
-        layer.training_samples = 1
+for _epoch in range(500):
+    opt.zero_grad()
+    log_probs = het_net_model(X_tensor)
+    loss = F.cross_entropy(log_probs, y_tensor)
+    loss.backward()
+    opt.step()
 
 # %%
 # Uncertainty Evaluation
 # ----------------------
 
 het_net_model.eval()
-rep = representer(het_net_model, num_samples=800)
+rep = representer(het_net_model)
 
 plot = plot_example_uncertainty(X, y, rep, title="HET-Net Predictive Uncertainty", notion="aleatoric")
 plot.show()

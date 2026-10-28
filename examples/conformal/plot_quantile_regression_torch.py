@@ -2,9 +2,9 @@
 Quantile Regression Conformal Prediction — PyTorch
 ==================================================
 
-Demonstrate :func:`~probly.conformal.scores.cqr_score`,
-:func:`~probly.conformal.scores.cqr_r_score`, and
-:func:`~probly.conformal.scores.uacqr_score` using
+Demonstrate :func:`~probly.conformal_scores.cqr_score`,
+:func:`~probly.conformal_scores.cqr_r_score`, and
+:func:`~probly.conformal_scores.uacqr_score` using
 PyTorch models on the Diabetes dataset.
 
 **CQR / CQRr** use the standard conformal API
