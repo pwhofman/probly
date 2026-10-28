@@ -104,6 +104,7 @@ body[data-theme="dark"] .milton-demo {
 }
 
 .milton-demo-switch {
+  position: relative;
   box-sizing: border-box;
   display: inline-flex;
   height: var(--md-control);
@@ -127,7 +128,10 @@ body[data-theme="dark"] .milton-demo {
   line-height: 1.2;
   white-space: nowrap;
   cursor: pointer;
-  transition: background var(--md-duration) var(--md-ease), color var(--md-duration) var(--md-ease);
+  transition:
+    background var(--md-duration) var(--md-ease),
+    color var(--md-duration) var(--md-ease),
+    transform 120ms var(--md-ease);
 }
 
 .milton-demo-option:hover:not(:disabled) {
@@ -138,6 +142,41 @@ body[data-theme="dark"] .milton-demo {
 .milton-demo-option[aria-pressed="true"]:hover {
   background: var(--md-text);
   color: var(--md-surface);
+}
+
+.milton-demo-option:active:not(:disabled),
+.milton-demo-chip:active,
+.milton-demo-info:active {
+  transform: scale(0.96);
+}
+
+/* with scripts, the pressed option's background is a pill that slides to the next one pressed */
+.milton-demo-thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  width: 0;
+  border-radius: 999px;
+  background: var(--md-text);
+  pointer-events: none;
+  transition:
+    transform 380ms cubic-bezier(0.45, 0, 0.15, 1),
+    width 380ms cubic-bezier(0.45, 0, 0.15, 1);
+}
+
+.milton-demo-thumb.milton-demo-still {
+  transition: none;
+}
+
+.milton-demo-sliding .milton-demo-option {
+  position: relative; /* above the pill */
+}
+
+.milton-demo-sliding .milton-demo-option[aria-pressed="true"],
+.milton-demo-sliding .milton-demo-option[aria-pressed="true"]:hover {
+  background: none;
+  transition-delay: 0s, 150ms, 0s; /* the label turns light as the pill arrives under it */
 }
 
 .milton-demo-option:disabled {
@@ -184,6 +223,10 @@ body[data-theme="dark"] .milton-demo {
   color: var(--md-muted);
   font: italic 600 0.95rem/1 Georgia, "Times New Roman", serif;
   cursor: pointer;
+  transition:
+    background var(--md-duration) var(--md-ease),
+    color var(--md-duration) var(--md-ease),
+    transform 120ms var(--md-ease);
 }
 
 .milton-demo-info[aria-expanded="true"] {
@@ -517,7 +560,10 @@ body[data-theme="dark"] .milton-demo {
   font: inherit;
   font-size: 0.8rem;
   cursor: pointer;
-  transition: border-color var(--md-duration) var(--md-ease), color var(--md-duration) var(--md-ease);
+  transition:
+    border-color var(--md-duration) var(--md-ease),
+    color var(--md-duration) var(--md-ease),
+    transform 120ms var(--md-ease);
 }
 
 .milton-demo-chip:hover {
