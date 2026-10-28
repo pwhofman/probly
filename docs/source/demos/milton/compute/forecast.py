@@ -23,9 +23,8 @@ The runs go in groups of as many as there are devices (GPUs), one run per device
 saved as soon as it is done, so that a restart only repeats the group that was cut off.
 
 This script needs WeatherNext and its dependencies, with probly installed next to them (see
-``run_full.py``). The full checkpoints need a GPU with about 80 GB of memory (an H100 or larger) or a
-TPU; WeatherNext's small model, ``--config WeatherNextCyclones_Mini`` with its 1-degree data and
-checkpoints, also runs on a CPU (about 12 minutes per run of 20 steps on four cores)::
+``run_full.py``). The checkpoints need a GPU with about 80 GB of memory (an H100 or larger) or a
+TPU::
 
     python forecast.py --data hres_0p25deg_steps20.nc --out results/full \
         --checkpoint model1=WeatherNextCyclones_2024_model1.npz ...  # four checkpoints
