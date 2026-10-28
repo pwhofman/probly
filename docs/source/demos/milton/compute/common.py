@@ -1,6 +1,6 @@
 """What the Milton demo's data scripts share: the map, the places, Milton's observed track, the format.
 
-``mock.py`` (made-up runs) and ``pack.py`` (WeatherNext's runs) both summarize runs with
+``mock_runs.py`` (made-up runs) and ``pack.py`` (WeatherNext's runs) both summarize runs with
 :func:`summarize` and write ``../assets/data.js`` with :func:`write`, so that the demo reads the same
 format from both. The runs' spread is split with probly's ``SecondOrderVarianceDecomposition``: the
 runs of every model are a Gaussian (their mean and variance), and the models are a sample of them.

@@ -3,18 +3,21 @@ r"""Forecast Hurricane Milton with WeatherNext: the runs of the Milton demo.
 Rolls out runs (ensemble members) of WeatherNext checkpoints from Milton's public initial
 conditions (2024-10-07, 00 UTC) and saves every run's fields over the demo's region:
 ``<out>/<checkpoint>/member_<seed>.nc``, with the initial fields in ``<out>/inputs_t0.nc``.
-Runs that exist are skipped, so the script can be restarted; the runs of all checkpoints alternate,
-so an interrupted ensemble stays balanced. ``pack.py`` turns the runs into the demo's data.
+A checkpoint whose runs all exist is skipped, so the script can be restarted. ``pack.py`` turns the
+runs into the demo's data.
 
-Every run follows PR #594's example: the ensemble wrapper is removed from the config, the runs are
-rolled out with WeatherNext's own ``chunked_prediction_generator_multiple_runs``, and run ``seed``
-draws its noise from ``jax.random.fold_in(jax.random.PRNGKey(0), seed)``. A run is the same for
-the same seed and the same number of steps (WeatherNext's noise also depends on how many steps are
-rolled out). On CPUs and GPUs, the attention is ``triblockdiag_mha`` (the config's default,
-``splash_mha``, needs a TPU).
+The runs go through probly's WeatherNext integration, as in probly's example
+(``examples/integrations/weathernext_uncertainty.py``): every checkpoint is a
+``WeatherNextPredictor``, and ``representer(predictor, num_samples=runs)`` collects its runs, one
+sample per variable. As there, the ensemble wrapper is removed from the config, the runs are rolled
+out with WeatherNext's own ``chunked_prediction_generator_multiple_runs``, and run ``seed`` draws its
+noise from ``jax.random.fold_in(jax.random.PRNGKey(0), seed)``. A run is the same for the same
+seed and the same number of steps (WeatherNext's noise also depends on how many steps are rolled
+out). On CPUs and GPUs, the attention is ``triblockdiag_mha`` (the config's default, ``splash_mha``,
+needs a TPU).
 
-This script needs WeatherNext and its dependencies, not probly's environment (see the README).
-The Mini checkpoints run on a CPU (about 12 minutes per run of 20 steps on four cores, 11 GB of
+This script needs WeatherNext and its dependencies, with probly installed next to them (see the
+README). The Mini checkpoints run on a CPU (about 12 minutes per run of 20 steps on four cores, 11 GB of
 memory) and on any GPU; the full ones need about 80 GB of GPU memory (an H100 or larger)::
 
     python forecast.py --data hres_1deg_steps20.nc \
@@ -30,6 +33,7 @@ import argparse
 import dataclasses
 from pathlib import Path
 import time
+from typing import TYPE_CHECKING
 
 import haiku as hk
 import jax
@@ -38,6 +42,14 @@ from weathernext.utils import checkpoint, data_utils, fiddle_config_io, rollout
 from weathernext.weathernext2 import fgn
 import xarray
 import xarray_jax
+
+from probly.integrations.weathernext import WeatherNextPredictor
+from probly.representer import representer
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from probly.representation.sample.numpy import NumpySample
 
 VARIABLES = {  # the fields the demo needs, with their units
     "10m_u_component_of_wind": "m s-1",
@@ -54,9 +66,14 @@ def log(message: str) -> None:
     print(f"[{time.strftime('%H:%M:%S')}] {message}", flush=True)  # noqa: T201
 
 
+def region(fields: xarray.Dataset) -> xarray.Dataset:
+    """The demo's fields over its region."""
+    return fields[[name for name in VARIABLES if name in fields.data_vars]].sel(lat=LAT, lon=LON)
+
+
 def crop(fields: xarray.Dataset, init: np.datetime64) -> xarray.Dataset:
     """The demo's fields over its region, with the valid time and units."""
-    out = fields[[name for name in VARIABLES if name in fields.data_vars]].sel(lat=LAT, lon=LON)
+    out = region(fields)
     for dim in ("batch", "sample"):
         if dim in out.dims:
             out = out.isel({dim: 0})
@@ -74,6 +91,18 @@ def save(fields: xarray.Dataset, path: Path, **attrs: object) -> None:
     temporary = path.with_suffix(".tmp")
     fields.to_netcdf(temporary)
     temporary.replace(path)
+
+
+def run_of(samples: dict[str, NumpySample], template: xarray.Dataset, seed: int) -> xarray.Dataset:
+    """One run's fields from probly's samples (one per variable, runs first), with the template's coordinates."""
+    fields = {}
+    for variable in template.data_vars:
+        values = samples[variable].array[seed]
+        if values.shape != template[variable].shape:
+            msg = f"{variable}: the run has the shape {values.shape}, the template {template[variable].shape}"
+            raise ValueError(msg)
+        fields[variable] = (template[variable].dims, values)
+    return xarray.Dataset(fields, coords=template.coords)
 
 
 def main() -> None:
@@ -114,41 +143,57 @@ def main() -> None:
 
     apply = jax.jit(forward.apply)
 
-    def runs_of(params: object) -> object:
-        """A checkpoint's forecast function, mapped over runs (the parameters closed over, as in PR #594)."""
-        return xarray_jax.pmap(lambda rng, i, t, f: apply(params, rng, i, t, f), dim="sample")
+    def ensemble_of(params: object) -> Callable[..., xarray.Dataset]:
+        """A checkpoint's ensemble function for probly's ``WeatherNextPredictor``: the runs of the given seeds.
 
-    predictors = {}
-    for entry in args.checkpoint:
-        name, path = entry.split("=", 1)
-        with Path(path).open("rb") as file:
-            predictors[name] = (path, runs_of(checkpoint.load(file, fgn.CheckPoint).params))
+        As in probly's WeatherNext example (``examples/integrations/weathernext_uncertainty.py``), but
+        every 6-hour step is cut to the demo's fields and region as it comes, so that all runs of a
+        checkpoint fit into a small machine's memory.
+        """
+        runs = xarray_jax.pmap(lambda rng, i, t, f: apply(params, rng, i, t, f), dim="sample")
 
-    for seed in range(args.runs):
-        for name, (path, predictor) in predictors.items():
-            (args.out / name).mkdir(exist_ok=True)
-            out = args.out / name / f"member_{seed}.nc"
-            if out.exists():
-                log(f"{out} exists")
-                continue
-            start = time.perf_counter()
+        def ensemble(
+            seeds: list[int], inputs: xarray.Dataset, targets_template: xarray.Dataset, forcings: xarray.Dataset
+        ) -> xarray.Dataset:
             chunks = []
+            # the runs go in groups of as many as there are devices, each group step by step
+            total = targets_template.sizes["time"] * -(-len(seeds) // jax.local_device_count())
             for chunk in rollout.chunked_prediction_generator_multiple_runs(
-                predictor_fn=predictor,
-                rngs=np.stack([jax.random.fold_in(jax.random.PRNGKey(0), seed)]),
+                predictor_fn=runs,
+                rngs=np.stack([jax.random.fold_in(jax.random.PRNGKey(0), seed) for seed in seeds]),
                 inputs=inputs,
-                targets_template=targets * np.nan,
+                targets_template=targets_template,
                 forcings=forcings,
                 num_steps_per_chunk=1,
-                num_samples=1,
+                num_samples=len(seeds),
                 pmap_devices=jax.local_devices(),
             ):
-                # block, and move the chunk to the host (see PR #594)
+                # block, and move the chunk to the host (see probly's example)
                 jax.block_until_ready([xarray_jax.unwrap_data(chunk[var]) for var in chunk.data_vars])
-                chunks.append(chunk.as_numpy())
-            run = crop(xarray.combine_by_coords(chunks), init)
+                chunks.append(region(chunk.as_numpy()))
+                log(f"step {len(chunks)} of {total}")
+            return xarray.combine_by_coords(chunks).isel(batch=0).transpose("sample", "time", ..., "lat", "lon")
+
+        return ensemble
+
+    # every run's fields come back from probly's representer as one sample per variable, without
+    # coordinates: the targets' template gives them back
+    template = region(targets).isel(batch=0).transpose("time", ..., "lat", "lon")
+    for entry in args.checkpoint:
+        name, path = entry.split("=", 1)
+        (args.out / name).mkdir(exist_ok=True)
+        files = [args.out / name / f"member_{seed}.nc" for seed in range(args.runs)]
+        if all(file.exists() for file in files):
+            log(f"{name}: the runs exist")
+            continue
+        with Path(path).open("rb") as file:
+            predictor = WeatherNextPredictor(ensemble_fn=ensemble_of(checkpoint.load(file, fgn.CheckPoint).params))
+        start = time.perf_counter()
+        samples = representer(predictor, num_samples=args.runs).represent(inputs, targets * np.nan, forcings)
+        log(f"{name}: {args.runs} runs in {time.perf_counter() - start:.0f} s")
+        for seed, out in enumerate(files):
             save(
-                run,
+                crop(run_of(samples, template, seed), init),
                 out,
                 model=args.config,
                 checkpoint=Path(path).name,
@@ -157,8 +202,8 @@ def main() -> None:
                 attention=transformer["attention_type"],
                 init_time=init,
                 initial_conditions=args.data.name,
+                computed_with="probly.integrations.weathernext.WeatherNextPredictor and probly.representer",
             )
-            log(f"{out}: {len(chunks)} steps in {time.perf_counter() - start:.0f} s")
 
 
 if __name__ == "__main__":

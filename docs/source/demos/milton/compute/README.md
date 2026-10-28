@@ -14,9 +14,9 @@ coastlines (Natural Earth) are real.
 
 | File | What it does | Environment |
 |---|---|---|
-| `forecast.py` | Rolls out WeatherNext's runs of Milton: `results/<checkpoint>/member_<seed>.nc`. | WeatherNext's |
+| `forecast.py` | Rolls out WeatherNext's runs of Milton through probly's `WeatherNextPredictor` and `representer`: `results/<checkpoint>/member_<seed>.nc`. | WeatherNext's, with probly |
 | `pack.py` | Writes `../assets/data.js` from the runs, with mock runs for the models that have none. | probly's, with xarray |
-| `mock.py` | The mock runs; run alone, it writes `../assets/data.js` with mock runs only. | probly's |
+| `mock_runs.py` | The mock runs; run alone, it writes `../assets/data.js` with mock runs only. | probly's |
 | `common.py` | What the scripts share: the map, the places, the observed track, the data's format. | probly's |
 | `preview.py` | Inlines the assets into one page, `cache/preview.html`, to look at the demo without the docs. | any |
 
@@ -31,6 +31,7 @@ uv pip install jax chex dask dinosaur-dycore dm-haiku dm-tree fiddle h5netcdf h5
     numpy pandas pyproj rtree scipy trimesh typing_extensions "xarray<=2026.2.0" xarray_tensorstore \
     "gdm-xarray-jax @ git+https://github.com/google-deepmind/xarray_jax.git@v0.1.1" netcdf4
 uv pip install --no-deps -e weathernext  # use "jax[cuda12]" above on a GPU
+uv pip install -e path/to/probly  # the runs go through probly.integrations.weathernext
 
 BASE=https://storage.googleapis.com/dm_graphcast/weathernext2
 curl -o wn_mini_2024.npz "$BASE/params/WeatherNextCyclones_Mini_%3C2024.npz"

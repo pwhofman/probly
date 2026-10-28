@@ -7,7 +7,7 @@ missing. ``pack.py`` uses them for the full WeatherNext models until those have 
 script writes ``../assets/data.js`` with mock runs only. Run from the repository's root (it downloads
 IBTrACS and Natural Earth into ``cache/`` once)::
 
-    uv run python docs/source/demos/milton/compute/mock.py
+    uv run python docs/source/demos/milton/compute/mock_runs.py
 """
 
 from __future__ import annotations
@@ -189,7 +189,7 @@ def main() -> None:
         models,
         observed,
         rings,
-        "The data of the Milton demo, written by compute/mock.py. MOCK DATA: every forecast in it is\n"
+        "The data of the Milton demo, written by compute/mock_runs.py. MOCK DATA: every forecast in it is\n"
         "invented; only the observed track (IBTrACS) and the coastlines (Natural Earth) are real.",
     )
 

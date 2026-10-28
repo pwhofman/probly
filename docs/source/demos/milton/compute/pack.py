@@ -5,7 +5,7 @@ initial fields (``<results>/inputs_t0.nc``), and summarizes them as the demo nee
 (``common.summarize``): the wind on the demo's grid and at its places every 6 hours, every run's
 track, found as the lowest sea-level pressure near the run's last position, and the split of the
 runs' spread into aleatoric and epistemic variance, with probly. Models whose runs are missing are
-mock data (``mock.py``); for now, these are the full models, which need a larger GPU than we have
+mock data (``mock_runs.py``); for now, these are the full models, which need a larger GPU than we have
 run them on.
 
 There is no "what happened" for the wind yet: the targets in WeatherNext's public data are ECMWF's
@@ -21,9 +21,9 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-from unittest.mock import build_model
 
 from common import HERE, TIMES, grid, land, observed_track, points, summarize, write
+from mock_runs import build_model
 import numpy as np
 import xarray as xr
 
@@ -155,7 +155,7 @@ def main() -> None:
         observed,
         rings,
         "The data of the Milton demo, written by compute/pack.py.\n"
-        f"Real runs: {real}. Every other model is MOCK DATA (compute/mock.py).",
+        f"Real runs: {real}. Every other model is MOCK DATA (compute/mock_runs.py).",
     )
 
 
