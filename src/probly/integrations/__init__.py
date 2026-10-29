@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from probly.calibrator import calibrate
+from probly.lazy_types import GPYTORCH_GP
 from probly.predictor import predict, predict_raw
 from probly.representer import representer
 
@@ -53,6 +54,12 @@ _PEFT_MODELS = ("peft.peft_model.PeftModel",)
 @predict_raw.delayed_register(_PEFT_MODELS)
 def _(_: type[object]) -> None:
     from . import peft as peft  # noqa: PLC0415
+
+
+@predict_raw.delayed_register(GPYTORCH_GP)
+@representer.delayed_register(GPYTORCH_GP)
+def _(_: type[object]) -> None:
+    from . import gpytorch as gpytorch  # noqa: PLC0415
 
 
 __all__ = []

@@ -98,6 +98,9 @@ jobs:
                     - os: ubuntu-latest
                       python-version: "3.13"
                       dependency-group: transformers
+                    - os: ubuntu-latest
+                      python-version: "3.13"
+                      dependency-group: gpytorch
                     - os: macos-latest
                       python-version: "3.13"
                       dependency-group: torch

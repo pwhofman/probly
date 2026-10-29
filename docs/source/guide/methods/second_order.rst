@@ -127,6 +127,35 @@ classification is currently supported.
 
 .. minigallery:: probly.method.laplace
 
+.. _m-gpytorch:
+
+:mod:`gpytorch <probly.integrations.gpytorch>`
+----------------------------------------------
+
+A Gaussian process places its posterior over functions rather than over
+weights, so no transformation is needed: ``probly`` binds GPyTorch models
+directly. ``predict`` returns the predictive Gaussian, with the likelihood
+noise included, and ``representer(model, num_samples=S)`` draws ``S`` latent
+functions from the posterior and maps each through the likelihood. A Gaussian
+likelihood gives a sample of Gaussians, a Bernoulli or softmax likelihood a
+sample of class distributions, so the usual decompositions apply to exact and
+sparse variational GPs alike.
+
+:Idea: Exact or variational posterior over the latent function; the
+    likelihood turns function draws into first-order distributions.
+:Representation: :ref:`Probability distribution <uq-first-order>` from
+    ``predict``; :ref:`Sampled second order <uq-second-order>` from the
+    representer.
+:Advantages: A closed-form posterior for exact GPs, with the aleatoric part
+    given by the likelihood noise and the epistemic part by the posterior
+    spread.
+:Disadvantages: Cubic cost in the number of training points for exact GPs,
+    inducing-point approximations otherwise; ``S`` draws per prediction for
+    the second-order representation.
+:Reference: Wraps the external ``GPyTorch`` package.
+
+.. minigallery:: probly.integrations.gpytorch
+
 .. _m-ensemble:
 
 :func:`ensemble <probly.transformation.ensemble>`
@@ -515,6 +544,7 @@ Full API
     ~probly.transformation.dropconnect
     ~probly.transformation.bayesian
     laplace
+    ~probly.integrations.gpytorch
     ~probly.transformation.ensemble
     ~probly.transformation.batchensemble
     ~probly.transformation.subensemble
