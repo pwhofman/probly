@@ -18,7 +18,7 @@ from ndlike.array_like import (
 )
 import numpy as np
 
-from probly.representation.sample._common import Sample, SampleAxis, create_sample
+from probly.representation.sample._common import Sample, SampleAxis, create_sample, track_sample_axis_after_broadcast
 from probly.representation.sample.axis_tracking import track_axis
 from probly.representation.sample.numpy_functions import (
     NumpySampleInternals,
@@ -315,36 +315,68 @@ class NumpySample[D: NumpyLike | np.ndarray](NumpyLikeImplementation[D], Sample[
         Returns:
             The result of applying the ufunc.
         """
-        new_sample_axis: int | None = self.sample_axis
+        samples = [value for value in inputs if isinstance(value, NumpySample)]
+        primary = samples[0] if samples else None
+        new_sample_axis = primary.sample_axis if primary is not None else None
         arrays = [x.array if isinstance(x, NumpySample) else x for x in inputs]
 
-        if method in ("__call__", "reduce", "reduceat", "accumulate") and "out" in kwargs:
-            outs = kwargs["out"]
-            if outs is not None:
-                if not isinstance(outs, tuple):
-                    outs = (outs,)
-                cast_outs = tuple(o.array if isinstance(o, NumpySample) else o for o in outs)
+        out = kwargs.get("out")
+        outs = out if isinstance(out, tuple) else ((out,) if out is not None else None)
+        if outs is not None:
+            cast_outs = tuple(value.array if isinstance(value, NumpySample) else value for value in outs)
+            if method in ("__call__", "outer"):
                 kwargs["out"] = cast_outs
-        else:
-            outs = None
+            else:
+                if len(cast_outs) != 1:
+                    msg = f"ufunc method {method!r} expects a single out value."
+                    raise TypeError(msg)
+                kwargs["out"] = cast_outs[0]
 
         result = getattr(ufunc, method)(*arrays, **kwargs)
 
-        if method in {"reduce", "reduceat", "accumulate"}:
-            axis: int | tuple[int, ...] = kwargs.get("axis", 0)
-            keepdims: bool = method == "reduce" and kwargs.get("keepdims", False)
-            new_sample_axis = track_sample_axis_after_reduction(self.sample_axis, self.ndim, axis, keepdims)
+        if primary is not None and method == "reduce":
+            axis = kwargs.get("axis", inputs[1] if len(inputs) > 1 else 0)
+            keepdims = kwargs.get("keepdims", False)
+            new_sample_axis = track_sample_axis_after_reduction(primary.sample_axis, primary.ndim, axis, keepdims)
+        elif primary is not None and method == "reduceat":
+            axis = kwargs.get("axis", inputs[2] if len(inputs) > 2 else 0)
+            if axis % primary.ndim == primary.sample_axis:
+                new_sample_axis = None
         elif method in ("at", "outer"):
             new_sample_axis = None
 
-        if outs is not None:
-            if len(outs) == 1:
-                return outs[0]
-            return outs
+        def wrap(value: Any) -> Any:  # noqa: ANN401
+            if not isinstance(value, NumpyLike):
+                return value
+            sample_axis = new_sample_axis
+            weights = primary.weights if primary is not None else None
+            if method == "__call__" and ufunc.signature is None:
+                sample_axis = track_sample_axis_after_broadcast(
+                    ((sample.sample_axis, sample.ndim) for sample in samples), value.ndim
+                )
+                if sample_axis is None:
+                    return value
+                candidates = [
+                    np.broadcast_to(sample.weights, (value.shape[sample_axis],))
+                    for sample in samples
+                    if sample.weights is not None
+                ]
+                if any(not np.array_equal(candidates[0], candidate) for candidate in candidates[1:]):
+                    msg = "Elementwise operands must have matching sample weights."
+                    raise ValueError(msg)
+                weights = candidates[0] if candidates else None
+            if sample_axis is None:
+                return value
+            return type(self)(array=value, sample_axis=sample_axis, weights=weights)
 
-        if new_sample_axis is not None and isinstance(result, np.ndarray):
-            return type(self)(result, sample_axis=new_sample_axis, weights=self.weights)
-        return result
+        output_count = ufunc.nout if method in ("__call__", "outer") else 1
+        result_items = result if output_count > 1 else (result,)
+        out_items = outs or (None,) * output_count
+        outputs = tuple(
+            original if original is not None else wrap(value)
+            for original, value in zip(out_items, result_items, strict=True)
+        )
+        return outputs if output_count > 1 else outputs[0]
 
     def __array_function__(
         self,

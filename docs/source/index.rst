@@ -1,53 +1,78 @@
+.. The logo comes before the title so that it floats next to it; the labels stay on the title. It is
+   inline so that _static/js/logo.js can animate its waves.
+
+.. container:: probly-hero-logo
+
+   .. container:: only-light
+
+      .. raw:: html
+         :file: _static/logo/probly-logo-stacked-light.svg
+
+   .. container:: only-dark
+
+      .. raw:: html
+         :file: _static/logo/probly-logo-stacked-dark.svg
+
 .. _nn-init-doc:
 .. _locally-disable-grad-doc:
 .. _index:
 
-``probly``
-==========
+Uncertainty Quantification for Machine Learning
+===============================================
 
-.. raw:: html
-   :file: _includes/ecosystem_ring.html
+.. container:: probly-hero
 
-.. rst-class:: probly-tagline
+   .. rst-class:: probly-tagline
 
    Turn any model into one that knows what it doesn't know.
 
-``probly`` is a **library-agnostic** toolkit for **uncertainty representation and quantification**
-in machine learning. Make any PyTorch, Flax/JAX, scikit-learn, River, or Hugging Face model
-uncertainty-aware in a single line, then **represent**, **quantify**, and **decompose** its
-predictive uncertainty into **aleatoric** and **epistemic** components. It ships 40+ methods,
-from Bayesian nets and deep ensembles to evidential, credal, and conformal prediction, all behind
-the same unified API.
+   ``probly`` is a **library-agnostic** toolkit for **uncertainty representation and quantification**
+   in machine learning. Make any PyTorch, Flax/JAX, scikit-learn, River, or Hugging Face model
+   uncertainty-aware in a single line, then **represent**, **quantify**, and **decompose** its
+   predictive uncertainty into **aleatoric** and **epistemic** components. It ships 40+ methods,
+   from Bayesian nets and deep ensembles to evidential, credal, and conformal prediction, all behind
+   the same unified API.
 
-.. container:: probly-hero-buttons
+   .. container:: probly-hero-buttons
 
-   .. button-ref:: getting_started
-      :ref-type: doc
-      :color: primary
-      :shadow:
+      .. button-ref:: getting_started
+         :ref-type: doc
+         :color: primary
+         :class: probly-button
 
-      Get started
+         Get started
 
-   .. button-ref:: user_guide
-      :ref-type: doc
-      :color: primary
-      :outline:
+      .. button-ref:: auto_examples/index
+         :ref-type: doc
+         :color: secondary
+         :outline:
+         :class: probly-button
 
-      User guide
+         Examples
 
-   .. button-ref:: auto_examples/index
-      :ref-type: doc
-      :color: primary
-      :outline:
+      .. button-ref:: api
+         :ref-type: doc
+         :color: secondary
+         :outline:
+         :class: probly-button
 
-      Browse examples
+         API reference
 
-   .. button-ref:: api
-      :ref-type: doc
-      :color: primary
-      :outline:
+      .. button-link:: https://github.com/pwhofman/probly
+         :color: secondary
+         :outline:
+         :class: probly-button
 
-      API reference
+         :octicon:`mark-github` GitHub
+
+   .. container:: probly-hero-meta
+
+      Python 3.12+ |middot| MIT license |middot| Published at NeurIPS 2026 (oral presentation)
+
+   .. raw:: html
+      :file: _includes/works_with.html
+
+.. |middot| unicode:: U+00B7
 
 Uncertainty in a few lines
 --------------------------

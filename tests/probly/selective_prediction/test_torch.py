@@ -13,8 +13,9 @@ from torch import nn  # noqa: E402
 from probly import method  # noqa: E402
 from probly.decider import categorical_from_maximin  # noqa: E402
 from probly.method import cast  # noqa: E402
+from probly.metrics import log_loss_per_instance  # noqa: E402
 from probly.predictor import RepresentationPredictor  # noqa: E402
-from probly.quantification import LogLoss, SecondOrderZeroOneDecomposition, quantify  # noqa: E402
+from probly.quantification import SecondOrderZeroOneDecomposition, quantify  # noqa: E402
 from probly.representation.distribution import (  # noqa: E402
     CategoricalDistribution,
     CategoricalDistributionSample,
@@ -60,7 +61,7 @@ def test_ensemble_log_loss_matches_quantify(notion: str) -> None:
 
     with torch.no_grad():
         result = selective_predictor(
-            representer(model), selector=make_selector(threshold=0.6, notion=notion), loss=LogLoss()
+            representer(model), selector=make_selector(threshold=0.6, notion=notion), loss=log_loss_per_instance
         ).predict(x)
         expected = quantify(representer(model).represent(x))[notion]
 

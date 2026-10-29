@@ -14,6 +14,7 @@ from ._pr_curve_suite import PRCurveSuite
 from ._reference_suite import ReferenceSuite
 from ._roc_auc_score_suite import RocAucScoreSuite
 from ._roc_curve_suite import RocCurveSuite
+from ._scoring_rule_suite import ScoringRuleSuite
 
 torch = pytest.importorskip("torch")
 
@@ -108,3 +109,175 @@ class TestDistributionInput:
 
 class TestReference(ReferenceSuite):
     pass
+
+
+class TestScoringRules(ScoringRuleSuite):
+    pass
+
+
+class TestScoringRuleInputs:
+    """Scoring rules accept categorical distributions and reject samples."""
+
+    def test_log_loss_of_logit_distribution_is_exact(self):
+        from probly.metrics import log_loss_per_instance  # noqa: PLC0415
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchLogitCategoricalDistribution,
+        )
+
+        # exp(-800) underflows to zero, so only the log probabilities keep this loss finite.
+        dist = TorchLogitCategoricalDistribution(tensor=torch.tensor([[0.0, -800.0]]))
+        assert float(log_loss_per_instance(dist, torch.tensor([1]))[0]) == pytest.approx(800.0)
+
+    def test_logit_distribution_scores_normalized_probabilities(self):
+        from probly.metrics import (  # noqa: PLC0415
+            brier_loss_per_instance,
+            log_loss_per_instance,
+            spherical_loss_per_instance,
+            zero_one_loss_per_instance,
+        )
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchLogitCategoricalDistribution,
+        )
+
+        probs = torch.tensor([[0.7, 0.2, 0.1], [0.1, 0.3, 0.6]], dtype=torch.float64)
+        labels = torch.tensor([0, 1])
+        # Shifted log probabilities are unnormalized logits of the same distribution.
+        dist = TorchLogitCategoricalDistribution(tensor=torch.log(probs) + 1.0)
+        for rule in (
+            log_loss_per_instance,
+            brier_loss_per_instance,
+            zero_one_loss_per_instance,
+            spherical_loss_per_instance,
+        ):
+            torch.testing.assert_close(rule(dist, labels), rule(probs, labels), msg=rule.__name__)
+
+    def test_distribution_target_matches_array(self):
+        from probly.metrics import brier_loss_per_instance  # noqa: PLC0415
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        probs = torch.tensor([[0.7, 0.3], [0.2, 0.8]])
+        target = torch.tensor([[0.5, 0.5], [0.1, 0.9]])
+        result = brier_loss_per_instance(probs, TorchProbabilityCategoricalDistribution(tensor=target))
+        torch.testing.assert_close(result, brier_loss_per_instance(probs, target))
+
+    @pytest.mark.parametrize("labels", [[2, 0, 1], (2, 0, 1), "numpy"])
+    def test_labels_from_other_backends(self, labels):
+        import numpy as np  # noqa: PLC0415
+
+        from probly.metrics import brier_loss_per_instance  # noqa: PLC0415
+
+        labels = np.array([2, 0, 1]) if labels == "numpy" else labels
+        probs = torch.tensor([[0.2, 0.5, 0.3], [0.6, 0.3, 0.1], [0.1, 0.1, 0.8]])
+        result = brier_loss_per_instance(probs, labels)
+        assert isinstance(result, torch.Tensor)
+        torch.testing.assert_close(result, brier_loss_per_instance(probs, torch.tensor([2, 0, 1])))
+
+    def test_rejects_samples(self):
+        from probly.metrics import brier_loss_per_instance  # noqa: PLC0415
+        from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
+
+        sample = TorchSample(torch.tensor([[[0.7, 0.3]], [[0.4, 0.6]]]), sample_dim=0)
+        with pytest.raises(TypeError, match="sample_mean"):
+            brier_loss_per_instance(sample, torch.tensor([0]))
+
+    def test_backward(self):
+        from probly.metrics import log_loss_per_instance  # noqa: PLC0415
+
+        probs = torch.softmax(torch.randn(8, 3), dim=1).requires_grad_()
+        log_loss_per_instance(probs, torch.randint(0, 3, (8,))).sum().backward()
+        assert probs.grad is not None
+        assert torch.isfinite(probs.grad).all()
+
+    @pytest.mark.parametrize("representation", ["array", "probability", "logit"])
+    @pytest.mark.parametrize("target_kind", ["labels", "probabilities", "distribution"])
+    def test_log_loss_backward_with_zero_probability(self, representation, target_kind):
+        from probly.metrics import log_loss  # noqa: PLC0415
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchLogitCategoricalDistribution,
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        values = torch.tensor([[0.0, -1000.0]] if representation == "logit" else [[1.0, 0.0]], requires_grad=True)
+        predictions = values
+        if representation == "probability":
+            predictions = TorchProbabilityCategoricalDistribution(values)
+        elif representation == "logit":
+            predictions = TorchLogitCategoricalDistribution(values)
+
+        target = torch.tensor([0]) if target_kind == "labels" else torch.tensor([[1.0, 0.0]])
+        if target_kind == "distribution":
+            target = TorchProbabilityCategoricalDistribution(target)
+        loss = log_loss(predictions, target)
+        loss.backward()
+
+        assert float(loss.detach()) == 0.0
+        expected = {"array": [[-1.0, 0.0]], "probability": [[0.0, 1.0]], "logit": [[0.0, 0.0]]}
+        torch.testing.assert_close(values.grad, torch.tensor(expected[representation]))
+
+    @pytest.mark.parametrize("soft_target", [False, True])
+    def test_log_loss_backward_through_underflowed_softmax(self, soft_target):
+        from probly.metrics import log_loss  # noqa: PLC0415
+
+        logits = torch.tensor([[0.0, -1000.0]], requires_grad=True)
+        target = torch.tensor([[1.0, 0.0]]) if soft_target else torch.tensor([0])
+        log_loss(logits.softmax(dim=-1), target).backward()
+        torch.testing.assert_close(logits.grad, torch.zeros_like(logits))
+
+    @pytest.mark.parametrize("soft_target", [False, True])
+    def test_extreme_logits_match_cross_entropy_value_and_gradient(self, soft_target):
+        from probly.metrics import log_loss  # noqa: PLC0415
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchLogitCategoricalDistribution,
+        )
+
+        logits = torch.tensor([[0.0, -1000.0]], requires_grad=True)
+        target = torch.tensor([[0.3, 0.7]]) if soft_target else torch.tensor([1])
+        expected = torch.nn.functional.cross_entropy(logits, target)
+        expected_gradient = torch.autograd.grad(expected, logits)[0]
+        actual = log_loss(TorchLogitCategoricalDistribution(logits), target)
+        actual_gradient = torch.autograd.grad(actual, logits)[0]
+        torch.testing.assert_close(actual, expected)
+        torch.testing.assert_close(actual_gradient, expected_gradient)
+
+    @pytest.mark.parametrize("representation", ["array", "probability", "logit"])
+    def test_first_log_loss_call_uses_specialization(self, representation):
+        import subprocess  # noqa: PLC0415
+        import sys  # noqa: PLC0415
+        import textwrap  # noqa: PLC0415
+
+        script = textwrap.dedent(
+            """\
+            import sys
+            import torch
+            from probly.metrics import log_loss
+            from probly.representation.distribution.torch_categorical import (
+                TorchLogitCategoricalDistribution,
+                TorchProbabilityCategoricalDistribution,
+            )
+
+            representation = sys.argv[1]
+            assert 'probly.metrics.torch' not in sys.modules
+            values = torch.tensor(
+                [[0.0, -1000.0]] if representation == 'logit' else [[1.0, 0.0]], requires_grad=True
+            )
+            predictions = values
+            if representation == 'probability':
+                predictions = TorchProbabilityCategoricalDistribution(values)
+            elif representation == 'logit':
+                predictions = TorchLogitCategoricalDistribution(values)
+            loss = log_loss(predictions, torch.tensor([0]))
+            loss.backward()
+            assert loss.item() == 0.0
+            assert torch.isfinite(values.grad).all(), values.grad
+            """
+        )
+        result = subprocess.run(  # noqa: S603 - fixed script and representation choices
+            [sys.executable, "-c", script, representation],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr

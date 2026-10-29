@@ -55,13 +55,6 @@ from .notion import (
     TotalUncertainty,
     notion_registry,
 )
-from .scoring_rule import (
-    BrierLoss,
-    LogLoss,
-    ScoringRule,
-    SphericalLoss,
-    ZeroOneLoss,
-)
 
 measure = _measure
 
@@ -71,7 +64,6 @@ __all__ = [
     "AleatoricEpistemicDecomposition",
     "AleatoricEpistemicTotalDecomposition",
     "AleatoricUncertainty",
-    "BrierLoss",
     "CachingDecomposition",
     "CategoricalVarianceDecomposition",
     "CredalSetEntropyDecomposition",
@@ -80,22 +72,18 @@ __all__ = [
     "EpistemicUncertainty",
     "LabelwiseBinaryEntropyDecomposition",
     "LabelwiseBinaryVarianceDecomposition",
-    "LogLoss",
     "Notion",
     "OrdinalEntropyDecomposition",
     "OrdinalVarianceDecomposition",
     "QuantificationResult",
     "Quantifier",
-    "ScoringRule",
     "SecondOrderEntropyDecomposition",
     "SecondOrderScoringRuleDecomposition",
     "SecondOrderVarianceDecomposition",
     "SecondOrderWassersteinDecomposition",
     "SecondOrderZeroOneDecomposition",
-    "SphericalLoss",
     "TotalDecomposition",
     "TotalUncertainty",
-    "ZeroOneLoss",
     "conditional_entropy",
     "conditional_spectral_entropy",
     "conformal_set_size",

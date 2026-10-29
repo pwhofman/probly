@@ -76,8 +76,9 @@ Supported semantics
   protected shapes or produce inconsistent batch shapes are rejected.
 * Comparisons return boolean arrays with the visible batch shape. All protected
   components and fields must satisfy the relation; ``!=`` instead tests whether
-  any component differs. Custom subclass comparisons take precedence. Use
-  ``eq=False`` on dataclasses to inherit the mixin's equality implementation.
+  any component differs. Custom subclass comparisons take precedence.
+  ``JaxLikeImplementation`` preserves inherited array equality even when a
+  subclass uses the default dataclass equality setting.
   When equality dispatch declines, Python retains its identity fallback.
 * ``divmod`` returns two reconstructed representations.
 * ``@`` applies matrix multiplication to visible dimensions independently at
@@ -85,9 +86,10 @@ Supported semantics
   dimensions. Vector and batched matrix multiplication follow JAX semantics.
 * Augmented assignment, such as ``x += y``, rebinds an out-of-place result.
   Modular three-argument ``pow`` is unsupported.
-* Generic operators reject representations with NumPy sidecar fields. NumPy
-  ufunc coercion is disabled so it cannot bypass the JAX function permissions;
-  explicit conversion with ``np.asarray`` remains available.
+* Generic JAX operators reject representations with NumPy sidecar fields.
+  NumPy ufuncs may coerce through ``__array__``, losing the representation and
+  its JAX-specific operation permissions. Use the JAX wrappers when those
+  semantics must be preserved.
 
 Distribution-specific behavior
 ------------------------------
@@ -104,6 +106,39 @@ Subclasses can customize arithmetic results through
 the wrapper function and original operands in expression order. Its results
 are checked for protected-shape and batch-shape preservation before
 ``with_protected_values(values, func)`` reconstructs the representation.
+
+Sample operators and pytree fields
+==================================
+
+``JaxSample`` also dispatches elementwise operators through these wrappers.
+Broadcasting tracks the sample axis and retains weights; conflicting sample
+axes produce a native result, and conflicting weights raise a validation error.
+For compiled operations on two distinct weighted samples, use ``checkify`` to
+functionalize the weight-compatibility check, as for constructor checks below.
+Native JAX arrays on the left of an infix operation may consume
+``__jax_array__`` and return native arrays; explicit ndlike wrappers preserve
+sample metadata in either operand order.
+Samples use NumPy priority zero: NumPy-led infix calls and explicit NumPy
+ufuncs can return native NumPy arrays. This does not affect the explicit
+``__jax_function__`` dispatch used by ndlike's JAX wrappers. JAX also accepts
+NumPy arrays as inputs, so sample-led JAX operations can retain the sample
+wrapper even with a NumPy array on the right.
+
+Reducing the sample axis removes the sample wrapper, even with
+``keepdims=True``. Keeping a length-one dimension preserves shape, not the
+sample interpretation. Reductions over other axes retain the wrapper and
+weights, updating the sample axis only if dimensions before it are removed.
+
+Since ``ndlike`` 0.2, general ``JaxLikeImplementation`` subclasses explicitly
+declare dynamic fields. ``JaxSample`` declares
+``pytree_children = ("array", "weights")``, including ``weights`` when its value
+is ``None``. The sample axis remains static metadata. Subclasses adding dynamic
+fields must extend this tuple. ``JaxAxisProtected`` declares its protected fields
+automatically.
+
+Native ``jax.tree.map`` transforms the underlying array and weights structurally.
+Use ``ndlike.jax_like.jax_tree_map`` to apply operations to whole sample objects
+instead: multiplying a sample by two transforms its values but not its weights.
 
 Constructor validation
 ======================

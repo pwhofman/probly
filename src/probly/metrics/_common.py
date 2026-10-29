@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any, cast
+
 from flextype import flexdispatch
 
 # Number of decimal places used when rounding lower/upper bounds in credal-set coverage and efficiency.
 CREDAL_ROUND_DECIMALS: int = 3
+
+type ScoringRule = Callable[[object, object], object]
+"""A per-instance scoring rule ``(y_prob, y_true) -> losses``, such as :func:`log_loss_per_instance`."""
 
 
 @flexdispatch
@@ -13,14 +19,14 @@ def auc(x: object, y: object) -> object:
     """Compute area under a curve using the trapezoid rule.
 
     Args:
-        x: x-coordinates (must be monotonic).
-        y: y-coordinates.
+        x: x-coordinates of shape ``(..., n)``, monotonic along the last axis.
+        y: y-coordinates of shape ``(..., n)``.
 
     Returns:
-        Area under the curve.
+        Area under the curve of shape ``(...)``.
     """
-    msg = f"No auc implementation registered for type {type(x)}"
-    raise NotImplementedError(msg)
+    xs, ys = cast("Any", x), cast("Any", y)
+    return ((xs[..., 1:] - xs[..., :-1]) * (ys[..., 1:] + ys[..., :-1]) / 2.0).sum(axis=-1)
 
 
 @flexdispatch
@@ -68,8 +74,8 @@ def roc_auc_score(y_true: object, y_score: object) -> object:
     Returns:
         AUROC value.
     """
-    msg = f"No roc_auc_score implementation registered for type {type(y_true)}"
-    raise NotImplementedError(msg)
+    fpr, tpr, _ = roc_curve(y_true, y_score)
+    return auc(fpr, tpr)
 
 
 @flexdispatch
@@ -85,8 +91,8 @@ def average_precision_score(y_true: object, y_score: object) -> object:
     Returns:
         Average precision value.
     """
-    msg = f"No average_precision_score implementation registered for type {type(y_true)}"
-    raise NotImplementedError(msg)
+    precision, recall, _ = cast("Any", precision_recall_curve(y_true, y_score))
+    return -((recall[..., 1:] - recall[..., :-1]) * precision[..., :-1]).sum(axis=-1)
 
 
 @flexdispatch
@@ -103,9 +109,22 @@ def accuracy(y_pred: object, y_true: object) -> object:
 
     Raises:
         NotImplementedError: If no implementation is registered for the type of ``y_pred``.
+        TypeError: If ``y_pred`` is a sample of predictions.
     """
-    msg = f"No accuracy implementation registered for type {type(y_pred)}"
-    raise NotImplementedError(msg)
+    predicted = cast("Any", _probabilities(y_pred))
+    labels = cast("Any", y_true).reshape(-1)
+    if predicted.ndim == 2:
+        predicted = predicted.argmax(axis=-1)
+    elif predicted.ndim != 1:
+        msg = f"accuracy expects predictions of shape (n,) or (n, k), got shape {tuple(predicted.shape)}."
+        raise ValueError(msg)
+    if predicted.shape[0] != labels.shape[0]:
+        msg = (
+            "accuracy labels must match predictions batch size. "
+            f"Got {labels.shape[0]} labels for {predicted.shape[0]} predictions."
+        )
+        raise ValueError(msg)
+    return (predicted == labels).sum() / labels.shape[0]
 
 
 @flexdispatch
@@ -143,10 +162,16 @@ def false_positive_rate(y_pred: object, y_true: object) -> object:
         The fraction of true negatives that are predicted positive, or NaN if there are no negative samples.
 
     Raises:
-        NotImplementedError: If no implementation is registered for the type of ``y_pred``.
+        ValueError: If ``y_pred`` and ``y_true`` differ in batch size.
     """
-    msg = f"No false_positive_rate implementation registered for type {type(y_pred)}"
-    raise NotImplementedError(msg)
+    y = cast("Any", y_true).reshape(-1)
+    p = cast("Any", y_pred).reshape(-1)
+    if p.shape[0] != y.shape[0]:
+        msg = f"false_positive_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
+        raise ValueError(msg)
+    negatives = (y == 0).sum()
+    # 0/0 yields NaN when there are no negative samples; a Python branch would break jax.jit tracing.
+    return ((p == 1) & (y == 0)).sum() / negatives
 
 
 @flexdispatch
@@ -161,10 +186,16 @@ def false_negative_rate(y_pred: object, y_true: object) -> object:
         The fraction of true positives that are predicted negative, or NaN if there are no positive samples.
 
     Raises:
-        NotImplementedError: If no implementation is registered for the type of ``y_pred``.
+        ValueError: If ``y_pred`` and ``y_true`` differ in batch size.
     """
-    msg = f"No false_negative_rate implementation registered for type {type(y_pred)}"
-    raise NotImplementedError(msg)
+    y = cast("Any", y_true).reshape(-1)
+    p = cast("Any", y_pred).reshape(-1)
+    if p.shape[0] != y.shape[0]:
+        msg = f"false_negative_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
+        raise ValueError(msg)
+    positives = (y == 1).sum()
+    # 0/0 yields NaN when there are no positive samples; a Python branch would break jax.jit tracing.
+    return ((p == 0) & (y == 1)).sum() / positives
 
 
 # --- Predicted-set metrics ----------------------------------------------------
@@ -380,3 +411,198 @@ def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.000
     """
     msg = f"convex_hull_coverage is not implemented for type {type(y_pred).__name__}."
     raise NotImplementedError(msg)
+
+
+# These primitives provide composed defaults. Individual rules can specialize dispatch where a backend needs
+# a more efficient or numerically stable implementation.
+@flexdispatch
+def _probabilities(y_prob: object) -> object:
+    """Return the probabilities ``(..., K)`` of a prediction, unwrapping categorical distributions."""
+    msg = f"No probabilities implementation registered for type {type(y_prob).__name__}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def _log_probabilities(y_prob: object) -> object:
+    """Return the log probabilities ``(..., K)`` of a prediction, exact for logit-parameterized distributions."""
+    msg = f"No log probabilities implementation registered for type {type(y_prob).__name__}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def _one_hot_argmax(probabilities: object) -> object:
+    """One-hot encode the first maximum of each probability vector ``(..., K)`` in the probabilities' dtype."""
+    msg = f"No one-hot argmax implementation registered for type {type(probabilities).__name__}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def _expected_loss(loss_vector: object, y_true: object) -> object:
+    """Reduce a per-label loss vector of shape ``(..., K)`` to the loss of each instance under ``y_true``."""
+    msg = f"Scoring rules are not implemented for type {type(loss_vector).__name__}."
+    raise NotImplementedError(msg)
+
+
+def _validate_labels(labels_shape: tuple[int, ...], loss_shape: tuple[int, ...], *, is_integer: bool) -> None:
+    """Raise unless ``y_true`` holds integer labels for per-label losses of shape ``loss_shape``."""
+    if labels_shape != loss_shape[:-1]:
+        msg = (
+            f"y_true must be integer labels of shape {loss_shape[:-1]} or target probabilities of shape "
+            f"{loss_shape}, got shape {labels_shape}."
+        )
+        raise ValueError(msg)
+    if not is_integer:
+        msg = "y_true of the predictions' batch shape must hold integer class labels."
+        raise ValueError(msg)
+
+
+@flexdispatch
+def log_loss_per_instance(y_prob: object, y_true: object) -> object:
+    """Compute the log loss ``-log(p_y)`` of each prediction.
+
+    No clipping is applied, so the loss is ``inf`` where the true class has probability zero.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution, whose log
+            probabilities are used directly so that logit-parameterized distributions stay exact.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)`` (array or
+            categorical distribution) under which the expected loss is taken.
+
+    Returns:
+        The loss of each prediction, of shape ``(...)``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    return _expected_loss(-cast("Any", _log_probabilities(y_prob)), y_true)
+
+
+def brier_loss_per_instance(y_prob: object, y_true: object) -> object:
+    """Compute the Brier loss ``sum_k (p_k - [k == y])^2`` of each prediction.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)`` (array or
+            categorical distribution) under which the expected loss is taken.
+
+    Returns:
+        The loss of each prediction in ``[0, 2]``, of shape ``(...)``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    probabilities = cast("Any", _probabilities(y_prob))
+    loss_vector = (probabilities**2).sum(axis=-1, keepdims=True) - 2.0 * probabilities + 1.0
+    return _expected_loss(loss_vector, y_true)
+
+
+def zero_one_loss_per_instance(y_prob: object, y_true: object) -> object:
+    """Compute the zero-one loss ``1 - [argmax_k p_k == y]`` of each prediction.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)`` (array or
+            categorical distribution) under which the expected loss is taken.
+
+    Returns:
+        The loss of each prediction in ``[0, 1]``, of shape ``(...)``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    return _expected_loss(1.0 - cast("Any", _one_hot_argmax(_probabilities(y_prob))), y_true)
+
+
+def spherical_loss_per_instance(y_prob: object, y_true: object) -> object:
+    """Compute the spherical loss ``1 - p_y / ||p||_2`` of each prediction.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)`` (array or
+            categorical distribution) under which the expected loss is taken.
+
+    Returns:
+        The loss of each prediction in ``[0, 1]``, of shape ``(...)``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    probabilities = cast("Any", _probabilities(y_prob))
+    norm = (probabilities**2).sum(axis=-1, keepdims=True) ** 0.5
+    return _expected_loss(1.0 - probabilities / norm, y_true)
+
+
+def log_loss(y_prob: object, y_true: object) -> object:
+    """Compute the mean log loss of the predictions, the average of :func:`log_loss_per_instance`.
+
+    No clipping is applied, so the mean is ``inf`` if any true class has probability zero.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)``.
+
+    Returns:
+        The mean log loss.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    return cast("Any", log_loss_per_instance(y_prob, y_true)).mean()
+
+
+def brier_loss(y_prob: object, y_true: object) -> object:
+    """Compute the mean Brier loss of the predictions, the average of :func:`brier_loss_per_instance`.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)``.
+
+    Returns:
+        The mean Brier loss in ``[0, 2]``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    return cast("Any", brier_loss_per_instance(y_prob, y_true)).mean()
+
+
+def zero_one_loss(y_prob: object, y_true: object) -> object:
+    """Compute the mean zero-one loss of the predictions, the average of :func:`zero_one_loss_per_instance`.
+
+    With integer labels this is the error rate, ``1 - accuracy``.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)``.
+
+    Returns:
+        The mean zero-one loss in ``[0, 1]``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    return cast("Any", zero_one_loss_per_instance(y_prob, y_true)).mean()
+
+
+def spherical_loss(y_prob: object, y_true: object) -> object:
+    """Compute the mean spherical loss of the predictions, the average of :func:`spherical_loss_per_instance`.
+
+    Args:
+        y_prob: Predicted class probabilities of shape ``(..., K)``, or a categorical distribution.
+        y_true: Integer class labels of shape ``(...)``, or target probabilities of shape ``(..., K)``.
+
+    Returns:
+        The mean spherical loss in ``[0, 1]``.
+
+    Raises:
+        ValueError: If ``y_true`` has neither shape or its labels are not integers.
+        TypeError: If ``y_prob`` is a sample of predictions.
+    """
+    return cast("Any", spherical_loss_per_instance(y_prob, y_true)).mean()

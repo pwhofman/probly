@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, override
 
 import jax
+from jax.core import Tracer
 import jax.numpy as jnp
 from ndlike.jax_functions import jax_mean
 from ndlike.protected_axis.jax import JaxAxisProtected
@@ -407,7 +408,7 @@ create_convex_credal_set.register(JaxSample, JaxConvexCredalSet.from_jax_sample)
 create_distance_based_credal_set.register(JaxSample, JaxDistanceBasedCredalSet.from_jax_sample)
 
 
-@create_probability_intervals_from_lower_upper_array.register(jax.Array)
+@create_probability_intervals_from_lower_upper_array.register((jax.Array, Tracer))
 def _create_probability_intervals_from_lower_upper_array(
     bounds: jax.Array,
 ) -> JaxProbabilityIntervalsCredalSet:
@@ -415,7 +416,7 @@ def _create_probability_intervals_from_lower_upper_array(
     return JaxProbabilityIntervalsCredalSet(reshaped[..., 0, :], reshaped[..., 1, :])
 
 
-@create_probability_intervals_from_bounds.register(jax.Array)
+@create_probability_intervals_from_bounds.register((jax.Array, Tracer))
 def _create_probability_intervals_from_bounds(
     probs: jax.Array, lower: jax.Array, upper: jax.Array
 ) -> JaxProbabilityIntervalsCredalSet:
@@ -442,7 +443,7 @@ def _broadcast_radius_to_batch(
     return radius_t
 
 
-@create_distance_based_credal_set_from_center_and_radius.register(jax.Array)
+@create_distance_based_credal_set_from_center_and_radius.register((jax.Array, Tracer))
 def _create_distance_based_credal_set_from_center_and_radius(
     center: jax.Array,
     radius: jax.Array,
@@ -467,7 +468,7 @@ def _create_distance_based_credal_set_from_categorical_distribution(
     )
 
 
-@create_dirichlet_level_set_credal_set.register(jax.Array)
+@create_dirichlet_level_set_credal_set.register((jax.Array, Tracer))
 def _create_dirichlet_level_set_from_array(
     alphas: jax.Array,
     threshold: jax.Array,

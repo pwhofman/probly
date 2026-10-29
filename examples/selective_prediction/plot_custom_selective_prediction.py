@@ -43,7 +43,9 @@ model = RandomForestClassifier(n_estimators=200, min_samples_leaf=5, random_stat
 # ------------------
 #
 # A function loss receives the decision, a categorical distribution, and the labels, and returns one loss per
-# instance. Class 1 is the positive class.
+# instance. Class 1 is the positive class. Unlike the scoring rules of :mod:`probly.metrics`, such as
+# :func:`~probly.metrics.log_loss_per_instance`, a function loss gives the losses only and leaves the criterion to
+# the zero-one loss.
 
 MISS_COST, ABSTAIN_COST = 3.0, 0.3
 

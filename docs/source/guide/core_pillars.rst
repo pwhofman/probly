@@ -334,9 +334,10 @@ it directly:
 
 .. jupyter-execute::
 
-    from probly.quantification import BrierLoss, SecondOrderScoringRuleDecomposition
+    from probly.metrics import brier_loss_per_instance
+    from probly.quantification import SecondOrderScoringRuleDecomposition
 
-    uq = SecondOrderScoringRuleDecomposition(out, BrierLoss())
+    uq = SecondOrderScoringRuleDecomposition(out, brier_loss_per_instance)
     print([c.__name__ for c in uq.components])  # which notions this split provides
 
 Each notion is then read off the decomposition by attribute, short key, or
@@ -376,9 +377,9 @@ notion type:
             print(epistemic.shape, epistemic[:5])    # one score per input; first five shown
 
 This makes the rule of thumb from :ref:`uq-quantifying`, to pick the scoring
-rule first, executable rather than advisory. ``LogLoss`` reproduces the
-Shannon-entropy split exactly (its epistemic part *is* the mutual information),
-and ``BrierLoss`` yields the Gini split. The credal counterpart is
+rule first, executable rather than advisory. ``log_loss_per_instance``
+reproduces the Shannon-entropy split exactly (its epistemic part *is* the mutual
+information), and ``brier_loss_per_instance`` yields the Gini split. The credal counterpart is
 ``CredalSetEntropyDecomposition``, whose total is the upper entropy, whose
 aleatoric part is the lower entropy, and whose epistemic part is the gap
 between them.
@@ -409,8 +410,6 @@ the three downstream tasks by which uncertainty is usually justified:
 :Selective prediction: ``selective_prediction`` abstains on the most uncertain
     fraction of inputs and measures the accuracy that remains. A useful
     uncertainty makes the risk-coverage curve fall.
-    ``evaluate_selective_prediction`` summarizes the exact curve by its AURC and
-    AUGRC, or by the risk or coverage at a working point.
 :Active learning: uncertainty chooses the next labels, and the resulting
     learning curve is compared against random acquisition.
 
@@ -480,12 +479,11 @@ with the per-bin losses; it is this curve that :ref:`uq-evaluating` calls the
 honest artifact, since the scalar alone hides where the gain occurs.
 
 ``probly.metrics`` holds the intrinsic scores (calibration error, coverage, set
-size), which ask a different question: not whether the derived score is
-*useful*, but whether the predicted distribution is *right*. The ranking scores
-on which the evaluation tasks rest (AUROC, AURC, AUGRC) live there as well. The
-proper scoring rules, in turn, live with the quantifiers in
-``probly.quantification.scoring_rule``, so that a rule chosen for evaluation is
-the same object as the one that generated the decomposition.
+size, and the proper scoring rules), which ask a different question: not whether
+the derived score is *useful*, but whether the predicted distribution is
+*right*. A scoring rule such as ``log_loss_per_instance`` is also what
+``SecondOrderScoringRuleDecomposition`` takes, so that a rule chosen for
+evaluation is the same function as the one that generated the decomposition.
 :ref:`uq-evaluating` draws this distinction in detail.
 
 .. seealso::

@@ -23,6 +23,7 @@ from ._common import (
     DEFAULT_NUM_SAMPLES,
     TOTAL_VARIATION_BISECTION_ITERATIONS,
     LogBase,
+    _generalized_entropy,
     conditional_entropy,
     dempster_shafer_uncertainty,
     entropy,
@@ -38,7 +39,7 @@ from ._common import (
 )
 
 if TYPE_CHECKING:
-    from probly.quantification.scoring_rule import ScoringRule
+    from probly.metrics import ScoringRule
 
 # Entropy
 
@@ -302,26 +303,20 @@ def numpy_categorical_sample_max_disagreement(
 def numpy_categorical_sample_generalized_entropy_of_expected(
     sample: NumpyCategoricalDistributionSample, scoring_rule: ScoringRule
 ) -> np.ndarray:
-    """Compute G(theta_bar) = <theta_bar, loss(theta_bar)> for a categorical sample."""
+    """Compute G(theta_bar) = scoring_rule(theta_bar, theta_bar) for a categorical sample."""
     mean = sample.sample_mean().probabilities  # (..., K)
-    # 0 * inf = 0: a zero-probability outcome contributes nothing to the expected loss.
-    with np.errstate(divide="ignore", invalid="ignore"):
-        weighted = mean * scoring_rule.loss(mean)
-    return np.where(mean > 0, weighted, 0.0).sum(axis=-1)
+    return _generalized_entropy(scoring_rule, mean)
 
 
 @expected_generalized_entropy.register(NumpyCategoricalDistributionSample)
 def numpy_categorical_sample_expected_generalized_entropy(
     sample: NumpyCategoricalDistributionSample, scoring_rule: ScoringRule
 ) -> np.ndarray:
-    """Compute E[G(theta)] = mean_m <theta_m, loss(theta_m)> for a categorical sample."""
+    """Compute E[G(theta)] = mean_m scoring_rule(theta_m, theta_m) for a categorical sample."""
     p = sample.array.probabilities  # (..., M, K)
     axis = sample.sample_axis
     del sample  # Avoid keeping a reference to the sample for memory efficiency
-    # 0 * inf = 0: a zero-probability outcome contributes nothing to the expected loss.
-    with np.errstate(divide="ignore", invalid="ignore"):
-        weighted = p * scoring_rule.loss(p)
-    per_sample = np.where(p > 0, weighted, 0.0).sum(axis=-1)  # (..., M)
+    per_sample = _generalized_entropy(scoring_rule, p)  # (..., M)
     return np.mean(per_sample, axis=axis)
 
 

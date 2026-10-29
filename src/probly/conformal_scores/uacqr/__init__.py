@@ -1,16 +1,16 @@
 """Conformal Prediction UACQR score implementation."""
 
-from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
+from probly.lazy_types import JAX_VALUE, TORCH_VALUE
 
 from ._common import uacqr_score
 
 
-@uacqr_score.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@uacqr_score.delayed_register(TORCH_VALUE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-@uacqr_score.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@uacqr_score.delayed_register(JAX_VALUE)
 def _(_: type) -> None:
     from . import jax as jax  # noqa: PLC0415
 

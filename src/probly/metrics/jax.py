@@ -11,9 +11,8 @@ Note:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import jax
+from jax.core import Tracer
 import jax.numpy as jnp
 
 from probly.metrics._common import CREDAL_ROUND_DECIMALS
@@ -25,48 +24,31 @@ from probly.representation.credal_set.jax import (
     JaxDistanceBasedCredalSet,
     JaxProbabilityIntervalsCredalSet,
 )
+from probly.representation.distribution._common import CategoricalDistribution
+from probly.representation.distribution.jax_categorical import (
+    JaxCategoricalDistribution,
+    JaxProbabilityCategoricalDistribution,
+)
 
 from ._common import (
-    accuracy,
-    auc,
+    _expected_loss,
+    _log_probabilities,
+    _one_hot_argmax,
+    _probabilities,
+    _validate_labels,
     average_interval_width,
-    average_precision_score,
     classwise_ece,
     convex_hull_coverage,
     coverage,
     efficiency,
     expected_calibration_error,
-    false_negative_rate,
-    false_positive_rate,
+    log_loss_per_instance,
     precision_recall_curve,
-    roc_auc_score,
     roc_curve,
 )
 
-if TYPE_CHECKING:
-    from probly.representation.distribution.jax_categorical import JaxCategoricalDistribution
 
-
-@accuracy.register(jax.Array)
-def jax_accuracy(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
-    """Compute top-1 classification accuracy for JAX arrays."""
-    labels = y_true.reshape(-1)
-    predicted = y_pred
-    if predicted.ndim == 2:
-        predicted = jnp.argmax(predicted, axis=-1)
-    elif predicted.ndim != 1:
-        msg = f"accuracy expects predictions of shape (n,) or (n, k), got shape {predicted.shape}."
-        raise ValueError(msg)
-    if predicted.shape[0] != labels.shape[0]:
-        msg = (
-            "accuracy labels must match predictions batch size. "
-            f"Got {labels.shape[0]} labels for {predicted.shape[0]} predictions."
-        )
-        raise ValueError(msg)
-    return (predicted == labels).astype(jnp.float32).mean()
-
-
-@classwise_ece.register(jax.Array)
+@classwise_ece.register((jax.Array, Tracer))
 def jax_classwise_ece(y_prob: jax.Array, y_true: jax.Array, *, num_bins: int = 15) -> jax.Array:
     """Compute the classwise expected calibration error for JAX arrays."""
     probs = y_prob.astype(jnp.float32)
@@ -96,7 +78,7 @@ def jax_classwise_ece(y_prob: jax.Array, y_true: jax.Array, *, num_bins: int = 1
     return total / k
 
 
-@expected_calibration_error.register(jax.Array)
+@expected_calibration_error.register((jax.Array, Tracer))
 def jax_expected_calibration_error(y_prob: jax.Array, y_true: jax.Array, *, num_bins: int = 15) -> jax.Array:
     """Compute the confidence expected calibration error for JAX arrays."""
     probs = y_prob.astype(jnp.float32)
@@ -128,47 +110,6 @@ def jax_expected_calibration_error(y_prob: jax.Array, y_true: jax.Array, *, num_
         conf_bin = (conf * mask).sum() / safe_count
         total = total + count / n * jnp.abs(acc_bin - conf_bin)
     return total
-
-
-@false_positive_rate.register(jax.Array)
-def jax_false_positive_rate(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
-    """Compute the false positive rate for JAX arrays."""
-    y = y_true.reshape(-1)
-    p = y_pred.reshape(-1)
-    if p.shape[0] != y.shape[0]:
-        msg = f"false_positive_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
-        raise ValueError(msg)
-    negatives = (y == 0).astype(jnp.float32)
-    false_positives = (p == 1).astype(jnp.float32) * negatives
-    # 0/0 yields NaN when there are no negative samples.
-    return false_positives.sum() / negatives.sum()
-
-
-@false_negative_rate.register(jax.Array)
-def jax_false_negative_rate(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
-    """Compute the false negative rate for JAX arrays."""
-    y = y_true.reshape(-1)
-    p = y_pred.reshape(-1)
-    if p.shape[0] != y.shape[0]:
-        msg = f"false_negative_rate y_true and y_pred must match in batch size. Got {y.shape[0]} and {p.shape[0]}."
-        raise ValueError(msg)
-    positives = (y == 1).astype(jnp.float32)
-    false_negatives = (p == 0).astype(jnp.float32) * positives
-    # 0/0 yields NaN when there are no positive samples.
-    return false_negatives.sum() / positives.sum()
-
-
-@auc.register(jax.Array)
-def jax_auc(x: jax.Array, y: jax.Array) -> jax.Array:
-    """Compute area under a curve using the trapezoid rule."""
-    return jnp.trapezoid(y, x, axis=-1)
-
-
-@average_precision_score.register(jax.Array)
-def jax_average_precision_score(y_true: jax.Array, y_score: jax.Array) -> jax.Array:
-    """Compute average precision for JAX arrays."""
-    precision, recall, _ = precision_recall_curve(y_true, y_score)
-    return -jnp.sum(jnp.diff(recall, axis=-1) * precision[..., :-1], axis=-1)  # ty:ignore[invalid-argument-type, not-subscriptable]
 
 
 def _binary_clf_curve(y_true: jax.Array, y_score: jax.Array) -> tuple[jax.Array, jax.Array, jax.Array]:
@@ -211,7 +152,7 @@ def _binary_clf_curve(y_true: jax.Array, y_score: jax.Array) -> tuple[jax.Array,
     return fps, tps, y_score
 
 
-@precision_recall_curve.register(jax.Array)
+@precision_recall_curve.register((jax.Array, Tracer))
 def jax_precision_recall_curve(y_true: jax.Array, y_score: jax.Array) -> tuple[jax.Array, jax.Array, jax.Array]:
     """Compute precision-recall curve along the last axis."""
     y_true = y_true.astype(jnp.float32)
@@ -231,7 +172,7 @@ def jax_precision_recall_curve(y_true: jax.Array, y_score: jax.Array) -> tuple[j
     return precision, recall, thresholds
 
 
-@roc_curve.register(jax.Array)
+@roc_curve.register((jax.Array, Tracer))
 def jax_roc_curve(y_true: jax.Array, y_score: jax.Array) -> tuple[jax.Array, jax.Array, jax.Array]:
     """Compute ROC curve along the last axis."""
     y_true = y_true.astype(jnp.float32)
@@ -250,13 +191,6 @@ def jax_roc_curve(y_true: jax.Array, y_score: jax.Array) -> tuple[jax.Array, jax
     thresholds = jnp.concatenate([thresholds[..., :1] + 1, thresholds], axis=-1)
 
     return fpr, tpr, thresholds
-
-
-@roc_auc_score.register(jax.Array)
-def jax_roc_auc_score(y_true: jax.Array, y_score: jax.Array) -> jax.Array:
-    """Compute area under the ROC curve for JAX arrays."""
-    fpr, tpr, _ = roc_curve(y_true, y_score)
-    return auc(fpr, tpr)  # ty:ignore[invalid-return-type]
 
 
 # --- Predicted-set metrics ----------------------------------------------------
@@ -550,3 +484,66 @@ def _jax_convex_convex_hull_coverage(
     vertices = jax.device_get(y_pred.tensor.probabilities)
     targets = jax.device_get(y_true.probabilities)
     return _numpy_convex_hull_lp_coverage(vertices, targets, epsilon, **linprog_kwargs)
+
+
+@_probabilities.register((jax.Array, Tracer))
+def jax_probabilities(probabilities: jnp.ndarray) -> jnp.ndarray:
+    """Return a JAX array of probabilities unchanged."""
+    return probabilities
+
+
+@_log_probabilities.register((jax.Array, Tracer))
+def jax_log_probabilities(probabilities: jnp.ndarray) -> jnp.ndarray:
+    """Compute the log probabilities of a JAX array."""
+    return jnp.log(probabilities)
+
+
+def _jax_scoring_target(y_true: object, reference: jax.Array) -> jax.Array:
+    """Convert targets and validate labels without changing their dtype."""
+    target = jnp.asarray(y_true.probabilities if isinstance(y_true, CategoricalDistribution) else y_true)
+    if target.shape != reference.shape:
+        _validate_labels(target.shape, reference.shape, is_integer=bool(jnp.issubdtype(target.dtype, jnp.integer)))
+    return target
+
+
+@log_loss_per_instance.register((jax.Array, Tracer))
+def jax_log_loss_per_instance(y_prob: jax.Array, y_true: object) -> jax.Array:
+    """Compute log loss without logging zero probabilities of classes with no target mass."""
+    target = _jax_scoring_target(y_true, y_prob)
+    if target.shape == y_prob.shape:
+        safe_probabilities = jnp.where(target > 0, y_prob, jnp.ones_like(y_prob))
+        return -(target * jnp.log(safe_probabilities)).sum(axis=-1)
+    selected = jnp.take_along_axis(y_prob, target[..., None], axis=-1).squeeze(-1)
+    return -jnp.log(selected)
+
+
+@log_loss_per_instance.register(JaxCategoricalDistribution)
+def jax_categorical_log_loss_per_instance(y_prob: JaxCategoricalDistribution, y_true: object) -> jax.Array:
+    """Score categorical log probabilities directly, preserving extreme logits."""
+    return _jax_expected_loss(-y_prob.log_probabilities, y_true)
+
+
+@log_loss_per_instance.register(JaxProbabilityCategoricalDistribution)
+def jax_probability_categorical_log_loss_per_instance(
+    y_prob: JaxProbabilityCategoricalDistribution, y_true: object
+) -> jax.Array:
+    """Score normalized categorical probabilities with target-aware logarithms."""
+    return jax_log_loss_per_instance(y_prob.probabilities, y_true)
+
+
+@_one_hot_argmax.register((jax.Array, Tracer))
+def jax_one_hot_argmax(probabilities: jnp.ndarray) -> jnp.ndarray:
+    """One-hot encode the first maximum of each probability vector of a JAX array."""
+    num_classes = probabilities.shape[-1]
+    argmax = jnp.argmax(probabilities, axis=-1)
+    return jnp.eye(num_classes, dtype=probabilities.dtype)[argmax]
+
+
+@_expected_loss.register((jax.Array, Tracer))
+def _jax_expected_loss(loss_vector: jax.Array, y_true: object) -> jax.Array:
+    """Reduce a per-label loss vector to the loss under integer labels or target probabilities."""
+    target = _jax_scoring_target(y_true, loss_vector)
+    if target.shape == loss_vector.shape:
+        # A class without target mass never occurs, so it adds no loss even where that loss is infinite.
+        return jnp.where(target > 0, target * loss_vector, 0.0).sum(axis=-1)
+    return jnp.take_along_axis(loss_vector, target[..., None], axis=-1).squeeze(-1)

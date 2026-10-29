@@ -12,14 +12,15 @@ import numpy as np
 from probly.calibrator import Calibrator
 from probly.decider import Decider, categorical_from_mean
 from probly.evaluation.selective_prediction import evaluate_selective_prediction
-from probly.predictor import Predictor, predict
-from probly.quantification import (
-    Notion,
+from probly.metrics import (
     ScoringRule,
-    TotalUncertainty,
-    ZeroOneLoss,
-    scoring_rule_decomposition,
+    brier_loss_per_instance,
+    log_loss_per_instance,
+    spherical_loss_per_instance,
+    zero_one_loss_per_instance,
 )
+from probly.predictor import Predictor, predict
+from probly.quantification import Notion, TotalUncertainty, scoring_rule_decomposition
 from probly.representation.distribution import CategoricalDistribution
 from probly.representer import Representer
 
@@ -30,8 +31,18 @@ if TYPE_CHECKING:
 
     from ndlike.array_like import ArrayLikeWithoutSize
 
-# Default loss, and the scoring rule that induces the decomposition for a function loss or loss=None.
-_ZERO_ONE_LOSS = ZeroOneLoss()
+# The losses treated as scoring rules: they induce the decomposition and take one class index per instance. Any other
+# function is a function loss, for which, as for loss=None, the zero-one loss induces the decomposition.
+_SCORING_RULES: tuple[ScoringRule, ...] = (
+    log_loss_per_instance,
+    brier_loss_per_instance,
+    zero_one_loss_per_instance,
+    spherical_loss_per_instance,
+)
+
+
+def _is_scoring_rule(loss: object) -> bool:
+    return any(loss is rule for rule in _SCORING_RULES)
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,11 +74,11 @@ class SelectivePrediction[D]:
 
 def _check_loss(loss: Any, selector: Selector | None) -> Any:  # noqa: ANN401
     """Check the loss and that it fits the selector."""
-    if loss is not None and not isinstance(loss, ScoringRule) and not callable(loss):
+    if loss is not None and not callable(loss):
         msg = f"loss must be a scoring rule, a function, or None, got {type(loss).__name__}."
         raise TypeError(msg)
     if selector is not None and selector.takes_losses and loss is None:
-        msg = f"{selector!r} needs losses. Pass a task loss, e.g. ZeroOneLoss()."
+        msg = f"{selector!r} needs losses. Pass a task loss, e.g. zero_one_loss_per_instance."
         raise TypeError(msg)
     return loss
 
@@ -101,9 +112,9 @@ def _decide(predictor: SelectivePredictor[Any, Any], representation: Any) -> Any
 def _losses(predictor: SelectivePredictor[Any, Any], representation: Any, y: Any) -> np.ndarray:  # noqa: ANN401
     """Task loss of the decision for the true label, per instance."""
     decision = _decide(predictor, representation)
-    loss = predictor.loss
-    if not isinstance(loss, ScoringRule):
-        values = _to_float64_numpy(_call_user(cast("Callable[..., Any]", loss), "loss", decision, y))
+    loss = cast("Callable[..., Any]", predictor.loss)
+    if not _is_scoring_rule(loss):
+        values = _to_float64_numpy(_call_user(loss, "loss", decision, y))
     else:
         if not isinstance(decision, CategoricalDistribution):
             msg = (
@@ -174,9 +185,7 @@ def _named_criterion(
 
 
 def _decomposition(predictor: SelectivePredictor[Any, Any], representation: Any) -> Any:  # noqa: ANN401
-    loss = predictor.loss
-    if not isinstance(loss, ScoringRule):
-        loss = _ZERO_ONE_LOSS
+    loss = cast("ScoringRule", predictor.loss) if _is_scoring_rule(predictor.loss) else zero_one_loss_per_instance
     return scoring_rule_decomposition(representation, loss)
 
 
@@ -201,7 +210,7 @@ class SelectivePredictor[**In, D](
 
     selector: Selector | None
     representer: Representer[Any, In, Any, Any]
-    loss: ScoringRule | Callable[[Any, Any], Any] | None
+    loss: ScoringRule | None
     decider: Decider[Any, Any]
 
     @property
@@ -220,7 +229,7 @@ class _SelectivePredictorBase[**In](ABC):
 
     selector: Selector | None
     representer: Representer[Any, In, Any, Any]
-    loss: ScoringRule | Callable[[Any, Any], Any] | None
+    loss: ScoringRule | None
     decider: Decider[Any, Any]
 
     def __init__(
@@ -228,7 +237,7 @@ class _SelectivePredictorBase[**In](ABC):
         base: Representer[Any, In, Any, Any],
         *,
         selector: Selector | None = None,
-        loss: ScoringRule | Callable[[Any, Any], Any] | None = _ZERO_ONE_LOSS,
+        loss: ScoringRule | None = zero_one_loss_per_instance,
         decider: Decider[Any, Any] | None = None,
     ) -> None:
         super().__init__()
@@ -312,7 +321,7 @@ class _SelectivePredictorBase[**In](ABC):
             )
             raise TypeError(msg)
         if selector.takes_losses and self.loss is None:
-            msg = f"{selector!r} needs losses, but loss is None. Set a task loss, e.g. ZeroOneLoss()."
+            msg = f"{selector!r} needs losses, but loss is None. Set a task loss, e.g. zero_one_loss_per_instance."
             raise TypeError(msg)
         if not selector.takes_losses and y_calib is not None:
             msg = f"{selector!r} takes no labels. Pass None instead: calibrate(None, x_calib)."
@@ -345,8 +354,9 @@ class _SelectivePredictorBase[**In](ABC):
         Raises:
             TypeError: If ``loss`` is ``None`` or no input of the representer is given.
             ValueError: If a fitted selector is not calibrated, or the criterion or losses are invalid. Unlike
-                :meth:`predict`, the metrics need a criterion without ``-inf`` and finite losses, which e.g. a
-                :class:`~probly.quantification.LogLoss` breaks if the probability of the label underflows in float32.
+                :meth:`predict`, the metrics need a criterion without ``-inf`` and finite losses, which e.g.
+                :func:`~probly.metrics.log_loss_per_instance` breaks if the probability of the label underflows in
+                float32.
         """
         if self.loss is None:
             msg = "evaluate needs losses. Pass a scoring rule or a function loss."
@@ -398,7 +408,7 @@ def selective_predictor[**In](
     base: Representer[Any, In, Any, Any],
     *,
     selector: Selector | None = None,
-    loss: ScoringRule | Callable[[Any, Any], Any] | None = _ZERO_ONE_LOSS,
+    loss: ScoringRule | None = zero_one_loss_per_instance,
     decider: Decider[Any, Any] | None = None,
 ) -> SelectivePredictor[In, Any]:
     r"""Selective predictor that predicts or abstains based on an uncertainty criterion.
@@ -446,8 +456,11 @@ def selective_predictor[**In](
             :func:`~probly.representer.representer`.
         selector: The selection rule, built with :func:`~probly.selective_prediction.selector`, or ``None``.
             ``calibrate`` fits it in place, so predictors sharing a selector share its state.
-        loss: The task loss: a scoring rule for integer labels (default: zero-one loss), a function
-            ``loss(decision, y)`` returning one loss per instance, e.g. for regression, or ``None`` for no losses.
+        loss: The task loss: a scoring rule of :mod:`probly.metrics` for integer labels, e.g.
+            :func:`~probly.metrics.log_loss_per_instance` (default: :func:`~probly.metrics.zero_one_loss_per_instance`),
+            any other function ``loss(decision, y)`` returning one loss per instance, e.g. for regression, or ``None``
+            for no losses. Only the four scoring rules of :mod:`probly.metrics` induce the decomposition; for any other
+            function, the zero-one loss does.
         decider: A :class:`~probly.decider.Decider` mapping the representation to the decision. Defaults to
             :func:`~probly.decider.categorical_from_mean`.
 

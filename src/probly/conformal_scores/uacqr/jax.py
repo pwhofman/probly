@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from jax import Array
+from jax.core import Tracer
 import jax.numpy as jnp
 
 from probly.representation.sample.jax import JaxSample
@@ -10,7 +11,7 @@ from probly.representation.sample.jax import JaxSample
 from ._common import uacqr_score
 
 
-@uacqr_score.register(Array)
+@uacqr_score.register((Array, Tracer))
 def _(y_pred: Array, y_true: Array) -> Array:
     """UACQR nonconformity scores for JAX arrays."""
     y = jnp.asarray(y_true, dtype=float)

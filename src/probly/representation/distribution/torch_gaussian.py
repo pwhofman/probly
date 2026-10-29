@@ -24,7 +24,7 @@ class TorchGaussianDistribution(TorchAxisProtected[Any], GaussianDistribution[to
     mean: torch.Tensor = field()
     var: torch.Tensor = field()
 
-    type: Literal["gaussian"] = "gaussian"
+    type: ClassVar[Literal["gaussian"]] = "gaussian"
     protected_axes: ClassVar[dict[str, int]] = {"mean": 0, "var": 0}
 
     def __post_init__(self) -> None:

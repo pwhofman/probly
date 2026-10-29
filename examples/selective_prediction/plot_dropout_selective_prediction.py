@@ -49,7 +49,8 @@ model.eval()
 # Selective prediction
 # --------------------
 #
-# The default criterion is the total uncertainty under the zero-one loss. It is one minus the largest mean
+# The default criterion is the total uncertainty under the zero-one loss,
+# :func:`~probly.metrics.zero_one_loss_per_instance`, the default ``loss``. It is one minus the largest mean
 # probability over the dropout samples, the model's own probability that its prediction is wrong. A
 # :func:`~probly.selective_prediction.selector` with ``threshold=0.1`` accepts a prediction if that probability is at
 # most 0.1. This is Chow's rule for an abstention that costs a tenth of a wrong prediction, so the threshold has a

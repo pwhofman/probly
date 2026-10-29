@@ -1,11 +1,6 @@
 """Measures for regression."""
 
-from probly.lazy_types import (
-    JAX_ARRAY,
-    JAX_ARRAY_LIKE,
-    TORCH_TENSOR,
-    TORCH_TENSOR_LIKE,
-)
+from probly.lazy_types import JAX_VALUE, TORCH_VALUE
 
 from ._common import (
     expected_conditional_variance,
@@ -24,19 +19,19 @@ from .numpy import (  # noqa: F401  (registers numpy implementations)
 )
 
 
-@variance.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@variance_of_expected_predictive_distribution.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@expected_conditional_variance.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@variance_of_conditional_mean.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@variance.delayed_register(TORCH_VALUE)
+@variance_of_expected_predictive_distribution.delayed_register(TORCH_VALUE)
+@expected_conditional_variance.delayed_register(TORCH_VALUE)
+@variance_of_conditional_mean.delayed_register(TORCH_VALUE)
 def _(_: type) -> None:
     """Register delayed implementations for torch tensors."""
     from . import torch as torch  # noqa: PLC0415
 
 
-@variance.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@variance_of_expected_predictive_distribution.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@expected_conditional_variance.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
-@variance_of_conditional_mean.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@variance.delayed_register(JAX_VALUE)
+@variance_of_expected_predictive_distribution.delayed_register(JAX_VALUE)
+@expected_conditional_variance.delayed_register(JAX_VALUE)
+@variance_of_conditional_mean.delayed_register(JAX_VALUE)
 def _(_: type) -> None:
     """Register delayed implementations for jax arrays."""
     from . import jax as jax  # noqa: PLC0415

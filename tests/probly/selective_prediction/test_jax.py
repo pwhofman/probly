@@ -12,8 +12,9 @@ import jax.numpy as jnp  # noqa: E402
 from ndlike.jax_functions import jax_concatenate  # noqa: E402
 
 from probly.method import cast  # noqa: E402
+from probly.metrics import log_loss_per_instance  # noqa: E402
 from probly.predictor import RepresentationPredictor  # noqa: E402
-from probly.quantification import LogLoss, SecondOrderZeroOneDecomposition, quantify  # noqa: E402
+from probly.quantification import SecondOrderZeroOneDecomposition, quantify  # noqa: E402
 from probly.representation.distribution import create_categorical_distribution  # noqa: E402
 from probly.representation.distribution.jax_categorical import (  # noqa: E402
     JaxCategoricalDistributionSample,
@@ -103,7 +104,7 @@ def test_sample_log_loss_matches_quantify(notion: str) -> None:
     representation = model.predict_representation(None)
 
     result = selective_predictor(
-        representer(model), selector=make_selector(threshold=0.5, notion=notion), loss=LogLoss()
+        representer(model), selector=make_selector(threshold=0.5, notion=notion), loss=log_loss_per_instance
     ).predict(None)
 
     np.testing.assert_allclose(

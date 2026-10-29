@@ -11,15 +11,13 @@ from probly.calibrator import calibrate
 from probly.decider import categorical_from_mean
 from probly.evaluation.selective_prediction import evaluate_selective_prediction
 from probly.method import cast
+from probly.metrics import brier_loss_per_instance, log_loss_per_instance, zero_one_loss_per_instance
 from probly.predictor import RepresentationPredictor, predict
 from probly.quantification import (
-    BrierLoss,
     EpistemicUncertainty,
-    LogLoss,
     SecondOrderScoringRuleDecomposition,
     SecondOrderZeroOneDecomposition,
     TotalUncertainty,
-    ZeroOneLoss,
     quantify,
 )
 from probly.representation.distribution import (
@@ -251,7 +249,9 @@ def test_named_notion_without_a_scoring_rule_decomposition_raises(kwargs: dict[s
         **kwargs,
     )
 
-    with pytest.raises(NotImplementedError, match=r"ZeroOneLoss is not supported for NumpyGaussianDistributionSample"):
+    with pytest.raises(
+        NotImplementedError, match=r"zero_one_loss_per_instance is not supported for NumpyGaussianDistributionSample"
+    ):
         predictor.predict(None)
 
 
@@ -326,16 +326,18 @@ def test_default_epistemic_is_exactly_zero_where_members_agree() -> None:
 def test_log_loss_gives_entropy_decomposition(notion: str) -> None:
     sample = _random_ensemble_sample()
     result = selective_predictor(
-        representer(_RepresentationModel(sample)), selector=make_selector(threshold=0.5, notion=notion), loss=LogLoss()
+        representer(_RepresentationModel(sample)),
+        selector=make_selector(threshold=0.5, notion=notion),
+        loss=log_loss_per_instance,
     ).predict(None)
 
     np.testing.assert_allclose(result.uncertainty, quantify(sample)[notion])
 
 
 def test_log_loss_gives_entropy_of_single_distribution() -> None:
-    result = selective_predictor(representer(_model()), selector=make_selector(threshold=0.5), loss=LogLoss()).predict(
-        None
-    )
+    result = selective_predictor(
+        representer(_model()), selector=make_selector(threshold=0.5), loss=log_loss_per_instance
+    ).predict(None)
 
     np.testing.assert_allclose(result.uncertainty, ENTROPIES)
 
@@ -345,10 +347,12 @@ def test_brier_loss_gives_its_scoring_rule_decomposition() -> None:
     result = selective_predictor(
         representer(_RepresentationModel(sample)),
         selector=make_selector(threshold=0.5, notion="epistemic"),
-        loss=BrierLoss(),
+        loss=brier_loss_per_instance,
     ).predict(None)
 
-    np.testing.assert_allclose(result.uncertainty, SecondOrderScoringRuleDecomposition(sample, BrierLoss()).epistemic)
+    np.testing.assert_allclose(
+        result.uncertainty, SecondOrderScoringRuleDecomposition(sample, brier_loss_per_instance).epistemic
+    )
 
 
 def test_no_loss_uses_the_zero_one_decomposition() -> None:
@@ -375,26 +379,27 @@ def test_dirichlet_criterion_uses_zero_one_decomposition() -> None:
 def test_dirichlet_rejects_other_losses() -> None:
     dirichlet = create_dirichlet_distribution_from_alphas(np.array([[2.0, 1.0], [1.0, 1.0]]))
     predictor = selective_predictor(
-        representer(_RepresentationModel(dirichlet)), selector=make_selector(threshold=0.5), loss=LogLoss()
+        representer(_RepresentationModel(dirichlet)), selector=make_selector(threshold=0.5), loss=log_loss_per_instance
     )
 
-    with pytest.raises(NotImplementedError, match="LogLoss is not supported for Dirichlet"):
+    with pytest.raises(NotImplementedError, match="log_loss_per_instance is not supported for Dirichlet"):
         predictor.predict(None)
 
 
 def test_default_loss_is_zero_one() -> None:
-    assert isinstance(
-        selective_predictor(representer(_model()), selector=make_selector(threshold=0.2)).loss, ZeroOneLoss
+    assert (
+        selective_predictor(representer(_model()), selector=make_selector(threshold=0.2)).loss
+        is zero_one_loss_per_instance
     )
 
 
-@pytest.mark.parametrize("loss", [ZeroOneLoss(), LogLoss(), BrierLoss()])
+@pytest.mark.parametrize("loss", [zero_one_loss_per_instance, log_loss_per_instance, brier_loss_per_instance])
 def test_explicit_loss_raises_for_representation_it_does_not_apply_to(loss: Any) -> None:  # noqa: ANN401
     predictor = selective_predictor(
         representer(_RepresentationModel(_regression_sample())), selector=make_selector(threshold=0.5), loss=loss
     )
 
-    with pytest.raises(NotImplementedError, match=f"{type(loss).__name__} is not supported for"):
+    with pytest.raises(NotImplementedError, match=f"{loss.__name__} is not supported for"):
         predictor.predict(None)
 
 
@@ -406,7 +411,7 @@ def test_explicit_zero_one_loss_matches_default_where_it_applies() -> None:
     explicit = selective_predictor(
         representer(_RepresentationModel(sample)),
         selector=make_selector(threshold=0.5, notion="epistemic"),
-        loss=ZeroOneLoss(),
+        loss=zero_one_loss_per_instance,
     )
 
     np.testing.assert_array_equal(explicit.predict(None).uncertainty, default.predict(None).uncertainty)
@@ -421,7 +426,7 @@ def test_callable_notion_ignores_loss() -> None:
     result = selective_predictor(
         representer(_model()),
         selector=make_selector(threshold=0.5, notion=lambda rep: 1.0 - rep.probabilities.max(axis=-1)),
-        loss=LogLoss(),
+        loss=log_loss_per_instance,
     ).predict(None)
 
     np.testing.assert_allclose(result.uncertainty, MAX_PROB_COMPLEMENTS)
@@ -571,7 +576,9 @@ def test_risk_rule_needs_a_task_loss_at_construction() -> None:
 
 
 def test_pipeline_non_binary_loss_is_rejected_by_sgr() -> None:
-    sp = selective_predictor(representer(_model()), selector=make_selector(risk=0.5, delta=0.5), loss=LogLoss())
+    sp = selective_predictor(
+        representer(_model()), selector=make_selector(risk=0.5, delta=0.5), loss=log_loss_per_instance
+    )
     with pytest.raises(ValueError, match="binary"):
         sp.calibrate(np.zeros(4, dtype=int), None)
 

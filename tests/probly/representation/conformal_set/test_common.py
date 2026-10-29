@@ -2,7 +2,16 @@
 
 from __future__ import annotations
 
+from typing import ClassVar, get_origin, get_type_hints
+
 import pytest
+
+from probly.representation.conformal_set._common import ConformalSet, IntervalConformalSet, OneHotConformalSet
+
+
+@pytest.mark.parametrize("conformal_set_class", [ConformalSet, OneHotConformalSet, IntervalConformalSet])
+def test_conformal_set_type_is_class_metadata(conformal_set_class) -> None:
+    assert get_origin(get_type_hints(conformal_set_class)["type"]) is ClassVar
 
 
 class TestConformalSetCommonFallbacks:

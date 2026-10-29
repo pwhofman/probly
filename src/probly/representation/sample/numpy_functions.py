@@ -170,11 +170,11 @@ def track_sample_axis_after_reduction(
     axes: tuple[int, ...] = axis if isinstance(axis, tuple) else (axis,)
     axes = tuple(a if a >= 0 else original_ndim + a for a in axes)
 
-    if keepdims:
-        return original_sample_dim
-
     if original_sample_dim in axes:
         return None
+
+    if keepdims:
+        return original_sample_dim
 
     new_sample_axis = original_sample_dim
 

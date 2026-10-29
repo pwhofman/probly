@@ -1,0 +1,47 @@
+/* The colors of the probly logo (see docs/design/brand.md). The red-pink is the accent of
+   the docs: the landing page's main button and the bar under its title. Links keep furo's
+   blue. Furo switches themes with body[data-theme]; "auto" follows the system setting. */
+:root {
+  --probly-red: #ff2763;
+  --probly-blue: #285bff;
+  --probly-gradient: linear-gradient(90deg, var(--probly-red), var(--probly-blue));
+  --probly-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --probly-duration: 220ms;
+}
+
+/* sphinx-design's primary color. On a light page a deeper red than the logo's, so that white
+   text on it stays readable (WCAG AA). Hovered or clicked, furo turns it into the link blue. */
+body {
+  --sd-color-primary: #e0245a;
+  --probly-surface: #ffffff;
+  --probly-surface-raised: #f7f8fc;
+  --probly-border: #e2e6f3;
+  --probly-text-muted: #5b6275;
+  --probly-shadow: 0 1px 2px rgba(20, 28, 60, 0.06), 0 4px 16px rgba(20, 28, 60, 0.06);
+}
+
+body[data-theme="dark"] {
+  --sd-color-primary: var(--probly-red);
+  --probly-surface: #1a1c23;
+  --probly-surface-raised: #22252e;
+  --probly-border: #343846;
+  --probly-text-muted: #a3a9ba;
+  --probly-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme="light"]) {
+    --sd-color-primary: var(--probly-red);
+    --probly-surface: #1a1c23;
+    --probly-surface-raised: #22252e;
+    --probly-border: #343846;
+    --probly-text-muted: #a3a9ba;
+    --probly-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --probly-duration: 0ms;
+  }
+}
