@@ -19,7 +19,9 @@ def append_activation_torch(obj: nn.Module) -> nn.Sequential:
     """Append exp so the model outputs Dirichlet alpha based on :cite:`malininPredictiveUncertaintyEstimation2018`.
 
     Unlike Sensoy's softplus + 1 parameterization, exp allows alpha values below 1,
-    which the Prior Networks paper uses for very flat Dirichlets on out-of-distribution inputs.
+    which the Prior Networks papers (:cite:`malininPredictiveUncertaintyEstimation2018`,
+    :cite:`malininReverseKLDivergenceTraining2019`) use for very flat Dirichlets on
+    out-of-distribution inputs.
     """
     return nn.Sequential(obj, _Exp())
 

@@ -213,50 +213,44 @@ def _der_loss(
     return loss_fn(y, mu, kappa, alpha, beta)
 
 
-def make_in_domain_target_alpha(y: Tensor) -> Tensor:
-    """Construct target Dirichlet distribution for in-distribution samples.
-
-    Used by Dirichlet Prior Networks, Posterior Networks, and PN-style paired
-    losses to create a sharp (peaked) Dirichlet target for supervised
-    in-distribution training.
+def make_in_domain_target_alpha(
+    y: Tensor,
+    num_classes: int,
+    target_concentration: float = 1e2,
+    concentration: float = 1.0,
+) -> Tensor:
+    """In-distribution target Dirichlet for Prior Networks, eq. 7 of :cite:`malininReverseKLDivergenceTraining2019`.
 
     Args:
-        y: Ground-truth class labels, shape (B,).
+        y: Class labels, shape (B,).
+        num_classes: Number of classes C.
+        target_concentration: Concentration added on the true class (``beta``).
+        concentration: Base concentration of every class.
 
     Returns:
-        Target Dirichlet concentration parameters, shape (B, C).
+        Target concentrations, shape (B, C).
     """
-    num_classes = int(y.max().item()) + 1
-    alpha = torch.ones((y.size(0), num_classes), device=y.device)
-    alpha[torch.arange(y.size(0)), y] = 10.0
+    alpha = torch.full((y.size(0), num_classes), concentration, device=y.device)
+    alpha[torch.arange(y.size(0), device=y.device), y] += target_concentration
     return alpha
 
 
 def make_ood_target_alpha(
     batch_size: int,
-    num_classes: int = 10,
-    alpha0: float = 10,
+    num_classes: int,
+    concentration: float = 1.0,
 ) -> torch.Tensor:
-    """Construct flat Dirichlet target distribution for out-of-distribution samples.
-
-    Used by Dirichlet Prior Networks, Posterior Networks, and PN-style paired
-    losses to encourage high uncertainty on out-of-distribution inputs by
-    assigning uniform Dirichlet concentration parameters.
+    """Flat out-of-distribution target Dirichlet for Prior Networks.
 
     Args:
-        batch_size: Number of out-of-distribution samples in the batch.
-        num_classes: Number of classes. Defaults to 10.
-        alpha0: Total Dirichlet concentration parameter (strength).
+        batch_size: Number of OOD samples.
+        num_classes: Number of classes C.
+        concentration: Concentration of every class.
 
     Returns:
-        Target Dirichlet concentration parameters, shape (B, C).
+        Target concentrations, shape (B, C).
     """
-    mu = torch.full(
-        (batch_size, num_classes),
-        1.0 / num_classes,
-    )
-
-    return mu * alpha0
+    return torch.full((batch_size, num_classes), concentration)
 
 
 def kl_dirichlet(prior_alpha: Tensor, posterior_alpha: Tensor) -> Tensor:
@@ -476,43 +470,85 @@ def evidential_regression_regularization(inputs: dict[str, Tensor], targets: Ten
     return loss
 
 
-def pn_loss(model: nn.Module, x_in: torch.Tensor, y_in: torch.Tensor, x_ood: torch.Tensor) -> torch.Tensor:
-    """Paired ID/OOD training loss for Dirichlet Prior Networks.
+def pn_loss(
+    model: nn.Module,
+    x_in: torch.Tensor,
+    y_in: torch.Tensor,
+    x_ood: torch.Tensor,
+    target_concentration: float = 1e2,
+    concentration: float = 1.0,
+    gamma: float = 1.0,
+    reverse: bool = True,
+) -> torch.Tensor:
+    """Prior Network loss of :cite:`malininReverseKLDivergenceTraining2019` (eq. 8, 10).
 
-    Combines KL divergence to sharp in-distribution targets and flat
-    out-of-distribution targets, with an additional cross-entropy term
-    for classification stability.
-
-    Reference:
-        Malinin and Gales, "Predictive Uncertainty Estimation via Prior Networks",
-        NeurIPS 2018.
-        https://arxiv.org/abs/1802.10501
+    Reverse KL ``KL(model || target)`` by default; ``reverse=False`` gives the forward KL of
+    :cite:`malininPredictiveUncertaintyEstimation2018` (eq. 12). Divided by ``target_concentration``
+    as in the reference implementation.
 
     Args:
-        model: Network mapping inputs to Dirichlet concentration parameters.
-        x_in: In-distribution inputs, shape (B, ...).
-        y_in: In-distribution class labels, shape (B,).
-        x_ood: Out-of-distribution inputs, shape (B_ood, ...).
+        model: Network mapping inputs to Dirichlet concentrations.
+        x_in: In-distribution inputs.
+        y_in: In-distribution labels, shape (B,).
+        x_ood: Out-of-distribution inputs.
+        target_concentration: Concentration added on the true class.
+        concentration: Base concentration of every class.
+        gamma: Weight of the OOD term.
+        reverse: Reverse (default) or forward KL.
 
     Returns:
-        Scalar paired ID+OOD Prior Networks loss.
+        Scalar loss.
     """
-    # ID forward
-    alpha_in = model(x_in)
-    alpha_target_in = make_in_domain_target_alpha(y_in).to(alpha_in.device)
-    kl_in = kl_dirichlet(alpha_target_in, alpha_in).mean()
+    return pn_loss_from_alphas(
+        model(x_in),
+        y_in,
+        model(x_ood),
+        target_concentration=target_concentration,
+        concentration=concentration,
+        gamma=gamma,
+        reverse=reverse,
+    )
 
-    probs_in = predictive_probs(alpha_in)
-    ce_term = F.nll_loss(torch.log(probs_in + 1e-8), y_in)
 
-    # OOD forward
-    alpha_ood = model(x_ood)
-    alpha_target_ood = make_ood_target_alpha(x_ood.size(0)).to(alpha_ood.device)
-    kl_ood = kl_dirichlet(alpha_target_ood, alpha_ood).mean()
+def pn_loss_from_alphas(
+    alpha_in: torch.Tensor,
+    y_in: torch.Tensor,
+    alpha_ood: torch.Tensor,
+    target_concentration: float = 1e2,
+    concentration: float = 1.0,
+    gamma: float = 1.0,
+    reverse: bool = True,
+) -> torch.Tensor:
+    """Same as :func:`pn_loss`, from already predicted concentrations.
 
-    loss = kl_in + kl_ood + 0.1 * ce_term
+    Args:
+        alpha_in: Predicted concentrations for ID inputs, shape (B, C).
+        y_in: ID labels, shape (B,).
+        alpha_ood: Predicted concentrations for OOD inputs, shape (B_ood, C).
+        target_concentration: Concentration added on the true class.
+        concentration: Base concentration of every class.
+        gamma: Weight of the OOD term.
+        reverse: Reverse (default) or forward KL.
 
-    return loss
+    Returns:
+        Scalar loss.
+    """
+    num_classes = alpha_in.size(-1)
+    alpha_target_in = make_in_domain_target_alpha(
+        y_in, num_classes, target_concentration=target_concentration, concentration=concentration
+    ).to(alpha_in.device)
+    alpha_target_ood = make_ood_target_alpha(alpha_ood.size(0), num_classes, concentration=concentration).to(
+        alpha_ood.device
+    )
+
+    if reverse:
+        kl_in = kl_dirichlet(alpha_in, alpha_target_in).mean()
+        kl_ood = kl_dirichlet(alpha_ood, alpha_target_ood).mean()
+    else:
+        kl_in = kl_dirichlet(alpha_target_in, alpha_in).mean()
+        kl_ood = kl_dirichlet(alpha_target_ood, alpha_ood).mean()
+
+    return (kl_in + gamma * kl_ood) / target_concentration
 
 
 def postnet_loss(

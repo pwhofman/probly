@@ -1,0 +1,9 @@
+# @package _global_
+
+# The papers have no ImageNet setup. Places365 (val split, small=True) is used as
+# OOD training data since it is not among the ImageNet OOD test sets.
+# Each step forwards an ID and an OOD batch, so the batch size is halved.
+batch_size: 1024
+method:
+  train:
+    ood_dataset: "places365"

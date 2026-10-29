@@ -30,6 +30,7 @@ from probly.method.evidential.classification import EvidentialClassificationPred
 from probly.method.het_net import HetNetPredictor
 from probly.method.natural_posterior_network import NaturalPosteriorNetworkPredictor
 from probly.method.posterior_network import PosteriorNetworkPredictor
+from probly.method.prior_network import PriorNetworkPredictor
 from probly.method.sngp import SNGPPredictor
 from probly.method.subensemble import SubensemblePredictor
 from probly.method.vbll import VBLLPredictor, find_vbll_layer
@@ -43,6 +44,7 @@ from probly.train.evidential.torch import (
     evidential_kl_divergence,
     evidential_log_loss,
     evidential_mse_loss,
+    pn_loss_from_alphas,
     postnet_loss,
 )
 from probly.train.vbll import vbll_loss
@@ -496,6 +498,54 @@ def _(
     return loss_val.item()
 
 
+@train_epoch.register(PriorNetworkPredictor)
+def _(
+    model: PriorNetworkPredictor,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    target_concentration: float = 1e2,
+    concentration: float = 1.0,
+    gamma: float = 1.0,
+    reverse: bool = True,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> torch.Tensor | float:
+    """Prior Network step with the reverse KL loss of Malinin and Gales (2019).
+
+    ``inputs`` is an ID batch followed by an OOD batch (see ``PairedOodLoader``); ``targets``
+    covers the ID part. One forward pass over both, as in the reference implementation.
+    """
+    n_id = targets.size(0)
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        alpha = model(inputs).float()
+    loss_val = pn_loss_from_alphas(
+        alpha[:n_id],
+        targets,
+        alpha[n_id:],
+        target_concentration=target_concentration,
+        concentration=concentration,
+        gamma=gamma,
+        reverse=reverse,
+    )
+    if scaler is not None:
+        scaler.scale(loss_val).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss_val.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        optimizer.step()
+    return loss_val.item()
+
+
 @train_epoch.register(CredalNetPredictor)
 def _(
     model: CredalNetPredictor,
@@ -913,6 +963,44 @@ def _(
     return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
 
 
+@validate.register(PriorNetworkPredictor)
+@torch.no_grad()
+def _(
+    model: PriorNetworkPredictor,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    target_concentration: float = 1e2,
+    concentration: float = 1.0,
+    gamma: float = 1.0,
+    reverse: bool = True,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> ValidationMetrics:
+    """Validate a Prior Network on paired ID and OOD batches; accuracy on the ID part only."""
+    model.eval()
+    val_loss = 0.0
+    val_acc = 0.0
+    num_instances = 0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        n_id = targets.size(0)
+        with autocast(device.type, enabled=amp_enabled):
+            alpha = model(inputs).float()
+        batch_loss = pn_loss_from_alphas(
+            alpha[:n_id],
+            targets,
+            alpha[n_id:],
+            target_concentration=target_concentration,
+            concentration=concentration,
+            gamma=gamma,
+            reverse=reverse,
+        )
+        val_loss += batch_loss.item()
+        val_acc += _accuracy(alpha[:n_id], targets) * n_id
+        num_instances += n_id
+    return {"loss": val_loss / len(val_loader), "acc": val_acc / num_instances}
+
+
 @validate.register(CredalNetPredictor)
 @torch.no_grad()
 def _(
@@ -1222,17 +1310,17 @@ def _(
     return _compute_metrics(probs, labels, n_bins)
 
 
-@evaluate.register(EvidentialClassificationPredictor)
+@evaluate.register((EvidentialClassificationPredictor, PriorNetworkPredictor))
 @torch.no_grad()
 def _(
-    model: EvidentialClassificationPredictor,
+    model: EvidentialClassificationPredictor | PriorNetworkPredictor,
     test_loader: DataLoader,
     device: torch.device,
     amp_enabled: bool = False,
     n_bins: int = 10,
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> dict[str, float]:
-    """Evaluate an evidential classifier on the test set.
+    """Evaluate an evidential classifier or Prior Network on the test set.
 
     Uses the mean of the predicted Dirichlet (alpha / alpha.sum) as class probabilities.
     """

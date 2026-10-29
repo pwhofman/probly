@@ -22,5 +22,6 @@ methods:
 #    -   name: "laplace"
     -   name: "natural_posterior_network"
     -   name: "posterior_network"
+    -   name: "prior_network"
     -   name: "sngp"
 #    -   name: "subensemble"

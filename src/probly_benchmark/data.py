@@ -20,6 +20,7 @@ from probly.datasets.torch import CIFAR10H
 from probly_benchmark.paths import DATA_PATH, IMAGENET_SHARD_PATH, IMAGENET_TORCH_PATH
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
 
     from omegaconf import DictConfig
@@ -68,6 +69,21 @@ TRANSFORMS_TEST = {
             T.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ]
     ),
+}
+
+
+# ImageNet shards are trained without augmentation (see _make_imagenet_loader).
+TRANSFORMS_TRAIN = {
+    "cifar10": T.Compose(
+        [
+            T.RandomCrop(32, padding=4),
+            T.RandomHorizontalFlip(),
+            T.ToImage(),
+            T.ToDtype(torch.float32, scale=True),
+            T.Normalize(CIFAR10_MEAN, CIFAR10_STD),
+        ]
+    ),
+    "imagenet": TRANSFORMS_TEST["imagenet"],
 }
 
 
@@ -313,15 +329,7 @@ def get_data_train(
     name = name.lower()
     match name:
         case "cifar10":
-            transforms_train = T.Compose(
-                [
-                    T.RandomCrop(32, padding=4),
-                    T.RandomHorizontalFlip(),
-                    T.ToImage(),
-                    T.ToDtype(torch.float32, scale=True),
-                    T.Normalize(CIFAR10_MEAN, CIFAR10_STD),
-                ]
-            )
+            transforms_train = TRANSFORMS_TRAIN[name]
             train = torchvision.datasets.CIFAR10(root=DATA_PATH, train=True, download=True, transform=transforms_train)
             test = torchvision.datasets.CIFAR10(
                 root=DATA_PATH, train=False, download=True, transform=TRANSFORMS_TEST[name]
@@ -684,6 +692,93 @@ def _get_test_dataset(name: str, transform: T.Compose) -> torchvision.datasets.V
         case _:
             msg = f"Dataset {name} not recognized for test loading"
             raise ValueError(msg)
+
+
+def _get_ood_train_dataset(name: str, transform: T.Compose) -> torchvision.datasets.VisionDataset:  # noqa: PLR0911
+    """Dataset for OOD *training* samples: the train split where one exists, else the test view."""
+    ssl._create_default_https_context = ssl._create_unverified_context  # ty:ignore[invalid-assignment]  # noqa: SLF001
+    name = name.lower()
+    if name in _GRAYSCALE_OOD_DATASETS:
+        transform = T.Compose([T.RGB(), *transform.transforms])
+    match name:
+        case "cifar10":
+            return torchvision.datasets.CIFAR10(root=DATA_PATH, train=True, download=True, transform=transform)
+        case "cifar100":
+            return torchvision.datasets.CIFAR100(root=DATA_PATH, train=True, download=True, transform=transform)
+        case "svhn":
+            return torchvision.datasets.SVHN(root=DATA_PATH, split="train", download=True, transform=transform)
+        case "textures":
+            return torchvision.datasets.DTD(root=DATA_PATH, split="train", download=True, transform=transform)
+        case "mnist":
+            return torchvision.datasets.MNIST(root=DATA_PATH, train=True, download=True, transform=transform)
+        case "fashion_mnist":
+            return torchvision.datasets.FashionMNIST(root=DATA_PATH, train=True, download=True, transform=transform)
+        case "stl10":
+            return torchvision.datasets.STL10(root=DATA_PATH, split="unlabeled", download=True, transform=transform)
+        case _:
+            return _get_test_dataset(name, transform)
+
+
+def get_data_ood_train(
+    name_id: str,
+    name_ood: str,
+    seed: int,
+    **kwargs: Any,  # noqa: ANN401
+) -> DataLoader:
+    """Shuffled loader of OOD training samples with the ID dataset's train transform (after a resize).
+
+    Args:
+        name_id: In-distribution dataset name, cifar10 or imagenet.
+        name_ood: Out-of-distribution dataset name, see :func:`_get_test_dataset`.
+        seed: Seed for shuffling.
+        **kwargs: DataLoader kwargs.
+    """
+    name_id = name_id.lower()
+    if name_id not in TRANSFORMS_TRAIN:
+        msg = f"Dataset {name_id} not recognized as ID dataset"
+        raise ValueError(msg)
+    test_transform = TRANSFORMS_TEST[name_id]
+    resize = [t for t in test_transform.transforms if isinstance(t, T.Resize)]
+    transform = T.Compose([*resize, *TRANSFORMS_TRAIN[name_id].transforms])
+    ood_ds = _get_ood_train_dataset(name_ood, transform)
+    print(f"[get_data_ood_train] ID={name_id}, OOD train={name_ood}: {len(ood_ds)} samples.")
+    loader_kwargs: dict[str, Any] = {**kwargs, "shuffle": True, "drop_last": True}
+    loader_kwargs.setdefault("generator", torch.Generator().manual_seed(seed))
+    return DataLoader(ood_ds, **loader_kwargs)
+
+
+class PairedOodLoader:
+    """Yield ``(cat([id_inputs, ood_inputs]), id_targets)``; the OOD loader is cycled.
+
+    Args:
+        id_loader: In-distribution training loader.
+        ood_loader: OOD loader, see :func:`get_data_ood_train`.
+    """
+
+    def __init__(self, id_loader: DataLoader, ood_loader: DataLoader) -> None:
+        """Store both loaders."""
+        self.id_loader = id_loader
+        self.ood_loader = ood_loader
+        self._ood_iter: Iterator[tuple[torch.Tensor, Any]] | None = None
+
+    def _next_ood(self) -> torch.Tensor:
+        if self._ood_iter is None:
+            self._ood_iter = iter(self.ood_loader)
+        try:
+            ood_inputs, _ = next(self._ood_iter)
+        except StopIteration:
+            self._ood_iter = iter(self.ood_loader)
+            ood_inputs, _ = next(self._ood_iter)
+        return ood_inputs
+
+    def __iter__(self) -> Iterator[tuple[torch.Tensor, torch.Tensor]]:
+        """Iterate over the ID loader, appending one OOD batch per ID batch."""
+        for inputs, targets in self.id_loader:
+            yield torch.cat([inputs, self._next_ood()], dim=0), targets
+
+    def __len__(self) -> int:
+        """Number of ID batches."""
+        return len(self.id_loader)
 
 
 def get_data_selective_prediction(

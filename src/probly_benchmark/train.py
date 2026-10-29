@@ -45,6 +45,7 @@ from probly.method.efficient_credal_prediction import (
     compute_efficient_credal_prediction_bounds,
 )
 from probly.method.ensemble import EnsemblePredictor
+from probly.method.prior_network import PriorNetworkPredictor
 from probly.method.subensemble import SubensemblePredictor
 from probly.method.vbll import VBLLPredictor, find_vbll_layer
 from probly.traverse_nn.utils import get_output_dim
@@ -455,6 +456,50 @@ def train_model(
         train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
         val_fn=validate,
     )
+
+
+@train_model.register(PriorNetworkPredictor)
+def _(
+    model: PriorNetworkPredictor,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Train a Prior Network; pairs every ID batch with an OOD batch from ``method.train.ood_dataset``."""
+    train_kwargs = dict(train_kwargs)
+    ood_dataset = train_kwargs.pop("ood_dataset", None)
+    if ood_dataset is None:
+        msg = "Prior Network training requires `method.train.ood_dataset` (the OOD training set)."
+        raise ValueError(msg)
+    ood_loader = data.get_data_ood_train(
+        cfg.dataset,
+        ood_dataset,
+        cfg.get("seed", 0),
+        batch_size=cfg.batch_size,
+        num_workers=cfg.num_workers,
+        pin_memory=cfg.pin_memory,
+        persistent_workers=cfg.persistent_workers,
+        prefetch_factor=cfg.get("prefetch_factor", 4),
+    )
+    paired_train = data.PairedOodLoader(train_loader, ood_loader)
+    paired_val = data.PairedOodLoader(val_loader, ood_loader) if val_loader is not None else None
+    try:
+        _training_loop(
+            cast("nn.Module", model),
+            paired_train,  # ty: ignore[invalid-argument-type]
+            paired_val,  # ty: ignore[invalid-argument-type]
+            cfg,
+            device,
+            run,
+            train_kwargs,
+            train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
+            val_fn=validate,
+        )
+    finally:
+        _release_persistent_workers(ood_loader)
 
 
 @train_model.register(EnsemblePredictor)

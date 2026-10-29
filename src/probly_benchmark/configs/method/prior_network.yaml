@@ -1,0 +1,12 @@
+# @package method
+name: "prior_network"
+label: "PriorNet"
+train:
+    # OOD training set, as in Malinin and Gales (2019) for CIFAR-10. Note that
+    # cifar100 is also one of the pipeline's OOD test sets.
+    ood_dataset: "cifar100"
+    # Table 4 of the 2019 paper (PN-RKL, CIFAR-10).
+    target_concentration: 100.0
+    concentration: 1.0
+    gamma: 10.0
+    reverse: true

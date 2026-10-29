@@ -42,6 +42,7 @@ from probly.method.evidential.classification import evidential_classification
 from probly.method.het_net import het_net
 from probly.method.natural_posterior_network import natural_posterior_network
 from probly.method.posterior_network import posterior_network
+from probly.method.prior_network import prior_network
 from probly.method.sngp import sngp
 from probly.method.subensemble import subensemble, subensemble_generator
 from probly.method.vbll import vbll
@@ -93,6 +94,7 @@ METHODS = {
     "evidential_classification": evidential_classification,
     "natural_posterior_network": natural_posterior_network,
     "posterior_network": posterior_network,
+    "prior_network": prior_network,
     "ensemble": ensemble,
     "credal_bnn": credal_bnn,
     "credal_ensembling": credal_ensembling,

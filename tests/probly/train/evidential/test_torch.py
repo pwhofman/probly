@@ -349,58 +349,56 @@ def _torch_modules():
 
 
 class TestMakeInDomainTargetAlpha:
-    def test_creates_correct_alpha(self) -> None:
+    def test_uses_explicit_num_classes_not_batch_labels(self) -> None:
         torch = _torch_modules()
         from probly.train.evidential.torch import make_in_domain_target_alpha  # noqa: PLC0415
 
-        y = torch.tensor([0, 1, 2])
-        alpha = make_in_domain_target_alpha(y)
-        # Number of classes inferred from max(y)+1.
-        assert alpha.shape == (3, 3)
-        # Diagonal entries should be 10.0, off-diagonals should be 1.0.
+        # Labels only span 0..1 but the dataset has 5 classes.
+        y = torch.tensor([0, 1])
+        alpha = make_in_domain_target_alpha(y, num_classes=5)
+        assert alpha.shape == (2, 5)
+
+    def test_target_is_concentration_plus_beta_on_true_class(self) -> None:
+        torch = _torch_modules()
+        from probly.train.evidential.torch import make_in_domain_target_alpha  # noqa: PLC0415
+
+        # Malinin and Gales (2019), eq. 7: beta + 1 on the true class, 1 elsewhere.
+        y = torch.tensor([0, 2])
+        alpha = make_in_domain_target_alpha(y, num_classes=3)
         torch.testing.assert_close(
             alpha,
             torch.tensor(
                 [
-                    [10.0, 1.0, 1.0],
-                    [1.0, 10.0, 1.0],
-                    [1.0, 1.0, 10.0],
+                    [101.0, 1.0, 1.0],
+                    [1.0, 1.0, 101.0],
                 ]
             ),
         )
 
-    def test_handles_skipped_classes(self) -> None:
+    def test_custom_concentrations(self) -> None:
         torch = _torch_modules()
         from probly.train.evidential.torch import make_in_domain_target_alpha  # noqa: PLC0415
 
-        # max(y) = 4 -> 5 classes.
-        y = torch.tensor([0, 4])
-        alpha = make_in_domain_target_alpha(y)
-        assert alpha.shape == (2, 5)
-        assert alpha[0, 0].item() == 10.0
-        assert alpha[1, 4].item() == 10.0
+        y = torch.tensor([1])
+        alpha = make_in_domain_target_alpha(y, num_classes=2, target_concentration=1e3, concentration=0.5)
+        torch.testing.assert_close(alpha, torch.tensor([[0.5, 1000.5]]))
 
 
 class TestMakeOodTargetAlpha:
-    def test_default_args(self) -> None:
+    def test_flat_dirichlet_of_ones(self) -> None:
         torch = _torch_modules()
         from probly.train.evidential.torch import make_ood_target_alpha  # noqa: PLC0415
 
-        out = make_ood_target_alpha(batch_size=4)
-        # Defaults: num_classes=10, alpha0=10
-        assert out.shape == (4, 10)
-        # Each row sums to alpha0.
-        torch.testing.assert_close(out.sum(dim=-1), torch.full((4,), 10.0))
-        # All values equal alpha0/num_classes.
-        torch.testing.assert_close(out[0, 0].item(), 1.0)
+        out = make_ood_target_alpha(batch_size=4, num_classes=7)
+        assert out.shape == (4, 7)
+        torch.testing.assert_close(out, torch.ones(4, 7))
 
-    def test_custom_args(self) -> None:
+    def test_custom_concentration(self) -> None:
         torch = _torch_modules()
         from probly.train.evidential.torch import make_ood_target_alpha  # noqa: PLC0415
 
-        out = make_ood_target_alpha(batch_size=2, num_classes=5, alpha0=20.0)
-        assert out.shape == (2, 5)
-        torch.testing.assert_close(out.sum(dim=-1), torch.full((2,), 20.0))
+        out = make_ood_target_alpha(batch_size=2, num_classes=5, concentration=0.5)
+        torch.testing.assert_close(out, torch.full((2, 5), 0.5))
 
 
 class TestPredictiveProbs:
@@ -956,30 +954,129 @@ class TestRpnNgKl:
         assert torch.isfinite(loss).all()
 
 
-class TestPnLoss:
-    """pn_loss runs ID + OOD pipeline through a small classification model."""
+class _ExpDirNet(nn.Module):
+    """Linear logits followed by exp, the Prior Network alpha parameterization."""
 
-    def test_pn_loss_finite(self) -> None:
-        torch = _torch_modules()
+    def __init__(self, in_features: int, num_classes: int) -> None:
+        super().__init__()
+        self.lin = nn.Linear(in_features, num_classes)
+
+    def forward(self, x: Tensor) -> Tensor:
+        return torch.exp(self.lin(x))
+
+
+class TestPnLoss:
+    """pn_loss follows Malinin and Gales (2019) and the authors' reference implementation."""
+
+    def _setup(self, num_classes: int = 5, seed: int = 0):
+        torch.manual_seed(seed)
+        model = _ExpDirNet(4, num_classes)
+        x_in = torch.randn(6, 4)
+        y_in = torch.randint(0, num_classes, (6,))
+        x_ood = torch.randn(6, 4)
+        return model, x_in, y_in, x_ood
+
+    def test_class_count_comes_from_model_output(self) -> None:
         from probly.train.evidential.torch import pn_loss  # noqa: PLC0415
 
-        # Tiny model that returns positive Dirichlet alphas.
-        # Note: pn_loss internally uses make_ood_target_alpha which defaults
-        # to num_classes=10, so the model must produce 10-class alphas.
-        class _TinyDirNet(nn.Module):
-            def __init__(self) -> None:
-                super().__init__()
-                self.lin = nn.Linear(4, 10)
-
-            def forward(self, x: torch.Tensor) -> torch.Tensor:
-                return torch.nn.functional.softplus(self.lin(x)) + 1.0
-
-        model = _TinyDirNet()
-        x_in = torch.randn(4, 4)
-        # In-distribution target labels need to span 0..9 so make_in_domain_target_alpha
-        # produces a 10-class target matching the OOD target shape.
-        y_in = torch.tensor([0, 9, 2, 5])
-        x_ood = torch.randn(4, 4)
-        loss = pn_loss(model, x_in, y_in, x_ood)
+        # 5-class model, batch labels never reach class 4: must not raise a shape error.
+        model = _ExpDirNet(4, 5)
+        loss = pn_loss(model, torch.randn(4, 4), torch.tensor([0, 1, 2, 3]), torch.randn(4, 4))
         assert loss.shape == ()
         assert torch.isfinite(loss).all()
+
+    def test_reverse_kl_is_default(self) -> None:
+        from torch.distributions import Dirichlet, kl_divergence  # noqa: PLC0415
+
+        from probly.train.evidential.torch import (  # noqa: PLC0415
+            make_in_domain_target_alpha,
+            make_ood_target_alpha,
+            pn_loss,
+        )
+
+        model, x_in, y_in, x_ood = self._setup()
+        with torch.no_grad():
+            alpha_in, alpha_ood = model(x_in), model(x_ood)
+            target_in = make_in_domain_target_alpha(y_in, num_classes=5)
+            target_ood = make_ood_target_alpha(x_ood.size(0), num_classes=5)
+            # Eq. 10 of the 2019 paper: KL(model || target), normalised by the target concentration.
+            kl_in = kl_divergence(Dirichlet(alpha_in), Dirichlet(target_in)).mean()
+            kl_ood = kl_divergence(Dirichlet(alpha_ood), Dirichlet(target_ood)).mean()
+            expected = (kl_in + kl_ood) / 1e2
+            loss = pn_loss(model, x_in, y_in, x_ood)
+        torch.testing.assert_close(loss, expected)
+
+    def test_forward_kl_option(self) -> None:
+        from torch.distributions import Dirichlet, kl_divergence  # noqa: PLC0415
+
+        from probly.train.evidential.torch import (  # noqa: PLC0415
+            make_in_domain_target_alpha,
+            make_ood_target_alpha,
+            pn_loss,
+        )
+
+        model, x_in, y_in, x_ood = self._setup()
+        with torch.no_grad():
+            alpha_in, alpha_ood = model(x_in), model(x_ood)
+            target_in = make_in_domain_target_alpha(y_in, num_classes=5)
+            target_ood = make_ood_target_alpha(x_ood.size(0), num_classes=5)
+            # Eq. 12 of the 2018 paper: KL(target || model).
+            kl_in = kl_divergence(Dirichlet(target_in), Dirichlet(alpha_in)).mean()
+            kl_ood = kl_divergence(Dirichlet(target_ood), Dirichlet(alpha_ood)).mean()
+            expected = (kl_in + kl_ood) / 1e2
+            loss = pn_loss(model, x_in, y_in, x_ood, reverse=False)
+        torch.testing.assert_close(loss, expected)
+
+    def test_gamma_weights_ood_term(self) -> None:
+        from torch.distributions import Dirichlet, kl_divergence  # noqa: PLC0415
+
+        from probly.train.evidential.torch import make_ood_target_alpha, pn_loss  # noqa: PLC0415
+
+        model, x_in, y_in, x_ood = self._setup()
+        with torch.no_grad():
+            alpha_ood = model(x_ood)
+            target_ood = make_ood_target_alpha(x_ood.size(0), num_classes=5)
+            kl_ood = kl_divergence(Dirichlet(alpha_ood), Dirichlet(target_ood)).mean()
+            diff = pn_loss(model, x_in, y_in, x_ood, gamma=3.0) - pn_loss(model, x_in, y_in, x_ood, gamma=1.0)
+        torch.testing.assert_close(diff, 2.0 * kl_ood / 1e2)
+
+    def test_target_concentration_normalises_loss(self) -> None:
+        from torch.distributions import Dirichlet, kl_divergence  # noqa: PLC0415
+
+        from probly.train.evidential.torch import (  # noqa: PLC0415
+            make_in_domain_target_alpha,
+            make_ood_target_alpha,
+            pn_loss,
+        )
+
+        model, x_in, y_in, x_ood = self._setup()
+        with torch.no_grad():
+            alpha_in, alpha_ood = model(x_in), model(x_ood)
+            target_in = make_in_domain_target_alpha(y_in, num_classes=5, target_concentration=1e3)
+            target_ood = make_ood_target_alpha(x_ood.size(0), num_classes=5)
+            kl_in = kl_divergence(Dirichlet(alpha_in), Dirichlet(target_in)).mean()
+            kl_ood = kl_divergence(Dirichlet(alpha_ood), Dirichlet(target_ood)).mean()
+            expected = (kl_in + kl_ood) / 1e3
+            loss = pn_loss(model, x_in, y_in, x_ood, target_concentration=1e3)
+        torch.testing.assert_close(loss, expected)
+
+    def test_backward_gives_finite_gradients(self) -> None:
+        from probly.train.evidential.torch import pn_loss  # noqa: PLC0415
+
+        model, x_in, y_in, x_ood = self._setup()
+        loss = pn_loss(model, x_in, y_in, x_ood)
+        loss.backward()
+        grad = model.lin.weight.grad
+        assert grad is not None
+        assert torch.isfinite(grad).all()
+
+    def test_pn_loss_from_alphas_matches_pn_loss(self) -> None:
+        from probly.train.evidential.torch import pn_loss, pn_loss_from_alphas  # noqa: PLC0415
+
+        model, x_in, y_in, x_ood = self._setup()
+        with torch.no_grad():
+            expected = pn_loss(model, x_in, y_in, x_ood, gamma=3.0, target_concentration=1e3, reverse=False)
+            loss = pn_loss_from_alphas(
+                model(x_in), y_in, model(x_ood), gamma=3.0, target_concentration=1e3, reverse=False
+            )
+        torch.testing.assert_close(loss, expected)
