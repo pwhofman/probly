@@ -186,7 +186,7 @@ class SelectivePredictor[**In, D](
     Calibrator[Concatenate[Any, In], Any],
     Protocol,
 ):
-    """Predictor that answers or abstains per instance, built by :func:`selective_predictor`.
+    """Predictor that predicts or abstains per instance, built by :func:`selective_predictor`.
 
     Anything registered with ``SelectivePredictor.register`` that has these attributes predicts through the
     selective prediction pipeline of :func:`~probly.predictor.predict`.
@@ -401,7 +401,7 @@ def selective_predictor[**In](
     loss: ScoringRule | Callable[[Any, Any], Any] | None = _ZERO_ONE_LOSS,
     decider: Decider[Any, Any] | None = None,
 ) -> SelectivePredictor[In, Any]:
-    r"""Selective predictor that answers or abstains based on an uncertainty criterion.
+    r"""Selective predictor that predicts or abstains based on an uncertainty criterion.
 
     The selection rule is a :class:`~probly.selective_prediction.selectors.Selector` built with
     :func:`~probly.selective_prediction.selector`; rules fitted on data are fitted with ``calibrate``. Without a
@@ -431,16 +431,7 @@ def selective_predictor[**In](
       ``selector(..., notion=lambda r: quantify(r).epistemic)`` with :func:`~probly.quantification.quantify`.
 
     A decomposition that a method registers with ``quantify`` for its own representation (DARE, SNGP,
-    heteroscedastic networks, the vacuity of evidential models) is used the same way. How the arguments are used:
-
-    =================  ===============================  =====================  =====================
-    \                  Scoring rule                     Function loss          ``loss=None``
-    =================  ===============================  =====================  =====================
-    criterion, name    decomposition of ``loss``        as the default loss    as the default loss
-    criterion, func    ``notion(rep)``                  ``notion(rep)``        ``notion(rep)``
-    decision           ``decider(rep)``                 ``decider(rep)``       ``decider(rep)``
-    losses             ``loss.loss(decision)[i, y_i]``  ``loss(decision, y)``  none
-    =================  ===============================  =====================  =====================
+    heteroscedastic networks, the vacuity of evidential models) is used the same way.
 
     Regression needs a function notion, ``decider`` and ``loss``, e.g. for MC dropout
     ``notion=lambda s: s.sample_var().squeeze(-1)``, ``decider=lambda s: s.sample_mean().squeeze(-1)`` and

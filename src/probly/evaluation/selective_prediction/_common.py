@@ -63,9 +63,7 @@ def evaluate_selective_prediction(
         metrics: The metrics to compute.
 
             - None or ``"all"``: the default set ``"aurc"``, ``"augrc"`` and ``"risk@1"``. Other working points
-              are not included and must be named. The risk at full coverage is the mean loss. A ranking metric
-              alone cannot tell a better classifier from a better ranking of its errors, so it is reported next
-              to them.
+              are not included and must be named.
             - A name or a list of names from ``"aurc"``, ``"augrc"``, ``"risk@<coverage>"`` (the selective
               risk at a coverage, see :func:`~probly.metrics.selective_prediction.risk_at_coverage`) and
               ``"coverage@<risk>"`` (the largest coverage with at most that risk, see
@@ -76,9 +74,7 @@ def evaluate_selective_prediction(
         A dictionary of floats with the following keys.
 
         - ``"<name>"``: the value of each requested metric.
-        - ``"<name>:coverage"`` for ``"risk@<coverage>"``: the coverage that was actually used. It is above the
-          target when the target is not a reachable coverage, and it can be far above it when many criterion
-          values are tied.
+        - ``"<name>:coverage"`` for ``"risk@<coverage>"``: the coverage that was actually used.
           ``"<name>:coverage"`` is omitted for a target of 1, since the realized coverage is then always 1.
         - ``"<name>:risk"`` for ``"coverage@<risk>"``: the selective risk at that coverage, or NaN if no
           coverage meets the target.

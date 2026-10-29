@@ -7,11 +7,10 @@ from flextype import flexdispatch
 
 @flexdispatch
 def risk_coverage_curve(criterion: object, losses: object) -> tuple[object, object, object]:
-    """Exact (unbinned) risk-coverage curve of selective prediction.
+    """Exact risk-coverage curve of selective prediction.
 
     The curve shows how the risk of a predictor changes as it abstains on more of its least confident instances.
-    Concretely, an instance is accepted when its criterion is at most a threshold, so larger criterion values, which
-    indicate more uncertainty, are rejected first. For every threshold, the curve gives the coverage, that is, the
+    For every threshold, the curve gives the coverage, that is, the
     fraction of accepted instances, and the selective risk, the mean loss of the accepted instances. Note that the
     selective risk need not be monotone in the coverage.
 
@@ -22,10 +21,6 @@ def risk_coverage_curve(criterion: object, losses: object) -> tuple[object, obje
     first point is an endpoint at coverage 0, where the selective risk is undefined; by convention, it carries the
     risk of the first step :cite:`jaegerCallReflect2023`. Without it, an area would start at the coverage of the
     first step and thus favor criteria with a large first step.
-
-    A criterion of NaN or ``-inf``, which is reserved for the endpoint, and a non-finite loss raise an error, while
-    a criterion of ``+inf`` is allowed. Under ``jax.jit``, these checks are skipped, since the values are unknown
-    during tracing.
 
     Args:
         criterion: Criterion values of shape ``(n,)``. Larger values are rejected first.

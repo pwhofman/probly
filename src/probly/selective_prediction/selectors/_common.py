@@ -306,7 +306,7 @@ def selector(
     notion: NotionKey | Callable[[Any], Any] = "total",
     **options: Any,  # noqa: ANN401
 ) -> Selector:
-    """Build the selection rule for a :class:`~probly.selective_prediction.SelectivePredictor` from its guarantee.
+    """Build the selection rule for a :class:`~probly.selective_prediction.SelectivePredictor`.
 
     Pass exactly one rule: ``threshold``, ``coverage``, or ``risk`` with ``delta``. The selector also works on its own,
     e.g. ``selector(coverage=0.9).calibrate(scores).select(new_scores)``. Every rule accepts a prediction whose
