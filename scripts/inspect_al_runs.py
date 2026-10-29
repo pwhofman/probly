@@ -47,6 +47,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -290,6 +291,13 @@ def fetch_all(sources: list[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
     return df_runs, df_hist
 
 
+def _atomic_to_pickle(df: pd.DataFrame, path: Path) -> None:
+    """Write through a per-process temp file and rename, so concurrent refreshes never expose a partial pickle."""
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    df.to_pickle(tmp)
+    tmp.replace(path)
+
+
 def load_or_fetch(sources: list[str], out_dir: Path, refresh: bool) -> tuple[pd.DataFrame, pd.DataFrame]:
     runs_path = out_dir / "wandb_cache_runs.pkl"
     hist_path = out_dir / "wandb_cache_history.pkl"
@@ -302,8 +310,8 @@ def load_or_fetch(sources: list[str], out_dir: Path, refresh: bool) -> tuple[pd.
 
     df_runs, df_hist = fetch_all(sources)
     out_dir.mkdir(parents=True, exist_ok=True)
-    df_runs.to_pickle(runs_path)
-    df_hist.to_pickle(hist_path)
+    _atomic_to_pickle(df_runs, runs_path)
+    _atomic_to_pickle(df_hist, hist_path)
     return df_runs, df_hist
 
 

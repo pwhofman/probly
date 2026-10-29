@@ -10,7 +10,7 @@
 #
 # Usage
 #   ./src/probly_benchmark/runner.sh --list
-#   ./src/probly_benchmark/runner.sh --lane NAME [--seeds SPEC] [--strategy NAME]...
+#   ./src/probly_benchmark/runner.sh --lane NAME [--seeds SPEC] [--method NAME]... [--strategy NAME]...
 #                                    [--device DEV] [--wandb-project NAME] [--limit N]
 #   DRY_RUN=1 ./src/probly_benchmark/runner.sh --lane crebnn --seeds 0   # print, launch nothing
 #   SKIP_REFRESH=1 ...                                                    # reuse the local wandb cache
@@ -32,7 +32,9 @@
 #   uv run wandb login            # an account with write access to the wandb entity "probly"
 #   tmux new -s al                # an SSH disconnect would otherwise kill the lane
 #   ./src/probly_benchmark/runner.sh --lane crebnn --seeds 0 --device cuda:0
-# Split a large lane across GPUs by seed (--seeds 0, 1, 2 on three GPUs) or by strategy.
+# Split a large lane across GPUs by seed (--seeds 0, 1, 2 on three GPUs), by method
+# (--method, one of the lane's methods) or by strategy; the three filters combine, so under a
+# job time limit one command per method, seed and strategy is at most two runs.
 # Report back when the final "Done. N succeeded, M failed." line prints; restart a failed
 # lane with the same command. Trial runs never go through this script: call
 # `uv run python -m probly_benchmark.active_learning ... wandb.enabled=false` directly.
@@ -68,6 +70,7 @@ SEEDS="0-2"
 PROJECT="crv-al-cifar10"
 DEVICE=""
 LIMIT=""
+ONLY_METHODS=()
 STRATEGIES=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -77,6 +80,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --lane) LANE="$2"; shift 2 ;;
         --seeds) SEEDS="$2"; shift 2 ;;
+        --method) ONLY_METHODS+=("$2"); shift 2 ;;
         --strategy) STRATEGIES+=("$2"); shift 2 ;;
         --device) DEVICE="$2"; shift 2 ;;
         --wandb-project) PROJECT="$2"; shift 2 ;;
@@ -89,6 +93,14 @@ done
 METHOD_LIST=$(lane_methods "$LANE") || die "unknown lane '$LANE' (see --list)"
 [[ -f scripts/run_al_sweep.py ]] || die "scripts/run_al_sweep.py not found next to this deployment -- sync it first."
 read -r -a METHODS <<<"$METHOD_LIST"
+# --method narrows the lane to some of its methods; a method from another lane is a typo.
+for m in ${ONLY_METHODS[@]+"${ONLY_METHODS[@]}"}; do
+    grep -qw -- "$m" <<<"$METHOD_LIST" || die "method '$m' is not in lane '$LANE' ($METHOD_LIST)"
+done
+if [[ ${#ONLY_METHODS[@]} -gt 0 ]]; then
+    METHODS=("${ONLY_METHODS[@]}")
+    METHOD_LIST="${METHODS[*]}"
+fi
 DRY="${DRY_RUN:-0}"
 
 echo "### lane $LANE: $METHOD_LIST | seeds $SEEDS | project $PROJECT | device ${DEVICE:-auto} ###"
@@ -144,7 +156,11 @@ if [[ "$DRY" == "1" ]]; then
     exit 0
 fi
 mkdir -p logs
-log="logs/al_cifar10_${LANE}_seeds${SEEDS//,/_}_$(date +%Y%m%d_%H%M%S).log"
+# Filtered commands of one lane may run side by side, so the filters go into the log name.
+tag=""
+[[ ${#ONLY_METHODS[@]} -eq 0 ]] || tag+="_$(IFS=-; echo "${ONLY_METHODS[*]}")"
+[[ ${#STRATEGIES[@]} -eq 0 ]] || tag+="_$(IFS=-; echo "${STRATEGIES[*]}")"
+log="logs/al_cifar10_${LANE}_seeds${SEEDS//,/_}${tag}_$(date +%Y%m%d_%H%M%S).log"
 echo "log: $log"
 "${cmd[@]}" --execute 2>&1 | tee "$log"
 exit "${PIPESTATUS[0]}"
