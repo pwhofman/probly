@@ -3,7 +3,7 @@ Selective Prediction with Risk Control
 ======================================
 
 Choose the threshold of a plain neural network on labeled calibration data so that the risk of the accepted
-predictions stays below a target (Geifman and El-Yaniv, 2017).
+predictions stays below a target :cite:`geifmanSelectiveClassification2017`.
 """
 
 from __future__ import annotations

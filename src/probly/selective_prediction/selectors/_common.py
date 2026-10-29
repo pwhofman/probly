@@ -200,7 +200,7 @@ class CoverageSelector(Selector):
 
 
 def _binomial_upper_bound(errors: float, n: int, delta: float) -> float:
-    """One-sided Clopper-Pearson upper limit (Geifman and El-Yaniv, 2017, Lemma 3.1).
+    """One-sided Clopper-Pearson upper limit :cite:`geifmanSelectiveClassification2017` (Lemma 3.1).
 
     The largest error rate under which at most ``errors`` errors in ``n`` trials have probability at least ``delta``.
     """

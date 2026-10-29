@@ -162,7 +162,10 @@ def test_binomial_upper_bound_edge_cases() -> None:
 
 
 def _reference_sgr(kappa: np.ndarray, losses: np.ndarray, risk: float, delta: float) -> tuple[float, float, list[int]]:
-    """Plain transcription of Algorithm 1 of Geifman and El-Yaniv (2017), returning the last certified iterate."""
+    """Plain transcription of Algorithm 1 of :cite:`geifmanSelectiveClassification2017`.
+
+    Returns the last certified iterate.
+    """
     n = len(kappa)
     ordered = np.sort(kappa)
     steps = int(np.ceil(np.log2(n)))
