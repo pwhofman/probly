@@ -9,7 +9,9 @@ method:
     # (the closed-form probit/bridge approximations are GLM-only).
     link_approx: "mc"
     # KFAC stores per-sample 1000x1000 Hessian square roots; train batch (2048) OOMs.
-    fit_batch_size: 32
+    # The type-2 KFAC fit has a large fixed cost per batch, so 32 took ~22h on the full train set.
+    # 512 gives the same prior precision and test metrics on a 2% subset at a fraction of the time.
+    fit_batch_size: 512
     # As on CIFAR-10, the posterior is fit on the full train set and the prior grid is scored
     # on the full validation split: laplace-torch sums the KFAC factors over the samples it
     # sees, so fitting on a subset would shrink the data term by that fraction.
