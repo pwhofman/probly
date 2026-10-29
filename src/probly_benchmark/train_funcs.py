@@ -1093,6 +1093,41 @@ def evaluate_single_model(
     return _compute_metrics(probs, labels, n_bins)
 
 
+@evaluate.register(VBLLPredictor)
+@torch.no_grad()
+def _(
+    model: Predictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    num_samples: int = 100,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate a VBLL predictor on the test set.
+
+    Draws ``num_samples`` logit samples from the predictive Gaussian and averages
+    their softmax probabilities, as the VBLL representer does for the downstream tasks.
+    The sampling runs in float32 because the logit variances can be tiny.
+    """
+    model.eval()  # ty: ignore[unresolved-attribute]
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            mean, variance = model(inputs)  # ty: ignore[call-non-callable]
+        mean, std = mean.float(), variance.float().sqrt()
+        logits = mean + std * torch.randn((num_samples, *mean.shape), device=mean.device)
+        all_probs.append(F.softmax(logits, dim=-1).mean(dim=0))
+        all_labels.append(targets)
+
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
+
+    return _compute_metrics(probs, labels, n_bins)
+
+
 @evaluate.register((DropConnectPredictor, DropoutPredictor))
 @torch.no_grad()
 def _(

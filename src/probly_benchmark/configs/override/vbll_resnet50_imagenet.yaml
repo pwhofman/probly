@@ -1,0 +1,9 @@
+# @package _global_
+
+# The dense covariance stores one in_features x in_features Cholesky factor per class:
+# 1000 x 2048 x 2048 = 4.2B parameters for ResNet-50 on ImageNet, which does not fit in
+# GPU memory together with its gradients and optimizer state. The diagonal covariance
+# (the default of the reference implementation for classification) is used instead.
+method:
+  params:
+    parameterization: "diagonal"
