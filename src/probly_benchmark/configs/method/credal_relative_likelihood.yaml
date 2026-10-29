@@ -8,3 +8,4 @@ params:
 train:
     alpha: 1.0
     batch_check: false # determines whether likelihood constraint is checked after batch (if true) or epoch (if false)
+    check_last_epochs: null # null = check the constraint every epoch; N = only in the last N epochs (skips the full-dataset likelihood pass before that)

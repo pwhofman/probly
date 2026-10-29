@@ -946,9 +946,14 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
     max_ll: float,
     alpha: float,
     batch_check: bool = False,
+    check_last_epochs: int | None = None,
     log_prefix: str = "",
 ) -> None:
-    """Training loop that stops when the relative likelihood reaches ``alpha``."""
+    """Training loop that stops when the relative likelihood reaches ``alpha``.
+
+    With ``check_last_epochs=N`` the constraint is only evaluated in the last ``N`` epochs;
+    earlier epochs skip the full-dataset likelihood pass and log ``nan``. ``None`` checks every epoch.
+    """
     _maybe_compile_forward(model, device)
 
     optimizer = get_optimizer(
@@ -973,8 +978,12 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
     wandb.define_metric(epoch_key, hidden=True)
     wandb.define_metric(f"{log_prefix}*", step_metric=epoch_key)
 
+    first_check_epoch = 0 if check_last_epochs is None else max(0, cfg.epochs - check_last_epochs)
+
     stopped = False
     for epoch in tqdm(range(cfg.epochs), desc=f"{log_prefix}Epoch"):
+        check_this_epoch = epoch >= first_check_epoch
+        relative_likelihood = float("nan")
         model.train()
         running_loss = 0.0
         for inputs_, targets_ in tqdm(train_loader):
@@ -994,7 +1003,7 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
             if scheduler is not None and step_per_iter:
                 scheduler.step()
 
-            if batch_check:
+            if batch_check and check_this_epoch:
                 model.eval()
                 current_ll = _compute_log_likelihood(model, train_loader, device, amp_enabled)
                 model.train()
@@ -1005,7 +1014,7 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
 
         running_loss /= len(train_loader)
 
-        if not stopped:
+        if check_this_epoch and not stopped:
             model.eval()
             current_ll = _compute_log_likelihood(model, train_loader, device, amp_enabled)
             relative_likelihood = torch.exp(torch.tensor(current_ll - max_ll)).item()
@@ -1028,7 +1037,7 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
             else:
                 scheduler.step()
 
-        if stopped or relative_likelihood >= alpha:
+        if stopped or (check_this_epoch and relative_likelihood >= alpha):
             run.summary[f"{log_prefix}rl_stopped"] = True
             run.summary[f"{log_prefix}stopped_epoch"] = epoch
             print(f"Relative likelihood stopping at epoch {epoch} (RL={relative_likelihood:.4f})")
@@ -1172,6 +1181,7 @@ def _(
     members = list(model)
     alpha = train_kwargs.get("alpha", 0.5)
     batch_check = train_kwargs.get("batch_check", False)
+    check_last_epochs = train_kwargs.get("check_last_epochs")
     num_remaining = len(members) - 1
 
     # The reference member stands in for the maximum-likelihood model, so it keeps its final
@@ -1218,6 +1228,7 @@ def _(
             max_ll=max_ll,
             alpha=threshold,
             batch_check=batch_check,
+            check_last_epochs=check_last_epochs,
             log_prefix=f"member_{i}/",
         )
 

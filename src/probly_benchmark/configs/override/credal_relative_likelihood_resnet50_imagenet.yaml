@@ -5,3 +5,9 @@
 method:
   params:
     reset_params: false
+
+# The per-epoch relative-likelihood check is a full pass over the training set
+# and costs as much as the epoch itself on ImageNet. Members never reach the
+# threshold before the final epochs there, so only check the last three.
+  train:
+    check_last_epochs: 3
