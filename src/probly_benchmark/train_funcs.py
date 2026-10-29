@@ -1383,7 +1383,12 @@ def evaluate_laplace(
     n_samples: int = 100,
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> dict[str, float]:
-    """Evaluate a fitted Laplace predictor via the closed-form GLM (or NN MC) predictive distribution."""
+    """Evaluate a fitted Laplace predictor via the closed-form GLM (or NN MC) predictive distribution.
+
+    Always runs in fp32 (``amp_enabled`` is ignored): autocast's weight cache makes the ``"nn"``
+    predictive reuse the first posterior sample for all samples.
+    """
+    del amp_enabled
     if model.n_data == 0:
         msg = "Laplace approximation is not fitted; .fit(loader) must run before evaluate."
         raise RuntimeError(msg)
@@ -1392,7 +1397,7 @@ def evaluate_laplace(
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in test_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
-        with autocast(device.type, enabled=amp_enabled):
+        with autocast(device.type, enabled=False):
             probs = model(inputs, pred_type=pred_type, link_approx=link_approx, n_samples=n_samples)
         all_probs.append(probs)  # ty: ignore[invalid-argument-type]
         all_labels.append(targets)

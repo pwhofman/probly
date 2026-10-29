@@ -5,6 +5,8 @@ defaults:
   - conformal: lac
   - recipe: ???
   - method: ???
+  # Optional combo-specific overrides keyed on (method, recipe), as in train.yaml
+  - optional override: ${method}_${recipe}
 
 seed: 1
 wandb:

@@ -5,6 +5,8 @@ defaults:
   - conformal: none
   - recipe: ???
   - method: ???
+  # Optional combo-specific overrides keyed on (method, recipe), as in train.yaml
+  - optional override: ${method}_${recipe}
 
 dataset: "cifar10"
 base_model: "resnet18"
