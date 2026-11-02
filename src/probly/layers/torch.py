@@ -1851,7 +1851,9 @@ class SNGPLayer(nn.Module):
 
     def compute_rff(self, x: torch.Tensor) -> torch.Tensor:
         """Compute Random Fourier Features (paper Eq. 7)."""
-        projection = F.linear(x, self.W_L, self.b_L)
+        # Large-norm inputs push the projection past the fp16 range under autocast and cos(inf) is NaN.
+        with torch.amp.autocast(device_type=x.device.type, enabled=False):
+            projection = F.linear(x.float(), self.W_L, self.b_L)
         return torch.cos(projection) * math.sqrt(2.0 / self.num_random_features)
 
     def reset_precision_matrix(self) -> None:

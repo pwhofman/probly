@@ -372,6 +372,22 @@ def test_sngp_layer_random_feature_init_std_scales_w_l() -> None:
     assert abs(layer_small.W_L.std().item() - 0.05) < 0.005
 
 
+def test_sngp_layer_rff_stays_finite_under_fp16_autocast() -> None:
+    """A large-norm input must not overflow the random-feature projection under fp16 autocast."""
+    torch.manual_seed(0)
+    layer = SNGPLayer(in_features=512, num_classes=10, num_random_features=1024)
+    layer.eval()
+    x = torch.randn(2, 512)
+    # Projections of this row exceed the fp16 maximum (65504); a CIFAR-10 pool image reached a norm of 2e4.
+    x[1] *= 1e5 / x[1].norm()
+
+    with torch.no_grad(), torch.autocast("cpu", dtype=torch.float16):
+        logits, variance = layer(x)
+
+    assert torch.isfinite(logits).all()
+    assert torch.isfinite(variance).all()
+
+
 import warnings  # noqa: E402
 
 
