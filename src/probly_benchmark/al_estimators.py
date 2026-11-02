@@ -388,7 +388,8 @@ class UncertaintyEstimator(BaseEstimator):
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return class probabilities via the ``decide`` dispatch."""
         _eval_mode(self.model)
-        amp_enabled = self.cfg.get("amp", False)
+        # BaseLaplace uses Cholesky decomposition internally which doesn't support float16.
+        amp_enabled = self.cfg.get("amp", False) and not isinstance(self.model, BaseLaplace)
         parts = []
         for i in range(0, len(x), self.cfg.batch_size):
             xb = x[i : i + self.cfg.batch_size].float().to(self.device)
@@ -402,7 +403,8 @@ class UncertaintyEstimator(BaseEstimator):
         """Return per-sample uncertainty via representer -> quantify -> select_uncertainty."""
         _eval_mode(self.model)
         rep = representer(self.model, **self.rep_kwargs)
-        amp_enabled = self.cfg.get("amp", False)
+        # BaseLaplace uses Cholesky decomposition internally which doesn't support float16.
+        amp_enabled = self.cfg.get("amp", False) and not isinstance(self.model, BaseLaplace)
         parts: list[torch.Tensor] = []
         for i in range(0, len(x), self.cfg.batch_size):
             xb = x[i : i + self.cfg.batch_size].float().to(self.device)
