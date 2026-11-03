@@ -8,6 +8,6 @@ method:
 
 # The per-epoch relative-likelihood check is a full pass over the training set
 # and costs as much as the epoch itself on ImageNet. Members never reach the
-# threshold before the final epochs there, so only check the last three.
+# threshold before the final epoch there, so only check the last one.
   train:
-    check_last_epochs: 3
+    check_last_epochs: 1
