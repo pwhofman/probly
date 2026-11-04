@@ -10,7 +10,7 @@ from omegaconf import DictConfig, OmegaConf
 from probly.evaluation.tasks import selective_prediction
 from probly.representer import representer
 from probly_benchmark import calibration, data, utils
-from probly_benchmark.uncertainty import SUPPORTED_DECOMPOSITIONS
+from probly_benchmark.uncertainty import SUPPORTED_DECOMPOSITIONS, SUPPORTED_MEASURES
 from probly_benchmark.utils import (
     collect_uncertainties_decisions_targets,
     init_wandb_for_evaluation,
@@ -76,6 +76,9 @@ def main(cfg: DictConfig) -> None:
     if cfg.decomposition not in SUPPORTED_DECOMPOSITIONS:
         msg = f"Unsupported decomposition: {cfg.decomposition!r}. Choose from {SUPPORTED_DECOMPOSITIONS}."
         raise ValueError(msg)
+    if cfg.measure not in SUPPORTED_MEASURES:
+        msg = f"Unsupported measure: {cfg.measure!r}. Choose from {SUPPORTED_MEASURES}."
+        raise ValueError(msg)
 
     uncertainties_t, mean_probs_t, targets_t = collect_uncertainties_decisions_targets(
         model,
@@ -85,6 +88,7 @@ def main(cfg: DictConfig) -> None:
         cfg.decomposition,
         rep_kwargs=rep_kwargs or None,
         amp_enabled=cfg.get("amp", False),
+        measure=cfg.measure,
     )
     uncertainties = uncertainties_t.detach().cpu().numpy()
     mean_probs = mean_probs_t.detach().cpu().numpy()

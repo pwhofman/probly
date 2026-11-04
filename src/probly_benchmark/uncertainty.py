@@ -2,16 +2,74 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast
 import warnings
 
+from probly.quantification import (
+    SecondOrderEntropyDecomposition,
+    SecondOrderScoringRuleDecomposition,
+    SecondOrderZeroOneDecomposition,
+    quantify,
+)
 from probly.quantification.notion import NotionName, notion_registry
+from probly.quantification.scoring_rule import BrierLoss
+from probly.representation.distribution import DistributionSample
 
 if TYPE_CHECKING:
     from probly.quantification import Decomposition, QuantificationResult
+    from probly.quantification.measure.distribution._common import SecondOrderDistributionLike
     from probly.quantification.notion import Notion
+    from probly.representation import Representation
 
 SUPPORTED_DECOMPOSITIONS: tuple[NotionName, ...] = ("aleatoric", "epistemic", "total")
+
+type MeasureName = Literal["default", "entropy", "zero_one", "brier"]
+SUPPORTED_MEASURES: tuple[MeasureName, ...] = ("default", "entropy", "zero_one", "brier")
+
+
+def quantify_with_measure(representation: Representation, measure: MeasureName) -> Decomposition:
+    """Quantify a representation with a named second-order uncertainty measure.
+
+    ``"default"`` uses the representation's own :func:`~probly.quantification.quantify`
+    dispatch. The other measures build an explicit second-order decomposition on a sample
+    of distributions: ``"entropy"`` (:class:`SecondOrderEntropyDecomposition`), ``"zero_one"``
+    (:class:`SecondOrderZeroOneDecomposition`) and ``"brier"``
+    (:class:`SecondOrderScoringRuleDecomposition` with the Brier score).
+
+    Args:
+        representation: Output of a representer, for example a categorical sample.
+        measure: One of :data:`SUPPORTED_MEASURES`.
+
+    Returns:
+        A decomposition with total, aleatoric and epistemic components (for ``"default"``, the
+        representation's own decomposition, which may expose fewer notions).
+
+    Raises:
+        ValueError: If ``measure`` is unsupported.
+        TypeError: If the representation is not a sample of distributions and ``measure`` is
+            not ``"default"``.
+    """
+    if measure not in SUPPORTED_MEASURES:
+        msg = f"Unsupported measure: {measure!r}. Choose from {SUPPORTED_MEASURES}."
+        raise ValueError(msg)
+    if measure == "default":
+        # Every benchmark representation quantifies to a decomposition; see select_uncertainty.
+        return cast("Decomposition", quantify(representation))
+
+    if not isinstance(representation, DistributionSample):
+        msg = (
+            f"Measure {measure!r} needs a sample of distributions, "
+            f"got {type(representation).__name__}. Use measure='default' for this method."
+        )
+        raise TypeError(msg)
+    sample = cast("SecondOrderDistributionLike", representation)
+
+    if measure == "entropy":
+        return SecondOrderEntropyDecomposition(sample)
+    if measure == "zero_one":
+        return SecondOrderZeroOneDecomposition(sample)
+    return SecondOrderScoringRuleDecomposition(sample, BrierLoss())
+
 
 _FALLBACK_CHAINS: dict[NotionName, tuple[NotionName, ...]] = {
     "total": ("total", "aleatoric", "epistemic"),

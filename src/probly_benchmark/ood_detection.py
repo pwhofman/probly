@@ -14,7 +14,7 @@ import wandb
 from probly.evaluation.ood import evaluate_ood
 from probly.representer import representer
 from probly_benchmark import calibration, data, utils
-from probly_benchmark.uncertainty import SUPPORTED_DECOMPOSITIONS
+from probly_benchmark.uncertainty import SUPPORTED_DECOMPOSITIONS, SUPPORTED_MEASURES
 from probly_benchmark.utils import init_wandb_for_evaluation, load_model_for_evaluation
 
 
@@ -67,6 +67,9 @@ def main(cfg: DictConfig) -> None:
     if cfg.decomposition not in SUPPORTED_DECOMPOSITIONS:
         msg = f"Unsupported decomposition: {cfg.decomposition!r}. Choose from {SUPPORTED_DECOMPOSITIONS}."
         raise ValueError(msg)
+    if cfg.measure not in SUPPORTED_MEASURES:
+        msg = f"Unsupported measure: {cfg.measure!r}. Choose from {SUPPORTED_MEASURES}."
+        raise ValueError(msg)
 
     # ID scores are identical across OOD datasets for a given trained model.
     # Key the cache on run_id so that models with the same method/seed but different
@@ -91,13 +94,27 @@ def main(cfg: DictConfig) -> None:
     if id_uncertainties is None:
         # Per-batch quantify preserves method-specific decomposition markers (PostNet, NatPN, EDL).
         id_uncertainties = (
-            utils.collect_uncertainties(rep, id_loader, device, cfg.decomposition, cfg.get("amp", False))
+            utils.collect_uncertainties(
+                rep,
+                id_loader,
+                device,
+                cfg.decomposition,
+                cfg.get("amp", False),
+                measure=cfg.measure,
+            )
             .detach()
             .cpu()
             .numpy()
         )
     ood_uncertainties = (
-        utils.collect_uncertainties(rep, ood_loader, device, cfg.decomposition, cfg.get("amp", False))
+        utils.collect_uncertainties(
+            rep,
+            ood_loader,
+            device,
+            cfg.decomposition,
+            cfg.get("amp", False),
+            measure=cfg.measure,
+        )
         .detach()
         .cpu()
         .numpy()

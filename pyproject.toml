@@ -281,7 +281,7 @@ exclude = ["notebooks", "docs", "supporting_files", "examples", "experiments", "
 extra-paths = ["./stubs"]
 
 [[tool.ty.overrides]]
-include = ["tests/probly/**"]
+include = ["tests/probly/**", "tests/probly_benchmark/**"]
 
 [tool.ty.overrides.rules]
 unresolved-import = "ignore"

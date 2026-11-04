@@ -16,11 +16,10 @@ import torch
 from tqdm import tqdm
 import wandb
 
-from probly.quantification import quantify
 from probly_benchmark import calibration, conformal, metadata
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.decision import decide
-from probly_benchmark.uncertainty import select_uncertainty
+from probly_benchmark.uncertainty import MeasureName, quantify_with_measure, select_uncertainty
 
 if TYPE_CHECKING:
     from torch import nn
@@ -123,11 +122,20 @@ def collect_uncertainties(
     device: torch.device,
     decomposition: NotionName,
     amp_enabled: bool = False,
+    measure: MeasureName = "default",
 ) -> torch.Tensor:
     """Collect per-batch uncertainty scores; quantify per batch then concat.
 
     Per-batch quantification preserves method-specific decomposition markers
     that ``torch.cat`` on the underlying representations would strip.
+
+    Args:
+        rep: A representer to produce uncertainty representations.
+        loader: DataLoader to iterate over.
+        device: Device to run inference on.
+        decomposition: Uncertainty notion to select, see :func:`select_uncertainty`.
+        amp_enabled: Whether to use automatic mixed precision.
+        measure: Uncertainty measure, see :func:`quantify_with_measure`.
     """
     uncertainties: list[torch.Tensor] = []
 
@@ -139,7 +147,10 @@ def collect_uncertainties(
                 outputs_ = rep.predict(inputs.to(device))
         else:
             outputs_ = rep.predict(inputs.to(device))
-        uncertainty = cast("torch.Tensor", select_uncertainty(quantify(outputs_), decomposition))
+        uncertainty = cast(
+            "torch.Tensor",
+            select_uncertainty(quantify_with_measure(outputs_, measure), decomposition),
+        )
         uncertainties.append(uncertainty)
 
     return torch.cat(uncertainties)
@@ -154,11 +165,13 @@ def collect_uncertainties_decisions_targets(
     decomposition: NotionName,
     rep_kwargs: dict[str, Any] | None = None,
     amp_enabled: bool = False,
+    measure: MeasureName = "default",
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Per-batch ``(uncertainties, mean_probs, targets)`` for selective prediction.
 
     Per-batch counterpart to :func:`collect_outputs_decisions_targets` — quantifies
     each batch immediately so method-specific decomposition markers survive concat.
+    ``measure`` is forwarded to :func:`quantify_with_measure`.
     """
     uncertainties: list[torch.Tensor] = []
     all_mean_probs: list[torch.Tensor] = []
@@ -175,7 +188,10 @@ def collect_uncertainties_decisions_targets(
         else:
             outputs_ = rep.predict(inputs_dev)
             decision = decide(model, inputs_dev, rep_kwargs=rep_kwargs)
-        uncertainty = cast("torch.Tensor", select_uncertainty(quantify(outputs_), decomposition))
+        uncertainty = cast(
+            "torch.Tensor",
+            select_uncertainty(quantify_with_measure(outputs_, measure), decomposition),
+        )
         uncertainties.append(uncertainty)
         all_mean_probs.append(cast("torch.Tensor", decision.probabilities))
         all_targets.append(targets_)
