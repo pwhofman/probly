@@ -25,12 +25,11 @@ def dare_regularizer(
     Returns:
         The anti-regularization term when loss <= threshold, else 0.0.
     """
-    if loss <= threshold:
-        anti_reg = torch.zeros((), device=device)
-        d = 0
-        for param in model.parameters():
-            if param.requires_grad:
-                anti_reg = anti_reg + torch.sum(torch.log(param.pow(2) + EPS_LOG))
-                d += param.numel()
-        return anti_reg / d
-    return torch.zeros((), device=device)
+    anti_reg = torch.zeros((), device=device)
+    d = 0
+    for param in model.parameters():
+        if param.requires_grad:
+            anti_reg = anti_reg + torch.sum(torch.log(param.pow(2) + EPS_LOG))
+            d += param.numel()
+    # torch.where instead of a Python branch avoids a host sync (and allows CUDA graph capture).
+    return torch.where(loss <= threshold, anti_reg / d, torch.zeros((), device=device))

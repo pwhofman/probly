@@ -19,3 +19,5 @@ train:
   head_epochs: 50
   head_lr: 0.001
   head_batch_size: 128
+  # On CUDA, run the head steps as a CUDA graph (fp32); false trains eagerly.
+  cuda_graph: true

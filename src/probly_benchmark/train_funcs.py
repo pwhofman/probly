@@ -357,6 +357,90 @@ def train_epoch_dare(
     return loss.item()
 
 
+def train_epoch_dare_cuda_graph(warmup_steps: int = 3) -> Callable[..., torch.Tensor]:
+    """Return the :func:`train_epoch_dare` step, captured once as a CUDA graph and replayed per batch.
+
+    Warmup batches and batches of another shape run eagerly. Requires fp32 and an Adam with
+    ``capturable=True``; call once per head. The step returns the loss as a device tensor.
+
+    Args:
+        warmup_steps: Number of eager steps before the graph is captured.
+    """
+    steps = 0
+    graph: torch.cuda.CUDAGraph | None = None
+    static_inputs: torch.Tensor | None = None
+    static_targets: torch.Tensor | None = None
+    static_loss: torch.Tensor | None = None
+    side_stream: torch.cuda.Stream | None = None
+
+    def _step(
+        model: nn.Module,
+        inputs: torch.Tensor,
+        targets: torch.Tensor,
+        optimizer: optim.Optimizer,
+        threshold: float,
+        num_classes: int,
+        target_scale: float | None,
+        grad_clip_norm: float | None,
+    ) -> torch.Tensor:
+        loss = _dare_squared_error(model(inputs), targets, num_classes, target_scale)
+        reg = dare_regularizer(model, inputs.device, loss.detach(), threshold)
+        (loss - reg).backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        optimizer.step()
+        return loss.detach()
+
+    def step(
+        model: nn.Module,
+        inputs: torch.Tensor,
+        targets: torch.Tensor,
+        optimizer: optim.Optimizer,
+        threshold: float,
+        num_classes: int,
+        target_scale: float | None = None,
+        grad_clip_norm: float | None = None,
+        amp_enabled: bool = False,
+        scaler: GradScaler | None = None,
+        **kwargs: Any,  # noqa: ANN401, ARG001
+    ) -> torch.Tensor:
+        nonlocal steps, graph, static_inputs, static_targets, static_loss, side_stream
+        if amp_enabled or scaler is not None:
+            msg = "The CUDA-graph DARE step runs in fp32; disable amp for the DARE heads."
+            raise ValueError(msg)
+        args = (optimizer, threshold, num_classes, target_scale, grad_clip_norm)
+
+        if graph is None and steps >= warmup_steps:
+            # Record one step on static input buffers; recording does not run it.
+            static_inputs, static_targets = torch.empty_like(inputs), torch.empty_like(targets)
+            optimizer.zero_grad(set_to_none=True)
+            graph = torch.cuda.CUDAGraph()
+            with torch.cuda.graph(graph):
+                static_loss = _step(model, static_inputs, static_targets, *args)
+        steps += 1
+
+        if graph is None or static_inputs is None or inputs.shape != static_inputs.shape:
+            optimizer.zero_grad(set_to_none=True)
+            if graph is not None:
+                return _step(model, inputs, targets, *args)
+            # Warmup on a side stream, as CUDA graph capture requires.
+            if side_stream is None:
+                side_stream = torch.cuda.Stream(device=inputs.device)
+            side_stream.wait_stream(torch.cuda.current_stream(inputs.device))
+            with torch.cuda.stream(side_stream):
+                loss = _step(model, inputs, targets, *args)
+            torch.cuda.current_stream(inputs.device).wait_stream(side_stream)
+            return loss
+
+        static_inputs.copy_(inputs)
+        cast("torch.Tensor", static_targets).copy_(targets)
+        graph.replay()
+        # Clone: the static buffer is overwritten by the next replay.
+        return cast("torch.Tensor", static_loss).clone()
+
+    return step
+
+
 @torch.no_grad()
 def validate_dare(
     model: nn.Module,

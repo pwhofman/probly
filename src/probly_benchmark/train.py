@@ -63,6 +63,7 @@ from probly_benchmark.train_funcs import (
     train_epoch_batchensemble,
     train_epoch_cross_entropy,
     train_epoch_dare,
+    train_epoch_dare_cuda_graph,
     train_epoch_deup,
     validate,
     validate_batchensemble,
@@ -308,7 +309,7 @@ def _training_loop(  # noqa: PLR0912, PLR0915
     device: torch.device,
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
-    train_fn: Callable[..., float],
+    train_fn: Callable[..., float | torch.Tensor],
     val_fn: Callable[..., ValidationMetrics],
     log_prefix: str = "",
     param_groups: list[dict[str, Any]] | None = None,
@@ -326,7 +327,7 @@ def _training_loop(  # noqa: PLR0912, PLR0915
         run: Weights & Biases run for logging.
         train_kwargs: Method-specific keyword arguments forwarded to ``train_fn``
             and ``val_fn``.
-        train_fn: Per-batch training function.
+        train_fn: Per-batch training function; may return the loss as a device tensor.
         val_fn: Validation function.
         log_prefix: Prefix for W&B log keys (e.g. ``"member_0/"``).
         param_groups: Optional list of parameter-group dicts forwarded to the optimizer
@@ -380,7 +381,7 @@ def _training_loop(  # noqa: PLR0912, PLR0915
 
     for epoch in tqdm(range(cfg.epochs), desc=f"{log_prefix}Epoch"):
         model.train()
-        running_loss = 0.0
+        running_loss: float | torch.Tensor = 0.0
         for inputs_, targets_ in tqdm(train_loader):
             inputs = inputs_.to(device, non_blocking=True)
             if device.type == "cuda" and inputs.ndim >= 4:
@@ -399,7 +400,8 @@ def _training_loop(  # noqa: PLR0912, PLR0915
             )
             if scheduler is not None and step_per_iter:
                 scheduler.step()
-        running_loss /= len(train_loader)
+        # One host sync per epoch when train_fn returns device tensors.
+        running_loss = float(running_loss) / len(train_loader)
 
         val_loss: float | None = None
         log_data: dict[str, Any] = {f"{log_prefix}train_loss": running_loss}
@@ -773,7 +775,7 @@ def _cache_dare_features(
     """Run ``loader`` once through the frozen backbone and return a loader over the cached features.
 
     The heads then train on in-memory tensors instead of re-running the backbone every epoch, which
-    freezes data augmentation to this single pass. Features keep the autocast dtype to halve memory.
+    freezes data augmentation to this single pass. Features stay on ``device`` in fp32.
     """
     backbone.eval()
     features: list[torch.Tensor] = []
@@ -785,10 +787,13 @@ def _cache_dare_features(
                 inputs = inputs.contiguous(memory_format=torch.channels_last)
             with torch.amp.autocast(device.type, enabled=amp_enabled):
                 feats = backbone(inputs)
-            features.append(feats.cpu())
-            targets.append(targets_.clone())
+            features.append(feats.float())
+            targets.append(targets_.to(device, non_blocking=True))
     dataset = torch.utils.data.TensorDataset(torch.cat(features), torch.cat(targets))
-    return torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+    sampler = torch.utils.data.RandomSampler(dataset) if shuffle else torch.utils.data.SequentialSampler(dataset)
+    # One gather per batch instead of per-sample indexing and stacking of device tensors.
+    batch_sampler = torch.utils.data.BatchSampler(sampler, batch_size, drop_last=False)
+    return torch.utils.data.DataLoader(dataset, sampler=batch_sampler, batch_size=None)
 
 
 @train_model.register(DarePredictor)
@@ -811,7 +816,8 @@ def _(
     schedule, no gradient clipping) and keep the latest epoch whose validation loss is at or below the
     threshold tau (:class:`ThresholdModelTracker`). ``threshold: "auto"`` applies the paper's heuristic
     ``tau = (1 + threshold_delta) * best validation loss`` of a probe head trained without the
-    anti-regularizer, i.e. a vanilla deep ensemble member; the probe is discarded afterwards.
+    anti-regularizer, i.e. a vanilla deep ensemble member; the probe is discarded afterwards. On CUDA the
+    head steps run as a CUDA graph (:func:`train_epoch_dare_cuda_graph`).
     """
     frozen_backbone = cast("_FrozenBackbone", next(model[0].children()))
     if not cfg.get("pretrained", False):
@@ -857,6 +863,15 @@ def _(
     head_cfg.optimizer = OmegaConf.create({"name": "adam", "params": {"lr": float(train_kwargs.get("head_lr", 1e-3))}})
     head_cfg.scheduler = OmegaConf.create({"name": "none"})
     head_cfg.grad_clip_norm = None
+    # Eager head steps are launch-bound; the CUDA graph is ~19x faster. It needs fp32 and a capturable Adam.
+    use_cuda_graph = device.type == "cuda" and bool(train_kwargs.get("cuda_graph", True))
+    if use_cuda_graph:
+        head_cfg.amp = False
+        head_cfg.optimizer.params.capturable = True
+
+    def head_step() -> Callable[..., float | torch.Tensor]:
+        # One graph per head and optimizer.
+        return train_epoch_dare_cuda_graph() if use_cuda_graph else train_epoch_dare
 
     heads = [cast("nn.Sequential", member)[1] for member in model]
     for head in heads:
@@ -879,7 +894,7 @@ def _(
             device,
             run,
             {**train_kwargs, "threshold": float("-inf")},
-            train_fn=train_epoch_dare,
+            train_fn=head_step(),
             val_fn=validate_dare,
             log_prefix="probe/",
             model_tracker=probe_tracker,
@@ -903,7 +918,7 @@ def _(
             device,
             run,
             head_kwargs,
-            train_fn=train_epoch_dare,
+            train_fn=head_step(),
             val_fn=validate_dare,
             log_prefix=f"member_{i}/",
             model_tracker=tracker,
