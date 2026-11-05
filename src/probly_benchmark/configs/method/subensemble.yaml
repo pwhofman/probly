@@ -11,4 +11,4 @@ params:
   # Head name resolved by `models.get_encoder_head`. "mlp_small" (FC-128 + output)
   # mirrors the smallest task network of arXiv:1910.08168; a single linear layer
   # on frozen features is strictly convex and drives all heads to the same optimum.
-  head: "mlp_small"
+  head: "linear"
