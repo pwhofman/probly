@@ -557,7 +557,10 @@ def _(
 
     Only ``requires_grad=True`` parameters are passed to each per-head optimizer so the
     frozen backbone does not inflate optimizer state nor distort gradient-norm
-    computations.
+    computations. With ``train_kwargs["cache_features"]`` (the subensemble's method
+    config sets it) the heads train on features cached from one pass over the loaders,
+    as the DARE heads do, instead of re-running the frozen backbone for every head and
+    epoch; the recipe's optimizer, schedule, epochs and clipping stay the same.
     """
     if not cfg.get("pretrained", False):
         num_classes = train_kwargs["num_classes"]
@@ -593,6 +596,35 @@ def _(
         # Algorithm 1 keeps the jointly trained task network as the first member;
         # seed member 0's head with it instead of discarding the warmup head.
         model[0][1].load_state_dict(warmup_head.state_dict())
+
+    if train_kwargs.get("cache_features", False):
+        frozen_backbone = cast("_FrozenBackbone", next(model[0].children()))
+        amp_enabled = bool(cfg.get("amp", False))
+        head_train_loader = _cache_features(
+            frozen_backbone, train_loader, device, amp_enabled, cfg.batch_size, shuffle=True
+        )
+        head_val_loader = (
+            _cache_features(frozen_backbone, val_loader, device, amp_enabled, cfg.batch_size, shuffle=False)
+            if val_loader is not None
+            else None
+        )
+        for i, member in enumerate(model):
+            head = cast("nn.Sequential", member)[1]
+            # Compiling ten tiny heads costs more than it saves.
+            head._probly_skip_compile = True  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+            _training_loop(
+                head,
+                head_train_loader,
+                head_val_loader,
+                cfg,
+                device,
+                run,
+                train_kwargs,
+                train_fn=train_epoch_cross_entropy,
+                val_fn=validate_cross_entropy,
+                log_prefix=f"member_{i}/",
+            )
+        return
 
     for i, member in enumerate(model):
         if i > 0 and isinstance(cfg.get("dataset"), str):
@@ -764,7 +796,7 @@ def _(
     )
 
 
-def _cache_dare_features(
+def _cache_features(
     backbone: nn.Module,
     loader: DataLoader,
     device: torch.device,
@@ -774,14 +806,15 @@ def _cache_dare_features(
 ) -> DataLoader:
     """Run ``loader`` once through the frozen backbone and return a loader over the cached features.
 
-    The heads then train on in-memory tensors instead of re-running the backbone every epoch, which
-    freezes data augmentation to this single pass. Features stay on ``device`` in fp32.
+    The heads of DARE and the subensemble then train on in-memory tensors instead of re-running the
+    backbone every epoch, which freezes data augmentation to this single pass. Features stay on
+    ``device`` in fp32.
     """
     backbone.eval()
     features: list[torch.Tensor] = []
     targets: list[torch.Tensor] = []
     with torch.no_grad():
-        for inputs_, targets_ in tqdm(loader, desc="Caching DARE features"):
+        for inputs_, targets_ in tqdm(loader, desc="Caching features"):
             inputs = inputs_.to(device, non_blocking=True)
             if device.type == "cuda" and inputs.ndim >= 4:
                 inputs = inputs.contiguous(memory_format=torch.channels_last)
@@ -848,11 +881,11 @@ def _(
 
     amp_enabled = cfg.get("amp", False)
     head_batch_size = int(train_kwargs.get("head_batch_size", 128))
-    head_train_loader = _cache_dare_features(
+    head_train_loader = _cache_features(
         frozen_backbone, train_loader, device, amp_enabled, head_batch_size, shuffle=True
     )
     head_val_loader = (
-        _cache_dare_features(frozen_backbone, val_loader, device, amp_enabled, head_batch_size, shuffle=False)
+        _cache_features(frozen_backbone, val_loader, device, amp_enabled, head_batch_size, shuffle=False)
         if val_loader is not None
         else None
     )

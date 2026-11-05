@@ -12,3 +12,7 @@ params:
   # mirrors the smallest task network of arXiv:1910.08168; a single linear layer
   # on frozen features is strictly convex and drives all heads to the same optimum.
   head: "linear"
+train:
+  # The heads train on features cached once per fit (one augmented view per image), as the DARE
+  # heads do, instead of re-running the frozen backbone for every head and epoch.
+  cache_features: true
