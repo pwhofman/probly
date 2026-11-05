@@ -315,3 +315,4 @@ src/probly/_version.py
 # Paper (synced via Overleaf git)
 paper/
 paper_artifacts/
+!experiments/llm-probly/data/
