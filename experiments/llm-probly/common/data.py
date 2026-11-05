@@ -1,0 +1,79 @@
+"""Shared data helpers for the LLM-probly experiments.
+
+Adapted from ``experiments/gemma/experiments/calibration/generate.py``
+(``load_trivia_questions``) so that every team member loads exactly the
+same TriviaQA questions in the same order.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+import random
+
+from datasets import load_dataset
+
+DATASET_NAME = "mandarjoshi/trivia_qa"
+DATASET_CONFIG = "rc.nocontext"
+DATASET_SPLIT = "validation"
+DEFAULT_SEED = 42
+
+# experiments/llm-probly/data
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+
+
+def load_trivia_questions(num_questions: int, seed: int = DEFAULT_SEED) -> list[dict]:
+    """Sample questions from the TriviaQA validation split.
+
+    The same ``seed`` always gives the same questions in the same order, so
+    the 5-question file is the first 5 questions of the 50-question file.
+
+    Args:
+        num_questions: How many questions to return.
+        seed: Random seed for the shuffle.
+
+    Returns:
+        List of dicts with keys ``id``, ``question`` and ``aliases``. The
+        canonical answer is always the first alias.
+    """
+    ds = load_dataset(DATASET_NAME, DATASET_CONFIG, split=DATASET_SPLIT)
+    indices = list(range(len(ds)))
+    random.Random(seed).shuffle(indices)  # noqa: S311 (not used for security)
+
+    questions = []
+    for qid, idx in enumerate(indices[:num_questions]):
+        item = ds[idx]
+        aliases = list(item["answer"]["aliases"])
+        value = item["answer"]["value"]
+        if value not in aliases:
+            aliases = [value, *aliases]
+        questions.append({"id": qid, "question": item["question"], "aliases": aliases})
+    return questions
+
+
+def save_jsonl(rows: list[dict], path: str | Path) -> None:
+    """Write one JSON object per line."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as f:
+        for row in rows:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
+def load_jsonl(path: str | Path) -> list[dict]:
+    """Read a JSONL file into a list of dicts."""
+    with Path(path).open(encoding="utf-8") as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
+def load_data(model: str = "qwen0.5b", n: int = 50) -> list[dict]:
+    """Load the shared generated data, e.g. ``load_data("qwen0.5b", 50)``.
+
+    Args:
+        model: Sub-folder of ``data/`` (``"qwen0.5b"`` or ``"smollm2"``).
+        n: Number of questions (``5`` or ``50``).
+
+    Returns:
+        One dict per question, in ``id`` order.
+    """
+    return load_jsonl(DATA_DIR / model / f"triviaqa_{n}.jsonl")
