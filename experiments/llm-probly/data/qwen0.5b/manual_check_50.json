@@ -1,0 +1,57 @@
+{
+  "model": "qwen0.5b",
+  "n_checked": 10,
+  "agreement": 1.0,
+  "items": [
+    {
+      "id": 4,
+      "auto": true,
+      "manual": true
+    },
+    {
+      "id": 23,
+      "auto": false,
+      "manual": false
+    },
+    {
+      "id": 26,
+      "auto": false,
+      "manual": false
+    },
+    {
+      "id": 27,
+      "auto": true,
+      "manual": true
+    },
+    {
+      "id": 30,
+      "auto": true,
+      "manual": true
+    },
+    {
+      "id": 32,
+      "auto": true,
+      "manual": true
+    },
+    {
+      "id": 33,
+      "auto": false,
+      "manual": false
+    },
+    {
+      "id": 39,
+      "auto": false,
+      "manual": false
+    },
+    {
+      "id": 48,
+      "auto": true,
+      "manual": true
+    },
+    {
+      "id": 49,
+      "auto": false,
+      "manual": false
+    }
+  ]
+}
