@@ -415,7 +415,9 @@ def train_epoch_dare_cuda_graph(warmup_steps: int = 3) -> Callable[..., torch.Te
             static_inputs, static_targets = torch.empty_like(inputs), torch.empty_like(targets)
             optimizer.zero_grad(set_to_none=True)
             graph = torch.cuda.CUDAGraph()
-            with torch.cuda.graph(graph):
+            # Capture on the model's device: the default capture stream lives on the current device, so on
+            # cuda:1 the step would run uncaptured on the empty buffers (and trap) instead of being recorded.
+            with torch.cuda.graph(graph, stream=torch.cuda.Stream(device=inputs.device)):
                 static_loss = _step(model, static_inputs, static_targets, *args)
         steps += 1
 
