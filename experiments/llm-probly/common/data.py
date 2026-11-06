@@ -43,10 +43,8 @@ def load_trivia_questions(num_questions: int, seed: int = DEFAULT_SEED) -> list[
     questions = []
     for qid, idx in enumerate(indices[:num_questions]):
         item = ds[idx]
-        aliases = list(item["answer"]["aliases"])
         value = item["answer"]["value"]
-        if value not in aliases:
-            aliases = [value, *aliases]
+        aliases = [value, *(a for a in item["answer"]["aliases"] if a != value)]
         questions.append({"id": qid, "question": item["question"], "aliases": aliases})
     return questions
 

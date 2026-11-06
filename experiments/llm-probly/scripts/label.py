@@ -1,0 +1,64 @@
+"""Add correctness labels to a generated data file (B1, day 2).
+
+Run from ``experiments/llm-probly``::
+
+    uv run python -m scripts.label --model qwen0.5b --n 50
+
+For every row this
+
+* re-reads the aliases from TriviaQA so that the canonical answer is first
+  (no model call is needed, only the dataset),
+* adds ``correct_alias`` / ``correct`` for the greedy answer and
+  ``samples_correct`` for the 10 samples, using alias matching,
+* rewrites ``data/<model>/triviaqa_<n>.jsonl`` and prints the accuracy.
+"""
+
+from __future__ import annotations
+
+import argparse
+
+from common.correctness import is_correct, matching_alias
+from common.data import DATA_DIR, DEFAULT_SEED, load_jsonl, load_trivia_questions, save_jsonl
+
+
+def parse_args() -> argparse.Namespace:
+    """Read the command line options."""
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--model", default="qwen0.5b")
+    parser.add_argument("--n", type=int, default=50, help="number of questions")
+    parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Label every row and print a short summary."""
+    args = parse_args()
+    path = DATA_DIR / args.model / f"triviaqa_{args.n}.jsonl"
+    rows = load_jsonl(path)
+    fresh = {q["id"]: q for q in load_trivia_questions(args.n, seed=args.seed)}
+
+    for row in rows:
+        ref = fresh[row["id"]]
+        if ref["question"] != row["question"]:
+            msg = f"Question {row['id']} does not match TriviaQA; was the file made with another seed?"
+            raise ValueError(msg)
+        row["aliases"] = ref["aliases"]
+        row["correct_alias"] = is_correct(row["greedy_answer"], row["aliases"])
+        row["correct"] = row["correct_alias"]
+        row["samples_correct"] = [is_correct(s, row["aliases"]) for s in row["samples"]]
+
+    save_jsonl(rows, path)
+
+    n_correct = sum(r["correct"] for r in rows)
+    sample_acc = sum(sum(r["samples_correct"]) for r in rows) / sum(len(r["samples"]) for r in rows)
+    print(f"{path.name}: greedy accuracy {n_correct}/{len(rows)} = {n_correct / len(rows):.0%}")
+    print(f"sample accuracy (all 10 samples): {sample_acc:.0%}\n")
+    for r in rows:
+        mark = "OK " if r["correct"] else "-- "
+        hit = matching_alias(r["greedy_answer"], r["aliases"])
+        extra = f"  [matched: {hit}]" if hit else ""
+        print(f"{mark}{r['id']:>2}  {r['greedy_answer'][:60]!r}  | {r['aliases'][0]}{extra}")
+
+
+if __name__ == "__main__":
+    main()
