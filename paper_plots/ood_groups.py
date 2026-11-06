@@ -5,6 +5,10 @@ Dataset name strings must match ``cfg.ood_dataset`` values logged into wandb.
 
 from __future__ import annotations
 
+# Methods without a valid OoD result, dropped from the OoD bar plots and the OoD table
+# columns. PriorNet is fit on OoD data, so its OoD AUROC is not a detection result.
+EXCLUDED_METHODS: frozenset[str] = frozenset({"prior_network"})
+
 NEAR_OOD: dict[str, tuple[str, ...]] = {
     "cifar10": ("cifar100",),
     "cifar100": ("cifar10",),

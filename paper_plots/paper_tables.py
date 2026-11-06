@@ -21,6 +21,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from paper_plots import ood_groups
 from paper_plots.aggregate import ood_band_ranking, sp_ranking
 from paper_plots.metadata import dataset_display
 from paper_plots.paths import PAPER_ARTIFACTS
@@ -396,7 +397,7 @@ def _collect_rankings() -> tuple[
         if sp_r:
             sp[target.dataset] = sp_r
         for band in ("near", "far"):
-            band_r = ood_band_ranking(target, band)
+            band_r = [r for r in ood_band_ranking(target, band) if r["method"] not in ood_groups.EXCLUDED_METHODS]
             if band_r:
                 ood[(band, target.dataset)] = band_r
     return sp, ood

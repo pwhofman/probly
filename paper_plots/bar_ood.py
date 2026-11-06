@@ -35,7 +35,7 @@ def _render_one(target: Target) -> None:
         "near": ood_groups.near_ood_for(target.dataset),
         "far": ood_groups.far_ood_for(target.dataset),
     }
-    excluded = PER_DATASET_EXCLUDED_OOD.get(target.dataset, set())
+    excluded = ood_groups.EXCLUDED_METHODS | PER_DATASET_EXCLUDED_OOD.get(target.dataset, set())
     for band_name, band_datasets in band_lookup.items():
         ranking = ood_band_ranking(target, band_name)
         if not ranking:
