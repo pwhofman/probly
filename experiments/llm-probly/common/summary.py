@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -10,6 +11,8 @@ from common.evaluate import bootstrap_auroc, evaluate
 from common.io import RESULTS_ROOT, load_scores
 
 EXPECTED_METHODS = (
+    "likelihood_mean",
+    "likelihood_sum",
     "p_true_zeroshot_norm",
     "p_true_brainstorm",
     "p_true_empirical",
@@ -19,6 +22,9 @@ EXPECTED_METHODS = (
 )
 
 COLUMNS = ["method", "status", "auroc", "ci_low", "ci_high", "aurc", "n_failed", "seconds_per_question"]
+
+SANITY_ROOT = RESULTS_ROOT / "sanity"
+SANITY_COLUMNS = ["method", "model", "auroc", "gap", "n_distinct", "verdict"]
 
 
 def summary_table(
@@ -66,3 +72,36 @@ def summary_table(
             },
         )
     return pd.DataFrame(table, columns=COLUMNS)
+
+
+def sanity_verdict(auroc: float) -> str:
+    """Interpret a sanity test AUROC with the thresholds of the plan."""
+    if auroc >= 0.8:
+        return "works"
+    if auroc >= 0.6:
+        return "weak signal"
+    return "random"
+
+
+def sanity_table(folder: Path = SANITY_ROOT) -> pd.DataFrame:
+    """Collect all sanity test results (``results/sanity/*.json``) into one table.
+
+    One row per method and model. ``auroc`` is computed with the correct answer as
+    the positive class and the confidence as the score (higher = more confident).
+    """
+    records = []
+    for path in sorted(Path(folder).glob("*.json")):
+        data = json.loads(path.read_text())
+        if not {"method", "model", "auroc", "gap", "n_distinct"} <= data.keys():
+            continue
+        records.append(
+            {
+                "method": data["method"],
+                "model": data["model"].split("/")[-1],
+                "auroc": data["auroc"],
+                "gap": data["gap"],
+                "n_distinct": data["n_distinct"],
+                "verdict": sanity_verdict(data["auroc"]),
+            },
+        )
+    return pd.DataFrame(records, columns=SANITY_COLUMNS)
