@@ -22,9 +22,9 @@
 | verbalized_2s_10 | R3 | smollm2-135m | 0.50 | +0.00 | 2 | failed 0/20 | 0.08 | rastgele |
 | verbalized_2s_10 | R3 | qwen0.5b | 0.45 | -0.01 | 2 | failed 0/20 | 0.06 | rastgele |
 | verbalized_2s_10 | R3 | qwen1.5b | 0.59 | +0.02 | 3 | failed 0/20 | 0.15 | rastgele |
-| r2_letter_brainstorm | R2 | smollm2-135m | - | - | - | - | - | bekleniyor |
-| r2_letter_brainstorm | R2 | qwen0.5b | 1.00 | +0.51 | 16 | - | - | calisiyor |
-| r2_letter_brainstorm | R2 | qwen1.5b | - | - | - | - | - | bekleniyor |
-| r2_letter_nobrainstorm | R2 | smollm2-135m | - | - | - | - | - | bekleniyor |
-| r2_letter_nobrainstorm | R2 | qwen0.5b | 0.76 | +0.15 | 15 | - | - | zayif sinyal |
-| r2_letter_nobrainstorm | R2 | qwen1.5b | - | - | - | - | - | bekleniyor |
+| r2_letter_brainstorm | R2 | smollm2-135m | 0.34 | -0.04 | 4 | - | - | rastgele |
+| r2_letter_brainstorm | R2 | qwen0.5b | 1.00 | +0.52 | 19 | - | - | calisiyor |
+| r2_letter_brainstorm | R2 | qwen1.5b | 1.00 | +0.83 | 18 | - | - | calisiyor |
+| r2_letter_nobrainstorm | R2 | smollm2-135m | 0.37 | -0.01 | 3 | - | - | rastgele |
+| r2_letter_nobrainstorm | R2 | qwen0.5b | 0.76 | +0.15 | 17 | - | - | zayif sinyal |
+| r2_letter_nobrainstorm | R2 | qwen1.5b | 0.99 | +0.78 | 18 | - | - | calisiyor |
