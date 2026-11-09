@@ -85,6 +85,8 @@ def main():
                 lines.append(f"| {method} | {who} | {model} | - | - | - | - | - | bekleniyor |")
                 continue
             sec = r.get("seconds_per_example")
+            if sec is None and "seconds_total" in r:  # R1 toplam sureyi kaydediyor (20 ornek)
+                sec = r["seconds_total"] / 20
             sec_s = f"{sec:.2f}" if sec is not None else "-"
             lines.append(
                 f"| {method} | {who} | {model} | {r['auroc']:.2f} | {r['gap']:+.2f} "
