@@ -1,0 +1,393 @@
+{
+  "method": "p_true_empirical",
+  "model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+  "auroc": 0.52,
+  "gap": -0.020000000000000018,
+  "n_distinct": 7,
+  "confidences": [
+    0.5,
+    0.0,
+    0.3,
+    0.3,
+    0.4,
+    0.2,
+    0.3,
+    0.8,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.1,
+    0.2,
+    0.2,
+    0.3,
+    0.5,
+    0.3,
+    0.0,
+    0.4
+  ],
+  "seconds_per_example": 0.1621225041999878,
+  "unparsed_share": 0.425,
+  "examples": [
+    {
+      "q": "What is the capital of France?",
+      "a": "Paris",
+      "conf": 0.5,
+      "unparsed_of_10": 2,
+      "raw": [
+        "(A)",
+        "False\nThe",
+        "True\nYour",
+        "One of the",
+        "True\nExplanation",
+        "(B)",
+        "(A)",
+        "False\n\n",
+        "The capital of",
+        "True\nI"
+      ]
+    },
+    {
+      "q": "What is the capital of France?",
+      "a": "Berlin",
+      "conf": 0.0,
+      "unparsed_of_10": 6,
+      "raw": [
+        "(B)",
+        "Bering Island",
+        "Yes, the",
+        "The capital of",
+        "False\nThe",
+        "(B)",
+        "The capital of",
+        "(B)",
+        "Bismarck",
+        "The capital of"
+      ]
+    },
+    {
+      "q": "What is the chemical symbol for water?",
+      "a": "H2O",
+      "conf": 0.3,
+      "unparsed_of_10": 5,
+      "raw": [
+        "Yes, the",
+        "Yes, the",
+        "False\n\n",
+        "Yes, the",
+        "True",
+        "The chemical symbol",
+        "(A)",
+        "The chemical symbol",
+        "(A)",
+        "(B)"
+      ]
+    },
+    {
+      "q": "What is the chemical symbol for water?",
+      "a": "CO2",
+      "conf": 0.3,
+      "unparsed_of_10": 6,
+      "raw": [
+        "False\n\n",
+        "The chemical symbol",
+        "The chemical symbol",
+        "(A)",
+        "The chemical symbol",
+        "(D)",
+        "(A)",
+        "Yes, the",
+        "True",
+        "Yes, the"
+      ]
+    },
+    {
+      "q": "How many planets are in our solar system?",
+      "a": "8",
+      "conf": 0.4,
+      "unparsed_of_10": 4,
+      "raw": [
+        "(B)",
+        "There are ",
+        "Correct answer:",
+        "The possible answer",
+        "True",
+        "(B)",
+        "(A)",
+        "Yes, the",
+        "(A)",
+        "(A)"
+      ]
+    },
+    {
+      "q": "How many planets are in our solar system?",
+      "a": "12",
+      "conf": 0.2,
+      "unparsed_of_10": 5,
+      "raw": [
+        "(C)",
+        "The possible answer",
+        "Yes, the",
+        "(A)",
+        "(B)",
+        "The possible answer",
+        "B (True",
+        "(A)",
+        "False\n\n",
+        "My previous answer"
+      ]
+    },
+    {
+      "q": "Who wrote Romeo and Juliet?",
+      "a": "William Shakespeare",
+      "conf": 0.3,
+      "unparsed_of_10": 4,
+      "raw": [
+        "True",
+        "(B)",
+        "True",
+        "The possible answer",
+        "True",
+        "The possible answer",
+        "(B)",
+        "Yes, the",
+        "Yep,",
+        "False"
+      ]
+    },
+    {
+      "q": "Who wrote Romeo and Juliet?",
+      "a": "Charles Dickens",
+      "conf": 0.8,
+      "unparsed_of_10": 1,
+      "raw": [
+        "(A)",
+        "True. Charles",
+        "(B)",
+        "True",
+        "True\nCharles",
+        "An excellent deduction",
+        "(A)",
+        "True. According",
+        "True",
+        "True"
+      ]
+    },
+    {
+      "q": "What is the largest ocean on Earth?",
+      "a": "Pacific Ocean",
+      "conf": 0.3,
+      "unparsed_of_10": 4,
+      "raw": [
+        "The largest ocean",
+        "(B)",
+        "True",
+        "(A)",
+        "(B)",
+        "The largest ocean",
+        "According to NASA",
+        "The largest ocean",
+        "(A)",
+        "False"
+      ]
+    },
+    {
+      "q": "What is the largest ocean on Earth?",
+      "a": "Atlantic Ocean",
+      "conf": 0.3,
+      "unparsed_of_10": 1,
+      "raw": [
+        "B\nThe",
+        "(B)",
+        "The largest ocean",
+        "(B)",
+        "(B)",
+        "(A)",
+        "(B)",
+        "False\nThe",
+        "A helpful AI",
+        "(A)"
+      ]
+    },
+    {
+      "q": "At what temperature in Celsius does water boil at sea level?",
+      "a": "100",
+      "conf": 0.3,
+      "unparsed_of_10": 6,
+      "raw": [
+        "(B)",
+        "I'm sorry",
+        "(A)",
+        "At a temperature",
+        "(A)",
+        "The answer to",
+        "Yes, the",
+        "The possible answer",
+        "(A)",
+        "To determine the"
+      ]
+    },
+    {
+      "q": "At what temperature in Celsius does water boil at sea level?",
+      "a": "50",
+      "conf": 0.3,
+      "unparsed_of_10": 4,
+      "raw": [
+        "(B)",
+        "(A)",
+        "The boiling point",
+        "False.\n",
+        "A: ",
+        "The possible answer",
+        "(A)",
+        "(B)",
+        "When water boils",
+        "The possible answer"
+      ]
+    },
+    {
+      "q": "Who was the first person to walk on the Moon?",
+      "a": "Neil Armstrong",
+      "conf": 0.1,
+      "unparsed_of_10": 6,
+      "raw": [
+        "Yes, the",
+        "No, the",
+        "False\nThe",
+        "(B)",
+        "The possible answer",
+        "It's A",
+        "(B)",
+        "True\n\n",
+        "Yes, the",
+        "I am a"
+      ]
+    },
+    {
+      "q": "Who was the first person to walk on the Moon?",
+      "a": "Yuri Gagarin",
+      "conf": 0.2,
+      "unparsed_of_10": 2,
+      "raw": [
+        "False",
+        "False",
+        "True",
+        "False",
+        "False",
+        "The possible answer",
+        "True. Y",
+        "(B)",
+        "(B)",
+        "Based on the"
+      ]
+    },
+    {
+      "q": "What is the currency of Japan?",
+      "a": "Yen",
+      "conf": 0.2,
+      "unparsed_of_10": 6,
+      "raw": [
+        "You are correct",
+        "(B)",
+        "No, the",
+        "(A)",
+        "The possible answer",
+        "(A)",
+        "No, the",
+        "The currency of",
+        "False",
+        "BIG:"
+      ]
+    },
+    {
+      "q": "What is the currency of Japan?",
+      "a": "Won",
+      "conf": 0.3,
+      "unparsed_of_10": 4,
+      "raw": [
+        "False\nThe",
+        "What is the",
+        "The currency of",
+        "(B)",
+        "True",
+        "True. Japan",
+        "False\n\n",
+        "(A)",
+        "The currency of",
+        "The currency of"
+      ]
+    },
+    {
+      "q": "How many legs does a spider have?",
+      "a": "8",
+      "conf": 0.5,
+      "unparsed_of_10": 2,
+      "raw": [
+        "Yes, the",
+        "(A)",
+        "(A)",
+        "True",
+        "The given response",
+        "(A)",
+        "(B)",
+        "(B)",
+        "(A)",
+        "False"
+      ]
+    },
+    {
+      "q": "How many legs does a spider have?",
+      "a": "6",
+      "conf": 0.3,
+      "unparsed_of_10": 5,
+      "raw": [
+        "(B)",
+        "(A)",
+        "(A)",
+        "(B)",
+        "Possible answer:",
+        "Answer: True",
+        "True",
+        "The possible answer",
+        "No, the",
+        "The answer is"
+      ]
+    },
+    {
+      "q": "Who painted the Mona Lisa?",
+      "a": "Leonardo da Vinci",
+      "conf": 0.0,
+      "unparsed_of_10": 8,
+      "raw": [
+        "Based on our",
+        "No, the",
+        "False",
+        "The answer depends",
+        "Is the possible",
+        "My previous answer",
+        "(B)",
+        "The possible answer",
+        "The possible answer",
+        "The possible answer"
+      ]
+    },
+    {
+      "q": "Who painted the Mona Lisa?",
+      "a": "Pablo Picasso",
+      "conf": 0.4,
+      "unparsed_of_10": 4,
+      "raw": [
+        "False",
+        "Yes, the",
+        "Bullse",
+        "True",
+        "Answer: (",
+        "True",
+        "The possible answer",
+        "True",
+        "False",
+        "True\n\n"
+      ]
+    }
+  ]
+}

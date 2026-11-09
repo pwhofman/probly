@@ -1,0 +1,173 @@
+{
+  "method": "verbalized_2s_10",
+  "model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+  "auroc": 0.5,
+  "gap": 0.0,
+  "n_distinct": 2,
+  "confidences": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    1.0
+  ],
+  "seconds_per_example": 0.07692201669997303,
+  "failed": 0,
+  "examples": [
+    {
+      "q": "What is the capital of France?",
+      "a": "Paris",
+      "conf": 1.0,
+      "failed": false,
+      "raw": "I am 95% confident that"
+    },
+    {
+      "q": "What is the capital of France?",
+      "a": "Berlin",
+      "conf": 1.0,
+      "failed": false,
+      "raw": "I am 95% confident that"
+    },
+    {
+      "q": "What is the chemical symbol for water?",
+      "a": "H2O",
+      "conf": 1.0,
+      "failed": false,
+      "raw": "I am 90% confident that"
+    },
+    {
+      "q": "What is the chemical symbol for water?",
+      "a": "CO2",
+      "conf": 1.0,
+      "failed": false,
+      "raw": "I am 95% confident that"
+    },
+    {
+      "q": "How many planets are in our solar system?",
+      "a": "8",
+      "conf": 0.0,
+      "failed": false,
+      "raw": "0"
+    },
+    {
+      "q": "How many planets are in our solar system?",
+      "a": "12",
+      "conf": 0.0,
+      "failed": false,
+      "raw": "0"
+    },
+    {
+      "q": "Who wrote Romeo and Juliet?",
+      "a": "William Shakespeare",
+      "conf": 1.0,
+      "failed": false,
+      "raw": "I am 95% confident that"
+    },
+    {
+      "q": "Who wrote Romeo and Juliet?",
+      "a": "Charles Dickens",
+      "conf": 1.0,
+      "failed": false,
+      "raw": "I am 95% confident that"
+    },
+    {
+      "q": "What is the largest ocean on Earth?",
+      "a": "Pacific Ocean",
+      "conf": 1.0,
+      "failed": false,
+      "raw": "I am 95% confident that"
+    },
+    {
+      "q": "What is the largest ocean on Earth?",
+      "a": "Atlantic Ocean",
+      "conf": 1.0,
+      "failed": false,
+      "raw": "I am 95% confident that"
+    },
+    {
+      "q": "At what temperature in Celsius does water boil at sea level?",
+      "a": "100",
+      "conf": 1.0,
+      "failed": false,
+      "raw": "10"
+    },
+    {
+      "q": "At what temperature in Celsius does water boil at sea level?",
+      "a": "50",
+      "conf": 1.0,
+      "failed": false,
+      "raw": "I'm 90% confident that"
+    },
+    {
+      "q": "Who was the first person to walk on the Moon?",
+      "a": "Neil Armstrong",
+      "conf": 1.0,
+      "failed": false,
+      "raw": "I am 99.9%"
+    },
+    {
+      "q": "Who was the first person to walk on the Moon?",
+      "a": "Yuri Gagarin",
+      "conf": 1.0,
+      "failed": false,
+      "raw": "I am 99.99"
+    },
+    {
+      "q": "What is the currency of Japan?",
+      "a": "Yen",
+      "conf": 1.0,
+      "failed": false,
+      "raw": "I am 90% confident that"
+    },
+    {
+      "q": "What is the currency of Japan?",
+      "a": "Won",
+      "conf": 1.0,
+      "failed": false,
+      "raw": "I am 90% confident that"
+    },
+    {
+      "q": "How many legs does a spider have?",
+      "a": "8",
+      "conf": 0.0,
+      "failed": false,
+      "raw": "0"
+    },
+    {
+      "q": "How many legs does a spider have?",
+      "a": "6",
+      "conf": 0.0,
+      "failed": false,
+      "raw": "0"
+    },
+    {
+      "q": "Who painted the Mona Lisa?",
+      "a": "Leonardo da Vinci",
+      "conf": 1.0,
+      "failed": false,
+      "raw": "I am 95% confident that"
+    },
+    {
+      "q": "Who painted the Mona Lisa?",
+      "a": "Pablo Picasso",
+      "conf": 1.0,
+      "failed": false,
+      "raw": "I am 95% confident that"
+    }
+  ]
+}

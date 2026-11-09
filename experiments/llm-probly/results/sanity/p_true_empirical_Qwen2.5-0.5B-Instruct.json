@@ -1,0 +1,393 @@
+{
+  "method": "p_true_empirical",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "auroc": 0.585,
+  "gap": 0.06000000000000005,
+  "n_distinct": 7,
+  "confidences": [
+    0.9,
+    0.9,
+    1.0,
+    0.8,
+    0.9,
+    0.6,
+    0.9,
+    0.6,
+    0.8,
+    0.9,
+    0.5,
+    0.4,
+    0.8,
+    1.0,
+    1.0,
+    1.0,
+    0.6,
+    0.9,
+    1.0,
+    0.7
+  ],
+  "seconds_per_example": 0.3912648687500223,
+  "unparsed_share": 0.08,
+  "examples": [
+    {
+      "q": "What is the capital of France?",
+      "a": "Paris",
+      "conf": 0.9,
+      "unparsed_of_10": 0,
+      "raw": [
+        "(A) True",
+        "(B) False",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True"
+      ]
+    },
+    {
+      "q": "What is the capital of France?",
+      "a": "Berlin",
+      "conf": 0.9,
+      "unparsed_of_10": 0,
+      "raw": [
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(B) False",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True"
+      ]
+    },
+    {
+      "q": "What is the chemical symbol for water?",
+      "a": "H2O",
+      "conf": 1.0,
+      "unparsed_of_10": 0,
+      "raw": [
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True"
+      ]
+    },
+    {
+      "q": "What is the chemical symbol for water?",
+      "a": "CO2",
+      "conf": 0.8,
+      "unparsed_of_10": 2,
+      "raw": [
+        "The correct answer",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "The correct answer",
+        "(A) True",
+        "(A) True",
+        "(A) True"
+      ]
+    },
+    {
+      "q": "How many planets are in our solar system?",
+      "a": "8",
+      "conf": 0.9,
+      "unparsed_of_10": 0,
+      "raw": [
+        "(B) False",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True"
+      ]
+    },
+    {
+      "q": "How many planets are in our solar system?",
+      "a": "12",
+      "conf": 0.6,
+      "unparsed_of_10": 0,
+      "raw": [
+        "(B) False",
+        "(A) True",
+        "(B) False",
+        "(A) True",
+        "(A) True",
+        "(B) False",
+        "(A) True",
+        "(B) False",
+        "(A) True",
+        "(A) True"
+      ]
+    },
+    {
+      "q": "Who wrote Romeo and Juliet?",
+      "a": "William Shakespeare",
+      "conf": 0.9,
+      "unparsed_of_10": 1,
+      "raw": [
+        "(A) True",
+        "William Shakespeare wrote",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True"
+      ]
+    },
+    {
+      "q": "Who wrote Romeo and Juliet?",
+      "a": "Charles Dickens",
+      "conf": 0.6,
+      "unparsed_of_10": 0,
+      "raw": [
+        "(B) False",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(B) False",
+        "(A) True",
+        "(A) True",
+        "(B) False",
+        "(A) True",
+        "(B) False"
+      ]
+    },
+    {
+      "q": "What is the largest ocean on Earth?",
+      "a": "Pacific Ocean",
+      "conf": 0.8,
+      "unparsed_of_10": 0,
+      "raw": [
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(B) False",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(B) False"
+      ]
+    },
+    {
+      "q": "What is the largest ocean on Earth?",
+      "a": "Atlantic Ocean",
+      "conf": 0.9,
+      "unparsed_of_10": 0,
+      "raw": [
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(B) False",
+        "(A) True",
+        "(A) True",
+        "(A) True"
+      ]
+    },
+    {
+      "q": "At what temperature in Celsius does water boil at sea level?",
+      "a": "100",
+      "conf": 0.5,
+      "unparsed_of_10": 4,
+      "raw": [
+        "(A) True",
+        "(A) True",
+        "(B) False",
+        "(A) True",
+        "(A) True",
+        "( A )",
+        "The correct answer",
+        "To determine whether",
+        "(A) True",
+        "The correct answer"
+      ]
+    },
+    {
+      "q": "At what temperature in Celsius does water boil at sea level?",
+      "a": "50",
+      "conf": 0.4,
+      "unparsed_of_10": 4,
+      "raw": [
+        "(A) True",
+        "(A) True",
+        "(B) False",
+        "( ) True",
+        "(A) True",
+        "(A) True",
+        "The correct answer",
+        "(B) False",
+        "The correct answer",
+        "( A )"
+      ]
+    },
+    {
+      "q": "Who was the first person to walk on the Moon?",
+      "a": "Neil Armstrong",
+      "conf": 0.8,
+      "unparsed_of_10": 2,
+      "raw": [
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "( A )",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "( A )",
+        "(A) True",
+        "(A) True"
+      ]
+    },
+    {
+      "q": "Who was the first person to walk on the Moon?",
+      "a": "Yuri Gagarin",
+      "conf": 1.0,
+      "unparsed_of_10": 0,
+      "raw": [
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True"
+      ]
+    },
+    {
+      "q": "What is the currency of Japan?",
+      "a": "Yen",
+      "conf": 1.0,
+      "unparsed_of_10": 0,
+      "raw": [
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True"
+      ]
+    },
+    {
+      "q": "What is the currency of Japan?",
+      "a": "Won",
+      "conf": 1.0,
+      "unparsed_of_10": 0,
+      "raw": [
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True"
+      ]
+    },
+    {
+      "q": "How many legs does a spider have?",
+      "a": "8",
+      "conf": 0.6,
+      "unparsed_of_10": 1,
+      "raw": [
+        "(A) True",
+        "(B) False",
+        "(B) False",
+        "(A) True",
+        "(A) True",
+        "The correct answer",
+        "(A) True",
+        "(B) False",
+        "(A) True",
+        "(A) True"
+      ]
+    },
+    {
+      "q": "How many legs does a spider have?",
+      "a": "6",
+      "conf": 0.9,
+      "unparsed_of_10": 0,
+      "raw": [
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(B) False",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True"
+      ]
+    },
+    {
+      "q": "Who painted the Mona Lisa?",
+      "a": "Leonardo da Vinci",
+      "conf": 1.0,
+      "unparsed_of_10": 0,
+      "raw": [
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True"
+      ]
+    },
+    {
+      "q": "Who painted the Mona Lisa?",
+      "a": "Pablo Picasso",
+      "conf": 0.7,
+      "unparsed_of_10": 2,
+      "raw": [
+        "(A) True",
+        "(P) True",
+        "(A) True",
+        "(A) True",
+        "(P) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(A) True",
+        "(B) False"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+
+===== HuggingFaceTB/SmolLM2-135M-Instruct =====
+Parametre: 135M | Bellek: 0.27 GB | Yukleme: 1.8 s
+[cpu] 10 cevap: 1.1 s
+   Ilk 3 cevap: ['The capital of France is Paris', 'The capital of France is Paris.', 'The capital of France is Paris.']
+[mps] 10 cevap: 0.7 s
+   Ilk 3 cevap: ['The capital of France is Paris, a city known for its historical landmarks and cultural significance.', 'The capital of France is Paris.', 'The capital of France, Paris, is approximately 145 kilometers (90 miles) from the West Coast, serving as the national capital.']
+
+===== Qwen/Qwen2.5-0.5B-Instruct =====
+Parametre: 494M | Bellek: 0.99 GB | Yukleme: 2.1 s
+[cpu] 10 cevap: 3.3 s
+   Ilk 3 cevap: ['Paris', 'The capital of France is Paris.', 'The capital of France is Paris.']
+[mps] 10 cevap: 0.7 s
+   Ilk 3 cevap: ['Paris', 'Paris', 'Paris']
+
+===== Qwen/Qwen2.5-1.5B-Instruct =====
+Parametre: 1544M | Bellek: 3.09 GB | Yukleme: 1.4 s
+[cpu] 10 cevap: 9.9 s
+   Ilk 3 cevap: ['Paris.', 'Paris.', 'Paris']
+[mps] 10 cevap: 1.1 s
+   Ilk 3 cevap: ['Paris.', 'Paris.', 'Paris.']
+
+
+| Model | Parametre | Bellek (fp32) | Yukleme | 10 cevap CPU | 10 cevap MPS |
+|---|---|---|---|---|---|
+| HuggingFaceTB/SmolLM2-135M-Instruct | 135M | 0.27 GB | 1.8 s | 1.1 s | 0.7 s |
+| Qwen/Qwen2.5-0.5B-Instruct | 494M | 0.99 GB | 2.1 s | 3.3 s | 0.7 s |
+| Qwen/Qwen2.5-1.5B-Instruct | 1544M | 3.09 GB | 1.4 s | 9.9 s | 1.1 s |
