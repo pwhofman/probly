@@ -4,12 +4,12 @@
 
 | Yontem | Kim | Model | AUROC | Gap | n_distinct | Failed / parse | s/ornek | Yorum |
 |---|---|---|---|---|---|---|---|---|
-| p_true_zeroshot_norm | R1 | smollm2-135m | - | - | - | - | - | bekleniyor |
-| p_true_zeroshot_norm | R1 | qwen0.5b | - | - | - | - | - | bekleniyor |
-| p_true_zeroshot_norm | R1 | qwen1.5b | - | - | - | - | - | bekleniyor |
-| p_true_zeroshot_raw | R1 | smollm2-135m | - | - | - | - | - | bekleniyor |
-| p_true_zeroshot_raw | R1 | qwen0.5b | - | - | - | - | - | bekleniyor |
-| p_true_zeroshot_raw | R1 | qwen1.5b | - | - | - | - | - | bekleniyor |
+| p_true_zeroshot_norm | R1 | smollm2-135m | 0.40 | -0.02 | 20 | - | 0.19 | rastgele |
+| p_true_zeroshot_norm | R1 | qwen0.5b | 0.70 | +0.06 | 20 | - | 0.57 | zayif sinyal |
+| p_true_zeroshot_norm | R1 | qwen1.5b | 0.97 | +0.68 | 17 | - | 5.91 | calisiyor |
+| p_true_zeroshot_raw | R1 | smollm2-135m | 0.47 | -0.07 | 6 | - | 0.17 | rastgele |
+| p_true_zeroshot_raw | R1 | qwen0.5b | 0.57 | +0.22 | 14 | - | 0.64 | rastgele |
+| p_true_zeroshot_raw | R1 | qwen1.5b | 0.91 | +2.05 | 17 | - | 5.86 | calisiyor |
 | p_true_brainstorm | R2 | smollm2-135m | - | - | - | - | - | bekleniyor |
 | p_true_brainstorm | R2 | qwen0.5b | - | - | - | - | - | bekleniyor |
 | p_true_brainstorm | R2 | qwen1.5b | - | - | - | - | - | bekleniyor |
