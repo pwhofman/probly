@@ -1,6 +1,8 @@
+import argparse
 import json
 import re
 import time
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -56,31 +58,62 @@ def empirical_p_true(model, tok, q, a, n=10):
     LOG.append({"q": q, "a": a, "conf": p, "unparsed_of_10": unparsed, "raw": texts})
     return p
 
-# ---------------- Yontem 2: Verbalized 2S (0-100) ----------------
-ASK = "How confident are you that your answer is correct? Reply with only a number between 0 and 100."
+# ---------------- Yontem 2: Verbalized 2S (0-100 ve 0-10 skala) ----------------
+ASK_100 = "How confident are you that your answer is correct? Reply with only a number between 0 and 100."
+ASK_10 = "How confident are you that your answer is correct? Reply with only a number between 0 and 10."
 
-def verbalized_2s(model, tok, q, a):
-    chat = [{"role": "user", "content": q},
-            {"role": "assistant", "content": a},
-            {"role": "user", "content": ASK}]
-    sv = HFTextGenerationSampler(model, tok, num_samples=1, do_sample=False,
-                                 max_new_tokens=8, with_log_likelihood=False)
-    reply = str(sv([chat]).tensor.text[0, 0])
+def parse_confidence(reply, scale):
+    """Cevaptaki ilk sayiyi 0..1 araligina cevirir. Sayi yoksa None.
+    "0.99" gibi ondalikli ve <= 1 olan sayilar zaten oran kabul edilir
+    (eskiden 0.99 / 100 = 0.0099 oluyordu)."""
     m = re.search(r"(\d+(?:\.\d+)?)", reply)
-    failed = m is None
-    conf = 0.0 if failed else min(max(float(m.group(1)), 0.0), 100.0) / 100.0
-    LOG.append({"q": q, "a": a, "conf": conf, "failed": failed, "raw": reply})
-    return conf
+    if m is None:
+        return None
+    x = float(m.group(1))
+    if "." in m.group(1) and x <= 1.0:
+        return x
+    return min(max(x, 0.0), scale) / scale
+
+def make_verbalized(ask, scale):
+    def verbalized(model, tok, q, a):
+        chat = [{"role": "user", "content": q},
+                {"role": "assistant", "content": a},
+                {"role": "user", "content": ask}]
+        sv = HFTextGenerationSampler(model, tok, num_samples=1, do_sample=False,
+                                     max_new_tokens=8, with_log_likelihood=False)
+        reply = str(sv([chat]).tensor.text[0, 0])
+        c = parse_confidence(reply, scale)
+        failed = c is None
+        conf = 0.0 if failed else c   # contract: parse edilemezse guven 0 -> uncertainty 1.0
+        LOG.append({"q": q, "a": a, "conf": conf, "failed": failed, "raw": reply})
+        return conf
+    return verbalized
+
+verbalized_2s = make_verbalized(ASK_100, 100.0)
+verbalized_2s_10 = make_verbalized(ASK_10, 10.0)
 
 # ---------------- Calistir: 2 yontem x 3 model ----------------
 MODELS = {"smollm2-135m": "HuggingFaceTB/SmolLM2-135M-Instruct",
           "qwen0.5b": "Qwen/Qwen2.5-0.5B-Instruct",
           "qwen1.5b": "Qwen/Qwen2.5-1.5B-Instruct"}
-METHODS = {"p_true_empirical": empirical_p_true, "verbalized_2s": verbalized_2s}
+ALL_METHODS = {"p_true_empirical": empirical_p_true,
+               "verbalized_2s": verbalized_2s,        # 0-100 skala
+               "verbalized_2s_10": verbalized_2s_10}  # 0-10 skala (plan: "hep ayni sayi" ise dene)
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--methods", nargs="+", default=list(ALL_METHODS), choices=list(ALL_METHODS))
+ap.add_argument("--models", nargs="+", default=list(MODELS), choices=list(MODELS))
+args = ap.parse_args()
+METHODS = {m: ALL_METHODS[m] for m in args.methods}
+
+# Sonuclar her zaman experiments/llm-probly/results/sanity/ altina (nereden calistirirsan calistir)
+OUT = Path(__file__).resolve().parents[1] / "results" / "sanity"
+OUT.mkdir(parents=True, exist_ok=True)
 device = "mps" if torch.backends.mps.is_available() else "cpu"
 
 table = []
-for short, name in MODELS.items():
+for short in args.models:
+    name = MODELS[short]
     model, tok = load_model(name)
     model.to(device)
     for method, fn in METHODS.items():
@@ -89,14 +122,15 @@ for short, name in MODELS.items():
         t0 = time.perf_counter()
         res = run_sanity(fn, model, tok)
         sec = (time.perf_counter() - t0) / 20
-        if method == "verbalized_2s":
+        if method.startswith("verbalized"):
             res["failed"] = sum(x["failed"] for x in LOG)
         else:
             res["unparsed_share"] = sum(x["unparsed_of_10"] for x in LOG) / 200
         res = {"method": method, "model": name, **{k: float(v) for k, v in res.items()},
                "seconds_per_example": sec, "examples": list(LOG)}
-        with open(f"results/sanity/{method}_{short}.json", "w") as f:
+        with open(OUT / f"{method}_{short}.json", "w") as f:
             json.dump(res, f, indent=2)
+            f.write("\n")
         table.append(res)
         print(f"{method:<18} {short:<13} AUROC={res['auroc']:.2f}  gap={res['gap']:+.2f}  "
               f"n_distinct={res['n_distinct']:.0f}  {sec:.2f} s/ornek")
