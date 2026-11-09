@@ -1,11 +1,11 @@
-# Maliyet tablosu: refleksif yontemler
+# Cost table: reflexive methods
 
-| Yontem | Kim | Model cagrisi / soru | Uretilen token | Logit gerekli? | s/soru (Qwen 0.5B) |
+| Method | Who | Model calls / question | Generated tokens | Needs logits? | s / question (Qwen 0.5B) |
 |---|---|---|---|---|---|
-| p_true_zeroshot_norm | R1 | 1 forward pass | 0 | evet | 0.72 (R1 notebook, Gun 3) |
-| p_true_brainstorm | R2 | 1 forward pass + 10 ornek* | 0 | evet | bekleniyor |
-| p_true_empirical | R3 | 10 uretim | <= 3 x 10 | hayir | 0.50 |
-| verbalized_2s | R3 | 1 uretim | <= 8 | hayir | 0.11 |
+| p_true_zeroshot_norm | R1 | 1 forward pass | 0 | yes | 0.79 |
+| p_true_brainstorm | R2 | 1 forward pass + 10 samples* | 0 | yes | pending |
+| p_true_empirical | R3 | 10 generations | <= 3 x 10 | no | 0.50 |
+| verbalized_2s | R3 | 1 generation | <= 8 | no | 0.11 |
 
-*Brainstorm, B1'in veri dosyasindaki 10 ornegi tekrar kullanir; bu ornekler semantic entropy icin zaten uretildigi icin ek maliyet sayilmaz. Sifirdan calistirilirsa +10 uretim.
-Logit gerektirmeyen yontemler (R3) sadece metin gordugu icin API modellerine de tasinabilir.
+*Brainstorm reuses the 10 samples in B1's data file; they are generated for semantic entropy anyway, so they add no extra cost here. Run from scratch: +10 generations.
+Methods without logits (R3) only see text, so they also work with API models.
