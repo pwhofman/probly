@@ -1,0 +1,1002 @@
+[
+  {
+    "id": 0,
+    "answer": "United Kingdom",
+    "correct": false,
+    "confidence": 0.6,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "The correct answer",
+      "(A) True",
+      "The answer is",
+      "The correct answer",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 3
+  },
+  {
+    "id": 1,
+    "answer": "Lesley Lynch King Jr. was born in 1942. The US President who was born that year is Barack Obama.",
+    "correct": false,
+    "confidence": 0.7,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "( A )",
+      "(A) True",
+      "( A )",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "( A )",
+      "(A) True"
+    ],
+    "unparsed_of_10": 3
+  },
+  {
+    "id": 2,
+    "answer": "Thickening.",
+    "correct": false,
+    "confidence": 0.3,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "( A )",
+      "True",
+      "Yes, the",
+      "True.\n\nTh",
+      "( A )",
+      "( A )",
+      "Yes, the",
+      "The correct answer",
+      "Yes, that"
+    ],
+    "unparsed_of_10": 7
+  },
+  {
+    "id": 3,
+    "answer": "Fort Ville-Marie was originally named Saint-Jean-sur-Richelieu in Quebec City.",
+    "correct": false,
+    "confidence": 0.8,
+    "failed": false,
+    "raw": [
+      "The correct answer",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "The correct answer",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 2
+  },
+  {
+    "id": 4,
+    "answer": "1822",
+    "correct": true,
+    "confidence": 0.5,
+    "failed": false,
+    "raw": [
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "Let's examine",
+      "(B) False",
+      "(A) True",
+      "(B) False",
+      "(A) True",
+      "Let's analyze",
+      "(A) True"
+    ],
+    "unparsed_of_10": 2
+  },
+  {
+    "id": 5,
+    "answer": "Marge Simpson's maiden name was Simpson.",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 6,
+    "answer": "Europe covers approximately 10% of the Earth's surface.",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 7,
+    "answer": "The artist is Jackson Pollock. He had a daughter named Arlene and two sons with Jane Asher.",
+    "correct": false,
+    "confidence": 0.7,
+    "failed": false,
+    "raw": [
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(B) False",
+      "(A) True",
+      "(B) False"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 8,
+    "answer": "Falkirk",
+    "correct": false,
+    "confidence": 0.5,
+    "failed": false,
+    "raw": [
+      "To determine which",
+      "To determine which",
+      "(A) True",
+      "(A) True",
+      "(B) False",
+      "The correct answer",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(B) False"
+    ],
+    "unparsed_of_10": 3
+  },
+  {
+    "id": 9,
+    "answer": "The first commercial jet airliner to go into service in the UK was the Boeing 707.",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 10,
+    "answer": "Vietnam",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 11,
+    "answer": "marram grass, fescue, and rye are types of grass.",
+    "correct": true,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 12,
+    "answer": "Cecil Parkinson's mistress was Mary Ann, and her mother was Sarah.",
+    "correct": false,
+    "confidence": 0.5,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(C) True",
+      "(A) True",
+      "(C) True",
+      "(A) True",
+      "(A) True",
+      "To determine if",
+      "(B) False",
+      "(A) True",
+      "(B) False"
+    ],
+    "unparsed_of_10": 3
+  },
+  {
+    "id": 13,
+    "answer": "Thomas Cranmer",
+    "correct": true,
+    "confidence": 0.7,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "The Archbishop of",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "The correct answer",
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 2
+  },
+  {
+    "id": 14,
+    "answer": "The Drama Regeneration Society",
+    "correct": false,
+    "confidence": 0.5,
+    "failed": false,
+    "raw": [
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "(B) False",
+      "The correct answer",
+      "(A) True",
+      "(A) True",
+      "(B) False",
+      "(B) False",
+      "(A) True"
+    ],
+    "unparsed_of_10": 1
+  },
+  {
+    "id": 15,
+    "answer": "The famous British actor who was/were married to Anouk Aimee is Michael Caine.",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 16,
+    "answer": "The River Durance flows into the Rhone near to Lyon, France.",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 17,
+    "answer": "Focaccia is likely to be served fresh and warm, possibly with olive oil, garlic, and herbs. It's often accompanied by bread or cheese.",
+    "correct": true,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 18,
+    "answer": "Professor Cuthbert Calculus is an associate of Professor Cuthbert.",
+    "correct": false,
+    "confidence": 0.7,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "The correct answer",
+      "(B) False",
+      "(A) True",
+      "The correct answer"
+    ],
+    "unparsed_of_10": 2
+  },
+  {
+    "id": 19,
+    "answer": "The artist who had a top album in 1985 with \"Like A Virgin\" was Michael Jackson.",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 20,
+    "answer": "Formula 1 Grand Prix of San Marino",
+    "correct": false,
+    "confidence": 0.9,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 21,
+    "answer": "Norway",
+    "correct": false,
+    "confidence": 0.4,
+    "failed": false,
+    "raw": [
+      "The correct answer",
+      "(A) True",
+      "(A) True",
+      "(B) False",
+      "The correct answer",
+      "(B) False",
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "(B) False"
+    ],
+    "unparsed_of_10": 2
+  },
+  {
+    "id": 22,
+    "answer": "In Ireland and Scotland, the sound of a dog barking near a house can be heard when someone is about to die.",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 23,
+    "answer": "Paul Pogba",
+    "correct": false,
+    "confidence": 0.7,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "The correct answer",
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 1
+  },
+  {
+    "id": 24,
+    "answer": "Star Trek: TOS was cancelled in 1969 after 20 years on the air.",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 25,
+    "answer": "New Zealand rugby",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 26,
+    "answer": "John Hannah has appeared in \"The Hound of the Baskervilles\" and \"The Case of the Missing Link,\" while Ken Stott has appeared in",
+    "correct": false,
+    "confidence": 0.7,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(B) False",
+      "(B) False",
+      "(A) True",
+      "The correct answer",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 1
+  },
+  {
+    "id": 27,
+    "answer": "Barack Obama was elected US President in November 2012.",
+    "correct": true,
+    "confidence": 0.9,
+    "failed": false,
+    "raw": [
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 28,
+    "answer": "Brazil",
+    "correct": false,
+    "confidence": 0.8,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "The correct answer",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(B) False",
+      "(A) True"
+    ],
+    "unparsed_of_10": 1
+  },
+  {
+    "id": 29,
+    "answer": "The People's Republic of China was proclaimed in 1949 by Mao Zedong.",
+    "correct": true,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 30,
+    "answer": "Australian Shane Warne is associated with cricket.",
+    "correct": true,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 31,
+    "answer": "Dr. James Stirling",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 32,
+    "answer": "The only mythical creature found in the Chinese zodiac is the dragon.",
+    "correct": true,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 33,
+    "answer": "The Beatles",
+    "correct": false,
+    "confidence": 0.9,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(B) False",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 34,
+    "answer": "Cheshire, England",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 35,
+    "answer": "A Rubik's cube has 6 faces, each containing 4 squares. Therefore, there are 24 colored squares on the surface of a Rubik",
+    "correct": false,
+    "confidence": 0.8,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "The correct answer",
+      "(A) True",
+      "(A) True",
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 1
+  },
+  {
+    "id": 36,
+    "answer": "The Red Badge of Courage was set during the American Civil War.",
+    "correct": true,
+    "confidence": 0.9,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 37,
+    "answer": "\"Love Story\" by Lily Allen.",
+    "correct": false,
+    "confidence": 0.9,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 38,
+    "answer": "A querulous person might:",
+    "correct": false,
+    "confidence": 0.6,
+    "failed": false,
+    "raw": [
+      "(B) False",
+      "(A) True",
+      "The answer that",
+      "(B) False",
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 1
+  },
+  {
+    "id": 39,
+    "answer": "Doctor Who Life-Size Dummies",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 40,
+    "answer": "Japan",
+    "correct": true,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 41,
+    "answer": "In Norse mythology, the goddess Freyja is responsible for deciding who lives and dies during battles and transporting half of the dead to Valhalla.",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 42,
+    "answer": "Friedrich Engels worked closely with Karl Marx and other socialists.",
+    "correct": true,
+    "confidence": 0.6,
+    "failed": false,
+    "raw": [
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "The correct answer",
+      "(A) True",
+      "(B) False",
+      "(A) True",
+      "(B) False",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 1
+  },
+  {
+    "id": 43,
+    "answer": "The island that belongs to Carthage is Tunisia.",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 44,
+    "answer": "Vincent van Gogh",
+    "correct": false,
+    "confidence": 0.6,
+    "failed": false,
+    "raw": [
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "(B) False",
+      "(B) False",
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 45,
+    "answer": "A polyandric woman has more than one child.",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 46,
+    "answer": "The writer who created the detective Charlie Chan is Raymond Chandler.",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 47,
+    "answer": "Alberto Giacometti",
+    "correct": false,
+    "confidence": 1.0,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 0
+  },
+  {
+    "id": 48,
+    "answer": "1957",
+    "correct": true,
+    "confidence": 0.7,
+    "failed": false,
+    "raw": [
+      "(Answer:",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "( A )",
+      "(A) True"
+    ],
+    "unparsed_of_10": 2
+  },
+  {
+    "id": 49,
+    "answer": "John Wayne Gacy",
+    "correct": false,
+    "confidence": 0.8,
+    "failed": false,
+    "raw": [
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "To determine whether",
+      "(B) False",
+      "(A) True",
+      "(A) True",
+      "(A) True",
+      "(A) True"
+    ],
+    "unparsed_of_10": 1
+  }
+]

@@ -1,13 +1,16 @@
 import argparse
 import json
-import re
+import sys
 import time
 from pathlib import Path
 
 import numpy as np
 import torch
 from sklearn.metrics import roc_auc_score
-from probly.representer.sampler.huggingface import HFTextGenerationSampler, load_model
+from probly.representer.sampler.huggingface import load_model
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import r3_methods as r3  # noqa: E402
 
 # ---------------- Plan Bolum 5: 10 soru (dogru, yanlis) ----------------
 SANITY = [
@@ -37,60 +40,25 @@ def run_sanity(confidence_fn, model, tok):
 
 LOG = []   # her ornegin detaylari buraya yazilir (ham cevaplar, failed vs.)
 
-# ---------------- Yontem 1: Empirical p(True) ----------------
-PT_PROMPT = ("Question: {q}\nPossible answer: {a}\nIs the possible answer:\n"
-             " (A) True\n (B) False\nThe possible answer is:")
-
-def is_true(t):
-    t = t.strip().lower()
-    return t.startswith("true") or re.match(r"^\(?a\)?(\W|$)", t) is not None
-
-def is_false(t):
-    t = t.strip().lower()
-    return t.startswith("false") or re.match(r"^\(?b\)?(\W|$)", t) is not None
-
+# ---------------- Yontemler (kod: r3_methods.py) ----------------
 def empirical_p_true(model, tok, q, a, n=10):
-    s = HFTextGenerationSampler(model, tok, num_samples=n, temperature=1.0,
-                                max_new_tokens=3, with_log_likelihood=False)
-    texts = [str(t) for t in s([PT_PROMPT.format(q=q, a=a)]).tensor.text[0]]
-    p = float(np.mean([is_true(t) for t in texts]))
-    unparsed = sum(not is_true(t) and not is_false(t) for t in texts)  # ne True ne False
+    p, texts, unparsed = r3.empirical_p_true(model, tok, q, a, n)
     LOG.append({"q": q, "a": a, "conf": p, "unparsed_of_10": unparsed, "raw": texts})
     return p
 
-# ---------------- Yontem 2: Verbalized 2S (0-100 ve 0-10 skala) ----------------
-ASK_100 = "How confident are you that your answer is correct? Reply with only a number between 0 and 100."
-ASK_10 = "How confident are you that your answer is correct? Reply with only a number between 0 and 10."
 
-def parse_confidence(reply, scale):
-    """Cevaptaki ilk sayiyi 0..1 araligina cevirir. Sayi yoksa None.
-    "0.99" gibi ondalikli ve <= 1 olan sayilar zaten oran kabul edilir
-    (eskiden 0.99 / 100 = 0.0099 oluyordu)."""
-    m = re.search(r"(\d+(?:\.\d+)?)", reply)
-    if m is None:
-        return None
-    x = float(m.group(1))
-    if "." in m.group(1) and x <= 1.0:
-        return x
-    return min(max(x, 0.0), scale) / scale
-
-def make_verbalized(ask, scale):
+def make_verbalized(scale):
     def verbalized(model, tok, q, a):
-        chat = [{"role": "user", "content": q},
-                {"role": "assistant", "content": a},
-                {"role": "user", "content": ask}]
-        sv = HFTextGenerationSampler(model, tok, num_samples=1, do_sample=False,
-                                     max_new_tokens=8, with_log_likelihood=False)
-        reply = str(sv([chat]).tensor.text[0, 0])
-        c = parse_confidence(reply, scale)
-        failed = c is None
-        conf = 0.0 if failed else c   # contract: parse edilemezse guven 0 -> uncertainty 1.0
+        conf, failed, reply = r3.verbalized_2s(model, tok, q, a, scale)
         LOG.append({"q": q, "a": a, "conf": conf, "failed": failed, "raw": reply})
         return conf
+
     return verbalized
 
-verbalized_2s = make_verbalized(ASK_100, 100.0)
-verbalized_2s_10 = make_verbalized(ASK_10, 10.0)
+
+verbalized_2s = make_verbalized(100)
+verbalized_2s_10 = make_verbalized(10)
+
 
 # ---------------- Calistir: 2 yontem x 3 model ----------------
 MODELS = {"smollm2-135m": "HuggingFaceTB/SmolLM2-135M-Instruct",
