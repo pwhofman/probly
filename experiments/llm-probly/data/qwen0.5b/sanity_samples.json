@@ -1,0 +1,122 @@
+{
+  "What is the capital of France?": [
+    "Paris",
+    "Paris",
+    "Paris",
+    "Paris",
+    "Paris",
+    "Paris",
+    "Paris",
+    "Paris",
+    "Paris",
+    "Paris"
+  ],
+  "What is the chemical symbol for water?": [
+    "H2O",
+    "H2O",
+    "H2O",
+    "H2O",
+    "H2O",
+    "H2O",
+    "H2O",
+    "H2O",
+    "H2O",
+    "H2O"
+  ],
+  "How many planets are in our solar system?": [
+    "Our solar system has 8 planets: Earth, Mars, Jupiter, Saturn,",
+    "Our solar system has 8 planets: Mercury, Venus, Earth, Mars,",
+    "Our solar system has 8 planets: Earth, Mars, Jupiter, Saturn,",
+    "Our solar system has 8 planets: Mercury, Venus, Earth, Mars,",
+    "Our solar system has 8 planets: Mercury, Venus, Earth, Mars,",
+    "Our solar system has 8 planets: Mercury, Venus, Earth, Mars,",
+    "Our solar system has eight planets: Mercury, Venus, Earth, Mars, Jupiter",
+    "Our solar system has 8 planets: Mercury, Venus, Earth, Mars,",
+    "Our solar system has eight planets: Mercury, Venus, Earth, Mars, Jupiter",
+    "Our solar system has eight planets: Mercury, Venus, Earth, Mars, Jupiter"
+  ],
+  "Who wrote Romeo and Juliet?": [
+    "William Shakespeare wrote \"Romeo and Juliet\".",
+    "Shakespeare wrote Romeo and Juliet.",
+    "William Shakespeare",
+    "William Shakespeare",
+    "William Shakespeare wrote \"Romeo and Juliet\".",
+    "William Shakespeare",
+    "William Shakespeare",
+    "William Shakespeare wrote \"Romeo and Juliet\".",
+    "William Shakespeare wrote Romeo and Juliet.",
+    "Shakespeare."
+  ],
+  "What is the largest ocean on Earth?": [
+    "The largest ocean on Earth is the Pacific Ocean.",
+    "The largest ocean on Earth is the Pacific Ocean.",
+    "The largest ocean on Earth is the Pacific Ocean.",
+    "The largest ocean on Earth is the Pacific Ocean.",
+    "The largest ocean on Earth is the Pacific Ocean.",
+    "The largest ocean on Earth is the Pacific Ocean.",
+    "The largest ocean on Earth is the Pacific Ocean.",
+    "The largest ocean on Earth is the Pacific Ocean.",
+    "The largest ocean on Earth is the Pacific Ocean.",
+    "The largest ocean on Earth is the Pacific Ocean."
+  ],
+  "At what temperature in Celsius does water boil at sea level?": [
+    "100 Celsius",
+    "100\u00b0C",
+    "100 Celsius.",
+    "100 Celsius",
+    "At 100\u00b0C (212\u00b0F) in Celsius, water",
+    "100 Celsius.",
+    "100 Celsius",
+    "100 Celsius",
+    "At 100\u00b0C (212\u00b0F), water boils at sea",
+    "At 100\u00b0C (212\u00b0F), water boils at sea"
+  ],
+  "Who was the first person to walk on the Moon?": [
+    "Yutu-2 was the first lunar rover to land successfully on the moon",
+    "Neil Armstrong was the first person to walk on the Moon.",
+    "Yutu 2 was the first person to walk on the Moon.",
+    "Yuan Longping was the first person to walk on the Moon.",
+    "Neil Armstrong was the first person to walk on the Moon.",
+    "Yutu 2 was the first lunar rover to land on the Moon.",
+    "Yuan Longping was the first person to walk on the Moon.",
+    "Gordian Spacewalk was the first lunar mission.",
+    "Yuan Longping was the first person to walk on the Moon.",
+    "Yutu 2 was the first lunar rover."
+  ],
+  "What is the currency of Japan?": [
+    "The currency of Japan is the Japanese Yen (JPY).",
+    "Japanese Yen (JPY)",
+    "The currency of Japan is the yen (JPY).",
+    "The currency of Japan is the yen.",
+    "Yen (JPY)",
+    "Japanese yen (JPY) is the official currency of Japan.",
+    "Japanese Yen (JPY) is the official currency of Japan.",
+    "Yen (JPY)",
+    "Japanese yen (JPY)",
+    "The currency of Japan is the yen."
+  ],
+  "How many legs does a spider have?": [
+    "A spider has eight legs.",
+    "A spider has eight legs.",
+    "A spider has eight legs.",
+    "A spider has eight legs.",
+    "A spider has eight legs.",
+    "A spider has eight legs.",
+    "A spider has eight legs.",
+    "A spider has eight legs.",
+    "A spider has eight legs.",
+    "A spider has eight legs."
+  ],
+  "Who painted the Mona Lisa?": [
+    "Leonardo da Vinci painted the Mona Lisa.",
+    "Leonardo da Vinci painted the Mona Lisa.",
+    "Leonardo da Vinci painted the Mona Lisa.",
+    "Leonardo da Vinci painted the Mona Lisa.",
+    "Leonardo da Vinci painted the Mona Lisa.",
+    "Leonardo da Vinci painted the Mona Lisa.",
+    "The Mona Lisa was painted by Leonardo da Vinci.",
+    "Leonardo da Vinci painted the Mona Lisa.",
+    "Leonardo da Vinci painted the Mona Lisa.",
+    "Leonardo da Vinci painted the Mona Lisa."
+  ]
+}
