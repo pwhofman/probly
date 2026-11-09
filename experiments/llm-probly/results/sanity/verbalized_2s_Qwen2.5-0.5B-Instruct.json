@@ -1,18 +1,40 @@
 {
   "method": "verbalized_2s",
-  "model": "Qwen/Qwen2.5-1.5B-Instruct",
-  "auroc": 0.6,
-  "gap": 0.010000000000000231,
-  "n_distinct": 2.0,
-  "failed": 0.0,
-  "seconds_per_example": 0.2067536250000103,
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "auroc": 0.5449999999999999,
+  "gap": 0.0050000000000000044,
+  "n_distinct": 3,
+  "confidences": [
+    0.95,
+    0.95,
+    0.95,
+    0.95,
+    0.95,
+    0.95,
+    0.85,
+    0.85,
+    0.95,
+    0.95,
+    0.95,
+    0.9,
+    0.95,
+    0.95,
+    0.95,
+    0.95,
+    0.95,
+    0.95,
+    0.95,
+    0.95
+  ],
+  "seconds_per_example": 0.07781084789999113,
+  "failed": 0,
   "examples": [
     {
       "q": "What is the capital of France?",
       "a": "Paris",
-      "conf": 1.0,
+      "conf": 0.95,
       "failed": false,
-      "raw": "100"
+      "raw": "95"
     },
     {
       "q": "What is the capital of France?",
@@ -38,9 +60,9 @@
     {
       "q": "How many planets are in our solar system?",
       "a": "8",
-      "conf": 1.0,
+      "conf": 0.95,
       "failed": false,
-      "raw": "100"
+      "raw": "95"
     },
     {
       "q": "How many planets are in our solar system?",
@@ -52,16 +74,16 @@
     {
       "q": "Who wrote Romeo and Juliet?",
       "a": "William Shakespeare",
-      "conf": 0.95,
+      "conf": 0.85,
       "failed": false,
-      "raw": "95"
+      "raw": "85"
     },
     {
       "q": "Who wrote Romeo and Juliet?",
       "a": "Charles Dickens",
-      "conf": 0.95,
+      "conf": 0.85,
       "failed": false,
-      "raw": "95"
+      "raw": "85"
     },
     {
       "q": "What is the largest ocean on Earth?",
@@ -80,16 +102,16 @@
     {
       "q": "At what temperature in Celsius does water boil at sea level?",
       "a": "100",
-      "conf": 1.0,
+      "conf": 0.95,
       "failed": false,
-      "raw": "100"
+      "raw": "95"
     },
     {
       "q": "At what temperature in Celsius does water boil at sea level?",
       "a": "50",
-      "conf": 1.0,
+      "conf": 0.9,
       "failed": false,
-      "raw": "100"
+      "raw": "90"
     },
     {
       "q": "Who was the first person to walk on the Moon?",
@@ -122,16 +144,16 @@
     {
       "q": "How many legs does a spider have?",
       "a": "8",
-      "conf": 1.0,
+      "conf": 0.95,
       "failed": false,
-      "raw": "100"
+      "raw": "95"
     },
     {
       "q": "How many legs does a spider have?",
       "a": "6",
-      "conf": 1.0,
+      "conf": 0.95,
       "failed": false,
-      "raw": "100"
+      "raw": "95"
     },
     {
       "q": "Who painted the Mona Lisa?",
