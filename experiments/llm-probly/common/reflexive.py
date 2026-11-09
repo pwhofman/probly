@@ -64,6 +64,9 @@ def p_true_details(model, tok, question, answer, brainstorm=None, mode=DEFAULT_M
     """Normalized p(True) plus coverage (probability mass on both groups)."""
     logp = torch.log_softmax(next_token_logits(model, tok, question, answer, brainstorm, mode), -1)
     true_ids, false_ids = (single_token_ids(tok, g) for g in GROUPS[mode])
+    if not true_ids or not false_ids:
+        raise ValueError(f"empty token group for mode {mode!r} "
+                         f"(true={true_ids}, false={false_ids}); check the tokenizer")
     lt = torch.logsumexp(logp[true_ids], dim=0)
     lf = torch.logsumexp(logp[false_ids], dim=0)
     return {
@@ -79,7 +82,8 @@ def p_true(model, tok, question, answer, brainstorm=None, mode=DEFAULT_MODE):
 
 
 def true_logit(model, tok, question, answer, brainstorm=None):
-    """Raw baseline: logit of the single token 'True' (LM-Polygraph), chat-template prompt."""
+    """Raw baseline: logit of the single token 'True' (LM-Polygraph), chat-template prompt.
+    High = more confident. For the score contract use uncertainty = -true_logit."""
     logits = next_token_logits(model, tok, question, answer, brainstorm, mode="chat_groups")
     true_id = tok.encode("True", add_special_tokens=False)[0]
     return logits[true_id].item()
