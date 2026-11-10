@@ -27,10 +27,14 @@ From the repository's root, in one environment with probly, JAX and WeatherNext 
 docstring says how to set it up):
 
 ```bash
-python docs/source/demos/milton/compute/run_full.py --check  # one step of one run, to test the setup
+python docs/source/demos/milton/compute/run_full.py --check  # two steps of one run, to test the setup
 python docs/source/demos/milton/compute/run_full.py  # the runs: a GPU with 80 GB (an H100 or larger)
 python docs/source/demos/milton/compute/preview.py  # then open cache/preview.html
 ```
+
+With `--also full_2022`, the script also rolls out the four models as trained on data through 2022
+into `results/full_2022`, after the demo's data is written: they are not in the demo, but compare
+the epistemic uncertainty of models trained with one year less of data.
 
 The script downloads what it needs into `cache/weathernext`, writes its runs to `results/full` as
 they are done, skips what already exists when restarted, and writes `../assets/data.js` at the end;

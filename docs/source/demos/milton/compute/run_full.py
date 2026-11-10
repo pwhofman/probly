@@ -9,6 +9,12 @@ probly's WeatherNext integration, and writes the demo's data,
 ``compute/results/full`` and the downloads in ``compute/cache/weathernext``; git ignores both. If the
 script stops, run it again: it skips the runs it already has.
 
+Optionally, ``--also full_2022`` rolls out the same 8 runs of each of the four models as trained on
+data through 2022, one year less (``WeatherNextCyclones_<2023_model{1..4}``, 0.7 GB each), into
+``compute/results/full_2022``, after the demo's data is written. That takes as long again. The demo
+does not use these runs: they are for comparing the epistemic uncertainty of models trained with
+one year less of data.
+
 What to install next to probly
 ------------------------------
 One environment, Python 3.12 or newer, with probly from this branch, JAX for the GPU, and
@@ -50,6 +56,7 @@ a step takes), then the runs::
 
     python docs/source/demos/milton/compute/run_full.py --check
     python docs/source/demos/milton/compute/run_full.py
+    python docs/source/demos/milton/compute/run_full.py --also full_2022  # with the 2022 models too
 
 The runs are 4 models x 8 runs x 16 steps of 6 hours, 512 steps on one GPU; the script prints every
 step with the time, and saves the runs as they are done. When it is done, commit
@@ -74,4 +81,6 @@ if __name__ == "__main__":
         # four models, trained independently on data through 2023
         checkpoints={f"model{i}": f"params/WeatherNextCyclones_<2024_model{i}.npz" for i in range(1, 5)},
         description=__doc__,
+        # the same four models trained on data through 2022, to compare (not in the demo)
+        also={"full_2022": {f"model{i}": f"params/WeatherNextCyclones_<2023_model{i}.npz" for i in range(1, 5)}},
     )

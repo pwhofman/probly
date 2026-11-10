@@ -254,7 +254,14 @@ def forecast(config: str, data: Path, checkpoints: dict[str, Path], runs: int, s
                 )
 
 
-def run(key: str, config: str, data: str, checkpoints: dict[str, str], description: str) -> None:
+def run(
+    key: str,
+    config: str,
+    data: str,
+    checkpoints: dict[str, str],
+    description: str,
+    also: dict[str, dict[str, str]] | None = None,
+) -> None:
     """Roll out a model of the demo from WeatherNext's public files, and write the demo's data.
 
     Downloads the initial conditions ``data`` and the checkpoints (name: file in WeatherNext's bucket),
@@ -262,10 +269,19 @@ def run(key: str, config: str, data: str, checkpoints: dict[str, str], descripti
     writes the demo's data with ``pack.py``. With ``--check``, rolls out two steps of one run of the
     first checkpoint into ``cache/check/<key>`` instead, to see that the model fits and how long a step
     takes (the first step includes the model's compilation).
+
+    ``also`` holds further sets of checkpoints of the same config, by key, which ``--also <key>`` rolls
+    out the same way into ``results/<key>``, after the demo's data is written; the demo does not use
+    them.
     """
+    also = also or {}
     parser = argparse.ArgumentParser(description=description.split("\n\n", maxsplit=1)[0])
     parser.add_argument("--check", action="store_true", help="roll out two steps of one run only, to test the setup")
     parser.add_argument("--downloads", type=Path, default=DOWNLOADS, help="where to keep WeatherNext's public files")
+    if also:
+        parser.add_argument(
+            "--also", action="append", default=[], choices=sorted(also), help="also roll out these checkpoints"
+        )
     args = parser.parse_args()
     initial = public_file(data, args.downloads)
     files = {name: public_file(path, args.downloads) for name, path in checkpoints.items()}
@@ -278,6 +294,11 @@ def run(key: str, config: str, data: str, checkpoints: dict[str, str], descripti
         return
     forecast(config, initial, files, runs=8, steps=16, out=HERE / "results" / key)
     pack(HERE / "results", require=(key,))
+    log("the demo's data is written: docs/source/demos/milton/assets/data.js")
+    for extra in dict.fromkeys(getattr(args, "also", [])):
+        files = {name: public_file(path, args.downloads) for name, path in also[extra].items()}
+        forecast(config, initial, files, runs=8, steps=16, out=HERE / "results" / extra)
+        log(f"{extra}: the runs are in {HERE / 'results' / extra}")
     log("done: commit docs/source/demos/milton/assets/data.js")
 
 
