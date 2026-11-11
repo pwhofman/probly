@@ -364,7 +364,8 @@ def _training_loop(  # noqa: PLR0912, PLR0915
     if model_tracker is not None:
         best_tracker: BestModelTracker | None = model_tracker
     else:
-        best_tracker = BestModelTracker(min_delta=min_delta) if val_loader is not None else None
+        restore_best_val = cfg.get("restore_best_val", True)
+        best_tracker = BestModelTracker(min_delta=min_delta) if val_loader is not None and restore_best_val else None
 
     grad_clip_norm = cfg.get("grad_clip_norm", None)
     amp_enabled = cfg.get("amp", False)
