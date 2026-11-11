@@ -1,0 +1,66 @@
+% Requires in your preamble:
+%   \usepackage{booktabs}
+%   \usepackage{arydshln}             % for \hdashline / \cdashline
+%   \usepackage[table]{xcolor}        % for \rowcolor on group-header rows
+\begin{table}[t]
+\centering
+\caption{Active learning (NAUC). LS denotes Label Smoothing, LR denotes Label Relaxation, temp denotes temperature scaling, and vec vector scaling. A superscript names the notion a value comes from when a method has no run for the column's notion.}
+\label{tab:results-al}
+\footnotesize
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}l cc cc cc@{}}
+\toprule
+\multicolumn{1}{@{}l}{} & \multicolumn{2}{c}{\textbf{OpenML 6}} & \multicolumn{2}{c}{\textbf{OpenML 156}} & \multicolumn{2}{c}{\textbf{CIFAR-10}} \\
+\cdashline{2-3} \cdashline{4-5} \cdashline{6-7}
+\noalign{\vskip 0.45em}
+\multicolumn{1}{@{}l}{\textbf{Method}} & \textbf{EU} & \textbf{TU} & \textbf{EU} & \textbf{TU} & \textbf{EU} & \textbf{TU} \\
+\hdashline\noalign{\vskip 0.45em}
+\rowcolor[gray]{0.92}[0pt][0pt]
+\multicolumn{7}{@{}l@{}}{\textbf{Baselines}} \\
+\addlinespace[0.15em]
+base + margin & $.959_{\pm .002}$ & $.959_{\pm .002}$ & $.890_{\pm .004}$ & $.890_{\pm .004}$ & $.815_{\pm .003}$ & $.815_{\pm .003}$ \\
+base + random & $.934_{\pm .003}$ & $.934_{\pm .003}$ & $.875_{\pm .004}$ & $.875_{\pm .004}$ & $.794_{\pm .002}$ & $.794_{\pm .002}$ \\
+\addlinespace[0.4em]
+\rowcolor[gray]{0.92}[0pt][0pt]
+\multicolumn{7}{@{}l@{}}{\textbf{Direct}} \\
+\addlinespace[0.15em]
+DDU & $.943_{\pm .004}$ & $.956_{\pm .001}$ & $.693_{\pm .017}$ & $.839_{\pm .015}$ & $.814_{\pm .002}$ & $.819_{\pm .003}^{\mathrm{AU}}$ \\
+DUQ & $.202_{\pm .088}$ & $.202_{\pm .088}$ & $.803_{\pm .016}$ & $.803_{\pm .016}$ & $.824_{\pm .002}^{\mathrm{TU}}$ & $.824_{\pm .002}$ \\
+HetNet & $.157_{\pm .026}$ & $.157_{\pm .026}$ & $.842_{\pm .010}$ & $.842_{\pm .010}$ & $.800_{\pm .003}^{\mathrm{AU}}$ & $.800_{\pm .003}^{\mathrm{AU}}$ \\
+\addlinespace[0.4em]
+\rowcolor[gray]{0.92}[0pt][0pt]
+\multicolumn{7}{@{}l@{}}{\textbf{2nd-order Distribution}} \\
+\addlinespace[0.15em]
+Dropout & $.962_{\pm .002}$ & $.963_{\pm .001}$ & $.655_{\pm .015}$ & $.822_{\pm .015}$ & $.817_{\pm .002}$ & $.817_{\pm .003}$ \\
+DropConnect & $.949_{\pm .002}$ & $.951_{\pm .002}$ & $.552_{\pm .014}$ & $.716_{\pm .030}$ & $.813_{\pm .002}$ & $.816_{\pm .004}$ \\
+BNN & $.955_{\pm .001}$ & $.956_{\pm .002}$ & $.316_{\pm .012}$ & $.435_{\pm .024}$ & $.783_{\pm .004}$ & $.784_{\pm .001}$ \\
+Laplace & $.946_{\pm .002}$ & $.946_{\pm .003}$ & $.574_{\pm .042}$ & $.800_{\pm .025}$ & $.753_{\pm .018}$ & $.775_{\pm .007}$ \\
+VBLL & $.934_{\pm .004}$ & $.947_{\pm .002}$ & $.818_{\pm .019}$ & $.779_{\pm .023}$ & $.824_{\pm .001}$ & $.822_{\pm .003}$ \\
+Deep Ensemble & $.960_{\pm .002}$ & $.959_{\pm .002}$ & $.783_{\pm .015}$ & $.857_{\pm .016}$ & $\mathbf{.843_{\pm .002}}$ & $\mathbf{.843_{\pm .002}}$ \\
+BatchEnsemble & $.961_{\pm .001}$ & $.961_{\pm .001}$ & $.690_{\pm .016}$ & $.844_{\pm .007}$ & $.821_{\pm .003}$ & $.818_{\pm .004}$ \\
+SubEnsemble & $.955_{\pm .002}$ & $.956_{\pm .001}$ & $.847_{\pm .008}$ & $.864_{\pm .007}$ & $.808_{\pm .004}$ & $.805_{\pm .002}$ \\
+DARE & $.949_{\pm .002}$ & $.949_{\pm .002}^{\mathrm{AU}}$ & $.802_{\pm .016}$ & $.802_{\pm .016}^{\mathrm{AU}}$ & $.770_{\pm .013}$ & $.770_{\pm .013}^{\mathrm{EU}}$ \\
+SNGP & $.286_{\pm .074}$ & $.241_{\pm .042}$ & $.649_{\pm .003}$ & $.667_{\pm .004}$ & $.739_{\pm .020}$ & $.739_{\pm .020}^{\mathrm{EU}}$ \\
+EDL & $.177_{\pm .019}$ & $.177_{\pm .019}$ & $.606_{\pm .037}$ & $.606_{\pm .037}$ & $.622_{\pm .017}$ & $.622_{\pm .017}^{\mathrm{EU}}$ \\
+PostNet & $.880_{\pm .027}$ & $.880_{\pm .022}$ & $.390_{\pm .030}$ & $.391_{\pm .033}$ & $.795_{\pm .004}$ & $.796_{\pm .006}^{\mathrm{AU}}$ \\
+\addlinespace[0.4em]
+\rowcolor[gray]{0.92}[0pt][0pt]
+\multicolumn{7}{@{}l@{}}{\textbf{Credal}} \\
+\addlinespace[0.15em]
+CreWra & $.956_{\pm .001}$ & $.960_{\pm .002}$ & $.837_{\pm .015}$ & $.858_{\pm .009}$ & $.837_{\pm .002}$ & $.835_{\pm .003}$ \\
+CreEns & -- & -- & $.808_{\pm .021}$ & $.858_{\pm .016}$ & $.839_{\pm .002}$ & $.840_{\pm .003}$ \\
+CreBNN & -- & -- & -- & -- & $.813_{\pm .003}$ & $.814_{\pm .003}$ \\
+CreRL & $.943_{\pm .002}$ & $.948_{\pm .002}$ & $.480_{\pm .014}$ & $.510_{\pm .026}$ & $.813_{\pm .003}$ & $.811_{\pm .003}$ \\
+EffCre & $.944_{\pm .002}$ & $.944_{\pm .002}$ & $.830_{\pm .015}$ & $.857_{\pm .011}$ & $.800_{\pm .004}$ & $.813_{\pm .005}$ \\
+\addlinespace[0.4em]
+\rowcolor[gray]{0.92}[0pt][0pt]
+\multicolumn{7}{@{}l@{}}{\textbf{Calibration}} \\
+\addlinespace[0.15em]
+base + margin + LS & $\mathbf{.971_{\pm .001}}$ & $\mathbf{.971_{\pm .001}}$ & $\mathbf{.893_{\pm .004}}$ & $\mathbf{.893_{\pm .004}}$ & $.819_{\pm .003}$ & $.819_{\pm .003}$ \\
+base + margin + LR & $.744_{\pm .105}$ & $.744_{\pm .105}$ & $.885_{\pm .008}$ & $.885_{\pm .008}$ & $.814_{\pm .002}$ & $.814_{\pm .002}$ \\
+base + margin + temp & $.946_{\pm .001}$ & $.946_{\pm .001}$ & $.870_{\pm .006}$ & $.870_{\pm .006}$ & $.800_{\pm .003}$ & $.800_{\pm .003}$ \\
+base + margin + vec & $.941_{\pm .001}$ & $.941_{\pm .001}$ & $.864_{\pm .006}$ & $.864_{\pm .006}$ & $.796_{\pm .002}$ & $.796_{\pm .002}$ \\
+\bottomrule
+\end{tabular}
+\end{table}

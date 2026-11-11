@@ -1,0 +1,60 @@
+% Requires in your preamble:
+%   \usepackage{booktabs}
+%   \usepackage{arydshln}             % for \hdashline / \cdashline
+%   \usepackage[table]{xcolor}        % for \rowcolor on group-header rows
+\begin{table}[h]
+\centering
+\caption{Summary Results on ImageNet. For Selective prediction we report accuracy-rejection AUC (Acc-Rej) and for OoD AUROC.}
+\label{tab:results-imagenet}
+\footnotesize
+\setlength{\tabcolsep}{7pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}l@{\hspace{4pt}}l c c c@{}}
+\toprule
+\multicolumn{2}{@{}l}{\textbf{Method}} & \textbf{SP Acc-Rej} ($\uparrow$) & \textbf{Near-OoD AUROC} ($\uparrow$) & \textbf{Far-OoD AUROC} ($\uparrow$) \\
+\hdashline\noalign{\vskip 0.45em}
+\rowcolor[gray]{0.92}[0pt][0pt]
+\multicolumn{5}{@{}l@{}}{\textbf{Deterministic baseline}} \\
+\addlinespace[0.15em]
+--- & Base & $.917_{\pm .001}$ & $.779_{\pm .003}$ & $.766_{\pm .007}$ \\
+\addlinespace[0.4em]
+\rowcolor[gray]{0.92}[0pt][0pt]
+\multicolumn{5}{@{}l@{}}{\textbf{Direct}} \\
+\addlinespace[0.15em]
+\cite{mukhotiDDU2023} & DDU & $.916_{\pm .003}$ & $.673_{\pm .006}$ & $.805_{\pm .014}$ \\
+\cite{collierHETNet2021} & HetNet & $.917_{\pm .001}$ & $.781_{\pm .011}$ & $.776_{\pm .014}$ \\
+\addlinespace[0.4em]
+\rowcolor[gray]{0.92}[0pt][0pt]
+\multicolumn{5}{@{}l@{}}{\textbf{2nd-order Distribution}} \\
+\addlinespace[0.15em]
+\cite{galDropout2016} & Dropout & $.916_{\pm .001}$ & $.692_{\pm .016}$ & $.765_{\pm .006}$ \\
+\cite{wanDropConnect2013} & DropConnect & $.909_{\pm .001}$ & $.571_{\pm .005}$ & $.606_{\pm .014}$ \\
+\cite{blundellWeightUncertainty2015} & BNN & $.920_{\pm .001}$ & $.749_{\pm .004}$ & $.802_{\pm .004}$ \\
+\cite{daxbergerLaplaceRedux2021} & Laplace & $.912_{\pm .001}$ & $.773_{\pm .006}$ & $.817_{\pm .009}$ \\
+\cite{harrisonVBLL2024} & VBLL & $.917_{\pm .001}$ & $.683_{\pm .009}$ & $.708_{\pm .007}$ \\
+\cite{laks_sa17} & Deep Ensemble & $.935_{\pm .000}$ & $.737_{\pm .006}$ & $.821_{\pm .003}$ \\
+\cite{wenBatchEnsemble2020} & BatchEnsemble & $.903_{\pm .002}$ & $.749_{\pm .004}$ & $.803_{\pm .006}$ \\
+\cite{valdenegroToroSubEnsemble2023} & SubEnsemble & $\mathbf{.945_{\pm .000}}$ & $\mathbf{.801_{\pm .001}}$ & $\mathbf{.834_{\pm .001}}$ \\
+\cite{liuSNGP2020} & SNGP & $.891_{\pm .001}$ & $.750_{\pm .003}$ & $.765_{\pm .002}$ \\
+\cite{sens_ed18} & EDL & $.816_{\pm .007}$ & $.719_{\pm .013}$ & $.701_{\pm .010}$ \\
+\cite{charpentierPosteriorNetwork2020} & PostNet & $.880_{\pm .002}$ & $.538_{\pm .015}$ & $.573_{\pm .002}$ \\
+\addlinespace[0.4em]
+\rowcolor[gray]{0.92}[0pt][0pt]
+\multicolumn{5}{@{}l@{}}{\textbf{Credal}} \\
+\addlinespace[0.15em]
+\cite{wangCredalWrapper2025} & CreWra & $.923_{\pm .000}$ & $.744_{\pm .005}$ & $.812_{\pm .002}$ \\
+\cite{nguyenCredalEnsembling2025} & CreEns & $.925_{\pm .001}$ & $.748_{\pm .008}$ & $.809_{\pm .002}$ \\
+\cite{caprioCredalBNNs2024} & CreBNN & $.925_{\pm .001}$ & $.752_{\pm .003}$ & $.810_{\pm .004}$ \\
+\cite{loehrCredalPrediction2025} & CreRL & $.936_{\pm .000}$ & $.793_{\pm .002}$ & $.822_{\pm .004}$ \\
+\cite{hofmanEfficientCredalPrediction2026} & EffCre & $.793_{\pm .009}$ & $.315_{\pm .019}$ & $.322_{\pm .020}$ \\
+\addlinespace[0.4em]
+\rowcolor[gray]{0.92}[0pt][0pt]
+\multicolumn{5}{@{}l@{}}{\textbf{Calibration}} \\
+\addlinespace[0.15em]
+\cite{szegedyRethinkingInceptionArchitecture2016} & Label Smooth. & $.902_{\pm .005}$ & $.773_{\pm .007}$ & $.754_{\pm .013}$ \\
+\cite{DBLP:conf/aaai/LienenH21} & Label Relax. & $.913_{\pm .001}$ & $.781_{\pm .009}$ & $.766_{\pm .012}$ \\
+\cite{guoOnCalibration2017} & Vector Scaling & $.902_{\pm .010}$ & $.742_{\pm .029}$ & $.738_{\pm .022}$ \\
+\cite{guoOnCalibration2017} & Temp. Scaling & $.914_{\pm .001}$ & $.781_{\pm .002}$ & $.773_{\pm .008}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
