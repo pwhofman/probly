@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 import numpy as np
 import torch
 
@@ -21,8 +23,8 @@ def _torch_compute_quantile_score(scores: torch.Tensor, alpha: float) -> float:
             msg = "scores array is empty"
             raise ValueError(msg)
 
-        q_level = torch.ceil(torch.tensor((n + 1) * (1 - alpha))) / n
-        q_level = torch.minimum(q_level, torch.tensor(1.0))  # ensure within [0, 1]
+        # A Python float works on any device; a CPU tensor would fail against CUDA scores.
+        q_level = min(math.ceil((n + 1) * (1 - alpha)) / n, 1.0)
 
         # Inverted CDF / right-continuous step quantile
         # PyTorch does not support "inverted_cdf" method; "nearest" is the most precise available approximation.
@@ -37,8 +39,8 @@ def _torch_compute_weighted_quantile(
         if sample_weight is None:
             return float(torch.quantile(values, quantile, interpolation="linear"))
 
-        values = torch.tensor(values)
-        sample_weight = torch.tensor(sample_weight)
+        values = torch.as_tensor(values)
+        sample_weight = torch.as_tensor(sample_weight, device=values.device)
 
         sorter = torch.argsort(values)
         values = values[sorter]

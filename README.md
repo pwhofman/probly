@@ -34,7 +34,8 @@ conformal prediction, all accessible via the same unified API.
   [scikit-learn](https://scikit-learn.org/stable/), [River](https://riverml.xyz/latest/),
   [Hugging Face](https://huggingface.co/docs/transformers/index), [NumPy](https://numpy.org/doc/stable/)
 - **Integrations:** [Lightning](https://lightning.ai/docs/pytorch/stable/), [torch-uncertainty](https://torch-uncertainty.github.io/),
-  [PyTorch Geometric](https://pytorch-geometric.readthedocs.io/en/latest/), [laplace-torch](https://aleximmer.github.io/Laplace/)
+  [PyTorch Geometric](https://pytorch-geometric.readthedocs.io/en/latest/), [laplace-torch](https://aleximmer.github.io/Laplace/),
+  [GPyTorch](https://gpytorch.ai/)
 
 
 ## 🛠️ Install
