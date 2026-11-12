@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from probly.evaluation.selective_prediction import selective_prediction
+from probly.metrics.selective_prediction import aurc
 
 
 def test_selective_prediction_shapes() -> None:
@@ -43,3 +44,11 @@ def test_selective_prediction_breaks_ties_by_input_order() -> None:
     losses = np.array([0.0, 10.0, 20.0, 30.0])
     _, bin_losses = selective_prediction(criterion, losses, n_bins=2)
     np.testing.assert_allclose(np.asarray(bin_losses), [15.0, 25.0])
+
+
+def test_selective_prediction_is_close_to_exact_aurc() -> None:
+    rng = np.random.default_rng(2)
+    criterion = rng.random(1000)
+    losses = (rng.random(1000) < criterion).astype(float)
+    binned, _ = selective_prediction(criterion, losses, n_bins=100)
+    assert abs(aurc(criterion, losses) - binned) < 0.02
