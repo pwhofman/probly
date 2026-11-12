@@ -139,7 +139,7 @@ collecting more samples won’t help. A single confidence score cannot distingui
 </div>
 
 Each stage is one import, and the stages compose freely. The
-[user guide](https://pwhofman.github.io/probly/stable/user_guide.html) walks through them in
+[user guide](https://pwhofman.github.io/probly/latest/user_guide.html) walks through them in
 order.
 
 ## 🎲 Methods at a glance
@@ -277,7 +277,7 @@ The preceding methods produce a **representation**. To interpret these, `quantif
 - **Embeddings and text**: `spectral_entropy`, `semantic_entropy`
 - **Scoring rules** (from `probly.metrics`, for `SecondOrderScoringRuleDecomposition`): `brier_loss_per_instance`, `log_loss_per_instance`, `spherical_loss_per_instance`, `zero_one_loss_per_instance`
 
-Browse the full [API reference](https://pwhofman.github.io/probly/stable/api.html) and the [examples gallery](https://pwhofman.github.io/probly/stable/examples.html) for the complete picture.
+Browse the full [API reference](https://pwhofman.github.io/probly/latest/api.html) and the [examples gallery](https://pwhofman.github.io/probly/latest/examples.html) for the complete picture.
 
 ## 🤖 Uncertainty for LLMs
 
@@ -370,7 +370,7 @@ The band is tight where the model has seen data and wide in the gap and past the
 
 ## 📖 Documentation with tutorials
 
-New to `probly`? Start with the [user guide](https://pwhofman.github.io/probly/stable/user_guide.html) and the [examples gallery](https://pwhofman.github.io/probly/stable/examples.html). The full [documentation](https://pwhofman.github.io/probly) covers the entire workflow, including the [API reference](https://pwhofman.github.io/probly/stable/api.html).
+New to `probly`? Start with the [user guide](https://pwhofman.github.io/probly/latest/user_guide.html) and the [examples gallery](https://pwhofman.github.io/probly/latest/examples.html). The full [documentation](https://pwhofman.github.io/probly) covers the entire workflow, including the [API reference](https://pwhofman.github.io/probly/latest/api.html).
 
 ## 🤝 Contributing
 Contributions are welcome - see [CONTRIBUTING.md](https://github.com/pwhofman/probly/blob/main/.github/CONTRIBUTING.md) for guidelines on adding methods, representations, or evaluation protocols.
