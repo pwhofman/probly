@@ -421,4 +421,4 @@ class FlexdispatchTraverser[T](_AbstractSingledispatchTraverser[T, flextype.Lazy
         registration_fn: RegistrationFunction | None = None,
     ) -> RegistrationFunction | Callable[[RegistrationFunction], RegistrationFunction]:
         """Register a function that will be called when a matching type is encountered."""
-        return self._dispatch.delayed_register(cls, registration_fn)  # ty: ignore[unresolved-attribute]
+        return self._dispatch.delayed_register(cls, registration_fn)  # ty: ignore[missing-attribute]

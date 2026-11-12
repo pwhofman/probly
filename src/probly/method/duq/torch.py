@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 @create_duq_representation.register(torch.Tensor)
 @dataclass(frozen=True, slots=True)
-class TorchDUQRepresentation(DUQRepresentation, TorchAxisProtected):
+class TorchDUQRepresentation(DUQRepresentation[torch.Tensor], TorchAxisProtected):
     """DUQ representation backed by a torch tensor."""
 
     kernel_values: Tensor

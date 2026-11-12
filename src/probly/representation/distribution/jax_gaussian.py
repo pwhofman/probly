@@ -28,6 +28,8 @@ if TYPE_CHECKING:
     from jax._src.typing import ArrayLike
     from numpy.typing import DTypeLike
 
+    from probly.representation.representation import Representation
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[jax.Array]):
@@ -37,7 +39,6 @@ class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[
     var: jax.Array = field()
 
     type: ClassVar[Literal["gaussian"]] = "gaussian"
-    protected_axes: ClassVar[dict[str, int]] = {"mean": 0, "var": 0}
     permitted_functions: ClassVar[set[Callable]] = {jax_add, jax_subtract}
 
     def __post_init__(self) -> None:
@@ -108,7 +109,7 @@ class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[
         return np.asarray(stacked, dtype=dtype, copy=copy)
 
     @override
-    def __eq__(self, other: Any) -> jax.Array:  # ty: ignore[invalid-method-override] # noqa: PYI032
+    def __eq__(self, other: Any) -> jax.Array:  # ty: ignore[incompatible-method-override] # noqa: PYI032
         """Compare two Gaussians by their parameter."""
         if not isinstance(other, JaxGaussianDistribution):
             return NotImplemented
@@ -141,7 +142,7 @@ class JaxGaussianDistributionSample(  # ty:ignore[conflicting-metaclass]
 ):
     """Sample type for empirical second-order Gaussian distributions."""
 
-    sample_space: ClassVar[type[GaussianDistribution]] = JaxGaussianDistribution
+    sample_space: ClassVar[type[Representation]] = JaxGaussianDistribution
 
     @override
     @classmethod

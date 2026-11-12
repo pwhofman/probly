@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, override
+from typing import TYPE_CHECKING, Any, ClassVar, override
 
 import numpy as np
 from scipy.special import logit
@@ -21,6 +21,9 @@ from probly.representation.distribution.numpy_categorical import (
     NumpyProbabilityCategoricalDistribution,
 )
 from probly.representation.sample.numpy import NumpySample
+
+if TYPE_CHECKING:
+    from probly.representation.representation import Representation
 
 
 class NumpyBernoulliDistribution(BernoulliDistribution, NumpyCategoricalDistribution, ABC):  # ty:ignore[conflicting-metaclass]
@@ -88,7 +91,7 @@ class NumpyBernoulliDistributionSample(  # ty:ignore[conflicting-metaclass]
 ):
     """Sample type for array Bernoulli distributions."""
 
-    sample_space: ClassVar[type[BernoulliDistribution]] = NumpyBernoulliDistribution
+    sample_space: ClassVar[type[Representation]] = NumpyBernoulliDistribution
 
 
 @create_bernoulli_distribution.register((list, tuple))

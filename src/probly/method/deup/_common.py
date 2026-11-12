@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 @runtime_checkable
-class DEUPRepresentation(Representation, Protocol):
+class DEUPRepresentation[T](Representation, Protocol):
     r"""Representation of a DEUP model output.
 
     Holds the two quantities needed for uncertainty quantification:
@@ -45,7 +45,7 @@ class DEUPRepresentation(Representation, Protocol):
         """Softmax probabilities of the base classifier, shape ``(batch, num_classes)``."""
 
     @property
-    def error_score(self) -> ArrayLike:
+    def error_score(self) -> T:
         """Predicted per-sample expected cross-entropy, shape ``(batch,)``."""
 
 
@@ -184,14 +184,14 @@ class DEUPDecomposition[T](AdditiveDecomposition[T, T, T]):
     learner's estimate.
     """
 
-    representation: DEUPRepresentation
+    representation: DEUPRepresentation[T]
     base: LogBase = None
 
     @override
     @property
     def _total(self) -> T:
         """The total uncertainty: predicted expected cross-entropy."""
-        return self.representation.error_score  # ty:ignore[invalid-return-type]
+        return self.representation.error_score
 
     @override
     @property

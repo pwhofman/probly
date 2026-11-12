@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, ClassVar, Self, override
 
 from ndlike.protected_axis.numpy import NumpyAxisProtected
@@ -172,9 +172,8 @@ class NumpyDistanceBasedCredalSet(
 ):
     """Distance-based credal set around a nominal categorical distribution."""
 
-    nominal: NumpyCategoricalDistribution
-    radius: np.ndarray
-    protected_axes: ClassVar[dict[str, int]] = {"nominal": 0, "radius": 0}
+    nominal: NumpyCategoricalDistribution = field()
+    radius: np.ndarray = field()
 
     def __post_init__(self) -> None:
         """Validate that nominal is a valid categorical distribution and radius is non-negative."""
@@ -246,9 +245,8 @@ class NumpyProbabilityIntervalsCredalSet(
 ):
     """Credal set represented by lower/upper categorical bounds."""
 
-    lower_bounds: np.ndarray
-    upper_bounds: np.ndarray
-    protected_axes: ClassVar[dict[str, int]] = {"lower_bounds": 1, "upper_bounds": 1}
+    lower_bounds: np.ndarray = field()
+    upper_bounds: np.ndarray = field()
 
     def __post_init__(self) -> None:
         """Validate that lower and upper bounds have the same shape and are valid distributions."""

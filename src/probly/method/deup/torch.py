@@ -50,7 +50,7 @@ from ._common import (
 
 @create_deup_representation.register(TorchCategoricalDistribution)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchDEUPRepresentation(DEUPRepresentation, TorchAxisProtected):
+class TorchDEUPRepresentation(DEUPRepresentation[torch.Tensor], TorchAxisProtected):
     """DEUP representation backed by torch tensors.
 
     Args:
@@ -62,7 +62,7 @@ class TorchDEUPRepresentation(DEUPRepresentation, TorchAxisProtected):
 
     softmax: TorchCategoricalDistribution
     error_score: torch.Tensor
-    protected_axes: ClassVar[dict[str, int]] = {"softmax": 0}
+    protected_axes: ClassVar[dict[str, int]] = {"softmax": 0, "error_score": 0}
 
 
 HEAD_MODULE: GlobalVariable[nn.Module | None] = GlobalVariable("DEUP_HEAD_MODULE", default=None)

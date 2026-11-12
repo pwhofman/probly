@@ -17,6 +17,8 @@ from probly.representation.sample.torch import TorchSample
 if TYPE_CHECKING:
     import numpy as np
 
+    from probly.representation.representation import Representation
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class TorchSparseLogCategoricalDistribution(
@@ -157,7 +159,7 @@ class TorchSparseLogCategoricalDistributionSample(  # ty:ignore[conflicting-meta
 ):
     """Sample type for sparse grouped log categorical distributions."""
 
-    sample_space: ClassVar[type[CategoricalDistribution]] = TorchSparseLogCategoricalDistribution
+    sample_space: ClassVar[type[Representation]] = TorchSparseLogCategoricalDistribution
 
     @override
     @classmethod

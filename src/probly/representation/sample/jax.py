@@ -163,17 +163,15 @@ class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
         del api_version
         return cast("Any", self.array).__array_namespace__()
 
-    # ty 0.0.82 cannot bind protocol properties through a union-bounded TypeVar.
-    # Keep suppressions local so unused-ignore-comment flags them once fixed.
     @property
     def dtype(self) -> DTypeLike:
         """The data type of the underlying array."""
-        return self.array.dtype  # ty: ignore[invalid-attribute-access]
+        return self.array.dtype
 
     @property
     def device(self) -> Any:  # noqa: ANN401
         """The device of the underlying array."""
-        return self.array.device  # ty: ignore[invalid-attribute-access]
+        return self.array.device
 
     @property
     def sharding(self) -> Sharding:
@@ -187,22 +185,22 @@ class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
     @property
     def ndim(self) -> int:
         """The number of dimensions of the underlying array."""
-        return self.array.ndim  # ty: ignore[invalid-attribute-access]
+        return self.array.ndim
 
     @property
     def shape(self) -> tuple[int, ...]:
         """The shape of the underlying array."""
-        return self.array.shape  # ty: ignore[invalid-attribute-access]
+        return self.array.shape
 
     @property
     def size(self) -> int:
         """The total number of elements in the underlying array."""
-        return self.array.size  # ty: ignore[invalid-attribute-access]
+        return self.array.size
 
     @property
     def at(self) -> Any:  # noqa: ANN401
         """The indexed update helper of the underlying array."""
-        return self.array.at  # ty: ignore[invalid-attribute-access]
+        return self.array.at
 
     @override
     def block_until_ready(self) -> Self:

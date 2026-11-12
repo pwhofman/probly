@@ -80,7 +80,7 @@ def numpy_function(
     kwargs: dict[str, Any],
 ) -> Any:  # noqa: ANN401
     """Implementation of numpy array functions for sample arrays."""
-    return func._implementation(*args, **kwargs)  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+    return func._implementation(*args, **kwargs)  # ty: ignore[missing-attribute]  # noqa: SLF001
 
 
 def numpy_function_override(

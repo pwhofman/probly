@@ -22,7 +22,12 @@ class Representer[**CtrIn, **In, Out, R: Representation](RepresentationPredictor
     during initialization and can be used to build the representation in the `represent` method.
     """
 
-    predictor: Predictor[In, Out]
+    if TYPE_CHECKING:
+        # The base interface promises reads; implementations may expose writable fields.
+        # Keep this property out of runtime inheritance so it cannot intercept assignments.
+        @property
+        def predictor(self) -> Predictor[In, Out]:
+            """The predictor used to build representations."""
 
     def __init__(
         self,
@@ -36,7 +41,8 @@ class Representer[**CtrIn, **In, Out, R: Representation](RepresentationPredictor
             predictor: The predictor to be used for building representations.
 
         """
-        self.predictor = predictor
+        # The type-only property is read-only; preserve subclass assignment hooks at runtime.
+        setattr(self, "predictor", predictor)  # noqa: B010
 
     @abstractmethod
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> R:

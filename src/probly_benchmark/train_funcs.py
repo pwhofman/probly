@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import TYPE_CHECKING, Any, TypedDict, cast
+from typing import TYPE_CHECKING, Any, NotRequired, TypedDict, cast
 
 from flextype import flexdispatch
 from laplace.baselaplace import BaseLaplace
@@ -157,7 +157,7 @@ def train_epoch_batchensemble(
     take the mean supervised loss on the ``[E*B, num_classes]`` output. Called directly
     (not via ``predict``) so the loss operates on a plain tensor.
     """
-    num_members = int(model.num_members)  # ty: ignore[unresolved-attribute]
+    num_members = int(model.num_members)  # ty: ignore[missing-attribute]
     criterion = _get_supervised_criterion(supervised_loss)
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
@@ -168,13 +168,13 @@ def train_epoch_batchensemble(
         scaler.scale(loss).backward()
         if grad_clip_norm is not None:
             scaler.unscale_(optimizer)
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[missing-attribute]
         scaler.step(optimizer)
         scaler.update()
     else:
         loss.backward()
         if grad_clip_norm is not None:
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[missing-attribute]
         optimizer.step()
     return loss.item()
 
@@ -201,13 +201,13 @@ def train_epoch_cross_entropy(
         scaler.scale(loss).backward()
         if grad_clip_norm is not None:
             scaler.unscale_(optimizer)
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[missing-attribute]
         scaler.step(optimizer)
         scaler.update()
     else:
         loss.backward()
         if grad_clip_norm is not None:
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[missing-attribute]
         optimizer.step()
     return loss.item()
 
@@ -616,6 +616,7 @@ class ValidationMetrics(TypedDict):
 
     loss: float
     acc: float
+    kl: NotRequired[float]
 
 
 @flexdispatch
@@ -651,11 +652,11 @@ def _(
             val_loss += F.cross_entropy(outputs, targets).item()
             val_acc += _accuracy(outputs, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
-    kl_value = collect_kl_divergence(model).item()  # ty: ignore[unresolved-attribute]
-    return {  # ty: ignore[invalid-return-type]
+    kl_value = collect_kl_divergence(model).item()  # ty: ignore[missing-attribute]
+    return {
         "loss": val_loss / len(val_loader),
         "acc": val_acc / num_instances,
-        "kl": kl_value,  # ty: ignore[invalid-key]
+        "kl": kl_value,
     }
 
 
@@ -669,9 +670,9 @@ def validate_batchensemble(
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> ValidationMetrics:
     """Validate a BatchEnsemble predictor with per-member CE loss and ensemble-averaged accuracy."""
-    num_members = int(model.num_members)  # ty: ignore[unresolved-attribute]
+    num_members = int(model.num_members)  # ty: ignore[missing-attribute]
     criterion = nn.CrossEntropyLoss()
-    model.eval()  # ty: ignore[unresolved-attribute]
+    model.eval()  # ty: ignore[missing-attribute]
     val_loss = 0.0
     val_acc = 0.0
     num_instances = 0
@@ -698,7 +699,7 @@ def validate_cross_entropy(
 ) -> ValidationMetrics:
     """Validate a dropout/dropconnect predictor with cross-entropy loss."""
     criterion = nn.CrossEntropyLoss()
-    model.eval()  # ty: ignore[unresolved-attribute]
+    model.eval()  # ty: ignore[missing-attribute]
     val_loss = 0.0
     val_acc = 0.0
     num_instances = 0
@@ -956,7 +957,7 @@ def evaluate_single_model(
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> dict[str, float]:
     """Evaluate methods with a single model on the test set."""
-    model.eval()  # ty:ignore[unresolved-attribute]
+    model.eval()  # ty:ignore[missing-attribute]
     all_probs: list[torch.Tensor] = []
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in test_loader:
@@ -988,7 +989,7 @@ def _(
     Keeps the model in train mode so dropout/dropconnect layers stay active, then
     averages softmax probabilities over ``samples`` stochastic forward passes.
     """
-    model.train()  # ty: ignore[unresolved-attribute]
+    model.train()  # ty: ignore[missing-attribute]
     all_probs: list[torch.Tensor] = []
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in test_loader:
@@ -1265,8 +1266,8 @@ def evaluate_batchensemble(
     Per-member metrics are keyed as ``member_<i>/accuracy``, ``member_<i>/nll``,
     ``member_<i>/ece``; the ensemble prediction is the mean softmax over members.
     """
-    num_members = int(model.num_members)  # ty: ignore[unresolved-attribute]
-    model.eval()  # ty: ignore[unresolved-attribute]
+    num_members = int(model.num_members)  # ty: ignore[missing-attribute]
+    model.eval()  # ty: ignore[missing-attribute]
     all_member_probs: list[list[torch.Tensor]] = [[] for _ in range(num_members)]
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in test_loader:
@@ -1456,7 +1457,7 @@ def _compute_metrics(probs: torch.Tensor, labels: torch.Tensor, n_bins: int) -> 
     eps = torch.finfo(probs.dtype).eps
     logprobs = torch.log(probs.clamp(min=eps))
     nll = F.nll_loss(logprobs, labels).item()
-    ece = expected_calibration_error(probs, labels, num_bins=n_bins).item()  # ty: ignore[unresolved-attribute]
+    ece = expected_calibration_error(probs, labels, num_bins=n_bins).item()  # ty: ignore[missing-attribute]
 
     return {"accuracy": accuracy, "nll": nll, "ece": ece}
 

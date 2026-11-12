@@ -793,12 +793,14 @@ class TestNumpySampleArrayFunctions:
         arr = np.arange(12).reshape(3, 4)
         sample = NumpySample(array=arr, sample_axis=0)
         result = np.expand_dims(sample, axis=2)
+        assert isinstance(result, NumpySample)
         assert result.sample_axis == 0
 
     def test_expand_dims_tuple_axes(self) -> None:
         arr = np.arange(12).reshape(3, 4)
         sample = NumpySample(array=arr, sample_axis=0)
         result = np.expand_dims(sample, axis=(0, 1))
+        assert isinstance(result, NumpySample)
         assert result.sample_axis == 2
 
     def test_squeeze_removes_singleton_after_sample(self) -> None:
@@ -910,8 +912,8 @@ class TestNumpySampleConcatenateStack:
         )
         b = NumpySample(array=np.arange(6, 12).reshape(2, 3), sample_axis=0)
         result = np.concatenate((a, b), axis=0)
-        assert result.weights is not None  # ty: ignore[unresolved-attribute]
-        np.testing.assert_allclose(result.weights, [0.4, 0.6, 1.0, 1.0])  # ty: ignore[unresolved-attribute]
+        assert result.weights is not None  # ty: ignore[missing-attribute]
+        np.testing.assert_allclose(result.weights, [0.4, 0.6, 1.0, 1.0])  # ty: ignore[missing-attribute]
 
     def test_stack_with_weights_raises(self) -> None:
         a = NumpySample(

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import ClassVar, override
+from typing import TYPE_CHECKING, ClassVar, override
 
 import jax
 from jax import numpy as jnp
@@ -25,6 +25,9 @@ from probly.representation.distribution.jax_categorical import (
     JaxProbabilityCategoricalDistribution,
 )
 from probly.representation.sample.jax import JaxSample
+
+if TYPE_CHECKING:
+    from probly.representation.representation import Representation
 
 
 class JaxBernoulliDistribution(BernoulliDistribution, JaxCategoricalDistribution, ABC):  # ty:ignore[conflicting-metaclass]
@@ -93,7 +96,7 @@ class JaxBernoulliDistributionSample(  # ty:ignore[conflicting-metaclass]
 ):
     """Sample type for jax Bernoulli distributins."""
 
-    sample_space: ClassVar[type[BernoulliDistribution]] = JaxBernoulliDistribution
+    sample_space: ClassVar[type[Representation]] = JaxBernoulliDistribution
 
 
 @create_bernoulli_distribution.register((jax.Array, Tracer))

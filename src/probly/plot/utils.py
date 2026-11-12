@@ -40,7 +40,7 @@ def _plot_line_with_outline(
     base_lw: float = kwargs.pop("linewidth", kwargs.pop("lw", rcParams["lines.linewidth"]))  # ty: ignore[invalid-assignment]
     color = kwargs.get("color", kwargs.get("c"))
     if color is None:
-        color = ax._get_lines.get_next_color()  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+        color = ax._get_lines.get_next_color()  # ty: ignore[missing-attribute]  # noqa: SLF001
     kwargs["color"] = color
     kwargs["linewidth"] = base_lw
     kwargs.pop("lw", None)

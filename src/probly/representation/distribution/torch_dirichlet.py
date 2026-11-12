@@ -35,7 +35,6 @@ class TorchDirichletDistribution(
     """
 
     alphas: torch.Tensor = field()
-    protected_axes: ClassVar[dict[str, int]] = {"alphas": 1}
     permitted_functions: ClassVar[set[Callable]] = {torch.mean, torch.sum, torch_average}
 
     def __post_init__(self) -> None:
@@ -88,7 +87,7 @@ class TorchDirichletDistribution(
         return self.alphas.numpy(force=force)
 
     @override
-    def __eq__(self, value: Any) -> torch.Tensor:  # ty: ignore[invalid-method-override]  # noqa: PYI032
+    def __eq__(self, value: Any) -> torch.Tensor:  # ty: ignore[incompatible-method-override]  # noqa: PYI032
         """Vectorized equality comparison."""
         if isinstance(value, TorchDirichletDistribution):
             eq = torch.eq(self.alphas, value.alphas)

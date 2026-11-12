@@ -23,7 +23,7 @@ class Embedding[T](Representation, ABC):
 class EmbeddingSample[T: Embedding](RepresentationSample[T]):
     """Abstract base class for samples of embedding representations."""
 
-    sample_space: ClassVar[type[Embedding]] = Embedding
+    sample_space: ClassVar[type[Representation]] = Embedding
 
     @classmethod
     def __instancehook__(cls, instance: object) -> bool:
@@ -33,7 +33,7 @@ class EmbeddingSample[T: Embedding](RepresentationSample[T]):
 class EmbeddingSampleSample[T: Embedding](RepresentationSample[EmbeddingSample[T]]):
     """Abstract base class for samples of samples of embedding representations."""
 
-    sample_space: ClassVar[type[EmbeddingSample]] = EmbeddingSample
+    sample_space: ClassVar[type[Representation]] = EmbeddingSample
 
     @classmethod
     def __instancehook__(cls, instance: object) -> bool:

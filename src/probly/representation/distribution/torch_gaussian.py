@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, Literal, override
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, override
 
 from ndlike.protected_axis.torch import TorchAxisProtected
 import torch
@@ -15,6 +15,9 @@ from probly.representation.distribution._common import (
 )
 from probly.representation.sample.torch import TorchSample
 
+if TYPE_CHECKING:
+    from probly.representation.representation import Representation
+
 
 @create_gaussian_distribution.register(torch.Tensor)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -25,7 +28,6 @@ class TorchGaussianDistribution(TorchAxisProtected[Any], GaussianDistribution[to
     var: torch.Tensor = field()
 
     type: ClassVar[Literal["gaussian"]] = "gaussian"
-    protected_axes: ClassVar[dict[str, int]] = {"mean": 0, "var": 0}
 
     def __post_init__(self) -> None:
         """Validate shapes and variances."""
@@ -72,7 +74,7 @@ class TorchGaussianDistribution(TorchAxisProtected[Any], GaussianDistribution[to
         return TorchSample(tensor=samples, sample_dim=0)
 
     @override
-    def __eq__(self, other: Any) -> torch.Tensor:  # ty: ignore[invalid-method-override]  # noqa: PYI032
+    def __eq__(self, other: Any) -> torch.Tensor:  # ty: ignore[incompatible-method-override]  # noqa: PYI032
         """Compare two Gaussians by their parameters."""
         if not isinstance(other, TorchGaussianDistribution):
             return NotImplemented
@@ -94,7 +96,7 @@ class TorchGaussianDistributionSample(  # ty:ignore[conflicting-metaclass]
 ):
     """Sample type for empirical second-order Gaussian distributions."""
 
-    sample_space: ClassVar[type[GaussianDistribution]] = TorchGaussianDistribution
+    sample_space: ClassVar[type[Representation]] = TorchGaussianDistribution
 
     @override
     @classmethod

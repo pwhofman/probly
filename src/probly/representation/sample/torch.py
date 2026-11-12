@@ -122,27 +122,25 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
         """The axis along which samples are organized."""
         return self.sample_dim
 
-    # ty 0.0.82 cannot bind protocol properties through a union-bounded TypeVar.
-    # Keep suppressions local so unused-ignore-comment flags them once fixed.
     @property
     def dtype(self) -> torch.dtype:
         """The data type of the underlying array."""
-        return self.tensor.dtype  # ty: ignore[invalid-attribute-access]
+        return self.tensor.dtype
 
     @property
     def device(self) -> Any:  # noqa: ANN401
         """The device of the underlying array."""
-        return self.tensor.device  # ty: ignore[invalid-attribute-access]
+        return self.tensor.device
 
     @property
     def ndim(self) -> int:
         """The number of dimensions of the underlying array."""
-        return self.tensor.ndim  # ty: ignore[invalid-attribute-access]
+        return self.tensor.ndim
 
     @property
     def shape(self) -> tuple[int, ...]:
         """The shape of the underlying array."""
-        return self.tensor.shape  # ty: ignore[invalid-attribute-access]
+        return self.tensor.shape
 
     @overload
     def size(self, dim: int) -> int: ...
@@ -153,7 +151,7 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
     @override
     def size(self, dim: int | None = None) -> int | torch.Size:
         """The total number of elements in the underlying array."""
-        return self.tensor.size(dim)  # ty:ignore[no-matching-overload]
+        return self.tensor.size(dim)
 
     @override
     @property
@@ -212,7 +210,7 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
     @override
     def sample_mean(self) -> D:
         """Compute the mean of the sample."""
-        return torch_average(self.tensor, dim=self.sample_dim, weights=self.weights)  # ty:ignore[invalid-return-type, invalid-argument-type]
+        return cast("D", torch_average(self.tensor, dim=self.sample_dim, weights=self.weights))
 
     @override
     def sample_std(self, ddof: int = 0) -> D:
@@ -231,7 +229,7 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
             if ddof != 0:
                 msg = "Weighted samples do not support ddof > 0."
                 raise ValueError(msg)
-            average = torch_average(tensor, dim=self.sample_dim, weights=weights, keepdim=True)  # ty:ignore[invalid-argument-type]
+            average = torch_average(tensor, dim=self.sample_dim, weights=weights, keepdim=True)
             variance = torch_average((tensor - average) ** 2, dim=self.sample_dim, weights=weights)  # ty:ignore[unsupported-operator]
             return variance  # ty:ignore[invalid-return-type]
 
@@ -320,7 +318,7 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
     @override
     def numpy(self, *, force: bool = False) -> NDArray[Any]:
         """Convert to a numpy array."""
-        return self.tensor.numpy(force=force)  # ty:ignore[invalid-argument-type]
+        return self.tensor.numpy(force=force)
 
     @override
     def detach(self) -> Self:
@@ -353,7 +351,7 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
         Returns:
             A copy of the TorchSample.
         """
-        tensor = self.tensor.to(*args, **kwargs)  # ty:ignore[no-matching-overload]
+        tensor = self.tensor.to(*args, **kwargs)
         weights = self.weights.to(*args, **kwargs) if self.weights is not None else None
 
         if tensor is self.tensor and weights is self.weights:

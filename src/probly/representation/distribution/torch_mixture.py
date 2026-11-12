@@ -123,7 +123,7 @@ class TorchMixtureDistribution[D: Distribution, T: TorchLike](
         return TorchSample(tensor=selected, sample_dim=0)
 
     @override
-    def __eq__(self, value: Any) -> torch.Tensor:  # ty: ignore[invalid-method-override]  # noqa: PYI032
+    def __eq__(self, value: Any) -> torch.Tensor:  # ty: ignore[incompatible-method-override]  # noqa: PYI032
         """Vectorized equality comparison."""
         if not isinstance(value, TorchMixtureDistribution):
             return NotImplemented
@@ -148,7 +148,7 @@ class TorchMixtureDistribution[D: Distribution, T: TorchLike](
     @property
     def mean(self) -> T:
         """Compute the mean of the mixture distribution."""
-        component_means = self.components.mean  # ty:ignore[unresolved-attribute]
+        component_means = self.components.mean  # ty:ignore[missing-attribute]
         weights = self.mixture_weights
 
         return torch_average(component_means, dim=-1, weights=weights)  # ty:ignore[invalid-return-type]

@@ -96,7 +96,7 @@ class TorchGraphPosteriorNetworkBase[T, F](nn.Module, ABC):
         self.batch_norm = nn.BatchNorm1d(latent_dim)
         self.norm_flow = RadialNormalizingFlowStack(dim=latent_dim, num_classes=num_classes, num_flows=num_flows)
         # PyG marks the optional edge_update hook abstract; APPNP uses propagate instead.
-        self.propagation = APPNP(K=propagation_steps, alpha=teleport_probability, add_self_loops=add_self_loops)  # ty: ignore[call-non-callable]
+        self.propagation = APPNP(K=propagation_steps, alpha=teleport_probability, add_self_loops=add_self_loops)  # ty: ignore[abstract-class-instantiation]
         self.register_buffer(
             "class_counts",
             None if class_counts is None else torch.as_tensor(class_counts, dtype=torch.float),
@@ -429,10 +429,10 @@ class TorchCUQGraphNeuralNetwork(
         )
         if convolution_name == "appnp":
             # PyG's optional edge_update hook is unused by this propagation layer.
-            self.graph_module = APPNP(K=propagation_steps, alpha=teleport_probability, add_self_loops=add_self_loops)  # ty: ignore[call-non-callable]
+            self.graph_module = APPNP(K=propagation_steps, alpha=teleport_probability, add_self_loops=add_self_loops)  # ty: ignore[abstract-class-instantiation]
         elif convolution_name == "gcn":
             # PyG's optional edge_update hook is unused by this convolution layer.
-            self.graph_module = GCNConv(self.encoder_dim, self.encoder_dim)  # ty: ignore[call-non-callable]
+            self.graph_module = GCNConv(self.encoder_dim, self.encoder_dim)  # ty: ignore[abstract-class-instantiation]
         else:
             msg = f"Unsupported CUQ-GNN convolution: {convolution_name!r}."
             raise ValueError(msg)

@@ -15,7 +15,7 @@ dependencies = [
     "numpy>=2.1.0", # first cp313 wheels
     "tqdm>=4.25.0",
     "flextype>=0.3.0",
-    "ndlike>=0.2.4",
+    "ndlike>=0.4.1",
 ]
 authors = [
     { name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de" },
@@ -119,9 +119,9 @@ test = [
     { include-group = "river" },
 ]
 lint = [
-    "ruff>=0.16.8",                                         # for linting
+    "ruff>=0.17.5",                                         # for linting
     "prek>=0.3.8",                                          # for running the linters pre-commit hooks
-    "ty>=0.0.82",                                           # for static type checking
+    "ty>=0.0.101",                                          # for static type checking
     "sigx @ git+https://github.com/Cortys/sigx.git@master",
 ]
 docs = [
@@ -303,4 +303,4 @@ extra-paths = ["./stubs"]
 include = ["tests/probly/**"]
 
 [tool.ty.overrides.rules]
-unresolved-import = "ignore"
+import-not-found = "ignore"

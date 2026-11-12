@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, override
 
 import jax
@@ -131,9 +131,8 @@ class JaxDistanceBasedCredalSet(
 ):
     """Distance-based credal set around a nominal categorical distribution."""
 
-    nominal: JaxCategoricalDistribution
-    radius: jax.Array
-    protected_axes: ClassVar[dict[str, int]] = {"nominal": 0, "radius": 0}
+    nominal: JaxCategoricalDistribution = field()
+    radius: jax.Array = field()
 
     def __post_init__(self) -> None:
         """Validate that nominal is a valid categorical distribution and radius is non-negative."""
@@ -208,9 +207,8 @@ class JaxDirichletLevelSetCredalSet(
     ``threshold`` times the peak density.
     """
 
-    alphas: jax.Array
-    threshold: jax.Array
-    protected_axes: ClassVar[dict[str, int]] = {"alphas": 1, "threshold": 0}
+    alphas: jax.Array = field()
+    threshold: jax.Array = field()
 
     def __post_init__(self) -> None:
         """Validate alpha parameters and threshold."""
@@ -340,9 +338,8 @@ class JaxProbabilityIntervalsCredalSet(
 ):
     """Credal set represented by lower/upper categorical bounds."""
 
-    lower_bounds: jax.Array
-    upper_bounds: jax.Array
-    protected_axes: ClassVar[dict[str, int]] = {"lower_bounds": 1, "upper_bounds": 1}
+    lower_bounds: jax.Array = field()
+    upper_bounds: jax.Array = field()
 
     @override
     @classmethod

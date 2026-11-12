@@ -62,8 +62,8 @@ def test_sequential_basic() -> None:
 def test_sequential_with_name() -> None:
     """Test sequential composition with custom name."""
     composed: Traverser[Any] = sequential(dummy_traverser, name="test_traverser")
-    assert composed.__name__ == "test_traverser"  # ty:ignore[unresolved-attribute]
-    assert "test_traverser" in composed.__qualname__  # ty:ignore[unresolved-attribute]
+    assert composed.__name__ == "test_traverser"  # ty:ignore[missing-attribute]
+    assert "test_traverser" in composed.__qualname__  # ty:ignore[missing-attribute]
 
 
 def test_sequential_empty() -> None:
@@ -107,8 +107,8 @@ def test_top_sequential_basic() -> None:
 def test_top_sequential_with_name() -> None:
     """Test top_sequential with custom name."""
     composed = top_sequential(dummy_traverser, name="top_test")
-    assert composed.__name__ == "top_test"  # ty:ignore[unresolved-attribute]
-    assert "top_test" in composed.__qualname__  # ty:ignore[unresolved-attribute]
+    assert composed.__name__ == "top_test"  # ty:ignore[missing-attribute]
+    assert "top_test" in composed.__qualname__  # ty:ignore[missing-attribute]
 
 
 def test_is_union_type() -> None:

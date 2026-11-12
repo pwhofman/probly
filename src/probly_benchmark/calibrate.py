@@ -31,7 +31,7 @@ def _classification_metrics(logits: torch.Tensor, targets: torch.Tensor) -> dict
     probs = torch.softmax(logits, dim=1)
     return {
         "val_nll": float(F.cross_entropy(logits, targets).item()),
-        "val_ece": float(expected_calibration_error(probs, targets).item()),  # ty: ignore[unresolved-attribute]
+        "val_ece": float(expected_calibration_error(probs, targets).item()),  # ty: ignore[missing-attribute]
     }
 
 

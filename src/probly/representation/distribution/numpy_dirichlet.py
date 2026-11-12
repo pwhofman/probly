@@ -34,7 +34,6 @@ class NumpyDirichletDistribution(
     """
 
     alphas: np.ndarray = field()
-    protected_axes: ClassVar[dict[str, int]] = {"alphas": 1}
     permitted_functions: ClassVar[set[Callable]] = {np.mean, np.sum, np.average}
     permitted_ufuncs: ClassVar[dict[np.ufunc, list[str]]] = {
         np.add: ["__call__"],
@@ -92,7 +91,7 @@ class NumpyDirichletDistribution(
         return np.maximum(result, 1e-10)
 
     @override
-    def __eq__(self, value: Any) -> np.ndarray:  # ty: ignore[invalid-method-override]  # noqa: PYI032
+    def __eq__(self, value: Any) -> np.ndarray:  # ty: ignore[incompatible-method-override]  # noqa: PYI032
         """Vectorized equality comparison."""
         if isinstance(value, NumpyDirichletDistribution):
             eq = np.equal(self.alphas, value.alphas)

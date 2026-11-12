@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import ClassVar, override
+from typing import TYPE_CHECKING, ClassVar, override
 
 import torch
 
@@ -20,6 +20,9 @@ from probly.representation.distribution.torch_categorical import (
     TorchProbabilityCategoricalDistribution,
 )
 from probly.representation.sample.torch import TorchSample
+
+if TYPE_CHECKING:
+    from probly.representation.representation import Representation
 
 
 class TorchBernoulliDistribution(BernoulliDistribution, TorchCategoricalDistribution, ABC):  # ty:ignore[conflicting-metaclass]
@@ -87,7 +90,7 @@ class TorchBernoulliDistributionSample(  # ty:ignore[conflicting-metaclass]
 ):
     """Sample type for torch Bernoulli distributions."""
 
-    sample_space: ClassVar[type[BernoulliDistribution]] = TorchBernoulliDistribution
+    sample_space: ClassVar[type[Representation]] = TorchBernoulliDistribution
 
 
 @create_bernoulli_distribution.register(torch.Tensor)

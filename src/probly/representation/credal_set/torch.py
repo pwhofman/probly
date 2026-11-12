@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, override
 
 from ndlike.protected_axis.torch import TorchAxisProtected
@@ -128,9 +128,8 @@ class TorchDistanceBasedCredalSet(
 ):
     """Distance-based credal set around a nominal categorical distribution."""
 
-    nominal: TorchCategoricalDistribution
-    radius: torch.Tensor
-    protected_axes: ClassVar[dict[str, int]] = {"nominal": 0, "radius": 0}
+    nominal: TorchCategoricalDistribution = field()
+    radius: torch.Tensor = field()
 
     def __post_init__(self) -> None:
         """Validate that nominal is a valid categorical distribution and radius is non-negative."""
@@ -205,9 +204,8 @@ class TorchDirichletLevelSetCredalSet(
     ``threshold`` times the peak density.
     """
 
-    alphas: torch.Tensor
-    threshold: torch.Tensor
-    protected_axes: ClassVar[dict[str, int]] = {"alphas": 1, "threshold": 0}
+    alphas: torch.Tensor = field()
+    threshold: torch.Tensor = field()
 
     def __post_init__(self) -> None:
         """Validate alpha parameters and threshold."""
@@ -336,9 +334,8 @@ class TorchProbabilityIntervalsCredalSet(
 ):
     """Credal set represented by lower/upper categorical bounds."""
 
-    lower_bounds: torch.Tensor
-    upper_bounds: torch.Tensor
-    protected_axes: ClassVar[dict[str, int]] = {"lower_bounds": 1, "upper_bounds": 1}
+    lower_bounds: torch.Tensor = field()
+    upper_bounds: torch.Tensor = field()
 
     @override
     @classmethod

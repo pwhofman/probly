@@ -40,7 +40,6 @@ class JaxDirichletDistribution(
     """
 
     alphas: jax.Array = field()
-    protected_axes: ClassVar[dict[str, int]] = {"alphas": 1}
     permitted_functions: ClassVar[set[Callable]] = {jax_mean, jax_sum, jax_average, jax_add, jax_subtract}
 
     def __post_init__(self) -> None:
@@ -97,7 +96,7 @@ class JaxDirichletDistribution(
         return values
 
     @override
-    def __eq__(self, value: Any) -> jax.Array:  # ty: ignore[invalid-method-override] # noqa: PYI032
+    def __eq__(self, value: Any) -> jax.Array:  # ty: ignore[incompatible-method-override] # noqa: PYI032
         """Vectorized equality comparison."""
         if isinstance(value, JaxDirichletDistribution):
             eq = jnp.equal(self.alphas, value.alphas)

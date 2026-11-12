@@ -21,13 +21,20 @@ from probly.representation.sample import NumpySample
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from ndlike.protected_axis.numpy import NumpyProtectedValue
 
-class NumpyCategoricalDistribution(CategoricalDistribution, NumpyAxisProtected[np.ndarray], ABC):
+    from probly.representation.representation import Representation
+
+
+class NumpyCategoricalDistribution(CategoricalDistribution[np.ndarray], NumpyAxisProtected[np.ndarray], ABC):
     """A categorical distribution stored as a numpy array.
 
     Shape: (..., num_classes)
     The last axis represents the category dimension.
     """
+
+    array: np.ndarray
+    protected_axes: ClassVar[dict[str, int]] = {"array": 1}
 
     @property
     @abstractmethod
@@ -35,7 +42,9 @@ class NumpyCategoricalDistribution(CategoricalDistribution, NumpyAxisProtected[n
         """Get the underlying array representing the categorical distribution."""
 
     @override
-    def _postprocess_protected_values(self, values: dict[str, np.ndarray], func: Callable) -> dict[str, np.ndarray]:
+    def _postprocess_protected_values(
+        self, values: dict[str, NumpyProtectedValue], func: Callable
+    ) -> dict[str, NumpyProtectedValue]:
         if func in (np.mean, np.average):
             values["array"] = self.probabilities
 
@@ -115,7 +124,6 @@ class NumpyProbabilityCategoricalDistribution(NumpyCategoricalDistribution):
     """A categorical distribution represented by unnormalized probabilities."""
 
     array: np.ndarray = field()
-    protected_axes: ClassVar[dict[str, int]] = {"array": 1}
     permitted_functions: ClassVar[set[Callable]] = {np.mean, np.average}
 
     def __post_init__(self) -> None:
@@ -137,7 +145,7 @@ class NumpyProbabilityCategoricalDistribution(NumpyCategoricalDistribution):
         return self.array
 
     @override
-    def __eq__(self, value: Any) -> np.ndarray:  # ty: ignore[invalid-method-override]  # noqa: PYI032
+    def __eq__(self, value: Any) -> np.ndarray:  # ty: ignore[incompatible-method-override]  # noqa: PYI032
         """Vectorized equality comparison."""
         if isinstance(value, NumpyCategoricalDistribution):
             eq = np.equal(self.probabilities, value.probabilities)
@@ -161,7 +169,6 @@ class NumpyLogitCategoricalDistribution(NumpyCategoricalDistribution):
     """A categorical distribution represented by logits."""
 
     array: np.ndarray = field()
-    protected_axes: ClassVar[dict[str, int]] = {"array": 1}
     permitted_functions: ClassVar[set[Callable]] = {np.mean, np.average}
 
     def __post_init__(self) -> None:
@@ -180,7 +187,7 @@ class NumpyLogitCategoricalDistribution(NumpyCategoricalDistribution):
         return self.array
 
     @override
-    def __eq__(self, value: Any) -> np.ndarray:  # ty: ignore[invalid-method-override]  # noqa: PYI032
+    def __eq__(self, value: Any) -> np.ndarray:  # ty: ignore[incompatible-method-override]  # noqa: PYI032
         """Vectorized equality comparison."""
         if isinstance(value, NumpyCategoricalDistribution):
             eq = np.equal(self.log_probabilities, value.log_probabilities)
@@ -204,7 +211,7 @@ class NumpyCategoricalDistributionSample(  # ty:ignore[conflicting-metaclass]
 ):
     """Sample type for empirical second-order categorical distributions."""
 
-    sample_space: ClassVar[type[CategoricalDistribution]] = NumpyCategoricalDistribution
+    sample_space: ClassVar[type[Representation]] = NumpyCategoricalDistribution
 
     @override
     @classmethod
