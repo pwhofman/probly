@@ -2,7 +2,7 @@
 
 Run from ``experiments/llm-probly``::
 
-    uv run python -m scripts.label --model qwen0.5b --n 50
+    uv run python -m scripts.label --model qwen0.5b --n 200
 
 For every row this
 
@@ -10,7 +10,7 @@ For every row this
   (no model call is needed, only the dataset),
 * adds ``correct_alias`` / ``correct`` for the greedy answer and
   ``samples_correct`` for the 10 samples, using alias matching,
-* rewrites ``data/<model>/triviaqa_<n>.jsonl`` and prints the accuracy.
+* rewrites ``data/<model>/<dataset>_<n>.jsonl`` and prints the accuracy.
 """
 
 from __future__ import annotations
@@ -18,13 +18,14 @@ from __future__ import annotations
 import argparse
 
 from common.correctness import is_correct, matching_alias
-from common.data import DATA_DIR, DEFAULT_SEED, load_jsonl, load_trivia_questions, save_jsonl
+from common.data import DATASETS, DEFAULT_SEED, cache_path, load_jsonl, load_questions, save_jsonl
 
 
 def parse_args() -> argparse.Namespace:
     """Read the command line options."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--model", default="qwen0.5b")
+    parser.add_argument("--dataset", choices=sorted(DATASETS), default="triviaqa")
     parser.add_argument("--n", type=int, default=50, help="number of questions")
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     return parser.parse_args()
@@ -33,14 +34,14 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     """Label every row and print a short summary."""
     args = parse_args()
-    path = DATA_DIR / args.model / f"triviaqa_{args.n}.jsonl"
+    path = cache_path(args.model, args.n, args.dataset)
     rows = load_jsonl(path)
-    fresh = {q["id"]: q for q in load_trivia_questions(args.n, seed=args.seed)}
+    fresh = {q["id"]: q for q in load_questions(args.dataset, args.n, seed=args.seed)}
 
     for row in rows:
         ref = fresh[row["id"]]
         if ref["question"] != row["question"]:
-            msg = f"Question {row['id']} does not match TriviaQA; was the file made with another seed?"
+            msg = f"Question {row['id']} does not match TriviaQA; was the file made with another seed or dataset?"
             raise ValueError(msg)
         row["aliases"] = ref["aliases"]
         row["correct_alias"] = is_correct(row["greedy_answer"], row["aliases"])

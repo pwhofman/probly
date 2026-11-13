@@ -10,8 +10,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import random
+from typing import TYPE_CHECKING
 
 from datasets import load_dataset
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 DATASET_NAME = "mandarjoshi/trivia_qa"
 DATASET_CONFIG = "rc.nocontext"
@@ -64,14 +68,34 @@ def load_jsonl(path: str | Path) -> list[dict]:
         return [json.loads(line) for line in f if line.strip()]
 
 
-def load_data(model: str = "qwen0.5b", n: int = 50) -> list[dict]:
-    """Load the shared generated data, e.g. ``load_data("qwen0.5b", 50)``.
+# Every dataset loader returns rows with ``id``, ``question`` and ``aliases``.
+DATASETS: dict[str, Callable[..., list[dict]]] = {
+    "triviaqa": load_trivia_questions,
+}
+
+
+def load_questions(dataset: str, num_questions: int, seed: int = DEFAULT_SEED) -> list[dict]:
+    """Load ``num_questions`` questions of a registered dataset."""
+    if dataset not in DATASETS:
+        msg = f"Unknown dataset {dataset!r}; known: {sorted(DATASETS)}"
+        raise ValueError(msg)
+    return DATASETS[dataset](num_questions, seed=seed)
+
+
+def cache_path(model: str, n: int, dataset: str = "triviaqa", suffix: str = ".jsonl") -> Path:
+    """Path of a cache file, e.g. ``data/qwen0.5b/triviaqa_200.jsonl`` (``suffix=".meta.json"`` for the meta file)."""
+    return DATA_DIR / model / f"{dataset}_{n}{suffix}"
+
+
+def load_data(model: str = "qwen0.5b", n: int = 50, dataset: str = "triviaqa") -> list[dict]:
+    """Load the shared generated data, e.g. ``load_data("qwen0.5b", 200)``.
 
     Args:
-        model: Sub-folder of ``data/`` (``"qwen0.5b"`` or ``"smollm2"``).
-        n: Number of questions (``5`` or ``50``).
+        model: Sub-folder of ``data/`` (``"qwen0.5b"``, ``"qwen1.5b"``, ``"qwen3b"``, ...).
+        n: Number of questions (``5``, ``50`` or ``200``).
+        dataset: Dataset name (``"triviaqa"``).
 
     Returns:
         One dict per question, in ``id`` order.
     """
-    return load_jsonl(DATA_DIR / model / f"triviaqa_{n}.jsonl")
+    return load_jsonl(cache_path(model, n, dataset))
