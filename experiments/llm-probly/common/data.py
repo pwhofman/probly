@@ -68,9 +68,45 @@ def load_jsonl(path: str | Path) -> list[dict]:
         return [json.loads(line) for line in f if line.strip()]
 
 
-# Every dataset loader returns rows with ``id``, ``question`` and ``aliases``.
+MMLU_NAME = "LM-Polygraph/mmlu"
+MMLU_CONFIG = "continuation"  # 5-shot prompt per subject, at most 100 test questions per subject
+MMLU_SPLIT = "test"
+# Chat models otherwise start explaining ("Let's analyze each option...") and never reach a letter.
+MMLU_INSTRUCTION = "Reply with only the letter (A, B, C or D) of the correct answer."
+
+
+def load_mmlu_questions(num_questions: int, seed: int = DEFAULT_SEED) -> list[dict]:
+    """Sample multiple-choice questions from LM-Polygraph's prepared MMLU.
+
+    LM-Polygraph's ``continuation`` config stores, per question, a ready prompt
+    (``input``: subject description, five solved examples, then the question
+    with options A-D and an empty ``Answer:``) and the gold letter (``output``).
+    That prompt is meant for base models, which simply continue with a letter.
+    Instruct models treat it as a chat message and start explaining, so we put a
+    one-line instruction (``MMLU_INSTRUCTION``) in front and otherwise keep it unchanged.
+
+    Returns:
+        Dicts with ``id``, ``question`` (only the last question block, for reading),
+        ``prompt`` (the full prompt that is sent) and ``aliases`` (``[gold letter]``).
+    """
+    ds = load_dataset(MMLU_NAME, MMLU_CONFIG, split=MMLU_SPLIT)
+    indices = list(range(len(ds)))
+    random.Random(seed).shuffle(indices)  # noqa: S311 (not used for security)
+
+    questions = []
+    for qid, idx in enumerate(indices[:num_questions]):
+        item = ds[idx]
+        question = item["input"].rsplit("Q:", 1)[-1].removesuffix("Answer:").strip()
+        prompt = f"{MMLU_INSTRUCTION}\n\n{item['input']}"
+        questions.append({"id": qid, "question": question, "prompt": prompt, "aliases": [item["output"].strip()]})
+    return questions
+
+
+# Every dataset loader returns rows with ``id``, ``question`` and ``aliases``; a loader
+# may add ``prompt`` when the dataset brings its own prompt (then it is sent as is).
 DATASETS: dict[str, Callable[..., list[dict]]] = {
     "triviaqa": load_trivia_questions,
+    "mmlu": load_mmlu_questions,
 }
 
 

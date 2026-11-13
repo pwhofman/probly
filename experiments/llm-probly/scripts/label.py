@@ -17,8 +17,12 @@ from __future__ import annotations
 
 import argparse
 
-from common.correctness import is_correct, matching_alias
+from common.correctness import is_correct, is_correct_letter, matching_alias
 from common.data import DATASETS, DEFAULT_SEED, cache_path, load_jsonl, load_questions, save_jsonl
+
+
+# How an answer is judged, per dataset: alias matching for free text, exact letter for multiple choice.
+CORRECTNESS = {"triviaqa": is_correct, "mmlu": is_correct_letter}
 
 
 def parse_args() -> argparse.Namespace:
@@ -41,12 +45,13 @@ def main() -> None:
     for row in rows:
         ref = fresh[row["id"]]
         if ref["question"] != row["question"]:
-            msg = f"Question {row['id']} does not match TriviaQA; was the file made with another seed or dataset?"
+            msg = f"Question {row['id']} does not match {args.dataset}; was the file made with another seed or dataset?"
             raise ValueError(msg)
         row["aliases"] = ref["aliases"]
-        row["correct_alias"] = is_correct(row["greedy_answer"], row["aliases"])
+        judge = CORRECTNESS[args.dataset]
+        row["correct_alias"] = judge(row["greedy_answer"], row["aliases"])
         row["correct"] = row["correct_alias"]
-        row["samples_correct"] = [is_correct(s, row["aliases"]) for s in row["samples"]]
+        row["samples_correct"] = [judge(s, row["aliases"]) for s in row["samples"]]
 
     save_jsonl(rows, path)
 

@@ -20,7 +20,7 @@ run refuses to continue if the settings differ.
 
 The same seed gives the same questions in the same order, and answers are
 seeded per question, so the first 50 rows of a 200-question file equal the
-50-question file made with the same model, precision and seed.
+50-question file of the same model.
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ import torch
 import transformers
 from transformers import set_seed
 
-from common.data import DATASETS, DEFAULT_SEED, cache_path, load_jsonl, load_questions
+from common.data import DATASETS, DEFAULT_SEED, MMLU_INSTRUCTION, cache_path, load_jsonl, load_questions
 from common.generation import generate_answers, stop_at_newline_config
 from probly.representer.sampler.huggingface import load_model
 
@@ -59,9 +59,15 @@ MAX_NEW_TOKENS = 32
 CACHE_VERSION = 2
 
 
-def build_prompt(question: str) -> str:
-    """Return the user message sent to the model (the chat template is applied in generate_answers)."""
-    return f"{INSTRUCTION}\nQuestion: {question}"
+def build_prompt(row: dict) -> str:
+    """Return the user message sent to the model (the chat template is applied in generate_answers).
+
+    Datasets that bring their own prompt (MMLU) are sent as the loader built it;
+    free-text questions get our instruction.
+    """
+    if "prompt" in row:
+        return row["prompt"]
+    return f"{INSTRUCTION}\nQuestion: {row['question']}"
 
 
 def parse_args() -> argparse.Namespace:
@@ -85,7 +91,7 @@ def settings(args: argparse.Namespace) -> dict:
         "n": args.n,
         "seed": args.seed,
         "precision": args.precision,
-        "instruction": INSTRUCTION,
+        "instruction": INSTRUCTION if args.dataset == "triviaqa" else f"{MMLU_INSTRUCTION} + LM-Polygraph prompt",
         "num_samples": NUM_SAMPLES,
         "temperature": TEMPERATURE,
         "max_new_tokens": MAX_NEW_TOKENS,
@@ -151,7 +157,7 @@ def main() -> None:
         if q["id"] in done:
             continue
         set_seed(args.seed + q["id"])  # reproducible samples per question
-        prompt = build_prompt(q["question"])
+        prompt = build_prompt(q)
         common = {"max_new_tokens": MAX_NEW_TOKENS, "generation_config": gen_config}
         greedy = generate_answers(model, tok, prompt, num_return_sequences=1, do_sample=False, **common)[0]
         samples = generate_answers(

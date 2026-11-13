@@ -39,3 +39,26 @@ def matching_alias(answer: str, aliases: list[str]) -> str | None:
 def is_correct(answer: str, aliases: list[str]) -> bool:
     """Return whether ``answer`` contains any of the reference ``aliases``."""
     return matching_alias(answer, aliases) is not None
+
+
+_LETTER = re.compile(r"^\W*([A-D])(?![A-Za-z])")
+_LETTER_IN_SENTENCE = re.compile(r"\banswer is\W*([A-D])(?![A-Za-z])", re.IGNORECASE)
+
+
+def answer_letter(answer: str) -> str | None:
+    """The option letter of an MMLU answer, else ``None``.
+
+    Accepts answers that start with the letter ("B", "(B)", "B. Paris") and short
+    sentences such as "The answer is B."; anything else counts as no answer.
+    """
+    match = _LETTER.match(answer.strip()) or _LETTER_IN_SENTENCE.search(answer)
+    return match.group(1) if match else None
+
+
+def is_correct_letter(answer: str, aliases: list[str]) -> bool:
+    """Exact-letter correctness for multiple choice: the chosen letter equals the gold letter.
+
+    Alias matching cannot be used here, because normalisation removes the article "a",
+    which is also the option letter A.
+    """
+    return answer_letter(answer) == aliases[0].strip().upper()
