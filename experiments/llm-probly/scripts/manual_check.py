@@ -21,6 +21,7 @@ before reporting the overall label error rate.
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import random
 
@@ -81,6 +82,13 @@ def label_error_rate(items: list[dict], share_auto_correct: float) -> dict:
     }
 
 
+def closest_aliases(answer: str, aliases: list[str], k: int = MAX_ALIASES_SHOWN) -> list[str]:
+    """The canonical answer first, then the aliases most similar to ``answer``."""
+    canonical, rest = aliases[0], aliases[1:]
+    ranked = sorted(rest, key=lambda a: difflib.SequenceMatcher(None, a.lower(), answer.lower()).ratio(), reverse=True)
+    return [canonical, *ranked[: k - 1]]
+
+
 def ask(prompt: str) -> bool:
     """Ask until the user types y or n."""
     while True:
@@ -98,7 +106,8 @@ def run_part(rows: list[dict], args: argparse.Namespace) -> None:
         print(f"\n[{i}/{len(picked)}] id {r['id']}")
         print(f"Question: {r['question']}")
         print(f"Answer:   {r['greedy_answer']}")
-        print(f"Aliases:  {r['aliases'][:MAX_ALIASES_SHOWN]}")
+        shown = closest_aliases(r["greedy_answer"], r["aliases"])
+        print(f"Aliases:  {shown}  ({len(r['aliases'])} in total; answer first, then the closest ones)")
         manual = ask("Is the answer correct? (y/n): ")
         results.append({"id": r["id"], "auto": r["correct"], "manual": manual})
 
