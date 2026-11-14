@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from common.data import cache_path, load_jsonl
-from common.evaluate import rejection_curve
+from common.evaluate import kept_accuracy_curve
 from common.io import RESULTS_ROOT
 from common.summary import compare_models, find_models
 
@@ -124,13 +124,13 @@ def plot_rejection(rows: list[dict], folder: Path, title: str, out: Path) -> Non
     fig, ax = plt.subplots(figsize=(7.5, 4.2), facecolor=SURFACE)
 
     correct_all = np.array(list(correct_by_id.values()))
-    rejected, oracle = rejection_curve(~correct_all, correct_all)  # perfect: wrong answers first
+    rejected, oracle = kept_accuracy_curve(~correct_all, correct_all)  # perfect: wrong answers first
     ax.plot(rejected, oracle, color=INK, linewidth=1.5, linestyle="--", label="oracle (perfect)")
     ax.axhline(correct_all.mean(), color=INK_2, linewidth=1, linestyle=":", label="random")
 
     for method, record in load_method_scores(folder).items():
         correct = [correct_by_id[str(i)] for i in record["ids"]]
-        rejected, accuracy = rejection_curve(record["uncertainty"], correct)
+        rejected, accuracy = kept_accuracy_curve(record["uncertainty"], correct)
         color, marker = STYLE.get(method, OTHER)
         keep = rejected <= 0.9  # the last points average only a few questions: too noisy
         ax.plot(rejected[keep], accuracy[keep], color=color, linewidth=2, label=method,

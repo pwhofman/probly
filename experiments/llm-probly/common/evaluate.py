@@ -62,7 +62,7 @@ def _rejection_area(u: np.ndarray, quality: np.ndarray) -> float:
     return float(mean_quality.mean())
 
 
-def rejection_curve(
+def kept_accuracy_curve(
     uncertainty: ArrayLike,
     correct: ArrayLike,
     n_tie_seeds: int = 20,
@@ -71,7 +71,8 @@ def rejection_curve(
     """Accuracy of the kept questions when the most uncertain ones are rejected.
 
     Returns ``(rejected_fraction, accuracy)`` with one point per number of
-    rejected questions (0, 1, ..., n-1). The mean of ``accuracy`` is the area
+    rejected questions (0, 1, ..., n-1), used for the plots. ``rejection_curve``
+    below gives the same idea as error rates in ``n_bins`` steps. The mean of ``accuracy`` is the area
     that ``prr`` uses. Ties are broken randomly and averaged, as in ``aurc``.
     """
     u, wrong = _prepare(uncertainty, correct)
