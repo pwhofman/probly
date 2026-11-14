@@ -9,7 +9,7 @@ import jax
 from jax import numpy as jnp
 from jax.core import Tracer
 from jax.experimental import checkify
-from ndlike.jax_functions import jax_add, jax_average, jax_mean, jax_subtract, jax_sum
+from ndlike.jax_functions import jax_add, jax_average, jax_equal, jax_mean, jax_not_equal, jax_subtract, jax_sum
 from ndlike.protected_axis.jax import JaxAxisProtected
 
 from probly.representation.distribution._common import DirichletDistribution, create_dirichlet_distribution_from_alphas
@@ -40,7 +40,15 @@ class JaxDirichletDistribution(
     """
 
     alphas: jax.Array = field()
-    permitted_functions: ClassVar[set[Callable]] = {jax_mean, jax_sum, jax_average, jax_add, jax_subtract}
+    permitted_functions: ClassVar[set[Callable]] = {
+        jax_mean,
+        jax_sum,
+        jax_average,
+        jax_add,
+        jax_subtract,
+        jax_equal,
+        jax_not_equal,
+    }
 
     def __post_init__(self) -> None:
         """Validate the concentration parameters."""
@@ -94,15 +102,6 @@ class JaxDirichletDistribution(
         if func in (jax_add, jax_subtract):
             return {name: jnp.maximum(value, 1e-10) for name, value in values.items()}
         return values
-
-    @override
-    def __eq__(self, value: Any) -> jax.Array:  # noqa: PYI032
-        """Vectorized equality comparison."""
-        if isinstance(value, JaxDirichletDistribution):
-            eq = jnp.equal(self.alphas, value.alphas)
-        else:
-            eq = jnp.equal(self.alphas, value)
-        return jnp.all(eq, axis=-1)
 
     def __hash__(self) -> int:
         """Return an identity-based hash.

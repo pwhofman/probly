@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, ClassVar, override
+from typing import TYPE_CHECKING, ClassVar, override
 
 from ndlike.protected_axis.torch import TorchAxisProtected
 from ndlike.torch_functions import torch_average
@@ -85,11 +85,6 @@ class TorchDirichletDistribution(
     def numpy(self, *, force: bool = False) -> np.ndarray:
         """Convert the Dirichlet alpha parameters to a numpy array."""
         return self.alphas.numpy(force=force)
-
-    @override
-    def __eq__(self, value: Any) -> torch.Tensor:  # noqa: PYI032
-        """Vectorized equality comparison."""
-        return torch.eq(self, value)  # ty: ignore[no-matching-overload]
 
     def __hash__(self) -> int:
         """Return an identity-based hash."""

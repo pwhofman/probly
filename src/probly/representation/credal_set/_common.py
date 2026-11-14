@@ -6,7 +6,7 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Protocol, Self
 
 from flextype import flexdispatch
-from ndlike.array_like import ArrayLike
+from ndlike.array_like import WeakArrayLike
 
 from probly.representation.distribution import CategoricalDistribution
 from probly.representation.representation import Representation
@@ -178,7 +178,7 @@ def create_distance_based_credal_set[T: CategoricalDistribution](sample: Sample[
 
 
 @flexdispatch
-def create_probability_intervals_from_lower_upper_array[T: ArrayLike](
+def create_probability_intervals_from_lower_upper_array[T: WeakArrayLike[Any]](
     array: T,
 ) -> ProbabilityIntervalsCredalSet:
     """Create a probability-interval credal set from an array of lower and upper probabilities."""
@@ -187,7 +187,7 @@ def create_probability_intervals_from_lower_upper_array[T: ArrayLike](
 
 
 @flexdispatch
-def create_probability_intervals_from_bounds[T: ArrayLike](
+def create_probability_intervals_from_bounds[T: WeakArrayLike[Any]](
     array: T,
     lower_bounds: T,
     upper_bounds: T,

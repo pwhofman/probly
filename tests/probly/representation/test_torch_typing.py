@@ -12,6 +12,8 @@ from tests.probly.representation._typing import check_types
 
 _TYPING_CHECK = """
 from typing import Any, assert_type
+from ndlike.array_like import WeakArrayLike
+from probly.method.efficient_credal_prediction._common import EfficientCredalPredictor
 import torch
 from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
@@ -136,6 +138,12 @@ def check_ddu(value: TorchDDURepresentation) -> None:
 from probly.method.mahalanobis.torch import TorchMahalanobisRepresentation
 def check_mahalanobis(value: TorchMahalanobisRepresentation) -> None:
     assert_type(value[0], TorchMahalanobisRepresentation)
+
+def check_credal_bounds(predictor: EfficientCredalPredictor) -> None:
+    assert_type(predictor.lower, WeakArrayLike[Any])
+    assert_type(predictor.upper, WeakArrayLike[Any])
+    predictor.lower = torch.ones(2)
+    predictor.upper = torch.ones(2)
 """
 
 

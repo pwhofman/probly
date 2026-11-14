@@ -12,6 +12,8 @@ from tests.probly.representation._typing import check_types
 
 _TYPING_CHECK = """
 from typing import Any, assert_type
+from ndlike.array_like import WeakArrayLike
+from probly.method.efficient_credal_prediction._common import EfficientCredalPredictor
 import numpy as np
 from probly.representation.distribution.numpy_gaussian import NumpyGaussianDistribution
 from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution
@@ -101,6 +103,12 @@ def check_gaussian(value: NumpyGaussianDistribution) -> None:
 from probly.method.mahalanobis.numpy import NumpyMahalanobisRepresentation
 def check_mahalanobis(value: NumpyMahalanobisRepresentation) -> None:
     assert_type(value[0], NumpyMahalanobisRepresentation)
+
+def check_credal_bounds(predictor: EfficientCredalPredictor) -> None:
+    assert_type(predictor.lower, WeakArrayLike[Any])
+    assert_type(predictor.upper, WeakArrayLike[Any])
+    predictor.lower = np.ones(2)
+    predictor.upper = np.ones(2)
 """
 
 
