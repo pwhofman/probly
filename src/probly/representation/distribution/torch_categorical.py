@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self, overload, override
 
 from ndlike.protected_axis.torch import TorchAxisProtected
 from ndlike.torch_functions import torch_average
+from ndlike.torch_like import AnyTorchLike
 import torch
 
 from probly.representation.distribution._common import (
@@ -21,11 +22,14 @@ from probly.representation.sample.torch import TorchSample
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from ndlike.protected_axis.torch import TorchProtectedValue
     import numpy as np
 
+    from probly.representation.representation import Representation
 
-class TorchCategoricalDistribution(
-    TorchAxisProtected[Any],
+
+class TorchCategoricalDistribution[OwnerT: AnyTorchLike = "TorchCategoricalDistribution[Any]"](
+    TorchAxisProtected[OwnerT, "TorchCategoricalDistribution[Any]", "TorchCategoricalDistribution[Any]"],
     CategoricalDistribution[torch.Tensor],
     ABC,
 ):
@@ -35,13 +39,18 @@ class TorchCategoricalDistribution(
     The last axis represents the category dimension.
     """
 
+    tensor: torch.Tensor
+    protected_axes: ClassVar[dict[str, int]] = {"tensor": 1}
+
     @property
     @abstractmethod
     def tensor(self) -> torch.Tensor:
         """Get the underlying tensor representing the categorical distribution."""
 
     @override
-    def _postprocess_protected_values(self, values: dict[str, torch.Tensor], func: Callable) -> dict[str, torch.Tensor]:
+    def _postprocess_protected_values(
+        self, values: dict[str, TorchProtectedValue], func: Callable
+    ) -> dict[str, TorchProtectedValue]:
         if func in (torch.mean, torch_average):
             # Ensure mean/average of categorical distributions uses normalized probabilities.
             values["tensor"] = self.probabilities
@@ -52,10 +61,14 @@ class TorchCategoricalDistribution(
     def with_protected_values(self, values: dict[str, Any]) -> Self: ...
 
     @overload
-    def with_protected_values(self, values: dict[str, Any], func: Callable | None) -> TorchAxisProtected[Any]: ...
+    def with_protected_values(
+        self, values: dict[str, Any], func: Callable | None
+    ) -> OwnerT | TorchCategoricalDistribution | torch.Tensor: ...
 
     @override
-    def with_protected_values(self, values: dict[str, Any], func: Callable | None = None) -> TorchAxisProtected[Any]:
+    def with_protected_values(
+        self, values: dict[str, Any], func: Callable | None = None
+    ) -> OwnerT | TorchCategoricalDistribution | torch.Tensor:
         """Return a copy with updated protected values."""
         if func in (torch.mean, torch_average) and not isinstance(self, TorchProbabilityCategoricalDistribution):
             return TorchProbabilityCategoricalDistribution(tensor=values["tensor"])
@@ -110,11 +123,12 @@ class TorchCategoricalDistribution(
 
 @create_categorical_distribution.register(torch.Tensor)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchProbabilityCategoricalDistribution(TorchCategoricalDistribution):
+class TorchProbabilityCategoricalDistribution[OwnerT: AnyTorchLike = "TorchProbabilityCategoricalDistribution[Any]"](
+    TorchCategoricalDistribution[OwnerT]
+):
     """A categorical distribution represented by unnormalized probabilities."""
 
     tensor: torch.Tensor = field()
-    protected_axes: ClassVar[dict[str, int]] = {"tensor": 1}
     permitted_functions: ClassVar[set[Callable]] = {torch.mean, torch_average}
 
     def __post_init__(self) -> None:
@@ -137,7 +151,7 @@ class TorchProbabilityCategoricalDistribution(TorchCategoricalDistribution):
         return self.tensor
 
     @override
-    def __eq__(self, value: Any) -> torch.Tensor:  # ty: ignore[invalid-method-override]  # noqa: PYI032
+    def __eq__(self, value: Any) -> torch.Tensor:  # noqa: PYI032
         """Vectorized equality comparison."""
         if isinstance(value, TorchCategoricalDistribution):
             eq = torch.eq(self.probabilities, value.probabilities)
@@ -157,11 +171,12 @@ class TorchProbabilityCategoricalDistribution(TorchCategoricalDistribution):
 
 @create_categorical_distribution_from_logits.register(torch.Tensor)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchLogitCategoricalDistribution(TorchCategoricalDistribution):
+class TorchLogitCategoricalDistribution[OwnerT: AnyTorchLike = "TorchLogitCategoricalDistribution[Any]"](
+    TorchCategoricalDistribution[OwnerT]
+):
     """A categorical distribution represented by logits."""
 
     tensor: torch.Tensor = field()
-    protected_axes: ClassVar[dict[str, int]] = {"tensor": 1}
     permitted_functions: ClassVar[set[Callable]] = {torch.mean, torch_average}
 
     def __post_init__(self) -> None:
@@ -180,7 +195,7 @@ class TorchLogitCategoricalDistribution(TorchCategoricalDistribution):
         return self.tensor
 
     @override
-    def __eq__(self, value: Any) -> torch.Tensor:  # ty: ignore[invalid-method-override]  # noqa: PYI032
+    def __eq__(self, value: Any) -> torch.Tensor:  # noqa: PYI032
         """Vectorized equality comparison."""
         if isinstance(value, TorchCategoricalDistribution):
             eq = torch.eq(self.log_probabilities, value.log_probabilities)
@@ -204,7 +219,7 @@ class TorchCategoricalDistributionSample(  # ty:ignore[conflicting-metaclass]
 ):
     """Sample type for empirical second-order categorical distributions."""
 
-    sample_space: ClassVar[type[CategoricalDistribution]] = TorchCategoricalDistribution
+    sample_space: ClassVar[type[Representation]] = TorchCategoricalDistribution
 
     @override
     @classmethod

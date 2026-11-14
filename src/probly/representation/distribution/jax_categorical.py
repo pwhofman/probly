@@ -11,6 +11,7 @@ from jax.core import Tracer
 from jax.experimental import checkify
 import jax.numpy as jnp
 from ndlike.jax_functions import jax_average, jax_mean
+from ndlike.jax_like import AnyJaxLike
 from ndlike.protected_axis.jax import JaxAxisProtected
 
 from probly.representation.distribution._common import (
@@ -26,14 +27,24 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from jax._src.typing import ArrayLike
+    from ndlike.protected_axis.jax import JaxProtectedValue
+
+    from probly.representation.representation import Representation
 
 
-class JaxCategoricalDistribution(CategoricalDistribution, JaxAxisProtected[jax.Array], ABC):
+class JaxCategoricalDistribution[OwnerT: AnyJaxLike = "JaxCategoricalDistribution[Any]"](
+    CategoricalDistribution[jax.Array],
+    JaxAxisProtected[OwnerT, "JaxCategoricalDistribution[Any]", "JaxCategoricalDistribution[Any]"],
+    ABC,
+):
     """A categorical distribution stored as a jax array.
 
     Shape: (..., num_classes)
     The last axis represents the category dimensions.
     """
+
+    array: jax.Array
+    protected_axes: ClassVar[dict[str, int]] = {"array": 1}
 
     @property
     @abstractmethod
@@ -41,7 +52,9 @@ class JaxCategoricalDistribution(CategoricalDistribution, JaxAxisProtected[jax.A
         """Get the underlying array representing the categorical distribution."""
 
     @override
-    def _postprocess_protected_values(self, values: dict[str, jax.Array], func: Callable) -> dict[str, jax.Array]:
+    def _postprocess_protected_values(
+        self, values: dict[str, JaxProtectedValue], func: Callable
+    ) -> dict[str, JaxProtectedValue]:
         if func in (jax_mean, jax_average):
             values["array"] = self.probabilities
 
@@ -51,12 +64,14 @@ class JaxCategoricalDistribution(CategoricalDistribution, JaxAxisProtected[jax.A
     def with_protected_values(self, values: dict[str, Any]) -> Self: ...
 
     @overload
-    def with_protected_values(self, values: dict[str, Any], func: Callable | None) -> JaxAxisProtected[jax.Array]: ...
+    def with_protected_values(
+        self, values: dict[str, Any], func: Callable | None
+    ) -> OwnerT | JaxCategoricalDistribution | jax.Array: ...
 
     @override
     def with_protected_values(
         self, values: dict[str, Any], func: Callable | None = None
-    ) -> JaxAxisProtected[jax.Array]:
+    ) -> OwnerT | JaxCategoricalDistribution | jax.Array:
         """Return a copy with a replaced primary protected value."""
         if func in (jax_mean, jax_average) and not isinstance(self, JaxProbabilityCategoricalDistribution):
             return JaxProbabilityCategoricalDistribution(array=values["array"])
@@ -117,11 +132,12 @@ class JaxCategoricalDistribution(CategoricalDistribution, JaxAxisProtected[jax.A
 
 @create_categorical_distribution.register((jax.Array, Tracer))
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class JaxProbabilityCategoricalDistribution(JaxCategoricalDistribution):
+class JaxProbabilityCategoricalDistribution[OwnerT: AnyJaxLike = "JaxProbabilityCategoricalDistribution[Any]"](
+    JaxCategoricalDistribution[OwnerT]
+):
     """A categorical distribution represented by unnormalized probabilities."""
 
     array: jax.Array = field()
-    protected_axes: ClassVar[dict[str, int]] = {"array": 1}
     permitted_functions: ClassVar[set[Callable]] = {jax_mean, jax_average}
 
     def __post_init__(self) -> None:
@@ -141,7 +157,7 @@ class JaxProbabilityCategoricalDistribution(JaxCategoricalDistribution):
         return self.array
 
     @override
-    def __eq__(self, value: Any) -> jax.Array:  # ty: ignore[invalid-method-override] # noqa: PYI032
+    def __eq__(self, value: Any) -> jax.Array:  # noqa: PYI032
         """Vectorized equality comparison."""
         if isinstance(value, JaxCategoricalDistribution):
             eq = jnp.equal(self.probabilities, value.probabilities)
@@ -161,11 +177,12 @@ class JaxProbabilityCategoricalDistribution(JaxCategoricalDistribution):
 
 @create_categorical_distribution_from_logits.register((jax.Array, Tracer))
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class JaxLogitCategoricalDistribution(JaxCategoricalDistribution):
+class JaxLogitCategoricalDistribution[OwnerT: AnyJaxLike = "JaxLogitCategoricalDistribution[Any]"](
+    JaxCategoricalDistribution[OwnerT]
+):
     """A categorical distribution represented by logits."""
 
     array: jax.Array = field()
-    protected_axes: ClassVar[dict[str, int]] = {"array": 1}
     permitted_functions: ClassVar[set[Callable]] = {jax_mean, jax_average}
 
     def __post_init__(self) -> None:
@@ -184,7 +201,7 @@ class JaxLogitCategoricalDistribution(JaxCategoricalDistribution):
         return self.array
 
     @override
-    def __eq__(self, value: Any) -> jax.Array:  # ty: ignore[invalid-method-override] # noqa: PYI032
+    def __eq__(self, value: Any) -> jax.Array:  # noqa: PYI032
         """Vectorized equality comparison."""
         if isinstance(value, JaxCategoricalDistribution):
             eq = jnp.equal(self.log_probabilities, value.log_probabilities)
@@ -208,7 +225,7 @@ class JaxCategoricalDistributionSample(  # ty:ignore[conflicting-metaclass]
 ):
     """Sample type for empirical second-order categorical distributions."""
 
-    sample_space: ClassVar[type[CategoricalDistribution]] = JaxCategoricalDistribution
+    sample_space: ClassVar[type[Representation]] = JaxCategoricalDistribution
 
     @override
     @classmethod

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, ClassVar, Self, override
+from typing import TYPE_CHECKING, ClassVar, Self, override
 
 from ndlike.protected_axis.numpy import NumpyAxisProtected
 import numpy as np
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 @create_dirichlet_distribution_from_alphas.register(np.ndarray)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class NumpyDirichletDistribution(
-    NumpyAxisProtected[np.ndarray],
+    NumpyAxisProtected["NumpyDirichletDistribution", "NumpyDirichletDistribution | np.ndarray | float"],
     DirichletDistribution[NumpyCategoricalDistribution],
 ):
     """A Dirichlet distribution stored as a numpy array.
@@ -34,9 +34,10 @@ class NumpyDirichletDistribution(
     """
 
     alphas: np.ndarray = field()
-    protected_axes: ClassVar[dict[str, int]] = {"alphas": 1}
     permitted_functions: ClassVar[set[Callable]] = {np.mean, np.sum, np.average}
     permitted_ufuncs: ClassVar[dict[np.ufunc, list[str]]] = {
+        np.equal: ["__call__"],
+        np.not_equal: ["__call__"],
         np.add: ["__call__"],
         np.subtract: ["__call__"],
     }
@@ -90,15 +91,6 @@ class NumpyDirichletDistribution(
     def _postprocess_ufunc_result(self, result: np.ndarray, *, ufunc: np.ufunc, method: str) -> np.ndarray:
         del ufunc, method
         return np.maximum(result, 1e-10)
-
-    @override
-    def __eq__(self, value: Any) -> np.ndarray:  # ty: ignore[invalid-method-override]  # noqa: PYI032
-        """Vectorized equality comparison."""
-        if isinstance(value, NumpyDirichletDistribution):
-            eq = np.equal(self.alphas, value.alphas)
-        else:
-            eq = np.equal(self.alphas, value)
-        return np.all(eq, axis=-1)
 
     def __hash__(self) -> int:
         """Return an identity-based hash.

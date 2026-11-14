@@ -15,9 +15,11 @@ from probly.representation.sample.torch import TorchSample
 if TYPE_CHECKING:
     from transformers import PreTrainedTokenizerBase
 
+    from probly.representation.representation import Representation
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchTextGeneration(TorchAxisProtected[Any]):
+class TorchTextGeneration(TorchAxisProtected["TorchTextGeneration"]):
     """Decoded text generations with sequence log-likelihoods.
 
     Shape: ``batch_shape``. The text is stored as a NumPy object array because
@@ -45,7 +47,7 @@ class TorchTextGeneration(TorchAxisProtected[Any]):
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchTokenGeneration(TorchAxisProtected[torch.Tensor]):
+class TorchTokenGeneration(TorchAxisProtected["TorchTokenGeneration"]):
     """Generated token sequences and token transition scores.
 
     Shape: ``batch_shape``. ``sequences`` stores token ids with a protected trailing
@@ -71,7 +73,7 @@ class TorchTokenGeneration(TorchAxisProtected[torch.Tensor]):
         if self.transition_scores.ndim < 1:
             msg = "transition_scores must have at least one dimension."
             raise ValueError(msg)
-        self.protected_values()
+        self.validate()
 
     def _text_log_likelihood(
         self,
@@ -169,7 +171,7 @@ class TorchTextGenerationSample(  # ty:ignore[conflicting-metaclass]
 ):
     """A torch sample of decoded text generations."""
 
-    sample_space: ClassVar[type[TorchTextGeneration]] = TorchTextGeneration
+    sample_space: ClassVar[type[Representation]] = TorchTextGeneration
 
     @override
     @classmethod
@@ -183,7 +185,7 @@ class TorchTextGenerationSampleSample(  # ty:ignore[conflicting-metaclass]
 ):
     """A torch sample of decoded text generation samples."""
 
-    sample_space: ClassVar[type[TorchTextGenerationSample]] = TorchTextGenerationSample
+    sample_space: ClassVar[type[Representation]] = TorchTextGenerationSample
 
     @override
     @classmethod
