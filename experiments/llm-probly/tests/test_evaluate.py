@@ -174,3 +174,26 @@ def test_overconfident_scores_have_large_ece():
 def test_ece_rejects_scores_outside_zero_one():
     with pytest.raises(ValueError):
         ece([1.5, 0.2], [True, False])
+
+
+# ----- rejection curve ---------------------------------------------------------
+
+
+def test_rejection_curve_mean_is_the_prr_area():
+    from common.evaluate import rejection_curve
+
+    rng = np.random.default_rng(5)
+    correct = rng.random(100) < 0.4
+    u = rng.random(100)
+    rejected, accuracy = rejection_curve(u, correct)
+    assert rejected[0] == 0.0 and len(accuracy) == 100
+    assert np.isclose(accuracy[0], correct.mean())  # nothing rejected: overall accuracy
+    assert np.isclose(accuracy.mean(), _rejection_area(u, correct.astype(float)))
+
+
+def test_perfect_rejection_curve_reaches_full_accuracy():
+    from common.evaluate import rejection_curve
+
+    _, accuracy = rejection_curve((~CORRECT).astype(float), CORRECT)
+    assert accuracy[-1] == 1.0  # only the most confident (a correct) answer is left
+    assert np.all(np.diff(accuracy) >= 0)  # never drops when wrong answers go first
