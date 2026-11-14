@@ -216,6 +216,24 @@ def build_svg(scenes: list[dict], theme_name: str, footer: str) -> str:
     )
 
 
+def load_method_scores(run: str, row_ids: list[int]) -> dict:
+    """Read every available score file. Returns name -> (label, uncertainty by id, all values)."""
+    scores = {}
+    for name, label in METHODS:
+        path = RESULTS_ROOT / run / f"{name}.json"
+        try:
+            record = load_scores(path, expected_ids=row_ids)
+        except (FileNotFoundError, ValueError) as error:
+            print(f"skip {name}: {error}")
+            continue
+        per_id = dict(zip(record["ids"], record["uncertainty"], strict=True))
+        scores[name] = (label, per_id, np.asarray(record["uncertainty"], dtype=float))
+    if not scores:
+        msg = "no score files found"
+        raise SystemExit(msg)
+    return scores
+
+
 def collect_scenes(run: str, n: int, ids: list[int]) -> tuple[list[dict], str]:
     """Read cache rows and score files and build one scene per question id."""
     rows = load_data(run, n)
@@ -225,19 +243,7 @@ def collect_scenes(run: str, n: int, ids: list[int]) -> tuple[list[dict], str]:
     if missing:
         msg = f"ids not in the data: {missing}"
         raise SystemExit(msg)
-
-    scores = {}
-    for name, label in METHODS:
-        path = RESULTS_ROOT / run / f"{name}.json"
-        try:
-            record = load_scores(path, expected_ids=row_ids)
-        except (FileNotFoundError, ValueError) as error:
-            print(f"skip {name}: {error}")
-            continue
-        scores[name] = (label, dict(zip(record["ids"], record["uncertainty"], strict=True)), np.asarray(record["uncertainty"], dtype=float))
-    if not scores:
-        msg = "no score files found"
-        raise SystemExit(msg)
+    scores = load_method_scores(run, row_ids)
 
     scenes = []
     for question_id in ids:
@@ -257,13 +263,46 @@ def collect_scenes(run: str, n: int, ids: list[int]) -> tuple[list[dict], str]:
     return scenes, f"{model} · TriviaQA · {len(rows)} questions · scores read from saved results"
 
 
+def list_questions(run: str, n: int, limit: int = 15) -> None:
+    """Print candidate questions with the rank of each method (0 = least, 1 = most uncertain).
+
+    Wrong answers with a low mean rank are the ones the methods miss; correct answers with a
+    high mean rank are false alarms.
+    """
+    rows = load_data(run, n)
+    scores = load_method_scores(run, [row["id"] for row in rows])
+    labels = [label for label, _, _ in scores.values()]
+    entries = []
+    for row in rows:
+        ranks = [percentile(values, per_id[row["id"]]) for _, per_id, values in scores.values()]
+        entries.append((float(np.mean(ranks)), row, ranks))
+
+    def show(title: str, selected: list) -> None:
+        print(f"\n{title}\n  columns: mean rank | " + " | ".join(labels))
+        for mean, row, ranks in selected[:limit]:
+            cols = " ".join(f"{r:.2f}" for r in ranks)
+            print(f"  id {row['id']:>3}  {mean:.2f} | {cols} | {clean(row['question'], 70)} -> {clean(row['greedy_answer'], 28)}")
+
+    wrong = sorted((e for e in entries if not e[1]["correct"]), key=lambda e: e[0])
+    right = sorted((e for e in entries if e[1]["correct"]), key=lambda e: -e[0])
+    show("WRONG answers the methods miss (low rank = confident):", wrong)
+    show("WRONG answers the methods flag (high rank):", wrong[::-1])
+    show("CORRECT answers with false alarms (high rank):", right)
+    show("CORRECT answers that look certain (low rank):", right[::-1])
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run", default="qwen0.5b")
     parser.add_argument("--n", type=int, default=50)
     parser.add_argument("--ids", type=int, nargs="+", default=[48, 49, 10])
     parser.add_argument("--out", type=Path, default=ROOT / "demo")
+    parser.add_argument("--list", action="store_true", help="list candidate questions with the rank of each method")
     args = parser.parse_args()
+
+    if args.list:
+        list_questions(args.run, args.n)
+        return
 
     scenes, footer = collect_scenes(args.run, args.n, args.ids)
     args.out.mkdir(parents=True, exist_ok=True)
