@@ -115,7 +115,7 @@ jobs:
         env:
           DOCS_SOURCE_REF: ${{ inputs.source-ref }}
           DOCS_BASE_URL: ${{ inputs.base-url }}
-        run: uv run sphinx-build ${{ inputs.strict && '-W' || '' }} -j 2 -b html docs/source docs/build/html
+        run: uv run sphinx-build ${{ inputs.strict && '-W' || '' }} -j auto -b html docs/source docs/build/html
       - name: Save docs build cache
         if: always()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0

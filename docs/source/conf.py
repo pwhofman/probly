@@ -8,11 +8,6 @@ import sys
 from typing import TYPE_CHECKING
 import warnings
 
-# Keep numerical libraries from starting a full CPU pool in each docs worker.
-# Set these before importing probly or any of its optional backends.
-for _thread_variable in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
-    os.environ.setdefault(_thread_variable, "1")
-
 _here = Path(__file__).resolve().parent
 sys.path.insert(0, str(_here))  # make _sphinx_helpers importable
 sys.path.insert(0, str(_here.parent / "src"))
@@ -162,10 +157,11 @@ sphinx_gallery_conf = {
     "run_stale_examples": os.environ.get("FORCE_CLEAN") == "1",
     # Don't kill the whole build if one example errors
     "abort_on_example_error": False,
-    # ML workers each hold their own models and datasets. Default to at most
-    # two processes to leave memory available for the rest of the machine.
-    # SPHINX_GALLERY_PARALLEL overrides this; 1 runs examples sequentially.
-    "parallel": int(os.environ.get("SPHINX_GALLERY_PARALLEL", min(2, os.process_cpu_count() or 1))),
+    # Execute examples in isolated worker processes (joblib/loky), one per
+    # available CPU; set SPHINX_GALLERY_PARALLEL to override (1 disables,
+    # sphinx-gallery treats it as off). os.process_cpu_count is 3.13+, so fall
+    # back to os.cpu_count on 3.12.
+    "parallel": int(os.environ.get("SPHINX_GALLERY_PARALLEL", getattr(os, "process_cpu_count", os.cpu_count)() or 1)),
     # Seed the RNGs before every example so a build is reproducible, and
     # re-apply probly's plot style after the matplotlib reset; given by name
     # because the gallery config is pickled to the parallel workers.
