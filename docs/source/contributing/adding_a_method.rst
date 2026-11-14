@@ -484,7 +484,7 @@ Before opening a pull request:
     uv run pytest tests/probly/method/mymethod
 
     # docs build (incremental; renders the new example and API pages)
-    uv run sphinx-build -j auto -b html docs/source docs/build/html
+    uv run sphinx-build -j 2 -b html docs/source docs/build/html
 
 Checklist
 =========
