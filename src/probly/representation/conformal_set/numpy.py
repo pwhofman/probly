@@ -31,7 +31,7 @@ def _numpy_ensure_one_hot(value: object) -> np.ndarray:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class NumpyOneHotConformalSet(NumpyAxisProtected[np.ndarray], OneHotConformalSet):
+class NumpyOneHotConformalSet(NumpyAxisProtected["NumpyOneHotConformalSet"], OneHotConformalSet[np.ndarray]):
     """One-hot conformal set backed by a NumPy array."""
 
     array: np.ndarray
@@ -76,7 +76,7 @@ class NumpyOneHotConformalSet(NumpyAxisProtected[np.ndarray], OneHotConformalSet
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class NumpyIntervalConformalSet(NumpyAxisProtected[np.ndarray], IntervalConformalSet):
+class NumpyIntervalConformalSet(NumpyAxisProtected["NumpyIntervalConformalSet"], IntervalConformalSet[np.ndarray]):
     """Interval conformal set backed by a NumPy array storing lower and upper bounds."""
 
     array: np.ndarray

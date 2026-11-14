@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Any, ClassVar, override
+from typing import TYPE_CHECKING, ClassVar, override
 
 from ndlike.protected_axis.torch import TorchAxisProtected
 import torch
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class TorchSparseLogCategoricalDistribution(
-    TorchAxisProtected[Any],
+    TorchAxisProtected["TorchSparseLogCategoricalDistribution"],
     CategoricalDistribution[torch.Tensor],
 ):
     """Sparse categorical distribution with grouped log-weights.

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol, override, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
+from ndlike.array_like import WeakArrayLike
 
 from probly.decider import categorical_from_mean
 from probly.predictor import LogitClassifier, Predictor, RepresentationPredictor
@@ -20,7 +21,7 @@ if TYPE_CHECKING:
 
 
 @runtime_checkable
-class DUQRepresentation[T](Representation, Protocol):
+class DUQRepresentation[T: WeakArrayLike[Any]](Representation, Protocol):
     r"""Representation of a DUQ model output."""
 
     @property
@@ -29,7 +30,7 @@ class DUQRepresentation[T](Representation, Protocol):
 
 
 @flexdispatch
-def create_duq_representation[T](kernel_values: T) -> DUQRepresentation[T]:
+def create_duq_representation[T: WeakArrayLike[Any]](kernel_values: T) -> DUQRepresentation[T]:
     """Create a DUQ representation from per-class kernel values."""
     msg = f"No DUQ representation factory registered for kernel values of type {type(kernel_values)}"
     raise NotImplementedError(msg)
@@ -78,7 +79,7 @@ def duq[**In, Out: DUQRepresentation](
 
 
 @flexdispatch
-def duq_uncertainty[T](kernel_values: T) -> T:
+def duq_uncertainty[T: WeakArrayLike[Any]](kernel_values: T) -> T:
     r"""Compute the DUQ uncertainty score :math:`1 - \max_c K_c(x)`."""
     msg = f"DUQ uncertainty is not implemented for kernel values of type {type(kernel_values)}"
     raise NotImplementedError(msg)
@@ -86,7 +87,7 @@ def duq_uncertainty[T](kernel_values: T) -> T:
 
 @decompose.register(DUQRepresentation)
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
-class DUQDecomposition[T](CachingDecomposition, TotalDecomposition[T]):
+class DUQDecomposition[T: WeakArrayLike[Any]](CachingDecomposition, TotalDecomposition[T]):
     """DUQ total-uncertainty decomposition."""
 
     representation: DUQRepresentation[T]

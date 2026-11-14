@@ -35,8 +35,8 @@ class EfficientCredalPredictor[**In, Out: CategoricalDistribution](LogitClassifi
     """
 
     predictor: Predictor
-    lower: ArrayLike[float]
-    upper: ArrayLike[float]
+    lower: ArrayLike[Any]
+    upper: ArrayLike[Any]
 
 
 @flexdispatch

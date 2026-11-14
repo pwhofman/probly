@@ -10,7 +10,8 @@ import sys
 import pytest
 
 _TYPING_CHECK = """
-from typing import assert_type
+from typing import Any, assert_type
+from ndlike.array_like import WeakArrayLike
 
 from probly.method.duq import DUQDecomposition, DUQRepresentation, create_duq_representation, duq_uncertainty
 from probly.method.mahalanobis import (
@@ -27,7 +28,7 @@ def check_decomposition_lookup(decomposition: Decomposition) -> None:
     assert_type(decomposition[AleatoricUncertainty], AleatoricUncertainty)
     assert_type(decomposition["aleatoric"], Notion)
 
-def check_method_backend_types[T](
+def check_method_backend_types[T: WeakArrayLike[Any]](
     values: T,
     softmax: CategoricalDistribution[T],
     duq: DUQDecomposition[T],

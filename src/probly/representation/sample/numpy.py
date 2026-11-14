@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, Self, cast, override
 
 from ndlike.array_like import (
+    AnyNumpyLike,
     ArrayAPIVersion,
     ArrayFlagsLike,
     NumpyLike,
@@ -33,14 +34,25 @@ if TYPE_CHECKING:
 
     import jax
     from jax.sharding import Sharding
-    from ndlike.jax_like import JaxLikeImplementation
-    from ndlike.torch_like import TorchLikeImplementation
     from numpy.typing import DTypeLike
     import torch
 
+    from probly.representation.sample.jax import JaxSample
+    from probly.representation.sample.torch import TorchSample
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class NumpySample[D: NumpyLike | np.ndarray](NumpyLikeImplementation[D], Sample[D]):
+class NumpySample[D: AnyNumpyLike | np.ndarray](
+    NumpyLikeImplementation[
+        "NumpySample[D]",
+        "NumpySample[D] | D | int | float | complex",
+        "NumpySample[D] | D",
+        D,
+        "NumpySample[D] | D",
+        "NumpySample[np.ndarray]",
+    ],
+    Sample[D],
+):
     """A sample of predictions stored in a numpy array."""
 
     array: D
@@ -250,7 +262,7 @@ class NumpySample[D: NumpyLike | np.ndarray](NumpyLikeImplementation[D], Sample[
         moved_array = np.moveaxis(self.array, self.sample_axis, new_sample_axis)  # ty:ignore[invalid-argument-type]
         return type(self)(array=moved_array, sample_axis=new_sample_axis, weights=self.weights)
 
-    def __getitem__(self, index: ToIndices) -> NumpyLikeImplementation[D] | D:
+    def __getitem__(self, index: ToIndices) -> NumpySample[D] | D:
         """Get a sample by index.
 
         Args:
@@ -426,7 +438,7 @@ class NumpySample[D: NumpyLike | np.ndarray](NumpyLikeImplementation[D], Sample[
         copied_array = cast("Any", self.array).copy(order=order)
         return type(self)(array=copied_array, sample_axis=self.sample_axis, weights=self.weights)
 
-    def __eq__(self, value: Any) -> Self:  # noqa: ANN401, PYI032  # ty:ignore[incompatible-method-override]
+    def __eq__(self, value: Any) -> NumpySample[np.ndarray]:  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
         return np.equal(self, value)
 
@@ -471,7 +483,7 @@ class NumpySample[D: NumpyLike | np.ndarray](NumpyLikeImplementation[D], Sample[
 
     def __torch_like__(
         self, dtype: torch.dtype | None = None, /, *, device: torch.device | str | None = None, copy: bool = False
-    ) -> TorchLikeImplementation[Any]:
+    ) -> TorchSample[Any]:
         """Convert to a TorchSample."""
         from ndlike.torch_like import to_torch_like  # noqa: PLC0415
 
@@ -492,7 +504,7 @@ class NumpySample[D: NumpyLike | np.ndarray](NumpyLikeImplementation[D], Sample[
         *,
         device: jax.Device | Sharding | None = None,
         copy: bool = False,
-    ) -> JaxLikeImplementation[Any]:
+    ) -> JaxSample[Any]:
         """Convert to a JaxSample."""
         from ndlike.jax_like import to_jax_like  # noqa: PLC0415
 
@@ -508,7 +520,7 @@ class NumpySample[D: NumpyLike | np.ndarray](NumpyLikeImplementation[D], Sample[
 
 
 @numpy_sample_internals.register(NumpySample)
-def _[D: NumpyLike](array: NumpySample[D]) -> NumpySampleInternals[D]:
+def _[D: AnyNumpyLike | np.ndarray](array: NumpySample[D]) -> NumpySampleInternals[D]:
     """Get the sample dimension of an NumpySample."""
     return NumpySampleInternals(
         create=type(array),

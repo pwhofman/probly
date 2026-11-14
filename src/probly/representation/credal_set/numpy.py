@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, ClassVar, Self, override
 
@@ -48,7 +48,7 @@ def _probability_interval_center(lower_bounds: np.ndarray, upper_bounds: np.ndar
     return lower_bounds + remaining * weights
 
 
-class NumpyCategoricalCredalSet(CategoricalCredalSet, ABC):
+class NumpyCategoricalCredalSet(CategoricalCredalSet):
     """Base class for NumPy-backed categorical credal sets."""
 
     @classmethod
@@ -79,7 +79,7 @@ class NumpyCategoricalCredalSet(CategoricalCredalSet, ABC):
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class NumpyDiscreteCredalSet(
-    NumpyAxisProtected[NumpyCategoricalDistribution],
+    NumpyAxisProtected["NumpyDiscreteCredalSet"],
     NumpyCategoricalCredalSet,
     DiscreteCredalSet,
 ):
@@ -121,7 +121,7 @@ class NumpyDiscreteCredalSet(
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class NumpyConvexCredalSet(
-    NumpyAxisProtected[NumpyCategoricalDistribution],
+    NumpyAxisProtected["NumpyConvexCredalSet"],
     NumpyCategoricalCredalSet,
     ConvexCredalSet,
 ):
@@ -166,7 +166,7 @@ class NumpyConvexCredalSet(
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class NumpyDistanceBasedCredalSet(
-    NumpyAxisProtected[NumpyCategoricalDistribution],
+    NumpyAxisProtected["NumpyDistanceBasedCredalSet"],
     NumpyCategoricalCredalSet,
     DistanceBasedCredalSet,
 ):
@@ -239,7 +239,7 @@ class NumpyDistanceBasedCredalSet(
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class NumpyProbabilityIntervalsCredalSet(
-    NumpyAxisProtected[NumpyCategoricalDistribution],
+    NumpyAxisProtected["NumpyProbabilityIntervalsCredalSet"],
     NumpyCategoricalCredalSet,
     ProbabilityIntervalsCredalSet,
 ):
@@ -305,7 +305,7 @@ class NumpyProbabilityIntervalsCredalSet(
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class NumpySingletonCredalSet(
-    NumpyAxisProtected[NumpyCategoricalDistribution],
+    NumpyAxisProtected["NumpySingletonCredalSet"],
     NumpyCategoricalCredalSet,
     SingletonCredalSet,
 ):

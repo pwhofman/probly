@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
@@ -25,7 +25,9 @@ type DistributionType = Literal[
 ]
 
 
-class Distribution[T](Representation, ABC):
+# Representation already supplies ABCMeta; an extra ABC base conflicts with
+# the ordering of ABC in NumPy's operator-mixin type stubs.
+class Distribution[T](Representation):
     """Base class for distributions."""
 
     type: ClassVar[DistributionType]
@@ -41,7 +43,7 @@ class Distribution[T](Representation, ABC):
         """Draw samples from Distribution."""
 
 
-class MixtureDistribution[D: Distribution, T](Distribution[T], ABC):
+class MixtureDistribution[D: Distribution, T](Distribution[T]):
     """Base class for mixture distributions."""
 
     type: ClassVar[Literal["mixture"]] = "mixture"
@@ -186,7 +188,7 @@ class DirichletMixtureDistribution[D: DirichletDistribution, T: CategoricalDistr
         return super().__instancehook__(instance)
 
 
-class GaussianDistribution[D](Distribution[D], ABC):
+class GaussianDistribution[D](Distribution[D]):
     """Base class for Gaussian distributions."""
 
     mean: D

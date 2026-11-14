@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, override
 
@@ -53,7 +53,7 @@ def _sample_probabilities(
     return sample_values.probabilities
 
 
-class TorchCategoricalCredalSet(CategoricalCredalSet, ABC):
+class TorchCategoricalCredalSet(CategoricalCredalSet):
     """Base class for torch-backed categorical credal sets."""
 
     @override
@@ -76,7 +76,7 @@ class TorchCategoricalCredalSet(CategoricalCredalSet, ABC):
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class TorchConvexCredalSet(
-    TorchAxisProtected[Any],
+    TorchAxisProtected["TorchConvexCredalSet"],
     TorchCategoricalCredalSet,
     ConvexCredalSet,
 ):
@@ -122,7 +122,7 @@ class TorchConvexCredalSet(
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class TorchDistanceBasedCredalSet(
-    TorchAxisProtected[Any],
+    TorchAxisProtected["TorchDistanceBasedCredalSet"],
     TorchCategoricalCredalSet,
     DistanceBasedCredalSet,
 ):
@@ -194,7 +194,7 @@ _LEVEL_SET_SAMPLES = 10_000
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class TorchDirichletLevelSetCredalSet(
-    TorchAxisProtected[Any],
+    TorchAxisProtected["TorchDirichletLevelSetCredalSet"],
     TorchCategoricalCredalSet,
     DirichletLevelSetCredalSet,
 ):
@@ -328,7 +328,7 @@ class TorchDirichletLevelSetCredalSet(
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class TorchProbabilityIntervalsCredalSet(
-    TorchAxisProtected[Any],
+    TorchAxisProtected["TorchProbabilityIntervalsCredalSet"],
     TorchCategoricalCredalSet,
     ProbabilityIntervalsCredalSet,
 ):

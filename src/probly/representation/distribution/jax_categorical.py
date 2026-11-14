@@ -11,6 +11,7 @@ from jax.core import Tracer
 from jax.experimental import checkify
 import jax.numpy as jnp
 from ndlike.jax_functions import jax_average, jax_mean
+from ndlike.jax_like import AnyJaxLike
 from ndlike.protected_axis.jax import JaxAxisProtected
 
 from probly.representation.distribution._common import (
@@ -31,7 +32,11 @@ if TYPE_CHECKING:
     from probly.representation.representation import Representation
 
 
-class JaxCategoricalDistribution(CategoricalDistribution[jax.Array], JaxAxisProtected[jax.Array], ABC):
+class JaxCategoricalDistribution[OwnerT: AnyJaxLike = "JaxCategoricalDistribution[Any]"](
+    CategoricalDistribution[jax.Array],
+    JaxAxisProtected[OwnerT, "JaxCategoricalDistribution[Any]", "JaxCategoricalDistribution[Any]"],
+    ABC,
+):
     """A categorical distribution stored as a jax array.
 
     Shape: (..., num_classes)
@@ -59,12 +64,14 @@ class JaxCategoricalDistribution(CategoricalDistribution[jax.Array], JaxAxisProt
     def with_protected_values(self, values: dict[str, Any]) -> Self: ...
 
     @overload
-    def with_protected_values(self, values: dict[str, Any], func: Callable | None) -> JaxAxisProtected[jax.Array]: ...
+    def with_protected_values(
+        self, values: dict[str, Any], func: Callable | None
+    ) -> OwnerT | JaxCategoricalDistribution | jax.Array: ...
 
     @override
     def with_protected_values(
         self, values: dict[str, Any], func: Callable | None = None
-    ) -> JaxAxisProtected[jax.Array]:
+    ) -> OwnerT | JaxCategoricalDistribution | jax.Array:
         """Return a copy with a replaced primary protected value."""
         if func in (jax_mean, jax_average) and not isinstance(self, JaxProbabilityCategoricalDistribution):
             return JaxProbabilityCategoricalDistribution(array=values["array"])
@@ -125,7 +132,9 @@ class JaxCategoricalDistribution(CategoricalDistribution[jax.Array], JaxAxisProt
 
 @create_categorical_distribution.register((jax.Array, Tracer))
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class JaxProbabilityCategoricalDistribution(JaxCategoricalDistribution):
+class JaxProbabilityCategoricalDistribution[OwnerT: AnyJaxLike = "JaxProbabilityCategoricalDistribution[Any]"](
+    JaxCategoricalDistribution[OwnerT]
+):
     """A categorical distribution represented by unnormalized probabilities."""
 
     array: jax.Array = field()
@@ -148,7 +157,7 @@ class JaxProbabilityCategoricalDistribution(JaxCategoricalDistribution):
         return self.array
 
     @override
-    def __eq__(self, value: Any) -> jax.Array:  # ty: ignore[incompatible-method-override] # noqa: PYI032
+    def __eq__(self, value: Any) -> jax.Array:  # noqa: PYI032
         """Vectorized equality comparison."""
         if isinstance(value, JaxCategoricalDistribution):
             eq = jnp.equal(self.probabilities, value.probabilities)
@@ -168,7 +177,9 @@ class JaxProbabilityCategoricalDistribution(JaxCategoricalDistribution):
 
 @create_categorical_distribution_from_logits.register((jax.Array, Tracer))
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class JaxLogitCategoricalDistribution(JaxCategoricalDistribution):
+class JaxLogitCategoricalDistribution[OwnerT: AnyJaxLike = "JaxLogitCategoricalDistribution[Any]"](
+    JaxCategoricalDistribution[OwnerT]
+):
     """A categorical distribution represented by logits."""
 
     array: jax.Array = field()
@@ -190,7 +201,7 @@ class JaxLogitCategoricalDistribution(JaxCategoricalDistribution):
         return self.array
 
     @override
-    def __eq__(self, value: Any) -> jax.Array:  # ty: ignore[incompatible-method-override] # noqa: PYI032
+    def __eq__(self, value: Any) -> jax.Array:  # noqa: PYI032
         """Vectorized equality comparison."""
         if isinstance(value, JaxCategoricalDistribution):
             eq = jnp.equal(self.log_probabilities, value.log_probabilities)

@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 @create_dirichlet_distribution_from_alphas.register(np.ndarray)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class NumpyDirichletDistribution(
-    NumpyAxisProtected[np.ndarray],
+    NumpyAxisProtected["NumpyDirichletDistribution", "NumpyDirichletDistribution | np.ndarray | float"],
     DirichletDistribution[NumpyCategoricalDistribution],
 ):
     """A Dirichlet distribution stored as a numpy array.
@@ -91,7 +91,7 @@ class NumpyDirichletDistribution(
         return np.maximum(result, 1e-10)
 
     @override
-    def __eq__(self, value: Any) -> np.ndarray:  # ty: ignore[incompatible-method-override]  # noqa: PYI032
+    def __eq__(self, value: Any) -> np.ndarray:  # noqa: PYI032
         """Vectorized equality comparison."""
         if isinstance(value, NumpyDirichletDistribution):
             eq = np.equal(self.alphas, value.alphas)

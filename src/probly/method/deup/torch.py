@@ -50,7 +50,7 @@ from ._common import (
 
 @create_deup_representation.register(TorchCategoricalDistribution)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchDEUPRepresentation(DEUPRepresentation[torch.Tensor], TorchAxisProtected):
+class TorchDEUPRepresentation(DEUPRepresentation[torch.Tensor], TorchAxisProtected["TorchDEUPRepresentation"]):
     """DEUP representation backed by torch tensors.
 
     Args:

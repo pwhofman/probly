@@ -20,7 +20,7 @@ from ndlike.jax_functions import (
     jax_std,
     jax_var,
 )
-from ndlike.jax_like import JaxLike, JaxLikeImplementation, to_jax_like
+from ndlike.jax_like import AnyJaxLike, JaxLike, JaxLikeImplementation, to_jax_like
 import numpy as np
 
 from probly.representation.sample._common import Sample, SampleAxis, create_sample
@@ -38,7 +38,17 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
+class JaxSample[D: AnyJaxLike | jax.Array](
+    JaxLikeImplementation[
+        "JaxSample[D]",
+        "JaxSample[D] | D | int | float | complex",
+        "JaxSample[D] | D",
+        D,
+        "JaxSample[D] | D",
+        "JaxSample[jax.Array]",
+    ],
+    Sample[D],
+):
     """A sample implementation for JAX arrays."""
 
     array: D
@@ -145,7 +155,7 @@ class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
         return len(self.array)
 
     @override
-    def __iter__(self) -> Iterator[Any]:
+    def __iter__(self) -> Iterator[JaxSample[D] | D]:
         """Iterate over axis 0 of the sample wrapper."""
         for index in range(len(self)):
             yield self[index]
@@ -311,7 +321,7 @@ class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
         moved_array = jax_moveaxis(cast("Any", self.array), self.sample_axis, new_sample_axis)
         return type(self)(array=cast("D", moved_array), sample_axis=new_sample_axis, weights=self.weights)
 
-    def __getitem__(self, index: ToIndices) -> Any:  # noqa: ANN401
+    def __getitem__(self, index: ToIndices) -> JaxSample[D] | D:
         """Get a sample by index.
 
         Args:
@@ -460,7 +470,7 @@ class JaxSample[D: JaxLike | jax.Array](JaxLikeImplementation[D], Sample[D]):
         *,
         device: Device | Sharding | None = None,
         copy: bool = False,
-    ) -> JaxLikeImplementation[Any]:
+    ) -> Self:
         """Convert to a JaxLike.
 
         Args:

@@ -32,7 +32,10 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[jax.Array]):
+class JaxGaussianDistribution(
+    JaxAxisProtected["JaxGaussianDistribution", "JaxGaussianDistribution | jax.Array | float"],
+    GaussianDistribution[jax.Array],
+):
     """Gaussian distribution with array parameters."""
 
     mean: jax.Array = field()
@@ -109,7 +112,7 @@ class JaxGaussianDistribution(JaxAxisProtected[jax.Array], GaussianDistribution[
         return np.asarray(stacked, dtype=dtype, copy=copy)
 
     @override
-    def __eq__(self, other: Any) -> jax.Array:  # ty: ignore[incompatible-method-override] # noqa: PYI032
+    def __eq__(self, other: Any) -> jax.Array:  # noqa: PYI032
         """Compare two Gaussians by their parameter."""
         if not isinstance(other, JaxGaussianDistribution):
             return NotImplemented

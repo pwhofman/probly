@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Protocol, Self
 
 from flextype import flexdispatch
@@ -24,7 +24,7 @@ class CredalSet(Representation):
     type: ClassVar[CredalSetType]
 
 
-class CategoricalCredalSet[T: CategoricalDistribution](CredalSet, ABC):
+class CategoricalCredalSet[T: CategoricalDistribution](CredalSet):
     """Base class for credal sets."""
 
     type: ClassVar[Literal["categorical"]] = "categorical"

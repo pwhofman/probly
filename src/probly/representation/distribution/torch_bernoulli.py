@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from abc import ABC
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, ClassVar, override
+from typing import TYPE_CHECKING, Any, ClassVar, override
 
+from ndlike.torch_like import AnyTorchLike
 import torch
 
 from probly.representation.distribution._common import (
@@ -25,12 +25,17 @@ if TYPE_CHECKING:
     from probly.representation.representation import Representation
 
 
-class TorchBernoulliDistribution(BernoulliDistribution, TorchCategoricalDistribution, ABC):  # ty:ignore[conflicting-metaclass]
+class TorchBernoulliDistribution[  # ty:ignore[conflicting-metaclass]
+    OwnerT: AnyTorchLike = "TorchBernoulliDistribution[Any]"
+](BernoulliDistribution[torch.Tensor], TorchCategoricalDistribution[OwnerT]):
     """A Bernoulli distribution represented as a categorical distribution with 2 classes."""
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchProbabilityBernoulliDistribution(TorchProbabilityCategoricalDistribution, TorchBernoulliDistribution):
+class TorchProbabilityBernoulliDistribution(
+    TorchBernoulliDistribution["TorchProbabilityBernoulliDistribution"],
+    TorchProbabilityCategoricalDistribution["TorchProbabilityBernoulliDistribution"],
+):
     """A Bernoulli distribution represented by the probability of class 1."""
 
     tensor: torch.Tensor = field()
@@ -62,7 +67,10 @@ class TorchProbabilityBernoulliDistribution(TorchProbabilityCategoricalDistribut
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchLogitBernoulliDistribution(TorchLogitCategoricalDistribution, TorchBernoulliDistribution):
+class TorchLogitBernoulliDistribution(
+    TorchBernoulliDistribution["TorchLogitBernoulliDistribution"],
+    TorchLogitCategoricalDistribution["TorchLogitBernoulliDistribution"],
+):
     """A Bernoulli distribution represented by class-1 log-odds."""
 
     tensor: torch.Tensor = field()

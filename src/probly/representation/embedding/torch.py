@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 @create_embedding.register(torch.Tensor)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchEmbedding(TorchAxisProtected[torch.Tensor], Embedding[torch.Tensor]):
+class TorchEmbedding(TorchAxisProtected["TorchEmbedding"], Embedding[torch.Tensor]):
     """Embedding vectors with a protected trailing embedding axis.
 
     Shape: ``batch_shape``. The underlying ``embeddings`` tensor has shape

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol, override, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
+from ndlike.array_like import WeakArrayLike
 
 from probly.decider import categorical_from_mean
 from probly.predictor import LogitClassifier, Predictor, RepresentationPredictor
@@ -23,7 +24,7 @@ type FeatureNodes = Sequence[str] | None
 
 
 @runtime_checkable
-class MahalanobisRepresentation[T](Representation, Protocol):
+class MahalanobisRepresentation[T: WeakArrayLike[Any]](Representation, Protocol):
     """Representation of a Mahalanobis OOD model output.
 
     Holds the softmax probabilities (used for the class prediction) and the
@@ -49,7 +50,7 @@ class MahalanobisRepresentation[T](Representation, Protocol):
 
 
 @flexdispatch
-def create_mahalanobis_representation[T](
+def create_mahalanobis_representation[T: WeakArrayLike[Any]](
     softmax: CategoricalDistribution[T],
     layer_scores: T,
     weight: T,
@@ -115,7 +116,7 @@ def mahalanobis[**In, Out: MahalanobisRepresentation](
 
 
 @flexdispatch
-def combine_layer_scores[T](layer_scores: T, weight: T, bias: T) -> T:
+def combine_layer_scores[T: WeakArrayLike[Any]](layer_scores: T, weight: T, bias: T) -> T:
     """Combine per-layer Mahalanobis confidences into a single OOD score."""
     msg = f"Combining layer scores is not supported for scores of type {type(layer_scores)}."
     raise NotImplementedError(msg)
@@ -123,7 +124,7 @@ def combine_layer_scores[T](layer_scores: T, weight: T, bias: T) -> T:
 
 @decompose.register(MahalanobisRepresentation)
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
-class MahalanobisDecomposition[T](CachingDecomposition, EpistemicDecomposition[T]):
+class MahalanobisDecomposition[T: WeakArrayLike[Any]](CachingDecomposition, EpistemicDecomposition[T]):
     """Mahalanobis decomposition exposing the combined OOD score as epistemic uncertainty.
 
     Following :cite:`leeSimpleUnifiedFramework2018`, which proposes only the
@@ -145,7 +146,7 @@ class MahalanobisDecomposition[T](CachingDecomposition, EpistemicDecomposition[T
 
 
 @categorical_from_mean.register(MahalanobisRepresentation)
-def _[T](representation: MahalanobisRepresentation[T]) -> CategoricalDistribution[T]:
+def _[T: WeakArrayLike[Any]](representation: MahalanobisRepresentation[T]) -> CategoricalDistribution[T]:
     return representation.softmax
 
 

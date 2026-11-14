@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, override
 
@@ -56,7 +56,7 @@ def _sample_probabilities(
     return sample_values.probabilities
 
 
-class JaxCategoricalCredalSet(CategoricalCredalSet, ABC):
+class JaxCategoricalCredalSet(CategoricalCredalSet):
     """Base class for jax-backed categorical credal sets."""
 
     @override
@@ -79,7 +79,7 @@ class JaxCategoricalCredalSet(CategoricalCredalSet, ABC):
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class JaxConvexCredalSet(
-    JaxAxisProtected[Any],
+    JaxAxisProtected["JaxConvexCredalSet"],
     JaxCategoricalCredalSet,
     ConvexCredalSet,
 ):
@@ -120,12 +120,12 @@ class JaxConvexCredalSet(
     @property
     def barycenter(self) -> JaxCategoricalDistribution:
         """Compute the barycenter of the convex credal set as the mean of the vertices."""
-        return jax_mean(self.tensor, axis=-1)  # ty:ignore[invalid-return-type]
+        return jax_mean(self.tensor, axis=-1)
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class JaxDistanceBasedCredalSet(
-    JaxAxisProtected[Any],
+    JaxAxisProtected["JaxDistanceBasedCredalSet"],
     JaxCategoricalCredalSet,
     DistanceBasedCredalSet,
 ):
@@ -197,7 +197,7 @@ _LEVEL_SET_SAMPLES = 10_000
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class JaxDirichletLevelSetCredalSet(
-    JaxAxisProtected[Any],
+    JaxAxisProtected["JaxDirichletLevelSetCredalSet"],
     JaxCategoricalCredalSet,
     DirichletLevelSetCredalSet,
 ):
@@ -332,7 +332,7 @@ class JaxDirichletLevelSetCredalSet(
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class JaxProbabilityIntervalsCredalSet(
-    JaxAxisProtected[Any],
+    JaxAxisProtected["JaxProbabilityIntervalsCredalSet"],
     JaxCategoricalCredalSet,
     ProbabilityIntervalsCredalSet,
 ):

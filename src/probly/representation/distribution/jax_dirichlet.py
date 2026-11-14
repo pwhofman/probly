@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 @create_dirichlet_distribution_from_alphas.register((jax.Array, Tracer))
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class JaxDirichletDistribution(
-    JaxAxisProtected[jax.Array],
+    JaxAxisProtected["JaxDirichletDistribution", "JaxDirichletDistribution | jax.Array | float"],
     DirichletDistribution[JaxCategoricalDistribution],
 ):
     """A Dirichlet distribution stored as a jax Array.
@@ -83,7 +83,7 @@ class JaxDirichletDistribution(
             self.alphas,
             shape=(num_samples, *self.alphas.shape),
         )
-        return JaxSample(array=JaxProbabilityCategoricalDistribution(gammas), sample_axis=0)
+        return JaxSample[JaxCategoricalDistribution](array=JaxProbabilityCategoricalDistribution(gammas), sample_axis=0)
 
     @override
     def _postprocess_elementwise_result(
@@ -96,7 +96,7 @@ class JaxDirichletDistribution(
         return values
 
     @override
-    def __eq__(self, value: Any) -> jax.Array:  # ty: ignore[incompatible-method-override] # noqa: PYI032
+    def __eq__(self, value: Any) -> jax.Array:  # noqa: PYI032
         """Vectorized equality comparison."""
         if isinstance(value, JaxDirichletDistribution):
             eq = jnp.equal(self.alphas, value.alphas)

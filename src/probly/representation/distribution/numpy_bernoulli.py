@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from abc import ABC
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, override
 
+from ndlike.array_like import AnyNumpyLike
 import numpy as np
 from scipy.special import logit
 
@@ -26,12 +26,17 @@ if TYPE_CHECKING:
     from probly.representation.representation import Representation
 
 
-class NumpyBernoulliDistribution(BernoulliDistribution, NumpyCategoricalDistribution, ABC):  # ty:ignore[conflicting-metaclass]
+class NumpyBernoulliDistribution[  # ty:ignore[conflicting-metaclass]
+    OwnerT: AnyNumpyLike = "NumpyBernoulliDistribution[Any]"
+](BernoulliDistribution[np.ndarray], NumpyCategoricalDistribution[OwnerT]):
     """A Bernoulli distribution represented as a categorical distribution with 2 classes."""
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class NumpyProbabilityBernoulliDistribution(NumpyProbabilityCategoricalDistribution, NumpyBernoulliDistribution):
+class NumpyProbabilityBernoulliDistribution(
+    NumpyBernoulliDistribution["NumpyProbabilityBernoulliDistribution"],
+    NumpyProbabilityCategoricalDistribution["NumpyProbabilityBernoulliDistribution"],
+):
     """A Bernoulli distribution represented by the probability of class 1."""
 
     array: np.ndarray = field()
@@ -63,7 +68,10 @@ class NumpyProbabilityBernoulliDistribution(NumpyProbabilityCategoricalDistribut
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class NumpyLogitBernoulliDistribution(NumpyLogitCategoricalDistribution, NumpyBernoulliDistribution):
+class NumpyLogitBernoulliDistribution(
+    NumpyBernoulliDistribution["NumpyLogitBernoulliDistribution"],
+    NumpyLogitCategoricalDistribution["NumpyLogitBernoulliDistribution"],
+):
     """A Bernoulli distribution represented by class-1 log-odds."""
 
     array: np.ndarray = field()

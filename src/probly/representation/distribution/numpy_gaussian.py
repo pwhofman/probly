@@ -23,7 +23,10 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class NumpyGaussianDistribution(NumpyAxisProtected[np.ndarray], GaussianDistribution[np.ndarray]):
+class NumpyGaussianDistribution(
+    NumpyAxisProtected["NumpyGaussianDistribution", "NumpyGaussianDistribution | np.ndarray | float"],
+    GaussianDistribution[np.ndarray],
+):
     """Gaussian distribution with array parameters."""
 
     mean: np.ndarray = field()
@@ -145,7 +148,7 @@ class NumpyGaussianDistribution(NumpyAxisProtected[np.ndarray], GaussianDistribu
         return result
 
     @override
-    def __eq__(self, other: Any) -> np.ndarray:  # ty: ignore[incompatible-method-override]  # noqa: PYI032
+    def __eq__(self, other: Any) -> np.ndarray:  # noqa: PYI032
         """Compare two Gaussians by their parameters."""
         if not isinstance(other, NumpyGaussianDistribution):
             return NotImplemented

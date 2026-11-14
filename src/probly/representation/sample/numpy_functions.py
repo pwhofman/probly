@@ -8,6 +8,7 @@ from inspect import BoundArguments, signature
 from typing import TYPE_CHECKING, Any, Literal, Protocol, overload
 
 from flextype import switchdispatch
+from ndlike.array_like import AnyNumpyLike
 import numpy as np
 
 if TYPE_CHECKING:
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
     from ndlike.array_like import NumpyLike, Order
 
 
-class NumpySampleCreator[D: NumpyLike](Protocol):
+class NumpySampleCreator[D: AnyNumpyLike | np.ndarray](Protocol):
     """Protocol for creating sample arrays."""
 
     def __call__(self, array: D, sample_axis: int, weights: np.ndarray | None) -> Any:  # noqa: ANN401
@@ -24,7 +25,7 @@ class NumpySampleCreator[D: NumpyLike](Protocol):
 
 
 @dataclass(frozen=True, slots=True)
-class NumpySampleInternals[D: NumpyLike]:
+class NumpySampleInternals[D: AnyNumpyLike | np.ndarray]:
     """Internal information about a sample array."""
 
     create: NumpySampleCreator[D]

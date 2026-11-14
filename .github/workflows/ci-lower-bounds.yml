@@ -24,12 +24,6 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            python-version: "3.12"
-            dependency-group: torch
-          - os: ubuntu-latest
-            python-version: "3.12"
-            dependency-group: jax
-          - os: ubuntu-latest
             python-version: "3.13"
             dependency-group: torch
           - os: ubuntu-latest

@@ -19,7 +19,9 @@ from ._common import (
 
 @create_mahalanobis_representation.register(NumpyCategoricalDistribution)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class NumpyMahalanobisRepresentation(MahalanobisRepresentation[np.ndarray], NumpyAxisProtected[np.ndarray]):
+class NumpyMahalanobisRepresentation(
+    MahalanobisRepresentation[np.ndarray], NumpyAxisProtected["NumpyMahalanobisRepresentation"]
+):
     """Mahalanobis representation backed by numpy arrays.
 
     ``weight`` and ``bias`` are shared (non per-sample) combiner parameters and

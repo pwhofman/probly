@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchTextGeneration(TorchAxisProtected[Any]):
+class TorchTextGeneration(TorchAxisProtected["TorchTextGeneration"]):
     """Decoded text generations with sequence log-likelihoods.
 
     Shape: ``batch_shape``. The text is stored as a NumPy object array because
@@ -47,7 +47,7 @@ class TorchTextGeneration(TorchAxisProtected[Any]):
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchTokenGeneration(TorchAxisProtected[torch.Tensor]):
+class TorchTokenGeneration(TorchAxisProtected["TorchTokenGeneration"]):
     """Generated token sequences and token transition scores.
 
     Shape: ``batch_shape``. ``sequences`` stores token ids with a protected trailing
