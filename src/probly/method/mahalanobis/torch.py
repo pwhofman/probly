@@ -35,7 +35,9 @@ if TYPE_CHECKING:
 
 @create_mahalanobis_representation.register(TorchCategoricalDistribution)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchMahalanobisRepresentation(MahalanobisRepresentation, TorchAxisProtected):
+class TorchMahalanobisRepresentation(
+    MahalanobisRepresentation[torch.Tensor], TorchAxisProtected["TorchMahalanobisRepresentation"]
+):
     """Mahalanobis representation backed by torch tensors.
 
     ``weight`` and ``bias`` are shared (non per-sample) combiner parameters and

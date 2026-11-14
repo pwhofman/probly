@@ -16,12 +16,13 @@ from probly.representation.sample.torch import TorchSample
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
+    from probly.representation.representation import Representation
     from probly.representation.sample._common import SampleAxis
 
 
 @create_embedding.register(torch.Tensor)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchEmbedding(TorchAxisProtected[torch.Tensor], Embedding[torch.Tensor]):
+class TorchEmbedding(TorchAxisProtected["TorchEmbedding"], Embedding[torch.Tensor]):
     """Embedding vectors with a protected trailing embedding axis.
 
     Shape: ``batch_shape``. The underlying ``embeddings`` tensor has shape
@@ -51,7 +52,7 @@ class TorchEmbeddingSample(  # ty:ignore[conflicting-metaclass]
 ):
     """A torch sample of embeddings."""
 
-    sample_space: ClassVar[type[TorchEmbedding]] = TorchEmbedding
+    sample_space: ClassVar[type[Representation]] = TorchEmbedding
 
     @override
     @classmethod
@@ -65,7 +66,7 @@ class TorchEmbeddingSampleSample(  # ty:ignore[conflicting-metaclass]
 ):
     """A torch sample of embedding samples."""
 
-    sample_space: ClassVar[type[TorchEmbeddingSample]] = TorchEmbeddingSample
+    sample_space: ClassVar[type[Representation]] = TorchEmbeddingSample
 
     @classmethod
     @override

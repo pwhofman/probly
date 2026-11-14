@@ -24,7 +24,7 @@ class TestDareTorch:
         loss = torch.tensor(2.0)
         threshold = torch.tensor(1.0)
         result = dare_anti_regularization(model, device="cpu", loss=loss, threshold=threshold)
-        assert result.item() == 0.0  # ty: ignore[unresolved-attribute]
+        assert result.item() == 0.0  # ty: ignore[missing-attribute]
 
     def test_anti_regularizer_active_below_threshold(self) -> None:
         torch, nn = _torch_nn()

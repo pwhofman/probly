@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self
 
 from flextype import flexdispatch
@@ -27,7 +27,7 @@ class ConformalSet(Representation):
         """Return the sizes of the conformal sets."""
 
 
-class OneHotConformalSet[T](ConformalSet, ABC):
+class OneHotConformalSet[T](ConformalSet):
     """A conformal set represented as a one-hot vector."""
 
     type: ClassVar[Literal["one_hot"]] = "one_hot"
@@ -47,7 +47,7 @@ class OneHotConformalSet[T](ConformalSet, ABC):
         raise NotImplementedError(msg)
 
 
-class IntervalConformalSet[T](ConformalSet, ABC):
+class IntervalConformalSet[T](ConformalSet):
     """A conformal set represented as an interval."""
 
     type: ClassVar[Literal["interval"]] = "interval"

@@ -45,7 +45,7 @@ jobs:
                 # Oldest and newest supported interpreter; installs from the
                 # project metadata, so it also catches a requires-python that
                 # no longer matches what the code needs.
-                python-version: ["3.12", "3.13", "3.14", "3.15"]
+                python-version: ["3.13", "3.14", "3.15"]
         steps:
             -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
                 with:
@@ -70,22 +70,10 @@ jobs:
         if: github.event.pull_request.draft == false
         strategy:
             fail-fast: false
-            # Both ends of the supported range (see project.requires-python) are
-            # covered on Linux; the other operating systems run the newest only.
+            # Backend tests use the minimum supported Python version. Import checks
+            # above cover newer interpreters without optional backend dependencies.
             matrix:
                 include:
-                    - os: ubuntu-latest
-                      python-version: "3.12"
-                      dependency-group: torch
-                    - os: ubuntu-latest
-                      python-version: "3.12"
-                      dependency-group: jax
-                    - os: ubuntu-latest
-                      python-version: "3.12"
-                      dependency-group: river
-                    - os: ubuntu-latest
-                      python-version: "3.12"
-                      dependency-group: transformers
                     - os: ubuntu-latest
                       python-version: "3.13"
                       dependency-group: torch

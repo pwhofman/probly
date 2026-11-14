@@ -346,3 +346,12 @@ def test_hash_returns_identity() -> None:
 
     assert isinstance(dist, JaxDirichletDistribution)
     assert isinstance(hash(dist), int)
+
+
+def test_inherited_comparisons_reduce_class_axis() -> None:
+    left = JaxDirichletDistribution(jnp.array([[1.0, 2.0], [3.0, 4.0]]))
+    right = JaxDirichletDistribution(jnp.array([[1.0, 2.0], [3.0, 5.0]]))
+    np.testing.assert_array_equal(left == right, [True, False])
+    np.testing.assert_array_equal(left != right, [False, True])
+    np.testing.assert_array_equal(left == right.alphas, [True, False])
+    np.testing.assert_array_equal(jax.jit(lambda x, y: x == y)(left, right), [True, False])

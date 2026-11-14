@@ -8,7 +8,7 @@ from typing import Any, ClassVar, Literal, cast, override
 
 from ndlike.protected_axis.torch import TorchAxisProtected
 from ndlike.torch_functions import torch_average
-from ndlike.torch_like import TorchLike
+from ndlike.torch_like import AnyTorchLike
 import torch
 
 from probly.representation.distribution._common import (
@@ -23,8 +23,12 @@ from probly.representation.sample.torch import TorchSample
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchMixtureDistribution[D: Distribution, T: TorchLike](
-    TorchAxisProtected[T],
+class TorchMixtureDistribution[
+    D: Distribution,
+    T: AnyTorchLike,
+    OwnerT: AnyTorchLike = "TorchMixtureDistribution[D, T, Any]",
+](
+    TorchAxisProtected[OwnerT],
     MixtureDistribution[D, T],
 ):
     """Mixture distribution with torch tensor mixture weights.
@@ -123,7 +127,7 @@ class TorchMixtureDistribution[D: Distribution, T: TorchLike](
         return TorchSample(tensor=selected, sample_dim=0)
 
     @override
-    def __eq__(self, value: Any) -> torch.Tensor:  # ty: ignore[invalid-method-override]  # noqa: PYI032
+    def __eq__(self, value: Any) -> torch.Tensor:  # noqa: PYI032
         """Vectorized equality comparison."""
         if not isinstance(value, TorchMixtureDistribution):
             return NotImplemented
@@ -148,14 +152,16 @@ class TorchMixtureDistribution[D: Distribution, T: TorchLike](
     @property
     def mean(self) -> T:
         """Compute the mean of the mixture distribution."""
-        component_means = self.components.mean  # ty:ignore[unresolved-attribute]
+        component_means = self.components.mean  # ty:ignore[missing-attribute]
         weights = self.mixture_weights
 
-        return torch_average(component_means, dim=-1, weights=weights)  # ty:ignore[invalid-return-type]
+        return torch_average(component_means, dim=-1, weights=weights)
 
 
 class TorchDirichletMixtureDistribution(  # ty:ignore[conflicting-metaclass]
-    TorchMixtureDistribution[TorchDirichletDistribution, TorchCategoricalDistribution],
+    TorchMixtureDistribution[
+        TorchDirichletDistribution, TorchCategoricalDistribution, "TorchDirichletMixtureDistribution"
+    ],
     MixtureDistribution[TorchDirichletDistribution, TorchCategoricalDistribution],
 ):
     """Mixture distribution with Dirichlet components and torch tensor mixture weights."""

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Self
 
 import numpy as np
 import pytest
@@ -66,7 +67,7 @@ class FakeNLIModel:
         self.calls: list[list[tuple[int, int]]] = []
         self.eval_calls = 0
 
-    def eval(self) -> FakeNLIModel:
+    def eval(self) -> Self:
         self.eval_calls += 1
         return self
 

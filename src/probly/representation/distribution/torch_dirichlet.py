@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, ClassVar, override
+from typing import TYPE_CHECKING, ClassVar, override
 
 from ndlike.protected_axis.torch import TorchAxisProtected
 from ndlike.torch_functions import torch_average
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 @create_dirichlet_distribution_from_alphas.register(torch.Tensor)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class TorchDirichletDistribution(
-    TorchAxisProtected[Any],
+    TorchAxisProtected["TorchDirichletDistribution", "TorchDirichletDistribution | torch.Tensor | float"],
     DirichletDistribution[TorchCategoricalDistribution],
 ):
     """A Dirichlet distribution stored as a torch tensor.
@@ -35,8 +35,7 @@ class TorchDirichletDistribution(
     """
 
     alphas: torch.Tensor = field()
-    protected_axes: ClassVar[dict[str, int]] = {"alphas": 1}
-    permitted_functions: ClassVar[set[Callable]] = {torch.mean, torch.sum, torch_average}
+    permitted_functions: ClassVar[set[Callable]] = {torch.mean, torch.sum, torch_average, torch.eq, torch.ne}
 
     def __post_init__(self) -> None:
         """Validate the concentration parameters."""
@@ -86,15 +85,6 @@ class TorchDirichletDistribution(
     def numpy(self, *, force: bool = False) -> np.ndarray:
         """Convert the Dirichlet alpha parameters to a numpy array."""
         return self.alphas.numpy(force=force)
-
-    @override
-    def __eq__(self, value: Any) -> torch.Tensor:  # ty: ignore[invalid-method-override]  # noqa: PYI032
-        """Vectorized equality comparison."""
-        if isinstance(value, TorchDirichletDistribution):
-            eq = torch.eq(self.alphas, value.alphas)
-        else:
-            eq = torch.eq(self.alphas, value)
-        return torch.all(eq, dim=-1)
 
     def __hash__(self) -> int:
         """Return an identity-based hash."""

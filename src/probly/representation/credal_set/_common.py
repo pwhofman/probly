@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar, Literal, Protocol, Self
+from abc import abstractmethod
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Protocol, Self
 
 from flextype import flexdispatch
-from ndlike.array_like import ArrayLike
+from ndlike.array_like import WeakArrayLike
 
 from probly.representation.distribution import CategoricalDistribution
 from probly.representation.representation import Representation
@@ -24,7 +24,7 @@ class CredalSet(Representation):
     type: ClassVar[CredalSetType]
 
 
-class CategoricalCredalSet[T: CategoricalDistribution](CredalSet, ABC):
+class CategoricalCredalSet[T: CategoricalDistribution](CredalSet):
     """Base class for credal sets."""
 
     type: ClassVar[Literal["categorical"]] = "categorical"
@@ -69,13 +69,49 @@ class ConvexCredalSet[T: CategoricalDistribution](CategoricalCredalSet[T]):
 class DistanceBasedCredalSet[T: CategoricalDistribution](CategoricalCredalSet[T]):
     """A credal set defined by a distance metric around a central distribution."""
 
+    @property
+    @abstractmethod
+    def nominal(self) -> T:
+        """The nominal distribution."""
+
+    @property
+    @abstractmethod
+    def radius(self) -> Any:  # noqa: ANN401
+        """The distance from the nominal distribution."""
+
+    protected_axes: ClassVar[dict[str, int]] = {"nominal": 0, "radius": 0}
+
 
 class ProbabilityIntervalsCredalSet[T: CategoricalDistribution](CategoricalCredalSet[T]):
     """A credal set defined by probability intervals over outcomes."""
 
+    @property
+    @abstractmethod
+    def lower_bounds(self) -> Any:  # noqa: ANN401
+        """The lower probability bounds."""
+
+    @property
+    @abstractmethod
+    def upper_bounds(self) -> Any:  # noqa: ANN401
+        """The upper probability bounds."""
+
+    protected_axes: ClassVar[dict[str, int]] = {"lower_bounds": 1, "upper_bounds": 1}
+
 
 class DirichletLevelSetCredalSet[T: CategoricalDistribution](CategoricalCredalSet[T]):
     """A credal set defined as a Dirichlet density level set."""
+
+    @property
+    @abstractmethod
+    def alphas(self) -> Any:  # noqa: ANN401
+        """The Dirichlet concentration parameters."""
+
+    @property
+    @abstractmethod
+    def threshold(self) -> Any:  # noqa: ANN401
+        """The density threshold."""
+
+    protected_axes: ClassVar[dict[str, int]] = {"alphas": 1, "threshold": 0}
 
 
 class SingletonCredalSet[T: CategoricalDistribution](DiscreteCredalSet[T]):
@@ -142,7 +178,7 @@ def create_distance_based_credal_set[T: CategoricalDistribution](sample: Sample[
 
 
 @flexdispatch
-def create_probability_intervals_from_lower_upper_array[T: ArrayLike](
+def create_probability_intervals_from_lower_upper_array[T: WeakArrayLike[Any]](
     array: T,
 ) -> ProbabilityIntervalsCredalSet:
     """Create a probability-interval credal set from an array of lower and upper probabilities."""
@@ -151,7 +187,7 @@ def create_probability_intervals_from_lower_upper_array[T: ArrayLike](
 
 
 @flexdispatch
-def create_probability_intervals_from_bounds[T: ArrayLike](
+def create_probability_intervals_from_bounds[T: WeakArrayLike[Any]](
     array: T,
     lower_bounds: T,
     upper_bounds: T,

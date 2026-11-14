@@ -30,7 +30,7 @@ def main(root: Path, output_dir: Path, split: str, maxcount: int) -> None:
 
     random.shuffle(all_files)
 
-    with wds.ShardWriter(output_pattern, maxcount=maxcount) as sink:  # ty: ignore[unresolved-attribute]
+    with wds.ShardWriter(output_pattern, maxcount=maxcount) as sink:  # ty: ignore[missing-attribute]
         for cls_idx, cls_name, filepath in tqdm(all_files, desc=f"Images ({split})"):
             image_data = filepath.read_bytes()
             sink.write(

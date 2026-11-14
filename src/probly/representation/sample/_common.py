@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Protocol, Self
 
@@ -47,7 +47,7 @@ class SampleFactory[T, S: Sample](Protocol):
         """
 
 
-class Sample[T](Representation, ABC):
+class Sample[T](Representation):
     """Abstract base class for samples."""
 
     @classmethod

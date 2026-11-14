@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from abc import abstractmethod
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, override
 
 from ndlike.protected_axis.torch import TorchAxisProtected
@@ -53,7 +53,7 @@ def _sample_probabilities(
     return sample_values.probabilities
 
 
-class TorchCategoricalCredalSet(CategoricalCredalSet, ABC):
+class TorchCategoricalCredalSet(CategoricalCredalSet):
     """Base class for torch-backed categorical credal sets."""
 
     @override
@@ -76,7 +76,7 @@ class TorchCategoricalCredalSet(CategoricalCredalSet, ABC):
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class TorchConvexCredalSet(
-    TorchAxisProtected[Any],
+    TorchAxisProtected["TorchConvexCredalSet"],
     TorchCategoricalCredalSet,
     ConvexCredalSet,
 ):
@@ -122,15 +122,14 @@ class TorchConvexCredalSet(
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class TorchDistanceBasedCredalSet(
-    TorchAxisProtected[Any],
+    TorchAxisProtected["TorchDistanceBasedCredalSet"],
     TorchCategoricalCredalSet,
     DistanceBasedCredalSet,
 ):
     """Distance-based credal set around a nominal categorical distribution."""
 
-    nominal: TorchCategoricalDistribution
-    radius: torch.Tensor
-    protected_axes: ClassVar[dict[str, int]] = {"nominal": 0, "radius": 0}
+    nominal: TorchCategoricalDistribution = field()
+    radius: torch.Tensor = field()
 
     def __post_init__(self) -> None:
         """Validate that nominal is a valid categorical distribution and radius is non-negative."""
@@ -195,7 +194,7 @@ _LEVEL_SET_SAMPLES = 10_000
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class TorchDirichletLevelSetCredalSet(
-    TorchAxisProtected[Any],
+    TorchAxisProtected["TorchDirichletLevelSetCredalSet"],
     TorchCategoricalCredalSet,
     DirichletLevelSetCredalSet,
 ):
@@ -205,9 +204,8 @@ class TorchDirichletLevelSetCredalSet(
     ``threshold`` times the peak density.
     """
 
-    alphas: torch.Tensor
-    threshold: torch.Tensor
-    protected_axes: ClassVar[dict[str, int]] = {"alphas": 1, "threshold": 0}
+    alphas: torch.Tensor = field()
+    threshold: torch.Tensor = field()
 
     def __post_init__(self) -> None:
         """Validate alpha parameters and threshold."""
@@ -330,15 +328,14 @@ class TorchDirichletLevelSetCredalSet(
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class TorchProbabilityIntervalsCredalSet(
-    TorchAxisProtected[Any],
+    TorchAxisProtected["TorchProbabilityIntervalsCredalSet"],
     TorchCategoricalCredalSet,
     ProbabilityIntervalsCredalSet,
 ):
     """Credal set represented by lower/upper categorical bounds."""
 
-    lower_bounds: torch.Tensor
-    upper_bounds: torch.Tensor
-    protected_axes: ClassVar[dict[str, int]] = {"lower_bounds": 1, "upper_bounds": 1}
+    lower_bounds: torch.Tensor = field()
+    upper_bounds: torch.Tensor = field()
 
     @override
     @classmethod

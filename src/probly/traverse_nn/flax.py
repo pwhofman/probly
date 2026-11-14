@@ -163,6 +163,6 @@ flax_traverser: t.Traverser[Module] = t.sequential(
     _flax_traverser,
     name="flax_traverser",
 )
-flax_traverser.register = _flax_traverser.register  # ty: ignore[unresolved-attribute]
+flax_traverser.register = _flax_traverser.register  # ty: ignore[missing-attribute]
 
 tnn.nn_traverser.register(Module, flax_traverser)

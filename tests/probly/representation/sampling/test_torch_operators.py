@@ -147,15 +147,16 @@ def test_tensor_methods_match_namespace_functions(name):
 def test_divmod_and_augmented_assignment():
     sample = TorchSample(torch.arange(1, 13).reshape(3, 4), sample_dim=1, weights=torch.ones(4))
     original = sample
+    original_tensor = sample.tensor.clone()
 
     quotient, remainder = divmod(sample, 3)
     sample += 2
 
-    assert sample is not original
+    assert sample is original
     for result, expected in [
-        (quotient, original.tensor // 3),
-        (remainder, original.tensor % 3),
-        (sample, original.tensor + 2),
+        (quotient, original_tensor // 3),
+        (remainder, original_tensor % 3),
+        (sample, original_tensor + 2),
     ]:
         assert isinstance(result, TorchSample)
         assert result.sample_dim == 1

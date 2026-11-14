@@ -25,7 +25,7 @@ def tile_inputs(x: jax.Array, num_members: int) -> jax.Array:
 @_attach_num_members.register(nnx.Module)
 def _(model: nnx.Module, num_members: int) -> None:
     """Attach ``num_members`` as a plain attribute (preserved through ``nnx.split``)."""
-    model.num_members = num_members  # ty: ignore[unresolved-attribute]
+    model.num_members = num_members  # ty: ignore[missing-attribute]
 
 
 @_wrap_batchensemble_logits.register(JaxSample)

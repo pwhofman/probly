@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol, override, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, override, runtime_checkable
 
 from flextype import flexdispatch
+from ndlike.array_like import WeakArrayLike
 
 from probly.decider import categorical_from_mean
 from probly.predictor import LogitClassifier, Predictor, RepresentationPredictor
@@ -16,24 +17,20 @@ from probly.representation.representation import Representation
 from probly.transformation.transformation import predictor_transformation
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
-    from ndlike.array_like import ArrayLike
-
     from probly.representation.distribution import CategoricalDistribution
 
 
 @runtime_checkable
-class DUQRepresentation(Representation, Protocol):
+class DUQRepresentation[T: WeakArrayLike[Any]](Representation, Protocol):
     r"""Representation of a DUQ model output."""
 
     @property
-    def kernel_values(self) -> ArrayLike:
+    def kernel_values(self) -> T:
         """Per-class RBF kernel values, shape ``(..., num_classes)``."""
 
 
 @flexdispatch
-def create_duq_representation(kernel_values: ArrayLike) -> DUQRepresentation:
+def create_duq_representation[T: WeakArrayLike[Any]](kernel_values: T) -> DUQRepresentation[T]:
     """Create a DUQ representation from per-class kernel values."""
     msg = f"No DUQ representation factory registered for kernel values of type {type(kernel_values)}"
     raise NotImplementedError(msg)
@@ -82,7 +79,7 @@ def duq[**In, Out: DUQRepresentation](
 
 
 @flexdispatch
-def duq_uncertainty(kernel_values: Iterable) -> ArrayLike:
+def duq_uncertainty[T: WeakArrayLike[Any]](kernel_values: T) -> T:
     r"""Compute the DUQ uncertainty score :math:`1 - \max_c K_c(x)`."""
     msg = f"DUQ uncertainty is not implemented for kernel values of type {type(kernel_values)}"
     raise NotImplementedError(msg)
@@ -90,16 +87,16 @@ def duq_uncertainty(kernel_values: Iterable) -> ArrayLike:
 
 @decompose.register(DUQRepresentation)
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
-class DUQDecomposition[T](CachingDecomposition, TotalDecomposition[T]):
+class DUQDecomposition[T: WeakArrayLike[Any]](CachingDecomposition, TotalDecomposition[T]):
     """DUQ total-uncertainty decomposition."""
 
-    representation: DUQRepresentation
+    representation: DUQRepresentation[T]
 
     @override
     @property
     def _total(self) -> T:
         """The total uncertainty of the decomposition."""
-        return duq_uncertainty(self.representation.kernel_values)  # ty:ignore[invalid-return-type]
+        return duq_uncertainty(self.representation.kernel_values)
 
 
 @categorical_from_mean.register(DUQRepresentation)

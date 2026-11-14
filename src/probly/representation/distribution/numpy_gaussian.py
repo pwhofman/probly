@@ -19,16 +19,20 @@ from probly.representation.sample.numpy import NumpySample
 if TYPE_CHECKING:
     from numpy.typing import DTypeLike
 
+    from probly.representation.representation import Representation
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class NumpyGaussianDistribution(NumpyAxisProtected[np.ndarray], GaussianDistribution[np.ndarray]):
+class NumpyGaussianDistribution(
+    NumpyAxisProtected["NumpyGaussianDistribution", "NumpyGaussianDistribution | np.ndarray | float"],
+    GaussianDistribution[np.ndarray],
+):
     """Gaussian distribution with array parameters."""
 
     mean: np.ndarray = field()
     var: np.ndarray = field()
 
     type: ClassVar[Literal["gaussian"]] = "gaussian"
-    protected_axes: ClassVar[dict[str, int]] = {"mean": 0, "var": 0}
     allowed_types: ClassVar[tuple[type[np.ndarray] | type[np.generic] | type[float] | type[int], ...]] = (
         np.ndarray,
         np.generic,
@@ -144,7 +148,7 @@ class NumpyGaussianDistribution(NumpyAxisProtected[np.ndarray], GaussianDistribu
         return result
 
     @override
-    def __eq__(self, other: Any) -> np.ndarray:  # ty: ignore[invalid-method-override]  # noqa: PYI032
+    def __eq__(self, other: Any) -> np.ndarray:  # noqa: PYI032
         """Compare two Gaussians by their parameters."""
         if not isinstance(other, NumpyGaussianDistribution):
             return NotImplemented
@@ -177,7 +181,7 @@ class NumpyGaussianDistributionSample(  # ty:ignore[conflicting-metaclass]
 ):
     """Sample type for empirical second-order Gaussian distributions."""
 
-    sample_space: ClassVar[type[GaussianDistribution]] = NumpyGaussianDistribution
+    sample_space: ClassVar[type[Representation]] = NumpyGaussianDistribution
 
     @override
     @classmethod

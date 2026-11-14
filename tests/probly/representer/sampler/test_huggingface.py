@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any, Self, cast
 
 import numpy as np
 import pytest
@@ -96,7 +96,7 @@ class FakeModel:
         self.transition_score_calls = 0
         self.eval_calls = 0
 
-    def eval(self) -> FakeModel:
+    def eval(self) -> Self:
         self.eval_calls += 1
         return self
 

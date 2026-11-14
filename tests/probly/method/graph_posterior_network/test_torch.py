@@ -384,7 +384,8 @@ def test_lop_forward_requires_num_nodes() -> None:
 
     class _DataWithoutNumNodes(Data):
         @property
-        def num_nodes(self) -> None:
+        # Deliberately hide the node count to exercise the missing-metadata error.
+        def num_nodes(self) -> None:  # ty: ignore[incompatible-property-override]
             return None
 
     bad_data = _DataWithoutNumNodes(
