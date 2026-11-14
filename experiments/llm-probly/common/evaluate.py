@@ -159,3 +159,22 @@ def bootstrap_auroc(
         raise ValueError(msg)
     lo, hi = np.percentile(values, [100 * alpha / 2, 100 * (1 - alpha / 2)])
     return float(lo), float(hi)
+
+
+def rejection_curve(uncertainty, correct, n_bins=10, n_tie_seeds=20, seed=0):
+    """Error rate of the kept questions after rejecting the most uncertain ones.
+
+    Returns ``(rejected, error)``: ``rejected[i]`` is the fraction of questions
+    rejected (0 to 1) and ``error[i]`` the error rate among the remaining ones.
+    Ties are broken randomly, the result is averaged over ``n_tie_seeds`` runs.
+    """
+    u, wrong = _prepare(uncertainty, correct)
+    losses = wrong.astype(float)
+    n_bins = min(n_bins, len(u))
+    rng = np.random.default_rng(seed)
+    curves = []
+    for _ in range(n_tie_seeds):
+        perm = rng.permutation(len(u))
+        _value, bin_losses = selective_prediction(u[perm], losses[perm], n_bins=n_bins)
+        curves.append(np.asarray(bin_losses, dtype=float))
+    return np.linspace(0, 1, n_bins), np.mean(curves, axis=0)
