@@ -1,0 +1,8 @@
+# qwen7b on 200 TriviaQA questions (BIG, COULD).
+# float16, not float32 like the other sizes: 7B in float32 needs ~30 GB and does not fit the 24 GB MacBook Air.
+model: qwen7b         # short name from scripts/generate.py
+dataset: triviaqa
+n: 200                # number of questions
+precision: float16    # must match the cache (.meta.json)
+device: mps           # Apple GPU
+methods: all          # "all" or a list, e.g. [msp, mean_token_entropy]

@@ -1,0 +1,81 @@
+{
+  "model": "qwen1.5b",
+  "part": 2,
+  "items": [
+    {
+      "id": 17,
+      "auto": false,
+      "manual": true
+    },
+    {
+      "id": 25,
+      "auto": false,
+      "manual": false
+    },
+    {
+      "id": 49,
+      "auto": false,
+      "manual": false
+    },
+    {
+      "id": 54,
+      "auto": true,
+      "manual": true
+    },
+    {
+      "id": 74,
+      "auto": true,
+      "manual": true
+    },
+    {
+      "id": 106,
+      "auto": false,
+      "manual": false
+    },
+    {
+      "id": 118,
+      "auto": false,
+      "manual": false
+    },
+    {
+      "id": 135,
+      "auto": false,
+      "manual": false
+    },
+    {
+      "id": 141,
+      "auto": true,
+      "manual": true
+    },
+    {
+      "id": 144,
+      "auto": false,
+      "manual": false
+    },
+    {
+      "id": 149,
+      "auto": true,
+      "manual": true
+    },
+    {
+      "id": 160,
+      "auto": false,
+      "manual": false
+    },
+    {
+      "id": 171,
+      "auto": true,
+      "manual": true
+    },
+    {
+      "id": 178,
+      "auto": true,
+      "manual": true
+    },
+    {
+      "id": 185,
+      "auto": false,
+      "manual": false
+    }
+  ]
+}
