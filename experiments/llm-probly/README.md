@@ -42,6 +42,45 @@ Compare model sizes and make the plots after running each model:
 A new uncertainty method is one file in `methods/` (see `CONTRACT.md`). Configs, metrics
 (AUROC, AURC, PRR, ECE) and plots: [docs/pipeline.md](docs/pipeline.md).
 
+## Results (PIPE)
+
+TriviaQA, 200 questions, Qwen2.5 0.5B–7B. Full tables (AUROC, PRR, AURC, ECE): [`results/comparison_triviaqa_200.md`](results/comparison_triviaqa_200.md).
+Rebuild with `uv run python -m scripts.compare_models` and `uv run python -m scripts.plot_results`.
+
+| model | accuracy | precision |
+|---|---|---|
+| qwen0.5b | 0.190 | float32 |
+| qwen1.5b | 0.375 | float32 |
+| qwen3b | 0.485 | float32 |
+| qwen7b | 0.590 | float16 |
+
+AUROC (higher is better, 0.5 = random):
+
+| method | family | 0.5B | 1.5B | 3B | 7B |
+|---|---|---|---|---|---|
+| p_true_zeroshot | self-eval | 0.669 | pending | **0.877** | – |
+| p_true_brainstorm | self-eval | 0.685 | pending | 0.820 | – |
+| p_true_empirical | self-eval | 0.518 | pending | 0.830 | – |
+| verbalized_2s | self-eval | 0.584 | pending | 0.713 | – |
+| likelihood_mean | baseline | **0.791** | 0.790 | 0.786 | 0.817 |
+| mean_token_entropy | baseline | 0.773 | **0.805** | 0.817 | **0.833** |
+| msp | baseline | 0.680 | 0.748 | 0.753 | 0.824 |
+| lexical_similarity | agreement | 0.757 | 0.752 | 0.757 | 0.735 |
+| semantic_entropy | agreement | pending | pending | pending | pending |
+
+![AUROC vs model size](results/plots/triviaqa_200_auroc_vs_size.png)
+
+**Takeaways**
+1. Self-evaluation needs model size. Zero-shot p(True) goes from 0.67 (0.5B) to 0.88 (3B) and is the best method at 3B; at 0.5B every p(True) variant is worse than the cheap baselines.
+2. Verbalized confidence stays weak (0.58 → 0.71); the 1.5B model answers "95" for most questions.
+3. The cheap baselines need no extra model calls and get better with size; at 7B mean token entropy and MSP reach 0.82–0.83.
+
+**Notes**
+- `perplexity` equals `likelihood_mean` (same ranking: one is a monotone function of the other), so the table shows only `likelihood_mean`.
+- 7B ran in float16 (memory), the others in float32.
+- 7B: no p(True) yet (about 1 h on the 24 GB Mac). 1.5B self-evaluation and semantic entropy results: pending.
+- Rejection curves for 3B: [`results/plots/triviaqa_200_qwen3b_rejection.png`](results/plots/triviaqa_200_qwen3b_rejection.png).
+
 ## Tests
     uv run python -m pytest tests
 
