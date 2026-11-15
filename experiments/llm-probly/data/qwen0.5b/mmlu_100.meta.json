@@ -1,0 +1,31 @@
+{
+  "settings": {
+    "cache_version": 2,
+    "model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "dataset": "mmlu",
+    "n": 100,
+    "seed": 42,
+    "precision": "float32",
+    "instruction": "Reply with only the letter (A, B, C or D) of the correct answer. + LM-Polygraph prompt",
+    "num_samples": 10,
+    "temperature": 0.7,
+    "max_new_tokens": 32,
+    "stop": "first newline or EOS; only tokens before the stop are scored"
+  },
+  "environment": {
+    "device": "cpu",
+    "torch": "2.10.0",
+    "transformers": "5.7.0",
+    "python": "3.13.5",
+    "machine": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "model_generation_config": {
+      "top_p": 0.8,
+      "top_k": 20,
+      "repetition_penalty": 1.1,
+      "do_sample": true
+    }
+  },
+  "started": "2026-11-13T15:09:52+00:00",
+  "finished": "2026-11-13T15:17:01+00:00",
+  "seconds_per_question_last_run": 4.29
+}
