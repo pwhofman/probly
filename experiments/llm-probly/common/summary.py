@@ -26,6 +26,7 @@ COLUMNS = ["method", "status", "auroc", "ci_low", "ci_high", "aurc", "prr", "ece
 # Methods whose score is a probability of being correct (uncertainty = 1 - probability).
 # Only for these ECE is computed. New plugins can instead put "probability": true in their record.
 PROBABILITY_METHODS = (
+    "p_true_zeroshot",
     "p_true_zeroshot_norm",
     "p_true_brainstorm",
     "p_true_empirical",
