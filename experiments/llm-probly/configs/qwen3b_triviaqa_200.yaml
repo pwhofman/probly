@@ -1,0 +1,7 @@
+# qwen3b on 200 TriviaQA questions (BIG).
+model: qwen3b         # short name from scripts/generate.py
+dataset: triviaqa
+n: 200                # number of questions
+precision: float32    # same as 0.5B and 1.5B (DATA: precision changes the answers)
+device: mps           # Apple GPU; 3B on cpu is too slow
+methods: all          # "all" or a list, e.g. [msp, mean_token_entropy]
