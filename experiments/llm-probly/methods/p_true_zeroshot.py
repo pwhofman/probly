@@ -39,6 +39,7 @@ def score(rows, model=None, tok=None) -> dict:
         "method": NAME,
         "model": rows[0]["model"],
         "answer": "greedy",
+        "probability": True,   # uncertainty = 1 - probability, so summary.py computes ECE
         "mode": MODE,
         "coverage": coverage,
         "ids": [row["id"] for row in rows],

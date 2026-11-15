@@ -44,6 +44,7 @@ def score(rows, model=None, tok=None) -> dict:
         "method": NAME,
         "model": rows[0]["model"],
         "answer": "greedy",
+        "probability": True,   # uncertainty = 1 - probability, so summary.py computes ECE
         "parsed_fraction": parsed_fraction,
         "ids": [row["id"] for row in rows],
         "uncertainty": uncertainty,
