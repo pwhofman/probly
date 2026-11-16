@@ -32,9 +32,11 @@ python docs/source/demos/milton/compute/run_full.py  # the runs: a GPU with 80 G
 python docs/source/demos/milton/compute/preview.py  # then open cache/preview.html
 ```
 
-With `--also full_2022`, the script also rolls out the four models as trained on data through 2022
-into `results/full_2022`, after the demo's data is written: they are not in the demo, but compare
-the epistemic uncertainty of models trained with one year less of data.
+`--runs 32` rolls out 32 runs per model instead of 8, keeping those already saved, so that less of
+the epistemic share comes by chance (about 2% instead of 10%). With `--also full_2022`, the script
+also rolls out the four models as trained on data through 2022 into `results/full_2022`, after the
+demo's data is written: they are not in the demo, but compare the epistemic uncertainty of models
+trained with one year less of data.
 
 The script downloads what it needs into `cache/weathernext`, writes its runs to `results/full` as
 they are done, skips what already exists when restarted, and writes `../assets/data.js` at the end;
@@ -60,9 +62,10 @@ the total uncertainty up to 25.5 m/s); `pack.py` warns when a value does not fit
   uncertainty (`spread`, the standard deviation of the runs), the epistemic share of its variance
   (`epistemic`), the runs' 5% and 95% quantiles (`lower`, `upper`) and, where there is one, what
   happened (`truth`);
-- `run_fields`: every run's wind near the storm, per lead time a window of `rows` x `cols` cells
+- `run_fields`: the runs' wind near the storm, per lead time a window of `rows` x `cols` cells
   around where any run has tropical-storm-force wind, with a cell to spare (`origins`: its first
-  row and column), for the outline around it;
+  row and column), in two `layers`: the first run's wind (`first`) and the most wind of any run
+  (`most`), for the outlines of One run and of the other views, however many runs there are;
 - `tracks`: every run's track (the lowest sea-level pressure near its last position) and where it
   comes ashore in Florida;
 - `places`: every run's wind at the demo's places, with the aleatoric and epistemic variance.

@@ -39,7 +39,7 @@ MODELS = {
         # WeatherNext's four models, trained on data through 2023, before Milton
         "checkpoints": ["model1", "model2", "model3", "model4"],
         "group": ["model", "models"],
-        "about": "8 runs of each of WeatherNext's four models, trained on data through 2023, before Milton.",
+        "about": "{runs} runs of each of WeatherNext's four models, trained on data through 2023, before Milton.",
     },
 }
 WIND = ("10m_u_component_of_wind", "10m_v_component_of_wind")
@@ -133,7 +133,7 @@ def build_real(key: str, results: Path, rings: list[np.ndarray], observed: list)
         "detail": spec["detail"],
         "mock": False,
         "group": spec["group"],
-        "about": spec["about"],
+        "about": spec["about"].format(runs=len(files[0])),
         **summary,
     }
 

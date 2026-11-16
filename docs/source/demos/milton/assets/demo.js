@@ -5,7 +5,7 @@
 // own: the runs of one model scatter as the model has learned the atmosphere might (aleatoric uncertainty), and the
 // models' disagreement shows what they do not know (epistemic uncertainty), as in its paper
 // (Alet et al., 2025). The data (data.js, written by the scripts in ../compute) holds the runs'
-// tracks, fields on a grid every 6 hours, every run's wind near the storm, and the runs at a few
+// tracks, fields on a grid every 6 hours, the runs' wind near the storm, and the runs at a few
 // places; the page interpolates between the 6-hourly steps and only looks values up.
 //
 // Four views: one run of the model, taken as the forecast; all runs; the uncertainty of the runs,
@@ -173,12 +173,13 @@
       if (row < 0 || col < 0 || row >= grid.rows || col >= grid.cols) return -1;
       return row * grid.cols + col;
     };
-    // every run's wind near the storm, interpolated between 6-hourly steps, on a grid ``factor`` times
-    // as fine (upsample, below); the runs' windows follow the storm, so the values cover the windows
-    // of both steps, and a window's cells outside the other's count as calm (a window holds all of the
-    // runs' tropical-storm-force wind, with a cell to spare)
+    // a layer of the runs' wind near the storm (the first run's, or the most of any run), interpolated
+    // between 6-hourly steps, on a grid ``factor`` times as fine (upsample, below); the windows follow
+    // the storm, so the values cover the windows of both steps, and a window's cells outside the
+    // other's count as calm (a window holds all of the runs' tropical-storm-force wind, with a cell to
+    // spare)
     const runFrames = new Map();
-    const runFields = (hours, factor, runs) => {
+    const runFields = (hours, factor, layer) => {
       const m = model();
       const windows = m.run_fields;
       const rows = windows.rows ?? windows.size;
@@ -195,19 +196,18 @@
       const left = Math.min(c0, c1);
       const height = Math.max(r0, r1) + rows - top;
       const width = Math.max(c0, c1) + cols - left;
-      const value = (frame, run, r, c) => (r >= 0 && r < rows && c >= 0 && c < cols ? frame[run * n + r * cols + c] : 0);
-      const fields = runs.map((run) => {
-        const values = new Float32Array(height * width);
-        for (let r = 0; r < height; r += 1) {
-          for (let c = 0; c < width; c += 1) {
-            const va = value(list[i], run, r + top - r0, c + left - c0);
-            const vb = value(list[i + 1], run, r + top - r1, c + left - c1);
-            values[r * width + c] = lerp(va, vb, w) / m.scales.wind;
-          }
+      // the window's layers: the first run's wind, and the most wind of any run
+      const at0 = windows.layers.indexOf(layer) * n;
+      const value = (frame, r, c) => (r >= 0 && r < rows && c >= 0 && c < cols ? frame[at0 + r * cols + c] : 0);
+      const values = new Float32Array(height * width);
+      for (let r = 0; r < height; r += 1) {
+        for (let c = 0; c < width; c += 1) {
+          const va = value(list[i], r + top - r0, c + left - c0);
+          const vb = value(list[i + 1], r + top - r1, c + left - c1);
+          values[r * width + c] = lerp(va, vb, w) / m.scales.wind;
         }
-        return upsample(values, height, width, factor);
-      });
-      return { fields, rows: (height - 1) * factor + 1, cols: (width - 1) * factor + 1, origin: [top, left] };
+      }
+      return { field: upsample(values, height, width, factor), rows: (height - 1) * factor + 1, cols: (width - 1) * factor + 1, origin: [top, left] };
     };
 
     // -- the tracks -----------------------------------------------------------------------------------
@@ -761,12 +761,9 @@
     // wind of the runs, cell by cell), on a grid of about a quarter degree, as a path
     const outlinePath = () => {
       const factor = Math.max(1, Math.round(model().grid.step / 0.25));
-      const runs = state.view === "one" ? [0] : model().tracks.map((_, run) => run);
-      const { fields, rows, cols, origin } = runFields(state.hours, factor, runs);
-      const most = fields[0].slice();
-      for (const values of fields) for (let c = 0; c < most.length; c += 1) most[c] = Math.max(most[c], values[c]);
+      const { field, rows, cols, origin } = runFields(state.hours, factor, state.view === "one" ? "first" : "most");
       context.beginPath();
-      trace(isolines(most, rows, cols, data.gale).map(smooth), origin, factor);
+      trace(isolines(field, rows, cols, data.gale).map(smooth), origin, factor);
     };
     // the outline: quiet, under the tracks
     const outline = () => {

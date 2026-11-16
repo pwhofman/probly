@@ -213,11 +213,14 @@ def encode(values: np.ndarray, kind: str) -> str:
 
 
 def windows(winds: np.ndarray, tracks: list[np.ndarray], spec: dict, size: int) -> dict:
-    """Every run's wind near the storm, for the outline around where any run has tropical-storm-force wind.
+    """The runs' wind near the storm, for the outlines of their tropical-storm-force wind.
 
     Per lead time a window of cells around where any run has tropical-storm-force wind, with a cell
     to spare (or around the runs' mean position, where none has), as large as it needs to be at any
     time and at least ``size`` x ``size`` cells; ``winds`` has the shape (runs, times, rows, cols).
+    The window holds two layers, which is all the outlines need, however many runs there are: the
+    first run's wind (``first``, for One run) and the most wind of any run (``most``, for the outline
+    around where any run has tropical-storm-force wind).
     """
     rows, cols = winds.shape[2:]
     gale = (winds >= GALE).any(axis=0)
@@ -238,8 +241,9 @@ def windows(winds: np.ndarray, tracks: list[np.ndarray], spec: dict, size: int) 
         row = int(np.clip((top + bottom + 1) // 2 - height // 2, 0, rows - height))
         col = int(np.clip((left + right + 1) // 2 - width // 2, 0, cols - width))
         origins.append([row, col])
-        fields.append(encode(winds[:, t, row : row + height, col : col + width], "wind"))
-    return {"rows": height, "cols": width, "origins": origins, "fields": fields}
+        window = winds[:, t, row : row + height, col : col + width]
+        fields.append(encode(np.stack([window[0], window.max(axis=0)]), "wind"))
+    return {"rows": height, "cols": width, "layers": ["first", "most"], "origins": origins, "fields": fields}
 
 
 def decompose(winds: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:

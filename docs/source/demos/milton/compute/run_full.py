@@ -2,12 +2,13 @@ r"""Run WeatherNext Cyclones on Hurricane Milton, and write the Milton demo's da
 
 Downloads WeatherNext's public initial conditions of 7 October 2024, 00 UTC (0.25 degrees, 9.2 GB)
 and the four public checkpoints of WeatherNext Cyclones (0.7 GB each; four models trained
-independently on data through 2023, before Milton), rolls out 8 runs of 4 days of each model through
-probly's WeatherNext integration, and writes the demo's data,
+independently on data through 2023, before Milton), rolls out 8 runs (or ``--runs``) of 4 days of each
+model through probly's WeatherNext integration, and writes the demo's data,
 ``docs/source/demos/milton/assets/data.js``, for which it also downloads Milton's observed track
 (IBTrACS, 57 MB) and the coastlines (Natural Earth, 2 MB) into ``compute/cache``. The runs land in
 ``compute/results/full`` and the downloads in ``compute/cache/weathernext``; git ignores both. If the
-script stops, run it again: it skips the runs it already has.
+script stops, run it again: it skips the runs it already has. For the same reason, ``--runs 32``
+later adds the runs 8 to 31 of every model to the 8 there are.
 
 Optionally, ``--also full_2022`` rolls out the same 8 runs of each of the four models as trained on
 data through 2022, one year less (``WeatherNextCyclones_<2023_model{1..4}``, 0.7 GB each), into
@@ -57,9 +58,12 @@ a step takes), then the runs::
     python docs/source/demos/milton/compute/run_full.py --check
     python docs/source/demos/milton/compute/run_full.py
     python docs/source/demos/milton/compute/run_full.py --also full_2022  # with the 2022 models too
+    python docs/source/demos/milton/compute/run_full.py --runs 32  # 32 runs per model, not 8
 
-The runs are 4 models x 8 runs x 16 steps of 6 hours, 512 steps on one GPU; the script prints every
-step with the time, and saves the runs as they are done. When it is done, commit
+The runs are 4 models x 8 runs x 16 steps of 6 hours, 512 steps on one GPU (2048 with ``--runs
+32``); the script prints every step with the time, and saves the runs as they are done. With 8 runs
+per model, about 10% of the variance shows as epistemic by chance even if the models were the same;
+with 32, about 2%. When it is done, commit
 ``docs/source/demos/milton/assets/data.js``. To look at the demo without building the docs,
 ``python docs/source/demos/milton/compute/preview.py`` writes ``compute/cache/preview.html``.
 """
