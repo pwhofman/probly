@@ -84,6 +84,35 @@ AUROC (higher is better, 0.5 = random; best per model in bold):
 - SE files were saved by hand and moved into `triviaqa_200/`; next week they will go through the runner.
 - Rejection curves for 1.5B: [`results/plots/triviaqa_200_qwen1.5b_rejection.png`](results/plots/triviaqa_200_qwen1.5b_rejection.png).
 
+## Models & cost (BIG)
+
+All runs: TriviaQA, 200 questions, on one MacBook Air (Apple M-series, 24 GB unified memory).
+
+| model | precision | device | memory (python process) | generation s/question | accuracy |
+|---|---|---|---|---|---|
+| Qwen2.5-0.5B | float32 | CPU | ~1 GB | 2.4 | 0.190 |
+| Qwen2.5-1.5B | float32 | CPU | ~3 GB | 4.0 | 0.375 |
+| Qwen2.5-3B | float32 | MPS | ~16 GB | 5.1 | 0.485 |
+| Qwen2.5-7B | **float16** | MPS | ~17–21 GB | 9.2 | 0.590 |
+
+Extra cost of each method, seconds per question on top of generation (`seconds_per_question` in the result files; 0.5B and 1.5B on CPU, 3B on MPS, so compare within a column):
+
+| method | 0.5B | 1.5B | 3B |
+|---|---|---|---|
+| cache-only (msp, perplexity, likelihood_mean, mean_token_entropy, lexical_similarity) | ~0 | ~0 | ~0 |
+| p_true_zeroshot | 0.11 | 0.31 | 0.24 |
+| p_true_brainstorm | 0.29 | 0.51 | 0.47 |
+| verbalized_2s | 0.19 | 0.56 | 0.77 |
+| p_true_empirical (10 generations) | 0.85 | 2.25 | 3.16 |
+| semantic_entropy (+ NLI) | 1.61 | 0.73 | – |
+
+**Mac limits**
+- 3B in float32 fits: memory pressure stays green while generating, with a short yellow peak while the weights load.
+- 7B in float32 needs ~30 GB and does not fit, so 7B runs in float16 only. Precision changes answers (0.5B: 9 of the first 50 answers changed between bfloat16 and float32), so 7B is not fully comparable with the other sizes.
+- Long runs get slower on the Air (no fan): 7B took 7.3 s/question on 5 questions and 9.2 s/question on 200.
+- Start long runs with `caffeinate -i` so the Mac does not sleep; `scripts.generate` saves after every question and resumes.
+- Load test before a long run: `uv run python -m scripts.generate --model qwen3b --n 5 --device mps`, with Activity Monitor › Memory open.
+
 ## Tests
     uv run python -m pytest tests
 
