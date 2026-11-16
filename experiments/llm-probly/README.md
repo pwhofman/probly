@@ -41,6 +41,7 @@ Compare model sizes and make the plots after running each model:
 
 A new uncertainty method is one file in `methods/` (see `CONTRACT.md`). Configs, metrics
 (AUROC, AURC, PRR, ECE) and plots: [docs/pipeline.md](docs/pipeline.md).
+Overview of all methods (family, logits, cost per question): docs/methods.md
 
 ## Results (PIPE)
 
