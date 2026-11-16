@@ -831,6 +831,16 @@ span.milton-demo-epistemic {
   width: 3.2rem;
 }
 
+/* the models' averages, as on the map: a red outline around a light red */
+.milton-demo-legend i.bean {
+  box-sizing: border-box;
+  width: 1.5rem;
+  height: 0.85rem;
+  border: 2px solid var(--md-red);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--md-red) 22%, transparent);
+}
+
 .milton-demo-note {
   margin: 1rem 0 0;
   color: var(--md-muted);

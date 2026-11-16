@@ -859,13 +859,14 @@
         // how far the models' averages lie apart is what they disagree on
         const means = state.view === "ensemble" ? [] : meanTracks().map((mean, group) => moved(mean, group, share));
         context.setLineDash([4, 4]);
+        // quiet, behind the bean of where the averages are now
         for (const mean of means) {
-          context.lineWidth = 1.5;
-          context.strokeStyle = rgba(colors.red, 0.55);
+          context.lineWidth = 1.1;
+          context.strokeStyle = rgba(colors.red, 0.3);
           path(mean, hours, last);
           context.stroke();
-          context.lineWidth = 2;
-          context.strokeStyle = rgba(colors.red, 1);
+          context.lineWidth = 1.25;
+          context.strokeStyle = rgba(colors.red, 0.55);
           path(mean, 0, hours);
           context.stroke();
         }
@@ -881,11 +882,45 @@
             dot(run.landfall.lat, run.landfall.lon, 3, rgba(colors.ink, 1), colors.surface);
           }
         }
-        for (const mean of means) {
-          const [lat, lon] = position(mean, hours);
-          dot(lat, lon, 4, rgba(colors.red, 1), colors.surface);
+        if (means.length) bean(means.map((mean) => position(mean, hours)));
+      }
+    };
+    // where the models' averages are now, as one shape, a "bean": the round hull of their positions,
+    // as wide as they lie apart, which is the epistemic part; when they agree, it is a small round spot
+    const bean = (positions) => {
+      const radius = 9;
+      const rim = [];
+      for (const [lat, lon] of positions) {
+        for (let k = 0; k < 24; k += 1) {
+          const angle = (k / 24) * Math.PI * 2;
+          rim.push([x(lon) + radius * Math.cos(angle), y(lat) + radius * Math.sin(angle)]);
         }
       }
+      const outline = roundHull(rim);
+      context.beginPath();
+      outline.forEach(([px, py], i) => (i ? context.lineTo(px, py) : context.moveTo(px, py)));
+      context.closePath();
+      context.fillStyle = rgba(colors.red, 0.22);
+      context.fill();
+      context.lineJoin = "round";
+      context.lineWidth = 2;
+      context.strokeStyle = rgba(colors.red, 1);
+      context.stroke();
+    };
+    // the convex hull of points (Andrew's monotone chain)
+    const roundHull = (points) => {
+      const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+      const turn = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+      const half = (list) => {
+        const out = [];
+        for (const point of list) {
+          while (out.length >= 2 && turn(out[out.length - 2], out[out.length - 1], point) <= 0) out.pop();
+          out.push(point);
+        }
+        out.pop();
+        return out;
+      };
+      return [...half(sorted), ...half([...sorted].reverse())];
     };
     const observed = () => {
       const hours = state.hours;
@@ -1603,14 +1638,16 @@
             word("aleatoric"),
             " uncertainty, stronger where larger",
           ]),
-          item(line(rgba(colors.red, 1), false, true), `the ${counted()}' averages, made to agree`),
+          item(line(rgba(colors.red, 0.55), true, true), `the ${counted()}' average tracks, made to agree`),
+          item(swatch("bean"), "where their averages are now: together, once they agree"),
         );
       } else {
         // the map's shade: how large the uncertainty is, and its color, which kind it mostly is
         const ramp = `linear-gradient(90deg, ${rgba(colors.blue, 0.85)}, ${rgba(split(0.5), 0.85)}, ${rgba(colors.red, 0.85)})`;
         items.push(
           item(swatch("ramp", ramp), ["source of uncertainty (stronger where larger, from ", word("aleatoric"), " to ", word("epistemic"), ")"]),
-          item(line(rgba(colors.red, 1), false, true), "each model's average track"),
+          item(line(rgba(colors.red, 0.55), true, true), "each model's average track"),
+          item(swatch("bean"), ["where the models' averages are now: as wide as they disagree (", word("epistemic"), ")"]),
         );
         if (state.wind) items.push(item(line(ink(0.42)), "where any run has tropical-storm-force wind (34 kt)"));
       }
