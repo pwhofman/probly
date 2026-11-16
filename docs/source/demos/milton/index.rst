@@ -30,16 +30,20 @@ data from before 2024, so none of them has seen Milton.
 - *Decomposition* splits the uncertainty of the runs: blue where the runs of one model scatter
   (aleatoric), red where the models disagree (epistemic). Together, they make up the total
   uncertainty.
-- *Better models* shows what better models and more data would change. If the four models agreed,
-  the epistemic part would go: every model's runs move onto the models' common average, which keeps
-  how they scatter. The aleatoric part stays. It is the weather's own and fine to have: plan for its
-  range, and work on the epistemic part.
+- *Better models* shows what would change if the four models agreed: the epistemic part would go,
+  as every model's runs move onto the models' common average, which keeps how they scatter. The
+  aleatoric part stays, and a forecast has to plan for its range. Models that agree are not
+  necessarily right, though: a bias they share stays.
 
 **Time and places.** Play the four days or drag through them, and pick a place, or click the map, to
-see it over time. *Show wind* draws where the run, or any run, has tropical-storm-force wind (34 kt,
-the lowest threshold of the US National Hurricane Center's wind probabilities): in *One run* shaded
-by how strong it is, up to hurricane force (64 kt), and in *All runs* by the chance of it. *Show Milton's track* draws its observed track, from IBTrACS
-:cite:`knappInternationalBest2010`.
+see it over time. *Show wind* draws where the run, or any run, has tropical-storm-force wind (34 kt):
+in *One run* shaded by how strong it is, and in *All runs* by the share of runs that have it at that
+time. *Show Milton's track* draws its observed track, from IBTrACS :cite:`knappInternationalBest2010`.
+
+**The wind is the model's, not the storm's.** The wind is the 10 m wind of the model's grid cells
+(0.25°, shown at 0.5°) every 6 hours. It is far below the storm's observed sustained wind near the
+center, so the share of runs with 34-kt wind is not the National Hurricane Center's wind speed
+probability, which is for the strongest wind over a whole period.
 
 How It Was Computed
 -------------------
@@ -49,7 +53,8 @@ WeatherNext as a Second-Order Predictor
 
 WeatherNext models its two kinds of uncertainty with two mechanisms :cite:`aletSkillfulJoint2025`.
 Within a model, every run draws a small noise vector at every step, a perturbation of the model's
-function: the runs of one model scatter as the atmosphere might, which is aleatoric uncertainty.
+function: the runs of one model scatter as the model has learned the atmosphere might, which is
+aleatoric uncertainty.
 Across models, four models trained independently, a deep ensemble
 :cite:`lakshminarayananSimpleScalable2017`, disagree where the training data does not pin them down,
 which is epistemic uncertainty. Each model's runs are a distribution, and the models are a sample of
@@ -94,12 +99,33 @@ mean and variance:
    # same analysis, and a Gaussian takes no zero variance, so the variance gets a tiny floor
    gaussians = NumpyGaussianDistribution(mean=wind.mean(axis=1), var=np.maximum(wind.var(axis=1), 1e-9))
    split = SecondOrderVarianceDecomposition(NumpyGaussianDistributionSample(array=gaussians, sample_axis=0))
-   split.aleatoric  # the mean variance within a model: the runs scatter as the atmosphere might
+   split.aleatoric  # the mean variance within a model: the runs of a model scatter
    split.epistemic  # the variance of the models' means: the models disagree
 
-The demo shows the square root of the total variance as the total uncertainty, and the epistemic
-share of the variance as the color between blue and red. Every run's track is the lowest sea-level pressure
-near its last position, and a run comes ashore where its track first crosses Florida's coast.
+The demo shows the square root of the total variance, the runs' standard deviation, as the total
+uncertainty, and the epistemic share of the variance as the color between blue and red. Every run's
+track is the lowest sea-level pressure near its last position, and a run, or Milton, comes ashore
+where its track first crosses Florida's coast. Between the 6-hourly steps, the page blends the
+fields of the steps before and after, rather than moving the storm.
+
+What the Split Can Say
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Some epistemic share comes by chance.** Eight runs pin a model's average down only roughly, so the
+models' averages differ even if the models were the same. With :math:`M` models of :math:`n` runs
+each, the epistemic share of the variance is then about :math:`(M-1)/(M(n-1)+M-1)`, here 3/31, about
+10%. Read epistemic shares near 10% as models that agree; for Milton, the epistemic share is only a
+little higher, so the four models mostly agree, and most of the uncertainty is aleatoric. More runs
+per model would lower that floor.
+
+**The same seeds.** Every model draws the runs of the seeds 0 to 7, the same noise. Runs of different
+models with the same seed do not correlate more than runs with different seeds, so this does not
+make the models agree more than they do.
+
+**Four models are few, and alike.** The aleatoric part is each model's own estimate of the spread,
+from one shared analysis of the weather at the start. The four models share an architecture and
+training data, so their disagreement is a lower bound on what they do not know: a bias they share,
+such as the wind that is too weak near the center, does not show as epistemic uncertainty.
 
 Run It Again
 ------------
@@ -111,7 +137,7 @@ install next to ``probly``:
 
 .. code-block:: bash
 
-   python docs/source/demos/milton/compute/run_full.py --check  # one step of one run, to test the setup
+   python docs/source/demos/milton/compute/run_full.py --check  # two steps of one run, to test the setup
    python docs/source/demos/milton/compute/run_full.py
 
 The checkpoints need a GPU with about 80 GB of memory, or a TPU. The coastlines are from

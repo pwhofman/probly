@@ -6,10 +6,10 @@ their uncertainty: the split into aleatoric and epistemic uncertainty, with prob
 `SecondOrderVarianceDecomposition`. The data is computed once, by hand, and committed; the page only
 looks values up.
 
-**Which runs are real.** The demo shows WeatherNext Cyclones, 8 runs of each of its four models. For
-now, its runs are placeholders, made up around Milton's real track (`mock_runs.py`), until
-`run_full.py` has run on a GPU with about 80 GB of memory (an H100 or larger). Milton's observed
-track (IBTrACS) and the coastlines (Natural Earth) are real.
+**Which runs are real.** The demo shows WeatherNext Cyclones, 8 runs of each of its four models,
+rolled out by `run_full.py` (`mock: false` in `data.js`). `mock_runs.py` makes up placeholder runs
+around Milton's real track, for working on the page without a GPU. Milton's observed track and
+landfall (IBTrACS) and the coastlines (Natural Earth) are real.
 
 | File | What it does | Environment |
 |---|---|---|
@@ -56,7 +56,7 @@ its runs are placeholders. Fields are bytes, value times the model's `scales` (w
 the total uncertainty up to 25.5 m/s); `pack.py` warns when a value does not fit.
 
 - `fields`: per lead time, the grid's values as bytes in base64 (rows north to south): one run's
-  wind (`single`), the runs' mean, the chance of tropical-storm-force wind (`gale`), the total
+  wind (`single`), the runs' mean, the share of runs with tropical-storm-force wind (`gale`), the total
   uncertainty (`spread`, the standard deviation of the runs), the epistemic share of its variance
   (`epistemic`), the runs' 5% and 95% quantiles (`lower`, `upper`) and, where there is one, what
   happened (`truth`);

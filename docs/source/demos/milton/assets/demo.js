@@ -2,7 +2,7 @@
 // ahead, from 7 October 2024, 00 UTC, and what probly makes of the spread of its runs.
 //
 // WeatherNext 2 is four models trained independently, and every run of a model draws noise of its
-// own: the runs of one model scatter as the atmosphere might (aleatoric uncertainty), and the
+// own: the runs of one model scatter as the model has learned the atmosphere might (aleatoric uncertainty), and the
 // models' disagreement shows what they do not know (epistemic uncertainty), as in its paper
 // (Alet et al., 2025). The data (data.js, written by the scripts in ../compute) holds the runs'
 // tracks, fields on a grid every 6 hours, every run's wind near the storm, and the runs at a few
@@ -11,7 +11,7 @@
 // Four views: one run of the model, taken as the forecast; all runs; the uncertainty of the runs,
 // split into its aleatoric and epistemic parts by the law of total variance; and what better models
 // would change: if the models agreed, the epistemic part would go and the aleatoric part stay. A toggle adds the
-// wind: where the run, or any run, has tropical-storm-force wind, and in all runs the chance of it.
+// wind: where the run, or any run, has tropical-storm-force wind, and in all runs the share of runs with it.
 // Pointing at the map shows the values there; clicking it, or a place, shows that spot over time.
 //
 // Without JavaScript, the static figure in the <noscript> shows; when the data does not load, the
@@ -106,17 +106,24 @@
     const NUMBERS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight"];
     const groups = (m = model()) => (m.group ?? ["model", "models"])[m.models === 1 ? 0 : 1];
     const counted = (m = model()) => `${NUMBERS[m.models] ?? m.models} ${groups(m)}`;
+    // the epistemic share of the variance that comes by chance, even if the models were the same: with
+    // M models of n runs, their averages still differ, by about (M - 1) / (M (n - 1) + M - 1)
+    const chanceShare = (m = model()) => (m.models > 1 ? (m.models - 1) / (m.models * (m.runs_per_model - 1) + m.models - 1) : 0);
+    const epistemicTerm = () => (model().models > 1 ? `Epistemic (${percent(chanceShare())} by chance)` : "Epistemic");
     // whether the model has what happened to its wind (the observed track is always there)
     const withTruth = () => Boolean(model().fields.truth);
 
     // -- time -----------------------------------------------------------------------------------
-    const when = (hours) => {
-      const date = new Date(init + Math.round(hours) * 3600e3);
+    // to the hour, or to the half hour (``exact``), as the landfalls are found
+    const rounded = (hours, exact) => (exact ? Math.round(hours * 2) / 2 : Math.round(hours));
+    const when = (hours, exact = false) => {
+      const date = new Date(init + rounded(hours, exact) * 3600e3);
       const hour = String(date.getUTCHours()).padStart(2, "0");
-      return `${DAYS[date.getUTCDay()]} ${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]}, ${hour} UTC`;
+      const minute = date.getUTCMinutes() ? `:${String(date.getUTCMinutes()).padStart(2, "0")}` : "";
+      return `${DAYS[date.getUTCDay()]} ${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]}, ${hour}${minute} UTC`;
     };
     const day = (hours) => when(hours).split(",")[0].replace(/ [A-Z][a-z]{2}$/, "");
-    const ahead = (hours) => `+${Math.round(hours)} h`;
+    const ahead = (hours, exact = false) => `+${rounded(hours, exact)} h`;
     // a value of a 6-hourly series at any hour
     const sample = (series, hours) => {
       const x = clamp(hours / step, 0, series.length - 1);
@@ -424,9 +431,9 @@
         "WeatherNext 2 (Google DeepMind) forecasts the weather of the whole globe in steps of 6 hours; " +
           "the demo shows WeatherNext Cyclones, its version for tropical cyclones. It is four models, " +
           "trained independently, and every run of a model draws its own random noise. " +
-          "The runs of one model scatter as the atmosphere might: that uncertainty is ",
+          "The runs of one model scatter as the model has learned the atmosphere might: that is ",
         word("aleatoric"),
-        " uncertainty. Where the four models disagree, they lack knowledge: that is ",
+        " uncertainty. Where the models disagree, they lack knowledge: that is ",
         word("epistemic"),
         " uncertainty (Alet et al., 2025).",
       ),
@@ -436,8 +443,13 @@
         word("aleatoric"),
         ") plus the variance of the models' means (",
         word("epistemic"),
-        "). The demo shows 8 runs of each of the four models, at 0.25°, from 7 October 2024, before " +
+        `). The demo shows ${model().runs_per_model} runs of each of the ${counted()}, at 0.25°, from 7 October 2024, before ` +
           "Milton came ashore; the note under the demo says more about them.",
+      ),
+      paragraph(
+        "The wind is the model's 10 m wind on its grid every 6 hours, far below the storm's observed " +
+          "sustained wind near the center: the share of runs with 34-kt wind is not the National Hurricane " +
+          "Center's wind speed probability.",
       ),
     );
     info.addEventListener("click", () => {
@@ -593,9 +605,10 @@
         field("gale", hours).forEach((p, c) => paint(c, colors.ink, p * 0.6));
       } else if (state.wind) {
         // one run has its wind or not, everywhere: shaded by how strong it is, from tropical-storm force
-        // to hurricane force (64 kt), within the run's outline, it reads as All runs' chance does
-        const hurricane = 64 * 0.514444;
-        field("single", hours).forEach((v, c) => paint(c, colors.ink, 0.06 + 0.54 * clamp((v - data.gale) / (hurricane - data.gale), 0, 1)));
+        // to 50 kt (the model's grid-scale wind rarely reaches hurricane force), within the run's outline,
+        // it reads as All runs' share of runs does
+        const top = 50 * 0.514444;
+        field("single", hours).forEach((v, c) => paint(c, colors.ink, 0.06 + 0.54 * clamp((v - data.gale) / (top - data.gale), 0, 1)));
       }
       offscreen.getContext("2d").putImageData(image, 0, 0);
       const half = grid.step / 2;
@@ -902,7 +915,7 @@
       context.stroke();
       const landfall = data.observed.landfall;
       if (landfall && hours >= landfall.hours) {
-        label(`Milton came ashore, ${ahead(landfall.hours)}`, x(landfall.lon) - 12, y(landfall.lat) + 17, colors.text, "right", 700);
+        label(`Milton came ashore, ${ahead(landfall.hours, true)}`, x(landfall.lon) - 12, y(landfall.lat) + 17, colors.text, "right", 700);
       }
     };
     const graticule = () => {
@@ -1099,17 +1112,17 @@
       const lines = [];
       if (state.view === "one") lines.push(`This run: ${ms(value("single"))}`);
       if (state.view === "ensemble") {
-        lines.push(`Chance of 34-kt wind: ${percent(value("gale"))}`);
+        lines.push(`Runs with 34-kt wind: ${percent(value("gale"))}`);
         lines.push(`Mean of the runs: ${ms(value("mean"))}`);
       }
       if (state.view === "split") {
         const share = value("epistemic");
-        lines.push(`Total uncertainty: ±${ms(value("spread"))}`);
+        lines.push(`Total uncertainty (std): ±${ms(value("spread"))}`);
         lines.push([`${percent(1 - share)} `, word("aleatoric"), `, ${percent(share)} `, word("epistemic")]);
       }
       if (state.view === "agree") {
         const share = value("epistemic");
-        lines.push(`Total uncertainty: ±${ms(value("spread"))}`);
+        lines.push(`Total uncertainty (std): ±${ms(value("spread"))}`);
         lines.push(["If the models agreed: ±", ms(value("spread") * Math.sqrt(1 - share)), " (", word("aleatoric"), ")"]);
       }
       if (state.truth && withTruth()) lines.push(`What happened: ${ms(value("truth"))}`);
@@ -1385,7 +1398,7 @@
       for (const run of runs) {
         const dot = svg("circle", { cx: run.cx, cy: coast - radius - 1.5 - run.level * pitch, r: radius, class: "run" });
         const tip = svg("title");
-        tip.textContent = `A run comes ashore near ${coastName(run.landfall.lat, run.landfall.lon)}, ${ahead(run.landfall.hours)}`;
+        tip.textContent = `A run comes ashore near ${coastName(run.landfall.lat, run.landfall.lon)}, ${ahead(run.landfall.hours, true)}`;
         dot.append(tip);
         shoreChart.append(dot);
         shoreMarks.push({ node: dot, hours: run.landfall.hours, hide: false });
@@ -1396,7 +1409,7 @@
         const px = x(observed.lat);
         mark.append(svg("line", { x1: px, x2: px, y1: 11, y2: coast }));
         const text = svg("text", { x: px, y: 8, "text-anchor": "middle" });
-        text.textContent = `Milton, ${ahead(observed.hours)}`;
+        text.textContent = `Milton, ${ahead(observed.hours, true)}`;
         mark.append(text);
         shoreChart.append(mark);
         shoreMarks.push({ node: mark, hours: observed.hours, hide: true });
@@ -1446,7 +1459,7 @@
           sentence(
             `One run of ${m.name} brings Milton ashore near `,
             strong(coastName(run.landfall.lat, run.landfall.lon)),
-            ` on ${when(run.landfall.hours)}. On its own, it gives no hint of how sure it is.`,
+            ` on ${when(run.landfall.hours, true)}. On its own, it gives no hint of how sure it is.`,
           );
         } else {
           sentence(`One run of ${m.name} keeps Milton offshore. On its own, it gives no hint of how sure it is.`);
@@ -1478,25 +1491,32 @@
         if (state.view === "agree") {
           title.textContent = "Reduce one, plan for the other";
           sentence(
-            "What if better models and more data made the four models agree? Here, every model's runs move onto the models' common average: the ",
+            `What if better models and more data made the ${counted()} agree? Here, every model's runs move onto the models' common average: the `,
             strong("epistemic", "milton-demo-epistemic"),
             " part is gone. What remains is ",
             strong("aleatoric", "milton-demo-aleatoric"),
-            ": even a perfect model's runs scatter, as the atmosphere might. That uncertainty is ",
-            el("em", "", "fine to have"),
-            ": it is the weather's own, so plan for its range. The epistemic part is the one worth reducing.",
+            ": each model's runs still scatter, and a forecast has to plan for that range. Agreeing is not ",
+            el("em", "", "being right"),
+            ", though: a bias the models share stays.",
           );
           return;
         }
         title.textContent = "Where the uncertainty comes from";
         sentence(
-          "The runs of one model scatter as the atmosphere might: that part of the uncertainty is ",
+          "The runs of one model scatter as the model has learned the atmosphere might: that part of the uncertainty is ",
           strong("aleatoric", "milton-demo-aleatoric"),
           ", and more training data would ",
           el("em", "", "not"),
           ` remove it. Where the ${counted()} disagree, they lack knowledge: that part is `,
           strong("epistemic", "milton-demo-epistemic"),
           ". Together, they make up the total uncertainty.",
+          ...(model().models > 1
+            ? [
+                ` With ${model().runs_per_model} runs per model, the models' averages differ by chance too: about ${percent(chanceShare())} of the variance shows as `,
+                strong("epistemic", "milton-demo-epistemic"),
+                " even if the models were the same, so read shares near it as models that agree.",
+              ]
+            : []),
         );
       }
     };
@@ -1517,22 +1537,22 @@
         items.push(stat("This run", ms(at(s.single))), stat("Its peak", `${ms(peak)}, ${ahead(peakAt)}`));
         items.push(state.truth && s.truth ? stat("What happened", ms(at(s.truth))) : stat("Runs shown", `1 of ${model().tracks.length}`));
       } else if (state.view === "ensemble") {
-        items.push(stat("Chance of 34 kt", percent(at(s.gale))), stat("5–95% of the runs", `${at(s.lower).toFixed(0)}–${at(s.upper).toFixed(0)} m/s`));
+        items.push(stat("Runs with 34 kt", percent(at(s.gale))), stat("5–95% of the runs", `${at(s.lower).toFixed(0)}–${at(s.upper).toFixed(0)} m/s`));
         items.push(state.truth && s.truth ? stat("What happened", ms(at(s.truth))) : stat("Mean of the runs", ms(at(s.mean))));
       } else {
         const a = at(s.aleatoric);
         const e = at(s.epistemic);
         const total = a + e;
-        items.push(stat("Total uncertainty", `±${ms(Math.sqrt(total))}`));
+        items.push(stat("Total uncertainty (std)", `±${ms(Math.sqrt(total))}`));
         if (state.view === "agree") {
           items.push(
             stat("What remains", `±${ms(Math.sqrt(a))}`, "milton-demo-aleatoric"),
-            stat("Reducible", total > 0 ? percent(e / total) : "–", "milton-demo-epistemic"),
+            stat(epistemicTerm(), total > 0 ? percent(e / total) : "–", "milton-demo-epistemic"),
           );
         } else {
           items.push(
             stat("Aleatoric", total > 0 ? percent(a / total) : "–", "milton-demo-aleatoric"),
-            stat("Epistemic", total > 0 ? percent(e / total) : "–", "milton-demo-epistemic"),
+            stat(epistemicTerm(), total > 0 ? percent(e / total) : "–", "milton-demo-epistemic"),
           );
         }
       }
@@ -1562,7 +1582,7 @@
       if (state.view === "one") {
         if (state.wind) {
           items.push(
-            item(swatch("ramp", `linear-gradient(90deg, ${ink(0.06)}, ${ink(0.6)})`), "this run's wind, from tropical-storm (34 kt) to hurricane force (64 kt)"),
+            item(swatch("ramp", `linear-gradient(90deg, ${ink(0.06)}, ${ink(0.6)})`), "this run's wind, from tropical-storm force (34 kt) to 50 kt and more"),
             item(line(ink(0.42)), "where it has tropical-storm-force wind"),
           );
         }
@@ -1570,7 +1590,7 @@
       } else if (state.view === "ensemble") {
         if (state.wind) {
           items.push(
-            item(swatch("ramp", `linear-gradient(90deg, ${ink(0.03)}, ${ink(0.6)})`), "chance of tropical-storm-force wind (34 kt)"),
+            item(swatch("ramp", `linear-gradient(90deg, ${ink(0.03)}, ${ink(0.6)})`), "share of runs with tropical-storm-force wind (34 kt)"),
             item(line(ink(0.42)), "where any run has it"),
           );
         }
@@ -1583,7 +1603,7 @@
             word("aleatoric"),
             " uncertainty, stronger where larger",
           ]),
-          item(line(rgba(colors.red, 1), false, true), "the four models' averages, made to agree"),
+          item(line(rgba(colors.red, 1), false, true), `the ${counted()}' averages, made to agree`),
         );
       } else {
         // the map's shade: how large the uncertainty is, and its color, which kind it mostly is

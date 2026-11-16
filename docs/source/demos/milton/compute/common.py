@@ -187,16 +187,16 @@ def points(spec: dict) -> tuple[np.ndarray, np.ndarray]:
     return lat, lon
 
 
-def landfall(rings: list[np.ndarray], track: np.ndarray) -> dict | None:
-    """Where and when a track first comes ashore in Florida (half-hourly).
+def landfall(rings: list[np.ndarray], track: np.ndarray, times: np.ndarray = TIMES) -> dict | None:
+    """Where and when a track (latitude, longitude at ``times``) first comes ashore in Florida (half-hourly).
 
     Florida is the mainland (the land around Orlando, not the Keys or the Bahamas) east of Alabama,
     south of Georgia (31 degrees N) and north of the Yucatan, which are part of the same land.
     """
     mainland = next(Polygon(ring) for ring in rings if Polygon(ring).contains_point((FLORIDA[1], FLORIDA[0])))
-    hours = np.arange(TIMES[0], TIMES[-1] + 0.25, 0.5)
-    lat = np.interp(hours, TIMES, track[:, 0])
-    lon = np.interp(hours, TIMES, track[:, 1])
+    hours = np.arange(max(TIMES[0], times[0]), min(TIMES[-1], times[-1]) + 0.25, 0.5)
+    lat = np.interp(hours, times, track[:, 0])
+    lon = np.interp(hours, times, track[:, 1])
     ashore = mainland.contains_points(np.column_stack([lon, lat])) & (lon > -87.6) & (lat > 24.6) & (lat < 31)
     if not ashore.any():
         return None
@@ -342,7 +342,8 @@ def write(models: dict, observed: list, rings: list[np.ndarray], note: str) -> N
         "coast": [{"name": name, "lat": lat, "lon": lon} for name, lat, lon in COAST],
         "observed": {
             "points": [[round(h, 2), lat, lon, round(w, 1)] for h, lat, lon, w in observed],
-            "landfall": {"hours": 72.5, "lat": 27.4, "lon": -82.6, "place": "Siesta Key"},
+            # found as the runs' landfalls are, so that the two compare
+            "landfall": landfall(rings, np.array(observed)[:, 1:3], np.array(observed)[:, 0]),
             "source": "IBTrACS v04r01 (NOAA NCEI)",
         },
         "models": models,

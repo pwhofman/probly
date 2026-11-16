@@ -20,7 +20,8 @@ default, ``splash_mha``, needs a TPU).
 
 The runs go in groups of as many as there are devices (GPUs), one run per device, and every group is
 saved as soon as it is done, so that a restart only repeats the group that was cut off. The model is
-compiled once per checkpoint.
+compiled once per checkpoint, and freed before the next checkpoint's: the parameters are compiled
+into the model as constants, and two compiled checkpoints do not fit on a GPU at once.
 
 This script needs WeatherNext and its dependencies, with probly installed next to them (see
 ``run_full.py``). The checkpoints need a GPU with about 80 GB of memory (an H100 or larger) or a
@@ -35,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import gc
 import math
 from pathlib import Path
 import shutil
@@ -203,9 +205,23 @@ def ensemble_of(apply: Callable[..., object], params: object) -> Callable[..., x
     return ensemble
 
 
+def release() -> None:
+    """Free the compiled models and their parameters on the devices, once nothing refers to them."""
+    gc.collect()
+    jax.clear_caches()
+    gc.collect()
+    stats = jax.local_devices()[0].memory_stats()
+    if stats and "bytes_in_use" in stats:
+        log(f"freed the model: {stats['bytes_in_use'] / 2**30:.1f} GiB left in use on {jax.local_devices()[0]}")
+
+
 def forecast(config: str, data: Path, checkpoints: dict[str, Path], runs: int, steps: int, out: Path) -> None:
     """Roll out ``runs`` runs of ``steps`` steps of 6 hours of every checkpoint, and save them in ``out``."""
-    batch = xarray.load_dataset(data).compute()
+    with xarray.open_dataset(data) as fields:
+        # WeatherNext takes the last times of the data as the targets: keep the inputs and the steps only,
+        # so that the runs start at the second input time
+        start = fields.time.values[1]
+        batch = fields.sel(time=slice(None, start + np.timedelta64(6 * steps, "h"))).load()
     init = np.datetime64(batch.datetime.values[0, 1], "ns")  # the second input time is the start
     settings, attention, apply = model(config)
     inputs, targets, forcings = data_utils.extract_inputs_targets_forcings(
@@ -252,6 +268,10 @@ def forecast(config: str, data: Path, checkpoints: dict[str, Path], runs: int, s
                     initial_conditions=data.name,
                     computed_with="probly.integrations.weathernext.WeatherNextPredictor and probly.representer",
                 )
+        if ensemble is not None:
+            # the predictor keeps the ensemble function, and with it the compiled model, alive
+            ensemble = predictor = None
+            release()
 
 
 def run(
