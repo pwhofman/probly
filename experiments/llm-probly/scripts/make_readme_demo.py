@@ -47,6 +47,11 @@ LABELS = {
     "discrete_se": "discrete SE",
     "p_true_empirical": "p(True) empirical",
     "verbalized_2s": "verbalized confidence",
+    "perplexity": "perplexity",
+    "discrete_semantic_entropy": "discrete SE",
+    "mean_token_entropy": "token entropy",
+    "msp": "MSP",
+    "lexical_similarity": "lexical similarity",
 }
 MAX_ROWS = 5  # the panel has room for five bars
 
@@ -341,6 +346,7 @@ def main() -> None:
     parser.add_argument("--ids", type=int, nargs="+", help="question ids, one scene each (pick them with --list)")
     parser.add_argument("--methods", nargs="+", help="method file names to show (default: the first five that exist)")
     parser.add_argument("--out", type=Path, default=ROOT / "demo")
+    parser.add_argument("--tag", default="", help="file name suffix, e.g. _0.5b_200q -> llm_uncertainty_demo_0.5b_200q_dark.svg")
     parser.add_argument("--list", action="store_true", help="list candidate questions with the rank of each method")
     args = parser.parse_args()
 
@@ -353,7 +359,7 @@ def main() -> None:
     scenes, footer = collect_scenes(args.run, args.n, args.ids, args.dataset, args.methods)
     args.out.mkdir(parents=True, exist_ok=True)
     for theme in THEMES:
-        path = args.out / f"llm_uncertainty_demo_{theme}.svg"
+        path = args.out / f"llm_uncertainty_demo{args.tag}_{theme}.svg"
         path.write_text(build_svg(scenes, theme, footer), encoding="utf-8")
         print(f"wrote {path} ({path.stat().st_size / 1024:.0f} KB)")
 
