@@ -1,6 +1,6 @@
 # Data & labelling
 
-*Owner: DATA. Numbers as of Friday 13 Nov; 3B and the second half of the hand check are added when they are in.*
+*Owner: DATA. Numbers as of Monday 16 Nov.*
 
 ## Questions
 
@@ -51,7 +51,12 @@ handles full-sentence answers ("The Red Badge of Courage was set during the Amer
 |---|---|---|
 | Qwen2.5-0.5B-Instruct | 38 / 200 = **19 %** | 20 % |
 | Qwen2.5-1.5B-Instruct | 75 / 200 = **38 %** | 35 % |
-| Qwen2.5-3B-Instruct | *pending* | *pending* |
+| Qwen2.5-3B-Instruct | 97 / 200 = **49 %** | 46 % |
+| Qwen2.5-7B-Instruct (float16) | 118 / 200 = **59 %** | 57 % |
+
+Accuracy rises steadily with model size; 1.5B and larger fall in the 30–70 % range where both correct and
+wrong answers are frequent enough to evaluate uncertainty. 7B had to run in float16 (see "Models & cost"),
+so it is not fully comparable with the float32 runs.
 
 ## Label error rate (hand check)
 
@@ -61,16 +66,21 @@ by how often each label occurs in the whole file.
 
 | Model | Checked | Labelled correct, actually wrong | Labelled wrong, actually correct | Label error rate |
 |---|---|---|---|---|
-| 0.5B | 15 of 30 | 0 % | 0 % | 0 % |
-| 1.5B | 15 of 30 | 0 % | 17 % | 10 % |
+| 0.5B | 30 | 13 % (2 of 15) | 0 % | **2.5 %** |
+| 1.5B | 30 | 0 % | 13 % (2 of 15) | **8.3 %** |
 
-*Second half pending; with 15 answers each number rests on one or two answers.*
+The two models fail in opposite directions: the 0.5B model repeats the question, and some aliases are words
+from the question, so a few wrong answers count as correct; the 1.5B model gives short correct answers that
+no alias matches, so a few correct answers count as wrong. With 30 answers per model each error rate rests on
+two answers, so read them as "a few percent", not as exact values. 3B and 7B were not checked by hand.
 
 ## Known weaknesses of alias matching
 
 1. **Loose aliases accept wrong answers.** TriviaQA lists "Nixon pardon" as an answer for Gerald Ford, and
-   "Earth pig" for *"What animal's name means earth pig in Dutch?"* (answer: aardvark). A model that just
-   repeats the question can then be labelled correct.
+   "Earth pig" for *"What animal's name means earth pig in Dutch?"* (answer: aardvark). Some aliases even
+   repeat words of the question: *"In Nabokov's Lolita, what is Lolita's real name?"* has the alias "Lolita",
+   so *"Lolita's real name is Liza Minnelli"* counts as correct; the same happens with "Oswald Chesterfield
+   Cobblepot" (answer: the Penguin). A model that just repeats the question is then labelled correct.
 2. **Short correct answers are missed.** *"The Maine."* is correct for the battleship sunk in Havana in 1898,
    but every alias is longer ("USS Maine", "Battleship Maine"), so none appears inside the answer. This
    happens more often with the larger model, whose answers are shorter, so its accuracy is probably
@@ -79,5 +89,21 @@ by how often each label occurs in the whole file.
    rule agrees here, but would not if an alias were just "California".
 
 Turning the rule around (also accept answers contained in an alias) would fix 2 but accept too general
-answers like "California", so we keep the rule and treat these as open questions: an NLI or model-judge
-check against the canonical answer, compared with the hand labels, is planned.
+answers like "California", so we keep the rule and treat these as open questions. Two fixes for next week:
+ignore aliases that already appear in the question (fixes the "Lolita" case), and an NLI or model-judge check
+against the canonical answer, compared with the 60 hand labels.
+
+## Second dataset: MMLU (first look)
+
+`--dataset mmlu` loads LM-Polygraph's prepared MMLU (`LM-Polygraph/mmlu`, config `continuation`: a 5-shot
+prompt per subject and the gold letter). Two things had to change for chat models:
+
+- Sent unchanged, the instruct model treats the few-shot prompt as a chat message and starts explaining
+  ("Let's analyze each option step-by-step:"), never reaching a letter. We put one line in front:
+  *"Reply with only the letter (A, B, C or D) of the correct answer."*
+- Correctness is the exact letter (`is_correct_letter`, also accepts "The answer is B."). Alias matching
+  cannot be used: its normalisation deletes the article "a", which is also option A.
+
+Qwen2.5-0.5B on 100 questions: **24 % correct, i.e. chance level**. It answers "A" 68 times (B 5, C 1, D 26)
+while the gold letters are spread evenly, a strong position bias. The model is consistently wrong, the hardest
+case for agreement methods, so MMLU is only worth running from 1.5B on.
