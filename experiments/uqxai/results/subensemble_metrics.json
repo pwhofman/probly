@@ -1,0 +1,83 @@
+{
+  "head": "mlp_small",
+  "num_heads": 10,
+  "classes": [
+    "guitar",
+    "dog",
+    "human"
+  ],
+  "train_images": {
+    "guitar": 2600,
+    "dog": 3896,
+    "human": 3900
+  },
+  "test_images": {
+    "guitar": 100,
+    "dog": 708,
+    "human": 150
+  },
+  "train": {
+    "accuracy": 1.0,
+    "accuracy_per_class": {
+      "guitar": 1.0,
+      "dog": 1.0,
+      "human": 1.0
+    },
+    "member_accuracy_mean": 1.0,
+    "member_accuracy_min": 1.0,
+    "negative_log_likelihood": 0.00013622385449707508,
+    "member_disagreement": 0.0,
+    "mean_total_uncertainty": 0.001153714256361127,
+    "mean_aleatoric_uncertainty": 0.0011506659211590886,
+    "mean_epistemic_uncertainty": 3.054806938962429e-06,
+    "confusion_matrix_rows_true": [
+      [
+        2600,
+        0,
+        0
+      ],
+      [
+        0,
+        3896,
+        0
+      ],
+      [
+        0,
+        0,
+        3900
+      ]
+    ]
+  },
+  "test": {
+    "accuracy": 0.9989561438560486,
+    "accuracy_per_class": {
+      "guitar": 0.9900000095367432,
+      "dog": 1.0,
+      "human": 1.0
+    },
+    "member_accuracy_mean": 0.9986430406570435,
+    "member_accuracy_min": 0.9979122877120972,
+    "negative_log_likelihood": 0.004895140416920185,
+    "member_disagreement": 0.0003131524135824293,
+    "mean_total_uncertainty": 0.0032837018370628357,
+    "mean_aleatoric_uncertainty": 0.003267289139330387,
+    "mean_epistemic_uncertainty": 1.6418754967162386e-05,
+    "confusion_matrix_rows_true": [
+      [
+        99,
+        0,
+        1
+      ],
+      [
+        0,
+        708,
+        0
+      ],
+      [
+        0,
+        0,
+        150
+      ]
+    ]
+  }
+}

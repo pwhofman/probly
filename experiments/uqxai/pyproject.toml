@@ -1,0 +1,40 @@
+[project]
+name = "uqxai"
+version = "0.1.0"
+description = "Explaining uncertainty-aware classifiers: class-contrastive Shapley attributions on the probability simplex."
+requires-python = ">=3.13"
+dependencies = [
+  "probly",
+  "shapiq",
+  "torch>=2.6",
+  "torchvision>=0.21",
+  "numpy",
+  "scikit-learn",
+  "lightgbm",          # OddSHAP's surrogate (falls back to a single decision tree without it)
+  "matplotlib",
+  "mpltern>=0.6.0",
+  "pillow",
+  "pyyaml",
+  "pyarrow",           # reading the ImageNet parquet shards
+  "huggingface-hub",   # downloading the ImageNet parquet shards
+  "tqdm",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.uv.sources]
+probly = { path = "../..", editable = true }
+# OddSHAP's support for more than ~1000 players is not in a shapiq release yet.
+shapiq = { git = "https://github.com/mmschlk/shapiq", branch = "main" }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/uqxai"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
