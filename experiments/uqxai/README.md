@@ -113,9 +113,14 @@ Here 20% of the squared magnitude is common and 7 features are shared. The dog's
 strongest feature, is class-specific with a clear common part: it raises dog at the expense of the
 other 997 classes, not of guitar.
 
-Further figures in `results/dog_guitar_patch16_mean/`: `simplex_mean_logit.png` (the logits; less
-saturated than the probabilities, same picture) and `uncertainty_maps.png` (Shapley values of total,
-aleatoric and epistemic uncertainty).
+Further figures in `results/dog_guitar_patch16_mean/`:
+
+- `simplex_mean_logit.png`: the logits, which are less saturated than the probabilities. Summed over
+  the superpixels, the image moves the logit of guitar by +4.0, of dog by +3.6 and of human by
+  -6.9: the dog and the guitar are both evidence against human, which the probabilities hide. The
+  dog's nose reads (-0.5, +1.9, -1.2), a piece of the guitar's neck (+1.5, 0.0, -1.1).
+- `uncertainty_maps.png`: Shapley values of total, aleatoric and epistemic uncertainty. The
+  guitar lowers the uncertainty, parts of the dog's face raise it; the epistemic part is empty.
 
 ### How reliable are 10,000 coalitions?
 
@@ -140,9 +145,23 @@ same coalitions as OddSHAP.
 
 ### Finer superpixels
 
-`results/dog_guitar_patch10_mean/` holds the same explanation for superpixels of 10x10 pixels (529
-players, same budget): the same picture, with 153 class-specific and no shared features for the
-sub-ensemble, and 11 shared features for the open-world readout.
+| superpixel | players | coalitions | class-specific | shared | common part (error) |
+|------------|--------:|-----------:|---------------:|-------:|--------------------:|
+| 16x16 px   |     196 |     10,000 |            102 |      0 | 0.6% |
+| 10x10 px   |     529 |     10,000 |            153 |      0 | 1.1% |
+| 6x6 px     |   1,444 |     20,000 |            648 |      0 | 2.1% |
+
+(Sub-ensemble probabilities; the figures are in `results/dog_guitar_patch10_mean/` and
+`results/dog_guitar_patch6_mean/`.)
+
+- At 10x10 pixels the picture is the same as at 16x16.
+- At 6x6 pixels the dog's nose still stands out, but the rest is mostly noise: the error grows, and
+  the 648 "class-specific" superpixels are an artifact of the background threshold (10% of the
+  largest magnitude), which then lies below the noise. The threshold should come from the error,
+  for example from the common part or from two seeds.
+- 4x4 pixels (3,136 players) were not run. OddSHAP considers at most `budget / 10` terms, so it
+  needs more than 31,000 coalitions to give every superpixel a value at all, and far more for a
+  stable picture. That is a job for a GPU, and a reason for question (a).
 
 ## Caveats
 
