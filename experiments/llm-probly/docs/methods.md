@@ -8,9 +8,9 @@ All methods are plugins in `methods/` (see CONTRACT.md). Each one has a family, 
 | discrete_semantic_entropy | agreement | no (cluster sizes only) | 0 LLM calls + NLI model on sample pairs (up to 45) |
 | lexical_similarity | agreement | no (text only, Rouge-L between samples) | 0 |
 | p_true_zeroshot | self-eval | yes (probability of "True") | 1 extra LLM call |
-| p_true_brainstorm | self-eval | yes (probability of "True") | about 2 extra LLM calls (brainstorm, then score) |
+| p_true_brainstorm | self-eval | yes (probability of the answer option "A" vs "B") | 1 extra LLM call (the 10 cached samples are shown in the prompt) |
 | p_true_empirical | self-eval | yes (probability of "True") | 10 extra generations + scoring |
-| verbalized_2s | self-eval | no (the model writes a confidence number) | about 2 extra LLM calls |
+| verbalized_2s | self-eval | no (the model writes a confidence number, read from the text) | 1 short extra LLM call |
 | msp | baseline | yes (cached greedy log-probs) | 0 |
 | likelihood_mean / perplexity | baseline | yes (cached greedy log-likelihood) | 0 |
 | mean_token_entropy | baseline | yes (cached token entropies) | 0 |
