@@ -28,14 +28,74 @@ newline, seed 42; saves after every question and resumes):
 
 Details, accuracy per model and the label error rate: [docs/data_and_labelling.md](docs/data_and_labelling.md).
 
+## Running the benchmark (PIPE)
+One command runs the whole chain (generate → label → methods → evaluate → table) for one
+model and dataset, skipping steps that are already done:
+
+    uv run python -m scripts.run_benchmark --config configs/qwen1.5b_triviaqa_200.yaml
+
+Compare model sizes and make the plots after running each model:
+
+    uv run python -m scripts.compare_models --dataset triviaqa --n 200
+    uv run python -m scripts.plot_results --dataset triviaqa --n 200
+
+A new uncertainty method is one file in `methods/` (see `CONTRACT.md`). Configs, metrics
+(AUROC, AURC, PRR, ECE) and plots: [docs/pipeline.md](docs/pipeline.md).
+
+## Results (PIPE)
+
+TriviaQA, 200 questions, Qwen2.5 0.5B–7B. Full tables (AUROC, PRR, AURC, ECE): [`results/comparison_triviaqa_200.md`](results/comparison_triviaqa_200.md).
+Rebuild with `uv run python -m scripts.compare_models` and `uv run python -m scripts.plot_results`.
+
+| model | accuracy | precision |
+|---|---|---|
+| qwen0.5b | 0.190 | float32 |
+| qwen1.5b | 0.375 | float32 |
+| qwen3b | 0.485 | float32 |
+| qwen7b | 0.590 | float16 |
+
+AUROC (higher is better, 0.5 = random; best per model in bold):
+
+| method | family | 0.5B | 1.5B | 3B | 7B |
+|---|---|---|---|---|---|
+| p_true_zeroshot | self-eval | 0.669 | **0.825** | **0.877** | – |
+| p_true_brainstorm | self-eval | 0.685 | 0.806 | 0.820 | – |
+| p_true_empirical | self-eval | 0.518 | 0.770 | 0.830 | – |
+| verbalized_2s | self-eval | 0.584 | 0.538 | 0.713 | – |
+| semantic_entropy | agreement | 0.740 | 0.781 | – | – |
+| discrete_semantic_entropy | agreement | 0.744 | 0.783 | – | – |
+| lexical_similarity | agreement | 0.757 | 0.752 | 0.757 | 0.735 |
+| likelihood_mean | baseline | **0.791** | 0.790 | 0.786 | 0.817 |
+| mean_token_entropy | baseline | 0.773 | 0.805 | 0.817 | **0.833** |
+| msp | baseline | 0.680 | 0.748 | 0.753 | 0.824 |
+
+![AUROC vs model size](results/plots/triviaqa_200_auroc_vs_size.png)
+
+**Takeaways**
+1. Self-evaluation needs model size. Zero-shot p(True) goes 0.67 → 0.83 → 0.88 (0.5B → 1.5B → 3B) and is the best method from 1.5B on; at 0.5B every p(True) variant is worse than the cheap baselines.
+2. Verbalized confidence stays weak (0.58, 0.54, 0.71); the 1.5B model answers "95" for most questions.
+3. Semantic entropy and its discrete version are almost identical (0.74 / 0.78) and below zero-shot p(True) at 1.5B, although they need 10 samples and an NLI model per question.
+4. The cheap baselines need no extra model calls and get better with size; at 7B mean token entropy and MSP reach 0.82–0.83.
+
+**Notes**
+- `perplexity` equals `likelihood_mean` (one is a monotone function of the other); the 1.5B value is from `perplexity`.
+- 7B ran in float16 (memory), the others in float32.
+- Not run yet (–): p(True) and verbalized on 7B, SE on 3B and 7B.
+- SE files were saved by hand and moved into `triviaqa_200/`; next week they will go through the runner.
+- Rejection curves for 1.5B: [`results/plots/triviaqa_200_qwen1.5b_rejection.png`](results/plots/triviaqa_200_qwen1.5b_rejection.png).
+
 ## Tests
     uv run python -m pytest tests
 
 ## Structure
 - common/     shared code (data.py, generation.py, correctness.py: DATA; evaluate.py, io.py, summary.py: PIPE; reflexive.py: SELF)
-- scripts/    generate.py, label.py, manual_check.py (DATA) and method scripts
+- scripts/    generate.py, label.py, manual_check.py (DATA); run_benchmark.py, compare_models.py, plot_results.py (PIPE); method scripts
+- methods/    one plugin per uncertainty method (see CONTRACT.md)
+- configs/    one YAML file per benchmark run
 - data/<model>/      <dataset>_<n>.jsonl, .meta.json, .manual_check_part<p>.json
-- results/<model>/   <method>.json (score contract, see CONTRACT.md)
+- results/<model>/<dataset>_<n>/   <method>.json + summary.md (benchmark runs)
+- results/<model>/   <method>.json (week 1; score contract, see CONTRACT.md)
+- results/comparison_<dataset>_<n>.md, results/plots/   model comparison (PIPE)
 - results/sanity/    <method>_<model>.json
 - notebooks/  one notebook per person
 - docs/       README sections per part
