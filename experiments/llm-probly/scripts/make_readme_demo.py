@@ -6,14 +6,18 @@ probly's own ``docs/source/_static/readme/llm_uncertainty_demo_*.svg``: plain SV
 
 Usage (from ``experiments/llm-probly``)::
 
-    uv run python scripts/make_readme_demo.py
-    uv run python scripts/make_readme_demo.py --ids 48 49 10 --run qwen0.5b --n 50
+    uv run python scripts/make_readme_demo.py --list --run qwen1.5b --n 200
+    uv run python scripts/make_readme_demo.py --ids 27 28 44 --run qwen1.5b --n 200
+
+Scores are read from ``results/<run>/<dataset>_<n>/<method>.json`` (pipeline layout) and, if that folder
+does not exist, from the older flat folder ``results/<run>/``.
 """
 
 # ruff: noqa: E501
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import textwrap
 from dataclasses import dataclass
@@ -33,14 +37,18 @@ CHAR_W = 7.2  # width of one character at font-size 12 (monospace)
 CHAT_LEFT, CHAT_RIGHT = 28, 570
 PANEL_X, PANEL_W = 600, 272
 
-# (file name in results/<run>/, label in the panel)
-METHODS = [
-    ("p_true_zeroshot_norm", "p(True) zero-shot"),
-    ("p_true_brainstorm", "p(True) brainstorm"),
-    ("likelihood_mean", "likelihood (mean)"),
-    ("semantic_entropy", "semantic entropy"),
-    ("discrete_se", "discrete SE"),
-]
+# label in the panel for every known method file name (order = preference when more than MAX_ROWS exist)
+LABELS = {
+    "p_true_zeroshot": "p(True) zero-shot",
+    "p_true_zeroshot_norm": "p(True) zero-shot",
+    "p_true_brainstorm": "p(True) brainstorm",
+    "likelihood_mean": "likelihood (mean)",
+    "semantic_entropy": "semantic entropy",
+    "discrete_se": "discrete SE",
+    "p_true_empirical": "p(True) empirical",
+    "verbalized_2s": "verbalized confidence",
+}
+MAX_ROWS = 5  # the panel has room for five bars
 
 GOOD, BAD, MID = "#1e88e5", "#ff0d57", "#f5a623"  # same blue and red as probly's demo
 
@@ -216,34 +224,68 @@ def build_svg(scenes: list[dict], theme_name: str, footer: str) -> str:
     )
 
 
-def load_method_scores(run: str, row_ids: list[int]) -> dict:
-    """Read every available score file. Returns name -> (label, uncertainty by id, all values)."""
-    scores = {}
-    for name, label in METHODS:
-        path = RESULTS_ROOT / run / f"{name}.json"
+def results_dir(run: str, n: int, dataset: str) -> Path:
+    """Folder with the score files: pipeline layout first, older flat folder as fallback."""
+    folder = RESULTS_ROOT / run / f"{dataset}_{n}"
+    return folder if folder.exists() else RESULTS_ROOT / run
+
+
+def load_method_scores(run: str, row_ids: list[int], n: int, dataset: str, methods: list[str] | None = None) -> dict:
+    """Read the available score files. Returns name -> (label, uncertainty by id, all values)."""
+    folder = results_dir(run, n, dataset)
+    print(f"scores from {folder}")
+    if methods:
+        names = methods
+    else:
+        extra = sorted(p.stem for p in folder.glob("*.json") if not p.stem.endswith("_details") and p.stem not in LABELS)
+        names = [*LABELS, *extra]
+    scores, labels_seen, absent = {}, set(), []
+    for name in names:
+        label = LABELS.get(name, name)
+        if label in labels_seen:
+            continue
         try:
-            record = load_scores(path, expected_ids=row_ids)
-        except (FileNotFoundError, ValueError) as error:
+            record = load_scores(folder / f"{name}.json", expected_ids=row_ids)
+        except FileNotFoundError:
+            absent.append(name)
+            continue
+        except ValueError as error:
             print(f"skip {name}: {error}")
             continue
         per_id = dict(zip(record["ids"], record["uncertainty"], strict=True))
         scores[name] = (label, per_id, np.asarray(record["uncertainty"], dtype=float))
+        labels_seen.add(label)
+        if len(scores) == MAX_ROWS and not methods:
+            break
+    if absent and not methods:
+        print(f"no file yet: {', '.join(absent)}")
     if not scores:
-        msg = "no score files found"
+        msg = "no usable score files found"
         raise SystemExit(msg)
+    print(f"methods shown: {', '.join(scores)}")
     return scores
 
 
-def collect_scenes(run: str, n: int, ids: list[int]) -> tuple[list[dict], str]:
+def precision(run: str, n: int, dataset: str) -> str:
+    """Return e.g. ``"float32 · "`` from the cache's .meta.json, or an empty string."""
+    path = ROOT / "data" / run / f"{dataset}_{n}.meta.json"
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))["settings"]["precision"]
+    except (OSError, KeyError, ValueError):
+        return ""
+    return f"{value} · "
+
+
+def collect_scenes(run: str, n: int, ids: list[int], dataset: str = "triviaqa", methods: list[str] | None = None) -> tuple[list[dict], str]:
     """Read cache rows and score files and build one scene per question id."""
-    rows = load_data(run, n)
+    rows = load_data(run, n, dataset)
     row_ids = [row["id"] for row in rows]
     by_id = {row["id"]: row for row in rows}
     missing = [i for i in ids if i not in by_id]
     if missing:
         msg = f"ids not in the data: {missing}"
         raise SystemExit(msg)
-    scores = load_method_scores(run, row_ids)
+    scores = load_method_scores(run, row_ids, n, dataset, methods)
 
     scenes = []
     for question_id in ids:
@@ -259,18 +301,18 @@ def collect_scenes(run: str, n: int, ids: list[int]) -> tuple[list[dict], str]:
         scenes.append(scene)
         shown = ", ".join(f"{label} {unc:.2f}" for _, label, unc, _ in scene["scores"])
         print(f"id {question_id}: correct={scene['correct']} | {clean(scene['question'], 60)} -> {clean(scene['answer'], 40)} | {shown}")
-    model = rows[0].get("model", run)
-    return scenes, f"{model} · TriviaQA · {len(rows)} questions · scores read from saved results"
+    model = str(rows[0].get("model", run)).split("/")[-1]
+    return scenes, f"{model} · {precision(run, n, dataset)}TriviaQA · {len(rows)} questions · scores read from saved results"
 
 
-def list_questions(run: str, n: int, limit: int = 15) -> None:
+def list_questions(run: str, n: int, dataset: str = "triviaqa", methods: list[str] | None = None, limit: int = 15) -> None:
     """Print candidate questions with the rank of each method (0 = least, 1 = most uncertain).
 
     Wrong answers with a low mean rank are the ones the methods miss; correct answers with a
     high mean rank are false alarms.
     """
-    rows = load_data(run, n)
-    scores = load_method_scores(run, [row["id"] for row in rows])
+    rows = load_data(run, n, dataset)
+    scores = load_method_scores(run, [row["id"] for row in rows], n, dataset, methods)
     labels = [label for label, _, _ in scores.values()]
     entries = []
     for row in rows:
@@ -293,18 +335,22 @@ def list_questions(run: str, n: int, limit: int = 15) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--run", default="qwen0.5b")
-    parser.add_argument("--n", type=int, default=50)
-    parser.add_argument("--ids", type=int, nargs="+", default=[48, 49, 10])
+    parser.add_argument("--run", default="qwen0.5b", help="model folder name, e.g. qwen0.5b, qwen1.5b, qwen3b")
+    parser.add_argument("--n", type=int, default=200, help="number of questions in the cache (5, 50 or 200)")
+    parser.add_argument("--dataset", default="triviaqa")
+    parser.add_argument("--ids", type=int, nargs="+", help="question ids, one scene each (pick them with --list)")
+    parser.add_argument("--methods", nargs="+", help="method file names to show (default: the first five that exist)")
     parser.add_argument("--out", type=Path, default=ROOT / "demo")
     parser.add_argument("--list", action="store_true", help="list candidate questions with the rank of each method")
     args = parser.parse_args()
 
     if args.list:
-        list_questions(args.run, args.n)
+        list_questions(args.run, args.n, args.dataset, args.methods)
         return
+    if not args.ids:
+        parser.error("give --ids (use --list to find good questions)")
 
-    scenes, footer = collect_scenes(args.run, args.n, args.ids)
+    scenes, footer = collect_scenes(args.run, args.n, args.ids, args.dataset, args.methods)
     args.out.mkdir(parents=True, exist_ok=True)
     for theme in THEMES:
         path = args.out / f"llm_uncertainty_demo_{theme}.svg"
