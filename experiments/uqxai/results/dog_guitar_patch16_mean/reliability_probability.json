@@ -1,0 +1,18 @@
+{
+  "oddshap": {
+    "split_half_correlation": 0.9078973962604129,
+    "split_half_rmse_relative_to_largest": 0.07395625724569677,
+    "share_of_squared_magnitude_that_is_common": 0.00638322772024063
+  },
+  "kernelshap": {
+    "split_half_correlation": 0.8632402081512801,
+    "split_half_rmse_relative_to_largest": 0.10202245481046537,
+    "share_of_squared_magnitude_that_is_common": 3.9669781682516666e-14
+  },
+  "oddshap_projected": {
+    "split_half_correlation": 0.913925660757408,
+    "split_half_rmse_relative_to_largest": 0.0717131775538432,
+    "share_of_squared_magnitude_that_is_common": 8.679097702423707e-34
+  },
+  "correlation_oddshap_kernelshap_seed0": 0.9640204808148837
+}
