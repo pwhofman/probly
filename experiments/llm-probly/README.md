@@ -54,32 +54,35 @@ Rebuild with `uv run python -m scripts.compare_models` and `uv run python -m scr
 | qwen3b | 0.485 | float32 |
 | qwen7b | 0.590 | float16 |
 
-AUROC (higher is better, 0.5 = random):
+AUROC (higher is better, 0.5 = random; best per model in bold):
 
 | method | family | 0.5B | 1.5B | 3B | 7B |
 |---|---|---|---|---|---|
-| p_true_zeroshot | self-eval | 0.669 | pending | **0.877** | – |
-| p_true_brainstorm | self-eval | 0.685 | pending | 0.820 | – |
-| p_true_empirical | self-eval | 0.518 | pending | 0.830 | – |
-| verbalized_2s | self-eval | 0.584 | pending | 0.713 | – |
-| likelihood_mean | baseline | **0.791** | 0.790 | 0.786 | 0.817 |
-| mean_token_entropy | baseline | 0.773 | **0.805** | 0.817 | **0.833** |
-| msp | baseline | 0.680 | 0.748 | 0.753 | 0.824 |
+| p_true_zeroshot | self-eval | 0.669 | **0.825** | **0.877** | – |
+| p_true_brainstorm | self-eval | 0.685 | 0.806 | 0.820 | – |
+| p_true_empirical | self-eval | 0.518 | 0.770 | 0.830 | – |
+| verbalized_2s | self-eval | 0.584 | 0.538 | 0.713 | – |
+| semantic_entropy | agreement | 0.740 | 0.781 | – | – |
+| discrete_semantic_entropy | agreement | 0.744 | 0.783 | – | – |
 | lexical_similarity | agreement | 0.757 | 0.752 | 0.757 | 0.735 |
-| semantic_entropy | agreement | pending | pending | pending | pending |
+| likelihood_mean | baseline | **0.791** | 0.790 | 0.786 | 0.817 |
+| mean_token_entropy | baseline | 0.773 | 0.805 | 0.817 | **0.833** |
+| msp | baseline | 0.680 | 0.748 | 0.753 | 0.824 |
 
 ![AUROC vs model size](results/plots/triviaqa_200_auroc_vs_size.png)
 
 **Takeaways**
-1. Self-evaluation needs model size. Zero-shot p(True) goes from 0.67 (0.5B) to 0.88 (3B) and is the best method at 3B; at 0.5B every p(True) variant is worse than the cheap baselines.
-2. Verbalized confidence stays weak (0.58 → 0.71); the 1.5B model answers "95" for most questions.
-3. The cheap baselines need no extra model calls and get better with size; at 7B mean token entropy and MSP reach 0.82–0.83.
+1. Self-evaluation needs model size. Zero-shot p(True) goes 0.67 → 0.83 → 0.88 (0.5B → 1.5B → 3B) and is the best method from 1.5B on; at 0.5B every p(True) variant is worse than the cheap baselines.
+2. Verbalized confidence stays weak (0.58, 0.54, 0.71); the 1.5B model answers "95" for most questions.
+3. Semantic entropy and its discrete version are almost identical (0.74 / 0.78) and below zero-shot p(True) at 1.5B, although they need 10 samples and an NLI model per question.
+4. The cheap baselines need no extra model calls and get better with size; at 7B mean token entropy and MSP reach 0.82–0.83.
 
 **Notes**
-- `perplexity` equals `likelihood_mean` (same ranking: one is a monotone function of the other), so the table shows only `likelihood_mean`.
+- `perplexity` equals `likelihood_mean` (one is a monotone function of the other); the 1.5B value is from `perplexity`.
 - 7B ran in float16 (memory), the others in float32.
-- 7B: no p(True) yet (about 1 h on the 24 GB Mac). 1.5B self-evaluation and semantic entropy results: pending.
-- Rejection curves for 3B: [`results/plots/triviaqa_200_qwen3b_rejection.png`](results/plots/triviaqa_200_qwen3b_rejection.png).
+- Not run yet (–): p(True) and verbalized on 7B, SE on 3B and 7B.
+- SE files were saved by hand and moved into `triviaqa_200/`; next week they will go through the runner.
+- Rejection curves for 1.5B: [`results/plots/triviaqa_200_qwen1.5b_rejection.png`](results/plots/triviaqa_200_qwen1.5b_rejection.png).
 
 ## Tests
     uv run python -m pytest tests
