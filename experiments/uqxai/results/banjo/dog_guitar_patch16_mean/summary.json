@@ -1,0 +1,85 @@
+{
+  "problem": "banjo",
+  "image": "dog_guitar.jpg",
+  "patch_size": 16,
+  "grid_shape": [
+    14,
+    14
+  ],
+  "n_players": 196,
+  "baseline": "mean",
+  "budget": 10000,
+  "approximator": "oddshap",
+  "seed": 0,
+  "classes": [
+    "acoustic guitar",
+    "golden retriever",
+    "banjo"
+  ],
+  "prediction": {
+    "acoustic guitar": 0.8657270669937134,
+    "golden retriever": 0.13076263666152954,
+    "banjo": 0.0035102323163300753
+  },
+  "total_uncertainty": 0.4106852114200592,
+  "aleatoric_uncertainty": 0.4076901972293854,
+  "epistemic_uncertainty": 0.002995043992996216,
+  "readouts": {
+    "probability": {
+      "empty": [
+        0.9353636503219604,
+        0.02242107316851616,
+        0.04221515730023384
+      ],
+      "full": [
+        0.8657268285751343,
+        0.13076284527778625,
+        0.0035102455876767635
+      ],
+      "largest_attribution": 0.12471615213834794,
+      "largest_sum_over_outputs": 0.02227728395794153
+    },
+    "mean_logit": {
+      "empty": [
+        1.9421027898788452,
+        -1.811474084854126,
+        -1.1884959936141968
+      ],
+      "full": [
+        2.189434051513672,
+        0.28141164779663086,
+        -3.398189067840576
+      ],
+      "largest_attribution": 1.3633464423551893,
+      "largest_sum_over_outputs": 0.35171103292870715
+    },
+    "uncertainty": {
+      "empty": [
+        0.28126057982444763,
+        0.2793801426887512,
+        0.0018804371356964111
+      ],
+      "full": [
+        0.4106857180595398,
+        0.4076906740665436,
+        0.002995043992996216
+      ],
+      "largest_attribution": 0.09541533873018126,
+      "largest_sum_over_outputs": 0.18835104760487456
+    },
+    "open_world": {
+      "empty": [
+        0.0008970559574663639,
+        0.0014027949655428529,
+        0.0007558465586043894
+      ],
+      "full": [
+        0.3054105341434479,
+        0.05859910324215889,
+        0.037675224244594574
+      ],
+      "largest_attribution": 0.052329982090660664,
+      "largest_sum_over_outputs": 0.045054111623541476
+    }
+  }
+}

@@ -14,4 +14,13 @@ DATA_DIR = Path(os.environ.get("UQXAI_DATA_DIR", DATA_PATH / "uqxai")).expanduse
 """Downloaded images and cached features (large, not in git). Override with ``UQXAI_DATA_DIR``."""
 
 RIBEIRO_IMAGE = ASSET_DIR / "dog_guitar.jpg"
-HEADS_CHECKPOINT = RESULT_DIR / "subensemble_heads.pt"
+
+
+def heads_checkpoint(problem: str) -> Path:
+    """Return the file with the trained heads of a problem's sub-ensemble."""
+    return RESULT_DIR / problem / "subensemble_heads.pt"
+
+
+def run_dir(problem: str, image: Path, patch_size: int, baseline: str) -> Path:
+    """Return the result directory of one explanation of a problem's sub-ensemble."""
+    return RESULT_DIR / problem / f"{image.stem}_patch{patch_size}_{baseline}"

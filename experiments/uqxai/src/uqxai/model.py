@@ -1,8 +1,8 @@
 """The uncertainty-aware model: a sub-ensemble of small MLP heads on a frozen ImageNet ResNet-50.
 
 The model is the sub-ensemble of the probly benchmark (``probly_benchmark``), built as its
-``_subensemble_builder`` builds it, with the ``mlp_small`` head and three output classes. Only the
-heads are trained, on backbone features that are computed once.
+``_subensemble_builder`` builds it, with the ``mlp_small`` head and one output per class of the
+problem. Only the heads are trained, on backbone features that are computed once.
 """
 
 from __future__ import annotations
@@ -22,7 +22,6 @@ import yaml
 from probly.method.subensemble import subensemble
 from probly.traverse_nn.utils import get_output_dim
 from probly_benchmark import models
-from uqxai.classes import CLASS_NAMES
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -55,10 +54,13 @@ def benchmark_subensemble_params(head: str = "mlp_small") -> dict[str, Any]:
     return params
 
 
-def build_subensemble(head: str = "mlp_small", pretrained: bool = True, seed: int = 0) -> nn.ModuleList:
-    """Build the benchmark's sub-ensemble on the ImageNet ResNet-50 encoder for the three classes.
+def build_subensemble(
+    n_classes: int = 3, head: str = "mlp_small", pretrained: bool = True, seed: int = 0
+) -> nn.ModuleList:
+    """Build the benchmark's sub-ensemble on the ImageNet ResNet-50 encoder.
 
     Args:
+        n_classes: Number of output classes.
         head: Name of the head of each member.
         pretrained: Whether the encoder loads its ImageNet weights. Only tests turn this off.
         seed: Seed of the initialization of the heads.
@@ -68,8 +70,8 @@ def build_subensemble(head: str = "mlp_small", pretrained: bool = True, seed: in
     """
     torch.manual_seed(seed)
     params = benchmark_subensemble_params(head)
-    encoder = models.get_base_model("resnet50_encoder", len(CLASS_NAMES), pretrained=pretrained)
-    head_module = models.get_encoder_head(params.pop("head"), get_output_dim(encoder), len(CLASS_NAMES))
+    encoder = models.get_base_model("resnet50_encoder", n_classes, pretrained=pretrained)
+    head_module = models.get_encoder_head(params.pop("head"), get_output_dim(encoder), n_classes)
     model = subensemble(encoder, head=head_module, predictor_type="logit_classifier", **params)
     return cast("nn.ModuleList", model).eval()
 
@@ -170,7 +172,8 @@ def train_heads(
         weight_decay: Weight decay of AdamW.
         seed: Seed of the mini-batch order; head ``i`` uses ``seed + i``.
     """
-    class_weights = len(labels) / (len(CLASS_NAMES) * torch.bincount(labels, minlength=len(CLASS_NAMES)))
+    counts = torch.bincount(labels)
+    class_weights = len(labels) / (len(counts) * counts)
     steps = epochs * int(np.ceil(len(features) / batch_size))
     for index, head in enumerate(heads_of(model)):
         generator = torch.Generator().manual_seed(seed + index)
@@ -188,24 +191,30 @@ def train_heads(
 
 
 def save_heads(model: nn.ModuleList, path: Path) -> None:
-    """Save the heads of the sub-ensemble; the encoder is the public ImageNet checkpoint."""
+    """Save the heads of the sub-ensemble in half precision; the encoder is the public ImageNet checkpoint.
+
+    Reload the model with :func:`load_subensemble` before using it, so that results come from the
+    stored weights.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
-    torch.save([head.state_dict() for head in heads_of(model)], path)
+    states = [{name: value.half() for name, value in head.state_dict().items()} for head in heads_of(model)]
+    torch.save(states, path)
 
 
-def load_subensemble(path: Path, head: str = "mlp_small", pretrained: bool = True) -> nn.ModuleList:
+def load_subensemble(path: Path, n_classes: int = 3, head: str = "mlp_small", pretrained: bool = True) -> nn.ModuleList:
     """Build the sub-ensemble and load its trained heads.
 
     Args:
         path: File written by :func:`save_heads`.
+        n_classes: Number of output classes.
         head: Name of the head of each member.
         pretrained: Whether the encoder loads its ImageNet weights. Only tests turn this off.
 
     Returns:
         The trained sub-ensemble in evaluation mode.
     """
-    model = build_subensemble(head, pretrained=pretrained)
+    model = build_subensemble(n_classes, head, pretrained=pretrained)
     states = torch.load(path, map_location="cpu")
     for head_module, state in zip(heads_of(model), states, strict=True):
-        head_module.load_state_dict(state)
+        head_module.load_state_dict({name: value.float() for name, value in state.items()})
     return model.eval()

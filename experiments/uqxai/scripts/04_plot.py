@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 READOUT_TITLES = {
     "probability": "class probabilities of the sub-ensemble",
     "mean_logit": "class logits of the sub-ensemble",
-    "open_world": "group probabilities of the 1000-class ImageNet model",
+    "open_world": "probabilities of the same classes in the 1000-class ImageNet model",
 }
 
 
@@ -38,7 +38,7 @@ def simplex_figure(
     threshold = background * simplex.magnitude(attributions).max()
     is_probability = readout in ("probability", "open_world")
     fig = plt.figure(figsize=(13.5, 4.6))
-    grid = fig.add_gridspec(1, 3, width_ratios=[0.85, 1.05, 1.25], wspace=0.28)
+    grid = fig.add_gridspec(1, 3, width_ratios=[0.85, 1.05, 1.25], wspace=0.4)
 
     ax_map = fig.add_subplot(grid[0])
     plots.simplex_map(ax_map, image, stored["cells"], attributions)
@@ -52,7 +52,7 @@ def simplex_figure(
         prediction=stored[f"{readout}_full"] / stored[f"{readout}_full"].sum() if is_probability else None,
         baseline=stored[f"{readout}_empty"] / stored[f"{readout}_empty"].sum() if is_probability else None,
         members=stored["member_probabilities"] if readout == "probability" else None,
-        prediction_note=" (renormalized to the three groups)" if readout == "open_world" else "",
+        prediction_note=" (renormalized to the three classes)" if readout == "open_world" else "",
     )
     ax_ternary.set_title("Simplex attribution plot", pad=28)
     handles, labels = ax_ternary.get_legend_handles_labels()
@@ -107,7 +107,7 @@ def maps_figure(
 def main() -> None:
     """Draw all figures of one result directory."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("run", help="name of the result directory, e.g. dog_guitar_patch16_mean")
+    parser.add_argument("run", help="result directory below results/, e.g. electric/dog_guitar_patch16_mean")
     parser.add_argument(
         "--background", type=float, default=0.1, help="background: magnitude below this share of the largest"
     )

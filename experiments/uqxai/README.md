@@ -1,7 +1,7 @@
 # uqxai: explaining uncertainty-aware classifiers on the probability simplex
 
 A first experiment towards an explanation method for models whose prediction is a distribution
-over classes (and, later, a distribution over such distributions). The model is a sub-ensemble
+over classes (and, later, a distribution over such distributions). The models are sub-ensembles
 from the probly benchmark, the explanations are Shapley values computed with shapiq.
 
 Status: the pipeline runs end to end on the dog-with-guitar image of the LIME paper. The numbers
@@ -83,50 +83,90 @@ classes out of many, one-vs-rest scores, the evidence of a Dirichlet (evidential
 uncertainty measure. Logits have a common part, but softmax ignores it (shifting all logits
 changes nothing), so there it carries no meaning.
 
+## The models
+
+One sub-ensemble per problem: the benchmark's sub-ensemble with 10 `mlp_small` heads on the frozen
+ImageNet ResNet-50, trained on three single ImageNet-1k classes (1,300 training and 50 test images
+each). All problems share acoustic guitar and golden retriever, the two classes that the 1000-class
+ResNet-50 ranks first for the image, and differ in the third class (`uqxai/classes.py`):
+
+| problem    | third class     | why                                    | test accuracy |
+|------------|-----------------|----------------------------------------|--------------:|
+| `electric` | electric guitar | rank 3 for the image, close to class 1 | 92.0% |
+| `banjo`    | banjo           | rank 4, close to class 1               | 98.7% |
+| `hat`      | cowboy hat      | a third object of the image            | 98.7% |
+
+The errors of `electric` are confusions of the two guitars (12 of 100 test images).
+
 ## Results on the dog-with-guitar image
 
-Model: the benchmark's sub-ensemble, 10 `mlp_small` heads on the frozen ImageNet ResNet-50,
-trained on three groups of ImageNet-1k classes (see below). Explanation: superpixels of 16x16
-pixels (196 players), absent superpixels are gray, OddSHAP with a budget of 10,000 coalitions.
+Superpixels of 16x16 pixels (196 players), absent superpixels are gray, OddSHAP with a budget of
+10,000 coalitions per model. The columns are the three models:
 
-The sub-ensemble predicts guitar 0.980, dog 0.020, human 0.000 for the image, and all ten heads
-agree (epistemic uncertainty 0.0007 nats of 0.0995 nats in total).
+![Simplex attribution plots of the three models](results/comparison_dog_guitar_patch16_mean_probability.png)
 
-![Simplex attribution plot of the class probabilities](results/dog_guitar_patch16_mean/simplex_probability.png)
+| problem    | prediction (guitar / retriever / third) | uncertainty | class-specific | shared | speak for two classes |
+|------------|-----------------------------------------|------------:|---------------:|-------:|----------------------:|
+| `electric` | 0.83 / 0.16 / 0.00                      | 0.47 nats   | 109            | 0      | 20 |
+| `banjo`    | 0.87 / 0.13 / 0.00                      | 0.41 nats   | 126            | 0      | 23 |
+| `hat`      | 0.80 / 0.20 / 0.00                      | 0.53 nats   | 67             | 0      | 12 |
 
-- The dog's face speaks for dog and against guitar, the neck and body of the guitar for guitar and
-  against dog. The dots lie on the line between the two; no superpixel speaks for human with
-  any weight.
-- As derived above, there are no shared features: 102 class-specific, 94 background (magnitude below
-  10% of the largest). The common part holds 0.6% of the squared magnitude; it is the
-  approximation error of OddSHAP, which explains each class on its own.
+("Speak for two classes": `supported_classes` of at least 1.5 among the class-specific features.)
 
-![Shapley values per class](results/dog_guitar_patch16_mean/class_maps.png)
+- **All three corners are in use.** The models agree on the prediction (acoustic guitar, with 0.13
+  to 0.20 for the retriever), but the superpixels now point in three directions.
+- **The dog and the guitar are stable.** The dog's nose speaks for golden retriever in every
+  model (+1.4 on its logit in all three), the edge of the guitar's body for acoustic guitar.
+- **The third class decides what the rest means.** The top of the hat speaks against acoustic
+  guitar in all models (-0.08, -0.12, -0.13), and the gain goes to whichever third class is on
+  offer: electric guitar (+0.10), banjo (+0.12) or cowboy hat (+0.14). Only the last reading is
+  about a hat. A piece of the guitar's neck speaks for acoustic guitar against banjo (+0.10, -0.10)
+  and against cowboy hat (+0.17, -0.18), but two superpixels further along the neck speak for
+  electric guitar against acoustic guitar (+0.07, -0.10).
+- **No shared features, as derived above.** The common part holds 0.8% to 0.9% of the squared
+  magnitude in each model; it is the approximation error of OddSHAP, which explains each class on
+  its own.
+- **Features for two classes exist**, 12 to 23 per model. They are the form in which a softmax
+  model can show "speaks for more than one class".
 
-To see regime 3, the same coalitions are read out with the original 1000-class ImageNet
-classifier, summed over the classes of each group. These three probabilities do not sum to one
-(guitar 0.345, dog 0.151, human 0.001; the rest goes to other classes):
+Per model, `results/<problem>/dog_guitar_patch16_mean/` holds `simplex_probability.png` (with the
+plane of common and contrast magnitude), `simplex_mean_logit.png`, `class_maps.png` and
+`uncertainty_maps.png`:
 
-![Simplex attribution plot of the open-world probabilities](results/dog_guitar_patch16_mean/simplex_open_world.png)
+![Simplex attribution plot of the electric model](results/electric/dog_guitar_patch16_mean/simplex_probability.png)
 
-Here 20% of the squared magnitude is common and 7 features are shared. The dog's nose, the
-strongest feature, is class-specific with a clear common part: it raises dog at the expense of the
-other 997 classes, not of guitar.
+### Regime 3 in the open world
 
-Further figures in `results/dog_guitar_patch16_mean/`:
+The same coalitions, read out with the original 1000-class ImageNet classifier for the three
+classes of each problem. These probabilities do not sum to one (acoustic guitar 0.31, golden
+retriever 0.06, electric guitar 0.04, banjo 0.04, cowboy hat 0.01):
 
-- `simplex_mean_logit.png`: the logits, which are less saturated than the probabilities. Summed over
-  the superpixels, the image moves the logit of guitar by +4.0, of dog by +3.6 and of human by
-  -6.9: the dog and the guitar are both evidence against human, which the probabilities hide. The
-  dog's nose reads (-0.5, +1.9, -1.2), a piece of the guitar's neck (+1.5, 0.0, -1.1).
-- `uncertainty_maps.png`: Shapley values of total, aleatoric and epistemic uncertainty. The
-  guitar lowers the uncertainty, parts of the dog's face raise it; the epistemic part is empty.
+![Simplex attribution plots of the open-world readout](results/comparison_dog_guitar_patch16_mean_open_world.png)
+
+Here 23% to 28% of the squared magnitude is common, and 9, 5 and 2 features are shared. In
+`electric`, the guitar's neck raises both guitars (acoustic +0.015, electric +0.020) at the expense
+of classes outside the triple: the wheel that speaks for car and truck.
+
+### Uncertainty
+
+The uncertainty of the three models for the image is almost entirely aleatoric: the heads agree
+(epistemic part at most 0.003 nats). Its Shapley values (`uncertainty_maps.png`) show the dog's face
+raising the uncertainty (+0.05 to +0.09 nats for the nose) and the guitar's body lowering it (down
+to -0.10): the face argues against the predicted class.
+
+## Earlier run: groups of classes
+
+The first version of this experiment used one model for three groups of ImageNet classes: guitar
+(2 classes), dog (118 breeds) and human (ballplayer, groom, scuba diver). Its results are kept in
+`results/archive_guitar_dog_human/`; the scripts no longer build it (see commit `087df16`). It
+predicted guitar 0.98, dog 0.02, human 0.00, with every superpixel on the line between guitar and
+dog. Two checks were made with it and not yet repeated for the models above.
 
 ### How reliable are 10,000 coalitions?
 
 `scripts/05_reliability.py` repeats the explanation with a second, independent sample of 10,000
 coalitions and correlates the two results (196 players, all classes pooled). KernelSHAP reads the
-same coalitions as OddSHAP.
+same coalitions as OddSHAP. (Group model.)
 
 | readout       | approximator                  | correlation of the two samples | common part |
 |---------------|-------------------------------|-------------------------------:|------------:|
@@ -151,8 +191,8 @@ same coalitions as OddSHAP.
 | 10x10 px   |     529 |     10,000 |            153 |      0 | 1.1% |
 | 6x6 px     |   1,444 |     20,000 |            648 |      0 | 2.1% |
 
-(Sub-ensemble probabilities; the figures are in `results/dog_guitar_patch10_mean/` and
-`results/dog_guitar_patch6_mean/`.)
+(Group model, sub-ensemble probabilities; the figures are in
+`results/archive_guitar_dog_human/`.)
 
 - At 10x10 pixels the picture is the same as at 16x16.
 - At 6x6 pixels the dog's nose still stands out, but the rest is mostly noise: the error grows, and
@@ -165,18 +205,15 @@ same coalitions as OddSHAP.
 
 ## Caveats
 
-- **"human" is a weak class.** ImageNet-1k has no person class. The group is the three classes
-  below WordNet's `person`: ballplayer, groom and scuba diver. The sub-ensemble separates them from
-  dogs and guitars almost perfectly, but it has not learned arms, hands or shirts, and gives the
-  image a human probability of zero. A broader group (for example adding classes of worn
-  clothing) or person images from another dataset would change this; `uqxai/classes.py` is the
-  place.
-- **The model is very confident and the heads agree.** On the test images the accuracy is 99.9%
-  and the heads disagree on 0.03% of the predictions. Heads on frozen features of an easy problem
-  give almost no epistemic uncertainty, so this model says little about question (c) below.
-- **Gray is not neutral.** The image without any feature is predicted as guitar with 0.93. The
-  attributions explain the step from there to the full image, in which guitar gains only 0.05.
-  `--baseline blur` is implemented as an alternative (its empty image is predicted as dog).
+- **The heads agree.** Heads on frozen features give almost no epistemic uncertainty, also for the
+  harder `electric` problem (the heads disagree on 0.4% of the test predictions). These models say
+  little about question (c) below.
+- **Gray is not neutral.** The image without any feature is predicted as acoustic guitar with 0.96
+  (`electric`), 0.94 (`banjo`) and 0.66 (`hat`, with 0.30 for cowboy hat). The attributions explain
+  the step from there to the full image. `--baseline blur` is implemented as an alternative.
+- **The explanation is relative to the alternatives.** A superpixel speaks for a class against the
+  other two. The top of the hat "is" an electric guitar, a banjo or a hat, depending on the model.
+- **Small test sets:** 50 images per class.
 - **Training images are 256x256 squares** of a public ImageNet mirror, resized to 224x224 as in
   the benchmark's evaluation transform. The heads use AdamW on cached features, not the LAMB recipe
   of the benchmark.
@@ -211,31 +248,34 @@ same coalitions as OddSHAP.
   (epistemic certainty), the contrast part that of the mean prediction. All three regimes exist
   there, and regime 3 reads as "evidence without a preference for a class".
 - A model with real disagreement is needed first: a deep ensemble or a sub-ensemble with a deeper
-  split, or a harder problem than three well separated groups.
+  split. A harder problem alone (`electric`) does not make the heads disagree.
 
 ## Reproduce
 
     cd experiments/uqxai
     uv sync
-    uv run python scripts/01_build_dataset.py                 # about 2.5 GB of range requests
-    uv run python scripts/02_train_subensemble.py             # encodes 11k images once
-    uv run python scripts/03_explain.py --patch-size 16       # 10k encoder passes
-    uv run python scripts/04_plot.py dog_guitar_patch16_mean
-    uv run python scripts/03_explain.py --patch-size 16 --seed 1 --readouts probability mean_logit open_world
-    uv run python scripts/05_reliability.py dog_guitar_patch16_mean
+    uv run python scripts/01_build_dataset.py        # five ImageNet classes, about 1 GB of range requests
+    uv run python scripts/02_train_subensemble.py    # encodes 6,750 images once, trains all problems
+    uv run python scripts/03_explain.py              # 10k encoder passes per problem
+    uv run python scripts/04_plot.py electric/dog_guitar_patch16_mean
+    uv run python scripts/06_compare.py
     uv run pytest
 
-The trained heads (`results/subensemble_heads.pt`) and the evaluated coalitions with the logits of
-all heads (`results/*/coalitions.npz`) are in the repository, so steps 1 and 2 can be skipped, and
-new readouts or approximators on the stored coalitions need no model at all. On a CPU with four
-cores, the encoder handles about 27 images per second.
+Steps 1 to 3 and 6 take `--problems electric banjo hat` to choose; a new problem is one line in
+`uqxai/classes.py`. For the reliability check, run step 3 again with `--seed 1` and then
+`scripts/05_reliability.py electric/dog_guitar_patch16_mean`.
+
+The trained heads (`results/<problem>/subensemble_heads.pt`) and the evaluated coalitions with the
+logits of all heads (`results/<problem>/*/coalitions.npz`) are in the repository, so steps 1 and 2
+can be skipped, and new readouts or approximators on the stored coalitions need no model at all. On
+a CPU with four cores, the encoder handles about 27 images per second.
 
 Data and features go to `~/datasets/uqxai` (set `UQXAI_DATA_DIR` to change this).
 
 ## Layout
 
-- `src/uqxai/classes.py`: the three groups of ImageNet classes.
-- `src/uqxai/data.py`: downloads the subset from a public parquet mirror of ImageNet-1k.
+- `src/uqxai/classes.py`: the problems, each a triple of ImageNet classes.
+- `src/uqxai/data.py`: downloads single classes from a public parquet mirror of ImageNet-1k.
 - `src/uqxai/model.py`: builds the benchmark's sub-ensemble, trains and loads the heads.
 - `src/uqxai/game.py`: superpixel masking and the cache of evaluated coalitions.
 - `src/uqxai/readouts.py`: the explained outputs as functions of the heads' logits.

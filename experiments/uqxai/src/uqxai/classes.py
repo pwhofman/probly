@@ -1,27 +1,51 @@
-"""The three-class problem: groups of ImageNet-1k classes that form "guitar", "dog" and "human".
+"""The three-class problems: triples of ImageNet-1k classes, one sub-ensemble per triple.
 
-Each group is the set of ImageNet-1k classes below one WordNet synset:
+All problems share acoustic guitar and golden retriever, the two classes that the 1000-class
+ResNet-50 ranks first for the dog-with-guitar image, and differ in their third class:
 
-- ``guitar``: the two descendants of ``guitar.n.01``.
-- ``dog``: the 118 breeds below ``dog.n.01`` (ImageNet-1k indices 151 to 268).
-- ``human``: the only three descendants of ``person.n.01`` in ImageNet-1k.
+- ``electric``: electric guitar, the third-ranked class, which shares features with the first.
+- ``banjo``: another class that is close to the acoustic guitar.
+- ``hat``: cowboy hat, a third object of the image with its own region.
 """
 
 from __future__ import annotations
 
-CLASS_GROUPS: dict[str, tuple[int, ...]] = {
-    "guitar": (402, 546),  # acoustic guitar, electric guitar
-    "dog": tuple(range(151, 269)),  # Chihuahua ... Mexican hairless
-    "human": (981, 982, 983),  # ballplayer, groom, scuba diver
-}
-"""ImageNet-1k class indices of each group; the order of the keys is the order of the model's outputs."""
+from dataclasses import dataclass
 
-CLASS_NAMES: tuple[str, ...] = tuple(CLASS_GROUPS)
-"""Names of the model's output classes, in output order."""
 
-IMAGENET_TO_GROUP: dict[int, int] = {
-    imagenet_index: group_index
-    for group_index, members in enumerate(CLASS_GROUPS.values())
-    for imagenet_index in members
+@dataclass(frozen=True)
+class Problem:
+    """A classification problem over a few ImageNet-1k classes.
+
+    Attributes:
+        name: Name of the problem; its results are in the directory of this name.
+        classes: ImageNet-1k class index of each class, by class name. The order of the classes is
+            the order of the model's outputs.
+    """
+
+    name: str
+    classes: dict[str, int]
+
+    @property
+    def class_names(self) -> tuple[str, ...]:
+        """Names of the model's output classes, in output order."""
+        return tuple(self.classes)
+
+    @property
+    def imagenet_classes(self) -> tuple[int, ...]:
+        """ImageNet-1k class indices of the model's output classes, in output order."""
+        return tuple(self.classes.values())
+
+
+ACOUSTIC_GUITAR, GOLDEN_RETRIEVER = 402, 207
+_SHARED = {"acoustic guitar": ACOUSTIC_GUITAR, "golden retriever": GOLDEN_RETRIEVER}
+
+PROBLEMS: dict[str, Problem] = {
+    problem.name: problem
+    for problem in (
+        Problem("electric", {**_SHARED, "electric guitar": 546}),
+        Problem("banjo", {**_SHARED, "banjo": 420}),
+        Problem("hat", {**_SHARED, "cowboy hat": 515}),
+    )
 }
-"""Maps an ImageNet-1k class index to the index of its group."""
+"""All problems by name."""

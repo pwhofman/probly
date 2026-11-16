@@ -1,7 +1,7 @@
-"""Train the sub-ensemble of ``mlp_small`` heads on the three-class ImageNet subset.
+"""Train one sub-ensemble of ``mlp_small`` heads per problem.
 
-The frozen ResNet-50 encoder runs once over the images; the heads then train on the cached features.
-The official ImageNet validation images of the three groups are the test set.
+The frozen ResNet-50 encoder runs once over the images of every ImageNet class; the heads then train
+on the cached features. The ImageNet validation images of the classes are the test set.
 """
 
 from __future__ import annotations
@@ -9,32 +9,41 @@ from __future__ import annotations
 import argparse
 import json
 
-import numpy as np
 import pyarrow.parquet as pq
 import torch
-from uqxai.classes import CLASS_NAMES
-from uqxai.model import build_subensemble, encode_image_bytes, encoder_of, head_logits, save_heads, train_heads
-from uqxai.paths import DATA_DIR, HEADS_CHECKPOINT, RESULT_DIR
+from uqxai.classes import PROBLEMS, Problem
+from uqxai.data import class_file
+from uqxai.model import (
+    build_subensemble,
+    encode_image_bytes,
+    encoder_of,
+    head_logits,
+    load_subensemble,
+    save_heads,
+    train_heads,
+)
+from uqxai.paths import DATA_DIR, RESULT_DIR, heads_checkpoint
 
 from probly.quantification import quantify
 from probly.representation.distribution import create_categorical_distribution_from_logits
 from probly.representation.sample import create_sample
 
 
-def load_features(split: str, model: torch.nn.ModuleList) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return the cached encoder features and labels of a split, computing them on first use."""
-    cache = DATA_DIR / f"features_{split}.pt"
-    if cache.exists():
-        cached = torch.load(cache)
-        return cached["features"], cached["labels"]
-    table = pq.read_table(DATA_DIR / f"{split}.parquet")
-    labels = torch.from_numpy(table.column("label").to_numpy().astype(np.int64))
-    features = encode_image_bytes(encoder_of(model), table.column("image").to_pylist())
-    torch.save({"features": features, "labels": labels}, cache)
-    return features, labels
+def load_features(split: str, problem: Problem, encoder: torch.nn.Module) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return the encoder features and labels of a problem's split, encoding each class on first use."""
+    features, labels = [], []
+    for label, imagenet_class in enumerate(problem.imagenet_classes):
+        cache = DATA_DIR / "features" / split / f"{imagenet_class}.pt"
+        if not cache.exists():
+            images = pq.read_table(class_file(DATA_DIR, split, imagenet_class)).column("image").to_pylist()
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            torch.save(encode_image_bytes(encoder, images), cache)
+        features.append(torch.load(cache))
+        labels.append(torch.full((len(features[-1]),), label))
+    return torch.cat(features), torch.cat(labels)
 
 
-def evaluate(model: torch.nn.ModuleList, features: torch.Tensor, labels: torch.Tensor) -> dict[str, object]:
+def evaluate(model: torch.nn.ModuleList, features: torch.Tensor, labels: torch.Tensor, names: tuple[str, ...]) -> dict:
     """Compute accuracy and uncertainty statistics of the sub-ensemble on cached features."""
     logits = head_logits(model, features)  # (m, heads, classes)
     member_accuracy = (logits.argmax(-1) == labels[:, None]).float().mean(0)
@@ -47,7 +56,7 @@ def evaluate(model: torch.nn.ModuleList, features: torch.Tensor, labels: torch.T
     return {
         "accuracy": correct.float().mean().item(),
         "accuracy_per_class": {
-            name: correct[labels == index].float().mean().item() for index, name in enumerate(CLASS_NAMES)
+            name: correct[labels == index].float().mean().item() for index, name in enumerate(names)
         },
         "member_accuracy_mean": member_accuracy.mean().item(),
         "member_accuracy_min": member_accuracy.min().item(),
@@ -57,39 +66,41 @@ def evaluate(model: torch.nn.ModuleList, features: torch.Tensor, labels: torch.T
         "mean_aleatoric_uncertainty": uncertainty.aleatoric.mean().item(),
         "mean_epistemic_uncertainty": uncertainty.epistemic.mean().item(),
         "confusion_matrix_rows_true": torch.stack(
-            [
-                torch.bincount(prediction[labels == index], minlength=len(CLASS_NAMES))
-                for index in range(len(CLASS_NAMES))
-            ]
+            [torch.bincount(prediction[labels == index], minlength=len(names)) for index in range(len(names))]
         ).tolist(),
     }
 
 
 def main() -> None:
-    """Cache the features, train the heads, and report the test metrics."""
+    """Cache the features, train the heads of every chosen problem, and report the test metrics."""
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--problems", nargs="+", choices=list(PROBLEMS), default=list(PROBLEMS))
     parser.add_argument("--head", default="mlp_small")
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
-    model = build_subensemble(args.head, seed=args.seed)
-    train_features, train_labels = load_features("train", model)
-    test_features, test_labels = load_features("validation", model)
-    train_heads(model, train_features, train_labels, epochs=args.epochs, seed=args.seed)
-    save_heads(model, HEADS_CHECKPOINT)
+    for name in args.problems:
+        problem = PROBLEMS[name]
+        model = build_subensemble(len(problem.classes), args.head, seed=args.seed)
+        train_features, train_labels = load_features("train", problem, encoder_of(model))
+        test_features, test_labels = load_features("validation", problem, encoder_of(model))
+        train_heads(model, train_features, train_labels, epochs=args.epochs, seed=args.seed)
+        save_heads(model, heads_checkpoint(name))
+        model = load_subensemble(heads_checkpoint(name), len(problem.classes), args.head)
 
-    metrics = {
-        "head": args.head,
-        "num_heads": len(model),
-        "classes": CLASS_NAMES,
-        "train_images": dict(zip(CLASS_NAMES, torch.bincount(train_labels).tolist(), strict=True)),
-        "test_images": dict(zip(CLASS_NAMES, torch.bincount(test_labels).tolist(), strict=True)),
-        "train": evaluate(model, train_features, train_labels),
-        "test": evaluate(model, test_features, test_labels),
-    }
-    (RESULT_DIR / "subensemble_metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
-    print(json.dumps(metrics, indent=2))
+        metrics = {
+            "problem": name,
+            "classes": problem.classes,
+            "head": args.head,
+            "num_heads": len(model),
+            "train_images": dict(zip(problem.class_names, torch.bincount(train_labels).tolist(), strict=True)),
+            "test_images": dict(zip(problem.class_names, torch.bincount(test_labels).tolist(), strict=True)),
+            "train": evaluate(model, train_features, train_labels, problem.class_names),
+            "test": evaluate(model, test_features, test_labels, problem.class_names),
+        }
+        (RESULT_DIR / name / "subensemble_metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
+        print(name, json.dumps(metrics["test"]))
 
 
 if __name__ == "__main__":

@@ -29,7 +29,7 @@ from uqxai.readouts import READOUTS
 def main() -> None:
     """Compute the diagnostics of both approximators and save them."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("run", help="name of the result directory, e.g. dog_guitar_patch16_mean")
+    parser.add_argument("run", help="result directory below results/, e.g. electric/dog_guitar_patch16_mean")
     parser.add_argument("--readout", default="probability")
     args = parser.parse_args()
 
