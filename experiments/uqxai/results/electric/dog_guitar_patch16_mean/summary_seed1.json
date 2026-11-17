@@ -1,0 +1,57 @@
+{
+  "problem": "electric",
+  "image": "dog_guitar.jpg",
+  "patch_size": 16,
+  "grid_shape": [
+    14,
+    14
+  ],
+  "n_players": 196,
+  "baseline": "mean",
+  "budget": 10000,
+  "approximator": "oddshap",
+  "seed": 1,
+  "classes": [
+    "acoustic guitar",
+    "golden retriever",
+    "electric guitar"
+  ],
+  "prediction": {
+    "acoustic guitar": 0.8344199061393738,
+    "golden retriever": 0.16212506592273712,
+    "electric guitar": 0.0034549939446151257
+  },
+  "total_uncertainty": 0.46559637784957886,
+  "aleatoric_uncertainty": 0.46236854791641235,
+  "epistemic_uncertainty": 0.0032278895378112793,
+  "readouts": {
+    "probability": {
+      "empty": [
+        0.9560236930847168,
+        0.01564253494143486,
+        0.028333742171525955
+      ],
+      "full": [
+        0.8344195485115051,
+        0.16212543845176697,
+        0.003455015365034342
+      ],
+      "largest_attribution": 0.18219595635084312,
+      "largest_sum_over_outputs": 0.018943121986864684
+    },
+    "mean_logit": {
+      "empty": [
+        2.1779325008392334,
+        -1.9496055841445923,
+        -1.360504388809204
+      ],
+      "full": [
+        1.9503542184829712,
+        0.29836827516555786,
+        -3.6548047065734863
+      ],
+      "largest_attribution": 1.502533627870794,
+      "largest_sum_over_outputs": 0.41764612622363506
+    }
+  }
+}

@@ -64,3 +64,28 @@ def test_structure_separates_conflict_from_ambiguity() -> None:
     summary = simplex.structure(ambiguous, background_threshold=0.1)
     assert np.isclose(summary["supported_classes"], 2)
     assert np.isclose(summary["multi_class_share"], 1)
+
+
+@pytest.mark.parametrize("scale", ["linear", "power", "softmax", "direction"])
+def test_scales_keep_directions_and_stay_in_the_simplex(attributions: np.ndarray, scale: str) -> None:
+    floor = np.median(simplex.contrast_magnitude(attributions))
+    points = simplex.simplex_embedding(attributions, scale=scale, noise_floor=floor)
+    assert points.min() >= -1e-12
+    assert np.allclose(points.sum(axis=1), 1)
+    below = simplex.contrast_magnitude(attributions) <= floor
+    assert np.allclose(points[below], 1 / 3)
+    # Features above the floor keep the order of their classes.
+    order = np.argsort(simplex.contrast(attributions)[~below], axis=1)
+    assert np.array_equal(np.argsort(points[~below], axis=1), order)
+    if scale == "direction":
+        assert np.allclose(points[~below].min(axis=1), 0)
+
+
+def test_noise_floor_of_two_noisy_estimates() -> None:
+    rng = np.random.default_rng(0)
+    first, second = (simplex.contrast(rng.normal(scale=0.1, size=(20_000, 3))) for _ in range(2))
+    floor = simplex.noise_floor(first, second, quantile=0.99)
+    mean = (first + second) / 2
+    assert np.isclose(np.mean(simplex.contrast_magnitude(mean) < floor), 0.99, atol=0.005)
+    # Without a second estimate, the bound is close for pure noise.
+    assert np.isclose(simplex.robust_noise_floor(mean), floor, rtol=0.05)

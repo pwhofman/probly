@@ -21,6 +21,7 @@ in a ternary plot; see :func:`simplex_embedding`.
 from __future__ import annotations
 
 import numpy as np
+from scipy.stats import chi
 
 BACKGROUND, SPECIFIC, SHARED = 0, 1, 2
 REGIME_NAMES = ("background", "class-specific", "shared")
@@ -138,39 +139,117 @@ def structure(attributions: np.ndarray, background_threshold: float) -> dict[str
     }
 
 
-def simplex_embedding(attributions: np.ndarray, mode: str = "contrast") -> np.ndarray:
+def noise_floor(first: np.ndarray, second: np.ndarray, quantile: float = 0.99) -> float:
+    """Measure the magnitude below which a feature of the mean of two estimates is noise.
+
+    The two estimates come from independent coalition samples. The noise of the contrast part is
+    taken as Gaussian with one standard deviation for all features and directions, estimated from
+    the difference of the estimates.
+
+    Args:
+        first: Attributions of shape ``(n_features, n_classes)`` from one coalition sample.
+        second: Attributions of the same game from an independent coalition sample.
+        quantile: Share of pure-noise features whose contrast magnitude lies below the floor.
+
+    Returns:
+        The noise floor of the contrast magnitude of ``(first + second) / 2``.
+    """
+    dimensions = first.shape[1] - 1  # the contrast part lives in a space of C - 1 dimensions
+    difference = contrast(first) - contrast(second)
+    deviation = np.sqrt(np.mean(np.sum(difference**2, axis=1)) / (2 * dimensions))  # of one estimate
+    return float(deviation / np.sqrt(2) * chi(dimensions).ppf(quantile))
+
+
+def robust_noise_floor(attributions: np.ndarray, quantile: float = 0.99) -> float:
+    """Bound the noise floor of a single estimate from above, without a second coalition sample.
+
+    Takes the median contrast magnitude as the median of pure noise, which holds if at least half of
+    the features have no effect. Features with a small true effect raise the median, so the floor
+    comes out too high: about twice the measured floor in the explanations of this experiment.
+
+    Args:
+        attributions: Attributions of shape ``(n_features, n_classes)``.
+        quantile: Share of pure-noise features whose contrast magnitude lies below the floor.
+
+    Returns:
+        An upper bound of the noise floor of the contrast magnitude.
+    """
+    noise = chi(attributions.shape[1] - 1)
+    return float(np.median(contrast_magnitude(attributions)) / noise.median() * noise.ppf(quantile))
+
+
+def simplex_embedding(
+    attributions: np.ndarray,
+    mode: str = "contrast",
+    *,
+    scale: str = "linear",
+    noise_floor: float = 0.0,
+    exponent: float = 0.5,
+    sharpness: float = 3.0,
+) -> np.ndarray:
     """Map each feature's attributions to a point of the probability simplex.
 
     Args:
         attributions: Attributions of shape ``(n_features, n_classes)``.
-        mode: ``"contrast"`` places a feature at the barycenter plus its scaled contrast part. The
-            scale is the same for all features and the largest that keeps every point in the
-            simplex, so the distance to the barycenter is proportional to the feature's standard
-            deviation across the classes. ``"minmax"`` rescales all attributions jointly to
-            ``[0, 1]`` and divides each feature's by their sum. Both agree for attributions that
-            sum to zero over the classes, as those of class probabilities do.
+        mode: ``"contrast"`` places a feature at the barycenter, displaced in the direction of its
+            contrast part by a distance that ``scale`` computes from the contrast magnitude.
+            ``"minmax"`` rescales all attributions jointly to ``[0, 1]`` and divides each feature's
+            by their sum; it ignores the other arguments. Both agree for the defaults and
+            attributions that sum to zero over the classes, as those of class probabilities do.
+        scale: How the contrast magnitude becomes a distance to the barycenter.
+            ``"linear"``: proportional, so the distance shows the standard deviation across the
+            classes; the feature that leaves the simplex first touches its boundary.
+            ``"power"``: proportional to the relative magnitude to the power of ``exponent``.
+            ``"softmax"``: the softmax of the contrast, so that the strongest feature in any
+            direction lies near the boundary; features for one class reach its corner.
+            ``"direction"``: every feature lies on the boundary; only its direction is shown.
+        noise_floor: Contrast magnitude that counts as noise. It is subtracted from every magnitude,
+            so features below it lie at the barycenter and the others start there.
+        exponent: Exponent of the ``"power"`` scale: below one spreads weak features outwards,
+            above one pulls them to the barycenter.
+        sharpness: Sharpness of the ``"softmax"`` scale: the logit gap of the strongest feature.
 
     Returns:
         Barycentric coordinates of shape ``(n_features, n_classes)``; every row is non-negative and
         sums to one.
 
     Raises:
-        ValueError: If ``mode`` is not known.
+        ValueError: If ``mode`` or ``scale`` is not known.
     """
     n_classes = attributions.shape[1]
     barycenter = np.full_like(attributions, 1 / n_classes, dtype=float)
-    match mode:
-        case "contrast":
-            directions = contrast(attributions)
-            lowest = directions.min()
-            return barycenter if lowest >= 0 else barycenter - directions / (n_classes * lowest)
-        case "minmax":
-            lowest, highest = attributions.min(), attributions.max()
-            if highest == lowest:
-                return barycenter
-            scaled = (attributions - lowest) / (highest - lowest)
-            total = scaled.sum(axis=1, keepdims=True)
-            return np.divide(scaled, total, out=barycenter, where=total > 0)
+    if mode == "minmax":
+        lowest, highest = attributions.min(), attributions.max()
+        if highest == lowest:
+            return barycenter
+        scaled = (attributions - lowest) / (highest - lowest)
+        total = scaled.sum(axis=1, keepdims=True)
+        return np.divide(scaled, total, out=barycenter, where=total > 0)
+    if mode != "contrast":
+        msg = f"Unknown mode {mode!r}; use 'contrast' or 'minmax'."
+        raise ValueError(msg)
+
+    directions = contrast(attributions)
+    radius = np.linalg.norm(directions, axis=1, keepdims=True)
+    above = np.clip(radius - noise_floor, 0, None)
+    if above.max() == 0:
+        return barycenter
+    unit = np.divide(directions, radius, out=np.zeros_like(directions, dtype=float), where=radius > 0)
+    relative = above / above.max()
+    match scale:
+        case "linear":
+            vectors = relative * unit
+        case "power":
+            vectors = relative**exponent * unit
+        case "softmax":
+            logits = sharpness * relative * unit
+            exponentials = np.exp(logits - logits.max(axis=1, keepdims=True))
+            return exponentials / exponentials.sum(axis=1, keepdims=True)
+        case "direction":
+            lowest = unit.min(axis=1, keepdims=True)  # negative for every feature with a direction
+            on_boundary = barycenter - unit / (n_classes * np.where(lowest < 0, lowest, -1))
+            return np.where(above > 0, on_boundary, barycenter)
         case _:
-            msg = f"Unknown mode {mode!r}; use 'contrast' or 'minmax'."
+            msg = f"Unknown scale {scale!r}; use 'linear', 'power', 'softmax' or 'direction'."
             raise ValueError(msg)
+    return barycenter - vectors / (n_classes * vectors.min())

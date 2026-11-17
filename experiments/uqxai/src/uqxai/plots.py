@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from matplotlib.colors import LinearSegmentedColormap, to_rgb
 import mpltern  # noqa: F401  # registers the "ternary" projection
@@ -62,9 +62,9 @@ def simplex_colors(points: np.ndarray, colors: Sequence[str] = CLASS_COLORS) -> 
     return np.clip((1 - saturation) * np.array(to_rgb(NEUTRAL)) + excess @ palette, 0, 1)
 
 
-def relative_magnitude(attributions: np.ndarray) -> np.ndarray:
-    """Return each feature's magnitude as a fraction of the largest one."""
-    magnitudes = simplex.magnitude(attributions)
+def relative_magnitude(attributions: np.ndarray, noise_floor: float = 0.0) -> np.ndarray:
+    """Return each feature's magnitude above the noise floor as a fraction of the largest one."""
+    magnitudes = np.clip(simplex.magnitude(attributions) - noise_floor, 0, None)
     return magnitudes / max(magnitudes.max(), 1e-12)
 
 
@@ -78,13 +78,17 @@ def ternary_plot(
     members: np.ndarray | None = None,
     mode: str = "contrast",
     prediction_note: str = "",
+    embedding: dict[str, Any] | None = None,
 ) -> None:
     """Draw the simplex attribution plot of a three-class problem.
 
     Every feature is a dot. Its direction from the center says which classes it speaks for and
-    against, its distance to the center is proportional to the standard deviation of its
-    attributions across the classes, and its size shows its magnitude. The model's predictions are
-    drawn in the same triangle, where they are probabilities.
+    against, its distance to the center grows with the standard deviation of its attributions
+    across the classes (in proportion to it by default), and its size shows its magnitude. The
+    model's predictions are drawn in the same triangle, where they are probabilities.
+
+    With a noise floor in ``embedding``, the features whose magnitude lies below it are not drawn
+    one by one: a single gray dot at the center stands for them, and the legend gives their number.
 
     Args:
         ax: An axes with the ``"ternary"`` projection.
@@ -95,10 +99,19 @@ def ternary_plot(
         members: Predicted probabilities of each ensemble member, of shape ``(n_members, 3)``.
         mode: How attributions become points; see :func:`uqxai.simplex.simplex_embedding`.
         prediction_note: Text appended to the legend entries of the predictions.
+        embedding: Options of :func:`uqxai.simplex.simplex_embedding`: ``scale``, ``noise_floor``,
+            ``exponent`` and ``sharpness``.
     """
-    points = simplex.simplex_embedding(attributions, mode=mode)
-    size = relative_magnitude(attributions)
+    embedding = embedding or {}
+    points = simplex.simplex_embedding(attributions, mode=mode, **embedding)
+    size = relative_magnitude(attributions, embedding.get("noise_floor", 0.0))
     order = np.argsort(size)  # strong features on top
+    order = order[size[order] > 0]
+    if len(order) < len(size):
+        ax.scatter(
+            [1 / 3], [1 / 3], [1 / 3], s=42, c=NEUTRAL, edgecolors=INK_MUTED, linewidths=0.8, zorder=2,
+            label=f"{len(size) - len(order)} features below the noise floor",
+        )  # fmt: skip
     ax.scatter(
         *points[order].T,
         s=6 + 170 * size[order],
@@ -198,7 +211,12 @@ def _grayscale(image: np.ndarray) -> np.ndarray:
 
 
 def simplex_map(
-    ax: Axes, image: np.ndarray, cells: np.ndarray, attributions: np.ndarray, mode: str = "contrast"
+    ax: Axes,
+    image: np.ndarray,
+    cells: np.ndarray,
+    attributions: np.ndarray,
+    mode: str = "contrast",
+    embedding: dict[str, Any] | None = None,
 ) -> None:
     """Color every superpixel of the image like its dot in the simplex attribution plot.
 
@@ -208,9 +226,11 @@ def simplex_map(
         cells: Index of the superpixel of each pixel, of shape ``(height, width)``.
         attributions: Attributions of shape ``(n_features, n_classes)``.
         mode: How attributions become points of the simplex; see :func:`ternary_plot`.
+        embedding: Options of :func:`uqxai.simplex.simplex_embedding`; see :func:`ternary_plot`.
     """
-    colors = simplex_colors(simplex.simplex_embedding(attributions, mode=mode))[cells]
-    opacity = (0.92 * relative_magnitude(attributions) ** 0.6)[cells][..., None]
+    embedding = embedding or {}
+    colors = simplex_colors(simplex.simplex_embedding(attributions, mode=mode, **embedding))[cells]
+    opacity = (0.92 * relative_magnitude(attributions, embedding.get("noise_floor", 0.0)) ** 0.6)[cells][..., None]
     ax.imshow((1 - opacity) * _grayscale(image) + opacity * colors)
     ax.set_axis_off()
 

@@ -214,6 +214,47 @@ is about the image. What does differ is where the magnitude goes: to one class f
 image (71% to 76% favor golden retriever), to all three for the dog-with-guitar image, and to the
 two similar classes for the third case (`electric`: 46% and 54%; `labrador`: 58% and 39%).
 
+## Noise and the scale of the triangle
+
+The weak features form a cloud around the center of the triangle. How much of it is noise can be
+measured with a second, independent coalition sample (`03_explain.py --seed 1`): the difference of
+the two estimates gives the standard deviation of the noise, which is about the same for weak and
+strong features, and from it the magnitude that 99% of pure-noise features stay below
+(`uqxai.simplex.noise_floor`). For the mean of two samples of 10,000 coalitions:
+
+| explanation                     | readout       | noise floor     | features above it |
+|---------------------------------|---------------|-----------------|------------------:|
+| `electric`, dog with guitar     | probabilities | 11% of the largest magnitude | 83 of 196 |
+| `electric`, dog with guitar     | logits        | 7%              | 117 |
+| `labrador`, dog with guitar     | probabilities | 11%             | 74 |
+| `labrador`, dog with guitar     | logits        | 6%              | 132 |
+| `labrador`, dog seen from behind | probabilities | 6%             | 118 |
+| `labrador`, dog seen from behind | logits        | 6%             | 115 |
+
+So about half of the cloud is noise, and the other half are weak but real effects. Without a second
+sample, `uqxai.simplex.robust_noise_floor` gives a bound from the median magnitude; it came out two
+to three times too high here.
+
+`scripts/08_scaling_gallery.py` draws the same explanations with different scales
+(`results/scaling_gallery_probability.png`, `results/scaling_gallery_mean_logit.png`). All but the
+first hide the features below the noise floor behind one gray dot and measure the distance to the
+center from the floor:
+
+![Scales of the simplex attribution plot](results/scaling_gallery_probability.png)
+
+- **linear**: the distance is the magnitude above the floor; the only scale on which distances can
+  be compared as numbers.
+- **square root**: spreads the weak features outwards, to see where they point.
+- **square**: pulls the weak features to the center, so that only the strong ones stand out.
+- **softmax**: the softmax of the scaled contrast. The strongest features lie near the boundary in
+  every direction; on the linear scale a feature against one class reaches the boundary at half
+  the distance of a feature for one class.
+- **direction only**: every feature on the boundary, its size is its magnitude.
+
+The scales are options of `uqxai.simplex.simplex_embedding` (`scale`, `noise_floor`, `exponent`,
+`sharpness`), which `ternary_plot` and `simplex_map` take as `embedding`. The other figures in this
+README still use the linear scale with all features.
+
 ## Earlier run: groups of classes
 
 The first version of this experiment used one model for three groups of ImageNet classes: guitar
@@ -322,6 +363,7 @@ same coalitions as OddSHAP. (Group model.)
     uv run python scripts/07_select_cases.py         # writes assets/cases and assets/cases.json
     uv run python scripts/03_explain.py --cases      # five more explanations
     uv run python scripts/06_compare.py --cases
+    uv run python scripts/08_scaling_gallery.py      # needs --seed 1 runs for measured noise floors
     uv run pytest
 
 Steps 1 to 3 and 6 take `--problems electric banjo hat labrador` to choose; a new problem is one line in
@@ -344,6 +386,7 @@ Data and features go to `~/datasets/uqxai` (set `UQXAI_DATA_DIR` to change this)
 - `src/uqxai/readouts.py`: the explained outputs as functions of the heads' logits.
 - `src/uqxai/explain.py`: Shapley values of all outputs on shared coalitions.
 - `src/uqxai/simplex.py`: common and contrast part, regimes, the simplex embedding.
+- `src/uqxai/results.py`: reads stored explanations, pooling coalition samples.
 - `src/uqxai/plots.py`: the figures.
 - `assets/dog_guitar.jpg`: the image, taken from the `new_approximations` branch of shapiq.
 - `assets/cases/`: three ImageNet validation images, selected by `scripts/07_select_cases.py`.

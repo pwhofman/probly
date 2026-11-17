@@ -1,0 +1,57 @@
+{
+  "problem": "labrador",
+  "image": "dog_guitar.jpg",
+  "patch_size": 16,
+  "grid_shape": [
+    14,
+    14
+  ],
+  "n_players": 196,
+  "baseline": "mean",
+  "budget": 10000,
+  "approximator": "oddshap",
+  "seed": 1,
+  "classes": [
+    "acoustic guitar",
+    "golden retriever",
+    "Labrador retriever"
+  ],
+  "prediction": {
+    "acoustic guitar": 0.868338406085968,
+    "golden retriever": 0.13101811707019806,
+    "Labrador retriever": 0.0006435827817767859
+  },
+  "total_uncertainty": 0.39359980821609497,
+  "aleatoric_uncertainty": 0.388363778591156,
+  "epistemic_uncertainty": 0.0052359700202941895,
+  "readouts": {
+    "probability": {
+      "empty": [
+        0.9275956153869629,
+        0.055727459490299225,
+        0.01667696237564087
+      ],
+      "full": [
+        0.868338406085968,
+        0.13101807236671448,
+        0.000643584702629596
+      ],
+      "largest_attribution": 0.10306448611839199,
+      "largest_sum_over_outputs": 0.00933942996788998
+    },
+    "mean_logit": {
+      "empty": [
+        2.0451393127441406,
+        -0.8029939532279968,
+        -1.9927533864974976
+      ],
+      "full": [
+        2.8359925746917725,
+        0.9087810516357422,
+        -4.459938049316406
+      ],
+      "largest_attribution": 1.1995200174566056,
+      "largest_sum_over_outputs": 0.26085970531629266
+    }
+  }
+}
