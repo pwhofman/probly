@@ -1,0 +1,85 @@
+{
+  "problem": "electric",
+  "image": "cases/ambiguous_electric.jpg",
+  "patch_size": 16,
+  "grid_shape": [
+    14,
+    14
+  ],
+  "n_players": 196,
+  "baseline": "mean",
+  "budget": 10000,
+  "approximator": "oddshap",
+  "seed": 0,
+  "classes": [
+    "acoustic guitar",
+    "golden retriever",
+    "electric guitar"
+  ],
+  "prediction": {
+    "acoustic guitar": 0.6396862268447876,
+    "golden retriever": 0.00016135405167005956,
+    "electric guitar": 0.36015239357948303
+  },
+  "total_uncertainty": 0.6550040245056152,
+  "aleatoric_uncertainty": 0.6489027738571167,
+  "epistemic_uncertainty": 0.006101250648498535,
+  "readouts": {
+    "probability": {
+      "empty": [
+        0.9560236930847168,
+        0.01564253494143486,
+        0.028333742171525955
+      ],
+      "full": [
+        0.6396852731704712,
+        0.00016135415353346616,
+        0.3601533770561218
+      ],
+      "largest_attribution": 0.10786429778467607,
+      "largest_sum_over_outputs": 0.010703942886025575
+    },
+    "mean_logit": {
+      "empty": [
+        2.1779325008392334,
+        -1.9496055841445923,
+        -1.360504388809204
+      ],
+      "full": [
+        2.4683001041412354,
+        -5.841829776763916,
+        1.885032296180725
+      ],
+      "largest_attribution": 0.5294311274533205,
+      "largest_sum_over_outputs": 0.29598771243657357
+    },
+    "uncertainty": {
+      "empty": [
+        0.20900580286979675,
+        0.20814397931098938,
+        0.000861823558807373
+      ],
+      "full": [
+        0.655004620552063,
+        0.6489033699035645,
+        0.006101250648498535
+      ],
+      "largest_attribution": 0.035999789413753404,
+      "largest_sum_over_outputs": 0.0684884114025242
+    },
+    "open_world": {
+      "empty": [
+        0.0008970559574663639,
+        0.0014027949655428529,
+        0.001025742501951754
+      ],
+      "full": [
+        0.04735922813415527,
+        0.0005871143075637519,
+        0.17946434020996094
+      ],
+      "largest_attribution": 0.0533449523189861,
+      "largest_sum_over_outputs": 0.06482831742743922
+    }
+  }
+}

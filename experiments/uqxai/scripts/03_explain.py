@@ -19,7 +19,7 @@ from uqxai.classes import PROBLEMS, Problem
 from uqxai.explain import shapley_values
 from uqxai.game import CoalitionCache, SuperpixelMasker
 from uqxai.model import IMAGENET_TRANSFORM, encode, encoder_of, head_logits, load_subensemble
-from uqxai.paths import RIBEIRO_IMAGE, heads_checkpoint, run_dir
+from uqxai.paths import ASSET_DIR, CASES_MANIFEST, RIBEIRO_IMAGE, heads_checkpoint, run_dir
 from uqxai.readouts import READOUTS
 
 from probly.quantification import quantify
@@ -57,7 +57,7 @@ def explain(problem: Problem, args: argparse.Namespace, imagenet_classifier: tor
         member_probabilities = torch.stack([member(image[None]).softmax(-1)[0] for member in model])
     summary = {
         "problem": problem.name,
-        "image": args.image.name,
+        "image": str(args.image.resolve().relative_to(ASSET_DIR)),
         "patch_size": args.patch_size,
         "grid_shape": masker.grid_shape,
         "n_players": masker.n_players,
@@ -104,7 +104,8 @@ def main() -> None:
     """Explain the image for every chosen problem."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--problems", nargs="+", choices=list(PROBLEMS), default=list(PROBLEMS))
-    parser.add_argument("--image", type=type(RIBEIRO_IMAGE), default=RIBEIRO_IMAGE)
+    parser.add_argument("--image", type=type(RIBEIRO_IMAGE), default=RIBEIRO_IMAGE, help="an image below assets/")
+    parser.add_argument("--cases", action="store_true", help="explain every image and problem of assets/cases.json")
     parser.add_argument("--patch-size", type=int, default=16, help="side length of a superpixel in pixels")
     parser.add_argument("--budget", type=int, default=10_000, help="number of coalitions per explanation")
     parser.add_argument("--baseline", choices=["mean", "blur"], default="mean")
@@ -115,6 +116,12 @@ def main() -> None:
     )
     args = parser.parse_args()
     imagenet_classifier = tm.resnet50(weights="DEFAULT").fc.eval()
+    if args.cases:
+        for case in json.loads(CASES_MANIFEST.read_text()):
+            args.image = ASSET_DIR / case["image"]
+            if not (run_dir(case["problem"], args.image, args.patch_size, args.baseline) / "summary.json").exists():
+                explain(PROBLEMS[case["problem"]], args, imagenet_classifier)
+        return
     for name in args.problems:
         explain(PROBLEMS[name], args, imagenet_classifier)
 

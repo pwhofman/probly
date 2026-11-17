@@ -105,6 +105,39 @@ def regimes(attributions: np.ndarray, background_threshold: float, shared_thresh
     return regime
 
 
+def structure(attributions: np.ndarray, background_threshold: float) -> dict[str, object]:
+    """Summarize where the features of an explanation point, weighted by their magnitude.
+
+    Two explanations of equally uncertain predictions can differ in this summary: if different
+    features favor different classes, the magnitude is split over the classes but each feature
+    supports one class; if the same features favor several classes, the features themselves support
+    more than one class.
+
+    Args:
+        attributions: Attributions of shape ``(n_features, n_classes)``.
+        background_threshold: Features with a magnitude below this value are left out.
+
+    Returns:
+        ``magnitude_share_per_class``: the share of the magnitude of the features that favor each
+        class most; ``supported_classes``: the mean of :func:`supported_classes`;
+        ``multi_class_share``: the share of the magnitude of features that support at least 1.5
+        classes. All are weighted by the features' magnitude. ``effective_features`` is the
+        participation ratio of the magnitudes: the number of features that carry the explanation.
+    """
+    weights = np.where(magnitude(attributions) >= background_threshold, magnitude(attributions), 0.0)
+    effective_features = weights.sum() ** 2 / max(np.sum(weights**2), 1e-12)
+    weights = weights / max(weights.sum(), 1e-12)
+    favored = contrast(attributions).argmax(axis=1)
+    supported = supported_classes(attributions)
+    multi_class = 1.5
+    return {
+        "magnitude_share_per_class": np.bincount(favored, weights=weights, minlength=attributions.shape[1]).tolist(),
+        "supported_classes": float(weights @ supported),
+        "multi_class_share": float(weights[supported >= multi_class].sum()),
+        "effective_features": float(effective_features),
+    }
+
+
 def simplex_embedding(attributions: np.ndarray, mode: str = "contrast") -> np.ndarray:
     """Map each feature's attributions to a point of the probability simplex.
 

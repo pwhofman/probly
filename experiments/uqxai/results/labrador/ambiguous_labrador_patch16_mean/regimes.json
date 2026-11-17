@@ -1,0 +1,32 @@
+{
+  "probability": {
+    "background_threshold": 0.023388750486145166,
+    "regime_counts": {
+      "background": 124,
+      "class-specific": 72,
+      "shared": 0
+    },
+    "share_of_squared_magnitude_that_is_common": 0.005878201383931502,
+    "mean_supported_classes_of_non_background": 1.177633134801526
+  },
+  "mean_logit": {
+    "background_threshold": 0.130174160795496,
+    "regime_counts": {
+      "background": 115,
+      "class-specific": 81,
+      "shared": 0
+    },
+    "share_of_squared_magnitude_that_is_common": 0.005389037387884623,
+    "mean_supported_classes_of_non_background": 1.285846375241175
+  },
+  "open_world": {
+    "background_threshold": 0.0032818461816351945,
+    "regime_counts": {
+      "background": 179,
+      "class-specific": 17,
+      "shared": 0
+    },
+    "share_of_squared_magnitude_that_is_common": 0.37673640716624274,
+    "mean_supported_classes_of_non_background": 1.1741077004873717
+  }
+}

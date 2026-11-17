@@ -14,6 +14,8 @@ DATA_DIR = Path(os.environ.get("UQXAI_DATA_DIR", DATA_PATH / "uqxai")).expanduse
 """Downloaded images and cached features (large, not in git). Override with ``UQXAI_DATA_DIR``."""
 
 RIBEIRO_IMAGE = ASSET_DIR / "dog_guitar.jpg"
+CASES_MANIFEST = ASSET_DIR / "cases.json"
+"""The test images of the uncertainty cases, written by ``scripts/07_select_cases.py``."""
 
 
 def heads_checkpoint(problem: str) -> Path:

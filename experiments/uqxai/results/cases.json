@@ -1,0 +1,252 @@
+{
+  "electric": {
+    "certain": {
+      "classes": [
+        "acoustic guitar",
+        "golden retriever",
+        "electric guitar"
+      ],
+      "prediction": [
+        2.4259139763671556e-07,
+        0.9999988675117493,
+        9.330700549980975e-07
+      ],
+      "prediction_without_features": [
+        0.9560236930847168,
+        0.01564253494143486,
+        0.028333742171525955
+      ],
+      "total_uncertainty": 1.778308978828136e-05,
+      "epistemic_uncertainty": 8.278402674477547e-08,
+      "probability": {
+        "magnitude_share_per_class": [
+          0.19551531070302525,
+          0.7077515943716293,
+          0.0967330949253458
+        ],
+        "supported_classes": 1.230825712729292,
+        "multi_class_share": 0.20035126735372277,
+        "effective_features": 110.3350817056345,
+        "common_share": 0.04876421883956628
+      },
+      "mean_logit": {
+        "magnitude_share_per_class": [
+          0.17347998782120488,
+          0.7096767987762412,
+          0.11684321340255399
+        ],
+        "supported_classes": 1.2509894331430464,
+        "multi_class_share": 0.25979776988992753,
+        "effective_features": 74.54809968149445,
+        "common_share": 0.029215904870642986
+      }
+    },
+    "conflict": {
+      "classes": [
+        "acoustic guitar",
+        "golden retriever",
+        "electric guitar"
+      ],
+      "prediction": [
+        0.8344199061393738,
+        0.16212506592273712,
+        0.0034549939446151257
+      ],
+      "prediction_without_features": [
+        0.9560236930847168,
+        0.01564253494143486,
+        0.028333742171525955
+      ],
+      "total_uncertainty": 0.46559637784957886,
+      "epistemic_uncertainty": 0.0032278895378112793,
+      "probability": {
+        "magnitude_share_per_class": [
+          0.36738691443887656,
+          0.27665115682953695,
+          0.35596192873158644
+        ],
+        "supported_classes": 1.1665125850219416,
+        "multi_class_share": 0.17794180116275232,
+        "effective_features": 81.55391885659583,
+        "common_share": 0.008090123819694865
+      },
+      "mean_logit": {
+        "magnitude_share_per_class": [
+          0.3284455058728073,
+          0.38462122485486244,
+          0.28693326927233026
+        ],
+        "supported_classes": 1.1298139218479895,
+        "multi_class_share": 0.13639558772171995,
+        "effective_features": 67.43976302212725,
+        "common_share": 0.01403734583292831
+      }
+    },
+    "ambiguous": {
+      "classes": [
+        "acoustic guitar",
+        "golden retriever",
+        "electric guitar"
+      ],
+      "prediction": [
+        0.6396862268447876,
+        0.00016135405167005956,
+        0.36015239357948303
+      ],
+      "prediction_without_features": [
+        0.9560236930847168,
+        0.01564253494143486,
+        0.028333742171525955
+      ],
+      "total_uncertainty": 0.6550040245056152,
+      "epistemic_uncertainty": 0.006101250648498535,
+      "probability": {
+        "magnitude_share_per_class": [
+          0.45534298943282187,
+          0.0,
+          0.5446570105671782
+        ],
+        "supported_classes": 1.0283664476550116,
+        "multi_class_share": 0.0032264559956752758,
+        "effective_features": 80.98350782223284,
+        "common_share": 0.0026021537759717828
+      },
+      "mean_logit": {
+        "magnitude_share_per_class": [
+          0.4530144931121402,
+          0.13949218410082911,
+          0.40749332278703077
+        ],
+        "supported_classes": 1.2452924194710264,
+        "multi_class_share": 0.26296889446513494,
+        "effective_features": 106.2085375001975,
+        "common_share": 0.026295847777941837
+      }
+    }
+  },
+  "labrador": {
+    "certain": {
+      "classes": [
+        "acoustic guitar",
+        "golden retriever",
+        "Labrador retriever"
+      ],
+      "prediction": [
+        2.963674887723755e-07,
+        0.9999572038650513,
+        4.2487568862270564e-05
+      ],
+      "prediction_without_features": [
+        0.9275956153869629,
+        0.055727459490299225,
+        0.01667696237564087
+      ],
+      "total_uncertainty": 0.0004749427316710353,
+      "epistemic_uncertainty": 1.2025993783026934e-06,
+      "probability": {
+        "magnitude_share_per_class": [
+          0.18865268418651066,
+          0.7587385218640148,
+          0.05260879394947442
+        ],
+        "supported_classes": 1.1917663932446092,
+        "multi_class_share": 0.1704624955158643,
+        "effective_features": 107.38873537006576,
+        "common_share": 0.06282946718507691
+      },
+      "mean_logit": {
+        "magnitude_share_per_class": [
+          0.0,
+          0.5864916920538713,
+          0.41350830794612886
+        ],
+        "supported_classes": 1.294546583195127,
+        "multi_class_share": 0.2952332146916749,
+        "effective_features": 39.116457893664,
+        "common_share": 0.01720803057209509
+      }
+    },
+    "conflict": {
+      "classes": [
+        "acoustic guitar",
+        "golden retriever",
+        "Labrador retriever"
+      ],
+      "prediction": [
+        0.868338406085968,
+        0.13101811707019806,
+        0.0006435827817767859
+      ],
+      "prediction_without_features": [
+        0.9275956153869629,
+        0.055727459490299225,
+        0.01667696237564087
+      ],
+      "total_uncertainty": 0.39359980821609497,
+      "epistemic_uncertainty": 0.0052359700202941895,
+      "probability": {
+        "magnitude_share_per_class": [
+          0.4594337026047066,
+          0.20788520644043926,
+          0.33268109095485404
+        ],
+        "supported_classes": 1.3512568284949154,
+        "multi_class_share": 0.3379769100823368,
+        "effective_features": 68.78555547545372,
+        "common_share": 0.009816647473745705
+      },
+      "mean_logit": {
+        "magnitude_share_per_class": [
+          0.40168438432477743,
+          0.38056906005869395,
+          0.21774655561652856
+        ],
+        "supported_classes": 1.283907720323998,
+        "multi_class_share": 0.2940163323518598,
+        "effective_features": 73.75958586542431,
+        "common_share": 0.009199154604203539
+      }
+    },
+    "ambiguous": {
+      "classes": [
+        "acoustic guitar",
+        "golden retriever",
+        "Labrador retriever"
+      ],
+      "prediction": [
+        2.0108298485865816e-05,
+        0.6219485402107239,
+        0.37803131341934204
+      ],
+      "prediction_without_features": [
+        0.9275956153869629,
+        0.055727459490299225,
+        0.01667696237564087
+      ],
+      "total_uncertainty": 0.6633201837539673,
+      "epistemic_uncertainty": 0.010241329669952393,
+      "probability": {
+        "magnitude_share_per_class": [
+          0.023998499728706102,
+          0.5831268117601979,
+          0.3928746885110961
+        ],
+        "supported_classes": 1.1282016088852789,
+        "multi_class_share": 0.12024333723028585,
+        "effective_features": 47.84026403463512,
+        "common_share": 0.005878201383931502
+      },
+      "mean_logit": {
+        "magnitude_share_per_class": [
+          0.13267602726132013,
+          0.585010661485414,
+          0.28231331125326575
+        ],
+        "supported_classes": 1.2993205686495544,
+        "multi_class_share": 0.2712971592275035,
+        "effective_features": 53.42353527326618,
+        "common_share": 0.005389037387884623
+      }
+    }
+  }
+}

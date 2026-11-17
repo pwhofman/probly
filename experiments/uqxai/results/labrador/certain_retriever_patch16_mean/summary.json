@@ -1,0 +1,85 @@
+{
+  "problem": "labrador",
+  "image": "cases/certain_retriever.jpg",
+  "patch_size": 16,
+  "grid_shape": [
+    14,
+    14
+  ],
+  "n_players": 196,
+  "baseline": "mean",
+  "budget": 10000,
+  "approximator": "oddshap",
+  "seed": 0,
+  "classes": [
+    "acoustic guitar",
+    "golden retriever",
+    "Labrador retriever"
+  ],
+  "prediction": {
+    "acoustic guitar": 2.963674887723755e-07,
+    "golden retriever": 0.9999572038650513,
+    "Labrador retriever": 4.2487568862270564e-05
+  },
+  "total_uncertainty": 0.0004749427316710353,
+  "aleatoric_uncertainty": 0.0004737401322927326,
+  "epistemic_uncertainty": 1.2025993783026934e-06,
+  "readouts": {
+    "probability": {
+      "empty": [
+        0.9275956153869629,
+        0.055727459490299225,
+        0.01667696237564087
+      ],
+      "full": [
+        2.963676877243415e-07,
+        0.999957263469696,
+        4.2487678001634777e-05
+      ],
+      "largest_attribution": 0.04598437444587487,
+      "largest_sum_over_outputs": 0.01832458795570931
+    },
+    "mean_logit": {
+      "empty": [
+        2.0451393127441406,
+        -0.8029939532279968,
+        -1.9927533864974976
+      ],
+      "full": [
+        -7.132882595062256,
+        8.006730079650879,
+        -2.088627338409424
+      ],
+      "largest_attribution": 1.0167826411228713,
+      "largest_sum_over_outputs": 0.18687902389209876
+    },
+    "uncertainty": {
+      "empty": [
+        0.2988893985748291,
+        0.29647549986839294,
+        0.0024138987064361572
+      ],
+      "full": [
+        0.00047488408745266497,
+        0.0004737411509267986,
+        1.1429365258663893e-06
+      ],
+      "largest_attribution": 0.026483844604306906,
+      "largest_sum_over_outputs": 0.048938179703998344
+    },
+    "open_world": {
+      "empty": [
+        0.0008970559574663639,
+        0.0014027949655428529,
+        0.0011583653977140784
+      ],
+      "full": [
+        0.00024996738648042083,
+        0.3722996115684509,
+        0.020357217639684677
+      ],
+      "largest_attribution": 0.06446151654116265,
+      "largest_sum_over_outputs": 0.07941881970213431
+    }
+  }
+}

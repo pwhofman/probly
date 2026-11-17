@@ -1,6 +1,6 @@
 {
   "probability": {
-    "background_threshold": 0.024795579564492604,
+    "background_threshold": 0.024792106689081536,
     "regime_counts": {
       "background": 129,
       "class-specific": 67,

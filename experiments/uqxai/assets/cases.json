@@ -1,0 +1,34 @@
+[
+  {
+    "problem": "electric",
+    "case": "certain",
+    "image": "cases/certain_retriever.jpg"
+  },
+  {
+    "problem": "electric",
+    "case": "conflict",
+    "image": "dog_guitar.jpg"
+  },
+  {
+    "problem": "labrador",
+    "case": "certain",
+    "image": "cases/certain_retriever.jpg"
+  },
+  {
+    "problem": "labrador",
+    "case": "conflict",
+    "image": "dog_guitar.jpg"
+  },
+  {
+    "problem": "electric",
+    "case": "ambiguous",
+    "image": "cases/ambiguous_electric.jpg",
+    "true_imagenet_class": 402
+  },
+  {
+    "problem": "labrador",
+    "case": "ambiguous",
+    "image": "cases/ambiguous_labrador.jpg",
+    "true_imagenet_class": 207
+  }
+]

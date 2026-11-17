@@ -1,13 +1,13 @@
 {
   "probability": {
-    "background_threshold": 0.017049703802981854,
+    "background_threshold": 0.017047103622331132,
     "regime_counts": {
-      "background": 70,
-      "class-specific": 126,
+      "background": 73,
+      "class-specific": 123,
       "shared": 0
     },
     "share_of_squared_magnitude_that_is_common": 0.008831410257116576,
-    "mean_supported_classes_of_non_background": 1.1837652892083599
+    "mean_supported_classes_of_non_background": 1.1803077825724357
   },
   "mean_logit": {
     "background_threshold": 0.15599039451760058,

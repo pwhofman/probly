@@ -1,0 +1,84 @@
+{
+  "problem": "labrador",
+  "classes": {
+    "acoustic guitar": 402,
+    "golden retriever": 207,
+    "Labrador retriever": 208
+  },
+  "head": "mlp_small",
+  "num_heads": 10,
+  "train_images": {
+    "acoustic guitar": 1300,
+    "golden retriever": 1300,
+    "Labrador retriever": 1300
+  },
+  "test_images": {
+    "acoustic guitar": 50,
+    "golden retriever": 50,
+    "Labrador retriever": 50
+  },
+  "train": {
+    "accuracy": 0.9958974123001099,
+    "accuracy_per_class": {
+      "acoustic guitar": 1.0,
+      "golden retriever": 0.9976922869682312,
+      "Labrador retriever": 0.9900000095367432
+    },
+    "member_accuracy_mean": 0.9958717226982117,
+    "member_accuracy_min": 0.9956410527229309,
+    "negative_log_likelihood": 0.014812744222581387,
+    "member_disagreement": 0.00043589744018390775,
+    "mean_total_uncertainty": 0.03279615566134453,
+    "mean_aleatoric_uncertainty": 0.03269829601049423,
+    "mean_epistemic_uncertainty": 9.786386362975463e-05,
+    "confusion_matrix_rows_true": [
+      [
+        1300,
+        0,
+        0
+      ],
+      [
+        0,
+        1297,
+        3
+      ],
+      [
+        0,
+        13,
+        1287
+      ]
+    ]
+  },
+  "test": {
+    "accuracy": 0.9666666388511658,
+    "accuracy_per_class": {
+      "acoustic guitar": 1.0,
+      "golden retriever": 0.9599999785423279,
+      "Labrador retriever": 0.9399999976158142
+    },
+    "member_accuracy_mean": 0.966666579246521,
+    "member_accuracy_min": 0.9666666388511658,
+    "negative_log_likelihood": 0.15086564421653748,
+    "member_disagreement": 0.0,
+    "mean_total_uncertainty": 0.034473493695259094,
+    "mean_aleatoric_uncertainty": 0.03427936136722565,
+    "mean_epistemic_uncertainty": 0.00019413801783230156,
+    "confusion_matrix_rows_true": [
+      [
+        50,
+        0,
+        0
+      ],
+      [
+        0,
+        48,
+        2
+      ],
+      [
+        0,
+        3,
+        47
+      ]
+    ]
+  }
+}

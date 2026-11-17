@@ -6,6 +6,7 @@ ResNet-50 ranks first for the dog-with-guitar image, and differ in their third c
 - ``electric``: electric guitar, the third-ranked class, which shares features with the first.
 - ``banjo``: another class that is close to the acoustic guitar.
 - ``hat``: cowboy hat, a third object of the image with its own region.
+- ``labrador``: Labrador retriever, a class that is close to the second class instead of the first.
 """
 
 from __future__ import annotations
@@ -46,6 +47,7 @@ PROBLEMS: dict[str, Problem] = {
         Problem("electric", {**_SHARED, "electric guitar": 546}),
         Problem("banjo", {**_SHARED, "banjo": 420}),
         Problem("hat", {**_SHARED, "cowboy hat": 515}),
+        Problem("labrador", {**_SHARED, "Labrador retriever": 208}),
     )
 }
 """All problems by name."""

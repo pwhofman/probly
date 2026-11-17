@@ -50,3 +50,17 @@ def test_regimes() -> None:
         simplex.SPECIFIC,
         simplex.SHARED,
     ]
+
+
+def test_structure_separates_conflict_from_ambiguity() -> None:
+    # Conflict: half of the features favor the first class, half the second.
+    conflict = np.array([[2.0, -1.0, -1.0], [-1.0, 2.0, -1.0], [0.01, 0.0, -0.01]])
+    # Ambiguity: every feature favors the second and third class alike.
+    ambiguous = np.array([[-2.0, 1.0, 1.0], [-2.0, 1.0, 1.0], [0.01, 0.0, -0.01]])
+    summary = simplex.structure(conflict, background_threshold=0.1)
+    assert np.allclose(summary["magnitude_share_per_class"], [0.5, 0.5, 0])
+    assert np.isclose(summary["supported_classes"], 1)
+    assert np.isclose(summary["multi_class_share"], 0)
+    summary = simplex.structure(ambiguous, background_threshold=0.1)
+    assert np.isclose(summary["supported_classes"], 2)
+    assert np.isclose(summary["multi_class_share"], 1)

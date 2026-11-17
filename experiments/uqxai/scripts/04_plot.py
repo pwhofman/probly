@@ -34,7 +34,10 @@ def simplex_figure(
     background: float,
 ) -> dict[str, object]:
     """Draw the image map, the simplex attribution plot and the regime plane of one readout."""
-    attributions = stored[f"{readout}_values"]
+    raw = stored[f"{readout}_values"]
+    # Exact Shapley values of class probabilities sum to zero over the classes: the common part of
+    # the estimate is error and is removed. Its size is reported as an estimate of that error.
+    attributions = simplex.contrast(raw) if readout == "probability" else raw
     threshold = background * simplex.magnitude(attributions).max()
     is_probability = readout in ("probability", "open_world")
     fig = plt.figure(figsize=(13.5, 4.6))
@@ -74,7 +77,7 @@ def simplex_figure(
         "background_threshold": threshold,
         "regime_counts": dict(zip(simplex.REGIME_NAMES, np.bincount(regime, minlength=3).tolist(), strict=True)),
         "share_of_squared_magnitude_that_is_common": float(
-            (simplex.common_magnitude(attributions) ** 2).sum() / (simplex.magnitude(attributions) ** 2).sum()
+            (simplex.common_magnitude(raw) ** 2).sum() / (simplex.magnitude(raw) ** 2).sum()
         ),
         "mean_supported_classes_of_non_background": float(
             simplex.supported_classes(attributions)[regime != simplex.BACKGROUND].mean()
@@ -127,7 +130,7 @@ def main() -> None:
                     run_dir / f"simplex_{readout}.png", image, stored, readout, class_names, args.background
                 )
         maps_figure(
-            run_dir / "class_maps.png", image, stored["cells"], stored["probability_values"], class_names,
+            run_dir / "class_maps.png", image, stored["cells"], simplex.contrast(stored["probability_values"]), class_names,
             "Shapley values of the class probabilities",
         )  # fmt: skip
         if "uncertainty_values" in stored:
