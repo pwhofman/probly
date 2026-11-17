@@ -231,7 +231,8 @@ strong features, and from it the magnitude that 99% of pure-noise features stay 
 | `labrador`, dog seen from behind | probabilities | 6%             | 118 |
 | `labrador`, dog seen from behind | logits        | 6%             | 115 |
 
-So about half of the cloud is noise, and the other half are weak but real effects. Without a second
+So between a third and two thirds of the features are below the floor. The rest of the cloud are
+weak effects that the noise does not explain. Without a second
 sample, `uqxai.simplex.robust_noise_floor` gives a bound from the median magnitude; it came out two
 to three times too high here.
 
