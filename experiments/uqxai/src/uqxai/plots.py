@@ -68,6 +68,24 @@ def relative_magnitude(attributions: np.ndarray, noise_floor: float = 0.0) -> np
     return magnitudes / max(magnitudes.max(), 1e-12)
 
 
+def visibility(attributions: np.ndarray, noise_floor: float = 0.0, exponent: float = 1.0) -> np.ndarray:
+    """Return how visible each feature is drawn, between zero (not at all) and one.
+
+    The visibility sets the size and the opacity of a feature's dot and the opacity of its
+    superpixel. It does not move the dot.
+
+    Args:
+        attributions: Attributions of shape ``(n_features, n_classes)``.
+        noise_floor: Magnitude that counts as noise; features below it are invisible.
+        exponent: The visibility is the magnitude above the floor, relative to the largest, to this
+            power: above one fades weak features faster, below one shows them sooner.
+
+    Returns:
+        The visibility of each feature, of shape ``(n_features,)``.
+    """
+    return relative_magnitude(attributions, noise_floor) ** exponent
+
+
 def ternary_plot(
     ax: Axes,
     attributions: np.ndarray,
@@ -79,6 +97,7 @@ def ternary_plot(
     mode: str = "contrast",
     prediction_note: str = "",
     embedding: dict[str, Any] | None = None,
+    fade: dict[str, float] | None = None,
 ) -> None:
     """Draw the simplex attribution plot of a three-class problem.
 
@@ -99,24 +118,32 @@ def ternary_plot(
         members: Predicted probabilities of each ensemble member, of shape ``(n_members, 3)``.
         mode: How attributions become points; see :func:`uqxai.simplex.simplex_embedding`.
         prediction_note: Text appended to the legend entries of the predictions.
-        embedding: Options of :func:`uqxai.simplex.simplex_embedding`: ``scale``, ``noise_floor``,
-            ``exponent`` and ``sharpness``.
+        embedding: Options of :func:`uqxai.simplex.simplex_embedding`, which change where the dots
+            lie: ``scale``, ``noise_floor``, ``exponent`` and ``sharpness``.
+        fade: Options of :func:`visibility`, which leave the dots where they are and change their
+            size and opacity: ``noise_floor`` and ``exponent``. Without it, every feature is
+            drawn with an opacity of at least 0.35.
     """
     embedding = embedding or {}
     points = simplex.simplex_embedding(attributions, mode=mode, **embedding)
-    size = relative_magnitude(attributions, embedding.get("noise_floor", 0.0))
+    if fade is None:
+        size = relative_magnitude(attributions, embedding.get("noise_floor", 0.0))
+        area, opacity = 6 + 170 * size, 0.35 + 0.65 * size
+    else:
+        size = visibility(attributions, **fade)
+        area, opacity = 170 * size, size
     order = np.argsort(size)  # strong features on top
     order = order[size[order] > 0]
-    if len(order) < len(size):
+    if len(order) < len(size) and embedding.get("noise_floor", 0.0) > 0:
         ax.scatter(
             [1 / 3], [1 / 3], [1 / 3], s=42, c=NEUTRAL, edgecolors=INK_MUTED, linewidths=0.8, zorder=2,
             label=f"{len(size) - len(order)} features below the noise floor",
         )  # fmt: skip
     ax.scatter(
         *points[order].T,
-        s=6 + 170 * size[order],
-        c=np.column_stack([simplex_colors(points[order]), 0.35 + 0.65 * size[order]]),
-        edgecolors=SURFACE,
+        s=area[order],
+        c=np.column_stack([simplex_colors(points[order]), opacity[order]]),
+        edgecolors=np.column_stack([np.tile(to_rgb(SURFACE), (len(order), 1)), opacity[order]]),
         linewidths=0.6,
         zorder=3,
     )
@@ -217,6 +244,7 @@ def simplex_map(
     attributions: np.ndarray,
     mode: str = "contrast",
     embedding: dict[str, Any] | None = None,
+    fade: dict[str, float] | None = None,
 ) -> None:
     """Color every superpixel of the image like its dot in the simplex attribution plot.
 
@@ -227,10 +255,15 @@ def simplex_map(
         attributions: Attributions of shape ``(n_features, n_classes)``.
         mode: How attributions become points of the simplex; see :func:`ternary_plot`.
         embedding: Options of :func:`uqxai.simplex.simplex_embedding`; see :func:`ternary_plot`.
+        fade: Options of :func:`visibility`; see :func:`ternary_plot`.
     """
     embedding = embedding or {}
     colors = simplex_colors(simplex.simplex_embedding(attributions, mode=mode, **embedding))[cells]
-    opacity = (0.92 * relative_magnitude(attributions, embedding.get("noise_floor", 0.0)) ** 0.6)[cells][..., None]
+    if fade is None:
+        shown = relative_magnitude(attributions, embedding.get("noise_floor", 0.0)) ** 0.6
+    else:
+        shown = visibility(attributions, **fade)
+    opacity = (0.92 * shown)[cells][..., None]
     ax.imshow((1 - opacity) * _grayscale(image) + opacity * colors)
     ax.set_axis_off()
 

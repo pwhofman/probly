@@ -236,25 +236,27 @@ weak effects that the noise does not explain. Without a second
 sample, `uqxai.simplex.robust_noise_floor` gives a bound from the median magnitude; it came out two
 to three times too high here.
 
-`scripts/08_scaling_gallery.py` draws the same explanations with different scales
-(`results/scaling_gallery_probability.png`, `results/scaling_gallery_mean_logit.png`). All but the
-first hide the features below the noise floor behind one gray dot and measure the distance to the
-center from the floor:
+`scripts/08_gallery.py` draws the same explanations in different ways, in two families.
 
-![Scales of the simplex attribution plot](results/scaling_gallery_probability.png)
+**Fade (`--vary fade`): the dots stay where they are.** The distance to the center remains
+proportional to the contrast magnitude; only the size and the opacity of the dots, and the opacity
+of the superpixels, follow the magnitude differently (`fade` of `ternary_plot` and `simplex_map`):
 
-- **linear**: the distance is the magnitude above the floor; the only scale on which distances can
-  be compared as numbers.
-- **square root**: spreads the weak features outwards, to see where they point.
-- **square**: pulls the weak features to the center, so that only the strong ones stand out.
-- **softmax**: the softmax of the scaled contrast. The strongest features lie near the boundary in
-  every direction; on the linear scale a feature against one class reaches the boundary at half
-  the distance of a feature for one class.
-- **direction only**: every feature on the boundary, its size is its magnitude.
+![Size and opacity of the simplex attribution plot](results/fade_gallery_probability.png)
 
-The scales are options of `uqxai.simplex.simplex_embedding` (`scale`, `noise_floor`, `exponent`,
-`sharpness`), which `ternary_plot` and `simplex_map` take as `embedding`. The other figures in this
-README still use the linear scale with all features.
+- **as before**: every feature is at least 35% opaque, so the noise is as visible as weak effects.
+- **linear**: size and opacity are proportional to the magnitude.
+- **quadratic**: proportional to the squared magnitude; only the strongest features remain.
+- **noise floor**: invisible below the measured floor, linear above it.
+- **noise floor, square root**: invisible below the floor, and soon fully visible above it.
+
+**Scale (`--vary scale`): the dots move.** The features below the noise floor are hidden behind one
+gray dot, and the distance to the center is a linear, square-root, squared or softmax function of
+the magnitude above the floor, or the dots show the direction only (`embedding` of `ternary_plot`,
+options of `uqxai.simplex.simplex_embedding`). See `results/scale_gallery_probability.png`.
+
+Both galleries exist for the logits too (`results/*_gallery_mean_logit.png`). The other figures in
+this README still show every feature with at least 35% opacity.
 
 ## Earlier run: groups of classes
 
@@ -364,7 +366,7 @@ same coalitions as OddSHAP. (Group model.)
     uv run python scripts/07_select_cases.py         # writes assets/cases and assets/cases.json
     uv run python scripts/03_explain.py --cases      # five more explanations
     uv run python scripts/06_compare.py --cases
-    uv run python scripts/08_scaling_gallery.py      # needs --seed 1 runs for measured noise floors
+    uv run python scripts/08_gallery.py              # needs --seed 1 runs for measured noise floors
     uv run pytest
 
 Steps 1 to 3 and 6 take `--problems electric banjo hat labrador` to choose; a new problem is one line in
