@@ -130,7 +130,8 @@ def main() -> None:
                     run_dir / f"simplex_{readout}.png", image, stored, readout, class_names, args.background
                 )
         maps_figure(
-            run_dir / "class_maps.png", image, stored["cells"], simplex.contrast(stored["probability_values"]), class_names,
+            run_dir / "class_maps.png", image, stored["cells"],
+            simplex.contrast(stored["probability_values"]), class_names,
             "Shapley values of the class probabilities",
         )  # fmt: skip
         if "uncertainty_values" in stored:
