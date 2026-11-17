@@ -1079,7 +1079,12 @@
     const morph = { from: 0, to: 0, start: 0 };
     const morphTo = (to) => {
       if (reducedMotion() || !width) {
+        // at once, without the turn
         agree = to;
+        if (width) {
+          buildChart();
+          draw();
+        }
         return;
       }
       const running = morph.start > 0;
