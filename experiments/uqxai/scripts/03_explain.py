@@ -73,10 +73,19 @@ def explain(problem: Problem, args: argparse.Namespace, imagenet_classifier: tor
         "readouts": {},
     }
 
-    results: dict[str, np.ndarray] = {"member_probabilities": member_probabilities.numpy()}
+    # Readouts that an earlier call computed for this coalition sample are kept.
+    suffix = f"_seed{args.seed}" if args.seed else ""
+    attribution_path, summary_path = out_dir / f"attributions{suffix}.npz", out_dir / f"summary{suffix}.json"
+    results: dict[str, np.ndarray] = dict(np.load(attribution_path)) if attribution_path.exists() else {}
+    results["member_probabilities"] = member_probabilities.numpy()
+    if summary_path.exists():
+        summary["readouts"] = json.loads(summary_path.read_text())["readouts"]
     for name in args.readouts:
         if name == "open_world":
             game = lambda coalitions: cache(coalitions)["open_world"]  # noqa: E731
+        elif name == "open_world_log":
+            # Log-probabilities: the logits of the 1000-class classifier minus their log-normalizer.
+            game = lambda coalitions: np.log(cache(coalitions)["open_world"])  # noqa: E731
         else:
             game = lambda coalitions, readout=READOUTS[name]: readout(cache(coalitions)["head_logits"])  # noqa: E731
         attribution = shapley_values(
@@ -94,9 +103,9 @@ def explain(problem: Problem, args: argparse.Namespace, imagenet_classifier: tor
             "largest_sum_over_outputs": float(np.abs(attribution.values.sum(axis=1)).max()),
         }
         print(" ", name, json.dumps(summary["readouts"][name]))
-    suffix = f"_seed{args.seed}" if args.seed else ""
-    np.savez_compressed(out_dir / f"attributions{suffix}.npz", cells=masker.cells.numpy(), **results)
-    (out_dir / f"summary{suffix}.json").write_text(json.dumps(summary, indent=2) + "\n")
+    results["cells"] = masker.cells.numpy()
+    np.savez_compressed(attribution_path, **results)
+    summary_path.write_text(json.dumps(summary, indent=2) + "\n")
     print(f"  {len(cache)} coalitions evaluated -> {out_dir}")
 
 

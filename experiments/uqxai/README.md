@@ -141,13 +141,30 @@ plane of common and contrast magnitude), `simplex_mean_logit.png`, `class_maps.p
 
 The same coalitions, read out with the original 1000-class ImageNet classifier for the three
 classes of each problem. These probabilities do not sum to one (acoustic guitar 0.31, golden
-retriever 0.06, electric guitar 0.04, banjo 0.04, cowboy hat 0.01):
+retriever 0.06, electric guitar 0.04, banjo 0.04, cowboy hat 0.01), and a gray image is none of the
+classes (0.001 each), so the explanation starts from a neutral point:
 
 ![Simplex attribution plots of the open-world readout](results/comparison_dog_guitar_patch16_mean_open_world.png)
 
-Here 23% to 28% of the squared magnitude is common, and 9, 5 and 2 features are shared. In
-`electric`, the guitar's neck raises both guitars (acoustic +0.015, electric +0.020) at the expense
-of classes outside the triple: the wheel that speaks for car and truck.
+Two readouts, `open_world` (probabilities) and `open_world_log` (log-probabilities: the logits
+minus their log-normalizer over the 1000 classes, the only part of a logit that the prediction
+depends on):
+
+| readout             | common part of the squared magnitude | correlation of two coalition samples |
+|---------------------|-------------------------------------:|-------------------------------------:|
+| probabilities       | 22% to 41%                           | 0.96 to 0.98 |
+| log-probabilities   | 29% to 66%                           | 0.98 to 0.99 |
+
+(Eight explanations for the common part, three for the correlation. For comparison, the
+sub-ensemble's probabilities correlate at 0.86 to 0.94 and its logits at 0.95 to 0.96.)
+
+In log space, the dog-with-guitar image moves all three classes of `electric` up (+5.8, +3.7,
++3.7). The guitar's neck raises both guitars (acoustic +0.68, electric +0.80, retriever -0.12): the
+wheel that speaks for car and truck. The dog's ear raises only the retriever (+1.04).
+
+This readout is the cleanest so far, but for two reasons that have nothing to do with the model
+being better: the set of classes is open, and the masked image is neutral. The classifier itself
+is a single network, without heads and without epistemic uncertainty.
 
 ### Uncertainty
 
