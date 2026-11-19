@@ -314,3 +314,8 @@ scripts/al_analysis_out/
 .mplcache/
 src/probly/_version.py
 logs/
+
+# Paper plotting wandb cache
+paper_plots/.cache/
+paper_plots/.cache_al/
+paper_plots/.cache_sweep/

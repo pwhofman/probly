@@ -1,0 +1,64 @@
+% Requires in your preamble:
+%   \usepackage{booktabs}
+%   \usepackage{arydshln}             % for \hdashline / \cdashline
+%   \usepackage[table]{xcolor}        % for \rowcolor on group-header rows
+\begin{table}[ht]
+\centering
+\caption{Summary Results on CIFAR-10. For Selective prediction we report accuracy-rejection AUC (Acc-Rej) and for OoD AUROC.}
+\label{tab:results-cifar10}
+\footnotesize
+\setlength{\tabcolsep}{7pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}l@{\hspace{4pt}}l c c c@{}}
+\toprule
+\multicolumn{2}{@{}l}{\textbf{Method}} & \textbf{SP Acc-Rej} ($\uparrow$) & \textbf{Near-OoD AUROC} ($\uparrow$) & \textbf{Far-OoD AUROC} ($\uparrow$) \\
+\hdashline\noalign{\vskip 0.45em}
+\rowcolor[gray]{0.92}[0pt][0pt]
+\multicolumn{5}{@{}l@{}}{\textbf{Deterministic baseline}} \\
+\addlinespace[0.15em]
+--- & Base & $.993_{\pm .000}$ & $.872_{\pm .001}$ & $.912_{\pm .014}$ \\
+\addlinespace[0.4em]
+\rowcolor[gray]{0.92}[0pt][0pt]
+\multicolumn{5}{@{}l@{}}{\textbf{Direct}} \\
+\addlinespace[0.15em]
+\cite{mukhotiDDU2023} & DDU & $.995_{\pm .000}$ & $.899_{\pm .001}$ & $.935_{\pm .004}$ \\
+\cite{vanAmersfoortDUE2021} & DUQ & $.992_{\pm .000}$ & $.857_{\pm .003}$ & $.902_{\pm .010}$ \\
+\cite{collierHETNet2021} & HetNet & $.994_{\pm .000}$ & $.871_{\pm .003}$ & $.906_{\pm .007}$ \\
+\addlinespace[0.4em]
+\rowcolor[gray]{0.92}[0pt][0pt]
+\multicolumn{5}{@{}l@{}}{\textbf{2nd-order Distribution}} \\
+\addlinespace[0.15em]
+\cite{galDropout2016} & Dropout & $.990_{\pm .001}$ & $.838_{\pm .002}$ & $.894_{\pm .005}$ \\
+\cite{wanDropConnect2013} & DropConnect & $.991_{\pm .001}$ & $.830_{\pm .002}$ & $.874_{\pm .005}$ \\
+\cite{blundellWeightUncertainty2015} & BNN & $.982_{\pm .001}$ & $.828_{\pm .005}$ & $.835_{\pm .015}$ \\
+\cite{daxbergerLaplaceRedux2021} & Laplace & $.993_{\pm .001}$ & $.868_{\pm .000}$ & $.901_{\pm .011}$ \\
+\cite{harrisonVBLL2024} & VBLL & $.994_{\pm .000}$ & $.812_{\pm .002}$ & $.861_{\pm .011}$ \\
+\cite{laks_sa17} & Deep Ensemble & $\mathbf{.997_{\pm .000}}$ & $.901_{\pm .001}$ & $.928_{\pm .003}$ \\
+\cite{wenBatchEnsemble2020} & BatchEnsemble & $.993_{\pm .001}$ & $.875_{\pm .002}$ & $.905_{\pm .005}$ \\
+\cite{valdenegroToroSubEnsemble2023} & SubEnsemble & $.993_{\pm .000}$ & $.815_{\pm .024}$ & $.863_{\pm .026}$ \\
+\cite{deMathelinDARE2023} & DARE & $.994_{\pm .001}$ & $.879_{\pm .003}$ & $.914_{\pm .007}$ \\
+\cite{liuSNGP2020} & SNGP & $.991_{\pm .001}$ & $.847_{\pm .003}$ & $.884_{\pm .009}$ \\
+\cite{sens_ed18} & EDL & $.987_{\pm .003}$ & $.861_{\pm .007}$ & $.890_{\pm .022}$ \\
+\cite{charpentierPosteriorNetwork2020} & PostNet & $.989_{\pm .001}$ & $.837_{\pm .002}$ & $.887_{\pm .008}$ \\
+\cite{charpentierNaturalPosteriorNetwork2022} & NatPN & $.888_{\pm .001}$ & $.256_{\pm .010}$ & $.220_{\pm .020}$ \\
+\cite{malininPriorNetworks2018} & PriorNet & $.991_{\pm .000}$ & $\mathbf{.975_{\pm .001}}$ & $\mathbf{.973_{\pm .002}}$ \\
+\addlinespace[0.4em]
+\rowcolor[gray]{0.92}[0pt][0pt]
+\multicolumn{5}{@{}l@{}}{\textbf{Credal}} \\
+\addlinespace[0.15em]
+\cite{wangCredalWrapper2025} & CreWra & $.997_{\pm .000}$ & $.811_{\pm .001}$ & $.864_{\pm .009}$ \\
+\cite{nguyenCredalEnsembling2025} & CreEns & $.997_{\pm .000}$ & $.919_{\pm .001}$ & $.951_{\pm .002}$ \\
+\cite{caprioCredalBNNs2024} & CreBNN & $.988_{\pm .001}$ & $.872_{\pm .004}$ & $.898_{\pm .010}$ \\
+\cite{loehrCredalPrediction2025} & CreRL & $.996_{\pm .000}$ & $.917_{\pm .000}$ & $.951_{\pm .003}$ \\
+\cite{hofmanEfficientCredalPrediction2026} & EffCre & $.988_{\pm .000}$ & $.616_{\pm .010}$ & $.600_{\pm .018}$ \\
+\addlinespace[0.4em]
+\rowcolor[gray]{0.92}[0pt][0pt]
+\multicolumn{5}{@{}l@{}}{\textbf{Calibration}} \\
+\addlinespace[0.15em]
+\cite{szegedyRethinkingInceptionArchitecture2016} & Label Smooth. & $.979_{\pm .003}$ & $.767_{\pm .011}$ & $.830_{\pm .016}$ \\
+\cite{DBLP:conf/aaai/LienenH21} & Label Relax. & $.986_{\pm .001}$ & $.806_{\pm .002}$ & $.875_{\pm .015}$ \\
+\cite{guoOnCalibration2017} & Vector Scaling & $.993_{\pm .001}$ & $.865_{\pm .002}$ & $.904_{\pm .011}$ \\
+\cite{guoOnCalibration2017} & Temp. Scaling & $.994_{\pm .000}$ & $.874_{\pm .002}$ & $.919_{\pm .007}$ \\
+\bottomrule
+\end{tabular}
+\end{table}

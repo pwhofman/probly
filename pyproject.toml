@@ -204,6 +204,7 @@ convention = "google"
 
 
 [tool.ruff.lint.per-file-ignores]
+"paper_plots/**/*.py" = ["INP001", "T201", "D103"]
 "tests/*.py" = [
     "S101",
     "INP001",
