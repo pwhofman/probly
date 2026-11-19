@@ -50,6 +50,26 @@ def set_seed(seed: int | None) -> None:
     torch.cuda.manual_seed_all(seed)
 
 
+def adjust_batch_size_for_method(cfg: DictConfig) -> None:
+    """Divide ``cfg.batch_size`` for methods whose per-step memory is a multiple of the regular cost.
+
+    Used by training and by the evaluation scripts, which run the same forward pass.
+
+    - BatchEnsemble: scales by ``num_members`` (it tiles inputs along the batch dim).
+    - credal_net: scales by 2 (every interval layer doubles channels, params, and activations).
+    """
+    name = cfg.method.name.lower()
+    if name == "batchensemble":
+        n = int(cfg.method.params.num_members)
+        original = int(cfg.batch_size)
+        cfg.batch_size = original // n
+        print(f"BatchEnsemble: scaled batch_size {original} -> {cfg.batch_size} (num_members={n})")
+    elif name == "credal_net":
+        original = int(cfg.batch_size)
+        cfg.batch_size = original // 2
+        print(f"credal_net: scaled batch_size {original} -> {cfg.batch_size} (interval layers double per-step memory)")
+
+
 def get_device(device_id: int | str | None = None) -> torch.device:
     """Return the best available device, or a specific device if requested.
 

@@ -251,7 +251,9 @@ class TorchAffineLogitCalibrationPredictor[**In](_TorchCalibrationPredictorBase[
             msg = f"Torch calibration expects torch logits, got {type(raw_logits)}"
             raise TypeError(msg)
 
-        logits = raw_logits.detach()
+        # At least float32 is needed, otherwise L-BFGS can get stuck at the initialization
+        # because the loss looks constant.
+        logits = raw_logits.detach().to(torch.promote_types(raw_logits.dtype, torch.float32))
         labels = y_calib if isinstance(y_calib, torch.Tensor) else torch.as_tensor(y_calib, device=logits.device)
         labels = labels.to(device=logits.device)
 

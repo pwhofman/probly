@@ -37,7 +37,7 @@ def _log_array_artifact(
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="ood_detection")
-def main(cfg: DictConfig) -> None:
+def main(cfg: DictConfig) -> None:  # noqa: PLR0915
     """Run out-of-distribution detection evaluation."""
     print("=== OOD detection configuration ===")
     print(OmegaConf.to_yaml(cfg))
@@ -47,6 +47,7 @@ def main(cfg: DictConfig) -> None:
 
     utils.set_seed(cfg.seed)
     calibration.validate_calibration_config(cfg)
+    utils.adjust_batch_size_for_method(cfg)
     print("Loading model...")
     model, _, run_id = load_model_for_evaluation(cfg, device)
     print("Loading data...")
@@ -71,10 +72,11 @@ def main(cfg: DictConfig) -> None:
         msg = f"Unsupported measure: {cfg.measure!r}. Choose from {SUPPORTED_MEASURES}."
         raise ValueError(msg)
 
-    # ID scores are identical across OOD datasets for a given trained model.
-    # Key the cache on run_id so that models with the same method/seed but different
-    # hyperparameters (e.g. different alpha) don't share stale id_scores.
-    id_art_name = f"id_scores-{run_id}-{cfg.dataset}-{cfg.measure}-{cfg.decomposition}"
+    # ID scores are identical across OOD datasets for a given trained model. Key the cache on
+    # the evaluated method and the source run id: methods that load another method's model
+    # (credal_wrapper, credal_ensembling) share that run id but not the scores, and models
+    # with the same method/seed but different hyperparameters have different run ids.
+    id_art_name = f"id_scores-{cfg.method.name}-{run_id}-{cfg.dataset}-{cfg.measure}-{cfg.decomposition}"
     id_qualname = f"{cfg.wandb.entity}/{cfg.wandb.project}/{id_art_name}:latest"
     id_uncertainties: np.ndarray | None = None
     id_loaded_from_cache = False

@@ -262,6 +262,31 @@ class TestTorchCalibrationPredictorBaseHelpers:
         assert logits.shape == (8, 3)
 
 
+class TestTorchAffineLogitPrecision:
+    def test_vector_scaling_fits_half_precision_logits_in_float32(self) -> None:
+        """fp16 logits (e.g. collected under autocast) give the same fit as their fp32 values."""
+        torch = _torch_modules()
+        from probly.calibrator import calibrate  # noqa: PLC0415
+        from probly.method.calibration import torch_identity_logit_model, vector_scaling  # noqa: PLC0415
+
+        generator = torch.Generator().manual_seed(0)
+        num_classes = 10
+        clean = 3.0 * torch.randn(4096, num_classes, generator=generator)
+        labels = torch.distributions.Categorical(logits=clean).sample()
+        scale = torch.linspace(0.4, 3.0, num_classes)
+        logits_half = (clean * scale).half()
+
+        fitted = {}
+        for name, logits in [("half", logits_half), ("float", logits_half.float())]:
+            wrapper = vector_scaling(torch_identity_logit_model(), num_classes=num_classes)
+            calibrate(wrapper, labels, logits)
+            fitted[name] = wrapper
+
+        assert fitted["half"].temperature.dtype == torch.float32
+        torch.testing.assert_close(fitted["half"].temperature, fitted["float"].temperature, atol=1e-3, rtol=1e-3)
+        torch.testing.assert_close(fitted["half"].bias, fitted["float"].bias, atol=1e-3, rtol=1e-3)
+
+
 class TestTorchAffineLogitErrors:
     def test_temperature_property_returns_none_when_uncalibrated(self) -> None:
         """Uncalibrated wrappers return ``None`` for ``temperature`` and ``bias``."""

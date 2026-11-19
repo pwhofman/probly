@@ -54,6 +54,7 @@ def main(cfg: DictConfig) -> None:
 
     utils.set_seed(cfg.seed)
     calibration.validate_calibration_config(cfg)
+    utils.adjust_batch_size_for_method(cfg)
 
     model, _, run_id = load_model_for_evaluation(cfg, device)
     print(f"Loaded model for {cfg.method.name} from wandb run: {run_id}")
