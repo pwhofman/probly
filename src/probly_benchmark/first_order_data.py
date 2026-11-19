@@ -22,6 +22,10 @@ from probly_benchmark.utils import (
     load_model_for_evaluation,
 )
 
+# L1 tolerance shared by interval and convex-hull coverage: a target counts as covered when some member of
+# the credal set lies within this L1 distance of it.
+COVERAGE_EPSILON = 0.005
+
 
 @hydra.main(version_base=None, config_path="configs/", config_name="first_order_data")
 def main(cfg: DictConfig) -> None:
@@ -72,9 +76,9 @@ def main(cfg: DictConfig) -> None:
     try:
         rep_interval = ProbabilityIntervalsRepresenter(model)
         outputs_interval, _ = collect_outputs_targets(rep_interval, data_loader, device, amp_enabled=amp)
-        cov = coverage(outputs_interval, targets)
+        cov = coverage(outputs_interval, targets, epsilon=COVERAGE_EPSILON)
     except (TypeError, NotImplementedError, ValueError):
-        cov = coverage(outputs, targets)
+        cov = coverage(outputs, targets, epsilon=COVERAGE_EPSILON)
 
     # Convex-hull coverage requires a vertex-based convex credal set.
     # For methods whose natural representation is already a ConvexCredalSet
@@ -88,12 +92,12 @@ def main(cfg: DictConfig) -> None:
     targets_dist = TorchProbabilityCategoricalDistribution(tensor=targets)
     chull_cov: float | None = None
     try:
-        chull_cov = float(convex_hull_coverage(outputs, targets_dist, epsilon=0.005))
+        chull_cov = float(convex_hull_coverage(outputs, targets_dist, epsilon=COVERAGE_EPSILON))
     except NotImplementedError:
         try:
             rep_convex = ConvexCredalSetRepresenter(model)
             outputs_convex, _ = collect_outputs_targets(rep_convex, data_loader, device, amp_enabled=amp)
-            chull_cov = float(convex_hull_coverage(outputs_convex, targets_dist, epsilon=0.005))
+            chull_cov = float(convex_hull_coverage(outputs_convex, targets_dist, epsilon=COVERAGE_EPSILON))
         except (TypeError, NotImplementedError, ValueError):
             print(f"convex_hull_coverage not available for {type(model).__name__}, skipping.")
 
