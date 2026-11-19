@@ -138,6 +138,17 @@ class CredalSuite:
         assert coverage(cs, target, epsilon=0.003) == pytest.approx(0.0)
         assert coverage(cs, target, epsilon=0.005) == pytest.approx(1.0)
 
+    def test_probability_intervals_coverage_rejects_negative_epsilon(
+        self,
+        make_intervals: Callable[[np.ndarray, np.ndarray], Any],
+        array_fn: Callable[..., Any],
+    ) -> None:
+        """A negative tolerance is rejected for probability-vector targets."""
+        cs = make_intervals(np.array([[0.1, 0.4, 0.05]]), np.array([[0.5, 0.6, 0.2]]))
+        target = array_fn(np.array([[0.3, 0.5, 0.2]]))
+        with pytest.raises(ValueError, match="epsilon must be non-negative"):
+            coverage(cs, target, epsilon=-0.001)
+
     def test_probability_intervals_default_tolerance_absorbs_softmax_residuals(
         self,
         make_intervals: Callable[[np.ndarray, np.ndarray], Any],
