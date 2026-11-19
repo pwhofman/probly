@@ -214,6 +214,17 @@ class TestTorchProbabilityIntervalsCredalSet:
         )
         torch.testing.assert_close(cred.width(), torch.tensor([[0.4, 0.4]]))
 
+    def test_barycenter_is_non_negative_for_slightly_inverted_intervals(self) -> None:
+        """Rounding in interval softmax heads can leave narrow intervals with upper < lower."""
+        lower = torch.tensor([[0.5, 0.3, 0.1]], dtype=torch.float64)
+        slack = torch.tensor([[-1e-6, 2e-6, -0.9e-6]], dtype=torch.float64)
+        cred = TorchProbabilityIntervalsCredalSet(lower_bounds=lower, upper_bounds=lower + slack)
+
+        probabilities = cred.barycenter.probabilities
+
+        assert bool(torch.all(probabilities >= 0))
+        torch.testing.assert_close(probabilities, torch.tensor([[0.5, 0.4, 0.1]], dtype=torch.float64))
+
     def test_contains(self) -> None:
         torch = _torch_modules()
         from probly.representation.credal_set.torch import TorchProbabilityIntervalsCredalSet  # noqa: PLC0415

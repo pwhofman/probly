@@ -388,7 +388,11 @@ class TorchProbabilityIntervalsCredalSet(
     @override
     @property
     def barycenter(self) -> TorchCategoricalDistribution:
-        return TorchProbabilityCategoricalDistribution(intersection_probability(self.lower_bounds, self.upper_bounds))
+        # Rounding (e.g. in the reachability clip of interval softmax heads) can leave narrow
+        # intervals slightly inverted; mixed-sign slacks then give negative intersection weights.
+        lower = self.lower_bounds.clamp(min=0)
+        upper = torch.maximum(self.upper_bounds, lower)
+        return TorchProbabilityCategoricalDistribution(intersection_probability(lower, upper))
 
 
 create_probability_intervals.register(TorchCategoricalDistribution, TorchProbabilityIntervalsCredalSet.from_sample)
