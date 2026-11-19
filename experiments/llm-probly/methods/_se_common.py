@@ -1,35 +1,75 @@
-import numpy as np
-import torch
+"""Shared code for the semantic-entropy plugins (SE and discrete SE).
 
-from probly.representation.text_generation.torch import (
-    TorchTextGeneration,
-    TorchTextGenerationSample,
-)
-from probly.representer.semantic_clustering.huggingface import (
-    HFGreedySemanticClusterer,
-)
-from probly.quantification import entropy
+Both plugins read the same per-question NLI matrix (A1). The matrix is computed
+once per question and kept in memory, so when the runner calls
+``semantic_entropy`` and then ``discrete_semantic_entropy`` in the same process,
+the NLI model runs only for the first one.
+"""
 
-_clusterer = None
+from __future__ import annotations
+
+import time
+from typing import TYPE_CHECKING
+
+from common.nli_matrix import compute_matrix, question_texts, se_and_dse
+
+from probly.representer.semantic_clustering.huggingface import HFGreedySemanticClusterer
+
+if TYPE_CHECKING:
+    import torch
+
+NLI_MODEL = "microsoft/deberta-base-mnli"
+
+_clusterer: HFGreedySemanticClusterer | None = None
+_matrices: dict[tuple[str, ...], torch.Tensor] = {}
+nli_pairs_scored = 0
+"""Number of NLI pairs sent to the model in this process (for before / after reports)."""
 
 
-def get_clusterer():
-    global _clusterer
+def get_clusterer() -> HFGreedySemanticClusterer:
+    """Load the NLI clusterer once per process."""
+    global _clusterer  # noqa: PLW0603
     if _clusterer is None:
-        _clusterer = HFGreedySemanticClusterer.from_model_name(
-            "microsoft/deberta-base-mnli"
-        )
+        _clusterer = HFGreedySemanticClusterer.from_model_name(NLI_MODEL)
     return _clusterer
 
 
-def compute_se_and_dse(row):
-    generation = TorchTextGeneration(
-        text=np.asarray(row["samples"], dtype=object),
-        log_likelihood=torch.tensor(row["samples_ll_mean"], dtype=torch.float32),
-    )
-    sample = TorchTextGenerationSample(tensor=generation, sample_dim=0)
-    semantic = get_clusterer()(sample)
+def get_matrix(row: dict) -> torch.Tensor:
+    """Return the NLI matrix of one question, computing it only the first time."""
+    global nli_pairs_scored  # noqa: PLW0603
+    key = tuple(question_texts(row))
+    if key not in _matrices:
+        matrix = compute_matrix(get_clusterer(), row)
+        n = matrix.shape[0]
+        nli_pairs_scored += n * (n - 1)
+        _matrices[key] = matrix
+    return _matrices[key]
 
-    se = float(entropy(semantic.to_dense()).item())
-    dse = float(entropy(semantic.uniform_logits().to_dense()).item())
-    return se, dse
+
+def compute_se_and_dse(row: dict) -> tuple[float, float]:
+    """Semantic entropy and discrete semantic entropy of one question."""
+    return se_and_dse(get_matrix(row), row["samples_ll_mean"])
+
+
+def score_rows(rows: list[dict], name: str, which: int) -> dict:
+    """Score record for SE (``which=0``) or discrete SE (``which=1``), see CONTRACT.md."""
+    ids, unc, failed = [], [], []
+    pairs_before = nli_pairs_scored
+    t0 = time.time()
+    for i, r in enumerate(rows):
+        ids.append(r.get("id", i))
+        try:
+            unc.append(compute_se_and_dse(r)[which])
+            failed.append(False)
+        except Exception:  # noqa: BLE001
+            unc.append(1.0)
+            failed.append(True)
+    return {
+        "method": name,
+        "model": rows[0].get("model"),
+        "ids": ids,
+        "uncertainty": unc,
+        "failed": failed,
+        "seconds_per_question": (time.time() - t0) / len(rows),
+        "nli_pairs_per_question": (nli_pairs_scored - pairs_before) / len(rows),
+    }

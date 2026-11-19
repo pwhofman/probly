@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Self, override
 
 import numpy as np
@@ -33,6 +33,9 @@ type SemanticClusterOutput = TorchSparseLogCategoricalDistribution | TorchSparse
 _CONTRADICTION = 0
 _NEUTRAL = 1
 _ENTAILMENT = 2
+
+NLI_LABELS = ("contradiction", "neutral", "entailment")
+"""Order of the last axis of :meth:`HFSemanticClusterer.pairwise_nli` matrices."""
 
 
 def _canonical_label_name(label: object) -> int | None:
@@ -225,18 +228,12 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOut
             labels.append(canonical)
         return torch.tensor(labels, dtype=torch.long)
 
-    def _predict_pair_labels(
+    def _iter_pair_logits(
         self,
         statements: np.ndarray,
         pairs: torch.Tensor,
-    ) -> torch.Tensor:
-        if pairs.ndim != 2 or pairs.shape[1] != 2:
-            msg = "pairs must have shape (num_pairs, 2)."
-            raise ValueError(msg)
-        if pairs.numel() == 0:
-            return torch.empty(0, dtype=torch.long)
-
-        labels: list[torch.Tensor] = []
+    ) -> Iterator[torch.Tensor]:
+        """Yield NLI logits for ``pairs`` in chunks of ``batch_size``."""
         for start in range(0, pairs.shape[0], self.batch_size):
             batch_pairs = pairs[start : start + self.batch_size]
             inputs = self._tokenize_pairs(statements, batch_pairs)
@@ -254,10 +251,99 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOut
             if logits.ndim != 2:
                 msg = "NLI model logits must have shape (batch_size, num_labels)."
                 raise ValueError(msg)
+            yield logits
 
-            labels.append(self._canonicalize_label_ids(torch.argmax(logits, dim=-1), logits.shape[-1]))
+    @staticmethod
+    def _check_pairs(pairs: torch.Tensor) -> None:
+        if pairs.ndim != 2 or pairs.shape[1] != 2:
+            msg = "pairs must have shape (num_pairs, 2)."
+            raise ValueError(msg)
 
+    def _predict_pair_labels(
+        self,
+        statements: np.ndarray,
+        pairs: torch.Tensor,
+    ) -> torch.Tensor:
+        self._check_pairs(pairs)
+        if pairs.numel() == 0:
+            return torch.empty(0, dtype=torch.long)
+
+        labels = [
+            self._canonicalize_label_ids(torch.argmax(logits, dim=-1), logits.shape[-1])
+            for logits in self._iter_pair_logits(statements, pairs)
+        ]
         return torch.cat(labels, dim=0)
+
+    def _canonical_label_columns(self, num_labels: int) -> list[int]:
+        """Return the model label id for contradiction, neutral and entailment, in that order."""
+        columns: dict[int, int] = {}
+        for label_id, canonical in self._label_id_to_canonical.items():
+            if 0 <= label_id < num_labels:
+                columns.setdefault(canonical, label_id)
+        if set(columns) != {_CONTRADICTION, _NEUTRAL, _ENTAILMENT}:
+            msg = f"Cannot map NLI labels of a model with {num_labels} outputs to contradiction/neutral/entailment."
+            raise ValueError(msg)
+        return [columns[_CONTRADICTION], columns[_NEUTRAL], columns[_ENTAILMENT]]
+
+    def _predict_pair_probabilities(
+        self,
+        statements: np.ndarray,
+        pairs: torch.Tensor,
+    ) -> torch.Tensor:
+        self._check_pairs(pairs)
+        if pairs.numel() == 0:
+            return torch.empty((0, 3), dtype=torch.float32)
+
+        probabilities: list[torch.Tensor] = []
+        for logits in self._iter_pair_logits(statements, pairs):
+            columns = self._canonical_label_columns(logits.shape[-1])
+            batch = torch.softmax(logits.float(), dim=-1)[:, columns]
+            probabilities.append(batch.detach().cpu())
+        return torch.cat(probabilities, dim=0)
+
+    def pairwise_nli(
+        self,
+        statements: Sequence[str] | np.ndarray,
+        *,
+        context: str | None = None,
+    ) -> torch.Tensor:
+        """Score every ordered pair of statements with the NLI model.
+
+        All ``n * (n - 1)`` ordered pairs are scored once, so the matrix can be shared by every
+        method that needs semantic agreement (for example semantic entropy, discrete semantic
+        entropy and graph-based measures) instead of each method calling the NLI model again.
+
+        Args:
+            statements: The ``n`` texts to compare, for example a greedy answer followed by samples.
+            context: Optional text placed in front of every premise and hypothesis, separated by a
+                space (for example the question the statements answer).
+
+        Returns:
+            A float32 CPU tensor of shape ``(n, n, 3)``. Entry ``[a, b]`` holds the probabilities of
+            contradiction, neutral and entailment (see ``NLI_LABELS``) with statement ``a`` as the
+            premise and statement ``b`` as the hypothesis. NLI is directional, so ``[a, b]`` and
+            ``[b, a]`` can differ. The diagonal is NaN.
+
+        Example:
+            >>> clusterer = HFGreedySemanticClusterer.from_model_name()  # doctest: +SKIP
+            >>> matrix = clusterer.pairwise_nli(["Paris", "paris", "Lyon"])  # doctest: +SKIP
+            >>> HFGreedySemanticClusterer.cluster_nli_matrix(matrix)  # doctest: +SKIP
+            tensor([0, 0, 1])
+        """
+        texts = np.asarray(statements, dtype=object)
+        if texts.ndim != 1:
+            msg = "statements must be one-dimensional."
+            raise ValueError(msg)
+        if context is not None:
+            texts = np.asarray([f"{context} {text}" for text in texts.tolist()], dtype=object)
+
+        n = texts.shape[0]
+        matrix = torch.full((n, n, 3), float("nan"), dtype=torch.float32)
+        off_diagonal = ~torch.eye(n, dtype=torch.bool)
+        pairs = torch.nonzero(off_diagonal, as_tuple=False)
+        if pairs.numel() > 0:
+            matrix[pairs[:, 0], pairs[:, 1]] = self._predict_pair_probabilities(texts, pairs)
+        return matrix
 
     @abstractmethod
     def _cluster_row(self, statements: np.ndarray) -> torch.Tensor:
@@ -377,6 +463,44 @@ class HFGreedySemanticClusterer(HFSemanticClusterer):
         has_no_contradiction = torch.all(label_pairs != _CONTRADICTION, dim=1)
         is_not_neutral_neutral = ~torch.all(label_pairs == _NEUTRAL, dim=1)
         return has_no_contradiction & is_not_neutral_neutral
+
+    @classmethod
+    def cluster_nli_matrix(cls, matrix: torch.Tensor) -> torch.Tensor:
+        """Cluster statements from a precomputed pairwise NLI matrix.
+
+        Uses the same greedy rule as calling the clusterer on the texts. Statements are visited in
+        order; each statement without a cluster starts a new one, and every later statement without
+        a cluster joins it if neither direction is a contradiction and the two directions are not
+        both neutral. Labels are the argmax over the last axis. Reading a shared matrix gives the
+        same clusters without any further NLI call.
+
+        Args:
+            matrix: Tensor of shape ``(n, n, 3)`` as returned by :meth:`pairwise_nli`, with the last
+                axis ordered as ``NLI_LABELS``. The diagonal is ignored.
+
+        Returns:
+            A long tensor of shape ``(n,)`` with cluster ids ``0, 1, ...`` in order of first
+            appearance.
+        """
+        if matrix.ndim != 3 or matrix.shape[0] != matrix.shape[1] or matrix.shape[2] != 3:
+            msg = f"matrix must have shape (n, n, 3), got {tuple(matrix.shape)}."
+            raise ValueError(msg)
+
+        n = matrix.shape[0]
+        labels = torch.argmax(torch.nan_to_num(matrix, nan=0.0), dim=-1).cpu()
+        semantic_ids = torch.full((n,), -1, dtype=torch.long)
+        next_id = 0
+        for i in range(n):
+            if semantic_ids[i].item() != -1:
+                continue
+            semantic_ids[i] = next_id
+            candidates = torch.nonzero(semantic_ids[i + 1 :] == -1, as_tuple=False).flatten() + i + 1
+            if candidates.numel() > 0:
+                label_pairs = torch.stack((labels[i, candidates], labels[candidates, i]), dim=1)
+                equivalent = cls._semantic_equivalence_mask(label_pairs)
+                semantic_ids[candidates[equivalent]] = next_id
+            next_id += 1
+        return semantic_ids
 
     @override
     def _cluster_row(self, statements: np.ndarray) -> torch.Tensor:
