@@ -109,6 +109,47 @@ class CredalSuite:
         targets = array_fn(np.array([[0.3, 0.5, 0.1], [0.0, 0.5, 0.1]]))
         assert coverage(cs, targets) == pytest.approx(0.5)
 
+    def test_probability_intervals_coverage_tolerance_mass_above_upper(
+        self,
+        make_intervals: Callable[[np.ndarray, np.ndarray], Any],
+        array_fn: Callable[..., Any],
+    ) -> None:
+        """A target counts as covered when its L1 distance to the credal set is at most ``epsilon``."""
+        lower = np.array([[0.0, 0.0, 0.0]])
+        upper = np.array([[0.9993, 0.6, 0.6]])
+        cs = make_intervals(lower, upper)
+        # [1, 0, 0] exceeds upper[0] by 0.0007; the closest member is [0.9993, 0.0007, 0], L1 distance 0.0014.
+        target = array_fn(np.array([[1.0, 0.0, 0.0]]))
+        assert coverage(cs, target, epsilon=0.0) == pytest.approx(0.0)
+        assert coverage(cs, target, epsilon=0.001) == pytest.approx(0.0)
+        assert coverage(cs, target, epsilon=0.005) == pytest.approx(1.0)
+
+    def test_probability_intervals_coverage_tolerance_mass_below_lower(
+        self,
+        make_intervals: Callable[[np.ndarray, np.ndarray], Any],
+        array_fn: Callable[..., Any],
+    ) -> None:
+        """Mass missing below the lower bounds counts towards the L1 distance as well."""
+        lower = np.array([[0.002, 0.0, 0.0]])
+        upper = np.array([[0.5, 0.6, 0.6]])
+        cs = make_intervals(lower, upper)
+        # [0, 0.5, 0.5] misses lower[0] by 0.002; the closest member is [0.002, 0.499, 0.499], L1 distance 0.004.
+        target = array_fn(np.array([[0.0, 0.5, 0.5]]))
+        assert coverage(cs, target, epsilon=0.003) == pytest.approx(0.0)
+        assert coverage(cs, target, epsilon=0.005) == pytest.approx(1.0)
+
+    def test_probability_intervals_default_tolerance_absorbs_softmax_residuals(
+        self,
+        make_intervals: Callable[[np.ndarray, np.ndarray], Any],
+        array_fn: Callable[..., Any],
+    ) -> None:
+        """With the default tolerance, a target probability of 0 is not excluded by a tiny positive lower bound."""
+        lower = np.array([[1e-6, 0.4, 0.05]])
+        upper = np.array([[0.5, 0.6, 0.6]])
+        cs = make_intervals(lower, upper)
+        target = array_fn(np.array([[0.0, 0.5, 0.5]]))
+        assert coverage(cs, target) == pytest.approx(1.0)
+
     def test_probability_intervals_average_interval_width(
         self,
         make_intervals: Callable[[np.ndarray, np.ndarray], Any],

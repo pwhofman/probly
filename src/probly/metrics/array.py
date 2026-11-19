@@ -18,6 +18,7 @@ from probly.representation.credal_set.array import (
 )
 
 from ._common import (
+    CREDAL_COVERAGE_EPSILON,
     CREDAL_ROUND_DECIMALS,
     auc,
     average_interval_width,
@@ -245,7 +246,12 @@ def _efficiency_array_discrete(y_pred: ArrayDiscreteCredalSet) -> np.floating:
     return np.mean(classes_picked.sum(axis=-1))
 
 
-def _credal_containment_coverage(lower: np.ndarray, upper: np.ndarray, y_true: np.ndarray) -> np.floating:
+def _credal_containment_coverage(
+    lower: np.ndarray,
+    upper: np.ndarray,
+    y_true: np.ndarray,
+    epsilon: float = CREDAL_COVERAGE_EPSILON,
+) -> np.floating:
     """Fraction of instances whose target lies inside the credal set's envelope.
 
     Dispatches on the shape of ``y_true``:
@@ -254,13 +260,18 @@ def _credal_containment_coverage(lower: np.ndarray, upper: np.ndarray, y_true: n
       the true class is selected by the interval-dominance rule, i.e.
       ``upper[y] >= max_k lower[k]``.
     * **Probability vectors** (``y_true.ndim == lower.ndim``): covered when
-      ``lower[k] <= y_true[k] <= upper[k]`` for all classes ``k``.
+      the L1 distance from ``y_true`` to ``{p : lower <= p <= upper, sum(p) = 1}``
+      is at most ``epsilon``. For a target on the simplex this distance is
+      ``2 * max(a, b)`` with ``a`` the target mass above ``upper`` and ``b`` the
+      mass missing below ``lower``, the same L1 distance as in
+      :func:`~probly.metrics.convex_hull_coverage`.
 
     Args:
         lower: Lower probability envelope of shape ``(..., C)``.
         upper: Upper probability envelope of shape ``(..., C)``.
         y_true: Integer class labels of shape ``(...)`` or target probability
             vectors of shape ``(..., C)``.
+        epsilon: L1 tolerance for probability-vector targets.
 
     Returns:
         Mean containment indicator as a scalar float.
@@ -273,13 +284,15 @@ def _credal_containment_coverage(lower: np.ndarray, upper: np.ndarray, y_true: n
         indices = y.astype(np.int64)[..., np.newaxis]
         covered = np.take_along_axis(mask, indices, axis=-1).squeeze(-1)
     else:
-        # Probability vectors: containment in [lower, upper] for all classes.
-        # Round before comparing so that tiny floating-point residuals in the
-        # lower envelope (softmax is never exactly 0) do not incorrectly
-        # exclude a target probability of 0.
-        lower_r = np.round(lower, decimals=CREDAL_ROUND_DECIMALS)
-        upper_r = np.round(upper, decimals=CREDAL_ROUND_DECIMALS)
-        covered = np.all((lower_r <= y) & (y <= upper_r), axis=-1)
+        if epsilon < 0:
+            msg = f"epsilon must be non-negative, got {epsilon}."
+            raise ValueError(msg)
+        # Probability vectors: L1 distance to the envelope intersected with the simplex. The 1e-12 slack keeps a
+        # distance that equals epsilon up to float rounding on the covered side.
+        lo, up, yf = (np.asarray(a, dtype=np.float64) for a in (lower, upper, y))
+        above = np.clip(yf - up, 0.0, None).sum(axis=-1)
+        below = np.clip(lo - yf, 0.0, None).sum(axis=-1)
+        covered = 2.0 * np.maximum(above, below) <= epsilon + 1e-12
     return np.mean(covered)
 
 
@@ -303,17 +316,20 @@ def _credal_interval_efficiency(lower: np.ndarray, upper: np.ndarray) -> np.floa
 
 
 @coverage.register(ArrayConvexCredalSet)
-def _coverage_array_convex(y_pred: ArrayConvexCredalSet, y_true: np.ndarray) -> np.floating:
+def _coverage_array_convex(
+    y_pred: ArrayConvexCredalSet, y_true: np.ndarray, *, epsilon: float = CREDAL_COVERAGE_EPSILON
+) -> np.floating:
     """Containment coverage for a convex credal set.
 
     Args:
         y_pred: Convex credal set.
         y_true: Target probability vectors of shape ``(N, C)``.
+        epsilon: L1 tolerance for probability-vector targets.
 
     Returns:
-        Fraction of instances where the target lies in ``[lower, upper]`` for all classes.
+        Fraction of instances whose target lies within L1 distance ``epsilon`` of the envelope.
     """
-    return _credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
+    return _credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true, epsilon)
 
 
 @efficiency.register(ArrayConvexCredalSet)
@@ -357,18 +373,19 @@ def _efficiency_array_distance(y_pred: ArrayDistanceBasedCredalSet) -> np.floati
 
 @coverage.register(ArrayProbabilityIntervalsCredalSet)
 def _coverage_array_probability_intervals(
-    y_pred: ArrayProbabilityIntervalsCredalSet, y_true: np.ndarray
+    y_pred: ArrayProbabilityIntervalsCredalSet, y_true: np.ndarray, *, epsilon: float = CREDAL_COVERAGE_EPSILON
 ) -> np.floating:
     """Containment coverage for a probability-intervals credal set.
 
     Args:
         y_pred: Probability-intervals credal set.
         y_true: Target probability vectors of shape ``(N, C)``.
+        epsilon: L1 tolerance for probability-vector targets.
 
     Returns:
-        Fraction of instances where the target lies in ``[lower, upper]`` for all classes.
+        Fraction of instances whose target lies within L1 distance ``epsilon`` of the intervals.
     """
-    return _credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
+    return _credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true, epsilon)
 
 
 @efficiency.register(ArrayProbabilityIntervalsCredalSet)
@@ -496,7 +513,7 @@ def _convex_hull_coverage_array_convex(
     y_pred: ArrayConvexCredalSet,
     y_true: ArrayCategoricalDistribution,
     *,
-    epsilon: float = 0.0,
+    epsilon: float = CREDAL_COVERAGE_EPSILON,
     **linprog_kwargs: object,
 ) -> np.floating:
     """LP-based hull coverage for a convex credal set."""
@@ -513,7 +530,7 @@ def _convex_hull_coverage_array_discrete(
     y_pred: ArrayDiscreteCredalSet,
     y_true: ArrayCategoricalDistribution,
     *,
-    epsilon: float = 0.0,
+    epsilon: float = CREDAL_COVERAGE_EPSILON,
     **linprog_kwargs: object,
 ) -> np.floating:
     """LP-based hull coverage for a discrete credal set (same vertex structure as Convex)."""
@@ -530,7 +547,7 @@ def _convex_hull_coverage_array_singleton(
     y_pred: ArraySingletonCredalSet,
     y_true: ArrayCategoricalDistribution,
     *,
-    epsilon: float = 0.0,
+    epsilon: float = CREDAL_COVERAGE_EPSILON,
     **_linprog_kwargs: object,
 ) -> np.floating:
     """Hull degenerates to a point; coverage is closed-form L1 distance test.
