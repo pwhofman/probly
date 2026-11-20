@@ -20,7 +20,7 @@ NAME = "p_true_empirical"
 FAMILY = "self_eval"
 NEEDS_MODEL = True
 N_SAMPLES = 10
-SEED = 42   # same seed as the week 1 run (scripts/r3_real_data.py), so results can be reproduced
+SEED = 42   # same seed as the week 1 run (archive/week1/scripts/r3_real_data.py), so results can be reproduced
 
 
 def score(rows, model=None, tok=None) -> dict:
