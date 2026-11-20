@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 
 from common import io as score_io

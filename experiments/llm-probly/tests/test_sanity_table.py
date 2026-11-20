@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 
 from common.summary import sanity_table, sanity_verdict

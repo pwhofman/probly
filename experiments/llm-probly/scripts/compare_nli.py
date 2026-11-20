@@ -17,9 +17,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import numpy as np
-
 from common.evaluate import bootstrap_auroc, evaluate
+import numpy as np
 from scripts.check_nli_cache import as_partition, clusters_from_cache
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,15 +26,24 @@ MODELS = ["qwen0.5b", "qwen1.5b"]
 NLI = {"base": "triviaqa_200.nli.npz", "large": "triviaqa_200.nli.deberta-large.npz"}
 
 
-def entropy(p):
+def entropy(p: np.ndarray) -> float:
+    """Shannon entropy (nats) of a probability vector; zero entries are skipped."""
     p = p[p > 0]
     return float(-(p * np.log(p)).sum())
 
 
-def se_and_dse(clusters, log_likelihood):
-    """clusters: lists of cache indices (samples are 1..K); log_likelihood: per sample (index 0 = sample 1)."""
+def se_and_dse(clusters: list[list[int]], log_likelihood: list[float]) -> tuple[float, float]:
+    """Semantic entropy and discrete semantic entropy of one question.
+
+    Args:
+        clusters: lists of cache indices (samples are 1..K).
+        log_likelihood: one value per sample (index 0 = sample 1).
+
+    Returns:
+        ``(se, dse)``.
+    """
     ll = np.asarray(log_likelihood, dtype=float)
-    weights = np.exp(ll - ll.max())                       # likelihood of every sample, up to a constant
+    weights = np.exp(ll - ll.max())  # likelihood of every sample, up to a constant
     se_p = np.array([weights[[k - 1 for k in c]].sum() for c in clusters])
     dse_p = np.array([len(c) for c in clusters], dtype=float)
     return entropy(se_p / se_p.sum()), entropy(dse_p / dse_p.sum())
@@ -43,14 +51,20 @@ def se_and_dse(clusters, log_likelihood):
 
 def main() -> None:
     for model in MODELS:
-        rows = [json.loads(line) for line in (ROOT / "data" / model / "triviaqa_200.jsonl").read_text().splitlines() if line.strip()]
+        rows = [
+            json.loads(line)
+            for line in (ROOT / "data" / model / "triviaqa_200.jsonl").read_text().splitlines()
+            if line.strip()
+        ]
         correct = np.array([bool(r["correct"]) for r in rows])
         print(f"\n===== {model} (accuracy {correct.mean():.3f}) =====")
 
         partitions, scores = {}, {}
         for name, file in NLI.items():
             cache = np.load(ROOT / "data" / model / file)
-            assert [str(i) for i in cache["ids"]] == [str(r["id"]) for r in rows], f"{file}: ids differ"
+            if [str(i) for i in cache["ids"]] != [str(r["id"]) for r in rows]:
+                msg = f"{file}: ids differ"
+                raise ValueError(msg)
             parts, se, dse = [], [], []
             for i, r in enumerate(rows):
                 clusters = clusters_from_cache(cache["nli"][i], range(1, len(r["samples"]) + 1), "probly")
@@ -61,8 +75,10 @@ def main() -> None:
             partitions[name] = parts
             scores[name] = {"semantic_entropy": np.array(se), "discrete_semantic_entropy": np.array(dse)}
             n_clusters = np.mean([len(p) for p in parts])
-            print(f"{name:<6} {str(cache['nli_model']):<28} mean clusters {n_clusters:.2f}   "
-                  f"NLI {float(cache['seconds_per_question']):.2f} s/question")
+            print(
+                f"{name:<6} {cache['nli_model']!s:<28} mean clusters {n_clusters:.2f}   "
+                f"NLI {float(cache['seconds_per_question']):.2f} s/question"
+            )
 
         # Sanity check: our SE from the base cache vs SAMPLE's SE (probly's clusterer)
         for method in ["semantic_entropy", "discrete_semantic_entropy"]:
@@ -70,9 +86,10 @@ def main() -> None:
             if path.exists():
                 theirs = np.array(json.loads(path.read_text())["uncertainty"])
                 diff = np.abs(theirs - scores["base"][method]).max()
-                print(f"check vs SAMPLE's {method}: max |difference| {diff:.2e}  ->  {'OK' if diff < 1e-4 else 'DIFFERENT'}")
+                verdict = "OK" if diff < 1e-4 else "DIFFERENT"
+                print(f"check vs SAMPLE's {method}: max |difference| {diff:.2e}  ->  {verdict}")
 
-        changed = sum(a != b for a, b in zip(partitions["base"], partitions["large"]))
+        changed = sum(a != b for a, b in zip(partitions["base"], partitions["large"], strict=True))
         print(f"questions with different clusters (base vs large): {changed}/{len(rows)}")
 
         print(f"{'method':<28} {'base AUROC':>20} {'large AUROC':>20}")
@@ -87,5 +104,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-

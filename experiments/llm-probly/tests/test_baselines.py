@@ -1,11 +1,12 @@
 """Tests for the cache-only baselines (BIG): msp, perplexity, mean_token_entropy, lexical_similarity."""
 
+from __future__ import annotations
+
 import math
 
-import pytest
-
 from common.io import validate_scores
-from methods import lexical_similarity, mean_token_entropy, msp, perplexity
+from methods import lexical_similarity, likelihood_mean, mean_token_entropy, msp, perplexity
+import pytest
 
 
 def row(i, logprobs, entropies, samples=("Paris",) * 10):
@@ -53,8 +54,6 @@ def test_empty_answer_is_failed(plugin):
 
 
 def test_perplexity_ranks_like_likelihood_mean():
-    from methods import likelihood_mean
-
     rows = [dict(r, greedy_ll_mean=sum(r["greedy_token_logprobs"]) / len(r["greedy_token_logprobs"])) for r in ROWS[:2]]
     a, b = perplexity.score(rows)["uncertainty"], likelihood_mean.score(rows)["uncertainty"]
     assert (a[0] < a[1]) == (b[0] < b[1])

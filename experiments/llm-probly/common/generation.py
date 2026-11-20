@@ -92,8 +92,11 @@ def generate_answers(
         config.pad_token_id = tok.pad_token_id
 
     with torch.inference_mode():
-        out = model.generate(**inputs, generation_config=config)
-        logprobs = model.compute_transition_scores(out.sequences, out.scores, normalize_logits=True).float()
+        # ty reads PreTrainedModel.generate/compute_transition_scores as tensors (transformers' __getattr__).
+        out = model.generate(**inputs, generation_config=config)  # ty: ignore[call-non-callable]
+        logprobs = model.compute_transition_scores(  # ty: ignore[call-non-callable]
+            out.sequences, out.scores, normalize_logits=True
+        ).float()
         # scores: one (num_return_sequences, vocab) tensor per generated step
         step_logp = torch.stack([torch.log_softmax(s.float(), dim=-1) for s in out.scores], dim=1)
         entropies = -(step_logp.exp() * step_logp.nan_to_num(neginf=0.0)).sum(dim=-1)

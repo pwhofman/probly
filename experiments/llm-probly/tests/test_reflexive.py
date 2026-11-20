@@ -1,12 +1,13 @@
 """Tests for common/reflexive.py with a fake tokenizer and model (no download needed)."""
 
+from __future__ import annotations
+
 import math
 from types import SimpleNamespace
 
+from common import reflexive
 import pytest
 import torch
-
-from common import reflexive
 
 
 class FakeTokenizer:

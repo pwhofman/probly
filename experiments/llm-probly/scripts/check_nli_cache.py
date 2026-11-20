@@ -18,29 +18,34 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
+
 from probly.representer.semantic_clustering.huggingface import HFGreedySemanticClusterer
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
 ROOT = Path(__file__).resolve().parents[1]
-ENTAIL, NEUTRAL, CONTRADICT = 0, 1, 2   # order in the cache (labels = entail, neutral, contradict)
+ENTAIL, NEUTRAL, CONTRADICT = 0, 1, 2  # order in the cache (labels = entail, neutral, contradict)
 
 
-def same_meaning(mat, a, b, rule):
+def same_meaning(mat: np.ndarray, a: int, b: int, rule: str) -> bool:
     """Are texts a and b equivalent, using the cached NLI labels in both directions?"""
     ab, ba = mat[a, b].argmax(), mat[b, a].argmax()
     if rule == "probly":
-        return ab != CONTRADICT and ba != CONTRADICT and not (ab == NEUTRAL and ba == NEUTRAL)
+        return CONTRADICT not in (ab, ba) and not (ab == NEUTRAL and ba == NEUTRAL)
     if rule == "strict":
         return ab == ENTAIL and ba == ENTAIL
     if rule == "lenient":
-        return ab != CONTRADICT and ba != CONTRADICT
+        return CONTRADICT not in (ab, ba)
     raise ValueError(rule)
 
 
-def clusters_from_cache(mat, indices, rule):
+def clusters_from_cache(mat: np.ndarray, indices: Iterable[int], rule: str) -> list[list[int]]:
     """Greedy clustering like probly: each text joins the first cluster whose first member matches."""
-    clusters = []
+    clusters: list[list[int]] = []
     for t in indices:
         for c in clusters:
             if same_meaning(mat, c[0], t, rule):
@@ -51,7 +56,7 @@ def clusters_from_cache(mat, indices, rule):
     return clusters
 
 
-def as_partition(clusters):
+def as_partition(clusters: Iterable[Iterable[int]]) -> set[frozenset[int]]:
     """Clusters as a set of sets, so the order and the cluster ids do not matter."""
     return {frozenset(c) for c in clusters}
 
@@ -65,8 +70,7 @@ def main() -> None:
 
     data = ROOT / "data" / args.model / f"triviaqa_{args.n}.jsonl"
     rows = [json.loads(line) for line in data.read_text().splitlines() if line.strip()]
-    cache = np.load(data.with_suffix("").with_suffix(".nli.npz") if False else
-                    ROOT / "data" / args.model / f"triviaqa_{args.n}.nli.npz")
+    cache = np.load(ROOT / "data" / args.model / f"triviaqa_{args.n}.nli.npz")
     if args.limit:
         rows = rows[: args.limit]
 
@@ -79,13 +83,13 @@ def main() -> None:
     # 2. probly's clusterer (same NLI model as the cache)
     clusterer = HFGreedySemanticClusterer.from_model_name(str(cache["nli_model"]))
     rules = ["probly", "strict", "lenient"]
-    matches = {rule: 0 for rule in rules}
+    matches = dict.fromkeys(rules, 0)
     for i, r in enumerate(rows):
         samples = np.asarray(r["samples"], dtype=object)
-        ids = clusterer._cluster_row(samples).tolist()   # one semantic id per sample
+        ids = clusterer._cluster_row(samples).tolist()  # noqa: SLF001 - one semantic id per sample, same as SE uses
         probly_clusters = as_partition(
             [[k + 1 for k, s in enumerate(ids) if s == c] for c in sorted(set(ids))]
-        )   # +1: in the cache, index 0 is the greedy answer and the samples are 1..K
+        )  # +1: in the cache, index 0 is the greedy answer and the samples are 1..K
 
         mat = cache["nli"][i]
         indices = range(1, len(r["samples"]) + 1)
