@@ -107,3 +107,11 @@ class TestDistributionFactoryFallbacks:
 
         d = NumpyLogitCategoricalDistribution(array=np.array([[0.0, 0.0]]))
         assert create_categorical_distribution_from_logits(d) is d
+
+
+@pytest.mark.parametrize(
+    "distribution_class", [Distribution, MixtureDistribution, CategoricalDistribution, GaussianDistribution]
+)
+def test_distribution_requires_abstract_methods(distribution_class) -> None:
+    with pytest.raises(TypeError, match="abstract"):
+        distribution_class()

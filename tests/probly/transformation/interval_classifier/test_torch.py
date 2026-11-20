@@ -96,8 +96,8 @@ class TestIntervalClassifierWeightCopy:
         with torch.no_grad():
             bn.weight.fill_(2.0)
             bn.bias.fill_(0.5)
-            bn.running_mean.fill_(0.1)  # ty: ignore[unresolved-attribute]
-            bn.running_var.fill_(0.9)  # ty: ignore[unresolved-attribute]
+            bn.running_mean.fill_(0.1)  # ty: ignore[missing-union-attribute]
+            bn.running_var.fill_(0.9)  # ty: ignore[missing-union-attribute]
 
         result, _ = traverse_with_state(
             bn,
@@ -126,8 +126,8 @@ class TestIntervalClassifierWeightCopy:
         with torch.no_grad():
             bn.weight.fill_(2.0)
             bn.bias.fill_(0.5)
-            bn.running_mean.fill_(0.1)  # ty: ignore[unresolved-attribute]
-            bn.running_var.fill_(0.9)  # ty: ignore[unresolved-attribute]
+            bn.running_mean.fill_(0.1)  # ty: ignore[missing-union-attribute]
+            bn.running_var.fill_(0.9)  # ty: ignore[missing-union-attribute]
 
         result, _ = traverse_with_state(
             bn,
@@ -155,7 +155,7 @@ class TestIntervalClassifierWeightCopy:
         conv = nn.Conv2d(3, 8, kernel_size=3, padding=1)
         with torch.no_grad():
             conv.weight.fill_(0.5)
-            conv.bias.fill_(0.25)  # ty: ignore[unresolved-attribute]
+            conv.bias.fill_(0.25)  # ty: ignore[missing-union-attribute]
 
         result, _ = traverse_with_state(
             conv,

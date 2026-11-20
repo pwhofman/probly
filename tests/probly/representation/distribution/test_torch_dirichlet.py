@@ -162,3 +162,10 @@ class TestTorchDirichletDistribution:
         d = TorchDirichletDistribution(alphas=torch.tensor([1.0, 2.0]))
         arr = d.numpy()
         np.testing.assert_allclose(arr, [1.0, 2.0])
+
+
+def test_torch_dirichlet_default_comparisons() -> None:
+    left = TorchDirichletDistribution(torch.tensor([[1.0, 2.0], [3.0, 4.0]]))
+    right = TorchDirichletDistribution(torch.tensor([[1.0, 2.0], [3.0, 5.0]]))
+    torch.testing.assert_close(torch.eq(left, right), torch.tensor([True, False]))
+    torch.testing.assert_close(torch.ne(left, right), torch.tensor([False, True]))

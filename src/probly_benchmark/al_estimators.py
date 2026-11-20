@@ -347,7 +347,7 @@ class UncertaintyEstimator(BaseEstimator):
             xb = x[i : i + self.cfg.batch_size].float().to(self.device)
             with torch.amp.autocast(self.device.type, enabled=amp_enabled):
                 probs = decide(self.model, xb, rep_kwargs=self.rep_kwargs).probabilities
-            parts.append(probs.float().cpu())  # ty: ignore[unresolved-attribute]
+            parts.append(probs.float().cpu())
         return torch.cat(parts)
 
     @torch.no_grad()

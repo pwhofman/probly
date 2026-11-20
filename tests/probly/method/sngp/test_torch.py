@@ -93,7 +93,7 @@ def _register_sn(layer: nn.Module, *, n_power_iterations: int = 1, norm_multipli
 
 def _spectral_param(layer: nn.Module) -> _SpectralNormParametrization:
     """Helper: pull the SpectralNorm parametrization out of a parametrized layer."""
-    parametrization = layer.parametrizations.weight[0]  # ty: ignore[unresolved-attribute,not-subscriptable]
+    parametrization = layer.parametrizations.weight[0]  # ty: ignore[missing-union-attribute, not-subscriptable]
     assert isinstance(parametrization, _SpectralNormParametrization)
     return parametrization
 

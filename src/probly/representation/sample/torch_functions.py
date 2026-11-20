@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Protocol, overload
 
 from flextype import switchdispatch
 from ndlike.torch_functions import torch_average
+from ndlike.torch_like import AnyTorchLike
 import torch
 
 from probly.representation.sample._common import track_sample_axis_after_broadcast
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
     from ndlike.torch_like import TorchLike
 
 
-class TorchSampleCreator[D: TorchLike](Protocol):
+class TorchSampleCreator[D: AnyTorchLike | torch.Tensor](Protocol):
     """Protocol for creating sample tensors."""
 
     def __call__(self, tensor: D, sample_dim: int, weights: torch.Tensor | None) -> Any:  # noqa: ANN401
@@ -26,7 +27,7 @@ class TorchSampleCreator[D: TorchLike](Protocol):
 
 
 @dataclass(frozen=True, slots=True)
-class TorchSampleInternals[D: TorchLike]:
+class TorchSampleInternals[D: AnyTorchLike | torch.Tensor]:
     """Internal information about a sample tensor."""
 
     create: TorchSampleCreator[D]
@@ -62,14 +63,14 @@ class _TorchBoundFunction(Protocol):
         ...
 
 
-class _TorchBoundFunctionWithInternals[D: TorchLike](Protocol):
+class _TorchBoundFunctionWithInternals[D: AnyTorchLike | torch.Tensor](Protocol):
     def __call__(
         self,
         func: Callable,
         args: tuple[Any, ...],
         kwargs: dict[str, Any],
         create_sample: TorchSampleCreator[D],
-        tensor: TorchLike[D],
+        tensor: D,
         sample_dim: int,
         weights: torch.Tensor | None,
     ) -> Any:  # noqa: ANN401

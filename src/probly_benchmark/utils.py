@@ -228,7 +228,7 @@ def collect_outputs_decisions_targets(
             outputs_ = rep.predict(inputs_dev)
             decision = decide(model, inputs_dev, rep_kwargs=rep_kwargs)
         all_outputs.append(outputs_)
-        all_mean_probs.append(decision.numpy(force=True))  # ty:ignore[unresolved-attribute]
+        all_mean_probs.append(decision.numpy(force=True))  # ty:ignore[missing-attribute]
         all_targets.append(targets_)
 
     return torch.cat(all_outputs), np.concatenate(all_mean_probs, axis=0), torch.cat(all_targets)
