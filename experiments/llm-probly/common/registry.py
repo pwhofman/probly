@@ -18,8 +18,9 @@ Fields of a method:
     local model.
 
 - ``cost``: relative cost per question, generation included. The unit is one
-  LLM generation pass, so ``1`` is the greedy answer alone and a method that
-  also reads the 10 cached samples costs ``11``.
+  LLM generation pass: ``1`` is the greedy answer alone, the 10 cached samples
+  add 10, every extra model call adds 1 and an NLI pass adds 1 (same rule as
+  the selector, D1). So lexical similarity costs ``11`` and semantic entropy ``12``.
 - ``needs_model``: the runner loads the LLM and passes it to ``score()``.
 - ``uses_nli``: the method also runs the NLI model on sample pairs (cheap
   compared with the LLM, but it is reported separately).
@@ -52,6 +53,7 @@ ACCESS_LEVELS: tuple[str, ...] = get_args(Access)
 
 GREEDY = 1  # one generation pass for the greedy answer
 SAMPLES = 10  # cached samples per question (scripts/generate.py)
+NLI = 1  # one NLI pass over the sample pairs (small model, but not free)
 
 METHODS_DIR = Path(__file__).resolve().parent.parent / "methods"
 
@@ -64,7 +66,7 @@ class MethodSpec:
         name: Same as the plugin's ``NAME`` and the result file name.
         family: Method family, one of ``FAMILIES``.
         access: What the method needs from the model, one of ``ACCESS_LEVELS``.
-        cost: LLM generation passes per question, greedy answer included.
+        cost: Generation passes per question, greedy answer included (+1 for an NLI pass).
         needs_model: True if ``score()`` needs the loaded LLM.
         uses_nli: True if the method also runs the NLI model.
         probability: True if ``1 - uncertainty`` is a probability of being correct
@@ -119,7 +121,7 @@ _SPECS = (
         "discrete_semantic_entropy",
         "agreement",
         "text_only",
-        GREEDY + SAMPLES,
+        GREEDY + SAMPLES + NLI,
         uses_nli=True,
         note="cluster sizes from NLI, no likelihoods",
     ),
@@ -127,7 +129,7 @@ _SPECS = (
         "semantic_entropy",
         "agreement",
         "logprobs",
-        GREEDY + SAMPLES,
+        GREEDY + SAMPLES + NLI,
         uses_nli=True,
         note="NLI clusters weighted by sample likelihoods",
     ),

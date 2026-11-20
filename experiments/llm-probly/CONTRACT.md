@@ -48,8 +48,8 @@ MethodSpec("likelihood_mean", "baseline", "logprobs", GREEDY, note="mean greedy 
 - `access`: `text_only` (generated text only, works behind any API) | `logprobs` (token
   log-probabilities, as APIs with a logprobs option give them) | `white_box` (full next-token
   distribution or weights, local model only)
-- `cost`: LLM generation passes per question, greedy answer included: 1 = greedy only,
-  11 = greedy + the 10 cached samples
+- `cost`: generation passes per question, greedy answer included: 1 = greedy only,
+  +10 for the cached samples, +1 per extra model call, +1 for an NLI pass (semantic entropy = 12)
 - `needs_model=True`: the runner loads the LLM and passes `model, tok`
 - `uses_nli=True`: the method also runs the NLI model
 - `probability=True`: `1 - uncertainty` is a probability of being correct, so ECE is computed

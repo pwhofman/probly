@@ -31,9 +31,10 @@ def test_values_match_the_d4_profile_schema():
     assert ACCESS_LEVELS == ("text_only", "logprobs", "white_box")
 
 
-def test_greedy_only_methods_cost_one_and_sample_methods_eleven():
+def test_cost_counts_greedy_samples_extra_calls_and_nli():
     assert get("msp").cost == 1
-    assert get("semantic_entropy").cost == 11
+    assert get("semantic_entropy").cost == 12  # greedy + 10 samples + NLI pass, as in the selector
+    assert get("discrete_semantic_entropy").cost == 12
     assert get("lexical_similarity").cost == 11
     assert get("p_true_zeroshot").cost == 2
 
@@ -45,6 +46,12 @@ def test_methods_that_need_the_model_are_self_evaluation():
         "p_true_empirical",
         "verbalized_2s",
     }
+
+
+def test_nli_methods_cost_one_more_than_their_llm_passes():
+    for spec in REGISTRY.values():
+        if spec.uses_nli:
+            assert spec.cost == 12
 
 
 def test_text_only_methods_match_f2():
