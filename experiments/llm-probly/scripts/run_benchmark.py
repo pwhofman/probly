@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING
 
 from common.data import DATASETS, cache_path, load_jsonl
 from common.io import RESULTS_ROOT, save_scores
+from common.registry import family_of, get
 from common.summary import summary_table, to_markdown
 import pandas as pd
 import yaml
@@ -46,7 +47,9 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--config", required=True, help="path to a YAML file in configs/")
     parser.add_argument("--methods", help="comma-separated method names; overrides the config")
-    parser.add_argument("--skip-model-methods", action="store_true", help="skip plugins with NEEDS_MODEL = True")
+    parser.add_argument(
+        "--skip-model-methods", action="store_true", help="skip methods with needs_model=True in the registry"
+    )
     parser.add_argument("--force", action="store_true", help="recompute method results even if they exist")
     return parser.parse_args()
 
@@ -138,7 +141,7 @@ def find_plugins() -> dict:
         if file.name.startswith("_"):  # skip __init__.py and helper files
             continue
         module = importlib.import_module(f"methods.{file.stem}")
-        for attr in ("NAME", "FAMILY", "NEEDS_MODEL", "score"):
+        for attr in ("NAME", "score"):
             if not hasattr(module, attr):
                 msg = f"methods/{file.name} has no {attr} (see CONTRACT.md)"
                 raise AttributeError(msg)
@@ -156,7 +159,7 @@ def choose_plugins(plugins: dict, config: dict, args: argparse.Namespace) -> dic
             raise ValueError(msg)
         plugins = {name: plugins[name] for name in wanted}
     if args.skip_model_methods:
-        plugins = {name: p for name, p in plugins.items() if not p.NEEDS_MODEL}
+        plugins = {name: p for name, p in plugins.items() if not get(name).needs_model}
     return plugins
 
 
@@ -186,14 +189,14 @@ def run_methods(plugins: dict, rows: list[dict], config: dict, run: str, force: 
         return
 
     model = tok = None
-    if any(p.NEEDS_MODEL for p in todo.values()):
+    if any(get(name).needs_model for name in todo):
         print("   loading the model ...")
         model, tok = load_llm(config)
 
     for name, plugin in todo.items():
         print(f"3. {name}")
         start = time.time()
-        record = plugin.score(rows, model, tok) if plugin.NEEDS_MODEL else plugin.score(rows)
+        record = plugin.score(rows, model, tok) if get(name).needs_model else plugin.score(rows)
         path = save_scores(record, run=run, expected_ids=ids)  # validates against the contract
         print(f"   saved {path.relative_to(ROOT)} ({time.time() - start:.1f} s)")
 
@@ -205,7 +208,7 @@ def make_table(rows: list[dict], plugins: dict, run: str, precision: str) -> Non
     """Evaluate every method of this run and write the summary table."""
     print("4. evaluate")
     table = summary_table(rows, run=run, methods=tuple(plugins))
-    families = pd.Series([getattr(plugins.get(m), "FAMILY", "") for m in table["method"]], index=table.index)
+    families = pd.Series([family_of(m) for m in table["method"]], index=table.index)
     table.insert(1, "family", families)
 
     out = RESULTS_ROOT / run / "summary.md"
