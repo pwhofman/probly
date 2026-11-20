@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 
 from common.io import validate_scores
+from common.registry import get
 from methods import lexical_similarity, likelihood_mean, mean_token_entropy, msp, perplexity
 import pytest
 
@@ -31,7 +32,7 @@ def test_record_follows_contract(plugin):
     rec = plugin.score(ROWS)
     assert validate_scores(rec, expected_ids=[0, 1, 2]) == []
     assert rec["method"] == plugin.NAME
-    assert not plugin.NEEDS_MODEL
+    assert not get(plugin.NAME).needs_model
 
 
 def test_values():

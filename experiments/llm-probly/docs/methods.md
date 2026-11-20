@@ -2,6 +2,10 @@
 
 All methods are plugins in `methods/` (see CONTRACT.md). Each one has a family, and each one reads the same cached generations.
 
+Family, model access (`text_only` / `logprobs` / `white_box`) and cost per question (generation passes,
+greedy answer included) are kept in one place, `common/registry.py`; `uv run python -m cli methods` prints them.
+The selector reads the same registry.
+
 | Method | Family | Needs logits? | Model calls per question |
 |---|---|---|---|
 | semantic_entropy | agreement | yes (sample log-likelihoods, `samples_ll_mean`) | 0 LLM calls (reads the 10 cached samples) + NLI model on sample pairs (up to 45) |

@@ -21,8 +21,6 @@ if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
 NAME = "perplexity"
-FAMILY = "baseline"
-NEEDS_MODEL = False
 
 
 def score(

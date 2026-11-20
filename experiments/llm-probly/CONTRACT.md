@@ -27,29 +27,47 @@ Example:
 `<model>` is the short name from `scripts/generate.py` (`qwen0.5b`, `qwen1.5b`, `qwen3b`, `qwen7b`).
 
 ### Method plugin
-Every file in `methods/` has:
+Every file in `methods/` has only a name and a score function:
 
 ```python
-NAME = "likelihood_mean"  # same as the result file name
-FAMILY = "baseline"  # "agreement" | "self_eval" | "baseline" | "hybrid"
-NEEDS_MODEL = False  # True: the runner loads the LLM and passes model, tok
+NAME = "likelihood_mean"  # same as the file name and the result file name
 
 
 def score(rows, model=None, tok=None) -> dict:
     """Return one score record (rules 1-5 above) for these rows."""
 ```
 
+and one entry in `common/registry.py` (week 3, E2) with what the selector needs to know:
+
+```python
+MethodSpec("likelihood_mean", "baseline", "logprobs", GREEDY, note="mean greedy token log-prob")
+#           name              family      access      cost (generation passes per question)
+```
+
+- `family`: `agreement` | `self_eval` | `baseline` | `hybrid`
+- `access`: `text_only` (generated text only, works behind any API) | `logprobs` (token
+  log-probabilities, as APIs with a logprobs option give them) | `white_box` (full next-token
+  distribution or weights, local model only)
+- `cost`: LLM generation passes per question, greedy answer included: 1 = greedy only,
+  11 = greedy + the 10 cached samples
+- `needs_model=True`: the runner loads the LLM and passes `model, tok`
+- `uses_nli=True`: the method also runs the NLI model
+- `probability=True`: `1 - uncertainty` is a probability of being correct, so ECE is computed
+
+`tests/test_registry.py` fails if a plugin has no entry or an entry has no plugin.
+`uv run python -m cli methods` prints the registry.
+
 Rules:
 - `score()` does **not** save and does **not** load data. The runner gives it the rows and saves what it returns.
 - `ids` in the record are `[row["id"] for row in rows]`, in the same order.
 - No hardcoded model or dataset names inside a plugin.
 - Put `seconds_per_question` in the record. Use 0.0 if the method only reads the cache.
-- If your score is a probability of being correct (uncertainty = 1 - probability), add `"probability": True` to the record, so ECE is computed for it.
+- If your score is a probability of being correct (uncertainty = 1 - probability), set `probability=True` in its registry entry, so ECE is computed for it.
 
 ### Runner
-    uv run python -m scripts.run_benchmark --config configs/qwen0.5b_triviaqa.yaml
+    uv run python -m cli run --config configs/qwen0.5b_triviaqa_200.yaml
     # steps: generate -> label -> methods -> evaluate -> table
     # a step is skipped if its output file already exists
     # --methods a,b            run only these methods
-    # --skip-model-methods     skip plugins with NEEDS_MODEL = True
+    # --skip-model-methods     skip methods with needs_model=True in the registry
     # --force                  recompute even if the file exists

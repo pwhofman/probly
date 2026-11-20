@@ -21,8 +21,6 @@ if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
 NAME = "p_true_empirical"
-FAMILY = "self_eval"
-NEEDS_MODEL = True
 N_SAMPLES = 10
 SEED = 42  # same seed as the week 1 run (archive/week1/scripts/r3_real_data.py), so results can be reproduced
 
@@ -34,7 +32,7 @@ def score(
 ) -> dict[str, Any]:
     """Score the greedy answer of every row with empirical p(True)."""
     if model is None or tok is None:
-        msg = f"{NAME} needs the model (NEEDS_MODEL = True)"
+        msg = f"{NAME} needs the model (needs_model=True in common/registry.py)"
         raise ValueError(msg)
 
     torch.manual_seed(SEED)  # once, before the loop, exactly as in week 1
