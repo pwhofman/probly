@@ -31,8 +31,8 @@ def test_skip_model_methods_drops_self_evaluation():
 
 
 def test_methods_option_overrides_config():
-    chosen = run_benchmark.choose_methods(REGISTRY, {"methods": "all"}, namespace(methods="msp,perplexity"))
-    assert list(chosen) == ["msp", "perplexity"]
+    chosen = run_benchmark.choose_methods(REGISTRY, {"methods": "all"}, namespace(methods="msp,likelihood_mean"))
+    assert list(chosen) == ["msp", "likelihood_mean"]
 
 
 def test_unknown_method_is_rejected():
