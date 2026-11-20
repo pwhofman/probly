@@ -56,4 +56,3 @@ def score(rows, model=None, tok=None) -> dict:
         "failed": failed,
         "seconds_per_question": seconds,
     }
-
