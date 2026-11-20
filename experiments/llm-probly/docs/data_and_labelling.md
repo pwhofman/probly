@@ -19,7 +19,7 @@ For every question the cache stores
 |---|---|---|
 | `greedy_answer` | the answer every method judges (no randomness) | everyone |
 | `greedy_ll_sum`, `greedy_ll_mean` | log likelihood of that answer, summed and per token | likelihood baselines |
-| `greedy_token_logprobs`, `greedy_token_entropies` | log probability and entropy of every answer token | MSP, perplexity, mean token entropy |
+| `greedy_token_logprobs`, `greedy_token_entropies` | log probability and entropy of every answer token | MSP, likelihood_mean, mean token entropy |
 | `samples` (10), `samples_ll_mean`, `samples_ll_sum` | ten answers with temperature 0.7, with log likelihoods | agreement methods (SE, discrete SE, …), brainstorm p(True) |
 | `correct`, `samples_correct` | correctness labels (below) | evaluation |
 

@@ -101,8 +101,10 @@ class MethodSpec:
 _SPECS = (
     # --- baselines: read the cached greedy answer only ---------------------------------------
     MethodSpec("msp", "baseline", "logprobs", GREEDY, note="sum of greedy token log-probs"),
-    MethodSpec("likelihood_mean", "baseline", "logprobs", GREEDY, note="mean greedy token log-prob"),
-    MethodSpec("perplexity", "baseline", "logprobs", GREEDY, note="exp of minus likelihood_mean"),
+    # Perplexity = exp(-likelihood_mean) ranks the answers identically, so it is not a separate method.
+    MethodSpec(
+        "likelihood_mean", "baseline", "logprobs", GREEDY, note="mean greedy token log-prob; = perplexity ranking"
+    ),
     MethodSpec(
         "mean_token_entropy",
         "baseline",

@@ -1,12 +1,10 @@
-"""Tests for the cache-only baselines (BIG): msp, perplexity, mean_token_entropy, lexical_similarity."""
+"""Tests for the cache-only baselines (BIG): msp, mean_token_entropy, lexical_similarity."""
 
 from __future__ import annotations
 
-import math
-
 from common.io import validate_scores
 from common.registry import get
-from methods import lexical_similarity, likelihood_mean, mean_token_entropy, msp, perplexity
+from methods import lexical_similarity, mean_token_entropy, msp
 import pytest
 
 
@@ -27,7 +25,7 @@ ROWS = [
 ]
 
 
-@pytest.mark.parametrize("plugin", [msp, perplexity, mean_token_entropy, lexical_similarity])
+@pytest.mark.parametrize("plugin", [msp, mean_token_entropy, lexical_similarity])
 def test_record_follows_contract(plugin):
     rec = plugin.score(ROWS)
     assert validate_scores(rec, expected_ids=[0, 1, 2]) == []
@@ -37,27 +35,20 @@ def test_record_follows_contract(plugin):
 
 def test_values():
     assert msp.score(ROWS)["uncertainty"][:2] == pytest.approx([0.2, 3.0])
-    assert perplexity.score(ROWS)["uncertainty"][:2] == pytest.approx([math.exp(0.1), math.exp(1.5)])
     assert mean_token_entropy.score(ROWS)["uncertainty"][:2] == pytest.approx([0.3, 2.0])
 
 
-@pytest.mark.parametrize("plugin", [msp, perplexity, mean_token_entropy])
+@pytest.mark.parametrize("plugin", [msp, mean_token_entropy])
 def test_unsure_answer_is_more_uncertain(plugin):
     u = plugin.score(ROWS)["uncertainty"]
     assert u[1] > u[0]
 
 
-@pytest.mark.parametrize("plugin", [msp, perplexity, mean_token_entropy])
+@pytest.mark.parametrize("plugin", [msp, mean_token_entropy])
 def test_empty_answer_is_failed(plugin):
     rec = plugin.score(ROWS)
     assert rec["failed"] == [False, False, True]
     assert rec["uncertainty"][2] == 1.0
-
-
-def test_perplexity_ranks_like_likelihood_mean():
-    rows = [dict(r, greedy_ll_mean=sum(r["greedy_token_logprobs"]) / len(r["greedy_token_logprobs"])) for r in ROWS[:2]]
-    a, b = perplexity.score(rows)["uncertainty"], likelihood_mean.score(rows)["uncertainty"]
-    assert (a[0] < a[1]) == (b[0] < b[1])
 
 
 def test_rouge_l():
