@@ -52,7 +52,7 @@ def save_scores(record: dict, run: str = "qwen0.5b", expected_ids: list[int] | N
         raise ValueError("invalid scores: " + "; ".join(problems))
     path = RESULTS_ROOT / run / f"{record['method']}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(record, indent=2))
+    path.write_text(json.dumps(record, indent=2) + "\n")  # end with a newline, as the end-of-file hook wants
     return path
 
 
