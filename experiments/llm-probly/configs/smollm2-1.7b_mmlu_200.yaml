@@ -1,0 +1,7 @@
+# E3 second model family on the same 200 MMLU questions.
+model: smollm2-1.7b
+dataset: mmlu
+n: 200
+precision: float32
+device: mps
+methods: [msp, likelihood_mean, mean_token_entropy, lexical_similarity, dummy_random]  # cache-only; others run on these caches later
