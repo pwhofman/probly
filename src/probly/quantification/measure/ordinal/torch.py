@@ -17,19 +17,11 @@ from ._common import (
     labelwise_conditional_entropy,
     labelwise_entropy,
     labelwise_entropy_of_expected_predictive_distribution,
-    labelwise_expected_conditional_variance,
     labelwise_mutual_information_entropy,
-    labelwise_variance,
-    labelwise_variance_of_conditional_mean,
-    labelwise_variance_of_expected_predictive_distribution,
     ordinal_conditional_entropy,
     ordinal_entropy,
     ordinal_entropy_of_expected_predictive_distribution,
-    ordinal_expected_conditional_variance,
     ordinal_mutual_information_entropy,
-    ordinal_variance,
-    ordinal_variance_of_conditional_mean,
-    ordinal_variance_of_expected_predictive_distribution,
 )
 
 
@@ -49,21 +41,6 @@ def _cdf(p: torch.Tensor) -> torch.Tensor:
     return torch.cumsum(p, dim=-1)[..., :-1]
 
 
-@ordinal_variance.register(TorchCategoricalDistribution)
-def torch_categorical_ordinal_variance(
-    distribution: TorchCategoricalDistribution | torch.Tensor,
-    base: LogBase = None,  # noqa: ARG001
-) -> torch.Tensor:
-    """Compute the ordinal variance of a categorical distribution."""
-    if isinstance(distribution, TorchCategoricalDistribution):
-        p = distribution.probabilities
-        del distribution
-    else:
-        p = distribution
-    cdf = _cdf(p)
-    return torch.sum(cdf * (1 - cdf), dim=-1)
-
-
 @ordinal_entropy.register(TorchCategoricalDistribution)
 def torch_categorical_ordinal_entropy(
     distribution: TorchCategoricalDistribution | torch.Tensor, base: LogBase = None
@@ -77,44 +54,6 @@ def torch_categorical_ordinal_entropy(
     cdf = _cdf(p)
     binary_entropies = _binary_entropy(cdf, base=base)
     return torch.sum(binary_entropies, dim=-1)
-
-
-@ordinal_variance_of_expected_predictive_distribution.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_ordinal_variance_of_expected_predictive_distribution(
-    sample: TorchCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> torch.Tensor:
-    """Compute the ordinal variance of the expected value of a categorical sample."""
-    p = sample.tensor.probabilities
-    axis = sample.sample_axis
-    cdf = _cdf(p)
-    expected_cdf = torch.mean(cdf, dim=axis)
-    return torch.sum(expected_cdf * (1 - expected_cdf), dim=-1)
-
-
-@ordinal_expected_conditional_variance.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_ordinal_expected_conditional_variance(
-    sample: TorchCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> torch.Tensor:
-    """Compute the ordinal expected conditional variance of a categorical sample."""
-    p = sample.tensor.probabilities
-    axis = sample.sample_axis
-    cdf = _cdf(p)
-    per_sample_variance = torch.sum(cdf * (1 - cdf), dim=-1)
-    return torch.mean(per_sample_variance, dim=axis)
-
-
-@ordinal_variance_of_conditional_mean.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_ordinal_variance_of_conditional_mean(
-    sample: TorchCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> torch.Tensor:
-    """Compute the ordinal variance of the conditional mean of a categorical sample."""
-    p = sample.tensor.probabilities
-    axis = sample.sample_axis
-    cdf = _cdf(p)
-    return torch.sum(torch.var(cdf, dim=axis, unbiased=False), dim=-1)
 
 
 @ordinal_entropy_of_expected_predictive_distribution.register(TorchCategoricalDistributionSample)
@@ -193,16 +132,6 @@ def torch_categorical_labelwise_entropy(
     return torch.sum(_binary_entropy(p, base=base), dim=-1)
 
 
-@labelwise_variance.register(TorchCategoricalDistribution)
-def torch_categorical_labelwise_variance(
-    distribution: TorchCategoricalDistribution | torch.Tensor,
-    base: LogBase = None,  # noqa: ARG001
-) -> torch.Tensor:
-    """Compute the label-wise binary variance of a categorical distribution."""
-    p = distribution.probabilities if isinstance(distribution, TorchCategoricalDistribution) else distribution
-    return torch.sum(p * (1 - p), dim=-1)
-
-
 @labelwise_entropy_of_expected_predictive_distribution.register(TorchCategoricalDistributionSample)
 def torch_categorical_sample_labelwise_entropy_of_expected_predictive_distribution(
     sample: TorchCategoricalDistributionSample, base: LogBase = None
@@ -233,38 +162,3 @@ def torch_categorical_sample_labelwise_mutual_information_entropy(
     return torch_categorical_sample_labelwise_entropy_of_expected_predictive_distribution(
         sample, base
     ) - torch_categorical_sample_labelwise_conditional_entropy(sample, base)
-
-
-@labelwise_variance_of_expected_predictive_distribution.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_labelwise_variance_of_expected_predictive_distribution(
-    sample: TorchCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> torch.Tensor:
-    """Compute the label-wise binary variance of the expected predictive distribution."""
-    p = sample.tensor.probabilities
-    axis = sample.sample_axis
-    expected_p = torch.mean(p, dim=axis)
-    return torch.sum(expected_p * (1 - expected_p), dim=-1)
-
-
-@labelwise_expected_conditional_variance.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_labelwise_expected_conditional_variance(
-    sample: TorchCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> torch.Tensor:
-    """Compute the label-wise expected conditional variance of a categorical sample."""
-    p = sample.tensor.probabilities
-    axis = sample.sample_axis
-    per_sample_variance = torch.sum(p * (1 - p), dim=-1)
-    return torch.mean(per_sample_variance, dim=axis)
-
-
-@labelwise_variance_of_conditional_mean.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_labelwise_variance_of_conditional_mean(
-    sample: TorchCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> torch.Tensor:
-    """Compute the label-wise variance of the conditional mean of a categorical sample."""
-    p = sample.tensor.probabilities
-    axis = sample.sample_axis
-    return torch.sum(torch.var(p, dim=axis, unbiased=False), dim=-1)
