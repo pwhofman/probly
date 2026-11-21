@@ -1,7 +1,8 @@
-# E3: MMLU for every model, same precision/device as this model's TriviaQA cache. About 30 min.
+# E3: MMLU 200 on cpu. On mps (Apple GPU) the long MMLU prompts x 10 samples ran out of memory
+# (day 3); cpu uses normal RAM. About 95 min.
 model: qwen3b
 dataset: mmlu
 n: 200
 precision: float32
-device: mps
+device: cpu
 methods: [msp, likelihood_mean, mean_token_entropy, lexical_similarity, dummy_random]  # cache-only; others run on these caches later
