@@ -2,18 +2,14 @@
 
 from __future__ import annotations
 
-import math
 from typing import TYPE_CHECKING, NoReturn
 
 import numpy as np
 from scipy.optimize import linprog
 
-from probly.representation.conformal_set.numpy import NumpyIntervalConformalSet, NumpyOneHotConformalSet
 from probly.representation.credal_set.numpy import (
     NumpyConvexCredalSet,
     NumpyDiscreteCredalSet,
-    NumpyDistanceBasedCredalSet,
-    NumpyProbabilityIntervalsCredalSet,
     NumpySingletonCredalSet,
 )
 from probly.representation.distribution._common import CategoricalDistribution
@@ -21,16 +17,18 @@ from probly.representation.sample import Sample
 
 from ._common import (
     CREDAL_COVERAGE_EPSILON,
+    _asarray_like,
     _expected_loss,
+    _floating,
+    _label_values,
     _log_probabilities,
+    _machine_epsilon,
     _one_hot_argmax,
     _probabilities,
+    _validate_epsilon,
     _validate_labels,
-    average_interval_width,
     classwise_ece,
     convex_hull_coverage,
-    coverage,
-    efficiency,
     expected_calibration_error,
     precision_recall_curve,
     roc_curve,
@@ -202,291 +200,32 @@ def numpy_roc_curve(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarray
 # --- Predicted-set metrics ----------------------------------------------------
 
 
-def _interval_dominance_mask(lower: np.ndarray, upper: np.ndarray) -> np.ndarray:
-    """Return the boolean mask of classes selected by the interval-dominance rule.
-
-    A class ``y`` is selected when its upper probability is at least the
-    maximum lower probability across all classes; equivalently, when no other
-    class strictly dominates it under the credal set's lower/upper envelope.
-
-    Args:
-        lower: Lower probability envelope of shape ``(..., C)``.
-        upper: Upper probability envelope of shape ``(..., C)``.
-
-    Returns:
-        Boolean array of shape ``(..., C)`` indicating selected classes.
-    """
-    threshold = np.max(lower, axis=-1, keepdims=True)
-    return upper >= threshold
+@_asarray_like.register(np.ndarray)
+def _numpy_asarray_like(_: np.ndarray, values: object) -> np.ndarray:
+    """Convert values to a NumPy array."""
+    return np.asarray(values)
 
 
-def _onehot_membership(mask: np.ndarray, y_true: np.ndarray) -> np.ndarray:
-    """Look up the membership flag for the true class along the last axis.
-
-    Args:
-        mask: Boolean class-membership mask of shape ``(..., C)``.
-        y_true: Integer class labels of shape ``(...,)``.
-
-    Returns:
-        Boolean array of shape ``(...,)`` with ``True`` where the true class
-        is in the predicted set.
-    """
+@_label_values.register(np.ndarray)
+def _numpy_label_values(values: np.ndarray, y_true: object) -> np.ndarray:
+    """Look up the entry at the class label of each instance along the last axis."""
     indices = np.asarray(y_true, dtype=np.int64)[..., None]
-    return np.take_along_axis(mask, indices, axis=-1).squeeze(-1)
+    return np.take_along_axis(values, indices, axis=-1).squeeze(-1)
 
 
-def _envelope_coverage(lower: np.ndarray, upper: np.ndarray, y_true: np.ndarray) -> np.floating:
-    mask = _interval_dominance_mask(lower, upper)
-    return np.mean(_onehot_membership(mask, np.asarray(y_true)))
+@_floating.register(np.ndarray)
+def _numpy_floating(values: np.ndarray) -> np.ndarray:
+    """Cast a NumPy array to a floating dtype of at least single precision."""
+    return np.asarray(values, dtype=np.result_type(values, np.float32))
 
 
-def _envelope_efficiency(lower: np.ndarray, upper: np.ndarray) -> np.floating:
-    mask = _interval_dominance_mask(lower, upper)
-    return np.mean(mask.sum(axis=-1))
-
-
-def _envelope_average_interval_width(lower: np.ndarray, upper: np.ndarray) -> np.floating:
-    return np.mean(np.asarray(upper) - np.asarray(lower))
-
-
-@coverage.register(NumpyOneHotConformalSet)
-def _numpy_onehot_coverage(y_pred: NumpyOneHotConformalSet, y_true: np.ndarray) -> np.floating:
-    """Coverage for a one-hot conformal set."""
-    return np.mean(_onehot_membership(np.asarray(y_pred.array), np.asarray(y_true)))
-
-
-@efficiency.register(NumpyOneHotConformalSet)
-def _numpy_onehot_efficiency(y_pred: NumpyOneHotConformalSet) -> np.floating:
-    """Average cardinality of a one-hot conformal set."""
-    return np.mean(np.asarray(y_pred.array).sum(axis=-1))
-
-
-@coverage.register(NumpyIntervalConformalSet)
-def _numpy_interval_coverage(y_pred: NumpyIntervalConformalSet, y_true: np.ndarray) -> np.floating:
-    """Coverage for an interval conformal set."""
-    arr = np.asarray(y_pred.array)
-    y = np.asarray(y_true)
-    return np.mean((y >= arr[..., 0]) & (y <= arr[..., 1]))
-
-
-@efficiency.register(NumpyIntervalConformalSet)
-def _numpy_interval_efficiency(y_pred: NumpyIntervalConformalSet) -> np.floating:
-    """Average width of an interval conformal set."""
-    arr = np.asarray(y_pred.array)
-    return np.mean(arr[..., 1] - arr[..., 0])
-
-
-@coverage.register(NumpySingletonCredalSet)
-def _numpy_singleton_coverage(y_pred: NumpySingletonCredalSet, y_true: np.ndarray) -> np.floating:
-    """Top-1 coverage for a singleton credal set (degenerate to argmax accuracy)."""
-    probs = np.asarray(y_pred.array.probabilities)
-    predicted = np.argmax(probs, axis=-1)
-    return np.mean(predicted == np.asarray(y_true))
-
-
-@efficiency.register(NumpySingletonCredalSet)
-def _numpy_singleton_efficiency(_: NumpySingletonCredalSet) -> np.floating:
-    """A singleton credal set always yields a single predicted class."""
-    return np.float64(1.0)
-
-
-@coverage.register(NumpyDiscreteCredalSet)
-def _numpy_discrete_coverage(y_pred: NumpyDiscreteCredalSet, y_true: np.ndarray) -> np.floating:
-    """Coverage for a discrete credal set: any vertex's argmax matches the true class."""
-    probs = np.asarray(y_pred.array.probabilities)
-    argmax_per_vertex = np.argmax(probs, axis=-1)
-    y = np.asarray(y_true)[..., None]
-    return np.mean(np.any(argmax_per_vertex == y, axis=-1))
-
-
-@efficiency.register(NumpyDiscreteCredalSet)
-def _numpy_discrete_efficiency(y_pred: NumpyDiscreteCredalSet) -> np.floating:
-    """Average number of distinct argmax classes across the vertex set."""
-    probs = np.asarray(y_pred.array.probabilities)
-    num_classes = probs.shape[-1]
-    argmax_per_vertex = np.argmax(probs, axis=-1)
-    classes_picked = (argmax_per_vertex[..., None] == np.arange(num_classes)).any(axis=-2)
-    return np.mean(classes_picked.sum(axis=-1))
-
-
-def _numpy_credal_containment_coverage(
-    lower: np.ndarray,
-    upper: np.ndarray,
-    y_true: np.ndarray,
-    epsilon: float = CREDAL_COVERAGE_EPSILON,
-) -> np.floating:
-    """Fraction of instances whose target lies inside the credal set's envelope.
-
-    Dispatches on the shape of ``y_true``:
-
-    * **Integer class labels** (``y_true.ndim == lower.ndim - 1``): covered when
-      the true class is selected by the interval-dominance rule, i.e.
-      ``upper[y] >= max_k lower[k]``.
-    * **Probability vectors** (``y_true.ndim == lower.ndim``): covered when
-      the L1 distance from ``y_true`` to ``{p : lower <= p <= upper, sum(p) = 1}``
-      is at most ``epsilon``. For a target on the simplex this distance is
-      ``2 * max(a, b)`` with ``a`` the target mass above ``upper`` and ``b`` the
-      mass missing below ``lower``, the same L1 distance as in
-      :func:`~probly.metrics.convex_hull_coverage`.
-
-    Args:
-        lower: Lower probability envelope of shape ``(..., C)``.
-        upper: Upper probability envelope of shape ``(..., C)``.
-        y_true: Integer class labels of shape ``(...)`` or target probability
-            vectors of shape ``(..., C)``.
-        epsilon: L1 tolerance for probability-vector targets.
-
-    Returns:
-        Mean containment indicator as a scalar float.
-    """
-    y = np.asarray(y_true)
-    if y.ndim < lower.ndim:
-        # Integer class labels: interval-dominance rule.
-        threshold = np.max(lower, axis=-1, keepdims=True)
-        mask = upper >= threshold
-        indices = y.astype(np.int64)[..., np.newaxis]
-        covered = np.take_along_axis(mask, indices, axis=-1).squeeze(-1)
-    else:
-        _validate_epsilon(epsilon)
-        # Probability vectors: L1 distance to the envelope intersected with the simplex, in the precision of the
-        # bounds. Rounding the inputs to that precision shifts the distance by at most two machine epsilons, so the
-        # slack keeps a distance that equals epsilon on the covered side.
-        dtype = np.result_type(lower, np.float32)
-        lo, up, yf = (np.asarray(a, dtype=dtype) for a in (lower, upper, y))
-        above = np.clip(yf - up, 0.0, None).sum(axis=-1)
-        below = np.clip(lo - yf, 0.0, None).sum(axis=-1)
-        covered = 2.0 * np.maximum(above, below) <= epsilon + 4.0 * np.finfo(dtype).eps
-    return np.mean(covered)
-
-
-def _numpy_credal_interval_efficiency(lower: np.ndarray, upper: np.ndarray) -> np.floating:
-    """Efficiency of a credal set as ``1 - mean(upper - lower)``.
-
-    Args:
-        lower: Lower probability envelope of shape ``(N, C)``.
-        upper: Upper probability envelope of shape ``(N, C)``.
-
-    Returns:
-        Scalar in ``(-inf, 1]``; higher means a tighter (more efficient) credal set.
-    """
-    return np.float64(1.0 - float(np.mean(np.asarray(upper) - np.asarray(lower))))
-
-
-@coverage.register(NumpyConvexCredalSet)
-def _numpy_convex_coverage(
-    y_pred: NumpyConvexCredalSet, y_true: np.ndarray, *, epsilon: float = CREDAL_COVERAGE_EPSILON
-) -> np.floating:
-    """Containment coverage for a convex credal set.
-
-    Args:
-        y_pred: Convex credal set.
-        y_true: Target probability vectors of shape ``(N, C)``.
-        epsilon: L1 tolerance for probability-vector targets.
-
-    Returns:
-        Fraction of instances whose target lies within L1 distance ``epsilon`` of the envelope.
-    """
-    return _numpy_credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true, epsilon)
-
-
-@efficiency.register(NumpyConvexCredalSet)
-def _numpy_convex_efficiency(y_pred: NumpyConvexCredalSet) -> np.floating:
-    """Interval-width efficiency for a convex credal set: ``1 - mean(upper - lower)``.
-
-    Returns:
-        Scalar efficiency; higher means a tighter credal set.
-    """
-    return _numpy_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
-
-
-@coverage.register(NumpyDistanceBasedCredalSet)
-def _numpy_distance_coverage(y_pred: NumpyDistanceBasedCredalSet, y_true: np.ndarray) -> np.floating:
-    """Coverage for a distance-based (TV-ball) credal set.
-
-    With class-index targets: interval-dominance coverage on the envelope.
-
-    With first-order targets ``y_true`` of shape ``(..., C)``: distribution
-    membership ``mean(lambda_i in Q_i)`` via ``mean(TV(nominal_i, lambda_i) <= radius_i)``.
-    """
-    y_true_arr = np.asarray(y_true)
-    if y_true_arr.ndim >= 2 and y_true_arr.shape[-1] == y_pred.num_classes:
-        nominal = np.asarray(y_pred.nominal.probabilities)
-        target = y_true_arr.astype(nominal.dtype, copy=False)
-        tv = 0.5 * np.sum(np.abs(nominal - target), axis=-1)
-        radius = np.asarray(y_pred.radius, dtype=nominal.dtype)
-        return np.asarray(tv <= radius, dtype=np.float64).mean()
-    return _envelope_coverage(y_pred.lower(), y_pred.upper(), y_true)
-
-
-@efficiency.register(NumpyDistanceBasedCredalSet)
-def _numpy_distance_efficiency(y_pred: NumpyDistanceBasedCredalSet) -> np.floating:
-    """Interval-width efficiency for a distance-based credal set: ``1 - mean(upper - lower)``.
-
-    Same semantic as ``ConvexCredalSet`` and ``ProbabilityIntervalsCredalSet``:
-    higher = tighter credal set.
-    """
-    return _numpy_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
-
-
-@coverage.register(NumpyProbabilityIntervalsCredalSet)
-def _numpy_probability_intervals_coverage(
-    y_pred: NumpyProbabilityIntervalsCredalSet, y_true: np.ndarray, *, epsilon: float = CREDAL_COVERAGE_EPSILON
-) -> np.floating:
-    """Containment coverage for a probability-intervals credal set.
-
-    Args:
-        y_pred: Probability-intervals credal set.
-        y_true: Target probability vectors of shape ``(N, C)``.
-        epsilon: L1 tolerance for probability-vector targets.
-
-    Returns:
-        Fraction of instances whose target lies within L1 distance ``epsilon`` of the intervals.
-    """
-    return _numpy_credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true, epsilon)
-
-
-@efficiency.register(NumpyProbabilityIntervalsCredalSet)
-def _numpy_probability_intervals_efficiency(y_pred: NumpyProbabilityIntervalsCredalSet) -> np.floating:
-    """Interval-width efficiency for a probability-intervals credal set: ``1 - mean(upper - lower)``.
-
-    Returns:
-        Scalar efficiency; higher means a tighter credal set.
-    """
-    return _numpy_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
-
-
-@average_interval_width.register(NumpyConvexCredalSet)
-def _numpy_convex_average_interval_width(y_pred: NumpyConvexCredalSet) -> np.floating:
-    """Mean per-class width of the vertex-derived envelope of a convex credal set."""
-    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
-
-
-@average_interval_width.register(NumpyDiscreteCredalSet)
-def _numpy_discrete_average_interval_width(y_pred: NumpyDiscreteCredalSet) -> np.floating:
-    """Mean per-class width of the vertex-min/vertex-max envelope of a discrete credal set."""
-    probs = np.asarray(y_pred.array.probabilities)
-    return _envelope_average_interval_width(np.min(probs, axis=-2), np.max(probs, axis=-2))
-
-
-@average_interval_width.register(NumpyDistanceBasedCredalSet)
-def _numpy_distance_average_interval_width(y_pred: NumpyDistanceBasedCredalSet) -> np.floating:
-    """Mean per-class width of the L1-clip envelope of a distance-based credal set."""
-    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
-
-
-@average_interval_width.register(NumpyProbabilityIntervalsCredalSet)
-def _numpy_probability_intervals_average_interval_width(y_pred: NumpyProbabilityIntervalsCredalSet) -> np.floating:
-    """Mean per-class interval width of a probability-intervals credal set."""
-    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
+@_machine_epsilon.register(np.ndarray)
+def _numpy_machine_epsilon(values: np.ndarray) -> float:
+    """Return the machine epsilon of the dtype of a floating NumPy array."""
+    return float(np.finfo(values.dtype).eps)
 
 
 # --- Convex-hull coverage ----------------------------------------------------
-
-
-def _validate_epsilon(epsilon: float) -> None:
-    if not math.isfinite(epsilon) or epsilon < 0.0:
-        msg = f"epsilon must be a non-negative finite float, got {epsilon!r}."
-        raise ValueError(msg)
 
 
 def _numpy_convex_hull_lp_coverage(

@@ -16,14 +16,8 @@ from jax.core import Tracer
 import jax.numpy as jnp
 
 from probly.metrics._common import CREDAL_COVERAGE_EPSILON
-from probly.metrics.numpy import _numpy_convex_hull_lp_coverage, _validate_epsilon
-from probly.representation.conformal_set.jax import JaxIntervalConformalSet, JaxOneHotConformalSet
-from probly.representation.credal_set.jax import (
-    JaxConvexCredalSet,
-    JaxDirichletLevelSetCredalSet,
-    JaxDistanceBasedCredalSet,
-    JaxProbabilityIntervalsCredalSet,
-)
+from probly.metrics.numpy import _numpy_convex_hull_lp_coverage
+from probly.representation.credal_set.jax import JaxConvexCredalSet
 from probly.representation.distribution._common import CategoricalDistribution
 from probly.representation.distribution.jax_categorical import (
     JaxCategoricalDistribution,
@@ -31,16 +25,17 @@ from probly.representation.distribution.jax_categorical import (
 )
 
 from ._common import (
+    _asarray_like,
     _expected_loss,
+    _floating,
+    _label_values,
     _log_probabilities,
+    _machine_epsilon,
     _one_hot_argmax,
     _probabilities,
     _validate_labels,
-    average_interval_width,
     classwise_ece,
     convex_hull_coverage,
-    coverage,
-    efficiency,
     expected_calibration_error,
     log_loss_per_instance,
     precision_recall_curve,
@@ -196,289 +191,29 @@ def jax_roc_curve(y_true: jax.Array, y_score: jax.Array) -> tuple[jax.Array, jax
 # --- Predicted-set metrics ----------------------------------------------------
 
 
-def _interval_dominance_mask(lower: jax.Array, upper: jax.Array) -> jax.Array:
-    """Return the boolean class mask selected by the interval-dominance rule.
-
-    Args:
-        lower: Lower probability envelope of shape ``(..., C)``.
-        upper: Upper probability envelope of shape ``(..., C)``.
-
-    Returns:
-        Boolean array of shape ``(..., C)``.
-    """
-    threshold = jnp.max(lower, axis=-1, keepdims=True)
-    return upper >= threshold
+@_asarray_like.register((jax.Array, Tracer))
+def _jax_asarray_like(_: jax.Array, values: object) -> jax.Array:
+    """Convert values to a JAX array."""
+    return jnp.asarray(values)
 
 
-def _onehot_membership(mask: jax.Array, y_true: object) -> jax.Array:
-    """Look up the membership flag for the true class along the last axis."""
+@_label_values.register((jax.Array, Tracer))
+def _jax_label_values(values: jax.Array, y_true: object) -> jax.Array:
+    """Look up the entry at the class label of each instance along the last axis."""
     indices = jnp.expand_dims(jnp.asarray(y_true).astype(jnp.int32), axis=-1)
-    return jnp.squeeze(jnp.take_along_axis(mask, indices, axis=-1), axis=-1)
+    return jnp.squeeze(jnp.take_along_axis(values, indices, axis=-1), axis=-1)
 
 
-def _envelope_coverage(lower: jax.Array, upper: jax.Array, y_true: object) -> float:
-    mask = _interval_dominance_mask(lower, upper)
-    return float(jnp.mean(_onehot_membership(mask, y_true).astype(jnp.float32)))
+@_floating.register((jax.Array, Tracer))
+def _jax_floating(values: jax.Array) -> jax.Array:
+    """Cast a JAX array to a floating dtype of at least single precision."""
+    return values.astype(jnp.promote_types(values.dtype, jnp.float32))
 
 
-def _envelope_efficiency(lower: jax.Array, upper: jax.Array) -> float:
-    mask = _interval_dominance_mask(lower, upper)
-    return float(jnp.mean(jnp.sum(mask.astype(jnp.float32), axis=-1)))
-
-
-def _envelope_average_interval_width(lower: jax.Array, upper: jax.Array) -> float:
-    return float(jnp.mean((upper - lower).astype(jnp.float32)))
-
-
-@coverage.register(JaxOneHotConformalSet)
-def _jax_onehot_coverage(y_pred: JaxOneHotConformalSet, y_true: jax.Array) -> float:
-    """Compute coverage for a one-hot conformal set.
-
-    Args:
-        y_pred: Class membership masks with arbitrary leading batch dimensions.
-        y_true: Integer class labels aligned with the batch dimensions.
-
-    Returns:
-        The fraction of sets containing the true class.
-    """
-    membership = _onehot_membership(y_pred.array, y_true)
-    return float(jnp.mean(membership.astype(jnp.float32)))
-
-
-@efficiency.register(JaxOneHotConformalSet)
-def _jax_onehot_efficiency(y_pred: JaxOneHotConformalSet) -> float:
-    """Compute the average cardinality of a one-hot conformal set.
-
-    Args:
-        y_pred: Class membership masks with arbitrary leading batch dimensions.
-
-    Returns:
-        The mean number of selected classes.
-    """
-    return float(jnp.mean(jnp.sum(y_pred.array.astype(jnp.float32), axis=-1)))
-
-
-@coverage.register(JaxIntervalConformalSet)
-def _jax_interval_coverage(y_pred: JaxIntervalConformalSet, y_true: jax.Array) -> float:
-    """Compute coverage for an interval conformal set, including its endpoints.
-
-    Args:
-        y_pred: Lower and upper bounds with arbitrary leading batch dimensions.
-        y_true: Targets aligned with the batch dimensions.
-
-    Returns:
-        The fraction of intervals containing the target.
-    """
-    array = y_pred.array
-    target = jnp.asarray(y_true)
-    inside = (target >= array[..., 0]) & (target <= array[..., 1])
-    return float(jnp.mean(inside.astype(jnp.float32)))
-
-
-@efficiency.register(JaxIntervalConformalSet)
-def _jax_interval_efficiency(y_pred: JaxIntervalConformalSet) -> float:
-    """Compute the average width of an interval conformal set.
-
-    Args:
-        y_pred: Lower and upper bounds with arbitrary leading batch dimensions.
-
-    Returns:
-        The mean interval width.
-    """
-    return float(jnp.mean((y_pred.array[..., 1] - y_pred.array[..., 0]).astype(jnp.float32)))
-
-
-def _is_first_order_target(y_true: object, num_classes: int) -> bool:
-    """Detect a first-order target array (probability vectors) vs class indices."""
-    y = jnp.asarray(y_true)
-    return y.ndim >= 2 and y.shape[-1] == num_classes
-
-
-def _jax_credal_containment_coverage(
-    lower: jax.Array,
-    upper: jax.Array,
-    y_true: object,
-    epsilon: float = CREDAL_COVERAGE_EPSILON,
-) -> float:
-    """Fraction of instances whose target lies inside the credal set's envelope.
-
-    Dispatches on the shape of ``y_true``:
-
-    * **Integer class labels** (``y_true.ndim == lower.ndim - 1``): covered when
-      the true class is selected by the interval-dominance rule, i.e.
-      ``upper[y] >= max_k lower[k]``.
-    * **Probability vectors** (``y_true.ndim == lower.ndim``): covered when
-      the L1 distance from ``y_true`` to ``{p : lower <= p <= upper, sum(p) = 1}``
-      is at most ``epsilon``. For a target on the simplex this distance is
-      ``2 * max(a, b)`` with ``a`` the target mass above ``upper`` and ``b`` the
-      mass missing below ``lower``, the same L1 distance as in
-      :func:`~probly.metrics.convex_hull_coverage`.
-
-    Args:
-        lower: Lower probability envelope of shape ``(..., C)``.
-        upper: Upper probability envelope of shape ``(..., C)``.
-        y_true: Integer class labels of shape ``(...)`` or target probability
-            arrays of shape ``(..., C)``.
-        epsilon: L1 tolerance for probability-vector targets.
-
-    Returns:
-        Mean containment indicator as a Python float.
-    """
-    y = jnp.asarray(y_true)
-    if y.ndim < lower.ndim:
-        covered = _onehot_membership(_interval_dominance_mask(lower, upper), y)
-    else:
-        _validate_epsilon(epsilon)
-        # Probability vectors: L1 distance to the envelope intersected with the simplex, in the precision of the
-        # bounds. Rounding the inputs to that precision shifts the distance by at most two machine epsilons, so the
-        # slack keeps a distance that equals epsilon on the covered side.
-        dtype = jnp.promote_types(lower.dtype, jnp.float32)
-        lo, up, y = lower.astype(dtype), upper.astype(dtype), y.astype(dtype)
-        above = jnp.sum(jnp.clip(y - up, 0.0, None), axis=-1)
-        below = jnp.sum(jnp.clip(lo - y, 0.0, None), axis=-1)
-        covered = 2.0 * jnp.maximum(above, below) <= epsilon + 4.0 * float(jnp.finfo(dtype).eps)
-    return float(jnp.mean(covered.astype(jnp.float32)))
-
-
-def _jax_credal_interval_efficiency(lower: jax.Array, upper: jax.Array) -> float:
-    """Efficiency of a credal set as ``1 - mean(upper - lower)``.
-
-    Args:
-        lower: Lower probability envelope of shape ``(N, C)``.
-        upper: Upper probability envelope of shape ``(N, C)``.
-
-    Returns:
-        Scalar in ``(-inf, 1]``; higher means a tighter (more efficient) credal set.
-    """
-    return float(1.0 - jnp.mean((upper - lower).astype(jnp.float32)))
-
-
-@coverage.register(JaxConvexCredalSet)
-def _jax_convex_coverage(
-    y_pred: JaxConvexCredalSet, y_true: object, *, epsilon: float = CREDAL_COVERAGE_EPSILON
-) -> float:
-    """Containment coverage for a convex credal set.
-
-    Args:
-        y_pred: Convex credal set.
-        y_true: Target probability arrays of shape ``(N, C)`` or class indices.
-        epsilon: L1 tolerance for probability-vector targets.
-
-    Returns:
-        Fraction of instances whose target lies within L1 distance ``epsilon`` of the envelope.
-    """
-    return _jax_credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true, epsilon)
-
-
-@efficiency.register(JaxConvexCredalSet)
-def _jax_convex_efficiency(y_pred: JaxConvexCredalSet) -> float:
-    """Interval-width efficiency for a convex credal set: ``1 - mean(upper - lower)``.
-
-    Returns:
-        Scalar efficiency; higher means a tighter credal set.
-    """
-    return _jax_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
-
-
-@coverage.register(JaxDistanceBasedCredalSet)
-def _jax_distance_coverage(y_pred: JaxDistanceBasedCredalSet, y_true: object) -> float:
-    """Coverage for a distance-based (TV-ball) credal set.
-
-    With class-index targets: interval-dominance coverage on the envelope.
-
-    With first-order targets ``y_true`` of shape ``(..., C)``: the paper's
-    distribution-membership coverage ``mean(lambda_i in Q_i)``, computed as
-    ``mean(TV(nominal_i, lambda_i) <= radius_i)``.
-    """
-    if _is_first_order_target(y_true, y_pred.num_classes):
-        nominal = y_pred.nominal.probabilities
-        target = jnp.asarray(y_true).astype(nominal.dtype)
-        tv = 0.5 * jnp.sum(jnp.abs(nominal - target), axis=-1)
-        radius = jnp.asarray(y_pred.radius).astype(nominal.dtype)
-        return float(jnp.mean((tv <= radius).astype(jnp.float32)))
-    return _envelope_coverage(y_pred.lower(), y_pred.upper(), y_true)
-
-
-@efficiency.register(JaxDistanceBasedCredalSet)
-def _jax_distance_efficiency(y_pred: JaxDistanceBasedCredalSet) -> float:
-    """Interval-width efficiency for a distance-based credal set: ``1 - mean(upper - lower)``.
-
-    Same semantic as ``ConvexCredalSet`` and ``ProbabilityIntervalsCredalSet``:
-    higher = tighter credal set. For TV (L1) distance-based credal sets the
-    per-class envelope bounds ``[max(0, p_k - r), min(1, p_k + r)]`` are tight.
-    """
-    return _jax_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
-
-
-@coverage.register(JaxProbabilityIntervalsCredalSet)
-def _jax_probability_intervals_coverage(
-    y_pred: JaxProbabilityIntervalsCredalSet, y_true: object, *, epsilon: float = CREDAL_COVERAGE_EPSILON
-) -> float:
-    """Containment coverage for a probability-intervals credal set.
-
-    Args:
-        y_pred: Probability-intervals credal set.
-        y_true: Target probability arrays of shape ``(N, C)`` or class indices.
-        epsilon: L1 tolerance for probability-vector targets.
-
-    Returns:
-        Fraction of instances whose target lies within L1 distance ``epsilon`` of the intervals.
-    """
-    return _jax_credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true, epsilon)
-
-
-@efficiency.register(JaxProbabilityIntervalsCredalSet)
-def _jax_probability_intervals_efficiency(y_pred: JaxProbabilityIntervalsCredalSet) -> float:
-    """Interval-width efficiency for a probability-intervals credal set: ``1 - mean(upper - lower)``.
-
-    Returns:
-        Scalar efficiency; higher means a tighter credal set.
-    """
-    return _jax_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
-
-
-@coverage.register(JaxDirichletLevelSetCredalSet)
-def _jax_dirichlet_level_set_coverage(y_pred: JaxDirichletLevelSetCredalSet, y_true: object) -> float:
-    """Interval-dominance coverage for a Dirichlet-level-set credal set.
-
-    The lower/upper envelopes are estimated by Monte-Carlo sampling from a fixed
-    default PRNG key, so repeated calls are deterministic.
-    """
-    return _envelope_coverage(y_pred.lower(), y_pred.upper(), y_true)
-
-
-@efficiency.register(JaxDirichletLevelSetCredalSet)
-def _jax_dirichlet_level_set_efficiency(y_pred: JaxDirichletLevelSetCredalSet) -> float:
-    """Interval-dominance prediction-set cardinality for a Dirichlet-level-set credal set.
-
-    The lower/upper envelopes are estimated by Monte-Carlo sampling from a fixed
-    default PRNG key, so repeated calls are deterministic.
-    """
-    return _envelope_efficiency(y_pred.lower(), y_pred.upper())
-
-
-@average_interval_width.register(JaxConvexCredalSet)
-def _jax_convex_average_interval_width(y_pred: JaxConvexCredalSet) -> float:
-    """Mean per-class width of the vertex-derived envelope of a convex credal set."""
-    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
-
-
-@average_interval_width.register(JaxDistanceBasedCredalSet)
-def _jax_distance_average_interval_width(y_pred: JaxDistanceBasedCredalSet) -> float:
-    """Mean per-class width of the L1-clip envelope of a distance-based credal set."""
-    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
-
-
-@average_interval_width.register(JaxProbabilityIntervalsCredalSet)
-def _jax_probability_intervals_average_interval_width(y_pred: JaxProbabilityIntervalsCredalSet) -> float:
-    """Mean per-class interval width of a probability-intervals credal set."""
-    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
-
-
-@average_interval_width.register(JaxDirichletLevelSetCredalSet)
-def _jax_dirichlet_level_set_average_interval_width(y_pred: JaxDirichletLevelSetCredalSet) -> float:
-    """Mean per-class width of the MC-sampled envelope of a Dirichlet-level-set credal set."""
-    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
+@_machine_epsilon.register((jax.Array, Tracer))
+def _jax_machine_epsilon(values: jax.Array) -> float:
+    """Return the machine epsilon of the dtype of a floating JAX array."""
+    return float(jnp.finfo(values.dtype).eps)
 
 
 @convex_hull_coverage.register(JaxConvexCredalSet)

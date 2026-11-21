@@ -103,8 +103,8 @@ def main(cfg: DictConfig) -> None:
 
     if cfg.wandb.enabled:
         run = init_wandb_for_evaluation(cfg, run_id)
-        run.summary["coverage"] = cov
-        run.summary["efficiency"] = eff
+        run.summary["coverage"] = float(cov)  # ty: ignore[invalid-argument-type]
+        run.summary["efficiency"] = float(eff)  # ty: ignore[invalid-argument-type]
         if chull_cov is not None:
             run.summary["convex_hull_coverage"] = chull_cov
         run.finish()

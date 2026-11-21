@@ -33,12 +33,10 @@ from probly.conformal_scores.aps._common import numpy_compute_aps_score
 from probly.conformal_scores.lac._common import numpy_compute_lac_score
 from probly.conformal_scores.raps._common import numpy_compute_raps_score
 from probly.conformal_scores.saps._common import numpy_compute_saps_score_func
-from probly.metrics.numpy import (
-    _numpy_convex_hull_lp_coverage,
-    _numpy_credal_containment_coverage,
-    _numpy_credal_interval_efficiency,
-)
+from probly.metrics import coverage, efficiency
+from probly.metrics.numpy import _numpy_convex_hull_lp_coverage
 from probly.plot.config import PlotConfig, _apply_rc_defaults
+from probly.representation.credal_set.numpy import NumpyProbabilityIntervalsCredalSet
 from probly.utils.quantile._common import calculate_quantile
 from probly_benchmark.data import _DCIC_FOLDER_NAME, DCIC_IMAGE_PATH, TRANSFORMS_TEST, _DcicZeroOrderDataset
 from probly_benchmark.utils import collect_outputs_targets_raw, get_device, load_model_for_evaluation
@@ -167,8 +165,8 @@ def load_ensemble_probs(
 def compute_credal_metrics(ensemble_probs: np.ndarray, true_probs: np.ndarray) -> dict[str, Any]:
     """Convex-hull coverage (eps=CH_EPSILON), interval coverage, efficiency.
 
-    Uses probly's _numpy_convex_hull_lp_coverage, _numpy_credal_containment_coverage,
-    _numpy_credal_interval_efficiency.
+    Uses probly's _numpy_convex_hull_lp_coverage and the coverage and efficiency of a
+    probability-intervals credal set.
 
     Args:
         ensemble_probs: (N, M, K)
@@ -184,12 +182,14 @@ def compute_credal_metrics(ensemble_probs: np.ndarray, true_probs: np.ndarray) -
     lower = ensemble_probs.min(axis=1)  # (N, K)
     upper = ensemble_probs.max(axis=1)  # (N, K)
 
+    intervals = NumpyProbabilityIntervalsCredalSet(lower_bounds=lower, upper_bounds=upper)
+
     print("  Interval coverage ...")
-    int_cov = float(_numpy_credal_containment_coverage(lower, upper, true_probs))
+    int_cov = float(coverage(intervals, true_probs))
     print(f"    Interval coverage: {int_cov:.4f}")
 
     print("  Credal efficiency ...")
-    eff = float(_numpy_credal_interval_efficiency(lower, upper))
+    eff = float(efficiency(intervals))
     print(f"    Efficiency (higher=better): {eff:.4f}")
 
     # Per-instance arrays for significance testing
