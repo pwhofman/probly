@@ -42,6 +42,16 @@ def test_entropy_dispatches_to_torch() -> None:
     torch.testing.assert_close(entropy(p), torch.tensor([math.log(2.0), 0.0]))
 
 
+def test_elementwise_entropy_dispatches_to_torch() -> None:
+    from probly.utils import elementwise_entropy  # noqa: PLC0415
+    from probly.utils.torch import torch_elementwise_entropy  # noqa: PLC0415
+
+    p = torch.tensor([0.5, 1.0, 0.0, -1e-9])
+    torch.testing.assert_close(elementwise_entropy(p), torch_elementwise_entropy(p))
+    # Zero and negative entries contribute nothing.
+    torch.testing.assert_close(elementwise_entropy(p), torch.tensor([0.5 * math.log(2.0), 0.0, 0.0, 0.0]))
+
+
 def test_torch_entropy_gradient_is_finite_at_exact_zeros() -> None:
     p = torch.tensor([0.5, 0.5, 0.0], dtype=torch.float64, requires_grad=True)
 
