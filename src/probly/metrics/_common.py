@@ -7,9 +7,6 @@ from typing import Any, cast
 
 from flextype import flexdispatch
 
-# Number of decimal places used when rounding lower/upper bounds in credal-set efficiency.
-CREDAL_ROUND_DECIMALS: int = 3
-
 # Default L1 tolerance for coverage. A target counts as covered when some member of
 # the credal set lies within this L1 distance of it. Shared by interval coverage and convex_hull_coverage.
 CREDAL_COVERAGE_EPSILON: float = 0.0005

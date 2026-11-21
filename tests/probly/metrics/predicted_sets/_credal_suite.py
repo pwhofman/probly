@@ -95,6 +95,15 @@ class CredalSuite:
         # widths = [0.4, 0.2, 0.15]; mean = 0.25; efficiency = 0.75.
         assert efficiency(cs) == pytest.approx(0.75)
 
+    def test_probability_intervals_efficiency_is_not_rounded(
+        self,
+        make_intervals: Callable[[np.ndarray, np.ndarray], Any],
+    ) -> None:
+        """Efficiency resolves width differences below the third decimal."""
+        lower = np.array([[0.2, 0.3, 0.1]])
+        cs = make_intervals(lower, lower + 0.1004)
+        assert efficiency(cs) == pytest.approx(1.0 - 0.1004)
+
     def test_probability_intervals_prob_vector_coverage(
         self,
         make_intervals: Callable[[np.ndarray, np.ndarray], Any],
@@ -138,16 +147,30 @@ class CredalSuite:
         assert coverage(cs, target, epsilon=0.003) == pytest.approx(0.0)
         assert coverage(cs, target, epsilon=0.005) == pytest.approx(1.0)
 
-    def test_probability_intervals_coverage_rejects_negative_epsilon(
+    @pytest.mark.parametrize("delta", [0.0003, 0.0007, 0.0011, 0.002])
+    def test_probability_intervals_coverage_tolerance_is_inclusive(
         self,
         make_intervals: Callable[[np.ndarray, np.ndarray], Any],
         array_fn: Callable[..., Any],
+        delta: float,
     ) -> None:
-        """A negative tolerance is rejected for probability-vector targets."""
+        """A target at L1 distance exactly ``epsilon`` is covered, whatever precision the backend computes in."""
+        cs = make_intervals(np.array([[0.0, 0.0, 0.0]]), np.array([[1.0 - delta, 0.6, 0.6]]))
+        target = array_fn(np.array([[1.0, 0.0, 0.0]]))
+        assert coverage(cs, target, epsilon=2 * delta) == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("epsilon", [-0.001, float("nan"), float("inf")])
+    def test_probability_intervals_coverage_rejects_invalid_epsilon(
+        self,
+        make_intervals: Callable[[np.ndarray, np.ndarray], Any],
+        array_fn: Callable[..., Any],
+        epsilon: float,
+    ) -> None:
+        """A negative or non-finite tolerance is rejected for probability-vector targets."""
         cs = make_intervals(np.array([[0.1, 0.4, 0.05]]), np.array([[0.5, 0.6, 0.2]]))
         target = array_fn(np.array([[0.3, 0.5, 0.2]]))
-        with pytest.raises(ValueError, match="epsilon must be non-negative"):
-            coverage(cs, target, epsilon=-0.001)
+        with pytest.raises(ValueError, match="epsilon must be a non-negative finite float"):
+            coverage(cs, target, epsilon=epsilon)
 
     def test_probability_intervals_default_tolerance_absorbs_softmax_residuals(
         self,

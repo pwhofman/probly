@@ -15,8 +15,8 @@ import jax
 from jax.core import Tracer
 import jax.numpy as jnp
 
-from probly.metrics._common import CREDAL_COVERAGE_EPSILON, CREDAL_ROUND_DECIMALS
-from probly.metrics.numpy import _numpy_convex_hull_lp_coverage
+from probly.metrics._common import CREDAL_COVERAGE_EPSILON
+from probly.metrics.numpy import _numpy_convex_hull_lp_coverage, _validate_epsilon
 from probly.representation.conformal_set.jax import JaxIntervalConformalSet, JaxOneHotConformalSet
 from probly.representation.credal_set.jax import (
     JaxConvexCredalSet,
@@ -328,24 +328,20 @@ def _jax_credal_containment_coverage(
     if y.ndim < lower.ndim:
         covered = _onehot_membership(_interval_dominance_mask(lower, upper), y)
     else:
-        if epsilon < 0:
-            msg = f"epsilon must be non-negative, got {epsilon}."
-            raise ValueError(msg)
-        # Probability vectors: L1 distance to the envelope intersected with the simplex. The 1e-12 slack keeps a
-        # distance that equals epsilon up to float rounding on the covered side.
-        y = y.astype(lower.dtype)
-        above = jnp.sum(jnp.clip(y - upper, 0.0, None), axis=-1)
-        below = jnp.sum(jnp.clip(lower - y, 0.0, None), axis=-1)
-        covered = 2.0 * jnp.maximum(above, below) <= epsilon + 1e-12
+        _validate_epsilon(epsilon)
+        # Probability vectors: L1 distance to the envelope intersected with the simplex, in the precision of the
+        # bounds. Rounding the inputs to that precision shifts the distance by at most two machine epsilons, so the
+        # slack keeps a distance that equals epsilon on the covered side.
+        dtype = jnp.promote_types(lower.dtype, jnp.float32)
+        lo, up, y = lower.astype(dtype), upper.astype(dtype), y.astype(dtype)
+        above = jnp.sum(jnp.clip(y - up, 0.0, None), axis=-1)
+        below = jnp.sum(jnp.clip(lo - y, 0.0, None), axis=-1)
+        covered = 2.0 * jnp.maximum(above, below) <= epsilon + 4.0 * float(jnp.finfo(dtype).eps)
     return float(jnp.mean(covered.astype(jnp.float32)))
 
 
 def _jax_credal_interval_efficiency(lower: jax.Array, upper: jax.Array) -> float:
     """Efficiency of a credal set as ``1 - mean(upper - lower)``.
-
-    Bounds are rounded to ``CREDAL_ROUND_DECIMALS`` decimals before subtracting
-    so floating-point residuals (e.g. softmax outputs near 0) do not perturb
-    the width.
 
     Args:
         lower: Lower probability envelope of shape ``(N, C)``.
@@ -354,10 +350,7 @@ def _jax_credal_interval_efficiency(lower: jax.Array, upper: jax.Array) -> float
     Returns:
         Scalar in ``(-inf, 1]``; higher means a tighter (more efficient) credal set.
     """
-    scale = 10**CREDAL_ROUND_DECIMALS
-    lower_r = jnp.round(lower * scale) / scale
-    upper_r = jnp.round(upper * scale) / scale
-    return float(1.0 - jnp.mean((upper_r - lower_r).astype(jnp.float32)))
+    return float(1.0 - jnp.mean((upper - lower).astype(jnp.float32)))
 
 
 @coverage.register(JaxConvexCredalSet)

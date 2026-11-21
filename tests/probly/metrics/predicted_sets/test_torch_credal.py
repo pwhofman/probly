@@ -82,6 +82,18 @@ def test_envelope_coverage_dominates_hull_coverage_at_same_epsilon(epsilon: floa
     assert envelope >= float(hull)
 
 
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+@pytest.mark.parametrize("delta", [0.0003, 0.0007, 0.0011, 0.002])
+def test_probability_vector_coverage_boundary_is_precision_independent(dtype: torch.dtype, delta: float) -> None:
+    """A target at L1 distance exactly ``epsilon`` is covered for single- and double-precision bounds alike."""
+    cs = TorchProbabilityIntervalsCredalSet(
+        lower_bounds=torch.tensor([[delta, 0.0, 0.0]], dtype=dtype),
+        upper_bounds=torch.tensor([[0.5, 0.6, 0.6]], dtype=dtype),
+    )
+    target = torch.tensor([[0.0, 0.5, 0.5]], dtype=dtype)
+    assert coverage(cs, target, epsilon=2 * delta) == pytest.approx(1.0)
+
+
 @pytest.mark.parametrize(
     "probs",
     [

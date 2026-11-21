@@ -25,7 +25,6 @@ from probly.metrics import (
 )
 from probly.metrics._common import (
     CREDAL_COVERAGE_EPSILON,
-    CREDAL_ROUND_DECIMALS,
     _expected_loss,
     _log_probabilities,
     _one_hot_argmax,
@@ -33,7 +32,7 @@ from probly.metrics._common import (
     _validate_labels,
     log_loss_per_instance,
 )
-from probly.metrics.numpy import _numpy_convex_hull_lp_coverage
+from probly.metrics.numpy import _numpy_convex_hull_lp_coverage, _validate_epsilon
 from probly.representation.conformal_set.torch import TorchIntervalConformalSet, TorchOneHotConformalSet
 from probly.representation.credal_set.torch import (
     TorchConvexCredalSet,
@@ -314,25 +313,20 @@ def _torch_credal_containment_coverage(
         indices = y.to(dtype=torch.int64).unsqueeze(-1)
         covered = torch.gather(mask, -1, indices).squeeze(-1)
     else:
-        if epsilon < 0:
-            msg = f"epsilon must be non-negative, got {epsilon}."
-            raise ValueError(msg)
-        # Probability vectors: L1 distance to the envelope intersected with the simplex, in float64 so that
-        # the comparison with epsilon does not depend on the precision the bounds were computed in. The 1e-12
-        # slack keeps a distance that equals epsilon up to float rounding on the covered side.
-        lo, up, y = lower.double(), upper.double(), y.double()
+        _validate_epsilon(epsilon)
+        # Probability vectors: L1 distance to the envelope intersected with the simplex, in the precision of the
+        # bounds because MPS has no float64. Rounding the inputs to that precision shifts the distance by at most
+        # two machine epsilons, so the slack keeps a distance that equals epsilon on the covered side.
+        dtype = torch.promote_types(lower.dtype, torch.float32)
+        lo, up, y = lower.to(dtype), upper.to(dtype), y.to(dtype)
         above = torch.clamp(y - up, min=0.0).sum(dim=-1)
         below = torch.clamp(lo - y, min=0.0).sum(dim=-1)
-        covered = 2.0 * torch.maximum(above, below) <= epsilon + 1e-12
+        covered = 2.0 * torch.maximum(above, below) <= epsilon + 4.0 * torch.finfo(dtype).eps
     return float(covered.float().mean().item())
 
 
 def _torch_credal_interval_efficiency(lower: torch.Tensor, upper: torch.Tensor) -> float:
     """Efficiency of a credal set as ``1 - mean(upper - lower)``.
-
-    Bounds are rounded to ``CREDAL_ROUND_DECIMALS`` decimals before subtracting
-    so floating-point residuals (e.g. softmax outputs near 0) do not perturb
-    the width.
 
     Args:
         lower: Lower probability envelope of shape ``(N, C)``.
@@ -341,10 +335,7 @@ def _torch_credal_interval_efficiency(lower: torch.Tensor, upper: torch.Tensor) 
     Returns:
         Scalar in ``(-inf, 1]``; higher means a tighter (more efficient) credal set.
     """
-    scale = 10**CREDAL_ROUND_DECIMALS
-    lower_r = torch.round(lower * scale) / scale
-    upper_r = torch.round(upper * scale) / scale
-    return float(1.0 - (upper_r - lower_r).float().mean().item())
+    return float(1.0 - (upper - lower).float().mean().item())
 
 
 @coverage.register(TorchConvexCredalSet)

@@ -21,7 +21,6 @@ from probly.representation.sample import Sample
 
 from ._common import (
     CREDAL_COVERAGE_EPSILON,
-    CREDAL_ROUND_DECIMALS,
     _expected_loss,
     _log_probabilities,
     _one_hot_argmax,
@@ -348,24 +347,20 @@ def _numpy_credal_containment_coverage(
         indices = y.astype(np.int64)[..., np.newaxis]
         covered = np.take_along_axis(mask, indices, axis=-1).squeeze(-1)
     else:
-        if epsilon < 0:
-            msg = f"epsilon must be non-negative, got {epsilon}."
-            raise ValueError(msg)
-        # Probability vectors: L1 distance to the envelope intersected with the simplex. The 1e-12 slack keeps a
-        # distance that equals epsilon up to float rounding on the covered side.
-        lo, up, yf = (np.asarray(a, dtype=np.float64) for a in (lower, upper, y))
+        _validate_epsilon(epsilon)
+        # Probability vectors: L1 distance to the envelope intersected with the simplex, in the precision of the
+        # bounds. Rounding the inputs to that precision shifts the distance by at most two machine epsilons, so the
+        # slack keeps a distance that equals epsilon on the covered side.
+        dtype = np.result_type(lower, np.float32)
+        lo, up, yf = (np.asarray(a, dtype=dtype) for a in (lower, upper, y))
         above = np.clip(yf - up, 0.0, None).sum(axis=-1)
         below = np.clip(lo - yf, 0.0, None).sum(axis=-1)
-        covered = 2.0 * np.maximum(above, below) <= epsilon + 1e-12
+        covered = 2.0 * np.maximum(above, below) <= epsilon + 4.0 * np.finfo(dtype).eps
     return np.mean(covered)
 
 
 def _numpy_credal_interval_efficiency(lower: np.ndarray, upper: np.ndarray) -> np.floating:
     """Efficiency of a credal set as ``1 - mean(upper - lower)``.
-
-    Bounds are rounded to ``CREDAL_ROUND_DECIMALS`` decimals before subtracting
-    so floating-point residuals (e.g. softmax outputs near 0) do not perturb
-    the width.
 
     Args:
         lower: Lower probability envelope of shape ``(N, C)``.
@@ -374,9 +369,7 @@ def _numpy_credal_interval_efficiency(lower: np.ndarray, upper: np.ndarray) -> n
     Returns:
         Scalar in ``(-inf, 1]``; higher means a tighter (more efficient) credal set.
     """
-    lower_r = np.round(np.asarray(lower), decimals=CREDAL_ROUND_DECIMALS)
-    upper_r = np.round(np.asarray(upper), decimals=CREDAL_ROUND_DECIMALS)
-    return np.float64(1.0 - float(np.mean(upper_r - lower_r)))
+    return np.float64(1.0 - float(np.mean(np.asarray(upper) - np.asarray(lower))))
 
 
 @coverage.register(NumpyConvexCredalSet)
