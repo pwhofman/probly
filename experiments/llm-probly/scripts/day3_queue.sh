@@ -12,24 +12,38 @@
 # then what other members wait for (7B no empty cells, 3B semantic), then the
 # long caches.
 
-set -u -o pipefail  # pipefail: a failing command fails its "| tee" pipeline too
+set -u
+
+# transformers tries to open a safetensors conversion PR on the Hub for models that only
+# ship .bin weights (deberta-base-mnli) and prints a KeyError from a background thread.
+export DISABLE_SAFETENSORS_CONVERSION=1
+
 cd "$(dirname "$0")/.."
 mkdir -p logs
 LOG=logs/day3_queue.log
 FAILED=0
+exec > >(tee -a "$LOG.full") 2>&1  # everything also goes to logs/day3_queue.log.full
+
+stop() {
+    local msg
+    msg="$(date '+%F %T') STOPPED by Ctrl+C, run the script again to continue"
+    echo "$msg" >>"$LOG"  # no tee here: Ctrl+C also stops tee
+    echo "$msg" >/dev/tty 2>/dev/null || true
+    exit 130
+}
+trap stop INT TERM  # one Ctrl+C stops the whole queue, not only the current step
 
 step() {
     local name=$1
     shift
-    local start
+    local start rc
     start=$(date +%s)
     echo "$(date '+%F %T') START $name: $*" | tee -a "$LOG"
-    if "$@" 2>&1 | tee -a "$LOG.full"; then
-        status=ok
-    else
-        status=FAILED
-        FAILED=$((FAILED + 1))
-    fi
+    "$@"
+    rc=$?
+    # 130 = the step was stopped with Ctrl+C (Python catches it, so bash may not see the signal)
+    [ "$rc" -eq 130 ] && stop
+    if [ "$rc" -eq 0 ]; then status=ok; else status="FAILED (exit $rc)"; FAILED=$((FAILED + 1)); fi
     echo "$(date '+%F %T') END   $name: $status ($(( ($(date +%s) - start) / 60 )) min)" | tee -a "$LOG"
 }
 
