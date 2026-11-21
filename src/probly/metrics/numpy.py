@@ -20,7 +20,7 @@ from probly.representation.distribution._common import CategoricalDistribution
 from probly.representation.sample import Sample
 
 from ._common import (
-    CREDAL_ROUND_DECIMALS,
+    CREDAL_COVERAGE_EPSILON,
     _expected_loss,
     _log_probabilities,
     _one_hot_argmax,
@@ -309,7 +309,12 @@ def _numpy_discrete_efficiency(y_pred: NumpyDiscreteCredalSet) -> np.floating:
     return np.mean(classes_picked.sum(axis=-1))
 
 
-def _numpy_credal_containment_coverage(lower: np.ndarray, upper: np.ndarray, y_true: np.ndarray) -> np.floating:
+def _numpy_credal_containment_coverage(
+    lower: np.ndarray,
+    upper: np.ndarray,
+    y_true: np.ndarray,
+    epsilon: float = CREDAL_COVERAGE_EPSILON,
+) -> np.floating:
     """Fraction of instances whose target lies inside the credal set's envelope.
 
     Dispatches on the shape of ``y_true``:
@@ -318,13 +323,18 @@ def _numpy_credal_containment_coverage(lower: np.ndarray, upper: np.ndarray, y_t
       the true class is selected by the interval-dominance rule, i.e.
       ``upper[y] >= max_k lower[k]``.
     * **Probability vectors** (``y_true.ndim == lower.ndim``): covered when
-      ``lower[k] <= y_true[k] <= upper[k]`` for all classes ``k``.
+      the L1 distance from ``y_true`` to ``{p : lower <= p <= upper, sum(p) = 1}``
+      is at most ``epsilon``. For a target on the simplex this distance is
+      ``2 * max(a, b)`` with ``a`` the target mass above ``upper`` and ``b`` the
+      mass missing below ``lower``, the same L1 distance as in
+      :func:`~probly.metrics.convex_hull_coverage`.
 
     Args:
         lower: Lower probability envelope of shape ``(..., C)``.
         upper: Upper probability envelope of shape ``(..., C)``.
         y_true: Integer class labels of shape ``(...)`` or target probability
             vectors of shape ``(..., C)``.
+        epsilon: L1 tolerance for probability-vector targets.
 
     Returns:
         Mean containment indicator as a scalar float.
@@ -337,22 +347,20 @@ def _numpy_credal_containment_coverage(lower: np.ndarray, upper: np.ndarray, y_t
         indices = y.astype(np.int64)[..., np.newaxis]
         covered = np.take_along_axis(mask, indices, axis=-1).squeeze(-1)
     else:
-        # Probability vectors: containment in [lower, upper] for all classes.
-        # Round before comparing so that tiny floating-point residuals in the
-        # lower envelope (softmax is never exactly 0) do not incorrectly
-        # exclude a target probability of 0.
-        lower_r = np.round(lower, decimals=CREDAL_ROUND_DECIMALS)
-        upper_r = np.round(upper, decimals=CREDAL_ROUND_DECIMALS)
-        covered = np.all((lower_r <= y) & (y <= upper_r), axis=-1)
+        _validate_epsilon(epsilon)
+        # Probability vectors: L1 distance to the envelope intersected with the simplex, in the precision of the
+        # bounds. Rounding the inputs to that precision shifts the distance by at most two machine epsilons, so the
+        # slack keeps a distance that equals epsilon on the covered side.
+        dtype = np.result_type(lower, np.float32)
+        lo, up, yf = (np.asarray(a, dtype=dtype) for a in (lower, upper, y))
+        above = np.clip(yf - up, 0.0, None).sum(axis=-1)
+        below = np.clip(lo - yf, 0.0, None).sum(axis=-1)
+        covered = 2.0 * np.maximum(above, below) <= epsilon + 4.0 * np.finfo(dtype).eps
     return np.mean(covered)
 
 
 def _numpy_credal_interval_efficiency(lower: np.ndarray, upper: np.ndarray) -> np.floating:
     """Efficiency of a credal set as ``1 - mean(upper - lower)``.
-
-    Bounds are rounded to ``CREDAL_ROUND_DECIMALS`` decimals before subtracting
-    so floating-point residuals (e.g. softmax outputs near 0) do not perturb
-    the width.
 
     Args:
         lower: Lower probability envelope of shape ``(N, C)``.
@@ -361,23 +369,24 @@ def _numpy_credal_interval_efficiency(lower: np.ndarray, upper: np.ndarray) -> n
     Returns:
         Scalar in ``(-inf, 1]``; higher means a tighter (more efficient) credal set.
     """
-    lower_r = np.round(np.asarray(lower), decimals=CREDAL_ROUND_DECIMALS)
-    upper_r = np.round(np.asarray(upper), decimals=CREDAL_ROUND_DECIMALS)
-    return np.float64(1.0 - float(np.mean(upper_r - lower_r)))
+    return np.float64(1.0 - float(np.mean(np.asarray(upper) - np.asarray(lower))))
 
 
 @coverage.register(NumpyConvexCredalSet)
-def _numpy_convex_coverage(y_pred: NumpyConvexCredalSet, y_true: np.ndarray) -> np.floating:
+def _numpy_convex_coverage(
+    y_pred: NumpyConvexCredalSet, y_true: np.ndarray, *, epsilon: float = CREDAL_COVERAGE_EPSILON
+) -> np.floating:
     """Containment coverage for a convex credal set.
 
     Args:
         y_pred: Convex credal set.
         y_true: Target probability vectors of shape ``(N, C)``.
+        epsilon: L1 tolerance for probability-vector targets.
 
     Returns:
-        Fraction of instances where the target lies in ``[lower, upper]`` for all classes.
+        Fraction of instances whose target lies within L1 distance ``epsilon`` of the envelope.
     """
-    return _numpy_credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
+    return _numpy_credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true, epsilon)
 
 
 @efficiency.register(NumpyConvexCredalSet)
@@ -421,18 +430,19 @@ def _numpy_distance_efficiency(y_pred: NumpyDistanceBasedCredalSet) -> np.floati
 
 @coverage.register(NumpyProbabilityIntervalsCredalSet)
 def _numpy_probability_intervals_coverage(
-    y_pred: NumpyProbabilityIntervalsCredalSet, y_true: np.ndarray
+    y_pred: NumpyProbabilityIntervalsCredalSet, y_true: np.ndarray, *, epsilon: float = CREDAL_COVERAGE_EPSILON
 ) -> np.floating:
     """Containment coverage for a probability-intervals credal set.
 
     Args:
         y_pred: Probability-intervals credal set.
         y_true: Target probability vectors of shape ``(N, C)``.
+        epsilon: L1 tolerance for probability-vector targets.
 
     Returns:
-        Fraction of instances where the target lies in ``[lower, upper]`` for all classes.
+        Fraction of instances whose target lies within L1 distance ``epsilon`` of the intervals.
     """
-    return _numpy_credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true)
+    return _numpy_credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true, epsilon)
 
 
 @efficiency.register(NumpyProbabilityIntervalsCredalSet)
@@ -560,7 +570,7 @@ def _numpy_convex_convex_hull_coverage(
     y_pred: NumpyConvexCredalSet,
     y_true: NumpyCategoricalDistribution,
     *,
-    epsilon: float = 0.0,
+    epsilon: float = CREDAL_COVERAGE_EPSILON,
     **linprog_kwargs: object,
 ) -> np.floating:
     """LP-based hull coverage for a convex credal set."""
@@ -577,7 +587,7 @@ def _numpy_discrete_convex_hull_coverage(
     y_pred: NumpyDiscreteCredalSet,
     y_true: NumpyCategoricalDistribution,
     *,
-    epsilon: float = 0.0,
+    epsilon: float = CREDAL_COVERAGE_EPSILON,
     **linprog_kwargs: object,
 ) -> np.floating:
     """LP-based hull coverage for a discrete credal set (same vertex structure as Convex)."""
@@ -594,7 +604,7 @@ def _numpy_singleton_convex_hull_coverage(
     y_pred: NumpySingletonCredalSet,
     y_true: NumpyCategoricalDistribution,
     *,
-    epsilon: float = 0.0,
+    epsilon: float = CREDAL_COVERAGE_EPSILON,
     **_linprog_kwargs: object,
 ) -> np.floating:
     """Hull degenerates to a point; coverage is closed-form L1 distance test.

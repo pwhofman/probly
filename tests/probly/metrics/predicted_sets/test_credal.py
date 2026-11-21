@@ -154,35 +154,33 @@ class TestConvexCredalSet:
         assert coverage(cs, targets_first_outside) == pytest.approx(0.5)
 
 
-class TestRoundingInProbVectorCoverage:
-    """Rounding of lower/upper before probability-vector containment check.
+class TestToleranceInProbVectorCoverage:
+    """L1 tolerance of the probability-vector containment check.
 
     Softmax outputs are never exactly 0, so the lower envelope of a deep
     ensemble can be e.g. 3e-5 for a class that the model confidently rejects.
-    Without rounding, ``3e-5 <= 0`` is False and coverage drops to 0 even
-    though the credal set is correct.  The implementation rounds lower/upper
-    to ``_CREDAL_ROUND_DECIMALS`` decimal places so that such residuals
-    collapse to 0 before the comparison.
+    A strict check ``3e-5 <= 0`` would fail and drop coverage to 0 even though
+    the credal set is correct. A target therefore counts as covered when its
+    L1 distance to the credal set is at most ``epsilon`` (default
+    ``CREDAL_COVERAGE_EPSILON``), which absorbs such residuals.
     """
 
     def test_near_zero_lower_does_not_block_zero_target(self) -> None:
-        """A lower bound of 3e-5 must not prevent a target of 0 from being covered."""
-        # lower[1] = 3e-5: rounds to 0.0 at 4 decimal places.
+        """Lower bounds of 3e-5 and 2e-5 must not prevent targets of 0 from being covered."""
         lower = np.array([[0.85, 3e-5, 2e-5]])
         upper = np.array([[0.95, 0.05, 0.03]])
         cs = NumpyProbabilityIntervalsCredalSet(lower_bounds=lower, upper_bounds=upper)
-        # Target: class 0 has true prob 0.9, classes 1 and 2 have prob 0.
-        # Without rounding: lower[1]=3e-5 > 0 → fails.
-        # With rounding:    lower[1]=0.0   ≤ 0 → passes.
+        # Target: class 0 has true prob 0.9, classes 1 and 2 have prob 0. The target misses the lower
+        # bounds by 3e-5 + 2e-5 = 5e-5 in total, an L1 distance of 1e-4, within the default tolerance.
         target = np.array([[0.9, 0.0, 0.0]])
         assert coverage(cs, target) == pytest.approx(1.0)
 
     def test_large_lower_still_blocks_zero_target(self) -> None:
-        """A lower bound of 0.05 (above the rounding threshold) correctly blocks a target of 0."""
+        """Lower bounds of 0.05 (far beyond the tolerance) correctly block targets of 0."""
         lower = np.array([[0.7, 0.05, 0.05]])
         upper = np.array([[0.9, 0.15, 0.15]])
         cs = NumpyProbabilityIntervalsCredalSet(lower_bounds=lower, upper_bounds=upper)
-        # Target prob for class 1 is 0.0, but lower[1]=0.05 rounds to 0.05 ≠ 0 → not covered.
+        # The target misses the lower bounds of classes 1 and 2 by 0.1 in total, an L1 distance of 0.2.
         target = np.array([[0.9, 0.0, 0.0]])
         assert coverage(cs, target) == pytest.approx(0.0)
 

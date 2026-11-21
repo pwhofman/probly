@@ -7,8 +7,9 @@ from typing import Any, cast
 
 from flextype import flexdispatch
 
-# Number of decimal places used when rounding lower/upper bounds in credal-set coverage and efficiency.
-CREDAL_ROUND_DECIMALS: int = 3
+# Default L1 tolerance for coverage. A target counts as covered when some member of
+# the credal set lies within this L1 distance of it. Shared by interval coverage and convex_hull_coverage.
+CREDAL_COVERAGE_EPSILON: float = 0.0005
 
 type ScoringRule = Callable[[object, object], object]
 """A per-instance scoring rule ``(y_prob, y_true) -> losses``, such as :func:`log_loss_per_instance`."""
@@ -255,7 +256,7 @@ def classwise_ece(y_prob: object, y_true: object, *, num_bins: int = 15) -> obje
 
 
 @flexdispatch
-def coverage[T](y_pred: T, y_true: object) -> float:
+def coverage[T](y_pred: T, y_true: object, **kwargs: object) -> float:
     """Compute the empirical coverage of a predicted set against true labels.
 
     Coverage is the fraction of samples whose true value lies inside the
@@ -275,7 +276,11 @@ def coverage[T](y_pred: T, y_true: object) -> float:
       ensemble); use Convex when the convex hull is the modeled object.
     * Convex / DistanceBased / ProbabilityIntervals / DirichletLevelSet:
       interval-dominance prediction set built from
-      ``lower()`` / ``upper()`` envelopes. Note that the DistanceBased
+      ``lower()`` / ``upper()`` envelopes. For distribution-valued targets,
+      Convex and ProbabilityIntervals sets count a target as covered when
+      its L1 distance to ``{p : lower <= p <= upper, sum(p) = 1}`` is at most
+      ``epsilon`` (keyword argument, default ``CREDAL_COVERAGE_EPSILON``),
+      the same tolerance :func:`convex_hull_coverage` uses. Note that the DistanceBased
       envelope (``clip(nominal +- radius, 0, 1)``) ignores the simplex
       constraint and is therefore loose; the resulting coverage is
       consistent with the declared envelope but over-conservative relative
@@ -286,6 +291,8 @@ def coverage[T](y_pred: T, y_true: object) -> float:
             See module docstring for the registered types.
         y_true: Ground-truth values aligned with ``y_pred``. Integer class
             labels for classification, or scalar targets for regression.
+        **kwargs: Forwarded to the implementation, e.g. ``epsilon`` for Convex
+            and ProbabilityIntervals credal sets with distribution-valued targets.
 
     Returns:
         The empirical coverage as a float in ``[0, 1]``.
@@ -356,7 +363,9 @@ def average_interval_width[T](y_pred: T) -> float:
 
 
 @flexdispatch
-def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.0005, **linprog_kwargs: object) -> float:
+def convex_hull_coverage[T](
+    y_pred: T, y_true: object, *, epsilon: float = CREDAL_COVERAGE_EPSILON, **linprog_kwargs: object
+) -> float:
     """Empirical convex-hull coverage for distribution-valued targets.
 
     For each instance, the LP feasibility test
@@ -371,9 +380,10 @@ def convex_hull_coverage[T](y_pred: T, y_true: object, *, epsilon: float = 0.000
     ``min sum(s+ + s-)``; coverage counts instances whose optimal L1
     distance from the hull is at most ``epsilon``.
 
-    Differs from :func:`coverage` on credal sets, which takes integer class
-    labels and uses interval dominance. This function takes wrapped
-    distribution-valued targets and uses exact convex-hull membership.
+    Differs from :func:`coverage` on credal sets, which tests the per-class
+    ``[lower, upper]`` envelope instead of the hull (with the same L1
+    tolerance for distribution-valued targets) and uses interval dominance
+    for integer class labels.
 
     Args:
         y_pred: A vertex-based credal-set representation

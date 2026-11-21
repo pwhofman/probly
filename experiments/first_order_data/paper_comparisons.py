@@ -33,7 +33,6 @@ from probly.conformal_scores.aps._common import numpy_compute_aps_score
 from probly.conformal_scores.lac._common import numpy_compute_lac_score
 from probly.conformal_scores.raps._common import numpy_compute_raps_score
 from probly.conformal_scores.saps._common import numpy_compute_saps_score_func
-from probly.metrics._common import CREDAL_ROUND_DECIMALS
 from probly.metrics.numpy import (
     _numpy_convex_hull_lp_coverage,
     _numpy_credal_containment_coverage,
@@ -75,6 +74,7 @@ CP_N_SEEDS = 10
 CP_CAL_FRAC = 0.5
 ECE_N_SEEDS = 10
 ECE_N_BINS = 15
+CREDAL_ROUND_DECIMALS = 3
 CH_EPSILON = 0.0005  # matches CREDAL_ROUND_DECIMALS=3 tolerance
 
 # Which credal method's ensemble mean feeds the LAC/APS/RAPS/SAPS conformal
