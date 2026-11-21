@@ -10,14 +10,21 @@ pytest.importorskip("jax")
 import jax
 import jax.numpy as jnp
 
-from probly.utils import entropy, intersection_probability
-from probly.utils.jax import jax_entropy, jax_intersection_probability
+from probly.utils import elementwise_entropy, entropy, intersection_probability
+from probly.utils.jax import jax_elementwise_entropy, jax_entropy, jax_intersection_probability
 
 
 def test_entropy_dispatches_to_jax() -> None:
     p = jnp.array([[0.5, 0.5], [1.0, 0.0]])
     assert jnp.allclose(entropy(p), jax_entropy(p))
     assert jnp.allclose(entropy(p), jnp.array([math.log(2.0), 0.0]))
+
+
+def test_elementwise_entropy_dispatches_to_jax() -> None:
+    p = jnp.array([0.5, 1.0, 0.0, -1e-9])
+    assert jnp.allclose(elementwise_entropy(p), jax_elementwise_entropy(p))
+    # Zero and negative entries contribute nothing.
+    assert jnp.allclose(elementwise_entropy(p), jnp.array([0.5 * math.log(2.0), 0.0, 0.0, 0.0]))
 
 
 def test_intersection_probability_dispatches_to_jax() -> None:

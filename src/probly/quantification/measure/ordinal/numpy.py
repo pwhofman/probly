@@ -3,93 +3,14 @@
 from __future__ import annotations
 
 import numpy as np
-from scipy.stats import entropy as scipy_entropy
 
-from probly.representation.distribution.numpy_categorical import (
-    NumpyCategoricalDistribution,
-    NumpyCategoricalDistributionSample,
-)
+from probly.representation.distribution.numpy_categorical import NumpyCategoricalDistributionSample
 
 from ._common import (
     LogBase,
     categorical_variance_aleatoric,
     categorical_variance_total,
-    labelwise_conditional_entropy,
-    labelwise_entropy,
-    labelwise_entropy_of_expected_predictive_distribution,
-    labelwise_mutual_information_entropy,
-    ordinal_conditional_entropy,
-    ordinal_entropy,
-    ordinal_entropy_of_expected_predictive_distribution,
-    ordinal_mutual_information_entropy,
 )
-
-
-def _numpy_binary_entropy(p: np.ndarray, base: LogBase = None) -> np.ndarray:
-    """Compute the binary Shannon entropy of probabilities ``p``.
-
-    ``base="normalize"`` normalizes by ``log(2)`` so that the entropy is in
-    ``[0, 1]`` for each binary problem.
-    """
-    scipy_base: float | None = 2.0 if base == "normalize" else base
-    stacked = np.stack([p, 1.0 - p], axis=-1)
-    return scipy_entropy(stacked, axis=-1, base=scipy_base)
-
-
-def _cdf(p: np.ndarray) -> np.ndarray:
-    """Compute the cumulative distribution function (CDF) excluding the last bin."""
-    return np.cumsum(p, axis=-1)[..., :-1]
-
-
-@ordinal_entropy.register(NumpyCategoricalDistribution)
-def numpy_categorical_ordinal_entropy(
-    distribution: NumpyCategoricalDistribution | np.ndarray, base: LogBase = None
-) -> np.ndarray:
-    """Compute the ordinal entropy of a categorical distribution."""
-    if isinstance(distribution, NumpyCategoricalDistribution):
-        p = distribution.probabilities
-        del distribution
-    else:
-        p = distribution
-    cdf = _cdf(p)
-    binary_entropies = _numpy_binary_entropy(cdf, base=base)
-    return np.sum(binary_entropies, axis=-1)
-
-
-@ordinal_entropy_of_expected_predictive_distribution.register(NumpyCategoricalDistributionSample)
-def numpy_categorical_sample_ordinal_entropy_of_expected_predictive_distribution(
-    sample: NumpyCategoricalDistributionSample, base: LogBase = None
-) -> np.ndarray:
-    """Compute the ordinal entropy of the expected value of a categorical sample."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    cdf = _cdf(p)
-    expected_cdf = np.mean(cdf, axis=axis)
-    binary_entropies = _numpy_binary_entropy(expected_cdf, base=base)
-    return np.sum(binary_entropies, axis=-1)
-
-
-@ordinal_conditional_entropy.register(NumpyCategoricalDistributionSample)
-def numpy_categorical_sample_ordinal_conditional_entropy(
-    sample: NumpyCategoricalDistributionSample, base: LogBase = None
-) -> np.ndarray:
-    """Compute the ordinal conditional entropy of a categorical sample."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    cdf = _cdf(p)
-    binary_entropies = _numpy_binary_entropy(cdf, base=base)
-    per_sample_entropy = np.sum(binary_entropies, axis=-1)
-    return np.mean(per_sample_entropy, axis=axis)
-
-
-@ordinal_mutual_information_entropy.register(NumpyCategoricalDistributionSample)
-def numpy_categorical_sample_ordinal_mutual_information_entropy(
-    sample: NumpyCategoricalDistributionSample, base: LogBase = None
-) -> np.ndarray:
-    """Compute the ordinal mutual information (entropy-based) of a categorical sample."""
-    return numpy_categorical_sample_ordinal_entropy_of_expected_predictive_distribution(
-        sample, base
-    ) - numpy_categorical_sample_ordinal_conditional_entropy(sample, base)
 
 
 def _integer_labels(num_classes: int) -> np.ndarray:
@@ -125,47 +46,3 @@ def numpy_ordinal_integer_variance_aleatoric(
     mu_m = np.sum(labels * p, axis=-1, keepdims=True)
     per_model = np.sum(((labels - mu_m) ** 2) * p, axis=-1)
     return np.mean(per_model, axis=axis)
-
-
-# Label-wise (one-vs-rest) binary reduction
-
-
-@labelwise_entropy.register(NumpyCategoricalDistribution)
-def numpy_categorical_labelwise_entropy(
-    distribution: NumpyCategoricalDistribution | np.ndarray, base: LogBase = None
-) -> np.ndarray:
-    """Compute the label-wise binary entropy of a categorical distribution."""
-    p = distribution.probabilities if isinstance(distribution, NumpyCategoricalDistribution) else distribution
-    return np.sum(_numpy_binary_entropy(p, base=base), axis=-1)
-
-
-@labelwise_entropy_of_expected_predictive_distribution.register(NumpyCategoricalDistributionSample)
-def numpy_categorical_sample_labelwise_entropy_of_expected_predictive_distribution(
-    sample: NumpyCategoricalDistributionSample, base: LogBase = None
-) -> np.ndarray:
-    """Compute the label-wise binary entropy of the expected predictive distribution."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    expected_p = np.mean(p, axis=axis)
-    return np.sum(_numpy_binary_entropy(expected_p, base=base), axis=-1)
-
-
-@labelwise_conditional_entropy.register(NumpyCategoricalDistributionSample)
-def numpy_categorical_sample_labelwise_conditional_entropy(
-    sample: NumpyCategoricalDistributionSample, base: LogBase = None
-) -> np.ndarray:
-    """Compute the label-wise conditional entropy of a categorical sample."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    per_sample_entropy = np.sum(_numpy_binary_entropy(p, base=base), axis=-1)
-    return np.mean(per_sample_entropy, axis=axis)
-
-
-@labelwise_mutual_information_entropy.register(NumpyCategoricalDistributionSample)
-def numpy_categorical_sample_labelwise_mutual_information_entropy(
-    sample: NumpyCategoricalDistributionSample, base: LogBase = None
-) -> np.ndarray:
-    """Compute the label-wise entropy-based mutual information of a categorical sample."""
-    return numpy_categorical_sample_labelwise_entropy_of_expected_predictive_distribution(
-        sample, base
-    ) - numpy_categorical_sample_labelwise_conditional_entropy(sample, base)
