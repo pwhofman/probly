@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import jax
 from jax import numpy as jnp
 from jax.core import Tracer
@@ -33,23 +31,17 @@ from ._common import (
     DEFAULT_NUM_SAMPLES,
     TOTAL_VARIATION_BISECTION_ITERATIONS,
     LogBase,
-    _generalized_entropy,
     conditional_entropy,
     dempster_shafer_uncertainty,
     entropy,
     entropy_of_expected_predictive_distribution,
-    expected_generalized_entropy,
     expected_max_probability_complement,
-    generalized_entropy_of_expected,
     max_disagreement,
     max_probability_complement_of_expected,
     min_expected_total_variation,
     mutual_information,
     vacuity,
 )
-
-if TYPE_CHECKING:
-    from probly.metrics import ScoringRule
 
 # Entropy
 
@@ -123,18 +115,6 @@ def jax_gaussian_entropy(distribution: JaxGaussianDistribution | jax.Array, base
 # Entropy of expected value
 
 
-@entropy_of_expected_predictive_distribution.register(JaxDirichletDistribution)
-def jax_dirichlet_entropy_of_expected_predictive_distribution(
-    distribution: JaxDirichletDistribution | jax.Array, base: LogBase = None
-) -> jax.Array:
-    """Compute the entropy of the expected value of a Dirichlet distribution."""
-    if isinstance(distribution, jax.Array):
-        distribution = JaxDirichletDistribution(alphas=distribution)
-
-    expected_distribution = distribution.mean
-    return jax_categorical_entropy(expected_distribution, base=base)
-
-
 @entropy_of_expected_predictive_distribution.register(JaxGaussianDistributionSample)
 def jax_gaussian_sample_entropy_of_expected_predictive_distribution(
     sample: JaxGaussianDistributionSample, base: LogBase = None
@@ -151,15 +131,6 @@ def jax_gaussian_sample_entropy_of_expected_predictive_distribution(
     # may be overestimated as-well, while aleatoric ucnertainty is computed correctly.
     var = jax_mean(array.var, axis=axis) + jax_var(array.mean, axis=axis)
     return jax_gaussian_entropy(var, base=base)
-
-
-@entropy_of_expected_predictive_distribution.register(JaxCategoricalDistributionSample)
-def jax_categorical_sample_entropy_of_expected_predictive_distribution(
-    sample: JaxCategoricalDistributionSample, base: LogBase = None
-) -> jax.Array:
-    """Compute the entropy of the expected value of a sample from a categorical distribution."""
-    expected_distribution = sample.sample_mean()
-    return jax_categorical_entropy(expected_distribution, base=base)
 
 
 # Conditional entropy
@@ -190,51 +161,7 @@ def jax_dirichlet_conditional_entropy(
     return res / jnp.log(base)
 
 
-@conditional_entropy.register(JaxGaussianDistributionSample)
-def jax_gaussian_sample_conditional_entropy(sample: JaxGaussianDistributionSample, base: LogBase = None) -> jax.Array:
-    """Compute the mean per-tree Gaussian entropy (aleatoric uncertainty)."""
-    axis = sample.sample_axis
-    entropies = jax_gaussian_entropy(sample.array, base=base)
-    return jax_mean(entropies, axis=axis)
-
-
-@conditional_entropy.register(JaxCategoricalDistributionSample)
-def jax_categorical_sample_conditional_entropy(
-    sample: JaxCategoricalDistributionSample, base: LogBase = None
-) -> jax.Array:
-    """Compute the conditional entropy of a sample from a categorical distribution."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    del sample  # Avoid keeping a reference to the sample for memory efficiency
-    entropies = jax_categorical_entropy(p, base=base)
-    return jax_mean(entropies, axis=axis)
-
-
 # Mutual information
-
-
-@mutual_information.register(JaxDirichletDistribution)
-def jax_dirichlet_mutual_information(
-    distribution: JaxDirichletDistribution | jax.Array, base: LogBase = None
-) -> jax.Array:
-    """Compute the mutual information of a Dirichlet distribution."""
-    if isinstance(distribution, JaxDirichletDistribution):
-        alphas = distribution.alphas
-        del distribution  # Avoid keeping a reference to the distribution for memory efficiency
-    else:
-        alphas = distribution
-
-    return jax_dirichlet_entropy_of_expected_predictive_distribution(
-        alphas, base=base
-    ) - jax_dirichlet_conditional_entropy(alphas, base=base)
-
-
-@mutual_information.register(JaxGaussianDistributionSample)
-def jax_gaussian_sample_mutual_information(sample: JaxGaussianDistributionSample, base: LogBase = None) -> jax.Array:
-    """Compute the epistemic uncertainty (total entropy minus aleatoric entropy)."""
-    return jax_gaussian_sample_entropy_of_expected_predictive_distribution(
-        sample, base=base
-    ) - jax_gaussian_sample_conditional_entropy(sample, base=base)
 
 
 @mutual_information.register(JaxCategoricalDistributionSample)
@@ -301,30 +228,6 @@ def jax_categorical_sample_max_disagreement(
     per_sample_bma_prob = jax_take_along_axis(p, bma_argmax, axis=-1).squeeze(-1)
     per_sample_max = jnp.max(p, axis=-1)
     return jax_mean(per_sample_max - per_sample_bma_prob, axis=axis)
-
-
-# Generalized-entropy (scoring rule) measures
-
-
-@generalized_entropy_of_expected.register(JaxCategoricalDistributionSample)
-def jax_categorical_sample_generalized_entropy_of_expected(
-    sample: JaxCategoricalDistributionSample, scoring_rule: ScoringRule
-) -> jax.Array:
-    """Compute G(theta_bar) = scoring_rule(theta_bar, theta_bar) for a categorical sample."""
-    mean = sample.sample_mean().probabilities  # (..., K)
-    return _generalized_entropy(scoring_rule, mean)
-
-
-@expected_generalized_entropy.register(JaxCategoricalDistributionSample)
-def jax_categorical_sample_expected_generalized_entropy(
-    sample: JaxCategoricalDistributionSample, scoring_rule: ScoringRule
-) -> jax.Array:
-    """Compute E[G(theta)] = mean_m scoring_rule(theta_m, theta_m) for a categorical sample."""
-    p = sample.array.probabilities  # (..., M, K)
-    axis = sample.sample_axis
-    del sample  # Avoid keeping a reference to the sample for memory efficiency
-    per_sample = _generalized_entropy(scoring_rule, p)  # (..., M)
-    return jax_mean(per_sample, axis=axis)
 
 
 # Distance-based epistemic uncertainty (Wasserstein)
