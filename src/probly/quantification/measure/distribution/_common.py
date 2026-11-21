@@ -8,7 +8,13 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 from flextype import flexdispatch
 
 from probly.quantification._quantification import measure
-from probly.representation.distribution import CategoricalDistribution, Distribution
+from probly.representation.distribution import (
+    CategoricalDistribution,
+    CategoricalDistributionSample,
+    DirichletDistribution,
+    Distribution,
+    GaussianDistributionSample,
+)
 from probly.representation.sample import Sample
 
 DEFAULT_MEAN_FIELD_FACTOR: float = math.pi / 8.0
@@ -189,3 +195,58 @@ def dempster_shafer_uncertainty(
     """
     msg = f"Dempster-Shafer uncertainty is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)
+
+
+# The measures below combine other measures and array operations that NumPy, PyTorch and JAX share, so one
+# implementation on the backend-independent representation classes serves every backend.
+
+
+@entropy_of_expected_predictive_distribution.register(DirichletDistribution)
+def _dirichlet_entropy_of_expected_predictive_distribution(
+    distribution: DirichletDistribution, base: LogBase = None
+) -> ArrayLike:
+    """Compute the entropy of the mean categorical distribution of a Dirichlet distribution."""
+    return entropy(distribution.mean, base=base)
+
+
+@entropy_of_expected_predictive_distribution.register(CategoricalDistributionSample)
+def _categorical_sample_entropy_of_expected_predictive_distribution(
+    sample: CategoricalDistributionSample, base: LogBase = None
+) -> ArrayLike:
+    """Compute the entropy of the mean categorical distribution of a sample."""
+    return entropy(sample.sample_mean(), base=base)
+
+
+@conditional_entropy.register((CategoricalDistributionSample, GaussianDistributionSample))
+def _sample_conditional_entropy(
+    sample: CategoricalDistributionSample | GaussianDistributionSample, base: LogBase = None
+) -> ArrayLike:
+    """Compute the mean entropy of the member distributions of a sample."""
+    member_entropies = entropy(cast("Any", sample.samples), base=base)  # (M, ...)
+    return cast("Any", member_entropies).mean(axis=0)
+
+
+@mutual_information.register((DirichletDistribution, GaussianDistributionSample))
+def _mutual_information_as_entropy_difference(
+    distribution: DirichletDistribution | GaussianDistributionSample, base: LogBase = None
+) -> ArrayLike:
+    """Compute the entropy of the expected predictive distribution minus the conditional entropy."""
+    total = entropy_of_expected_predictive_distribution(distribution, base=base)
+    return cast("Any", total) - conditional_entropy(distribution, base=base)
+
+
+@generalized_entropy_of_expected.register(CategoricalDistributionSample)
+def _categorical_sample_generalized_entropy_of_expected(
+    sample: CategoricalDistributionSample, scoring_rule: ScoringRule
+) -> ArrayLike:
+    """Compute ``G(theta_bar)`` for the mean ``theta_bar`` of a categorical sample."""
+    return _generalized_entropy(scoring_rule, sample.sample_mean().probabilities)
+
+
+@expected_generalized_entropy.register(CategoricalDistributionSample)
+def _categorical_sample_expected_generalized_entropy(
+    sample: CategoricalDistributionSample, scoring_rule: ScoringRule
+) -> ArrayLike:
+    """Compute ``E[G(theta)]``, the mean of ``G`` over the members ``theta`` of a categorical sample."""
+    member_entropies = _generalized_entropy(scoring_rule, cast("Any", sample.samples).probabilities)  # (M, ...)
+    return member_entropies.mean(axis=0)
