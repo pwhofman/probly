@@ -17,19 +17,11 @@ from ._common import (
     labelwise_conditional_entropy,
     labelwise_entropy,
     labelwise_entropy_of_expected_predictive_distribution,
-    labelwise_expected_conditional_variance,
     labelwise_mutual_information_entropy,
-    labelwise_variance,
-    labelwise_variance_of_conditional_mean,
-    labelwise_variance_of_expected_predictive_distribution,
     ordinal_conditional_entropy,
     ordinal_entropy,
     ordinal_entropy_of_expected_predictive_distribution,
-    ordinal_expected_conditional_variance,
     ordinal_mutual_information_entropy,
-    ordinal_variance,
-    ordinal_variance_of_conditional_mean,
-    ordinal_variance_of_expected_predictive_distribution,
 )
 
 
@@ -49,21 +41,6 @@ def _cdf(p: np.ndarray) -> np.ndarray:
     return np.cumsum(p, axis=-1)[..., :-1]
 
 
-@ordinal_variance.register(NumpyCategoricalDistribution)
-def numpy_categorical_ordinal_variance(
-    distribution: NumpyCategoricalDistribution | np.ndarray,
-    base: LogBase = None,  # noqa: ARG001
-) -> np.ndarray:
-    """Compute the ordinal variance of a categorical distribution."""
-    if isinstance(distribution, NumpyCategoricalDistribution):
-        p = distribution.probabilities
-        del distribution
-    else:
-        p = distribution
-    cdf = _cdf(p)
-    return np.sum(cdf * (1 - cdf), axis=-1)
-
-
 @ordinal_entropy.register(NumpyCategoricalDistribution)
 def numpy_categorical_ordinal_entropy(
     distribution: NumpyCategoricalDistribution | np.ndarray, base: LogBase = None
@@ -77,44 +54,6 @@ def numpy_categorical_ordinal_entropy(
     cdf = _cdf(p)
     binary_entropies = _numpy_binary_entropy(cdf, base=base)
     return np.sum(binary_entropies, axis=-1)
-
-
-@ordinal_variance_of_expected_predictive_distribution.register(NumpyCategoricalDistributionSample)
-def numpy_categorical_sample_ordinal_variance_of_expected_predictive_distribution(
-    sample: NumpyCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> np.ndarray:
-    """Compute the ordinal variance of the expected value of a categorical sample."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    cdf = _cdf(p)
-    expected_cdf = np.mean(cdf, axis=axis)
-    return np.sum(expected_cdf * (1 - expected_cdf), axis=-1)
-
-
-@ordinal_expected_conditional_variance.register(NumpyCategoricalDistributionSample)
-def numpy_categorical_sample_ordinal_expected_conditional_variance(
-    sample: NumpyCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> np.ndarray:
-    """Compute the ordinal expected conditional variance of a categorical sample."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    cdf = _cdf(p)
-    per_sample_variance = np.sum(cdf * (1 - cdf), axis=-1)
-    return np.mean(per_sample_variance, axis=axis)
-
-
-@ordinal_variance_of_conditional_mean.register(NumpyCategoricalDistributionSample)
-def numpy_categorical_sample_ordinal_variance_of_conditional_mean(
-    sample: NumpyCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> np.ndarray:
-    """Compute the ordinal variance of the conditional mean of a categorical sample."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    cdf = _cdf(p)
-    return np.sum(np.var(cdf, axis=axis, ddof=0), axis=-1)
 
 
 @ordinal_entropy_of_expected_predictive_distribution.register(NumpyCategoricalDistributionSample)
@@ -200,16 +139,6 @@ def numpy_categorical_labelwise_entropy(
     return np.sum(_numpy_binary_entropy(p, base=base), axis=-1)
 
 
-@labelwise_variance.register(NumpyCategoricalDistribution)
-def numpy_categorical_labelwise_variance(
-    distribution: NumpyCategoricalDistribution | np.ndarray,
-    base: LogBase = None,  # noqa: ARG001
-) -> np.ndarray:
-    """Compute the label-wise binary variance of a categorical distribution."""
-    p = distribution.probabilities if isinstance(distribution, NumpyCategoricalDistribution) else distribution
-    return np.sum(p * (1 - p), axis=-1)
-
-
 @labelwise_entropy_of_expected_predictive_distribution.register(NumpyCategoricalDistributionSample)
 def numpy_categorical_sample_labelwise_entropy_of_expected_predictive_distribution(
     sample: NumpyCategoricalDistributionSample, base: LogBase = None
@@ -240,38 +169,3 @@ def numpy_categorical_sample_labelwise_mutual_information_entropy(
     return numpy_categorical_sample_labelwise_entropy_of_expected_predictive_distribution(
         sample, base
     ) - numpy_categorical_sample_labelwise_conditional_entropy(sample, base)
-
-
-@labelwise_variance_of_expected_predictive_distribution.register(NumpyCategoricalDistributionSample)
-def numpy_categorical_sample_labelwise_variance_of_expected_predictive_distribution(
-    sample: NumpyCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> np.ndarray:
-    """Compute the label-wise binary variance of the expected predictive distribution."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    expected_p = np.mean(p, axis=axis)
-    return np.sum(expected_p * (1 - expected_p), axis=-1)
-
-
-@labelwise_expected_conditional_variance.register(NumpyCategoricalDistributionSample)
-def numpy_categorical_sample_labelwise_expected_conditional_variance(
-    sample: NumpyCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> np.ndarray:
-    """Compute the label-wise expected conditional variance of a categorical sample."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    per_sample_variance = np.sum(p * (1 - p), axis=-1)
-    return np.mean(per_sample_variance, axis=axis)
-
-
-@labelwise_variance_of_conditional_mean.register(NumpyCategoricalDistributionSample)
-def numpy_categorical_sample_labelwise_variance_of_conditional_mean(
-    sample: NumpyCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> np.ndarray:
-    """Compute the label-wise variance of the conditional mean of a categorical sample."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    return np.sum(np.var(p, axis=axis, ddof=0), axis=-1)
