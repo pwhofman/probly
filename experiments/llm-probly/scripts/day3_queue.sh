@@ -22,7 +22,7 @@ cd "$(dirname "$0")/.."
 mkdir -p logs
 LOG=logs/day3_queue.log
 FAILED=0
-exec > >(tee -a "$LOG.full") 2>&1  # everything also goes to logs/day3_queue.log.full
+exec > >(tee -a logs/day3_queue_full.log) 2>&1  # everything also goes to logs/day3_queue_full.log (git ignores *.log)
 
 stop() {
     local msg
