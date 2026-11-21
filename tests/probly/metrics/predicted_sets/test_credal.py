@@ -70,6 +70,11 @@ class TestSingletonCredalSet:
     def test_efficiency_is_one(self) -> None:
         cs = NumpySingletonCredalSet(array=_categorical(np.array([[0.5, 0.5]])))
         assert efficiency(cs) == 1.0
+        assert isinstance(efficiency(cs), np.floating)
+
+    def test_average_interval_width_is_zero(self) -> None:
+        cs = NumpySingletonCredalSet(array=_categorical(np.array([[0.7, 0.3], [0.5, 0.5]])))
+        assert average_interval_width(cs) == 0.0
 
 
 class TestDiscreteCredalSet:

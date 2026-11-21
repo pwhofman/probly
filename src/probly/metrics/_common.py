@@ -3,9 +3,21 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import math
 from typing import Any, cast
 
 from flextype import flexdispatch
+
+from probly.representation.conformal_set._common import IntervalConformalSet, OneHotConformalSet
+from probly.representation.credal_set._common import (
+    CategoricalCredalSet,
+    ConvexCredalSet,
+    DirichletLevelSetCredalSet,
+    DiscreteCredalSet,
+    DistanceBasedCredalSet,
+    ProbabilityIntervalsCredalSet,
+    SingletonCredalSet,
+)
 
 # Default L1 tolerance for coverage. A target counts as covered when some member of
 # the credal set lies within this L1 distance of it. Shared by interval coverage and convex_hull_coverage.
@@ -213,21 +225,11 @@ def false_negative_rate(y_pred: object, y_true: object) -> object:
 #
 # Concrete semantics depend on the dispatched type. Conformal sets follow the
 # classical conformal-prediction definitions (cardinality of a one-hot set,
-# width of an interval). Credal-set semantics specialize per subtype; see the
-# implementations in :mod:`probly.metrics.numpy` and :mod:`probly.metrics.torch`.
-#
-# Currently registered types
-# --------------------------
-# * Conformal: ``NumpyOneHotConformalSet``, ``NumpyIntervalConformalSet``,
-#   ``TorchOneHotConformalSet``, ``TorchIntervalConformalSet``,
-#   ``JaxOneHotConformalSet``, ``JaxIntervalConformalSet``.
-# * Credal (numpy): ``NumpySingletonCredalSet``, ``NumpyDiscreteCredalSet``,
-#   ``NumpyConvexCredalSet``, ``NumpyDistanceBasedCredalSet``,
-#   ``NumpyProbabilityIntervalsCredalSet``.
-# * Credal (torch): ``TorchConvexCredalSet``, ``TorchDistanceBasedCredalSet``,
-#   ``TorchProbabilityIntervalsCredalSet``, ``TorchDirichletLevelSetCredalSet``.
-#   Singleton and Discrete torch counterparts do not yet exist; constructing
-#   one numpy-side is the supported path for those semantics.
+# width of an interval). Credal-set semantics specialize per subtype. The
+# implementations below are registered on the backend-independent set classes
+# and written against the array operations NumPy, PyTorch and JAX share, so
+# every backend class of a set type is covered and results keep the backend's
+# scalar type and gradients.
 
 
 @flexdispatch
@@ -256,7 +258,7 @@ def classwise_ece(y_prob: object, y_true: object, *, num_bins: int = 15) -> obje
 
 
 @flexdispatch
-def coverage[T](y_pred: T, y_true: object, **kwargs: object) -> float:
+def coverage[T](y_pred: T, y_true: object, **kwargs: object) -> object:
     """Compute the empirical coverage of a predicted set against true labels.
 
     Coverage is the fraction of samples whose true value lies inside the
@@ -295,7 +297,7 @@ def coverage[T](y_pred: T, y_true: object, **kwargs: object) -> float:
             and ProbabilityIntervals credal sets with distribution-valued targets.
 
     Returns:
-        The empirical coverage as a float in ``[0, 1]``.
+        The empirical coverage in ``[0, 1]``, as a scalar of the set's backend.
 
     Raises:
         NotImplementedError: If no implementation is registered for the type
@@ -306,11 +308,12 @@ def coverage[T](y_pred: T, y_true: object, **kwargs: object) -> float:
 
 
 @flexdispatch
-def efficiency[T](y_pred: T) -> float:
+def efficiency[T](y_pred: T) -> object:
     """Compute the average size of a predicted set.
 
     Efficiency reports how compact the predicted set is on average. Smaller
-    is better. The exact semantics depend on the dispatched type:
+    is better unless noted otherwise. The exact semantics depend on the
+    dispatched type:
 
     * One-hot conformal sets: average cardinality (number of selected
       classes).
@@ -320,15 +323,18 @@ def efficiency[T](y_pred: T) -> float:
     * Discrete credal sets: average number of distinct argmax classes
       across the vertex set. Differs from the convex hull's interval-dominance
       cardinality (which is always ``>=`` the discrete count).
-    * Convex / DistanceBased / ProbabilityIntervals / DirichletLevelSet
-      credal sets: cardinality of the interval-dominance prediction set.
+    * Convex / DistanceBased / ProbabilityIntervals credal sets:
+      ``1 - mean(upper - lower)``, one minus the mean width of the per-class
+      probability intervals; here larger is better.
+    * DirichletLevelSet credal sets: cardinality of the interval-dominance
+      prediction set.
 
     Args:
         y_pred: A predicted-set representation. See module docstring for the
             registered types.
 
     Returns:
-        The mean set size as a float.
+        The efficiency, as a scalar of the set's backend.
 
     Raises:
         NotImplementedError: If no implementation is registered for the type
@@ -339,7 +345,7 @@ def efficiency[T](y_pred: T) -> float:
 
 
 @flexdispatch
-def average_interval_width[T](y_pred: T) -> float:
+def average_interval_width[T](y_pred: T) -> object:
     """Compute the mean width of per-class probability intervals.
 
     A geometric companion to :func:`efficiency` for credal sets that expose a
@@ -352,7 +358,7 @@ def average_interval_width[T](y_pred: T) -> float:
             methods.
 
     Returns:
-        The mean per-class interval width as a float.
+        The mean per-class interval width, as a scalar of the set's backend.
 
     Raises:
         NotImplementedError: If no implementation is registered for the type
@@ -421,6 +427,193 @@ def convex_hull_coverage[T](
     """
     msg = f"convex_hull_coverage is not implemented for type {type(y_pred).__name__}."
     raise NotImplementedError(msg)
+
+
+def _validate_epsilon(epsilon: float) -> None:
+    if not math.isfinite(epsilon) or epsilon < 0.0:
+        msg = f"epsilon must be a non-negative finite float, got {epsilon!r}."
+        raise ValueError(msg)
+
+
+# The predicted-set metrics need four array operations that the backends spell differently.
+@flexdispatch
+def _asarray_like(reference: object, values: object) -> object:
+    """Convert ``values`` to an array of the backend, and on the device, of the array ``reference``."""
+    msg = f"Predicted-set metrics are not implemented for arrays of type {type(reference).__name__}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def _label_values(values: object, y_true: object) -> object:
+    """Return the entry of ``values`` ``(..., K)`` at the class label ``y_true`` ``(...)`` of each instance."""
+    msg = f"Predicted-set metrics are not implemented for arrays of type {type(values).__name__}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def _floating(values: object) -> object:
+    """Cast an array to a floating dtype of at least single precision."""
+    msg = f"Predicted-set metrics are not implemented for arrays of type {type(values).__name__}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def _machine_epsilon(values: object) -> float:
+    """Return the machine epsilon of the dtype of a floating array."""
+    msg = f"Predicted-set metrics are not implemented for arrays of type {type(values).__name__}."
+    raise NotImplementedError(msg)
+
+
+def _payload(y_pred: object) -> Any:  # noqa: ANN401
+    """Return the single array or distribution a set wraps, whose field name differs between backends."""
+    (payload,) = cast("Any", y_pred).protected_values().values()
+    return payload
+
+
+def _mean(values: object) -> object:
+    """Average all entries; unlike ``.mean()`` this accepts boolean and integer arrays in every backend."""
+    array = cast("Any", values)
+    return array.sum() / math.prod(array.shape)
+
+
+def _interval_dominance_mask(lower: object, upper: object) -> Any:  # noqa: ANN401
+    """Return the classes ``(..., K)`` whose upper probability reaches the largest lower probability."""
+    # The largest lower probability is looked up at its argmax because the backends disagree on ``max``.
+    threshold = cast("Any", _label_values(lower, cast("Any", lower).argmax(axis=-1)))
+    return upper >= threshold[..., None]
+
+
+@coverage.register(OneHotConformalSet)
+def _onehot_coverage(y_pred: OneHotConformalSet, y_true: object) -> object:
+    """Fraction of one-hot conformal sets that contain the true class."""
+    return _mean(_label_values(_payload(y_pred), y_true))
+
+
+@coverage.register(IntervalConformalSet)
+def _interval_coverage(y_pred: IntervalConformalSet, y_true: object) -> object:
+    """Fraction of conformal intervals that contain the target, endpoints included."""
+    bounds = _payload(y_pred)
+    target = cast("Any", _asarray_like(bounds, y_true))
+    return _mean((target >= bounds[..., 0]) & (target <= bounds[..., 1]))
+
+
+@efficiency.register((OneHotConformalSet, IntervalConformalSet))
+def _conformal_efficiency(y_pred: OneHotConformalSet | IntervalConformalSet) -> object:
+    """Average size of a conformal set: the cardinality of a one-hot set or the width of an interval."""
+    return _mean(y_pred.set_size)
+
+
+@coverage.register(SingletonCredalSet)
+def _singleton_coverage(y_pred: SingletonCredalSet, y_true: object) -> object:
+    """Top-1 accuracy of the single distribution in a singleton credal set."""
+    predicted = _payload(y_pred).probabilities.argmax(axis=-1)
+    return _mean(predicted == _asarray_like(predicted, y_true))
+
+
+@efficiency.register(SingletonCredalSet)
+def _singleton_efficiency(y_pred: SingletonCredalSet) -> object:
+    """Average number of argmax classes of a singleton credal set, which is one for every instance."""
+    one_hot = cast("Any", _one_hot_argmax(_payload(y_pred).probabilities))  # (..., K)
+    return _mean(one_hot.sum(axis=-1))
+
+
+@coverage.register(DiscreteCredalSet)
+def _discrete_coverage(y_pred: DiscreteCredalSet, y_true: object) -> object:
+    """Fraction of instances whose true class is the argmax of some distribution in a discrete credal set."""
+    predicted = _payload(y_pred).probabilities.argmax(axis=-1)  # (..., V)
+    target = cast("Any", _asarray_like(predicted, y_true))
+    return _mean((predicted == target[..., None]).sum(axis=-1) > 0)
+
+
+@efficiency.register(DiscreteCredalSet)
+def _discrete_efficiency(y_pred: DiscreteCredalSet) -> object:
+    """Average number of distinct argmax classes among the distributions of a discrete credal set."""
+    one_hot = cast("Any", _one_hot_argmax(_payload(y_pred).probabilities))  # (..., V, K)
+    return _mean((one_hot.sum(axis=-2) > 0).sum(axis=-1))
+
+
+@coverage.register(DirichletLevelSetCredalSet)
+def _interval_dominance_coverage(y_pred: CategoricalCredalSet, y_true: object) -> object:
+    """Fraction of instances whose true class is selected by interval dominance on the envelope."""
+    credal_set = cast("Any", y_pred)
+    return _mean(_label_values(_interval_dominance_mask(credal_set.lower(), credal_set.upper()), y_true))
+
+
+@coverage.register((ConvexCredalSet, ProbabilityIntervalsCredalSet))
+def _envelope_coverage(
+    y_pred: ConvexCredalSet | ProbabilityIntervalsCredalSet,
+    y_true: object,
+    *,
+    epsilon: float = CREDAL_COVERAGE_EPSILON,
+) -> object:
+    """Coverage of the lower/upper envelope of a convex or probability-intervals credal set.
+
+    Class labels of shape ``(...)`` are covered when interval dominance selects them. Target distributions of shape
+    ``(..., K)`` are covered when their L1 distance to ``{p : lower <= p <= upper, sum(p) = 1}`` is at most
+    ``epsilon``. For a target on the simplex this distance is ``2 * max(a, b)``, with ``a`` the target mass above
+    ``upper`` and ``b`` the mass missing below ``lower``, the same L1 distance :func:`convex_hull_coverage` uses.
+
+    Args:
+        y_pred: Convex or probability-intervals credal set.
+        y_true: Class labels of shape ``(...)`` or target distributions of shape ``(..., K)``.
+        epsilon: L1 tolerance for target distributions.
+
+    Returns:
+        The fraction of covered instances.
+
+    Raises:
+        ValueError: If ``epsilon`` is negative or not finite.
+    """
+    credal_set = cast("Any", y_pred)
+    lower, upper = credal_set.lower(), credal_set.upper()
+    target = cast("Any", _asarray_like(lower, y_true))
+    if target.ndim < lower.ndim:
+        return _mean(_label_values(_interval_dominance_mask(lower, upper), target))
+    _validate_epsilon(epsilon)
+    lo, up, y = (cast("Any", _floating(array)) for array in (lower, upper, target))
+    above = (y - up).clip(0.0).sum(axis=-1)
+    below = (lo - y).clip(0.0).sum(axis=-1)
+    # Rounding the inputs to their floating precision shifts the distance by at most two machine epsilons, so the
+    # slack keeps a distance that equals epsilon on the covered side.
+    tolerance = epsilon + 4.0 * _machine_epsilon(lo)
+    return _mean((2.0 * above <= tolerance) & (2.0 * below <= tolerance))
+
+
+@coverage.register(DistanceBasedCredalSet)
+def _distance_based_coverage(y_pred: DistanceBasedCredalSet, y_true: object) -> object:
+    """Coverage of a distance-based credal set.
+
+    Class labels of shape ``(...)`` are covered when interval dominance on the envelope selects them. Target
+    distributions of shape ``(..., K)`` are covered when their total variation distance to the nominal distribution
+    is at most the radius.
+    """
+    nominal = cast("Any", y_pred.nominal).probabilities
+    target = cast("Any", _asarray_like(nominal, y_true))
+    if target.ndim < nominal.ndim:
+        return _interval_dominance_coverage(y_pred, target)
+    total_variation = 0.5 * abs(nominal - target).sum(axis=-1)
+    return _mean(total_variation <= y_pred.radius)
+
+
+@efficiency.register((ConvexCredalSet, DistanceBasedCredalSet, ProbabilityIntervalsCredalSet))
+def _envelope_efficiency(y_pred: CategoricalCredalSet) -> object:
+    """Efficiency of an envelope-based credal set as ``1 - mean(upper - lower)``; higher means a tighter set."""
+    return 1.0 - cast("Any", _envelope_average_interval_width(y_pred))
+
+
+@efficiency.register(DirichletLevelSetCredalSet)
+def _interval_dominance_efficiency(y_pred: DirichletLevelSetCredalSet) -> object:
+    """Average number of classes selected by interval dominance on the envelope."""
+    credal_set = cast("Any", y_pred)
+    return _mean(_interval_dominance_mask(credal_set.lower(), credal_set.upper()).sum(axis=-1))
+
+
+@average_interval_width.register(CategoricalCredalSet)
+def _envelope_average_interval_width(y_pred: CategoricalCredalSet) -> object:
+    """Mean per-class width ``upper - lower`` of the envelope of a credal set."""
+    credal_set = cast("Any", y_pred)
+    lower, upper = credal_set.lower(), credal_set.upper()
+    return _mean(upper - lower)
 
 
 # These primitives provide composed defaults. Individual rules can specialize dispatch where a backend needs

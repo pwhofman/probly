@@ -94,6 +94,24 @@ def test_probability_vector_coverage_boundary_is_precision_independent(dtype: to
     assert coverage(cs, target, epsilon=2 * delta) == pytest.approx(1.0)
 
 
+@pytest.mark.parametrize("metric", [efficiency, average_interval_width])
+def test_envelope_metrics_are_differentiable(metric) -> None:
+    """Efficiency and interval width stay on the autograd graph of the credal set's probabilities."""
+    logits = torch.randn(8, 5, 3, generator=torch.Generator().manual_seed(0), requires_grad=True)
+    cs = TorchConvexCredalSet(tensor=TorchProbabilityCategoricalDistribution(torch.softmax(logits, dim=-1)))
+    (grad,) = torch.autograd.grad(metric(cs), logits)
+    assert grad.abs().sum() > 0
+
+
+def test_set_metrics_return_tensors() -> None:
+    """Set metrics return zero-dimensional tensors in the precision of the credal set."""
+    lower = torch.tensor([[0.1, 0.4, 0.05]], dtype=torch.float64)
+    cs = TorchProbabilityIntervalsCredalSet(lower_bounds=lower, upper_bounds=lower + 0.2)
+    results = [coverage(cs, torch.tensor([1])), efficiency(cs), average_interval_width(cs)]
+    assert all(isinstance(result, torch.Tensor) and result.ndim == 0 for result in results)
+    assert efficiency(cs).dtype == torch.float64
+
+
 @pytest.mark.parametrize(
     "probs",
     [
