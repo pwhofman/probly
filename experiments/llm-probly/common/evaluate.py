@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -188,6 +189,113 @@ def bootstrap_auroc(
         raise ValueError(msg)
     lo, hi = np.percentile(values, [100 * alpha / 2, 100 * (1 - alpha / 2)])
     return float(lo), float(hi)
+
+
+# metric -> (function, True if higher is better); used by paired_bootstrap
+_METRICS = {
+    "auroc": (auroc, True),
+    "prr": (lambda u, c: prr(u, c, n_tie_seeds=3), True),  # fewer tie shuffles inside the bootstrap
+    "aurc": (lambda u, c: aurc(u, c, n_tie_seeds=3), False),
+}
+
+
+@dataclass(frozen=True)
+class PairedDifference:
+    """Result of a paired bootstrap between two methods on the same questions.
+
+    ``diff`` is signed so that a positive value always means "A is better"
+    (for AURC, where lower is better, it is ``aurc(B) - aurc(A)``).
+
+    Attributes:
+        metric: ``auroc``, ``prr`` or ``aurc``.
+        value_a: Metric of method A on all questions.
+        value_b: Metric of method B on all questions.
+        diff: Improvement of A over B on all questions.
+        ci_low: Lower end of the bootstrap interval of ``diff``.
+        ci_high: Upper end of the bootstrap interval of ``diff``.
+        n_boot: Resamples actually used (resamples with only one class are skipped).
+    """
+
+    metric: str
+    value_a: float
+    value_b: float
+    diff: float
+    ci_low: float
+    ci_high: float
+    n_boot: int
+
+    @property
+    def verdict(self) -> str:
+        """``"A"`` or ``"B"`` if the interval excludes 0 (that method is better), else ``"tie"``."""
+        if self.ci_low > 0:
+            return "A"
+        if self.ci_high < 0:
+            return "B"
+        return "tie"
+
+
+def paired_bootstrap(
+    uncertainty_a: ArrayLike,
+    uncertainty_b: ArrayLike,
+    correct: ArrayLike,
+    metric: str = "auroc",
+    n_boot: int = 1000,
+    alpha: float = 0.05,
+    seed: int = 0,
+) -> PairedDifference:
+    """Is method A better than method B on these questions (E4)?
+
+    Both methods are scored on the *same* resampled questions in every bootstrap
+    round, and the interval is taken over the per-round difference. Questions
+    that are hard for both methods move both scores together, so the difference
+    varies much less than each score alone: two separate intervals can overlap
+    although one method is better in almost every resample.
+
+    Resampling is the same as in ``bootstrap_auroc`` (same seed gives the same
+    resamples), and resamples with only right or only wrong answers are skipped.
+
+    Args:
+        uncertainty_a: Uncertainty of method A per question.
+        uncertainty_b: Uncertainty of method B per question (same order).
+        correct: Correctness per question.
+        metric: ``"auroc"`` (default), ``"prr"`` or ``"aurc"``.
+        n_boot: Number of resamples.
+        alpha: 1 - confidence level (0.05 gives a 95 % interval).
+        seed: Random seed.
+
+    Returns:
+        The difference with its interval; ``.verdict`` says which method is better.
+
+    Raises:
+        ValueError: For an unknown metric, unequal lengths, or if every resample had one class.
+    """
+    if metric not in _METRICS:
+        msg = f"metric must be one of {sorted(_METRICS)}, got {metric!r}"
+        raise ValueError(msg)
+    fn, higher_is_better = _METRICS[metric]
+    a, wrong = _prepare(uncertainty_a, correct)
+    b, _ = _prepare(uncertainty_b, correct)
+    right = ~wrong
+    sign = 1.0 if higher_is_better else -1.0
+
+    def improvement(idx: np.ndarray | slice) -> tuple[float, float, float]:
+        value_a, value_b = fn(a[idx], right[idx]), fn(b[idx], right[idx])
+        return value_a, value_b, sign * (value_a - value_b)
+
+    value_a, value_b, diff = improvement(slice(None))
+    rng = np.random.default_rng(seed)
+    n = len(a)
+    diffs = []
+    for _ in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        if wrong[idx].all() or not wrong[idx].any():
+            continue
+        diffs.append(improvement(idx)[2])
+    if not diffs:
+        msg = "all bootstrap samples contained only one class"
+        raise ValueError(msg)
+    low, high = np.percentile(diffs, [100 * alpha / 2, 100 * (1 - alpha / 2)])
+    return PairedDifference(metric, value_a, value_b, diff, float(low), float(high), len(diffs))
 
 
 def rejection_curve(
