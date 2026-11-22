@@ -81,3 +81,20 @@ def test_method_by_model_has_one_column_per_model(tmp_path):
 def test_to_markdown_leaves_nan_empty():
     text = to_markdown(pd.DataFrame({"method": ["a"], "auroc": [float("nan")]}))
     assert text.splitlines()[2] == "| a |  |"
+
+
+def test_paired_comparison_marks_best_tied_and_worse(tmp_path):
+    folder = tmp_path / "run"
+    folder.mkdir()
+    ids = [r["id"] for r in ROWS]
+    perfect = [0.0 if r["correct"] else 1.0 for r in ROWS]
+    almost = [0.0 if r["correct"] or r["id"] == 49 else 1.0 for r in ROWS]  # one wrong answer looks right
+    write(folder, "perfect", ids, perfect)
+    write(folder, "almost", ids, almost)
+    write(folder, "constant", ids, [0.5] * 50)
+    table = summary_table(ROWS, run="run", methods=(), results_root=tmp_path, n_boot=200).set_index("method")
+    assert table.loc["perfect", "vs_best"] == "best"
+    assert table.loc["perfect", "d_auroc"] == 0.0
+    assert table.loc["almost", "vs_best"] == "tied"
+    assert table.loc["constant", "vs_best"] == "worse"
+    assert table.loc["constant", "d_ci_high"] < 0

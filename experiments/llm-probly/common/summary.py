@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from common.evaluate import bootstrap_auroc, ece, evaluate
+from common.evaluate import bootstrap_auroc, ece, evaluate, paired_bootstrap
 from common.io import RESULTS_ROOT, load_scores
 from common.registry import REGISTRY
 
@@ -23,7 +23,22 @@ EXPECTED_METHODS = (
     "discrete_se",
 )
 
-COLUMNS = ["method", "status", "auroc", "ci_low", "ci_high", "aurc", "prr", "ece", "n_failed", "seconds_per_question"]
+COLUMNS = [
+    "method",
+    "status",
+    "auroc",
+    "ci_low",
+    "ci_high",
+    "vs_best",  # "best", "tied" (paired 95 % interval of the difference contains 0) or "worse"
+    "d_auroc",  # AUROC minus the best method's AUROC
+    "d_ci_low",
+    "d_ci_high",
+    "aurc",
+    "prr",
+    "ece",
+    "n_failed",
+    "seconds_per_question",
+]
 
 # Methods whose score is a probability of being correct (uncertainty = 1 - probability); only for these
 # ECE is computed. Registered methods set probability=True in common/registry.py; this tuple adds the
@@ -63,6 +78,7 @@ def summary_table(
     all_methods = [*methods, *(name for name in found if name not in methods)]
 
     table = []
+    uncertainties = {}  # method -> uncertainty, for the paired comparison with the best method
     for method in all_methods:
         path = folder / f"{method}.json"
         if not path.exists():
@@ -73,6 +89,7 @@ def summary_table(
         except ValueError as error:
             table.append({"method": method, "status": f"pending: {error}"})
             continue
+        uncertainties[method] = record["uncertainty"]
         scores = evaluate(record["uncertainty"], correct)
         spec = REGISTRY.get(method)
         default = spec.probability if spec else method in PROBABILITY_METHODS
@@ -93,7 +110,38 @@ def summary_table(
                 "seconds_per_question": record["seconds_per_question"],
             },
         )
+    add_paired_comparison(table, uncertainties, correct, n_boot=n_boot)
     return pd.DataFrame(table, columns=pd.Index(COLUMNS))
+
+
+def add_paired_comparison(
+    table: list[dict],
+    uncertainties: dict[str, list[float]],
+    correct: list[bool],
+    n_boot: int = 1000,
+) -> None:
+    """Compare every evaluated method with the best one (highest AUROC) by a paired bootstrap (E4).
+
+    Fills ``vs_best``, ``d_auroc``, ``d_ci_low`` and ``d_ci_high`` in place.
+    ``tied`` means the data cannot tell the method apart from the best one: the
+    95 % interval of its AUROC difference contains 0. This is the same test the
+    selector (D1) uses to pick the cheapest method among the tied ones.
+    """
+    evaluated = [row for row in table if row["status"] == "ok"]
+    if not evaluated:
+        return
+    best = max(evaluated, key=lambda row: row["auroc"])
+    for row in evaluated:
+        if row is best:
+            row.update(vs_best="best", d_auroc=0.0, d_ci_low=0.0, d_ci_high=0.0)
+            continue
+        result = paired_bootstrap(uncertainties[row["method"]], uncertainties[best["method"]], correct, n_boot=n_boot)
+        row.update(
+            vs_best="tied" if result.verdict == "tie" else "worse" if result.verdict == "B" else "better",
+            d_auroc=result.diff,
+            d_ci_low=result.ci_low,
+            d_ci_high=result.ci_high,
+        )
 
 
 def to_markdown(table: pd.DataFrame) -> str:
