@@ -37,3 +37,19 @@ def test_save_and_load_roundtrip(tmp_path, monkeypatch):
     monkeypatch.setattr(score_io, "RESULTS_ROOT", tmp_path)
     path = score_io.save_scores(GOOD, run="test")
     assert score_io.load_scores(path) == GOOD
+
+
+def test_saved_file_ends_with_one_newline(tmp_path, monkeypatch):
+    monkeypatch.setattr(score_io, "RESULTS_ROOT", tmp_path)
+    record = {
+        "method": "m",
+        "model": "x",
+        "answer": "greedy",
+        "ids": [0],
+        "uncertainty": [0.5],
+        "failed": [False],
+        "seconds_per_question": 0.0,
+    }
+    text = score_io.save_scores(record, run="r").read_text()
+    assert text.endswith("}\n")
+    assert not text.endswith("\n\n")
