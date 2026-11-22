@@ -27,6 +27,8 @@ newline, seed 42; saves after every question and resumes):
     uv run python -m scripts.label    --model qwen1.5b --n 200
 
 Details, accuracy per model and the label error rate: [docs/data_and_labelling.md](docs/data_and_labelling.md).
+All cached runs (TriviaQA 200 / 1000, MMLU 200, five models incl. SmolLM2) with accuracy and settings:
+[docs/benchmark_caches.md](docs/benchmark_caches.md).
 
 ## Running the benchmark (PIPE)
 One command runs the whole chain (generate → label → methods → evaluate → table) for one

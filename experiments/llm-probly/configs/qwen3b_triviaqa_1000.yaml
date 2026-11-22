@@ -1,0 +1,7 @@
+# E3: first 200 = triviaqa_200 (same mps/float32). About 86 min (5.1 s/question).
+model: qwen3b
+dataset: triviaqa
+n: 1000
+precision: float32
+device: mps
+methods: [msp, likelihood_mean, mean_token_entropy, lexical_similarity, dummy_random]  # cache-only; others run on these caches later
