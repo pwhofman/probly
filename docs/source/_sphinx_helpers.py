@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 import pkgutil
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 # env.dependencies entries must be _StrPath; plain str crashes _has_doc_changed.
 from sphinx.util._pathlib import _StrPath
@@ -659,3 +659,33 @@ def build_case_collision_filename_map(reexported: dict[str, dict[str, list[str]]
             if name.lower() in lowered_classes:
                 filename_map[f"{modname}.{name}"] = f"{modname}.{name}_function"
     return filename_map
+
+
+class _CodeautolinkState(Protocol):
+    """Mutable page selection used by sphinx-codeautolink."""
+
+    outdated_docs: set[str]
+
+
+def track_codeautolink_written_pages(app: Sphinx, state: _CodeautolinkState) -> None:
+    """Restrict code-link insertion to HTML rendered during the current build.
+
+    The extension initializes its selection with ``get_outdated_docs()``, which
+    can include cached pages Sphinx ultimately does not rewrite. Relinking such
+    pages fails because the target names are already wrapped in anchors.
+
+    Args:
+        app: The Sphinx application.
+        state: The codeautolink extension's mutable state.
+    """
+
+    def reset_written(_app: Sphinx) -> None:
+        state.outdated_docs.clear()
+
+    def mark_written(_app: Sphinx, _doctree: object, docname: str) -> None:
+        state.outdated_docs.add(str(Path(docname)))
+
+    # Run after codeautolink initializes its selection at priority 500.
+    app.connect("builder-inited", reset_written, priority=501)
+    # This event runs in the main process even when HTML is written in parallel.
+    app.connect("doctree-resolved", mark_written)

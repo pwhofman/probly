@@ -96,6 +96,15 @@ def test_token_generation_empty_transition_scores_return_zero_log_likelihoods() 
     assert torch.equal(text.log_likelihood, torch.zeros(2))
 
 
+@pytest.mark.parametrize("score_shape", [(1, 1), (3, 1), (2, 1, 1)])
+def test_token_generation_rejects_mismatched_batch_shapes(score_shape: tuple[int, ...]) -> None:
+    with pytest.raises(ValueError, match="batch-shapes"):
+        TorchTokenGeneration(
+            sequences=torch.tensor([[1, 2], [3, 4]]),
+            transition_scores=torch.zeros(score_shape),
+        )
+
+
 def test_text_generation_validates_object_text_shape() -> None:
     with pytest.raises(TypeError, match="dtype=object"):
         TorchTextGeneration(log_likelihood=torch.zeros(2), text=np.array(["a", "b"]))

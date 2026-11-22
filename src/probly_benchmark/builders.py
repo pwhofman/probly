@@ -137,7 +137,7 @@ def _filter_params(fn: Callable[..., Any], params: dict[str, Any]) -> dict[str, 
     dropped = {k for k in params if k not in accepted}
     if dropped:
         warnings.warn(
-            f"{fn.__name__} does not accept {dropped}; dropping from method params. "  # ty:ignore[unresolved-attribute]
+            f"{fn.__name__} does not accept {dropped}; dropping from method params. "  # ty:ignore[missing-attribute]
             "Check your recipe/method config for unintended overrides.",
             stacklevel=3,
         )

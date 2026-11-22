@@ -48,7 +48,8 @@ def main() -> None:
     run_name = f"{args.dataset}_{args.n}"
     models = find_models(run_name)
     if not models:
-        raise SystemExit(f"no results/<model>/{run_name}/ folders yet; run run_benchmark first")
+        msg = f"no results/<model>/{run_name}/ folders yet; run run_benchmark first"
+        raise SystemExit(msg)
 
     rows_by_model = {m: load_jsonl(cache_path(m, args.n, args.dataset)) for m in models}
     long = compare_models(rows_by_model, run_name, n_boot=args.n_boot)

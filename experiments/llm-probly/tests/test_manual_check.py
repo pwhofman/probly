@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from scripts.manual_check import label_error_rate, part_rows
 
 

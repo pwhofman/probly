@@ -184,14 +184,14 @@ def _make_imagenet_loader(
     Returns:
         A WebLoader with length set to num_samples // batch_size.
     """
-    ds = wds.WebDataset(shards, shardshuffle=shardshuffle, seed=loader_seed)  # ty: ignore[unresolved-attribute]
+    ds = wds.WebDataset(shards, shardshuffle=shardshuffle, seed=loader_seed)  # ty: ignore[missing-attribute]
     if shuffle_buf > 0:
         if loader_seed is not None:
-            ds = ds.compose(wds.detshuffle(bufsize=shuffle_buf, seed=loader_seed))  # ty: ignore[unresolved-attribute]
+            ds = ds.compose(wds.detshuffle(bufsize=shuffle_buf, seed=loader_seed))  # ty: ignore[missing-attribute]
         else:
             ds = ds.shuffle(shuffle_buf)
     ds = (
-        ds.decode(wds.imagehandler("torchrgb8"))  # ty: ignore[unresolved-attribute]
+        ds.decode(wds.imagehandler("torchrgb8"))  # ty: ignore[missing-attribute]
         .to_tuple("jpg", "txt")
         .map_tuple(TRANSFORMS_TEST["imagenet"], int)
         .compose(lambda src: itertools.islice(src, num_samples))
@@ -210,7 +210,7 @@ def _make_imagenet_loader(
     if effective_num_workers > 0:
         loader_kwargs["persistent_workers"] = persistent_workers
         loader_kwargs["prefetch_factor"] = prefetch_factor
-    loader = wds.WebLoader(ds, **loader_kwargs)  # ty: ignore[unresolved-attribute]
+    loader = wds.WebLoader(ds, **loader_kwargs)  # ty: ignore[missing-attribute]
     return loader.with_length(num_samples // batch_size)
 
 
@@ -567,11 +567,11 @@ def get_data_train(
                 train, val, cal = random_split(train, [train_len, val_len, cal_len], generator=rng)
                 if val_split > 0:
                     val.dataset = copy.copy(val.dataset)
-                    val.dataset.transform = TRANSFORMS_TEST[name]  # ty: ignore[unresolved-attribute]
+                    val.dataset.transform = TRANSFORMS_TEST[name]  # ty: ignore[missing-attribute]
                     val_loader = DataLoader(val, **eval_kwargs)
                 if cal_split > 0:
                     cal.dataset = copy.copy(cal.dataset)
-                    cal.dataset.transform = TRANSFORMS_TEST[name]  # ty: ignore[unresolved-attribute]
+                    cal.dataset.transform = TRANSFORMS_TEST[name]  # ty: ignore[missing-attribute]
                     cal_loader = DataLoader(cal, **cal_kwargs)
             train_loader = DataLoader(train, **kwargs)
             test_loader = DataLoader(test, **eval_kwargs)

@@ -157,3 +157,57 @@ def test_slice() -> None:
     assert sliced.shape == (2,)
     torch.testing.assert_close(sliced.mean, torch.tensor([10.0, 20.0]))
     torch.testing.assert_close(sliced.var, torch.tensor([1.0, 1.0]))
+
+
+@pytest.mark.parametrize("subtract", [False, True])
+def test_torch_gaussian_combines_independent_variances(subtract: bool) -> None:
+    left = TorchGaussianDistribution(torch.tensor([[1.0], [2.0]]), torch.tensor([[3.0], [4.0]]))
+    right = TorchGaussianDistribution(torch.tensor([[5.0, 6.0, 7.0]]), torch.tensor([[8.0, 9.0, 10.0]]))
+    result = left - right if subtract else left + right
+    torch.testing.assert_close(result.mean, left.mean - right.mean if subtract else left.mean + right.mean)
+    torch.testing.assert_close(result.var, left.var + right.var)
+    assert result.shape == (2, 3)
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+@pytest.mark.parametrize("subtract", [False, True])
+def test_torch_gaussian_shift_preserves_variance(reverse: bool, subtract: bool) -> None:
+    mean = torch.tensor([[1.0], [2.0]], requires_grad=True)
+    var = torch.tensor([[3.0], [4.0]], requires_grad=True)
+    distribution = TorchGaussianDistribution(mean, var)
+    shift = torch.tensor([5.0, 6.0, 7.0])
+    left, right = (shift, distribution) if reverse else (distribution, shift)
+    result = torch.sub(input=left, other=right) if subtract else torch.add(input=left, other=right)
+    assert isinstance(result, TorchGaussianDistribution)
+    expected = shift - mean if reverse and subtract else mean - shift if subtract else mean + shift
+    torch.testing.assert_close(result.mean, expected)
+    torch.testing.assert_close(result.var, var.expand(2, 3))
+    (result.mean.sum() + result.var.sum()).backward()
+    torch.testing.assert_close(mean.grad, torch.full_like(mean, -3.0 if reverse and subtract else 3.0))
+    torch.testing.assert_close(var.grad, torch.full_like(var, 3.0))
+
+
+def test_torch_gaussian_sign_and_comparisons() -> None:
+    distribution = TorchGaussianDistribution(torch.tensor([1.0, 2.0]), torch.tensor([3.0, 4.0]))
+    negative = -distribution
+    torch.testing.assert_close(negative.mean, -distribution.mean)
+    torch.testing.assert_close(negative.var, distribution.var)
+    positive = +distribution
+    torch.testing.assert_close(positive.mean, distribution.mean)
+    torch.testing.assert_close(positive.var, distribution.var)
+    other = TorchGaussianDistribution(distribution.mean.clone(), torch.tensor([3.0, 5.0]))
+    torch.testing.assert_close(distribution == other, torch.tensor([True, False]))
+    torch.testing.assert_close(torch.ne(distribution, other), torch.tensor([False, True]))
+
+
+def test_torch_gaussian_rejects_uncorrected_arithmetic_options() -> None:
+    distribution = TorchGaussianDistribution(torch.tensor([1.0, 2.0]), torch.tensor([3.0, 4.0]))
+    output = TorchGaussianDistribution(torch.zeros(2), torch.ones(2))
+    with pytest.raises(TypeError, match="does not support out"):
+        torch.add(distribution, distribution, out=output)
+    torch.testing.assert_close(output.mean, torch.zeros(2))
+    torch.testing.assert_close(output.var, torch.ones(2))
+    with pytest.raises(ValueError, match="require alpha=1"):
+        torch.sub(distribution, distribution, alpha=2)
+    with pytest.raises(TypeError):
+        torch.mul(distribution, distribution)

@@ -32,12 +32,12 @@ import platform
 import time
 from typing import TYPE_CHECKING
 
+from common.data import DATASETS, DEFAULT_SEED, MMLU_INSTRUCTION, cache_path, load_jsonl, load_questions
+from common.generation import generate_answers, stop_at_newline_config
 import torch
 import transformers
 from transformers import set_seed
 
-from common.data import DATASETS, DEFAULT_SEED, MMLU_INSTRUCTION, cache_path, load_jsonl, load_questions
-from common.generation import generate_answers, stop_at_newline_config
 from probly.representer.sampler.huggingface import load_model
 
 if TYPE_CHECKING:
@@ -158,10 +158,24 @@ def main() -> None:
             continue
         set_seed(args.seed + q["id"])  # reproducible samples per question
         prompt = build_prompt(q)
-        common = {"max_new_tokens": MAX_NEW_TOKENS, "generation_config": gen_config}
-        greedy = generate_answers(model, tok, prompt, num_return_sequences=1, do_sample=False, **common)[0]
+        greedy = generate_answers(
+            model,
+            tok,
+            prompt,
+            num_return_sequences=1,
+            do_sample=False,
+            max_new_tokens=MAX_NEW_TOKENS,
+            generation_config=gen_config,
+        )[0]
         samples = generate_answers(
-            model, tok, prompt, num_return_sequences=NUM_SAMPLES, do_sample=True, temperature=TEMPERATURE, **common
+            model,
+            tok,
+            prompt,
+            num_return_sequences=NUM_SAMPLES,
+            do_sample=True,
+            temperature=TEMPERATURE,
+            max_new_tokens=MAX_NEW_TOKENS,
+            generation_config=gen_config,
         )
 
         row = {

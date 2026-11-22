@@ -51,12 +51,12 @@ so 1.5B and larger run on a machine with more memory.
 One file in `methods/`, nothing else to change:
 
 ```python
-NAME = "my_method"         # also the result file name
-FAMILY = "self_eval"       # "agreement" | "self_eval" | "baseline" | "hybrid"
-NEEDS_MODEL = True         # the runner loads the LLM and passes model, tok
+NAME = "my_method"  # also the result file name
+FAMILY = "self_eval"  # "agreement" | "self_eval" | "baseline" | "hybrid"
+NEEDS_MODEL = True  # the runner loads the LLM and passes model, tok
 
-def score(rows, model=None, tok=None) -> dict:
-    ...  # return a score record (CONTRACT.md); do not save or load anything
+
+def score(rows, model=None, tok=None) -> dict: ...  # return a score record (CONTRACT.md); do not save or load anything
 ```
 
 If the score is a probability of being correct (uncertainty = 1 − probability), add

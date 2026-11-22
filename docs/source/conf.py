@@ -24,6 +24,7 @@ from _sphinx_helpers import (  # noqa: E402
     remove_orphaned_example_pages,
     scrub_external_dependencies,
     stale_example_backreferences,
+    track_codeautolink_written_pages,
 )
 
 import probly  # noqa: E402
@@ -344,19 +345,11 @@ def setup(app: Sphinx) -> None:
     for listener in list(app.events.listeners["build-finished"]):
         if listener.handler is embed_code_links:
             app.disconnect(listener.id)
-        # codeautolink injects its links into the written HTML at build-finished,
-        # but only for the docs it saw as outdated at builder-inited. On a clean
-        # build the autosummary stubs and gallery pages do not exist yet at that
-        # point, and an incremental build rewrites every page after a config
-        # change, so either way pages were written without links. Mark every
-        # page that is actually written instead.
+        # Only relink HTML rendered during this build. The extension's early
+        # get_outdated_docs() call can include cached, already-linked pages
+        # that Sphinx ultimately does not rewrite (notably after config changes).
         elif getattr(listener.handler, "__name__", "") == "apply_links":
-            codeautolink_state = listener.handler.__self__
-
-            def _mark_written(_app: Sphinx, _doctree: object, docname: str, state: object = codeautolink_state) -> None:
-                state.outdated_docs.add(str(Path(docname)))
-
-            app.connect("doctree-resolved", _mark_written)
+            track_codeautolink_written_pages(app, listener.handler.__self__)
 
     _orig_resolve = PythonDomain.resolve_xref
 

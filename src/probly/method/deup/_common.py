@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol, cast, override, runtime_checkable
 
 from flextype import flexdispatch
+from ndlike.array_like import WeakArrayLike
 
 from probly.decider import categorical_from_mean
 from probly.predictor import LogitClassifier, Predictor, RepresentationPredictor
@@ -17,14 +18,12 @@ from probly.transformation.transformation import predictor_transformation
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from ndlike.array_like import ArrayLike
-
     from probly.quantification.measure.distribution import LogBase
     from probly.representation.distribution._common import CategoricalDistribution
 
 
 @runtime_checkable
-class DEUPRepresentation(Representation, Protocol):
+class DEUPRepresentation[T: WeakArrayLike[Any]](Representation, Protocol):
     r"""Representation of a DEUP model output.
 
     Holds the two quantities needed for uncertainty quantification:
@@ -45,12 +44,14 @@ class DEUPRepresentation(Representation, Protocol):
         """Softmax probabilities of the base classifier, shape ``(batch, num_classes)``."""
 
     @property
-    def error_score(self) -> ArrayLike:
+    def error_score(self) -> T:
         """Predicted per-sample expected cross-entropy, shape ``(batch,)``."""
 
 
 @flexdispatch
-def create_deup_representation(softmax: CategoricalDistribution, error_score: ArrayLike) -> DEUPRepresentation:
+def create_deup_representation[T: WeakArrayLike[Any]](
+    softmax: CategoricalDistribution, error_score: T
+) -> DEUPRepresentation[T]:
     """Create a DEUP representation from a softmax distribution and error score.
 
     Args:
@@ -164,7 +165,7 @@ def deup[**In, Out: DEUPRepresentation](
 
 @decompose.register(DEUPRepresentation)
 @dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
-class DEUPDecomposition[T](AdditiveDecomposition[T, T, T]):
+class DEUPDecomposition[T: WeakArrayLike[Any]](AdditiveDecomposition[T, T, T]):
     r"""DEUP additive uncertainty decomposition.
 
     Follows the classification setup of
@@ -184,14 +185,14 @@ class DEUPDecomposition[T](AdditiveDecomposition[T, T, T]):
     learner's estimate.
     """
 
-    representation: DEUPRepresentation
+    representation: DEUPRepresentation[T]
     base: LogBase = None
 
     @override
     @property
     def _total(self) -> T:
         """The total uncertainty: predicted expected cross-entropy."""
-        return self.representation.error_score  # ty:ignore[invalid-return-type]
+        return self.representation.error_score
 
     @override
     @property

@@ -107,10 +107,10 @@ def _refork_rng_stream(obj: nnx.Module, rngs: nnx.Rngs) -> None:
     if stored_rngs is None:
         return
     if isinstance(stored_rngs, nnx.Rngs):
-        obj.rngs = nnx.Rngs(**{name: rngs[name].fork() for name in stored_rngs})  # ty: ignore[unresolved-attribute]
+        obj.rngs = nnx.Rngs(**{name: rngs[name].fork() for name in stored_rngs})  # ty: ignore[missing-attribute]
         return
     collection = getattr(obj, "rng_collection", getattr(stored_rngs, "tag", "default"))
-    obj.rngs = rngs[collection].fork()  # ty: ignore[unresolved-attribute]
+    obj.rngs = rngs[collection].fork()  # ty: ignore[missing-attribute]
 
 
 @reset_traverser.register(cls=nnx.Variable)

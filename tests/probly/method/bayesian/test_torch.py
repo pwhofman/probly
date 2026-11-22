@@ -107,7 +107,7 @@ class TestCollectKLDivergence:
         model = bayesian(torch_conv_linear_model)
 
         kl = collect_kl_divergence(model)
-        kl.backward()  # ty: ignore[unresolved-attribute]
+        kl.backward()  # ty: ignore[missing-attribute]
 
         variational_params = {name: p for name, p in model.named_parameters() if name.endswith(("_mu", "_rho"))}
         assert variational_params

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import pytest
 
+pytest.importorskip("torch")
+
 
 def _torch_modules():
     pytest.importorskip("torch")
@@ -274,6 +276,41 @@ class TestTorchDEUPPredictor:
 
 class TestDEUPRepresentation:
     """Decomposition behaviour for a DEUP representation."""
+
+    @pytest.mark.parametrize("operation", ["index", "slice", "reshape", "stack"])
+    def test_batch_operations_keep_error_scores_aligned(self, operation: str) -> None:
+        torch, _ = _torch_modules()
+        from probly.method.deup._common import DEUPDecomposition  # noqa: PLC0415
+        from probly.method.deup.torch import TorchDEUPRepresentation  # noqa: PLC0415
+        from probly.representation.distribution.torch_categorical import (  # noqa: PLC0415
+            TorchProbabilityCategoricalDistribution,
+        )
+
+        probabilities = torch.tensor([[0.2, 0.8], [0.4, 0.6], [0.7, 0.3]])
+        scores = torch.tensor([0.1, 0.5, 0.9])
+        rep = TorchDEUPRepresentation(TorchProbabilityCategoricalDistribution(probabilities), scores)
+
+        if operation == "index":
+            result = rep[1]
+            expected_probabilities = probabilities[1]
+            expected_scores = scores[1]
+        elif operation == "slice":
+            result = rep[1:]
+            expected_probabilities = probabilities[1:]
+            expected_scores = scores[1:]
+        elif operation == "reshape":
+            result = torch.reshape(rep, (1, 3))
+            expected_probabilities = probabilities.reshape(1, 3, 2)
+            expected_scores = scores.reshape(1, 3)
+        else:
+            result = torch.stack((rep, rep), dim=1)
+            expected_probabilities = torch.stack((probabilities, probabilities), dim=1)
+            expected_scores = torch.stack((scores, scores), dim=1)
+
+        assert result.shape == expected_scores.shape
+        torch.testing.assert_close(result.softmax.probabilities, expected_probabilities)
+        torch.testing.assert_close(result.error_score, expected_scores)
+        torch.testing.assert_close(DEUPDecomposition(representation=result).total, expected_scores)
 
     def test_total_equals_error_score(self) -> None:
         torch, _ = _torch_modules()

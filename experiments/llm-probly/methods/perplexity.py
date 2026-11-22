@@ -13,15 +13,23 @@ table lists the standard baselines.
 from __future__ import annotations
 
 import math
+from typing import TYPE_CHECKING, Any
 
 from methods._cache_baselines import record
+
+if TYPE_CHECKING:
+    from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
 NAME = "perplexity"
 FAMILY = "baseline"
 NEEDS_MODEL = False
 
 
-def score(rows, model=None, tok=None) -> dict:
+def score(
+    rows: list[dict[str, Any]],
+    model: PreTrainedModel | None = None,
+    tok: PreTrainedTokenizerBase | None = None,
+) -> dict[str, Any]:
     """Uncertainty = perplexity of the greedy answer."""
     values = []
     for r in rows:

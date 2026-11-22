@@ -1,7 +1,8 @@
+from __future__ import annotations
+
+from common.evaluate import _rejection_area, aurc, auroc, bootstrap_auroc, ece, evaluate, kept_accuracy_curve, prr
 import numpy as np
 import pytest
-
-from common.evaluate import _rejection_area, aurc, auroc, bootstrap_auroc, ece, evaluate, prr
 
 CORRECT = np.array([True] * 12 + [False] * 38)
 
@@ -50,7 +51,7 @@ def test_evaluate_returns_both_metrics():
 
 
 def test_mismatched_lengths_raise():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="equally long"):
         auroc([0.1, 0.2], [True, False, True])
 
 
@@ -172,7 +173,7 @@ def test_overconfident_scores_have_large_ece():
 
 
 def test_ece_rejects_scores_outside_zero_one():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"values in \[0, 1\]"):
         ece([1.5, 0.2], [True, False])
 
 
@@ -180,20 +181,17 @@ def test_ece_rejects_scores_outside_zero_one():
 
 
 def test_kept_accuracy_curve_mean_is_the_prr_area():
-    from common.evaluate import kept_accuracy_curve
-
     rng = np.random.default_rng(5)
     correct = rng.random(100) < 0.4
     u = rng.random(100)
     rejected, accuracy = kept_accuracy_curve(u, correct)
-    assert rejected[0] == 0.0 and len(accuracy) == 100
+    assert rejected[0] == 0.0
+    assert len(accuracy) == 100
     assert np.isclose(accuracy[0], correct.mean())  # nothing rejected: overall accuracy
     assert np.isclose(accuracy.mean(), _rejection_area(u, correct.astype(float)))
 
 
 def test_perfect_kept_accuracy_curve_reaches_full_accuracy():
-    from common.evaluate import kept_accuracy_curve
-
     _, accuracy = kept_accuracy_curve((~CORRECT).astype(float), CORRECT)
     assert accuracy[-1] == 1.0  # only the most confident (a correct) answer is left
     assert np.all(np.diff(accuracy) >= 0)  # never drops when wrong answers go first

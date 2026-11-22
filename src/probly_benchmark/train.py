@@ -172,7 +172,7 @@ def _make_warmup_cosine(
         schedulers=[warmup, cosine],
         milestones=[warmup_iters],
     )
-    scheduler._step_per_iter = True  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+    scheduler._step_per_iter = True  # ty: ignore[missing-attribute]  # noqa: SLF001
     return scheduler
 
 
@@ -1032,7 +1032,7 @@ def _(
     """
     # The density head buffer is ~16 GB at ImageNet scale and is unused during training
     # Parking it on CPU during training decreases footprint sufficiently to use H200 cards
-    density_device = next(model.density_head.buffers()).device  # ty: ignore[unresolved-attribute]
+    density_device = next(model.density_head.buffers()).device  # ty: ignore[missing-union-attribute]
     model.density_head.to("cpu")
     _training_loop(
         model,
@@ -1230,7 +1230,7 @@ def _(
 
     # Phase 1: train encoder + classification_head only (exclude error_head).
     # Pass their parameters explicitly so the optimizer never touches error_head.
-    phase1_params = [{"params": list(model.encoder.parameters()) + list(model.classification_head.parameters())}]  # ty:ignore[unresolved-attribute]
+    phase1_params = [{"params": list(model.encoder.parameters()) + list(model.classification_head.parameters())}]  # ty:ignore[missing-union-attribute]
 
     # Strip cal_loader from train_kwargs forwarded into the inner training loop;
     # it is consumed only here and would otherwise leak into train_fn / val_fn.

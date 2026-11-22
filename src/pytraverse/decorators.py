@@ -723,7 +723,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
             res = traverser_fn(**kwargs)  # ty:ignore[missing-argument]
             if update_vars:
                 obj, updates = res  # ty:ignore[not-iterable]
-                for k, v in updates.items():  # ty:ignore[unresolved-attribute]
+                for k, v in updates.items():  # ty:ignore[missing-union-attribute]
                     if k not in vars:  # ty:ignore[unsupported-operator]
                         continue
                     state = vars[k].set(state, v)  # ty:ignore[not-subscriptable]

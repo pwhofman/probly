@@ -36,7 +36,7 @@ def _get_radar_axes(num_vars: int) -> type[PolarAxes]:
 
     class RadarTransform(PolarAxes.PolarTransform):  # ty: ignore[unsupported-base]
         def transform_path_non_affine(self, path: Path) -> Path:
-            if path._interpolation_steps > 1:  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+            if path._interpolation_steps > 1:  # ty: ignore[missing-attribute]  # noqa: SLF001
                 path = path.interpolated(num_vars)
             return Path(self.transform(path.vertices), path.codes)
 
