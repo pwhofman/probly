@@ -1,0 +1,27 @@
+{
+  "method": "mean_token_entropy",
+  "model": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+  "answer": "greedy",
+  "ids": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "uncertainty": [
+    0.37157151103019714,
+    1.3973270952701569,
+    0.5916478230307499,
+    0.4284880757331848,
+    0.6741475684102625
+  ],
+  "failed": [
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "seconds_per_question": 0.0
+}

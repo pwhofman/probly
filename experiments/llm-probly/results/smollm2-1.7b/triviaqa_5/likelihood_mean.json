@@ -1,0 +1,27 @@
+{
+  "method": "likelihood_mean",
+  "model": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+  "answer": "greedy",
+  "ids": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "uncertainty": [
+    0.058194175362586975,
+    0.7346542229255041,
+    0.12797057795493552,
+    0.13397721014916897,
+    0.2930721520096995
+  ],
+  "failed": [
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "seconds_per_question": 0.0
+}

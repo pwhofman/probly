@@ -1,0 +1,27 @@
+{
+  "method": "lexical_similarity",
+  "model": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+  "answer": "greedy",
+  "ids": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "uncertainty": [
+    -1.0,
+    -0.0962962962962963,
+    -0.6222222222222222,
+    -0.8,
+    -0.1925925925925926
+  ],
+  "failed": [
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "seconds_per_question": 6.079999729990959e-05
+}
