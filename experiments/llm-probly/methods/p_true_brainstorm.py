@@ -20,8 +20,6 @@ if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
 NAME = "p_true_brainstorm"
-FAMILY = "self_eval"
-NEEDS_MODEL = True
 MODE = "plain_ab"
 
 
@@ -32,7 +30,7 @@ def score(
 ) -> dict[str, Any]:
     """Score the greedy answer of every row with brainstorm p(True)."""
     if model is None or tok is None:
-        msg = f"{NAME} needs the model (NEEDS_MODEL = True)"
+        msg = f"{NAME} needs the model (needs_model=True in common/registry.py)"
         raise ValueError(msg)
 
     uncertainty, failed, coverage = [], [], []

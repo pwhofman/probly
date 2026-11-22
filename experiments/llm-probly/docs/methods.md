@@ -2,6 +2,10 @@
 
 All methods are plugins in `methods/` (see CONTRACT.md). Each one has a family, and each one reads the same cached generations.
 
+Family, model access (`text_only` / `logprobs` / `white_box`) and cost per question (generation passes,
+greedy answer included) are kept in one place, `common/registry.py`; `uv run python -m cli methods` prints them.
+The selector reads the same registry.
+
 | Method | Family | Needs logits? | Model calls per question |
 |---|---|---|---|
 | semantic_entropy | agreement | yes (sample log-likelihoods, `samples_ll_mean`) | 0 LLM calls (reads the 10 cached samples) + NLI model on sample pairs (up to 45) |
@@ -12,7 +16,7 @@ All methods are plugins in `methods/` (see CONTRACT.md). Each one has a family, 
 | p_true_empirical | self-eval | yes (probability of "True") | 10 extra generations + scoring |
 | verbalized_2s | self-eval | no (the model writes a confidence number, read from the text) | 1 short extra LLM call |
 | msp | baseline | yes (cached greedy log-probs) | 0 |
-| likelihood_mean / perplexity | baseline | yes (cached greedy log-likelihood) | 0 |
+| likelihood_mean | baseline | yes (cached greedy log-likelihood) | 0 |
 | mean_token_entropy | baseline | yes (cached token entropies) | 0 |
 
 ## How the cost works
@@ -25,3 +29,6 @@ The agreement methods (SE and discrete SE) also run an NLI model (`microsoft/deb
 
 - SE and discrete SE each run the NLI model separately, so the NLI work is done twice per question. The `.nli.npz` cache is meant to remove this; it is planned for next week.
 - SE differs from discrete SE only in the likelihood weights, so the two give almost the same AUROC (0.740 vs 0.744 at 0.5B, 0.781 vs 0.783 at 1.5B).
+- Perplexity is not a separate method: perplexity = exp(−likelihood_mean), and exp keeps the order, so it gives
+  exactly the same ranking (AUROC, AURC and PRR are identical; checked on 0.5B, 1.5B, 3B and 7B). It was removed
+  in week 3 so the selector does not get the same method twice.

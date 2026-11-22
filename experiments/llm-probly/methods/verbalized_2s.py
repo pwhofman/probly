@@ -20,8 +20,6 @@ if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
 NAME = "verbalized_2s"
-FAMILY = "self_eval"
-NEEDS_MODEL = True
 SCALE = 100  # the week 1 run on real data used 0-100
 
 
@@ -32,7 +30,7 @@ def score(
 ) -> dict[str, Any]:
     """Score the greedy answer of every row with verbalized confidence."""
     if model is None or tok is None:
-        msg = f"{NAME} needs the model (NEEDS_MODEL = True)"
+        msg = f"{NAME} needs the model (needs_model=True in common/registry.py)"
         raise ValueError(msg)
 
     uncertainty, failed, replies = [], [], []

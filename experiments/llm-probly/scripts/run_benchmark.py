@@ -9,17 +9,16 @@ Steps, in order. Each step is skipped if its output file already exists
 
 1. generate  -> data/<model>/<dataset>_<n>.jsonl + .meta.json  (scripts/generate.py)
 2. label     -> adds "correct" to that file           (scripts/label.py)
-3. methods   -> results/<model>/<dataset>/<method>.json, one per plugin in methods/
+3. methods   -> results/<model>/<dataset>/<method>.json, one per method in common/registry.py
 4. evaluate  -> AUROC, AURC, bootstrap interval per method (common/summary.py)
-5. table     -> results/<model>/<dataset>/summary.md
+5. table     -> results/<model>/<dataset>/summary.md (with family, access and cost from the registry)
 
-See CONTRACT.md for the plugin interface.
+See CONTRACT.md for the plugin interface. ``python -m cli run`` calls this module.
 """
 
 from __future__ import annotations
 
 import argparse
-import importlib
 import json
 from pathlib import Path
 import subprocess
@@ -29,6 +28,7 @@ from typing import TYPE_CHECKING
 
 from common.data import DATASETS, cache_path, load_jsonl
 from common.io import RESULTS_ROOT, save_scores
+from common.registry import REGISTRY, MethodSpec, check_registry, score_function
 from common.summary import summary_table, to_markdown
 import pandas as pd
 import yaml
@@ -37,18 +37,24 @@ if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
 ROOT = Path(__file__).resolve().parent.parent  # experiments/llm-probly
-METHODS_DIR = ROOT / "methods"
 PRECISIONS = ("float32", "float16", "bfloat16")  # same choices as scripts/generate.py
 
 
-def parse_args() -> argparse.Namespace:
-    """Read the command line options."""
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+def add_arguments(parser: argparse.ArgumentParser) -> None:
+    """Add the runner's options to a parser (used here and by ``cli.py``)."""
     parser.add_argument("--config", required=True, help="path to a YAML file in configs/")
     parser.add_argument("--methods", help="comma-separated method names; overrides the config")
-    parser.add_argument("--skip-model-methods", action="store_true", help="skip plugins with NEEDS_MODEL = True")
+    parser.add_argument(
+        "--skip-model-methods", action="store_true", help="skip methods with needs_model=True in the registry"
+    )
     parser.add_argument("--force", action="store_true", help="recompute method results even if they exist")
-    return parser.parse_args()
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Read the command line options."""
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    add_arguments(parser)
+    return parser.parse_args(argv)
 
 
 def load_config(path: str) -> dict:
@@ -70,6 +76,11 @@ def load_config(path: str) -> dict:
     return config
 
 
+def shown(path: Path) -> str:
+    """Path relative to experiments/llm-probly when it is inside, for shorter log lines."""
+    return str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)
+
+
 def run_script(module: str, *args: str) -> None:
     """Run one of the existing scripts, e.g. scripts.generate, as its own process."""
     command = [sys.executable, "-m", module, *args]
@@ -86,7 +97,7 @@ def prepare_data(config: dict) -> list[dict]:
     path = cache_path(model, n, dataset)
 
     if path.exists():
-        print(f"1. generate: skip, {path.relative_to(ROOT)} exists")
+        print(f"1. generate: skip, {shown(path)} exists")
     else:
         print("1. generate")
         run_script(
@@ -131,33 +142,27 @@ def cache_precision(config: dict) -> str:
 # ----- step 3: methods -----------------------------------------------------
 
 
-def find_plugins() -> dict:
-    """Import every file in methods/ and return {NAME: module}."""
-    plugins = {}
-    for file in sorted(METHODS_DIR.glob("*.py")):
-        if file.name.startswith("_"):  # skip __init__.py and helper files
-            continue
-        module = importlib.import_module(f"methods.{file.stem}")
-        for attr in ("NAME", "FAMILY", "NEEDS_MODEL", "score"):
-            if not hasattr(module, attr):
-                msg = f"methods/{file.name} has no {attr} (see CONTRACT.md)"
-                raise AttributeError(msg)
-        plugins[module.NAME] = module
-    return plugins
+def find_methods() -> dict[str, MethodSpec]:
+    """Return every registered method, after checking the registry against methods/."""
+    problems = check_registry()
+    if problems:
+        msg = "common/registry.py and methods/ disagree:\n  " + "\n  ".join(problems)
+        raise ValueError(msg)
+    return dict(REGISTRY)
 
 
-def choose_plugins(plugins: dict, config: dict, args: argparse.Namespace) -> dict:
+def choose_methods(methods: dict[str, MethodSpec], config: dict, args: argparse.Namespace) -> dict[str, MethodSpec]:
     """Keep only the methods this run should use."""
     wanted = args.methods.split(",") if args.methods else config["methods"]
     if wanted != "all":
-        unknown = [name for name in wanted if name not in plugins]
+        unknown = [name for name in wanted if name not in methods]
         if unknown:
-            msg = f"unknown methods {unknown}; available: {sorted(plugins)}"
+            msg = f"unknown methods {unknown}; available: {sorted(methods)}"
             raise ValueError(msg)
-        plugins = {name: plugins[name] for name in wanted}
+        methods = {name: methods[name] for name in wanted}
     if args.skip_model_methods:
-        plugins = {name: p for name, p in plugins.items() if not p.NEEDS_MODEL}
-    return plugins
+        methods = {name: spec for name, spec in methods.items() if not spec.needs_model}
+    return methods
 
 
 def load_llm(config: dict) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
@@ -175,59 +180,78 @@ def load_llm(config: dict) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
     return model, tok
 
 
-def run_methods(plugins: dict, rows: list[dict], config: dict, run: str, force: bool) -> None:
-    """Call score() for every plugin and save its record."""
+def run_methods(methods: dict[str, MethodSpec], rows: list[dict], config: dict, run: str, force: bool) -> None:
+    """Call score() for every method and save its record."""
     ids = [row["id"] for row in rows]
-    todo = {name: p for name, p in plugins.items() if force or not (RESULTS_ROOT / run / f"{name}.json").exists()}
-    for name in plugins:
+    todo = {name: s for name, s in methods.items() if force or not (RESULTS_ROOT / run / f"{name}.json").exists()}
+    for name in methods:
         if name not in todo:
             print(f"3. {name}: skip, result exists")
     if not todo:
         return
 
     model = tok = None
-    if any(p.NEEDS_MODEL for p in todo.values()):
+    if any(spec.needs_model for spec in todo.values()):
         print("   loading the model ...")
         model, tok = load_llm(config)
 
-    for name, plugin in todo.items():
+    for name, spec in todo.items():
         print(f"3. {name}")
         start = time.time()
-        record = plugin.score(rows, model, tok) if plugin.NEEDS_MODEL else plugin.score(rows)
+        score = score_function(name)
+        record = score(rows, model, tok) if spec.needs_model else score(rows)
         path = save_scores(record, run=run, expected_ids=ids)  # validates against the contract
-        print(f"   saved {path.relative_to(ROOT)} ({time.time() - start:.1f} s)")
+        print(f"   saved {shown(path)} ({time.time() - start:.1f} s)")
 
 
 # ----- steps 4 and 5: evaluate and table -------------------------------------
 
 
-def make_table(rows: list[dict], plugins: dict, run: str, precision: str) -> None:
+def add_registry_columns(table: pd.DataFrame) -> pd.DataFrame:
+    """Add family, access and cost from the registry after the method column.
+
+    Every method with a result file gets its family, also when this run skipped
+    it (e.g. ``--skip-model-methods``). Result files of unregistered week-1
+    methods get empty cells.
+    """
+    specs = [REGISTRY.get(m) for m in table["method"]]
+    table = table.copy()
+    table.insert(1, "family", pd.Series([s.family if s else "" for s in specs], index=table.index))
+    table.insert(2, "access", pd.Series([s.access if s else "" for s in specs], index=table.index))
+    # cost as text, so the Markdown table shows "11" and not "11.000"
+    table.insert(3, "cost", pd.Series([f"{s.cost:g}" if s else "" for s in specs], index=table.index))
+    return table
+
+
+def make_table(rows: list[dict], methods: dict[str, MethodSpec], run: str, precision: str) -> None:
     """Evaluate every method of this run and write the summary table."""
     print("4. evaluate")
-    table = summary_table(rows, run=run, methods=tuple(plugins))
-    families = pd.Series([getattr(plugins.get(m), "FAMILY", "") for m in table["method"]], index=table.index)
-    table.insert(1, "family", families)
+    table = add_registry_columns(summary_table(rows, run=run, methods=tuple(methods), results_root=RESULTS_ROOT))
 
     out = RESULTS_ROOT / run / "summary.md"
     header = f"Run `{run}`, {len(rows)} questions, precision {precision}\n\n"
     out.write_text(header + to_markdown(table))
-    print(f"5. table:    {out.relative_to(ROOT)}\n")
+    print(f"5. table:    {shown(out)}\n")
     print(f"precision: {precision}")
     print(table.to_string(index=False))
 
 
-def main() -> None:
+def run(args: argparse.Namespace) -> None:
     """Run all steps for one config."""
-    args = parse_args()
     config = load_config(args.config)
-    run = f"{config['model']}/{config['dataset']}_{config['n']}"  # results/<run>/
-    print(f"run: {run}")
+    run_name = f"{config['model']}/{config['dataset']}_{config['n']}"  # results/<run>/
+    print(f"run: {run_name}")
 
     rows = prepare_data(config)
     precision = cache_precision(config)
-    plugins = choose_plugins(find_plugins(), config, args)
-    run_methods(plugins, rows, config, run, args.force)
-    make_table(rows, plugins, run, precision)
+    methods = choose_methods(find_methods(), config, args)
+    run_methods(methods, rows, config, run_name, args.force)
+    make_table(rows, methods, run_name, precision)
+
+
+def main() -> None:
+    """Command line entry point."""
+    run(parse_args())
 
 
 if __name__ == "__main__":

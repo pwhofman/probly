@@ -21,8 +21,6 @@ if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
 NAME = "lexical_similarity"
-FAMILY = "agreement"
-NEEDS_MODEL = False
 
 
 def tokens(text: str) -> list[str]:
