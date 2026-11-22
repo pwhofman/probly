@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 @create_ddu_representation.register(TorchCategoricalDistribution)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchDDURepresentation(DDURepresentation, TorchAxisProtected):
+class TorchDDURepresentation(DDURepresentation, TorchAxisProtected["TorchDDURepresentation"]):
     """DDU representation backed by torch tensors."""
 
     softmax: TorchCategoricalDistribution

@@ -13,8 +13,12 @@ from __future__ import annotations
 from itertools import combinations
 import re
 import time
+from typing import TYPE_CHECKING, Any
 
 from methods._cache_baselines import record
+
+if TYPE_CHECKING:
+    from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
 NAME = "lexical_similarity"
 FAMILY = "agreement"
@@ -49,7 +53,11 @@ def rouge_l(a: str, b: str) -> float:
     return 2 * precision * recall / (precision + recall)
 
 
-def score(rows, model=None, tok=None) -> dict:
+def score(
+    rows: list[dict[str, Any]],
+    model: PreTrainedModel | None = None,
+    tok: PreTrainedTokenizerBase | None = None,
+) -> dict[str, Any]:
     """Uncertainty = minus the mean pairwise ROUGE-L of the samples."""
     start = time.perf_counter()
     values = []

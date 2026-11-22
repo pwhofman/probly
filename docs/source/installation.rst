@@ -3,7 +3,7 @@
 Installation
 ============
 
-`probly` is intended to work with **Python 3.12 and above**. Installation can be done via `uv` or
+`probly` is intended to work with **Python 3.13 and above**. Installation can be done via `uv` or
 directly via `pip`:
 
 .. code-block:: sh

@@ -7,7 +7,7 @@ name = "probly"
 dynamic = ["version", "readme"]
 description = "Uncertainty Representation and Quantification for Machine Learning"
 license = "MIT"
-requires-python = ">=3.12.0"
+requires-python = ">=3.13"
 dependencies = [
     "scipy>=1.14.1", # first cp313 wheels
     "matplotlib>=3.9.2",
@@ -15,7 +15,7 @@ dependencies = [
     "numpy>=2.1.0", # first cp313 wheels
     "tqdm>=4.25.0",
     "flextype>=0.3.0",
-    "ndlike>=0.2.4",
+    "ndlike>=0.5.0",
 ]
 authors = [
     { name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de" },
@@ -34,7 +34,6 @@ classifiers = [
     'Operating System :: Unix',
     'Operating System :: MacOS',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.12',
     'Programming Language :: Python :: 3.13',
     'Programming Language :: Python :: 3.14',
 ]
@@ -119,9 +118,9 @@ test = [
     { include-group = "river" },
 ]
 lint = [
-    "ruff>=0.16.8",                                         # for linting
+    "ruff>=0.17.5",                                         # for linting
     "prek>=0.3.8",                                          # for running the linters pre-commit hooks
-    "ty>=0.0.82",                                           # for static type checking
+    "ty>=0.0.101",                                          # for static type checking
     "sigx @ git+https://github.com/Cortys/sigx.git@master",
 ]
 docs = [
@@ -162,7 +161,7 @@ dev = { requires-python = ">=3.13,<3.15" }
 
 [tool.ruff]
 line-length = 120
-target-version = "py312"
+target-version = "py313"
 output-format = "full"
 
 # Exclude a variety of commonly ignored directories.
@@ -197,7 +196,23 @@ exclude = [
     "supporting_files",
     "examples",
     "web",
-    "experiments",
+    # Only experiments/llm-probly is linted; the other experiment folders stay excluded.
+    "experiments/first_order_data",
+    "experiments/gemma",
+    "experiments/gpn_uncertainty",
+    "experiments/river_uncertainty",
+    "experiments/rl_uncertainty",
+    "experiments/stacking",
+    "experiments/llm-probly/archive",
+    "experiments/llm-probly/notebooks",
+    # Rewritten or removed this week; each owner removes the entry in that PR:
+    # A1 (semantic files, build_nli_cache.py), C1 (common/reflexive.py), C2 (scripts/r3_methods.py).
+    "experiments/llm-probly/methods/_se_common.py",
+    "experiments/llm-probly/methods/semantic_entropy.py",
+    "experiments/llm-probly/methods/discrete_semantic_entropy.py",
+    "experiments/llm-probly/scripts/build_nli_cache.py",
+    "experiments/llm-probly/common/reflexive.py",
+    "experiments/llm-probly/scripts/r3_methods.py",
     "*.pyi",
 ]
 
@@ -257,6 +272,24 @@ convention = "google"
 "docs/**/*.py" = ["INP001", "PTH", "I002"]
 "src/probly_benchmark/*.py" = ["T201"]
 "experiments/**/*.py" = ["INP001", "T201", "D103"]
+"experiments/llm-probly/tests/*.py" = [
+    "S101",
+    "INP001",
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "ANN001",
+    "ANN201",
+    "ANN202",
+    "ANN204",
+    "ANN003",
+    "D107",
+    "ARG002",
+    "PLR2004",
+]
+# Plugins implement score(rows, model=None, tok=None); cache-only plugins ignore model and tok.
+"experiments/llm-probly/methods/*.py" = ["ARG001"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 15
@@ -294,13 +327,37 @@ exclude_also = [
 exclude_lines = ["if TYPE_CHECKING"]
 
 [tool.ty.src]
-exclude = ["notebooks", "docs", "supporting_files", "examples", "experiments", "web", "stubs"]
+exclude = [
+    "notebooks",
+    "docs",
+    "supporting_files",
+    "examples",
+    "web",
+    "stubs",
+    # Only experiments/llm-probly is type-checked; the other experiment folders stay excluded.
+    "experiments/first_order_data",
+    "experiments/gemma",
+    "experiments/gpn_uncertainty",
+    "experiments/river_uncertainty",
+    "experiments/rl_uncertainty",
+    "experiments/stacking",
+    "experiments/llm-probly/archive",
+    "experiments/llm-probly/notebooks",
+    # Rewritten or removed this week (same list as in [tool.ruff] exclude).
+    "experiments/llm-probly/methods/_se_common.py",
+    "experiments/llm-probly/methods/semantic_entropy.py",
+    "experiments/llm-probly/methods/discrete_semantic_entropy.py",
+    "experiments/llm-probly/scripts/build_nli_cache.py",
+    "experiments/llm-probly/common/reflexive.py",
+    "experiments/llm-probly/scripts/r3_methods.py",
+]
 
 [tool.ty.environment]
-extra-paths = ["./stubs"]
+extra-paths = ["./stubs", "./experiments/llm-probly"]
 
 [[tool.ty.overrides]]
-include = ["tests/probly/**"]
+# The generated stubs/probly package shadows src/probly for these folders (same as for tests/probly).
+include = ["tests/probly/**", "experiments/llm-probly/**"]
 
 [tool.ty.overrides.rules]
-unresolved-import = "ignore"
+import-not-found = "ignore"

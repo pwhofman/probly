@@ -7,12 +7,21 @@ Plugin version of scripts/baseline_likelihood.py.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from transformers import PreTrainedModel, PreTrainedTokenizerBase
+
 NAME = "likelihood_mean"
 FAMILY = "baseline"
 NEEDS_MODEL = False
 
 
-def score(rows, model=None, tok=None) -> dict:
+def score(
+    rows: list[dict[str, Any]],
+    model: PreTrainedModel | None = None,
+    tok: PreTrainedTokenizerBase | None = None,
+) -> dict[str, Any]:
     """Uncertainty = minus the mean log likelihood of the greedy answer."""
     return {
         "method": NAME,

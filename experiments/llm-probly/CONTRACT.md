@@ -30,9 +30,10 @@ Example:
 Every file in `methods/` has:
 
 ```python
-NAME = "likelihood_mean"   # same as the result file name
-FAMILY = "baseline"        # "agreement" | "self_eval" | "baseline" | "hybrid"
-NEEDS_MODEL = False        # True: the runner loads the LLM and passes model, tok
+NAME = "likelihood_mean"  # same as the result file name
+FAMILY = "baseline"  # "agreement" | "self_eval" | "baseline" | "hybrid"
+NEEDS_MODEL = False  # True: the runner loads the LLM and passes model, tok
+
 
 def score(rows, model=None, tok=None) -> dict:
     """Return one score record (rules 1-5 above) for these rows."""

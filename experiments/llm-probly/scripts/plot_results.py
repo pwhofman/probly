@@ -21,18 +21,25 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 
 import matplotlib as mpl
+from matplotlib.ticker import PercentFormatter
 
 mpl.use("Agg")  # write files only, no window
-import matplotlib.pyplot as plt
-import numpy as np
+from typing import TYPE_CHECKING
 
 from common.data import cache_path, load_jsonl
 from common.evaluate import kept_accuracy_curve
 from common.io import RESULTS_ROOT
 from common.summary import compare_models, find_models
+import matplotlib.pyplot as plt
+import numpy as np
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from matplotlib.axes import Axes
+    import pandas as pd
 
 # Fixed color + marker per method: color follows the method, never its position in a plot.
 # Colors: the 8 categorical slots of the shared chart palette (checked for colour-blind
@@ -58,7 +65,7 @@ GRID = "#e4e3df"
 SURFACE = "#fcfcfb"
 
 
-def style_axes(ax) -> None:
+def style_axes(ax: Axes) -> None:
     """Quiet grid and axes, so the data lines stand out."""
     ax.set_facecolor(SURFACE)
     ax.grid(axis="y", color=GRID, linewidth=0.8)
@@ -70,14 +77,14 @@ def style_axes(ax) -> None:
     ax.tick_params(colors=INK_2, labelsize=9)
 
 
-def legend(ax) -> None:
+def legend(ax: Axes) -> None:
     """Legend outside the plot on the right, text in ink (not series colours)."""
     leg = ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1), frameon=False, fontsize=9)
     for text in leg.get_texts():
         text.set_color(INK)
 
 
-def plot_vs_size(long, metric: str, title: str, out: Path) -> None:
+def plot_vs_size(long: pd.DataFrame, metric: str, title: str, out: Path) -> None:
     """One line per method: the metric at each model size."""
     models = list(dict.fromkeys(long["model"]))
     x = np.arange(len(models))
@@ -91,12 +98,28 @@ def plot_vs_size(long, metric: str, title: str, out: Path) -> None:
         if metric == "auroc":  # bootstrap 95 % interval as thin error bars
             err = np.vstack([y - part["ci_low"].to_numpy(float), part["ci_high"].to_numpy(float) - y])
             ax.errorbar(x + shift, y, yerr=err, color=color, linewidth=0, elinewidth=1, capsize=3, alpha=0.6)
-        ax.plot(x + shift, y, color=color, marker=marker, markersize=8, linewidth=2, label=method,
-                markeredgecolor=SURFACE, markeredgewidth=1.5)
+        ax.plot(
+            x + shift,
+            y,
+            color=color,
+            marker=marker,
+            markersize=8,
+            linewidth=2,
+            label=method,
+            markeredgecolor=SURFACE,
+            markeredgewidth=1.5,
+        )
     reference = 0.5 if metric == "auroc" else 0.0
     ax.axhline(reference, color=INK_2, linewidth=1, linestyle=":")
-    ax.annotate("random", xy=(0.01, reference), xycoords=("axes fraction", "data"),
-                xytext=(0, 3), textcoords="offset points", color=INK_2, fontsize=8)
+    ax.annotate(
+        "random",
+        xy=(0.01, reference),
+        xycoords=("axes fraction", "data"),
+        xytext=(0, 3),
+        textcoords="offset points",
+        color=INK_2,
+        fontsize=8,
+    )
     ax.set_xticks(x, [SIZE_LABEL.get(m, m) for m in models])
     ax.set_xlabel("model size (Qwen2.5-Instruct)", color=INK_2, fontsize=9)
     ax.set_ylabel(metric.upper(), color=INK_2, fontsize=9)
@@ -133,14 +156,23 @@ def plot_rejection(rows: list[dict], folder: Path, title: str, out: Path) -> Non
         rejected, accuracy = kept_accuracy_curve(record["uncertainty"], correct)
         color, marker = STYLE.get(method, OTHER)
         keep = rejected <= 0.9  # the last points average only a few questions: too noisy
-        ax.plot(rejected[keep], accuracy[keep], color=color, linewidth=2, label=method,
-                marker=marker, markevery=max(1, keep.sum() // 6), markersize=7,
-                markeredgecolor=SURFACE, markeredgewidth=1.5)
+        ax.plot(
+            rejected[keep],
+            accuracy[keep],
+            color=color,
+            linewidth=2,
+            label=method,
+            marker=marker,
+            markevery=max(1, keep.sum() // 6),
+            markersize=7,
+            markeredgecolor=SURFACE,
+            markeredgewidth=1.5,
+        )
 
     ax.set_xlim(0, 0.9)
     ax.set_ylim(0, 1.02)
-    ax.xaxis.set_major_formatter(mpl.ticker.PercentFormatter(1.0))
-    ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1.0))
+    ax.xaxis.set_major_formatter(PercentFormatter(1.0))
+    ax.yaxis.set_major_formatter(PercentFormatter(1.0))
     ax.set_xlabel("most uncertain questions rejected", color=INK_2, fontsize=9)
     ax.set_ylabel("accuracy on the questions kept", color=INK_2, fontsize=9)
     ax.set_title(title, color=INK, fontsize=11, loc="left")
@@ -167,7 +199,8 @@ def main() -> None:
     run_name = f"{args.dataset}_{args.n}"
     models = find_models(run_name)
     if not models:
-        raise SystemExit(f"no results/<model>/{run_name}/ folders yet; run run_benchmark first")
+        msg = f"no results/<model>/{run_name}/ folders yet; run run_benchmark first"
+        raise SystemExit(msg)
     out_dir = RESULTS_ROOT / "plots"
     out_dir.mkdir(exist_ok=True)
 
@@ -183,8 +216,12 @@ def main() -> None:
     if args.curves_model in rows_by_model:
         out = out_dir / f"{run_name}_{args.curves_model}_rejection.png"
         label = SIZE_LABEL.get(args.curves_model, args.curves_model)
-        plot_rejection(rows_by_model[args.curves_model], RESULTS_ROOT / args.curves_model / run_name,
-                       f"Rejection curves · Qwen {label} · {name}", out)
+        plot_rejection(
+            rows_by_model[args.curves_model],
+            RESULTS_ROOT / args.curves_model / run_name,
+            f"Rejection curves · Qwen {label} · {name}",
+            out,
+        )
         written.append(out)
     else:
         print(f"no results for {args.curves_model}, rejection curves skipped")

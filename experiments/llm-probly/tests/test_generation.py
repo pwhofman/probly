@@ -11,6 +11,7 @@ transformers = pytest.importorskip("transformers")
 tokenizers = pytest.importorskip("tokenizers")
 
 from common.generation import generate_answers, stop_at_newline_config  # noqa: E402
+
 from probly.representer.sampler.huggingface import HFTextGenerationSampler  # noqa: E402
 
 WORDS = ["<pad>", "<eos>", "\n", ".\n", "a", "b", "c", "Paris", "1822", "the", "Question", ":", "user", "assistant"]

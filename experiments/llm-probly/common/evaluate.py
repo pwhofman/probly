@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
-from numpy.typing import ArrayLike
-from probly.evaluation.selective_prediction import selective_prediction
 from sklearn.metrics import roc_auc_score
+
+from probly.evaluation.selective_prediction import selective_prediction
+
+if TYPE_CHECKING:
+    from numpy.typing import ArrayLike
 
 
 def _prepare(uncertainty: ArrayLike, correct: ArrayLike) -> tuple[np.ndarray, np.ndarray]:
@@ -137,10 +142,7 @@ def ece(uncertainty: ArrayLike, correct: ArrayLike, n_bins: int = 10) -> float:
     total = 0.0
     for i in range(n_bins):
         lo, hi = edges[i], edges[i + 1]
-        if i == 0:
-            in_bin = (confidence >= lo) & (confidence <= hi)
-        else:
-            in_bin = (confidence > lo) & (confidence <= hi)
+        in_bin = (confidence >= lo) & (confidence <= hi) if i == 0 else (confidence > lo) & (confidence <= hi)
         if not in_bin.any():
             continue
         gap = abs(accuracy[in_bin].mean() - confidence[in_bin].mean())
@@ -188,7 +190,13 @@ def bootstrap_auroc(
     return float(lo), float(hi)
 
 
-def rejection_curve(uncertainty, correct, n_bins=10, n_tie_seeds=20, seed=0):
+def rejection_curve(
+    uncertainty: ArrayLike,
+    correct: ArrayLike,
+    n_bins: int = 10,
+    n_tie_seeds: int = 20,
+    seed: int = 0,
+) -> tuple[np.ndarray, np.ndarray]:
     """Error rate of the kept questions after rejecting the most uncertain ones.
 
     Returns ``(rejected, error)``: ``rejected[i]`` is the fraction of questions

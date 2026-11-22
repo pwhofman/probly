@@ -20,7 +20,6 @@ import argparse
 from common.correctness import is_correct, is_correct_letter, matching_alias
 from common.data import DATASETS, DEFAULT_SEED, cache_path, load_jsonl, load_questions, save_jsonl
 
-
 # How an answer is judged, per dataset: alias matching for free text, exact letter for multiple choice.
 CORRECTNESS = {"triviaqa": is_correct, "mmlu": is_correct_letter}
 

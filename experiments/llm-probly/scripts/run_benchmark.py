@@ -25,12 +25,16 @@ from pathlib import Path
 import subprocess
 import sys
 import time
-
-import yaml
+from typing import TYPE_CHECKING
 
 from common.data import DATASETS, cache_path, load_jsonl
 from common.io import RESULTS_ROOT, save_scores
 from common.summary import summary_table, to_markdown
+import pandas as pd
+import yaml
+
+if TYPE_CHECKING:
+    from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
 ROOT = Path(__file__).resolve().parent.parent  # experiments/llm-probly
 METHODS_DIR = ROOT / "methods"
@@ -52,12 +56,15 @@ def load_config(path: str) -> dict:
     config = yaml.safe_load(Path(path).read_text())
     missing = [key for key in ("model", "dataset", "n") if key not in config]
     if missing:
-        raise ValueError(f"{path}: missing keys {missing}")
+        msg = f"{path}: missing keys {missing}"
+        raise ValueError(msg)
     if config["dataset"] not in DATASETS:  # the datasets DATA registered in common/data.py
-        raise ValueError(f"unknown dataset {config['dataset']!r}; known: {sorted(DATASETS)}")
+        msg = f"unknown dataset {config['dataset']!r}; known: {sorted(DATASETS)}"
+        raise ValueError(msg)
     config.setdefault("precision", "float32")
     if config["precision"] not in PRECISIONS:
-        raise ValueError(f"precision must be one of {PRECISIONS}, got {config['precision']!r}")
+        msg = f"precision must be one of {PRECISIONS}, got {config['precision']!r}"
+        raise ValueError(msg)
     config.setdefault("device", "cpu")
     config.setdefault("methods", "all")
     return config
@@ -67,7 +74,7 @@ def run_script(module: str, *args: str) -> None:
     """Run one of the existing scripts, e.g. scripts.generate, as its own process."""
     command = [sys.executable, "-m", module, *args]
     print("   $", " ".join(command[1:]))
-    subprocess.run(command, cwd=ROOT, check=True)  # check=True: stop if the script fails
+    subprocess.run(command, cwd=ROOT, check=True)  # noqa: S603 - fixed module names; check=True stops on failure
 
 
 # ----- steps 1 and 2: data -------------------------------------------------
@@ -111,9 +118,12 @@ def cache_precision(config: dict) -> str:
         return "unknown"
     used = json.loads(meta_path.read_text())["settings"]["precision"]
     if used != config["precision"]:
-        raise ValueError(
+        msg = (
             f"{meta_path.name} says the cache was made with {used}, but the config asks for "
-            f"{config['precision']}. Change the config, or delete the cache to regenerate it.",
+            f"{config['precision']}. Change the config, or delete the cache to regenerate it."
+        )
+        raise ValueError(
+            msg,
         )
     return used
 
@@ -130,7 +140,8 @@ def find_plugins() -> dict:
         module = importlib.import_module(f"methods.{file.stem}")
         for attr in ("NAME", "FAMILY", "NEEDS_MODEL", "score"):
             if not hasattr(module, attr):
-                raise AttributeError(f"methods/{file.name} has no {attr} (see CONTRACT.md)")
+                msg = f"methods/{file.name} has no {attr} (see CONTRACT.md)"
+                raise AttributeError(msg)
         plugins[module.NAME] = module
     return plugins
 
@@ -141,20 +152,21 @@ def choose_plugins(plugins: dict, config: dict, args: argparse.Namespace) -> dic
     if wanted != "all":
         unknown = [name for name in wanted if name not in plugins]
         if unknown:
-            raise ValueError(f"unknown methods {unknown}; available: {sorted(plugins)}")
+            msg = f"unknown methods {unknown}; available: {sorted(plugins)}"
+            raise ValueError(msg)
         plugins = {name: plugins[name] for name in wanted}
     if args.skip_model_methods:
         plugins = {name: p for name, p in plugins.items() if not p.NEEDS_MODEL}
     return plugins
 
 
-def load_llm(config: dict):
+def load_llm(config: dict) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
     """Load the LLM once for all plugins that need it."""
     # Imported here, not at the top: torch and transformers are slow to import
     # and not needed when no plugin uses the model.
-    from probly.representer.sampler.huggingface import load_model
-    from scripts.generate import MODELS
-    from scripts.generate import PRECISIONS as TORCH_DTYPES
+    from scripts.generate import MODELS, PRECISIONS as TORCH_DTYPES  # noqa: PLC0415
+
+    from probly.representer.sampler.huggingface import load_model  # noqa: PLC0415
 
     # Same precision as the cache, so methods see the model that wrote the answers.
     model, tok = load_model(MODELS[config["model"]], model_kwargs={"dtype": TORCH_DTYPES[config["precision"]]})
@@ -188,11 +200,13 @@ def run_methods(plugins: dict, rows: list[dict], config: dict, run: str, force: 
 
 # ----- steps 4 and 5: evaluate and table -------------------------------------
 
+
 def make_table(rows: list[dict], plugins: dict, run: str, precision: str) -> None:
     """Evaluate every method of this run and write the summary table."""
     print("4. evaluate")
     table = summary_table(rows, run=run, methods=tuple(plugins))
-    table.insert(1, "family", [getattr(plugins.get(m), "FAMILY", "") for m in table["method"]])
+    families = pd.Series([getattr(plugins.get(m), "FAMILY", "") for m in table["method"]], index=table.index)
+    table.insert(1, "family", families)
 
     out = RESULTS_ROOT / run / "summary.md"
     header = f"Run `{run}`, {len(rows)} questions, precision {precision}\n\n"

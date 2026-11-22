@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
-
-import common.data
 from common.correctness import answer_letter, is_correct_letter
+import common.data
+import pytest
 
 PROMPT = (
     "The following are multiple choice questions (with answers) about astronomy.\n\n"

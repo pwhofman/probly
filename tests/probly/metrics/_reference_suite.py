@@ -64,10 +64,10 @@ class ReferenceSuite:
         y_score = _random_scores(rng, 20, tied=tied)
 
         fpr_sk, tpr_sk, _ = sm.roc_curve(y_true, y_score, drop_intermediate=False)
-        expected = np.unique(np.stack([fpr_sk, tpr_sk], axis=-1), axis=0)
+        expected = np.unique(np.stack([fpr_sk, tpr_sk], axis=-1, dtype=float), axis=0)
 
         fpr, tpr, _ = roc_curve(array_fn(y_true, dtype=float), array_fn(y_score, dtype=float))
-        actual = np.unique(np.stack([np.asarray(fpr), np.asarray(tpr)], axis=-1), axis=0)
+        actual = np.unique(np.stack([np.asarray(fpr), np.asarray(tpr)], axis=-1, dtype=float), axis=0)
 
         np.testing.assert_allclose(actual, expected, atol=1e-6)
 

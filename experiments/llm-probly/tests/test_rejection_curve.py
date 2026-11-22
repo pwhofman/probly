@@ -1,6 +1,7 @@
-import numpy as np
+from __future__ import annotations
 
 from common.evaluate import rejection_curve
+import numpy as np
 
 
 def test_perfect_scores_drop_to_zero_error():

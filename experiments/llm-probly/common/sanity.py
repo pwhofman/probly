@@ -5,11 +5,17 @@ deliberately wrong one. A method that works should give clearly higher
 confidence to the correct answers.
 """
 
+from __future__ import annotations
+
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from sklearn.metrics import roc_auc_score
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 SANITY = [
     ("What is the capital of France?", "Paris", "Berlin"),
@@ -25,7 +31,10 @@ SANITY = [
 ]
 
 
-def run_sanity(confidence_fn, samples=None):
+def run_sanity(
+    confidence_fn: Callable[[str, str, list[str] | None], float],
+    samples: dict[str, list[str]] | None = None,
+) -> dict[str, Any]:
     """Run the sanity test.
 
     Args:
@@ -48,16 +57,16 @@ def run_sanity(confidence_fn, samples=None):
     return {
         "auroc": float(roc_auc_score(label, conf)),
         "gap": float(conf[label == 1].mean() - conf[label == 0].mean()),
-        "n_distinct": int(len(np.unique(np.round(conf, 3)))),
+        "n_distinct": len(np.unique(np.round(conf, 3))),
         "confidences": conf.tolist(),
     }
 
 
-def save_sanity(result, method, model_name, folder="results/sanity"):
+def save_sanity(result: dict[str, Any], method: str, model_name: str, folder: str | Path = "results/sanity") -> Path:
     """Save a sanity test result as results/sanity/<method>_<model>.json."""
     Path(folder).mkdir(parents=True, exist_ok=True)
-    short = model_name.split("/")[-1]
+    short = model_name.rsplit("/", maxsplit=1)[-1]
     path = Path(folder) / f"{method}_{short}.json"
-    with open(path, "w") as f:
+    with path.open("w") as f:
         json.dump({"method": method, "model": model_name, **result}, f, indent=2)
     return path

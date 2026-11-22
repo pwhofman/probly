@@ -17,11 +17,11 @@ does not exist, from the older flat folder ``results/<run>/``.
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 import json
+from pathlib import Path
 import sys
 import textwrap
-from dataclasses import dataclass
-from pathlib import Path
 from xml.sax.saxutils import escape
 
 import numpy as np
@@ -59,14 +59,34 @@ GOOD, BAD, MID = "#1e88e5", "#ff0d57", "#f5a623"  # same blue and red as probly'
 
 THEMES = {
     "light": {
-        "bg1": "#ffffff", "bg2": "#f7f8fa", "border": "#cccccc", "text": "#1a1a1a", "muted": "#708090",
-        "faint": "#9aa4b0", "bubble": "#eef0f3", "bubble_line": "#d8dce1", "track": "#e7e9ec",
-        "panel": "#f4f5f7", "dot1": "#d3d7dc", "dot2": "#dfe2e6", "dot3": "#e7e9ec",
+        "bg1": "#ffffff",
+        "bg2": "#f7f8fa",
+        "border": "#cccccc",
+        "text": "#1a1a1a",
+        "muted": "#708090",
+        "faint": "#9aa4b0",
+        "bubble": "#eef0f3",
+        "bubble_line": "#d8dce1",
+        "track": "#e7e9ec",
+        "panel": "#f4f5f7",
+        "dot1": "#d3d7dc",
+        "dot2": "#dfe2e6",
+        "dot3": "#e7e9ec",
     },
     "dark": {
-        "bg1": "#0d1117", "bg2": "#161b22", "border": "#30363d", "text": "#e6edf3", "muted": "#8b949e",
-        "faint": "#6e7681", "bubble": "#21262d", "bubble_line": "#30363d", "track": "#30363d",
-        "panel": "#161b22", "dot1": "#484f58", "dot2": "#3b424a", "dot3": "#30363d",
+        "bg1": "#0d1117",
+        "bg2": "#161b22",
+        "border": "#30363d",
+        "text": "#e6edf3",
+        "muted": "#8b949e",
+        "faint": "#6e7681",
+        "bubble": "#21262d",
+        "bubble_line": "#30363d",
+        "track": "#30363d",
+        "panel": "#161b22",
+        "dot1": "#484f58",
+        "dot2": "#3b424a",
+        "dot3": "#30363d",
     },
 }
 
@@ -98,7 +118,7 @@ def render_item(item: Item, total: float) -> str:
     d = (item.t_off + fall) / total
     keys = ";".join(_key(x) for x in (0, a, b, c, d, 1))
     on, off = _key(item.on), "0"
-    values = ";".join((off, off, on, on, off, off))
+    values = f"{off};{off};{on};{on};{off};{off}"
     animate = (
         f'<animate attributeName="{item.attr}" values="{values}" keyTimes="{keys}" '
         f'dur="{_key(total)}s" repeatCount="indefinite"/>'
@@ -106,7 +126,16 @@ def render_item(item: Item, total: float) -> str:
     return f'<{item.tag} {item.attrs} {item.attr}="0">{item.inner}{animate}</{item.tag}>'
 
 
-def typed(text_lines: list[str], x: float, y: float, step: float, t_start: float, t_off: float, theme: dict, size=12):
+def typed(
+    text_lines: list[str],
+    x: float,
+    y: float,
+    step: float,
+    t_start: float,
+    t_off: float,
+    theme: dict,
+    size: int = 12,
+) -> tuple[list[Item], float]:
     """Per-character typing effect (like probly's demo). Returns items and the end time."""
     items: list[Item] = []
     t = t_start
@@ -144,7 +173,15 @@ def scene_items(scene: dict, t0: float, theme: dict) -> tuple[list[Item], float]
     height = 30 + 18 * (len(question) - 1)
     t = t0 + 0.4
     items.append(Item("text", f'x="{bx + 4:.1f}" y="66" font-size="10" fill="{theme["muted"]}"', "you", t, t_off))
-    items.append(Item("rect", f'x="{bx:.1f}" y="74" width="{width:.1f}" height="{height}" rx="12" fill="{theme["bubble"]}" stroke="{theme["bubble_line"]}"', "", t, t_off))
+    items.append(
+        Item(
+            "rect",
+            f'x="{bx:.1f}" y="74" width="{width:.1f}" height="{height}" rx="12" fill="{theme["bubble"]}" stroke="{theme["bubble_line"]}"',
+            "",
+            t,
+            t_off,
+        )
+    )
     typing, t = typed(question, bx + 14, 94, 0.04, t + 0.3, t_off, theme)
     items += typing
 
@@ -158,7 +195,9 @@ def scene_items(scene: dict, t0: float, theme: dict) -> tuple[list[Item], float]
     )
     items.append(Item("g", "", dots, t, t + 1.0))
     t += 1.0
-    items.append(Item("text", f'x="{CHAT_LEFT}" y="{ya}" font-size="10" fill="{theme["muted"]}"', "assistant", t, t_off))
+    items.append(
+        Item("text", f'x="{CHAT_LEFT}" y="{ya}" font-size="10" fill="{theme["muted"]}"', "assistant", t, t_off)
+    )
     typing, t = typed(answer, CHAT_LEFT, ya + 28, 0.03, t + 0.1, t_off, theme)
     items += typing
 
@@ -171,10 +210,39 @@ def scene_items(scene: dict, t0: float, theme: dict) -> tuple[list[Item], float]
         rank = 1 + int(np.sum(all_values > uncertainty))
         color = BAD if pct >= 0.67 else GOOD if pct <= 0.33 else MID
         pcts.append(pct)
-        items.append(Item("text", f'x="{PANEL_X + 16}" y="{y}" font-size="11" fill="{theme["text"]}"', escape(label), t, t_off))
-        items.append(Item("text", f'x="{PANEL_X + PANEL_W - 16}" y="{y}" font-size="10" text-anchor="end" fill="{theme["muted"]}"', f"{uncertainty:.2f} · rank {rank}/{n}", t, t_off))
-        items.append(Item("rect", f'x="{PANEL_X + 16}" y="{y + 8}" width="{PANEL_W - 32}" height="9" rx="4.5" fill="{theme["track"]}"', "", t, t_off))
-        items.append(Item("rect", f'x="{PANEL_X + 16}" y="{y + 8}" height="9" rx="4.5" fill="{color}"', "", t, t_off, attr="width", on=(PANEL_W - 32) * max(pct, 0.03), rise=0.6))
+        items.append(
+            Item("text", f'x="{PANEL_X + 16}" y="{y}" font-size="11" fill="{theme["text"]}"', escape(label), t, t_off)
+        )
+        items.append(
+            Item(
+                "text",
+                f'x="{PANEL_X + PANEL_W - 16}" y="{y}" font-size="10" text-anchor="end" fill="{theme["muted"]}"',
+                f"{uncertainty:.2f} · rank {rank}/{n}",
+                t,
+                t_off,
+            )
+        )
+        items.append(
+            Item(
+                "rect",
+                f'x="{PANEL_X + 16}" y="{y + 8}" width="{PANEL_W - 32}" height="9" rx="4.5" fill="{theme["track"]}"',
+                "",
+                t,
+                t_off,
+            )
+        )
+        items.append(
+            Item(
+                "rect",
+                f'x="{PANEL_X + 16}" y="{y + 8}" height="9" rx="4.5" fill="{color}"',
+                "",
+                t,
+                t_off,
+                attr="width",
+                on=(PANEL_W - 32) * max(pct, 0.03),
+                rise=0.6,
+            )
+        )
         y += 46
         t += 0.9
 
@@ -186,10 +254,26 @@ def scene_items(scene: dict, t0: float, theme: dict) -> tuple[list[Item], float]
         verdict, color = "✓ low uncertainty", GOOD
     else:
         verdict, color = "• medium uncertainty", MID
-    items.append(Item("text", f'x="{PANEL_X + 16}" y="{y + 12}" font-size="12" font-weight="bold" fill="{color}"', verdict, t, t_off))
+    items.append(
+        Item(
+            "text",
+            f'x="{PANEL_X + 16}" y="{y + 12}" font-size="12" font-weight="bold" fill="{color}"',
+            verdict,
+            t,
+            t_off,
+        )
+    )
     t += 1.0
     truth = "correct ✓" if scene["correct"] else "wrong ✗"
-    items.append(Item("text", f'x="{PANEL_X + 16}" y="{y + 34}" font-size="11" fill="{theme["muted"]}"', f"actual answer: {truth}", t, t_off))
+    items.append(
+        Item(
+            "text",
+            f'x="{PANEL_X + 16}" y="{y + 34}" font-size="11" fill="{theme["muted"]}"',
+            f"actual answer: {truth}",
+            t,
+            t_off,
+        )
+    )
     t_end = t + 2.8
 
     for item in items:
@@ -242,7 +326,9 @@ def load_method_scores(run: str, row_ids: list[int], n: int, dataset: str, metho
     if methods:
         names = methods
     else:
-        extra = sorted(p.stem for p in folder.glob("*.json") if not p.stem.endswith("_details") and p.stem not in LABELS)
+        extra = sorted(
+            p.stem for p in folder.glob("*.json") if not p.stem.endswith("_details") and p.stem not in LABELS
+        )
         names = [*LABELS, *extra]
     scores, labels_seen, absent = {}, set(), []
     for name in names:
@@ -281,7 +367,9 @@ def precision(run: str, n: int, dataset: str) -> str:
     return f"{value} · "
 
 
-def collect_scenes(run: str, n: int, ids: list[int], dataset: str = "triviaqa", methods: list[str] | None = None) -> tuple[list[dict], str]:
+def collect_scenes(
+    run: str, n: int, ids: list[int], dataset: str = "triviaqa", methods: list[str] | None = None
+) -> tuple[list[dict], str]:
     """Read cache rows and score files and build one scene per question id."""
     rows = load_data(run, n, dataset)
     row_ids = [row["id"] for row in rows]
@@ -305,12 +393,19 @@ def collect_scenes(run: str, n: int, ids: list[int], dataset: str = "triviaqa", 
         }
         scenes.append(scene)
         shown = ", ".join(f"{label} {unc:.2f}" for _, label, unc, _ in scene["scores"])
-        print(f"id {question_id}: correct={scene['correct']} | {clean(scene['question'], 60)} -> {clean(scene['answer'], 40)} | {shown}")
+        print(
+            f"id {question_id}: correct={scene['correct']} | {clean(scene['question'], 60)} -> {clean(scene['answer'], 40)} | {shown}"
+        )
     model = str(rows[0].get("model", run)).split("/")[-1]
-    return scenes, f"{model} · {precision(run, n, dataset)}TriviaQA · {len(rows)} questions · scores read from saved results"
+    return (
+        scenes,
+        f"{model} · {precision(run, n, dataset)}TriviaQA · {len(rows)} questions · scores read from saved results",
+    )
 
 
-def list_questions(run: str, n: int, dataset: str = "triviaqa", methods: list[str] | None = None, limit: int = 15) -> None:
+def list_questions(
+    run: str, n: int, dataset: str = "triviaqa", methods: list[str] | None = None, limit: int = 15
+) -> None:
     """Print candidate questions with the rank of each method (0 = least, 1 = most uncertain).
 
     Wrong answers with a low mean rank are the ones the methods miss; correct answers with a
@@ -328,7 +423,9 @@ def list_questions(run: str, n: int, dataset: str = "triviaqa", methods: list[st
         print(f"\n{title}\n  columns: mean rank | " + " | ".join(labels))
         for mean, row, ranks in selected[:limit]:
             cols = " ".join(f"{r:.2f}" for r in ranks)
-            print(f"  id {row['id']:>3}  {mean:.2f} | {cols} | {clean(row['question'], 70)} -> {clean(row['greedy_answer'], 28)}")
+            print(
+                f"  id {row['id']:>3}  {mean:.2f} | {cols} | {clean(row['question'], 70)} -> {clean(row['greedy_answer'], 28)}"
+            )
 
     wrong = sorted((e for e in entries if not e[1]["correct"]), key=lambda e: e[0])
     right = sorted((e for e in entries if e[1]["correct"]), key=lambda e: -e[0])
@@ -346,7 +443,9 @@ def main() -> None:
     parser.add_argument("--ids", type=int, nargs="+", help="question ids, one scene each (pick them with --list)")
     parser.add_argument("--methods", nargs="+", help="method file names to show (default: the first five that exist)")
     parser.add_argument("--out", type=Path, default=ROOT / "demo")
-    parser.add_argument("--tag", default="", help="file name suffix, e.g. _0.5b_200q -> llm_uncertainty_demo_0.5b_200q_dark.svg")
+    parser.add_argument(
+        "--tag", default="", help="file name suffix, e.g. _0.5b_200q -> llm_uncertainty_demo_0.5b_200q_dark.svg"
+    )
     parser.add_argument("--list", action="store_true", help="list candidate questions with the rank of each method")
     args = parser.parse_args()
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
@@ -25,7 +25,9 @@ type DistributionType = Literal[
 ]
 
 
-class Distribution[T](Representation, ABC):
+# Representation already supplies ABCMeta; an extra ABC base conflicts with
+# the ordering of ABC in NumPy's operator-mixin type stubs.
+class Distribution[T](Representation):
     """Base class for distributions."""
 
     type: ClassVar[DistributionType]
@@ -41,7 +43,7 @@ class Distribution[T](Representation, ABC):
         """Draw samples from Distribution."""
 
 
-class MixtureDistribution[D: Distribution, T](Distribution[T], ABC):
+class MixtureDistribution[D: Distribution, T](Distribution[T]):
     """Base class for mixture distributions."""
 
     type: ClassVar[Literal["mixture"]] = "mixture"
@@ -52,12 +54,12 @@ class MixtureDistribution[D: Distribution, T](Distribution[T], ABC):
 
     @property
     @abstractmethod
-    def components(self) -> ArrayLike[D]:
+    def components(self) -> D:
         """Get the components of the mixture distribution."""
 
     @property
     @abstractmethod
-    def mixture_weights(self) -> ArrayLike:
+    def mixture_weights(self) -> Any:  # noqa: ANN401
         """Get the mixture weights of the mixture distribution."""
 
     @classmethod
@@ -76,7 +78,7 @@ class MixtureDistribution[D: Distribution, T](Distribution[T], ABC):
 class CategoricalDistribution[T](Distribution[T]):
     """Base class for categorical distributions."""
 
-    type: ClassVar[Literal["categorical"]] = "categorical"
+    type: ClassVar[Literal["categorical", "bernoulli"]] = "categorical"
 
     @property
     @abstractmethod
@@ -85,22 +87,22 @@ class CategoricalDistribution[T](Distribution[T]):
 
     @property
     @abstractmethod
-    def unnormalized_probabilities(self) -> ArrayLike:
+    def unnormalized_probabilities(self) -> T:
         """Get unnormalized probabilities of the categorical distribution."""
 
     @property
     @abstractmethod
-    def probabilities(self) -> ArrayLike:
+    def probabilities(self) -> T:
         """Get the probabilities of the categorical distribution."""
 
     @property
     @abstractmethod
-    def logits(self) -> ArrayLike:
+    def logits(self) -> T:
         """Get logits of the categorical distribution."""
 
     @property
     @abstractmethod
-    def log_probabilities(self) -> ArrayLike:
+    def log_probabilities(self) -> T:
         """Get the log probabilities of the categorical distribution."""
 
 
@@ -111,7 +113,7 @@ class BernoulliDistribution[T](CategoricalDistribution[T]):
     can be viewed as two-class categorical distributions.
     """
 
-    type: ClassVar[Literal["bernoulli"]] = "bernoulli"
+    type: ClassVar[Literal["categorical", "bernoulli"]] = "bernoulli"
 
     @property
     def num_classes(self) -> int:
@@ -126,7 +128,7 @@ class BernoulliDistribution[T](CategoricalDistribution[T]):
 class DistributionSample[T: Distribution](RepresentationSample[T]):
     """Sample type for empirical second-order distributions."""
 
-    sample_space: ClassVar[type[Distribution]] = Distribution
+    sample_space: ClassVar[type[Representation]] = Distribution
 
     @classmethod
     def __instancehook__(cls, instance: object) -> bool:
@@ -136,7 +138,7 @@ class DistributionSample[T: Distribution](RepresentationSample[T]):
 class CategoricalDistributionSample[T: CategoricalDistribution](DistributionSample[T]):
     """Sample type for empirical second-order categorical distributions."""
 
-    sample_space: ClassVar[type[CategoricalDistribution]] = CategoricalDistribution
+    sample_space: ClassVar[type[Representation]] = CategoricalDistribution
 
     @classmethod
     def __instancehook__(cls, instance: object) -> bool:
@@ -146,7 +148,7 @@ class CategoricalDistributionSample[T: CategoricalDistribution](DistributionSamp
 class BernoulliDistributionSample[T: BernoulliDistribution](CategoricalDistributionSample[T]):
     """Sample type for Bernoulli distributions."""
 
-    sample_space: ClassVar[type[BernoulliDistribution]] = BernoulliDistribution
+    sample_space: ClassVar[type[Representation]] = BernoulliDistribution
 
     @classmethod
     def __instancehook__(cls, instance: object) -> bool:
@@ -159,6 +161,9 @@ class SecondOrderDistribution[T: Distribution](Distribution[T]):
 
 class DirichletDistribution[T: CategoricalDistribution](SecondOrderDistribution[T]):
     """Base class for Dirichlet distributions."""
+
+    alphas: Any
+    protected_axes: ClassVar[dict[str, int]] = {"alphas": 1}
 
     type: ClassVar[Literal["dirichlet"]] = "dirichlet"
 
@@ -183,8 +188,12 @@ class DirichletMixtureDistribution[D: DirichletDistribution, T: CategoricalDistr
         return super().__instancehook__(instance)
 
 
-class GaussianDistribution[D](Distribution[D], ABC):
+class GaussianDistribution[D](Distribution[D]):
     """Base class for Gaussian distributions."""
+
+    mean: D
+    var: D
+    protected_axes: ClassVar[dict[str, int]] = {"mean": 0, "var": 0}
 
     type: ClassVar[Literal["gaussian"]] = "gaussian"
 
@@ -211,7 +220,7 @@ class GaussianDistribution[D](Distribution[D], ABC):
 class GaussianDistributionSample[T: GaussianDistribution](DistributionSample[T]):
     """Sample type for empirical second-order Gaussian distributions."""
 
-    sample_space: ClassVar[type[GaussianDistribution]] = GaussianDistribution
+    sample_space: ClassVar[type[Representation]] = GaussianDistribution
 
     @classmethod
     def __instancehook__(cls, instance: object) -> bool:

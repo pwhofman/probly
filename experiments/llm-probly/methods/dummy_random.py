@@ -6,15 +6,23 @@ Only used to test the pipeline. Its AUROC should be around 0.5 (no signal).
 from __future__ import annotations
 
 import random
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
 NAME = "dummy_random"
 FAMILY = "baseline"
 NEEDS_MODEL = False
 
 
-def score(rows, model=None, tok=None) -> dict:
+def score(
+    rows: list[dict[str, Any]],
+    model: PreTrainedModel | None = None,
+    tok: PreTrainedTokenizerBase | None = None,
+) -> dict[str, Any]:
     """Give every question a random uncertainty between 0 and 1."""
-    rng = random.Random(0)  # fixed seed, so the dummy result is the same every run
+    rng = random.Random(0)  # noqa: S311 - not security related; fixed seed, so the dummy result is the same every run
     return {
         "method": NAME,
         "model": rows[0]["model"],

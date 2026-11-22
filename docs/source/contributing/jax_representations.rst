@@ -48,7 +48,7 @@ functions to its ``permitted_functions`` set:
     from ndlike.jax_functions import jax_add, jax_multiply
 
     @dataclass(frozen=True, eq=False)
-    class Vectors(JaxAxisProtected[jax.Array]):
+    class Vectors(JaxAxisProtected["Vectors", "Vectors | jax.Array | float"]):
         array: jax.Array
         protected_axes: ClassVar[dict[str, int]] = {"array": 1}
         permitted_functions: ClassVar[set[Callable]] = {jax_add, jax_multiply}
@@ -57,6 +57,14 @@ functions to its ``permitted_functions`` set:
     y = 2 * x + x
     assert y.shape == (2,)
     assert y.protected_shape == (3,)
+
+With ndlike 0.5, the first type argument is the wrapper owner (``Vectors``),
+not its stored array. The second describes accepted arithmetic operands. By
+default, arithmetic, indexing, reshape, and copies return the owner; comparisons
+return a backend boolean array. Supply separate operation and shape result types
+when an operation changes representation or removes a sample wrapper. For
+extensible representation families, thread an owner type parameter through the
+base classes so concrete subclasses retain their type when indexed or copied.
 
 Both protected operands must permit the operation. Forward and reflected
 operators share a permission; permitting addition does not permit multiplication

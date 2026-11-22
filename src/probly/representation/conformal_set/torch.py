@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, Self
+from typing import TYPE_CHECKING, ClassVar, Self
 
 from ndlike.protected_axis.torch import TorchAxisProtected
 import torch
@@ -31,7 +31,7 @@ def _torch_ensure_one_hot(value: object) -> torch.Tensor:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchOneHotConformalSet(TorchAxisProtected[Any], OneHotConformalSet):
+class TorchOneHotConformalSet(TorchAxisProtected["TorchOneHotConformalSet"], OneHotConformalSet[torch.Tensor]):
     """One-hot conformal set represented as a torch tensor."""
 
     tensor: torch.Tensor
@@ -64,7 +64,7 @@ class TorchOneHotConformalSet(TorchAxisProtected[Any], OneHotConformalSet):
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchIntervalConformalSet(TorchAxisProtected[Any], IntervalConformalSet):
+class TorchIntervalConformalSet(TorchAxisProtected["TorchIntervalConformalSet"], IntervalConformalSet[torch.Tensor]):
     """Interval conformal set backed by a PyTorch tensor storing lower and upper bounds."""
 
     tensor: torch.Tensor

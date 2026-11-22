@@ -33,7 +33,7 @@ def validate_scores(record: dict, expected_ids: list[int] | None = None) -> list
     if record["answer"] != "greedy":
         problems.append(f"answer must be 'greedy', got {record['answer']!r}")
 
-    for i, (u, failed) in enumerate(zip(record["uncertainty"], record["failed"])):
+    for i, (u, failed) in enumerate(zip(record["uncertainty"], record["failed"], strict=True)):
         if not isinstance(u, (int, float)) or math.isnan(u) or math.isinf(u):
             problems.append(f"uncertainty[{i}] is not a finite number: {u!r}")
         elif failed and u != 1.0:

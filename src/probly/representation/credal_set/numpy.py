@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from abc import abstractmethod
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, ClassVar, Self, override
 
 from ndlike.protected_axis.numpy import NumpyAxisProtected
@@ -48,7 +48,7 @@ def _probability_interval_center(lower_bounds: np.ndarray, upper_bounds: np.ndar
     return lower_bounds + remaining * weights
 
 
-class NumpyCategoricalCredalSet(CategoricalCredalSet, ABC):
+class NumpyCategoricalCredalSet(CategoricalCredalSet):
     """Base class for NumPy-backed categorical credal sets."""
 
     @classmethod
@@ -79,7 +79,7 @@ class NumpyCategoricalCredalSet(CategoricalCredalSet, ABC):
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class NumpyDiscreteCredalSet(
-    NumpyAxisProtected[NumpyCategoricalDistribution],
+    NumpyAxisProtected["NumpyDiscreteCredalSet"],
     NumpyCategoricalCredalSet,
     DiscreteCredalSet,
 ):
@@ -121,7 +121,7 @@ class NumpyDiscreteCredalSet(
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class NumpyConvexCredalSet(
-    NumpyAxisProtected[NumpyCategoricalDistribution],
+    NumpyAxisProtected["NumpyConvexCredalSet"],
     NumpyCategoricalCredalSet,
     ConvexCredalSet,
 ):
@@ -166,15 +166,14 @@ class NumpyConvexCredalSet(
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class NumpyDistanceBasedCredalSet(
-    NumpyAxisProtected[NumpyCategoricalDistribution],
+    NumpyAxisProtected["NumpyDistanceBasedCredalSet"],
     NumpyCategoricalCredalSet,
     DistanceBasedCredalSet,
 ):
     """Distance-based credal set around a nominal categorical distribution."""
 
-    nominal: NumpyCategoricalDistribution
-    radius: np.ndarray
-    protected_axes: ClassVar[dict[str, int]] = {"nominal": 0, "radius": 0}
+    nominal: NumpyCategoricalDistribution = field()
+    radius: np.ndarray = field()
 
     def __post_init__(self) -> None:
         """Validate that nominal is a valid categorical distribution and radius is non-negative."""
@@ -240,15 +239,14 @@ class NumpyDistanceBasedCredalSet(
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class NumpyProbabilityIntervalsCredalSet(
-    NumpyAxisProtected[NumpyCategoricalDistribution],
+    NumpyAxisProtected["NumpyProbabilityIntervalsCredalSet"],
     NumpyCategoricalCredalSet,
     ProbabilityIntervalsCredalSet,
 ):
     """Credal set represented by lower/upper categorical bounds."""
 
-    lower_bounds: np.ndarray
-    upper_bounds: np.ndarray
-    protected_axes: ClassVar[dict[str, int]] = {"lower_bounds": 1, "upper_bounds": 1}
+    lower_bounds: np.ndarray = field()
+    upper_bounds: np.ndarray = field()
 
     def __post_init__(self) -> None:
         """Validate that lower and upper bounds have the same shape and are valid distributions."""
@@ -307,7 +305,7 @@ class NumpyProbabilityIntervalsCredalSet(
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class NumpySingletonCredalSet(
-    NumpyAxisProtected[NumpyCategoricalDistribution],
+    NumpyAxisProtected["NumpySingletonCredalSet"],
     NumpyCategoricalCredalSet,
     SingletonCredalSet,
 ):

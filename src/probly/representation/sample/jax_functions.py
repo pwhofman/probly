@@ -30,6 +30,7 @@ from ndlike.jax_functions import (
     jax_transpose,
     jax_var,
 )
+from ndlike.jax_like import AnyJaxLike
 
 from probly.representation.sample._common import track_sample_axis_after_broadcast
 from probly.representation.sample.numpy_functions import track_sample_axis_after_reduction
@@ -41,7 +42,7 @@ if TYPE_CHECKING:
     from ndlike.jax_like import JaxLike
 
 
-class JaxSampleCreator[D: JaxLike | jax.Array](Protocol):
+class JaxSampleCreator[D: AnyJaxLike | jax.Array](Protocol):
     """Protocol for creating sample arrays."""
 
     def __call__(self, array: D, sample_axis: int, weights: jax.Array | None) -> Any:  # noqa: ANN401
@@ -49,7 +50,7 @@ class JaxSampleCreator[D: JaxLike | jax.Array](Protocol):
 
 
 @dataclass(frozen=True, slots=True)
-class JaxSampleInternals[D: JaxLike | jax.Array]:
+class JaxSampleInternals[D: AnyJaxLike | jax.Array]:
     """Internal information about a sample array."""
 
     create: JaxSampleCreator[D]
@@ -85,14 +86,14 @@ class _JaxBoundFunction(Protocol):
         ...
 
 
-class _JaxBoundFunctionWithInternals[D: JaxLike | jax.Array](Protocol):
+class _JaxBoundFunctionWithInternals[D: AnyJaxLike | jax.Array](Protocol):
     def __call__(
         self,
         func: Callable,
         args: tuple[Any, ...],
         kwargs: dict[str, Any],
         create_sample: JaxSampleCreator[D],
-        array: JaxLike[D],
+        array: D,
         sample_axis: int,
         weights: jax.Array | None,
     ) -> Any:  # noqa: ANN401

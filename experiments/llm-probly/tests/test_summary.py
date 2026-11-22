@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import json
 
-import numpy as np
-
 from common.summary import EXPECTED_METHODS, compare_models, find_models, method_by_model, summary_table, to_markdown
+import numpy as np
+import pandas as pd
 
 ROWS = [{"id": i, "correct": i < 12} for i in range(50)]
 
@@ -77,7 +79,5 @@ def test_method_by_model_has_one_column_per_model(tmp_path):
 
 
 def test_to_markdown_leaves_nan_empty():
-    import pandas as pd
-
     text = to_markdown(pd.DataFrame({"method": ["a"], "auroc": [float("nan")]}))
     assert text.splitlines()[2] == "| a |  |"
