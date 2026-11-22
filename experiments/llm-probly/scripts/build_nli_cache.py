@@ -20,21 +20,18 @@ import json
 from pathlib import Path
 import time
 
-from common.nli_matrix import compute_matrix, load_nli_cache, nli_pair_count, save_nli_cache  # noqa: F401  (load_nli_cache: re-export)
+from common.nli_matrix import (  # noqa: F401  (load_nli_cache: re-export)
+    QUESTIONS_PER_BATCH,
+    compute_matrices,
+    load_nli_cache,
+    nli_pair_count,
+    pick_device,
+    resolve_dtype,
+    save_nli_cache,
+)
 import numpy as np
 
 from probly.representer.semantic_clustering.huggingface import HFGreedySemanticClusterer
-
-
-def pick_device() -> str:
-    """Return "cuda", "mps" or "cpu", whichever is available."""
-    import torch  # noqa: PLC0415
-
-    if torch.cuda.is_available():
-        return "cuda"
-    if torch.backends.mps.is_available():
-        return "mps"
-    return "cpu"
 
 
 def build(
@@ -46,6 +43,8 @@ def build(
     deduplicate: bool,
     batch_size: int,
     limit: int,
+    dtype: str = "float32",
+    questions_per_batch: int = QUESTIONS_PER_BATCH,
 ) -> None:
     """Compute and save the NLI matrices of one data cache."""
     with Path(cache).open() as f:
@@ -58,14 +57,16 @@ def build(
         raise KeyError(msg)
 
     clusterer = HFGreedySemanticClusterer.from_model_name(nli_model, batch_size=batch_size, max_length=256)
-    clusterer.model.to(pick_device())
+    device = pick_device()
+    clusterer.model.to(device=device, dtype=resolve_dtype(dtype, device))
+    print(f"NLI on {device}, {dtype}, {questions_per_batch} questions per batch, batch size {batch_size}")
 
     matrices = []
     t0 = time.time()
-    for i, row in enumerate(rows):
-        matrices.append(compute_matrix(clusterer, row, use_question=use_question, deduplicate=deduplicate))
-        if (i + 1) % 20 == 0:
-            print(f"{i + 1}/{len(rows)}  {(time.time() - t0) / (i + 1):.2f}s/question")
+    for start in range(0, len(rows), questions_per_batch):
+        chunk = rows[start : start + questions_per_batch]
+        matrices += compute_matrices(clusterer, chunk, use_question=use_question, deduplicate=deduplicate)
+        print(f"{len(matrices)}/{len(rows)}  {(time.time() - t0) / len(matrices):.2f}s/question")
     sec_per_q = (time.time() - t0) / len(rows)
 
     ids = [r.get("id", i) for i, r in enumerate(rows)]
@@ -89,6 +90,10 @@ if __name__ == "__main__":
     ap.add_argument("--out", default=None, help="default: <cache>.nli.npz")
     ap.add_argument("--use-question", action="store_true")
     ap.add_argument("--no-dedup", action="store_true", help="also send identical texts to the NLI model (A2 off)")
+    ap.add_argument("--dtype", choices=["float32", "float16"], default="float32", help="float16 only on a GPU")
+    ap.add_argument(
+        "--questions-per-batch", type=int, default=QUESTIONS_PER_BATCH, help="1 = no batching across questions"
+    )
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--limit", type=int, default=0, help="only first N rows (testing)")
     a = ap.parse_args()
@@ -101,4 +106,6 @@ if __name__ == "__main__":
         deduplicate=not a.no_dedup,
         batch_size=a.batch_size,
         limit=a.limit,
+        dtype=a.dtype,
+        questions_per_batch=a.questions_per_batch,
     )
