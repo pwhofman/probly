@@ -18,6 +18,7 @@ Cache file format (``data/<model>/<dataset>_<n>.nli.npz``, version 1)::
     labels                str     (3,)              order of the last axis of ``nli`` in the file
     nli_model             str     ()                Hugging Face name of the NLI model
     use_question          bool    ()                True if the question was put in front of each text
+    deduplicate           bool    ()                True if identical texts were scored once (A2); missing = False
     seconds_per_question  float   ()                NLI time when the file was built
 
 The file stores the last axis as ``labels`` says (entail, neutral, contradict,
@@ -64,6 +65,7 @@ def compute_matrix(
     row: dict,
     *,
     use_question: bool = False,
+    deduplicate: bool = True,
 ) -> torch.Tensor:
     """Compute the NLI matrix of one question with probly's clusterer.
 
@@ -71,12 +73,28 @@ def compute_matrix(
         clusterer: probly semantic clusterer that holds the NLI model.
         row: One row of the data cache.
         use_question: If True, the question is put in front of every text.
+        deduplicate: If True, identical texts are sent to the NLI model only once (A2).
 
     Returns:
         Tensor of shape ``(K+1, K+1, 3)`` in probly's label order (``NLI_LABELS``).
     """
     context = row["question"] if use_question else None
-    return clusterer.pairwise_nli(question_texts(row), context=context)
+    return clusterer.pairwise_nli(question_texts(row), context=context, deduplicate=deduplicate)
+
+
+def nli_pair_count(row: dict, *, deduplicate: bool = True) -> int:
+    """Number of ordered pairs the NLI model scores for one question.
+
+    Args:
+        row: One row of the data cache.
+        deduplicate: Count distinct texts only, as :func:`compute_matrix` does with ``deduplicate=True``.
+
+    Returns:
+        ``m * (m - 1)`` with ``m`` the number of (distinct) texts of the question.
+    """
+    texts = question_texts(row)
+    m = len(set(texts)) if deduplicate else len(texts)
+    return m * (m - 1)
 
 
 def sample_block(matrix: torch.Tensor) -> torch.Tensor:
@@ -134,6 +152,7 @@ def save_nli_cache(
     nli_model: str,
     use_question: bool,
     seconds_per_question: float,
+    deduplicate: bool = True,
 ) -> None:
     """Save question matrices (probly order) as a ``.nli.npz`` file.
 
@@ -144,6 +163,7 @@ def save_nli_cache(
         nli_model: Name of the NLI model that produced the matrices.
         use_question: Whether the question was put in front of each text.
         seconds_per_question: Measured NLI time per question.
+        deduplicate: Whether identical texts were scored once.
     """
     n_texts = np.array([m.shape[0] for m in matrices], dtype=np.int16)
     size = int(n_texts.max()) if len(matrices) else 0
@@ -161,6 +181,7 @@ def save_nli_cache(
         nli_model=np.array(nli_model),
         use_question=np.array(use_question),
         seconds_per_question=np.array(seconds_per_question),
+        deduplicate=np.array(deduplicate),
         format_version=np.array(FORMAT_VERSION),
     )
 
@@ -173,7 +194,7 @@ def load_nli_cache(path: str | Path) -> dict:
 
     Returns:
         Dict with ``matrices`` (list of ``(n_i, n_i, 3)`` float32 tensors, probly order),
-        ``ids``, ``nli_model``, ``use_question`` and ``seconds_per_question``.
+        ``ids``, ``nli_model``, ``use_question``, ``seconds_per_question`` and ``deduplicate``.
     """
     with np.load(path, allow_pickle=False) as z:
         columns = _file_to_probly_order(z["labels"].tolist())
@@ -185,4 +206,5 @@ def load_nli_cache(path: str | Path) -> dict:
             "nli_model": str(z["nli_model"]),
             "use_question": bool(z["use_question"]),
             "seconds_per_question": float(z["seconds_per_question"]),
+            "deduplicate": bool(z["deduplicate"]) if "deduplicate" in z.files else False,
         }

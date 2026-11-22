@@ -11,7 +11,7 @@ from __future__ import annotations
 import time
 from typing import TYPE_CHECKING
 
-from common.nli_matrix import compute_matrix, question_texts, se_and_dse
+from common.nli_matrix import compute_matrix, nli_pair_count, question_texts, se_and_dse
 
 from probly.representer.semantic_clustering.huggingface import HFGreedySemanticClusterer
 
@@ -39,10 +39,8 @@ def get_matrix(row: dict) -> torch.Tensor:
     global nli_pairs_scored  # noqa: PLW0603
     key = tuple(question_texts(row))
     if key not in _matrices:
-        matrix = compute_matrix(get_clusterer(), row)
-        n = matrix.shape[0]
-        nli_pairs_scored += n * (n - 1)
-        _matrices[key] = matrix
+        _matrices[key] = compute_matrix(get_clusterer(), row)
+        nli_pairs_scored += nli_pair_count(row)
     return _matrices[key]
 
 

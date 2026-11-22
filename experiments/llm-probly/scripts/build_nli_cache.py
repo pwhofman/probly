@@ -20,7 +20,7 @@ import json
 from pathlib import Path
 import time
 
-from common.nli_matrix import compute_matrix, load_nli_cache, save_nli_cache  # noqa: F401  (load_nli_cache: re-export)
+from common.nli_matrix import compute_matrix, load_nli_cache, nli_pair_count, save_nli_cache  # noqa: F401  (load_nli_cache: re-export)
 import numpy as np
 
 from probly.representer.semantic_clustering.huggingface import HFGreedySemanticClusterer
@@ -37,7 +37,16 @@ def pick_device() -> str:
     return "cpu"
 
 
-def build(cache: str, nli_model: str, out: str, *, use_question: bool, batch_size: int, limit: int) -> None:
+def build(
+    cache: str,
+    nli_model: str,
+    out: str,
+    *,
+    use_question: bool,
+    deduplicate: bool,
+    batch_size: int,
+    limit: int,
+) -> None:
     """Compute and save the NLI matrices of one data cache."""
     with Path(cache).open() as f:
         rows = [json.loads(line) for line in f if line.strip()]
@@ -54,7 +63,7 @@ def build(cache: str, nli_model: str, out: str, *, use_question: bool, batch_siz
     matrices = []
     t0 = time.time()
     for i, row in enumerate(rows):
-        matrices.append(compute_matrix(clusterer, row, use_question=use_question))
+        matrices.append(compute_matrix(clusterer, row, use_question=use_question, deduplicate=deduplicate))
         if (i + 1) % 20 == 0:
             print(f"{i + 1}/{len(rows)}  {(time.time() - t0) / (i + 1):.2f}s/question")
     sec_per_q = (time.time() - t0) / len(rows)
@@ -67,8 +76,9 @@ def build(cache: str, nli_model: str, out: str, *, use_question: bool, batch_siz
         nli_model=nli_model,
         use_question=use_question,
         seconds_per_question=sec_per_q,
+        deduplicate=deduplicate,
     )
-    pairs = np.mean([m.shape[0] * (m.shape[0] - 1) for m in matrices])
+    pairs = np.mean([nli_pair_count(row, deduplicate=deduplicate) for row in rows])
     print(f"saved {out}  {len(rows)} questions  {pairs:.0f} NLI pairs/question  {sec_per_q:.2f}s/question")
 
 
@@ -78,8 +88,17 @@ if __name__ == "__main__":
     ap.add_argument("--nli-model", default="microsoft/deberta-base-mnli")
     ap.add_argument("--out", default=None, help="default: <cache>.nli.npz")
     ap.add_argument("--use-question", action="store_true")
+    ap.add_argument("--no-dedup", action="store_true", help="also send identical texts to the NLI model (A2 off)")
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--limit", type=int, default=0, help="only first N rows (testing)")
     a = ap.parse_args()
     out = a.out or str(Path(a.cache).with_suffix("")) + ".nli.npz"
-    build(a.cache, a.nli_model, out, use_question=a.use_question, batch_size=a.batch_size, limit=a.limit)
+    build(
+        a.cache,
+        a.nli_model,
+        out,
+        use_question=a.use_question,
+        deduplicate=not a.no_dedup,
+        batch_size=a.batch_size,
+        limit=a.limit,
+    )
