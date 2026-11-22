@@ -93,6 +93,35 @@ lm-polygraph's implementations in `tests/test_evaluate.py`.
 Why PRR next to AURC: a bigger model is right more often, which alone improves AURC.
 PRR divides that out, so it shows whether the *ranking* got better.
 
+## Is method X better than method Y? (paired bootstrap, E4)
+
+Two separate 95 % AUROC intervals often overlap even when one method is better on
+almost every resample, because both methods find the same questions hard. The
+paired bootstrap resamples the questions once per round, scores *both* methods on
+that resample and keeps the difference. Its interval is much narrower.
+
+Example, qwen0.5b on TriviaQA 1000: likelihood_mean 0.712 [0.672, 0.747] and
+mean_token_entropy 0.696 [0.656, 0.735] overlap almost completely, yet the paired
+difference is +0.016 [+0.003, +0.028]: likelihood_mean is better, by a little.
+
+    uv run python -m cli diff --run qwen0.5b/triviaqa_1000 likelihood_mean mean_token_entropy
+    # On qwen0.5b/triviaqa_1000, likelihood_mean is better than mean_token_entropy: AUROC 0.712 vs 0.696, ...
+
+`--metric prr` or `--metric aurc` compare another metric. In code:
+`common.evaluate.paired_bootstrap(u_a, u_b, correct)` returns the difference, its
+interval and `.verdict` (`"A"`, `"B"` or `"tie"`).
+
+Every `summary.md` compares each method with the best one of the run:
+
+| column | meaning |
+|---|---|
+| `vs_best` | `best`; `tied` = the interval of the difference contains 0, the data cannot tell it apart from the best; `worse` |
+| `d_auroc` | AUROC minus the best AUROC |
+| `d_ci_low`, `d_ci_high` | paired 95 % interval of `d_auroc` |
+
+"Tied" is the same test the selector (D1) uses before it picks the cheapest of the
+tied methods.
+
 ## Comparing models and plots
 
 After the runner has run for each model:
