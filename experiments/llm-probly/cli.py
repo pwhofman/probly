@@ -11,6 +11,7 @@ Run from ``experiments/llm-probly``::
     uv run python -m cli plot --dataset triviaqa --n 200
     uv run python -m cli check-prefix --model qwen0.5b --small 200 --large 1000
     uv run python -m cli diff --run qwen0.5b/triviaqa_1000 likelihood_mean msp   # is A better than B?
+    uv run python -m cli report                                                   # results/report.md + .html
 
 ``uv run python -m cli <command> --help`` shows the options of each command.
 The step commands forward their options unchanged to the scripts in
@@ -35,6 +36,7 @@ STEP_COMMANDS = {
     "plot": "scripts.plot_results",
     "check-prefix": "scripts.check_prefix",
     "diff": "scripts.diff_methods",
+    "report": "scripts.report",
 }
 
 
