@@ -60,6 +60,65 @@ def question_texts(row: dict) -> list[str]:
     return [row["greedy_answer"], *row["samples"]]
 
 
+QUESTIONS_PER_BATCH = 16
+"""Questions whose NLI pairs share model batches (A3); a question has at most 110 pairs."""
+
+
+def pick_device() -> str:
+    """Return ``"cuda"``, ``"mps"`` or ``"cpu"``, whichever is available."""
+    if torch.cuda.is_available():
+        return "cuda"
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+
+def resolve_dtype(name: str, device: str) -> torch.dtype:
+    """Map ``"float32"`` / ``"float16"`` to a torch dtype; float16 only on a GPU.
+
+    Args:
+        name: ``"float32"`` or ``"float16"``.
+        device: ``"cuda"``, ``"mps"`` or ``"cpu"``.
+
+    Returns:
+        The torch dtype for the NLI model.
+
+    Raises:
+        ValueError: For an unknown name, or float16 on the CPU (slow and not supported by every op).
+    """
+    dtypes = {"float32": torch.float32, "float16": torch.float16}
+    if name not in dtypes:
+        msg = f"dtype must be one of {sorted(dtypes)}, got {name!r}."
+        raise ValueError(msg)
+    if dtypes[name] == torch.float16 and device == "cpu":
+        msg = "float16 NLI needs a GPU (cuda or mps); use float32 on the CPU."
+        raise ValueError(msg)
+    return dtypes[name]
+
+
+def compute_matrices(
+    clusterer: HFSemanticClusterer,
+    rows: Sequence[dict],
+    *,
+    use_question: bool = False,
+    deduplicate: bool = True,
+) -> list[torch.Tensor]:
+    """Compute the NLI matrices of several questions in shared model batches (A3).
+
+    Args:
+        clusterer: probly semantic clusterer that holds the NLI model.
+        rows: Rows of the data cache.
+        use_question: If True, the question is put in front of every text.
+        deduplicate: If True, identical texts of a question are sent to the NLI model only once (A2).
+
+    Returns:
+        One ``(K+1, K+1, 3)`` tensor per row in probly's label order (``NLI_LABELS``).
+    """
+    contexts = [row["question"] if use_question else None for row in rows]
+    groups = [question_texts(row) for row in rows]
+    return clusterer.pairwise_nli_many(groups, contexts=contexts, deduplicate=deduplicate)
+
+
 def compute_matrix(
     clusterer: HFSemanticClusterer,
     row: dict,
@@ -67,19 +126,8 @@ def compute_matrix(
     use_question: bool = False,
     deduplicate: bool = True,
 ) -> torch.Tensor:
-    """Compute the NLI matrix of one question with probly's clusterer.
-
-    Args:
-        clusterer: probly semantic clusterer that holds the NLI model.
-        row: One row of the data cache.
-        use_question: If True, the question is put in front of every text.
-        deduplicate: If True, identical texts are sent to the NLI model only once (A2).
-
-    Returns:
-        Tensor of shape ``(K+1, K+1, 3)`` in probly's label order (``NLI_LABELS``).
-    """
-    context = row["question"] if use_question else None
-    return clusterer.pairwise_nli(question_texts(row), context=context, deduplicate=deduplicate)
+    """Compute the NLI matrix of one question; see :func:`compute_matrices`."""
+    return compute_matrices(clusterer, [row], use_question=use_question, deduplicate=deduplicate)[0]
 
 
 def nli_pair_count(row: dict, *, deduplicate: bool = True) -> int:

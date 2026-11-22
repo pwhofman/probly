@@ -374,22 +374,64 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOut
         if texts.ndim != 1:
             msg = "statements must be one-dimensional."
             raise ValueError(msg)
-        if context is not None:
-            texts = np.asarray([f"{context} {text}" for text in texts.tolist()], dtype=object)
+        return self.pairwise_nli_many([texts.tolist()], contexts=[context], deduplicate=deduplicate)[0]
 
-        if not deduplicate:
-            return self._score_all_pairs(texts)
-        unique, inverse = unique_statements(texts.tolist())
-        return expand_unique_nli(self._score_all_pairs(np.asarray(unique, dtype=object)), inverse)
+    def pairwise_nli_many(
+        self,
+        groups: Sequence[Sequence[str]],
+        *,
+        contexts: Sequence[str | None] | None = None,
+        deduplicate: bool = True,
+    ) -> list[torch.Tensor]:
+        """Score the ordered pairs of several groups of statements in shared model batches.
 
-    def _score_all_pairs(self, texts: np.ndarray) -> torch.Tensor:
-        n = texts.shape[0]
-        matrix = torch.full((n, n, 3), float("nan"), dtype=torch.float32)
-        off_diagonal = ~torch.eye(n, dtype=torch.bool)
-        pairs = torch.nonzero(off_diagonal, as_tuple=False)
-        if pairs.numel() > 0:
-            matrix[pairs[:, 0], pairs[:, 1]] = self._predict_pair_probabilities(texts, pairs)
-        return matrix
+        Gives the same matrices as calling :meth:`pairwise_nli` once per group, but the pairs of
+        all groups are sent to the model together, so batches stay full even when one group has
+        only a few pairs. The pairs are ordered by text length before batching, so that pairs of
+        similar length share a batch and less padding is computed.
+
+        Args:
+            groups: One sequence of statements per group, for example the answers to one question.
+            contexts: Optional context per group (see ``context`` in :meth:`pairwise_nli`).
+            deduplicate: Score identical statements of a group only once (see :meth:`pairwise_nli`).
+
+        Returns:
+            One ``(n_g, n_g, 3)`` matrix per group, as returned by :meth:`pairwise_nli`.
+        """
+        if contexts is None:
+            contexts = [None] * len(groups)
+        if len(contexts) != len(groups):
+            msg = f"got {len(contexts)} contexts for {len(groups)} groups."
+            raise ValueError(msg)
+
+        all_texts: list[str] = []
+        layouts: list[tuple[int, torch.Tensor | None]] = []
+        all_pairs: list[torch.Tensor] = []
+        for group, context in zip(groups, contexts, strict=True):
+            texts = [str(text) if context is None else f"{context} {text}" for text in group]
+            inverse = None
+            if deduplicate:
+                texts, inverse = unique_statements(texts)
+            start, size = len(all_texts), len(texts)
+            all_texts.extend(texts)
+            all_pairs.append(torch.nonzero(~torch.eye(size, dtype=torch.bool), as_tuple=False) + start)
+            layouts.append((size, inverse))
+
+        pairs = torch.cat(all_pairs) if all_pairs else torch.empty((0, 2), dtype=torch.long)
+        lengths = torch.tensor([len(all_texts[a]) + len(all_texts[b]) for a, b in pairs.tolist()])
+        order = torch.argsort(lengths, stable=True)
+        probabilities = torch.empty((pairs.shape[0], 3), dtype=torch.float32)
+        probabilities[order] = self._predict_pair_probabilities(np.asarray(all_texts, dtype=object), pairs[order])
+
+        matrices: list[torch.Tensor] = []
+        cursor = 0
+        for size, inverse in layouts:
+            matrix = torch.full((size, size, 3), float("nan"), dtype=torch.float32)
+            local = torch.nonzero(~torch.eye(size, dtype=torch.bool), as_tuple=False)
+            matrix[local[:, 0], local[:, 1]] = probabilities[cursor : cursor + local.shape[0]]
+            cursor += local.shape[0]
+            matrices.append(matrix if inverse is None else expand_unique_nli(matrix, inverse))
+        return matrices
 
     @abstractmethod
     def _cluster_row(self, statements: np.ndarray) -> torch.Tensor:

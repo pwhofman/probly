@@ -434,3 +434,44 @@ def test_unique_statements_and_expand_unique_nli() -> None:
     torch.testing.assert_close(matrix[2, 1], unique_matrix[0, 1])
     torch.testing.assert_close(matrix[1, 2], unique_matrix[1, 0])
     torch.testing.assert_close(matrix[0, 2], torch.tensor([0.0, 0.0, 1.0]))
+
+
+def test_pairwise_nli_many_matches_one_call_per_group() -> None:
+    # The first group has the longest texts, so sorting by length reorders the pairs across groups.
+    groups = [["a long answer", "z", "a long answer"], ["bb", "c"], ["d"]]
+    contexts = ["Q?", None, None]
+    texts = ["Q? a long answer", "Q? z", "bb", "c"]
+    pairs = {(p, h): (len(p) + 2 * len(h)) % 3 for p in texts for h in texts if p != h}
+    tokenizer = FakeTokenizer()
+    clusterer = HFGreedySemanticClusterer(FakeNLIModel(_labels_for(tokenizer, pairs)), tokenizer, batch_size=3)
+
+    many = clusterer.pairwise_nli_many(groups, contexts=contexts)
+    single = [clusterer.pairwise_nli(g, context=c) for g, c in zip(groups, contexts, strict=True)]
+
+    assert [m.shape for m in many] == [(3, 3, 3), (2, 2, 3), (1, 1, 3)]
+    for got, expected in zip(many, single, strict=True):
+        torch.testing.assert_close(got, expected, equal_nan=True)
+    # Every cell holds the label of its own pair, although the pairs were sorted by length for batching.
+    for matrix, group, context in zip(many, groups, contexts, strict=True):
+        prefixed = [t if context is None else f"{context} {t}" for t in group]
+        for a, premise in enumerate(prefixed):
+            for b, hypothesis in enumerate(prefixed):
+                if premise != hypothesis:
+                    assert matrix[a, b].argmax().item() == pairs[(premise, hypothesis)]
+
+
+def test_pairwise_nli_many_shares_model_calls_across_groups() -> None:
+    model = FakeNLIModel()
+    clusterer = HFGreedySemanticClusterer(model, FakeTokenizer(), batch_size=32)
+
+    clusterer.pairwise_nli_many([["a", "b"], ["c", "d"], ["e", "f"]])
+
+    assert len(model.calls) == 1  # 6 pairs of 3 groups in one batch
+
+
+def test_pairwise_nli_many_edge_cases() -> None:
+    clusterer = HFGreedySemanticClusterer(FakeNLIModel(), FakeTokenizer())
+
+    assert clusterer.pairwise_nli_many([]) == []
+    with pytest.raises(ValueError, match="contexts"):
+        clusterer.pairwise_nli_many([["a"], ["b"]], contexts=["q"])

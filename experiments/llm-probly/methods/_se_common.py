@@ -11,7 +11,14 @@ from __future__ import annotations
 import time
 from typing import TYPE_CHECKING
 
-from common.nli_matrix import compute_matrix, nli_pair_count, question_texts, se_and_dse
+from common.nli_matrix import (
+    QUESTIONS_PER_BATCH,
+    compute_matrices,
+    nli_pair_count,
+    pick_device,
+    question_texts,
+    se_and_dse,
+)
 
 from probly.representer.semantic_clustering.huggingface import HFGreedySemanticClusterer
 
@@ -31,17 +38,27 @@ def get_clusterer() -> HFGreedySemanticClusterer:
     global _clusterer  # noqa: PLW0603
     if _clusterer is None:
         _clusterer = HFGreedySemanticClusterer.from_model_name(NLI_MODEL)
+        _clusterer.model.to(pick_device())
     return _clusterer
+
+
+def prepare_matrices(rows: list[dict]) -> None:
+    """Compute the missing NLI matrices of ``rows``, ``QUESTIONS_PER_BATCH`` questions per model batch."""
+    global nli_pairs_scored  # noqa: PLW0603
+    missing = {tuple(question_texts(row)): row for row in rows if tuple(question_texts(row)) not in _matrices}
+    todo = list(missing.items())
+    for start in range(0, len(todo), QUESTIONS_PER_BATCH):
+        chunk = todo[start : start + QUESTIONS_PER_BATCH]
+        matrices = compute_matrices(get_clusterer(), [row for _, row in chunk])
+        for (key, row), matrix in zip(chunk, matrices, strict=True):
+            _matrices[key] = matrix
+            nli_pairs_scored += nli_pair_count(row)
 
 
 def get_matrix(row: dict) -> torch.Tensor:
     """Return the NLI matrix of one question, computing it only the first time."""
-    global nli_pairs_scored  # noqa: PLW0603
-    key = tuple(question_texts(row))
-    if key not in _matrices:
-        _matrices[key] = compute_matrix(get_clusterer(), row)
-        nli_pairs_scored += nli_pair_count(row)
-    return _matrices[key]
+    prepare_matrices([row])
+    return _matrices[tuple(question_texts(row))]
 
 
 def compute_se_and_dse(row: dict) -> tuple[float, float]:
@@ -54,6 +71,7 @@ def score_rows(rows: list[dict], name: str, which: int) -> dict:
     ids, unc, failed = [], [], []
     pairs_before = nli_pairs_scored
     t0 = time.time()
+    prepare_matrices(rows)
     for i, r in enumerate(rows):
         ids.append(r.get("id", i))
         try:

@@ -7,7 +7,14 @@ from pathlib import Path
 
 from common import nli_matrix
 from common.io import validate_scores
-from common.nli_matrix import load_nli_cache, nli_pair_count, question_texts, save_nli_cache, se_and_dse
+from common.nli_matrix import (
+    load_nli_cache,
+    nli_pair_count,
+    question_texts,
+    resolve_dtype,
+    save_nli_cache,
+    se_and_dse,
+)
 from methods import _se_common, discrete_semantic_entropy, semantic_entropy
 import numpy as np
 import pytest
@@ -113,13 +120,17 @@ class CountingClusterer:
         """Start with zero calls."""
         self.calls = 0
 
-    def pairwise_nli(self, statements: list[str], context: str | None = None, deduplicate: bool = True) -> torch.Tensor:
-        """Return an all-entailment matrix and count the call."""
+    def pairwise_nli_many(
+        self, groups: list[list[str]], contexts: list[str | None] | None = None, deduplicate: bool = True
+    ) -> list[torch.Tensor]:
+        """Return one all-entailment matrix per group and count the (batched) call."""
         self.calls += 1
-        n = len(statements)
-        matrix = torch.zeros((n, n, 3))
-        matrix[..., 2] = 1.0
-        return matrix
+        matrices = []
+        for group in groups:
+            matrix = torch.zeros((len(group), len(group), 3))
+            matrix[..., 2] = 1.0
+            matrices.append(matrix)
+        return matrices
 
 
 def test_se_and_dse_plugins_share_one_nli_pass(monkeypatch):
@@ -135,7 +146,7 @@ def test_se_and_dse_plugins_share_one_nli_pass(monkeypatch):
     se = semantic_entropy.score(rows)
     dse = discrete_semantic_entropy.score(rows)
 
-    assert fake.calls == 2  # one per question, not one per question and method
+    assert fake.calls == 1  # both questions in one batched NLI call, shared by SE and DSE
     # question 0: 1 distinct text -> 0 pairs; question 1: 3 distinct texts -> 6 pairs; mean 3
     assert se["nli_pairs_per_question"] == 3
     assert dse["nli_pairs_per_question"] == 0
@@ -144,3 +155,25 @@ def test_se_and_dse_plugins_share_one_nli_pass(monkeypatch):
     assert se["failed"] == dse["failed"] == [False, False]
     assert validate_scores(se, expected_ids=[0, 1]) == []
     assert validate_scores(dse, expected_ids=[0, 1]) == []
+
+
+def test_questions_are_batched_in_chunks(monkeypatch):
+    fake = CountingClusterer()
+    monkeypatch.setattr(_se_common, "_clusterer", fake)
+    monkeypatch.setattr(_se_common, "_matrices", {})
+    monkeypatch.setattr(_se_common, "QUESTIONS_PER_BATCH", 2)
+    rows = [{"greedy_answer": f"g{i}", "samples": [f"s{i}"]} for i in range(5)]
+
+    _se_common.prepare_matrices(rows)
+    _se_common.prepare_matrices(rows)  # already cached: no new call
+
+    assert fake.calls == 3  # 2 + 2 + 1 questions
+
+
+def test_resolve_dtype():
+    assert resolve_dtype("float32", "cpu") == torch.float32
+    assert resolve_dtype("float16", "mps") == torch.float16
+    with pytest.raises(ValueError, match="GPU"):
+        resolve_dtype("float16", "cpu")
+    with pytest.raises(ValueError, match="dtype"):
+        resolve_dtype("bfloat16", "cuda")
