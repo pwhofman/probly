@@ -67,6 +67,7 @@ def score_rows(rows: list[dict], name: str, which: int) -> dict:
     return {
         "method": name,
         "model": rows[0].get("model"),
+        "answer": "greedy",
         "ids": ids,
         "uncertainty": unc,
         "failed": failed,

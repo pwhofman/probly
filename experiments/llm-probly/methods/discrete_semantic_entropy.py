@@ -5,8 +5,6 @@ from __future__ import annotations
 from methods._se_common import score_rows
 
 NAME = "discrete_semantic_entropy"
-FAMILY = "agreement"
-NEEDS_MODEL = False
 
 
 def score(rows: list[dict], model: object = None, tok: object = None) -> dict:

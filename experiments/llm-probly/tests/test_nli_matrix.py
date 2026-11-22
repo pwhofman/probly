@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from common import nli_matrix
+from common.io import validate_scores
 from common.nli_matrix import load_nli_cache, save_nli_cache, se_and_dse
 from methods import _se_common, discrete_semantic_entropy, semantic_entropy
 import numpy as np
@@ -111,3 +112,5 @@ def test_se_and_dse_plugins_share_one_nli_pass(monkeypatch):
     assert se["uncertainty"] == pytest.approx([0.0, 0.0])
     assert dse["uncertainty"] == pytest.approx([0.0, 0.0])
     assert se["failed"] == dse["failed"] == [False, False]
+    assert validate_scores(se, expected_ids=[0, 1]) == []
+    assert validate_scores(dse, expected_ids=[0, 1]) == []
