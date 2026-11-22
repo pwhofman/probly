@@ -1,0 +1,11 @@
+# qwen0.5b on 1000 TriviaQA questions (E3, week 3). The first 200 questions are the
+# triviaqa_200 set; same precision and device as that cache (cpu, float32), so the
+# answers on the prefix should be identical. Check after (or during) the run:
+#   uv run python -m cli check-prefix --model qwen0.5b --small 200 --large 1000
+# Expected time: about 40 min (2.4 s per question on cpu for the 200 run).
+model: qwen0.5b       # short name from scripts/generate.py
+dataset: triviaqa
+n: 1000               # number of questions
+precision: float32    # float32 | float16 | bfloat16, must match the cache (.meta.json)
+device: cpu           # cpu or mps (Apple GPU), only used when a model is loaded
+methods: all          # "all" or a list, e.g. [dummy_random, likelihood_mean]
