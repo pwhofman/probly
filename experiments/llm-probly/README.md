@@ -42,6 +42,8 @@ Compare model sizes and make the plots after running each model:
     uv run python -m cli plot --dataset triviaqa --n 200
 
 See all methods with their family, model access and cost: `uv run python -m cli methods`.
+The full report over every run (Markdown + HTML, with cost and the cheapest method tied with the best):
+`uv run python -m cli report`.
 A new uncertainty method is one file in `methods/` plus one entry in `common/registry.py` (see `CONTRACT.md`). Configs, metrics
 (AUROC, AURC, PRR, ECE) and plots: [docs/pipeline.md](docs/pipeline.md).
 Overview of all methods (family, logits, cost per question): docs/methods.md
