@@ -1,11 +1,23 @@
 # Pipeline & evaluation
 
-*Owner: PIPE. Describes the code in `scripts/run_benchmark.py`, `scripts/compare_models.py`,
+*Owner: PIPE. Describes the code in `cli.py`, `common/registry.py`, `scripts/run_benchmark.py`, `scripts/compare_models.py`,
 `scripts/plot_results.py`, `common/evaluate.py` and `common/summary.py`.*
 
 ## One command per run
 
-    uv run python -m scripts.run_benchmark --config configs/qwen1.5b_triviaqa_200.yaml
+    uv run python -m cli run --config configs/qwen1.5b_triviaqa_200.yaml
+
+`cli.py` is the one entry point for everything (`uv run python -m cli --help`):
+
+| Command | What it does |
+|---|---|
+| `run --config <yaml>` | the five steps below for one config |
+| `methods [--access text_only] [--max-cost 11] [--json]` | the method registry: family, access, cost |
+| `generate`, `label` | one data step on its own (same options as `scripts/generate.py`, `scripts/label.py`) |
+| `compare`, `plot` | methods x models table and plots (`scripts/compare_models.py`, `scripts/plot_results.py`) |
+| `check-prefix --model m --small 200 --large 1000` | the first rows of a larger cache are the smaller cache |
+
+`python -m scripts.<name>` still works the same.
 
 The runner does five steps. Each step is skipped if its output already exists, so an
 interrupted run continues where it stopped.
@@ -14,9 +26,9 @@ interrupted run continues where it stopped.
 |---|---|---|
 | 1. generate | answers + 10 samples per question (`scripts/generate.py`) | `data/<model>/<dataset>_<n>.jsonl` + `.meta.json` |
 | 2. label | right/wrong per answer (`scripts/label.py`) | adds `correct` to the cache |
-| 3. methods | every plugin in `methods/` computes an uncertainty per question | `results/<model>/<dataset>_<n>/<method>.json` |
+| 3. methods | every method in `common/registry.py` computes an uncertainty per question | `results/<model>/<dataset>_<n>/<method>.json` |
 | 4. evaluate | metrics per method (below) | |
-| 5. table | one row per method | `results/<model>/<dataset>_<n>/summary.md` |
+| 5. table | one row per method, with family, access and cost from the registry | `results/<model>/<dataset>_<n>/summary.md` |
 
 Options:
 
@@ -42,25 +54,28 @@ methods: all          # "all" or a list of method names
 (bfloat16 → float32 changed 9 of 50 answers on 0.5B), so a table must never mix them
 silently.
 
-**Memory.** Methods with `NEEDS_MODEL = True` load the model once per run. In float32,
+**Memory.** Methods with `needs_model=True` load the model once per run. In float32,
 1.5B needs about 6–7 GB of RAM; on an 8 GB laptop it swaps and becomes unusably slow,
 so 1.5B and larger run on a machine with more memory.
 
 ## Adding a method
 
-One file in `methods/`, nothing else to change:
+One file in `methods/` and one line in `common/registry.py`:
 
 ```python
-NAME = "my_method"  # also the result file name
-FAMILY = "self_eval"  # "agreement" | "self_eval" | "baseline" | "hybrid"
-NEEDS_MODEL = True  # the runner loads the LLM and passes model, tok
+# methods/my_method.py
+NAME = "my_method"  # also the file name and the result file name
 
 
 def score(rows, model=None, tok=None) -> dict: ...  # return a score record (CONTRACT.md); do not save or load anything
+
+
+# common/registry.py, in _SPECS
+MethodSpec("my_method", "self_eval", "logprobs", GREEDY + 1, needs_model=True, probability=True, note="...")
 ```
 
-If the score is a probability of being correct (uncertainty = 1 − probability), add
-`"probability": True` to the record so ECE is computed. Template: `methods/dummy_random.py`.
+The fields are explained in CONTRACT.md. `probability=True` means uncertainty = 1 − probability
+of being correct, so ECE is computed. Template: `methods/dummy_random.py`.
 
 ## Metrics
 

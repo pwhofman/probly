@@ -3,7 +3,6 @@ Run `qwen3b/triviaqa_200`, 200 questions, precision float32
 | method | family | status | auroc | ci_low | ci_high | aurc | prr | ece | n_failed | seconds_per_question |
 |---|---|---|---|---|---|---|---|---|---|---|
 | msp | baseline | ok | 0.753 | 0.682 | 0.818 | 0.342 | 0.573 |  | 0 | 0.000 |
-| perplexity | baseline | ok | 0.786 | 0.719 | 0.843 | 0.321 | 0.631 |  | 0 | 0.000 |
 | mean_token_entropy | baseline | ok | 0.817 | 0.757 | 0.871 | 0.299 | 0.684 |  | 0 | 0.000 |
 | lexical_similarity | agreement | ok | 0.757 | 0.692 | 0.816 | 0.363 | 0.457 |  | 0 | 0.000 |
 | likelihood_mean | baseline | ok | 0.786 | 0.719 | 0.843 | 0.321 | 0.631 |  | 0 | 0.000 |

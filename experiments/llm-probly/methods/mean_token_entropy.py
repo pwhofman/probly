@@ -17,8 +17,6 @@ if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
 NAME = "mean_token_entropy"
-FAMILY = "baseline"
-NEEDS_MODEL = False
 
 
 def score(

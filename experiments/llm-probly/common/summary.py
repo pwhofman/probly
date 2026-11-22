@@ -10,6 +10,7 @@ import pandas as pd
 
 from common.evaluate import bootstrap_auroc, ece, evaluate
 from common.io import RESULTS_ROOT, load_scores
+from common.registry import REGISTRY
 
 EXPECTED_METHODS = (
     "likelihood_mean",
@@ -24,8 +25,9 @@ EXPECTED_METHODS = (
 
 COLUMNS = ["method", "status", "auroc", "ci_low", "ci_high", "aurc", "prr", "ece", "n_failed", "seconds_per_question"]
 
-# Methods whose score is a probability of being correct (uncertainty = 1 - probability).
-# Only for these ECE is computed. New plugins can instead put "probability": true in their record.
+# Methods whose score is a probability of being correct (uncertainty = 1 - probability); only for these
+# ECE is computed. Registered methods set probability=True in common/registry.py; this tuple adds the
+# week-1 result names. A record can still override it with "probability": true.
 PROBABILITY_METHODS = (
     "p_true_zeroshot",
     "p_true_zeroshot_norm",
@@ -72,7 +74,9 @@ def summary_table(
             table.append({"method": method, "status": f"pending: {error}"})
             continue
         scores = evaluate(record["uncertainty"], correct)
-        is_probability = record.get("probability", method in PROBABILITY_METHODS)
+        spec = REGISTRY.get(method)
+        default = spec.probability if spec else method in PROBABILITY_METHODS
+        is_probability = record.get("probability", default)
         calibration = ece(record["uncertainty"], correct) if is_probability else float("nan")
         low, high = bootstrap_auroc(record["uncertainty"], correct, n_boot=n_boot)
         table.append(

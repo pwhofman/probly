@@ -32,14 +32,15 @@ Details, accuracy per model and the label error rate: [docs/data_and_labelling.m
 One command runs the whole chain (generate → label → methods → evaluate → table) for one
 model and dataset, skipping steps that are already done:
 
-    uv run python -m scripts.run_benchmark --config configs/qwen1.5b_triviaqa_200.yaml
+    uv run python -m cli run --config configs/qwen1.5b_triviaqa_200.yaml
 
 Compare model sizes and make the plots after running each model:
 
-    uv run python -m scripts.compare_models --dataset triviaqa --n 200
-    uv run python -m scripts.plot_results --dataset triviaqa --n 200
+    uv run python -m cli compare --dataset triviaqa --n 200
+    uv run python -m cli plot --dataset triviaqa --n 200
 
-A new uncertainty method is one file in `methods/` (see `CONTRACT.md`). Configs, metrics
+See all methods with their family, model access and cost: `uv run python -m cli methods`.
+A new uncertainty method is one file in `methods/` plus one entry in `common/registry.py` (see `CONTRACT.md`). Configs, metrics
 (AUROC, AURC, PRR, ECE) and plots: [docs/pipeline.md](docs/pipeline.md).
 Overview of all methods (family, logits, cost per question): docs/methods.md
 
@@ -79,7 +80,7 @@ AUROC (higher is better, 0.5 = random; best per model in bold):
 4. The cheap baselines need no extra model calls and get better with size; at 7B mean token entropy and MSP reach 0.82–0.83.
 
 **Notes**
-- `perplexity` equals `likelihood_mean` (one is a monotone function of the other); the 1.5B value is from `perplexity`.
+- Perplexity is not listed separately: it is exp(−likelihood_mean), so it ranks the answers exactly like `likelihood_mean` (same AUROC, AURC, PRR).
 - 7B ran in float16 (memory), the others in float32.
 - Not run yet (–): p(True) and verbalized on 7B, SE on 3B and 7B.
 - SE files were saved by hand and moved into `triviaqa_200/`; next week they will go through the runner.
@@ -100,7 +101,7 @@ Extra cost of each method, seconds per question on top of generation (`seconds_p
 
 | method | 0.5B | 1.5B | 3B |
 |---|---|---|---|
-| cache-only (msp, perplexity, likelihood_mean, mean_token_entropy, lexical_similarity) | ~0 | ~0 | ~0 |
+| cache-only (msp, likelihood_mean, mean_token_entropy, lexical_similarity) | ~0 | ~0 | ~0 |
 | p_true_zeroshot | 0.11 | 0.31 | 0.24 |
 | p_true_brainstorm | 0.29 | 0.51 | 0.47 |
 | verbalized_2s | 0.19 | 0.56 | 0.77 |
@@ -118,8 +119,10 @@ Extra cost of each method, seconds per question on top of generation (`seconds_p
     uv run python -m pytest tests
 
 ## Structure
-- common/     shared code (data.py, generation.py, correctness.py: DATA; evaluate.py, io.py, summary.py: PIPE; reflexive.py: SELF)
-- scripts/    generate.py, label.py, manual_check.py (DATA); run_benchmark.py, compare_models.py, plot_results.py (PIPE); method scripts
+- cli.py      one entry point: run, methods, generate, label, compare, plot, check-prefix
+- common/     shared code (data.py, generation.py, correctness.py: DATA; evaluate.py, io.py, summary.py, registry.py: PIPE; reflexive.py: SELF)
+- scripts/    generate.py, label.py, manual_check.py (DATA); run_benchmark.py, compare_models.py, plot_results.py, check_prefix.py (PIPE); method scripts
+- archive/week1/  superseded week-1 scripts, kept for reproducibility (not linted)
 - methods/    one plugin per uncertainty method (see CONTRACT.md)
 - configs/    one YAML file per benchmark run
 - data/<model>/      <dataset>_<n>.jsonl, .meta.json, .manual_check_part<p>.json

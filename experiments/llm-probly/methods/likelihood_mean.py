@@ -13,8 +13,6 @@ if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
 NAME = "likelihood_mean"
-FAMILY = "baseline"
-NEEDS_MODEL = False
 
 
 def score(
