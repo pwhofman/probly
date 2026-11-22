@@ -273,3 +273,110 @@ def test_from_model_name_loads_hf_sequence_classifier(monkeypatch: pytest.Monkey
             "dtype": "auto",
         }
     ]
+
+
+class ReorderedLabelNLIModel(FakeNLIModel):
+    """Fake model whose output order is entailment, neutral, contradiction."""
+
+    config = SimpleNamespace(id2label={0: "ENTAILMENT", 1: "NEUTRAL", 2: "CONTRADICTION"})
+
+
+def test_pairwise_nli_scores_every_ordered_pair_once() -> None:
+    tokenizer = FakeTokenizer()
+    labels = _labels_for(tokenizer, {("a", "b"): 2, ("b", "a"): 1, ("a", "c"): 0})
+    model = FakeNLIModel(labels)
+    clusterer = HFGreedySemanticClusterer(model, tokenizer, batch_size=4)
+
+    matrix = clusterer.pairwise_nli(["a", "b", "c"])
+
+    assert matrix.shape == (3, 3, 3)
+    assert matrix.dtype == torch.float32
+    assert torch.isnan(matrix[torch.arange(3), torch.arange(3)]).all()
+    scored = [pair for call in tokenizer.pair_calls for pair in call]
+    assert sorted(scored) == sorted((p, h) for p in "abc" for h in "abc" if p != h)
+    assert all(len(call) <= 4 for call in tokenizer.pair_calls)
+    off_diagonal = matrix[~torch.eye(3, dtype=torch.bool)]
+    torch.testing.assert_close(off_diagonal.sum(dim=-1), torch.ones(6))
+    assert matrix[0, 1].argmax().item() == 2
+    assert matrix[1, 0].argmax().item() == 1
+    assert matrix[0, 2].argmax().item() == 0
+
+
+def test_pairwise_nli_returns_canonical_label_order_for_reordered_model() -> None:
+    tokenizer = FakeTokenizer()
+    # Raw label 0 is entailment for this model.
+    model = ReorderedLabelNLIModel(_labels_for(tokenizer, {("a", "b"): 0, ("b", "a"): 2}))
+    clusterer = HFGreedySemanticClusterer(model, tokenizer)
+
+    matrix = clusterer.pairwise_nli(["a", "b"])
+
+    assert matrix[0, 1].argmax().item() == 2  # entailment
+    assert matrix[1, 0].argmax().item() == 0  # contradiction
+
+
+def test_pairwise_nli_prepends_context_to_both_sides() -> None:
+    tokenizer = FakeTokenizer()
+    clusterer = HFGreedySemanticClusterer(FakeNLIModel(), tokenizer)
+
+    clusterer.pairwise_nli(["Paris", "Lyon"], context="Capital of France?")
+
+    assert tokenizer.pair_calls == [
+        [
+            ("Capital of France? Paris", "Capital of France? Lyon"),
+            ("Capital of France? Lyon", "Capital of France? Paris"),
+        ]
+    ]
+
+
+def test_pairwise_nli_single_statement_needs_no_model_call() -> None:
+    model = FakeNLIModel()
+    clusterer = HFGreedySemanticClusterer(model, FakeTokenizer())
+
+    matrix = clusterer.pairwise_nli(["only"])
+
+    assert matrix.shape == (1, 1, 3)
+    assert model.calls == []
+
+
+def test_cluster_nli_matrix_matches_direct_clustering() -> None:
+    pairs = {
+        ("a", "b"): 2,
+        ("b", "a"): 1,
+        ("a", "c"): 1,
+        ("c", "a"): 1,
+        ("a", "d"): 2,
+        ("d", "a"): 2,
+        ("c", "e"): 2,
+        ("e", "c"): 2,
+        ("b", "e"): 0,
+    }
+    texts = ["a", "b", "c", "d", "e"]
+
+    direct_tokenizer = FakeTokenizer()
+    direct = HFGreedySemanticClusterer(FakeNLIModel(_labels_for(direct_tokenizer, pairs)), direct_tokenizer)
+    expected = direct(
+        TorchTextGeneration(text=np.asarray(texts, dtype=object), log_likelihood=torch.zeros(5)),
+        axis=0,
+    ).group_ids
+
+    matrix_tokenizer = FakeTokenizer()
+    matrix_clusterer = HFGreedySemanticClusterer(FakeNLIModel(_labels_for(matrix_tokenizer, pairs)), matrix_tokenizer)
+    matrix = matrix_clusterer.pairwise_nli(texts)
+
+    assert torch.equal(HFGreedySemanticClusterer.cluster_nli_matrix(matrix), expected)
+    assert torch.equal(expected, torch.tensor([0, 0, 1, 0, 1]))
+
+
+def test_cluster_nli_matrix_on_hand_made_matrix() -> None:
+    contradiction, neutral, entailment = torch.eye(3)
+    matrix = torch.full((3, 3, 3), float("nan"))
+    matrix[0, 1], matrix[1, 0] = entailment, entailment
+    matrix[0, 2], matrix[2, 0] = neutral, neutral
+    matrix[1, 2], matrix[2, 1] = contradiction, entailment
+
+    assert torch.equal(HFGreedySemanticClusterer.cluster_nli_matrix(matrix), torch.tensor([0, 0, 1]))
+
+
+def test_cluster_nli_matrix_rejects_wrong_shape() -> None:
+    with pytest.raises(ValueError, match="shape"):
+        HFGreedySemanticClusterer.cluster_nli_matrix(torch.zeros((2, 3, 3)))
