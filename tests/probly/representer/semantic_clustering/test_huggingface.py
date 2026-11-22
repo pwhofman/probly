@@ -23,7 +23,12 @@ from probly.representation.text_generation.torch import (
     TorchTextGenerationSample,
     TorchTextGenerationSampleSample,
 )
-from probly.representer.semantic_clustering.huggingface import DEFAULT_NLI_MODEL, HFGreedySemanticClusterer
+from probly.representer.semantic_clustering.huggingface import (
+    DEFAULT_NLI_MODEL,
+    HFGreedySemanticClusterer,
+    expand_unique_nli,
+    unique_statements,
+)
 
 
 class FakeTokenizer:
@@ -380,3 +385,52 @@ def test_cluster_nli_matrix_on_hand_made_matrix() -> None:
 def test_cluster_nli_matrix_rejects_wrong_shape() -> None:
     with pytest.raises(ValueError, match="shape"):
         HFGreedySemanticClusterer.cluster_nli_matrix(torch.zeros((2, 3, 3)))
+
+
+def test_pairwise_nli_deduplicate_scores_each_distinct_pair_once() -> None:
+    texts = ["a", "b", "a", "c", "b"]
+    pairs = {("a", "b"): 2, ("b", "a"): 1, ("a", "c"): 0, ("c", "a"): 1, ("b", "c"): 2, ("c", "b"): 2}
+
+    tokenizer = FakeTokenizer()
+    clusterer = HFGreedySemanticClusterer(FakeNLIModel(_labels_for(tokenizer, pairs)), tokenizer)
+    matrix = clusterer.pairwise_nli(texts)
+
+    scored = [pair for call in tokenizer.pair_calls for pair in call]
+    assert sorted(scored) == sorted((p, h) for p in "abc" for h in "abc" if p != h)  # 3 * 2, not 5 * 4
+    entailment = torch.tensor([0.0, 0.0, 1.0])
+    torch.testing.assert_close(matrix[0, 2], entailment)
+    torch.testing.assert_close(matrix[4, 1], entailment)
+    assert torch.isnan(matrix[torch.arange(5), torch.arange(5)]).all()
+
+    full_tokenizer = FakeTokenizer()
+    full_clusterer = HFGreedySemanticClusterer(FakeNLIModel(_labels_for(full_tokenizer, pairs)), full_tokenizer)
+    full = full_clusterer.pairwise_nli(texts, deduplicate=False)
+    assert len([pair for call in full_tokenizer.pair_calls for pair in call]) == 5 * 4
+    distinct = torch.tensor([[a != b for b in texts] for a in texts])
+    torch.testing.assert_close(matrix[distinct], full[distinct])
+
+
+def test_pairwise_nli_deduplicate_all_identical_needs_no_model_call() -> None:
+    model = FakeNLIModel()
+    clusterer = HFGreedySemanticClusterer(model, FakeTokenizer())
+
+    matrix = clusterer.pairwise_nli(["Paris", "Paris", "Paris"])
+
+    assert model.calls == []
+    assert torch.equal(HFGreedySemanticClusterer.cluster_nli_matrix(matrix), torch.tensor([0, 0, 0]))
+
+
+def test_unique_statements_and_expand_unique_nli() -> None:
+    unique, inverse = unique_statements(["x", "y", "x"])
+    assert unique == ["x", "y"]
+    assert inverse.tolist() == [0, 1, 0]
+
+    unique_matrix = torch.full((2, 2, 3), float("nan"))
+    unique_matrix[0, 1] = torch.tensor([0.7, 0.2, 0.1])
+    unique_matrix[1, 0] = torch.tensor([0.1, 0.8, 0.1])
+    matrix = expand_unique_nli(unique_matrix, inverse)
+
+    assert matrix.shape == (3, 3, 3)
+    torch.testing.assert_close(matrix[2, 1], unique_matrix[0, 1])
+    torch.testing.assert_close(matrix[1, 2], unique_matrix[1, 0])
+    torch.testing.assert_close(matrix[0, 2], torch.tensor([0.0, 0.0, 1.0]))

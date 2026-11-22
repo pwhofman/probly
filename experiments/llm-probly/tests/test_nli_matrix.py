@@ -7,11 +7,13 @@ from pathlib import Path
 
 from common import nli_matrix
 from common.io import validate_scores
-from common.nli_matrix import load_nli_cache, save_nli_cache, se_and_dse
+from common.nli_matrix import load_nli_cache, nli_pair_count, question_texts, save_nli_cache, se_and_dse
 from methods import _se_common, discrete_semantic_entropy, semantic_entropy
 import numpy as np
 import pytest
 import torch
+
+from probly.representer.semantic_clustering.huggingface import expand_unique_nli, unique_statements
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -30,6 +32,33 @@ def test_se_from_cached_matrix_equals_old_results(model):
 
     np.testing.assert_allclose(new[:, 0], old_se["uncertainty"], atol=1e-5)
     np.testing.assert_allclose(new[:, 1], old_dse["uncertainty"], atol=1e-5)
+
+
+@pytest.mark.parametrize("model", ["qwen0.5b", "qwen1.5b"])
+def test_deduplicated_matrix_gives_the_same_se(model: str) -> None:
+    """A2: scoring each distinct text once (identical pairs = entailment) keeps SE / DSE unchanged."""
+    cache = load_nli_cache(ROOT / f"data/{model}/triviaqa_200.nli.npz")
+    rows = [json.loads(line) for line in (ROOT / f"data/{model}/triviaqa_200.jsonl").open()]
+    results = ROOT / f"results/{model}/triviaqa_200"
+    old_se = json.loads((results / "semantic_entropy.json").read_text())["uncertainty"]
+    old_dse = json.loads((results / "discrete_semantic_entropy.json").read_text())["uncertainty"]
+
+    new = []
+    for matrix, row in zip(cache["matrices"], rows, strict=True):
+        texts = question_texts(row)
+        unique, inverse = unique_statements(texts)
+        first = torch.tensor([texts.index(text) for text in unique])
+        deduplicated = expand_unique_nli(matrix[first[:, None], first[None, :]], inverse)
+        new.append(se_and_dse(deduplicated, row["samples_ll_mean"]))
+
+    np.testing.assert_allclose(np.array(new)[:, 0], old_se, atol=1e-5)
+    np.testing.assert_allclose(np.array(new)[:, 1], old_dse, atol=1e-5)
+
+
+def test_nli_pair_count() -> None:
+    row = {"greedy_answer": "Paris", "samples": ["Paris", "paris", "Lyon"]}
+    assert nli_pair_count(row) == 3 * 2
+    assert nli_pair_count(row, deduplicate=False) == 4 * 3
 
 
 def test_load_converts_file_order_to_probly_order(tmp_path):
@@ -84,7 +113,7 @@ class CountingClusterer:
         """Start with zero calls."""
         self.calls = 0
 
-    def pairwise_nli(self, statements: list[str], context: str | None = None) -> torch.Tensor:
+    def pairwise_nli(self, statements: list[str], context: str | None = None, deduplicate: bool = True) -> torch.Tensor:
         """Return an all-entailment matrix and count the call."""
         self.calls += 1
         n = len(statements)
@@ -107,7 +136,8 @@ def test_se_and_dse_plugins_share_one_nli_pass(monkeypatch):
     dse = discrete_semantic_entropy.score(rows)
 
     assert fake.calls == 2  # one per question, not one per question and method
-    assert se["nli_pairs_per_question"] == 12  # 4 texts -> 4 * 3 ordered pairs per question
+    # question 0: 1 distinct text -> 0 pairs; question 1: 3 distinct texts -> 6 pairs; mean 3
+    assert se["nli_pairs_per_question"] == 3
     assert dse["nli_pairs_per_question"] == 0
     assert se["uncertainty"] == pytest.approx([0.0, 0.0])
     assert dse["uncertainty"] == pytest.approx([0.0, 0.0])

@@ -38,6 +38,39 @@ NLI_LABELS = ("contradiction", "neutral", "entailment")
 """Order of the last axis of :meth:`HFSemanticClusterer.pairwise_nli` matrices."""
 
 
+def unique_statements(statements: Sequence[str]) -> tuple[list[str], torch.Tensor]:
+    """Return the distinct statements in order of first appearance and where each statement went.
+
+    Args:
+        statements: Texts that may contain exact duplicates.
+
+    Returns:
+        ``(unique, inverse)`` with ``unique[inverse[i]] == statements[i]`` for every ``i``.
+    """
+    position: dict[str, int] = {}
+    inverse = [position.setdefault(text, len(position)) for text in statements]
+    return list(position), torch.tensor(inverse, dtype=torch.long)
+
+
+def expand_unique_nli(unique_matrix: torch.Tensor, inverse: torch.Tensor) -> torch.Tensor:
+    """Expand an NLI matrix over distinct statements back to all statements.
+
+    Args:
+        unique_matrix: ``(u, u, 3)`` matrix over the distinct statements (see :func:`unique_statements`).
+        inverse: ``(n,)`` index of the distinct statement of every statement.
+
+    Returns:
+        ``(n, n, 3)`` matrix. Pairs of identical statements are entailment with probability 1,
+        the diagonal is NaN and every other entry is copied from ``unique_matrix``.
+    """
+    matrix = unique_matrix[inverse[:, None], inverse[None, :]].clone()
+    same = inverse[:, None] == inverse[None, :]
+    matrix[same] = torch.tensor([0.0, 0.0, 1.0], dtype=matrix.dtype)
+    n = inverse.shape[0]
+    matrix[torch.arange(n), torch.arange(n)] = float("nan")
+    return matrix
+
+
 def _canonical_label_name(label: object) -> int | None:
     normalized = str(label).lower().replace("_", " ").replace("-", " ")
     if "contradiction" in normalized:
@@ -306,17 +339,24 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOut
         statements: Sequence[str] | np.ndarray,
         *,
         context: str | None = None,
+        deduplicate: bool = True,
     ) -> torch.Tensor:
         """Score every ordered pair of statements with the NLI model.
 
-        All ``n * (n - 1)`` ordered pairs are scored once, so the matrix can be shared by every
-        method that needs semantic agreement (for example semantic entropy, discrete semantic
-        entropy and graph-based measures) instead of each method calling the NLI model again.
+        Every ordered pair is scored once, so the matrix can be shared by every method that needs
+        semantic agreement (for example semantic entropy, discrete semantic entropy and
+        graph-based measures) instead of each method calling the NLI model again.
+
+        With ``deduplicate=True`` identical statements are sent to the model only once: for ``u``
+        distinct statements the model scores ``u * (u - 1)`` pairs instead of ``n * (n - 1)``, and
+        a pair of identical statements is set to entailment (probability 1) without a model call.
 
         Args:
             statements: The ``n`` texts to compare, for example a greedy answer followed by samples.
             context: Optional text placed in front of every premise and hypothesis, separated by a
                 space (for example the question the statements answer).
+            deduplicate: Score identical statements only once (see above). Set to False to send
+                every pair to the model, including pairs of identical statements.
 
         Returns:
             A float32 CPU tensor of shape ``(n, n, 3)``. Entry ``[a, b]`` holds the probabilities of
@@ -337,6 +377,12 @@ class HFSemanticClusterer(Representer[Any, Any, torch.Tensor, SemanticClusterOut
         if context is not None:
             texts = np.asarray([f"{context} {text}" for text in texts.tolist()], dtype=object)
 
+        if not deduplicate:
+            return self._score_all_pairs(texts)
+        unique, inverse = unique_statements(texts.tolist())
+        return expand_unique_nli(self._score_all_pairs(np.asarray(unique, dtype=object)), inverse)
+
+    def _score_all_pairs(self, texts: np.ndarray) -> torch.Tensor:
         n = texts.shape[0]
         matrix = torch.full((n, n, 3), float("nan"), dtype=torch.float32)
         off_diagonal = ~torch.eye(n, dtype=torch.bool)
