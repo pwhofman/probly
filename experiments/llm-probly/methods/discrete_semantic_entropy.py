@@ -21,6 +21,7 @@ def score(rows, model=None, tok=None):
     return {
         "method": NAME,
         "model": rows[0].get("model"),
+        "answer": "greedy",  # CONTRACT rule 4; save_scores rejects a record without it
         "ids": ids,
         "uncertainty": unc,
         "failed": failed,

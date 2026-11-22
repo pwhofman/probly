@@ -1,0 +1,7 @@
+# E3 second model family: 5-question smoke test (first run downloads about 3.4 GB).
+model: smollm2-1.7b
+dataset: triviaqa
+n: 5
+precision: float32
+device: mps
+methods: [msp, likelihood_mean, mean_token_entropy, lexical_similarity, dummy_random]  # cache-only; others run on these caches later

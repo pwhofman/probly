@@ -1,0 +1,27 @@
+{
+  "method": "dummy_random",
+  "model": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+  "answer": "greedy",
+  "ids": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "uncertainty": [
+    0.8444218515250481,
+    0.7579544029403025,
+    0.420571580830845,
+    0.25891675029296335,
+    0.5112747213686085
+  ],
+  "failed": [
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "seconds_per_question": 0.0
+}

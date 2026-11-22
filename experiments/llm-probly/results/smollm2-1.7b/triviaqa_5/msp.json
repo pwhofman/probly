@@ -1,0 +1,27 @@
+{
+  "method": "msp",
+  "model": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+  "answer": "greedy",
+  "ids": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "uncertainty": [
+    0.058194175362586975,
+    2.203962668776512,
+    0.3839117338648066,
+    0.26795442029833794,
+    4.689154432155192
+  ],
+  "failed": [
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "seconds_per_question": 0.0
+}
