@@ -83,7 +83,7 @@ class CountingClusterer:
         """Start with zero calls."""
         self.calls = 0
 
-    def pairwise_nli(self, statements: list[str], context: str | None = None) -> torch.Tensor:  # noqa: ARG002
+    def pairwise_nli(self, statements: list[str], context: str | None = None) -> torch.Tensor:
         """Return an all-entailment matrix and count the call."""
         self.calls += 1
         n = len(statements)

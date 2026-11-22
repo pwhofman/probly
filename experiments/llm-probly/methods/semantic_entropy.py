@@ -9,6 +9,6 @@ FAMILY = "agreement"
 NEEDS_MODEL = False
 
 
-def score(rows: list[dict], model: object = None, tok: object = None) -> dict:  # noqa: ARG001
+def score(rows: list[dict], model: object = None, tok: object = None) -> dict:
     """Score every row; see CONTRACT.md for the record format."""
     return score_rows(rows, NAME, which=0)

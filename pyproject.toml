@@ -206,11 +206,7 @@ exclude = [
     "experiments/llm-probly/archive",
     "experiments/llm-probly/notebooks",
     # Rewritten or removed this week; each owner removes the entry in that PR:
-    # A1 (semantic files, build_nli_cache.py), C1 (common/reflexive.py), C2 (scripts/r3_methods.py).
-    "experiments/llm-probly/methods/_se_common.py",
-    "experiments/llm-probly/methods/semantic_entropy.py",
-    "experiments/llm-probly/methods/discrete_semantic_entropy.py",
-    "experiments/llm-probly/scripts/build_nli_cache.py",
+    # C1 (common/reflexive.py), C2 (scripts/r3_methods.py).
     "experiments/llm-probly/common/reflexive.py",
     "experiments/llm-probly/scripts/r3_methods.py",
     "*.pyi",
@@ -344,10 +340,6 @@ exclude = [
     "experiments/llm-probly/archive",
     "experiments/llm-probly/notebooks",
     # Rewritten or removed this week (same list as in [tool.ruff] exclude).
-    "experiments/llm-probly/methods/_se_common.py",
-    "experiments/llm-probly/methods/semantic_entropy.py",
-    "experiments/llm-probly/methods/discrete_semantic_entropy.py",
-    "experiments/llm-probly/scripts/build_nli_cache.py",
     "experiments/llm-probly/common/reflexive.py",
     "experiments/llm-probly/scripts/r3_methods.py",
 ]
