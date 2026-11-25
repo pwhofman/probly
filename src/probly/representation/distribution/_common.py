@@ -12,7 +12,7 @@ from probly.representation.representation import Representation
 from probly.representation.sample._common import RepresentationSample, Sample
 
 if TYPE_CHECKING:
-    from ndlike.array_like import ArrayLike
+    from ndlike.array_like import WeakArrayLike
 
 type DistributionType = Literal[
     "gaussian",
@@ -32,7 +32,7 @@ class Distribution[T](Representation):
 
     type: ClassVar[DistributionType]
 
-    def entropy(self) -> ArrayLike:
+    def entropy(self) -> WeakArrayLike:
         """Compute entropy."""
         from probly.quantification.measure.distribution._common import entropy  # noqa: PLC0415
 

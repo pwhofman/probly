@@ -18,7 +18,7 @@ from probly.transformation.transformation import predictor_transformation
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from ndlike.array_like import ArrayLike
+    from ndlike.array_like import WeakArrayLike
 
     from probly.representation.distribution._common import CategoricalDistribution
 
@@ -87,7 +87,7 @@ def ddu[**In, Out: DDURepresentation](
 
 
 @flexdispatch
-def negative_log_density(densities: Iterable) -> ArrayLike:
+def negative_log_density(densities: Iterable) -> WeakArrayLike:
     """Convert DDU log-density scores to an epistemic uncertainty score."""
     msg = f"Negative log density is not supported for densities of type {type(densities)}."
     raise NotImplementedError(msg)

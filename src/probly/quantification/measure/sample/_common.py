@@ -11,7 +11,7 @@ from probly.representation.distribution._common import CategoricalDistributionSa
 from probly.representation.sample._common import Sample
 
 if TYPE_CHECKING:
-    from ndlike.array_like import ArrayLike
+    from ndlike.array_like import WeakArrayLike
 
 
 @measure_atomic.register(Sample)
@@ -23,7 +23,7 @@ def sample_variance[T](sample: Sample[T]) -> T:
 @flexdispatch
 def mean_squared_distance_to_scaled_one_hot(
     sample: CategoricalDistributionSample, scale: float | None = None
-) -> ArrayLike:
+) -> WeakArrayLike:
     r"""Mean over members of :math:`\| h_k - s\, e_{\arg\max_j h_{k,j}} \|_2^2`; class axis is last.
 
     Args:
@@ -37,7 +37,7 @@ def mean_squared_distance_to_scaled_one_hot(
 
 @measure_atomic.register(CategoricalDistributionSample)
 @flexdispatch
-def total_logit_sample_variance(sample: CategoricalDistributionSample) -> ArrayLike:
+def total_logit_sample_variance(sample: CategoricalDistributionSample) -> WeakArrayLike:
     """Measure uncertainty for samples via the variance of their total logits (logits summed across members)."""
     msg = f"total_logit_sample_variance not supported for sample of type {type(sample)}."
     raise NotImplementedError(msg)

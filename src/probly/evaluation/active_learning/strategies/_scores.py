@@ -12,14 +12,14 @@ from flextype import flexdispatch
 from probly.quantification.measure.distribution import entropy
 
 if TYPE_CHECKING:
-    from ndlike.array_like import ArrayLike
+    from ndlike.array_like import WeakArrayLike
 
 
 entropy_score = entropy
 
 
 @flexdispatch
-def least_confident_score(probs: ArrayLike) -> ArrayLike:
+def least_confident_score(probs: WeakArrayLike) -> WeakArrayLike:
     """Score each sample by 1 - max(prob). Higher = less confident = more informative.
 
     Args:
@@ -33,7 +33,7 @@ def least_confident_score(probs: ArrayLike) -> ArrayLike:
 
 
 @flexdispatch
-def margin_score(probs: ArrayLike) -> ArrayLike:
+def margin_score(probs: WeakArrayLike) -> WeakArrayLike:
     """Score each sample by negative margin. Higher = smaller margin = more informative.
 
     Args:

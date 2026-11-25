@@ -12,13 +12,13 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from flextype import LazyType
-    from ndlike.array_like import ArrayLike
+    from ndlike.array_like import WeakArrayLike
 
     from probly.representation.credal_set._common import CredalSet
 
 type LogBase = float | Literal["normalize"] | None
 type Approximate = bool | Literal["auto"]
-type _EntropyResult = ArrayLike | tuple[ArrayLike, ArrayLike]
+type _EntropyResult = WeakArrayLike | tuple[WeakArrayLike, WeakArrayLike]
 
 # Probability intervals with at most this many classes get the exact lower entropy.
 EXACT_LOWER_ENTROPY_MAX_CLASSES = 14
@@ -36,7 +36,7 @@ class _EntropyDispatcher(Flexdispatch[..., _EntropyResult]):
         base: LogBase = None,
         *,
         return_distribution: Literal[False] = False,
-    ) -> ArrayLike: ...
+    ) -> WeakArrayLike: ...
 
     @overload
     def __call__(
@@ -45,7 +45,7 @@ class _EntropyDispatcher(Flexdispatch[..., _EntropyResult]):
         base: LogBase = None,
         *,
         return_distribution: Literal[True],
-    ) -> tuple[ArrayLike, ArrayLike]: ...
+    ) -> tuple[WeakArrayLike, WeakArrayLike]: ...
 
     @overload
     def __call__(
@@ -110,7 +110,7 @@ class _LowerEntropyDispatcher(_EntropyDispatcher):
         *,
         return_distribution: Literal[False] = False,
         approximate: Approximate = "auto",
-    ) -> ArrayLike: ...
+    ) -> WeakArrayLike: ...
 
     @overload
     def __call__(
@@ -120,7 +120,7 @@ class _LowerEntropyDispatcher(_EntropyDispatcher):
         *,
         return_distribution: Literal[True],
         approximate: Approximate = "auto",
-    ) -> tuple[ArrayLike, ArrayLike]: ...
+    ) -> tuple[WeakArrayLike, WeakArrayLike]: ...
 
     @overload
     def __call__(
@@ -148,7 +148,7 @@ def upper_entropy(
     base: LogBase = None,
     *,
     return_distribution: bool = False,
-) -> ArrayLike | tuple[ArrayLike, ArrayLike]:
+) -> WeakArrayLike | tuple[WeakArrayLike, WeakArrayLike]:
     """Compute the upper entropy of a credal set.
 
     If ``return_distribution`` is ``True``, returns ``(entropy, distribution)``
@@ -165,7 +165,7 @@ def lower_entropy(
     *,
     return_distribution: bool = False,
     approximate: Approximate = "auto",
-) -> ArrayLike | tuple[ArrayLike, ArrayLike]:
+) -> WeakArrayLike | tuple[WeakArrayLike, WeakArrayLike]:
     """Compute the lower entropy of a credal set.
 
     If ``return_distribution`` is ``True``, returns ``(entropy, distribution)``
@@ -230,7 +230,7 @@ def use_approximate_lower_entropy(n_classes: int, approximate: Approximate) -> b
 
 
 @flexdispatch
-def generalized_hartley(credal_set: CredalSet, base: LogBase = None) -> ArrayLike:
+def generalized_hartley(credal_set: CredalSet, base: LogBase = None) -> WeakArrayLike:
     """Compute the generalized Hartley measure of a credal set."""
     msg = f"Generalized Hartley measure is not supported for credal sets of type {type(credal_set)}."
     raise NotImplementedError(msg)

@@ -5,13 +5,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
-    from ndlike.array_like import ArrayLike
+    from ndlike.array_like import WeakArrayLike
 
     from probly.evaluation.active_learning.pool import ActiveLearningPool
 
 
 @runtime_checkable
-class Estimator(Protocol):
+class Estimator[A: WeakArrayLike](Protocol):
     """Protocol for estimators usable by query strategies.
 
     Implement this for basic strategies (:class:`RandomQuery`,
@@ -20,37 +20,37 @@ class Estimator(Protocol):
     proper gradient embeddings, implement :class:`BadgeEstimator`.
     """
 
-    def fit(self, x: ArrayLike, y: ArrayLike) -> None:
+    def fit(self, x: A, y: A) -> None:
         """Fit the estimator on labeled data."""
         ...
 
-    def predict(self, x: ArrayLike) -> ArrayLike:
+    def predict(self, x: A) -> WeakArrayLike:
         """Return class predictions."""
         ...
 
-    def predict_proba(self, x: ArrayLike) -> ArrayLike:
+    def predict_proba(self, x: A) -> WeakArrayLike:
         """Return class probabilities."""
         ...
 
 
 @runtime_checkable
-class UncertaintyEstimator(Estimator, Protocol):
+class UncertaintyEstimator[A: WeakArrayLike](Estimator[A], Protocol):
     """Protocol for estimators that provide uncertainty scores."""
 
-    def uncertainty_scores(self, x: ArrayLike) -> ArrayLike:
+    def uncertainty_scores(self, x: A) -> WeakArrayLike:
         """Return per-sample uncertainty scores of shape (n_samples,)."""
         ...
 
 
 @runtime_checkable
-class BadgeEstimator(Estimator, Protocol):
+class BadgeEstimator[A: WeakArrayLike](Estimator[A], Protocol):
     """Protocol for estimators usable by :class:`BADGEQuery`.
 
     Extends :class:`Estimator` with an ``embed`` method that returns
     penultimate-layer features used to build BADGE gradient embeddings.
     """
 
-    def embed(self, x: ArrayLike) -> ArrayLike:
+    def embed(self, x: A) -> WeakArrayLike:
         """Return penultimate-layer embeddings of shape ``(n, emb_dim)``."""
         ...
 
@@ -59,7 +59,7 @@ class BadgeEstimator(Estimator, Protocol):
 class QueryStrategy[E: Estimator](Protocol):
     """Protocol for active learning query strategies."""
 
-    def select(self, estimator: E, pool: ActiveLearningPool, n: int) -> ArrayLike:
+    def select(self, estimator: E, pool: ActiveLearningPool, n: int) -> WeakArrayLike:
         """Return n indices into pool.x_unlabeled to query next.
 
         Args:

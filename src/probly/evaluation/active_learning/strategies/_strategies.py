@@ -10,7 +10,7 @@ from ._scores import entropy_score, least_confident_score, margin_score
 from ._selection import random_select, topk_select
 
 if TYPE_CHECKING:
-    from ndlike.array_like import ArrayLike
+    from ndlike.array_like import WeakArrayLike
 
     from probly.evaluation.active_learning.pool import ActiveLearningPool
 
@@ -34,12 +34,12 @@ class RandomQuery:
         """
         self._rng = np.random.default_rng(seed)
 
-    def select(
+    def select[A: WeakArrayLike](
         self,
-        estimator: Estimator,  # noqa: ARG002
-        pool: ActiveLearningPool,
+        estimator: Estimator[A],  # noqa: ARG002
+        pool: ActiveLearningPool[A],
         n: int,
-    ) -> ArrayLike:
+    ) -> WeakArrayLike:
         """Return n randomly chosen indices from the unlabeled pool.
 
         Args:
@@ -61,7 +61,7 @@ class EntropySampling:
     classes, making these samples informative to label.
     """
 
-    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> ArrayLike:
+    def select[A: WeakArrayLike](self, estimator: Estimator[A], pool: ActiveLearningPool[A], n: int) -> WeakArrayLike:
         """Return n indices with the highest prediction entropy."""
         n = min(n, pool.n_unlabeled)
         scores = entropy_score(estimator.predict_proba(pool.x_unlabeled))
@@ -75,7 +75,7 @@ class LeastConfidentSampling:
     making these samples informative to label.
     """
 
-    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> ArrayLike:
+    def select[A: WeakArrayLike](self, estimator: Estimator[A], pool: ActiveLearningPool[A], n: int) -> WeakArrayLike:
         """Return n indices with the lowest maximum class probability."""
         n = min(n, pool.n_unlabeled)
         scores = least_confident_score(estimator.predict_proba(pool.x_unlabeled))
@@ -89,7 +89,7 @@ class MarginSampling:
     classes, making these samples most informative to label.
     """
 
-    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> ArrayLike:
+    def select[A: WeakArrayLike](self, estimator: Estimator[A], pool: ActiveLearningPool[A], n: int) -> WeakArrayLike:
         """Return n indices with the smallest margin in predicted probabilities."""
         n = min(n, pool.n_unlabeled)
         scores = margin_score(estimator.predict_proba(pool.x_unlabeled))
@@ -104,7 +104,9 @@ class UncertaintyQuery:
     or any other UQ-based measure).
     """
 
-    def select(self, estimator: UncertaintyEstimator, pool: ActiveLearningPool, n: int) -> ArrayLike:
+    def select[A: WeakArrayLike](
+        self, estimator: UncertaintyEstimator[A], pool: ActiveLearningPool[A], n: int
+    ) -> WeakArrayLike:
         """Return n indices with the highest uncertainty scores from the estimator."""
         n = min(n, pool.n_unlabeled)
         scores = estimator.uncertainty_scores(pool.x_unlabeled)

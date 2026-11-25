@@ -7,12 +7,12 @@ from typing import TYPE_CHECKING
 from flextype import flexdispatch
 
 if TYPE_CHECKING:
-    from ndlike.array_like import ArrayLike
+    from ndlike.array_like import WeakArrayLike
     import numpy as np
 
 
 @flexdispatch
-def topk_select(scores: ArrayLike, n: int) -> ArrayLike:
+def topk_select(scores: WeakArrayLike, n: int) -> WeakArrayLike:
     """Select n indices with the highest scores.
 
     Args:
@@ -27,7 +27,7 @@ def topk_select(scores: ArrayLike, n: int) -> ArrayLike:
 
 
 @flexdispatch
-def random_select(x_ref: ArrayLike, n_pool: int, n: int, rng: np.random.Generator) -> ArrayLike:
+def random_select(x_ref: WeakArrayLike, n_pool: int, n: int, rng: np.random.Generator) -> WeakArrayLike:
     """Select n unique random indices, returning the backend's native index type.
 
     Dispatches on the type of ``x_ref`` (a reference array from the pool, used

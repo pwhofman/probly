@@ -10,13 +10,13 @@ from flextype import flexdispatch
 from ._protocols import BadgeEstimator, Estimator
 
 if TYPE_CHECKING:
-    from ndlike.array_like import ArrayLike
+    from ndlike.array_like import WeakArrayLike
 
     from probly.evaluation.active_learning.pool import ActiveLearningPool
 
 
 @flexdispatch
-def badge_embed(estimator: object, x_unlabeled: ArrayLike) -> ArrayLike:
+def badge_embed(estimator: object, x_unlabeled: WeakArrayLike) -> WeakArrayLike:
     """Extract embeddings for BADGE selection.
 
     Dispatches on the estimator type. If the estimator implements
@@ -42,18 +42,18 @@ def badge_embed(estimator: object, x_unlabeled: ArrayLike) -> ArrayLike:
 
 
 @badge_embed.register(BadgeEstimator)
-def _badge_embed_badge(estimator: BadgeEstimator, x_unlabeled: ArrayLike) -> ArrayLike:
+def _badge_embed_badge(estimator: BadgeEstimator, x_unlabeled: WeakArrayLike) -> WeakArrayLike:
     """Use the estimator's penultimate-layer embeddings for BADGE selection."""
     return estimator.embed(x_unlabeled)
 
 
 @flexdispatch
 def badge_select(
-    embeddings: ArrayLike,
-    probs: ArrayLike,
+    embeddings: WeakArrayLike,
+    probs: WeakArrayLike,
     n: int,
     seed: int | None = None,
-) -> ArrayLike:
+) -> WeakArrayLike:
     """Select n indices via BADGE gradient embedding k-means++.
 
     Args:
@@ -91,7 +91,7 @@ class BADGEQuery:
         """
         self._seed = seed
 
-    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> ArrayLike:
+    def select[A: WeakArrayLike](self, estimator: Estimator[A], pool: ActiveLearningPool[A], n: int) -> WeakArrayLike:
         """Return n indices chosen by BADGE k-means++ on gradient embeddings."""
         n = min(n, pool.n_unlabeled)
         probs = estimator.predict_proba(pool.x_unlabeled)
