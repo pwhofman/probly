@@ -47,7 +47,7 @@ class JaxSample[D: AnyJaxLike | jax.Array](
         "JaxSample[D] | D",
         "JaxSample[jax.Array]",
     ],
-    Sample[D],
+    Sample[D, D],
 ):
     """A sample implementation for JAX arrays."""
 

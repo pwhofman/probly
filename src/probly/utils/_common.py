@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from flextype import flexdispatch
+
+if TYPE_CHECKING:
+    from probly.lazy_types import NativeArray
 
 
 @flexdispatch
-def elementwise_entropy(p: object) -> object:
+def elementwise_entropy[A: NativeArray](p: A) -> A:
     """Compute the entropy contribution ``-p * log(p)`` of every probability.
 
     Args:

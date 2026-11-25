@@ -51,7 +51,7 @@ class NumpySample[D: AnyNumpyLike | np.ndarray](
         "NumpySample[D] | D",
         "NumpySample[np.ndarray]",
     ],
-    Sample[D],
+    Sample[D, D],
 ):
     """A sample of predictions stored in a numpy array."""
 

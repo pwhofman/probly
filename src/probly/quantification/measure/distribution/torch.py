@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 import warnings
 
 from ndlike.torch_functions import torch_average
@@ -26,23 +25,17 @@ from ._common import (
     DEFAULT_NUM_SAMPLES,
     TOTAL_VARIATION_BISECTION_ITERATIONS,
     LogBase,
-    _generalized_entropy,
     conditional_entropy,
     dempster_shafer_uncertainty,
     entropy,
     entropy_of_expected_predictive_distribution,
-    expected_generalized_entropy,
     expected_max_probability_complement,
-    generalized_entropy_of_expected,
     max_disagreement,
     max_probability_complement_of_expected,
     min_expected_total_variation,
     mutual_information,
     vacuity,
 )
-
-if TYPE_CHECKING:
-    from probly.metrics import ScoringRule
 
 _TORCH_GENERATOR_UNUSED_MESSAGE = (
     "generator is not used by the torch Dirichlet sampler. Seed with torch.manual_seed for reproducibility."
@@ -124,27 +117,6 @@ def torch_gaussian_entropy(
 # Entropy of expected value
 
 
-@entropy_of_expected_predictive_distribution.register(TorchDirichletDistribution)
-def torch_dirichlet_entropy_of_expected_predictive_distribution(
-    distribution: TorchDirichletDistribution | torch.Tensor, base: LogBase = None
-) -> torch.Tensor:
-    """Compute the entropy of the expected value of a torch Dirichlet distribution."""
-    if isinstance(distribution, torch.Tensor):
-        distribution = TorchDirichletDistribution(alphas=distribution)
-
-    expected_distribution = distribution.mean
-    return torch_categorical_entropy(expected_distribution, base=base)
-
-
-@entropy_of_expected_predictive_distribution.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_entropy_of_expected_predictive_distribution(
-    sample: TorchCategoricalDistributionSample, base: LogBase = None
-) -> torch.Tensor:
-    """Compute the entropy of the expected value of a sample from a categorical distribution."""
-    expected_distribution = sample.sample_mean()
-    return torch_categorical_entropy(expected_distribution, base=base)
-
-
 @entropy_of_expected_predictive_distribution.register(TorchGaussianDistributionSample)
 def torch_gaussian_sample_entropy_of_expected_predictive_distribution(
     sample: TorchGaussianDistributionSample, base: LogBase = None
@@ -197,28 +169,6 @@ def torch_dirichlet_conditional_entropy(
     return result / torch.log(torch.as_tensor(base, dtype=result.dtype, device=result.device))
 
 
-@conditional_entropy.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_conditional_entropy(
-    sample: TorchCategoricalDistributionSample, base: LogBase = None
-) -> torch.Tensor:
-    """Compute the conditional entropy of a sample from a categorical distribution."""
-    p = sample.tensor.probabilities
-    axis = sample.sample_axis
-    del sample  # Avoid keeping a reference to the sample for memory efficiency
-    entropies = torch_categorical_entropy(p, base=base)
-    return torch.mean(entropies, dim=axis)
-
-
-@conditional_entropy.register(TorchGaussianDistributionSample)
-def torch_gaussian_sample_conditional_entropy(
-    sample: TorchGaussianDistributionSample, base: LogBase = None
-) -> torch.Tensor:
-    """Compute the mean per-member Gaussian entropy (aleatoric uncertainty)."""
-    axis = sample.sample_axis
-    entropies = torch_gaussian_entropy(sample.tensor, base=base)
-    return torch.mean(entropies, dim=axis)
-
-
 @conditional_entropy.register(TorchDirichletMixtureDistribution)
 def torch_mixture_conditional_entropy(
     distribution: TorchDirichletMixtureDistribution, base: LogBase = None
@@ -229,16 +179,6 @@ def torch_mixture_conditional_entropy(
 
 
 # Mutual information
-
-
-@mutual_information.register(TorchDirichletDistribution)
-def torch_dirichlet_mutual_information(
-    distribution: TorchDirichletDistribution | torch.Tensor, base: LogBase = None
-) -> torch.Tensor:
-    """Compute mutual information of a torch Dirichlet distribution."""
-    return torch_dirichlet_entropy_of_expected_predictive_distribution(
-        distribution, base=base
-    ) - torch_dirichlet_conditional_entropy(distribution, base=base)
 
 
 @mutual_information.register(TorchCategoricalDistributionSample)
@@ -252,16 +192,6 @@ def torch_categorical_sample_mutual_information(
     expected_value_entropy = torch_categorical_entropy(torch.mean(p, dim=axis), base=base)
     conditional_entropy_value = torch.mean(torch_categorical_entropy(p, base=base), dim=axis)
     return expected_value_entropy - conditional_entropy_value
-
-
-@mutual_information.register(TorchGaussianDistributionSample)
-def torch_gaussian_sample_mutual_information(
-    sample: TorchGaussianDistributionSample, base: LogBase = None
-) -> torch.Tensor:
-    """Compute the epistemic uncertainty (total entropy minus aleatoric entropy)."""
-    return torch_gaussian_sample_entropy_of_expected_predictive_distribution(
-        sample, base=base
-    ) - torch_gaussian_sample_conditional_entropy(sample, base=base)
 
 
 @mutual_information.register(TorchDirichletMixtureDistribution)
@@ -329,30 +259,6 @@ def torch_categorical_sample_max_disagreement(
     per_sample_bma_prob = torch.take_along_dim(p, bma_argmax, dim=-1).squeeze(-1)
     per_sample_max = torch.max(p, dim=-1).values
     return torch.mean(per_sample_max - per_sample_bma_prob, dim=axis)
-
-
-# Generalized-entropy (scoring rule) measures
-
-
-@generalized_entropy_of_expected.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_generalized_entropy_of_expected(
-    sample: TorchCategoricalDistributionSample, scoring_rule: ScoringRule
-) -> torch.Tensor:
-    """Compute G(theta_bar) = scoring_rule(theta_bar, theta_bar) for a categorical sample."""
-    mean = sample.sample_mean().probabilities  # (..., K)
-    return _generalized_entropy(scoring_rule, mean)
-
-
-@expected_generalized_entropy.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_expected_generalized_entropy(
-    sample: TorchCategoricalDistributionSample, scoring_rule: ScoringRule
-) -> torch.Tensor:
-    """Compute E[G(theta)] = mean_m scoring_rule(theta_m, theta_m) for a categorical sample."""
-    p = sample.tensor.probabilities  # (..., M, K)
-    axis = sample.sample_axis
-    del sample  # Avoid keeping a reference to the sample for memory efficiency
-    per_sample = _generalized_entropy(scoring_rule, p)  # (..., M)
-    return torch.mean(per_sample, dim=axis)
 
 
 # Distance-based epistemic uncertainty (Wasserstein)
