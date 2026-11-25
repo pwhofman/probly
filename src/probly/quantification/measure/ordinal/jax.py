@@ -17,19 +17,11 @@ from ._common import (
     labelwise_conditional_entropy,
     labelwise_entropy,
     labelwise_entropy_of_expected_predictive_distribution,
-    labelwise_expected_conditional_variance,
     labelwise_mutual_information_entropy,
-    labelwise_variance,
-    labelwise_variance_of_conditional_mean,
-    labelwise_variance_of_expected_predictive_distribution,
     ordinal_conditional_entropy,
     ordinal_entropy,
     ordinal_entropy_of_expected_predictive_distribution,
-    ordinal_expected_conditional_variance,
     ordinal_mutual_information_entropy,
-    ordinal_variance,
-    ordinal_variance_of_conditional_mean,
-    ordinal_variance_of_expected_predictive_distribution,
 )
 
 
@@ -54,21 +46,6 @@ def _cdf(p: jnp.ndarray) -> jnp.ndarray:
     return jnp.cumsum(p, axis=-1)[..., :-1]
 
 
-@ordinal_variance.register(JaxCategoricalDistribution)
-def jax_categorical_ordinal_variance(
-    distribution: JaxCategoricalDistribution | jnp.ndarray,
-    base: LogBase = None,  # noqa: ARG001
-) -> jnp.ndarray:
-    """Compute the ordinal variance of a categorical distribution."""
-    if isinstance(distribution, JaxCategoricalDistribution):
-        p = distribution.probabilities
-        del distribution
-    else:
-        p = distribution
-    cdf = _cdf(p)
-    return jnp.sum(cdf * (1 - cdf), axis=-1)
-
-
 @ordinal_entropy.register(JaxCategoricalDistribution)
 def jax_categorical_ordinal_entropy(
     distribution: JaxCategoricalDistribution | jnp.ndarray, base: LogBase = None
@@ -82,44 +59,6 @@ def jax_categorical_ordinal_entropy(
     cdf = _cdf(p)
     binary_entropies = _jax_binary_entropy(cdf, base=base)
     return jnp.sum(binary_entropies, axis=-1)
-
-
-@ordinal_variance_of_expected_predictive_distribution.register(JaxCategoricalDistributionSample)
-def jax_categorical_sample_ordinal_variance_of_expected_predictive_distribution(
-    sample: JaxCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> jnp.ndarray:
-    """Compute the ordinal variance of the expected value of a categorical sample."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    cdf = _cdf(p)
-    expected_cdf = jnp.mean(cdf, axis=axis)
-    return jnp.sum(expected_cdf * (1 - expected_cdf), axis=-1)
-
-
-@ordinal_expected_conditional_variance.register(JaxCategoricalDistributionSample)
-def jax_categorical_sample_ordinal_expected_conditional_variance(
-    sample: JaxCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> jnp.ndarray:
-    """Compute the ordinal expected conditional variance of a categorical sample."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    cdf = _cdf(p)
-    per_sample_variance = jnp.sum(cdf * (1 - cdf), axis=-1)
-    return jnp.mean(per_sample_variance, axis=axis)
-
-
-@ordinal_variance_of_conditional_mean.register(JaxCategoricalDistributionSample)
-def jax_categorical_sample_ordinal_variance_of_conditional_mean(
-    sample: JaxCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> jnp.ndarray:
-    """Compute the ordinal variance of the conditional mean of a categorical sample."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    cdf = _cdf(p)
-    return jnp.sum(jnp.var(cdf, axis=axis, ddof=0), axis=-1)
 
 
 @ordinal_entropy_of_expected_predictive_distribution.register(JaxCategoricalDistributionSample)
@@ -205,16 +144,6 @@ def jax_categorical_labelwise_entropy(
     return jnp.sum(_jax_binary_entropy(p, base=base), axis=-1)
 
 
-@labelwise_variance.register(JaxCategoricalDistribution)
-def jax_categorical_labelwise_variance(
-    distribution: JaxCategoricalDistribution | jnp.ndarray,
-    base: LogBase = None,  # noqa: ARG001
-) -> jnp.ndarray:
-    """Compute the label-wise binary variance of a categorical distribution."""
-    p = distribution.probabilities if isinstance(distribution, JaxCategoricalDistribution) else distribution
-    return jnp.sum(p * (1 - p), axis=-1)
-
-
 @labelwise_entropy_of_expected_predictive_distribution.register(JaxCategoricalDistributionSample)
 def jax_categorical_sample_labelwise_entropy_of_expected_predictive_distribution(
     sample: JaxCategoricalDistributionSample, base: LogBase = None
@@ -245,38 +174,3 @@ def jax_categorical_sample_labelwise_mutual_information_entropy(
     return jax_categorical_sample_labelwise_entropy_of_expected_predictive_distribution(
         sample, base
     ) - jax_categorical_sample_labelwise_conditional_entropy(sample, base)
-
-
-@labelwise_variance_of_expected_predictive_distribution.register(JaxCategoricalDistributionSample)
-def jax_categorical_sample_labelwise_variance_of_expected_predictive_distribution(
-    sample: JaxCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> jnp.ndarray:
-    """Compute the label-wise binary variance of the expected predictive distribution."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    expected_p = jnp.mean(p, axis=axis)
-    return jnp.sum(expected_p * (1 - expected_p), axis=-1)
-
-
-@labelwise_expected_conditional_variance.register(JaxCategoricalDistributionSample)
-def jax_categorical_sample_labelwise_expected_conditional_variance(
-    sample: JaxCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> jnp.ndarray:
-    """Compute the label-wise expected conditional variance of a categorical sample."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    per_sample_variance = jnp.sum(p * (1 - p), axis=-1)
-    return jnp.mean(per_sample_variance, axis=axis)
-
-
-@labelwise_variance_of_conditional_mean.register(JaxCategoricalDistributionSample)
-def jax_categorical_sample_labelwise_variance_of_conditional_mean(
-    sample: JaxCategoricalDistributionSample,
-    base: LogBase = None,  # noqa: ARG001
-) -> jnp.ndarray:
-    """Compute the label-wise variance of the conditional mean of a categorical sample."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    return jnp.sum(jnp.var(p, axis=axis, ddof=0), axis=-1)
