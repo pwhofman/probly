@@ -1,6 +1,17 @@
-"""Collection of fully-qualified type names for lazy type checking."""
+"""Backend types for static checking and lazy dispatch."""
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import jax
+    import numpy as np
+    import torch
+
+    type NativeArray = np.ndarray | torch.Tensor | jax.Array
+else:
+    NativeArray = object
 
 TORCH_MODULE = "torch.nn.modules.module.Module"
 TORCH_MODULE_LIST = "torch.nn.modules.container.ModuleList"

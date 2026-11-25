@@ -30,15 +30,6 @@ class TestTorchOrdinal:
         out = ordinal_variance(d)
         torch.testing.assert_close(out, torch.tensor([0.25]))
 
-    def test_variance_on_raw_tensor_branch(self) -> None:
-        torch = _torch_modules()
-        from probly.quantification.measure.ordinal.torch import (  # noqa: PLC0415
-            torch_categorical_ordinal_variance,
-        )
-
-        out = torch_categorical_ordinal_variance(torch.tensor([[0.5, 0.5]]))
-        torch.testing.assert_close(out, torch.tensor([0.25]))
-
     def test_entropy_on_distribution(self) -> None:
         torch = _torch_modules()
         from probly.quantification.measure.ordinal import ordinal_entropy  # noqa: PLC0415

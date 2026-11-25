@@ -23,68 +23,20 @@ from ._common import (
     ordinal_variance_of_expected_predictive_distribution,
 )
 from .numpy import (  # noqa: F401  (registers numpy implementations)
-    numpy_categorical_labelwise_entropy,
-    numpy_categorical_labelwise_variance,
-    numpy_categorical_ordinal_entropy,
-    numpy_categorical_ordinal_variance,
-    numpy_categorical_sample_labelwise_conditional_entropy,
-    numpy_categorical_sample_labelwise_entropy_of_expected_predictive_distribution,
-    numpy_categorical_sample_labelwise_expected_conditional_variance,
-    numpy_categorical_sample_labelwise_mutual_information_entropy,
-    numpy_categorical_sample_labelwise_variance_of_conditional_mean,
-    numpy_categorical_sample_labelwise_variance_of_expected_predictive_distribution,
-    numpy_categorical_sample_ordinal_conditional_entropy,
-    numpy_categorical_sample_ordinal_entropy_of_expected_predictive_distribution,
-    numpy_categorical_sample_ordinal_expected_conditional_variance,
-    numpy_categorical_sample_ordinal_mutual_information_entropy,
-    numpy_categorical_sample_ordinal_variance_of_conditional_mean,
-    numpy_categorical_sample_ordinal_variance_of_expected_predictive_distribution,
     numpy_ordinal_integer_variance_aleatoric,
     numpy_ordinal_integer_variance_total,
 )
 
 
-@ordinal_entropy.delayed_register(TORCH_VALUE)
-@ordinal_variance.delayed_register(TORCH_VALUE)
-@ordinal_conditional_entropy.delayed_register(TORCH_VALUE)
-@ordinal_expected_conditional_variance.delayed_register(TORCH_VALUE)
-@ordinal_entropy_of_expected_predictive_distribution.delayed_register(TORCH_VALUE)
-@ordinal_mutual_information_entropy.delayed_register(TORCH_VALUE)
-@ordinal_variance_of_conditional_mean.delayed_register(TORCH_VALUE)
-@ordinal_variance_of_expected_predictive_distribution.delayed_register(TORCH_VALUE)
 @categorical_variance_total.delayed_register(TORCH_VALUE)
 @categorical_variance_aleatoric.delayed_register(TORCH_VALUE)
-@labelwise_entropy.delayed_register(TORCH_VALUE)
-@labelwise_variance.delayed_register(TORCH_VALUE)
-@labelwise_entropy_of_expected_predictive_distribution.delayed_register(TORCH_VALUE)
-@labelwise_conditional_entropy.delayed_register(TORCH_VALUE)
-@labelwise_mutual_information_entropy.delayed_register(TORCH_VALUE)
-@labelwise_variance_of_expected_predictive_distribution.delayed_register(TORCH_VALUE)
-@labelwise_expected_conditional_variance.delayed_register(TORCH_VALUE)
-@labelwise_variance_of_conditional_mean.delayed_register(TORCH_VALUE)
 def _(_: type) -> None:
     """Register delayed implementations for distributions."""
     from . import torch as torch  # noqa: PLC0415
 
 
-@ordinal_entropy.delayed_register(JAX_VALUE)
-@ordinal_variance.delayed_register(JAX_VALUE)
-@ordinal_conditional_entropy.delayed_register(JAX_VALUE)
-@ordinal_expected_conditional_variance.delayed_register(JAX_VALUE)
-@ordinal_entropy_of_expected_predictive_distribution.delayed_register(JAX_VALUE)
-@ordinal_mutual_information_entropy.delayed_register(JAX_VALUE)
-@ordinal_variance_of_conditional_mean.delayed_register(JAX_VALUE)
-@ordinal_variance_of_expected_predictive_distribution.delayed_register(JAX_VALUE)
 @categorical_variance_total.delayed_register(JAX_VALUE)
 @categorical_variance_aleatoric.delayed_register(JAX_VALUE)
-@labelwise_entropy.delayed_register(JAX_VALUE)
-@labelwise_variance.delayed_register(JAX_VALUE)
-@labelwise_entropy_of_expected_predictive_distribution.delayed_register(JAX_VALUE)
-@labelwise_conditional_entropy.delayed_register(JAX_VALUE)
-@labelwise_mutual_information_entropy.delayed_register(JAX_VALUE)
-@labelwise_variance_of_expected_predictive_distribution.delayed_register(JAX_VALUE)
-@labelwise_expected_conditional_variance.delayed_register(JAX_VALUE)
-@labelwise_variance_of_conditional_mean.delayed_register(JAX_VALUE)
 def _(_: type) -> None:
     """Register delayed implementations for distributions."""
     from . import jax as jax  # noqa: PLC0415

@@ -3,17 +3,15 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from collections.abc import Iterable, Sequence
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Protocol, Self
+from itertools import chain
+from typing import Any, ClassVar, Literal, Protocol, Self, cast
 
 from flextype import Flexdispatch, flexdispatch
 
 from probly.representation.representation import Representation
 from probly.utils.iterable import first_element
-
-if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
-
 
 type SampleAxis = int | Literal["auto"]
 
@@ -47,8 +45,12 @@ class SampleFactory[T, S: Sample](Protocol):
         """
 
 
-class Sample[T](Representation):
-    """Abstract base class for samples."""
+class Sample[T, Members: Iterable | Representation = Iterable[T]](Representation):
+    """A sample whose individual members have type ``T``.
+
+    ``Members`` is the type returned by ``.samples`` and defaults to ``Iterable[T]``.
+    For example, an array-backed sample can return a single array with the sample axis first.
+    """
 
     @classmethod
     @abstractmethod
@@ -82,8 +84,8 @@ class Sample[T](Representation):
 
     @property
     @abstractmethod
-    def samples(self) -> Iterable[T]:
-        """Return an iterator over the samples."""
+    def samples(self) -> Members:
+        """Return all members in sample order."""
 
     @property
     @abstractmethod
@@ -98,11 +100,15 @@ class Sample[T](Representation):
     @property
     def sample_size(self) -> int:
         """Return the number of samples."""
-        return sum(1 for _ in self.samples)
+        return sum(1 for _ in self._members())
+
+    def _members(self) -> Iterable[T]:
+        # A representation can support iteration through its backend even when its abstract type omits it.
+        return cast("Iterable[T]", self.samples)
 
     def concat(self, other: Sample[T]) -> Self:
         """Append another sample to this sample."""
-        return type(self).from_iterable(samples=(sample for s in (self, other) for sample in s.samples))
+        return type(self).from_iterable(samples=chain(self._members(), other.samples))
 
     def sample_mean(self) -> T:
         """Compute the (weighted) mean of the sample."""
@@ -120,7 +126,7 @@ class Sample[T](Representation):
         raise NotImplementedError(msg)
 
 
-class RepresentationSample[T: Representation](Sample[T]):
+class RepresentationSample[T: Representation](Sample[T, T]):
     """Sample type for samples over representation objects."""
 
     _running_instancehook: ClassVar[ContextVar[object]] = ContextVar(
@@ -141,7 +147,7 @@ class RepresentationSample[T: Representation](Sample[T]):
         return NotImplemented
 
 
-class ListSample[T](list[T], Sample[T]):
+class ListSample[T](list[T], Sample[T, Sequence[T]]):
     """A sample of predictions stored in a list."""
 
     weights: list[float] | None = None
