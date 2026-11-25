@@ -12,6 +12,7 @@ from probly.representation.distribution import CategoricalDistribution
 from probly.representation.representation import Representation
 
 if TYPE_CHECKING:
+    from probly.lazy_types import NativeArray
     from probly.representation.sample._common import Sample
 
 
@@ -28,6 +29,14 @@ class CategoricalCredalSet[T: CategoricalDistribution](CredalSet):
     """Base class for credal sets."""
 
     type: ClassVar[Literal["categorical"]] = "categorical"
+
+    def lower(self) -> NativeArray:
+        """Return the per-class lower probability bounds."""
+        raise NotImplementedError
+
+    def upper(self) -> NativeArray:
+        """Return the per-class upper probability bounds."""
+        raise NotImplementedError
 
     @classmethod
     @abstractmethod

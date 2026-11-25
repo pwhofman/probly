@@ -15,6 +15,7 @@ import pytest
 
 pytest.importorskip("jax")
 
+import jax
 import jax.numpy as jnp
 
 from probly.metrics import average_interval_width, convex_hull_coverage, coverage, efficiency
@@ -159,6 +160,17 @@ def test_convex_hull_coverage_jax() -> None:
     )
     targets = JaxProbabilityCategoricalDistribution(jnp.array([[0.3, 0.4, 0.3], [0.1, 0.1, 0.8]]))
     assert float(convex_hull_coverage(cs, targets)) == pytest.approx(1.0)
+
+
+def test_average_interval_width_is_differentiable_and_jittable() -> None:
+    """The interval width can be differentiated and jit-compiled with respect to the bounds."""
+
+    def width(lower: jax.Array, upper: jax.Array) -> jax.Array:
+        return average_interval_width(JaxProbabilityIntervalsCredalSet(lower_bounds=lower, upper_bounds=upper))
+
+    lower, upper = jnp.full((4, 3), 0.1), jnp.full((4, 3), 0.4)
+    assert jax.grad(width, argnums=1)(lower, upper) == pytest.approx(np.full((4, 3), 1 / 12))
+    assert jax.jit(width)(lower, upper) == pytest.approx(0.3)
 
 
 def test_unregistered_jax_type_raises() -> None:

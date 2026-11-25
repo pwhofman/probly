@@ -14,32 +14,27 @@ from __future__ import annotations
 import torch
 
 from probly.metrics import (
-    average_interval_width,
     classwise_ece,
     convex_hull_coverage,
-    coverage,
-    efficiency,
     expected_calibration_error,
     precision_recall_curve,
     roc_curve,
 )
 from probly.metrics._common import (
     CREDAL_COVERAGE_EPSILON,
+    _asarray_like,
     _expected_loss,
+    _floating,
+    _label_values,
     _log_probabilities,
+    _machine_epsilon,
     _one_hot_argmax,
     _probabilities,
     _validate_labels,
     log_loss_per_instance,
 )
-from probly.metrics.numpy import _numpy_convex_hull_lp_coverage, _validate_epsilon
-from probly.representation.conformal_set.torch import TorchIntervalConformalSet, TorchOneHotConformalSet
-from probly.representation.credal_set.torch import (
-    TorchConvexCredalSet,
-    TorchDirichletLevelSetCredalSet,
-    TorchDistanceBasedCredalSet,
-    TorchProbabilityIntervalsCredalSet,
-)
+from probly.metrics.numpy import _numpy_convex_hull_lp_coverage
+from probly.representation.credal_set.torch import TorchConvexCredalSet
 from probly.representation.distribution._common import CategoricalDistribution
 from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistribution,
@@ -203,269 +198,29 @@ def torch_roc_curve(y_true: torch.Tensor, y_score: torch.Tensor) -> tuple[torch.
 # --- Predicted-set metrics ----------------------------------------------------
 
 
-def _interval_dominance_mask(lower: torch.Tensor, upper: torch.Tensor) -> torch.Tensor:
-    """Return the boolean class mask selected by the interval-dominance rule.
+@_asarray_like.register(torch.Tensor)
+def _torch_asarray_like(reference: torch.Tensor, values: object) -> torch.Tensor:
+    """Convert values to a torch tensor on the device of the reference."""
+    return torch.as_tensor(values, device=reference.device)
 
-    Args:
-        lower: Lower probability envelope of shape ``(..., C)``.
-        upper: Upper probability envelope of shape ``(..., C)``.
 
-    Returns:
-        Boolean tensor of shape ``(..., C)``.
-    """
-    threshold, _ = torch.max(lower, dim=-1, keepdim=True)
-    return upper >= threshold
+@_label_values.register(torch.Tensor)
+def _torch_label_values(values: torch.Tensor, y_true: object) -> torch.Tensor:
+    """Look up the entry at the class label of each instance along the last axis."""
+    indices = torch.as_tensor(y_true, device=values.device).to(dtype=torch.int64).unsqueeze(-1)
+    return torch.gather(values, -1, indices).squeeze(-1)
 
 
-def _onehot_membership(mask: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
-    """Look up the membership flag for the true class along the last axis.
+@_floating.register(torch.Tensor)
+def _torch_floating(values: torch.Tensor) -> torch.Tensor:
+    """Cast a torch tensor to a floating dtype of at least single precision."""
+    return values.to(torch.promote_types(values.dtype, torch.float32))
 
-    ``y_true`` is coerced onto ``mask.device``; transfer cost falls on the
-    caller if the devices mismatch.
-    """
-    indices = torch.as_tensor(y_true, device=mask.device).to(dtype=torch.int64).unsqueeze(-1)
-    return torch.gather(mask, -1, indices).squeeze(-1)
 
-
-def _envelope_coverage(lower: torch.Tensor, upper: torch.Tensor, y_true: torch.Tensor) -> float:
-    mask = _interval_dominance_mask(lower, upper)
-    return float(_onehot_membership(mask, y_true).float().mean().item())
-
-
-def _envelope_efficiency(lower: torch.Tensor, upper: torch.Tensor) -> float:
-    mask = _interval_dominance_mask(lower, upper)
-    return float(mask.float().sum(dim=-1).mean().item())
-
-
-def _is_first_order_target(y_true: object, num_classes: int) -> bool:
-    """Detect a first-order target tensor (probability vectors) vs class indices."""
-    y_true_t = torch.as_tensor(y_true)
-    return y_true_t.ndim >= 2 and y_true_t.shape[-1] == num_classes
-
-
-def _envelope_average_interval_width(lower: torch.Tensor, upper: torch.Tensor) -> float:
-    return float((upper - lower).float().mean().item())
-
-
-@coverage.register(TorchOneHotConformalSet)
-def _torch_onehot_coverage(y_pred: TorchOneHotConformalSet, y_true: torch.Tensor) -> float:
-    """Coverage for a one-hot conformal set."""
-    membership = _onehot_membership(y_pred.tensor, y_true)
-    return float(membership.float().mean().item())
-
-
-@efficiency.register(TorchOneHotConformalSet)
-def _torch_onehot_efficiency(y_pred: TorchOneHotConformalSet) -> float:
-    """Average cardinality of a one-hot conformal set."""
-    return float(y_pred.tensor.float().sum(dim=-1).mean().item())
-
-
-@coverage.register(TorchIntervalConformalSet)
-def _torch_interval_coverage(y_pred: TorchIntervalConformalSet, y_true: torch.Tensor) -> float:
-    """Coverage for an interval conformal set."""
-    arr = y_pred.tensor
-    y = torch.as_tensor(y_true, device=arr.device)
-    inside = (y >= arr[..., 0]) & (y <= arr[..., 1])
-    return float(inside.float().mean().item())
-
-
-@efficiency.register(TorchIntervalConformalSet)
-def _torch_interval_efficiency(y_pred: TorchIntervalConformalSet) -> float:
-    """Average width of an interval conformal set."""
-    return float((y_pred.tensor[..., 1] - y_pred.tensor[..., 0]).float().mean().item())
-
-
-def _torch_credal_containment_coverage(
-    lower: torch.Tensor,
-    upper: torch.Tensor,
-    y_true: torch.Tensor,
-    epsilon: float = CREDAL_COVERAGE_EPSILON,
-) -> float:
-    """Fraction of instances whose target lies inside the credal set's envelope.
-
-    Dispatches on the shape of ``y_true``:
-
-    * **Integer class labels** (``y_true.dim() == lower.dim() - 1``): covered
-      when the true class is selected by the interval-dominance rule, i.e.
-      ``upper[y] >= max_k lower[k]``.
-    * **Probability vectors** (``y_true.dim() == lower.dim()``): covered when
-      the L1 distance from ``y_true`` to ``{p : lower <= p <= upper, sum(p) = 1}``
-      is at most ``epsilon``. For a target on the simplex this distance is
-      ``2 * max(a, b)`` with ``a`` the target mass above ``upper`` and ``b`` the
-      mass missing below ``lower``, the same L1 distance as in
-      :func:`~probly.metrics.convex_hull_coverage`.
-
-    Args:
-        lower: Lower probability envelope of shape ``(..., C)``.
-        upper: Upper probability envelope of shape ``(..., C)``.
-        y_true: Integer class labels of shape ``(...)`` or target probability
-            tensors of shape ``(..., C)``.
-        epsilon: L1 tolerance for probability-vector targets.
-
-    Returns:
-        Mean containment indicator as a Python float.
-    """
-    y = torch.as_tensor(y_true, device=lower.device)
-    if y.dim() < lower.dim():
-        # Integer class labels: interval-dominance rule.
-        threshold = lower.max(dim=-1, keepdim=True).values
-        mask = upper >= threshold
-        indices = y.to(dtype=torch.int64).unsqueeze(-1)
-        covered = torch.gather(mask, -1, indices).squeeze(-1)
-    else:
-        _validate_epsilon(epsilon)
-        # Probability vectors: L1 distance to the envelope intersected with the simplex, in the precision of the
-        # bounds because MPS has no float64. Rounding the inputs to that precision shifts the distance by at most
-        # two machine epsilons, so the slack keeps a distance that equals epsilon on the covered side.
-        dtype = torch.promote_types(lower.dtype, torch.float32)
-        lo, up, y = lower.to(dtype), upper.to(dtype), y.to(dtype)
-        above = torch.clamp(y - up, min=0.0).sum(dim=-1)
-        below = torch.clamp(lo - y, min=0.0).sum(dim=-1)
-        covered = 2.0 * torch.maximum(above, below) <= epsilon + 4.0 * torch.finfo(dtype).eps
-    return float(covered.float().mean().item())
-
-
-def _torch_credal_interval_efficiency(lower: torch.Tensor, upper: torch.Tensor) -> float:
-    """Efficiency of a credal set as ``1 - mean(upper - lower)``.
-
-    Args:
-        lower: Lower probability envelope of shape ``(N, C)``.
-        upper: Upper probability envelope of shape ``(N, C)``.
-
-    Returns:
-        Scalar in ``(-inf, 1]``; higher means a tighter (more efficient) credal set.
-    """
-    return float(1.0 - (upper - lower).float().mean().item())
-
-
-@coverage.register(TorchConvexCredalSet)
-def _torch_convex_coverage(
-    y_pred: TorchConvexCredalSet, y_true: torch.Tensor, *, epsilon: float = CREDAL_COVERAGE_EPSILON
-) -> float:
-    """Containment coverage for a convex credal set.
-
-    Args:
-        y_pred: Convex credal set.
-        y_true: Target probability tensors of shape ``(N, C)``.
-        epsilon: L1 tolerance for probability-vector targets.
-
-    Returns:
-        Fraction of instances whose target lies within L1 distance ``epsilon`` of the envelope.
-    """
-    return _torch_credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true, epsilon)
-
-
-@efficiency.register(TorchConvexCredalSet)
-def _torch_convex_efficiency(y_pred: TorchConvexCredalSet) -> float:
-    """Interval-width efficiency for a convex credal set: ``1 - mean(upper - lower)``.
-
-    Returns:
-        Scalar efficiency; higher means a tighter credal set.
-    """
-    return _torch_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
-
-
-@coverage.register(TorchDistanceBasedCredalSet)
-def _torch_distance_coverage(y_pred: TorchDistanceBasedCredalSet, y_true: torch.Tensor) -> float:
-    """Coverage for a distance-based (TV-ball) credal set.
-
-    With class-index targets: interval-dominance coverage on the envelope.
-
-    With first-order targets ``y_true`` of shape ``(..., C)``: the paper's
-    distribution-membership coverage ``mean(lambda_i in Q_i)``, computed as
-    ``mean(TV(nominal_i, lambda_i) <= radius_i)``.
-    """
-    if _is_first_order_target(y_true, y_pred.num_classes):
-        nominal = y_pred.nominal.probabilities
-        target = torch.as_tensor(y_true, device=nominal.device, dtype=nominal.dtype)
-        tv = 0.5 * torch.sum(torch.abs(nominal - target), dim=-1)
-        radius = torch.as_tensor(y_pred.radius, device=nominal.device, dtype=nominal.dtype)
-        return float((tv <= radius).float().mean().item())
-    return _envelope_coverage(y_pred.lower(), y_pred.upper(), y_true)
-
-
-@efficiency.register(TorchDistanceBasedCredalSet)
-def _torch_distance_efficiency(y_pred: TorchDistanceBasedCredalSet) -> float:
-    """Interval-width efficiency for a distance-based credal set: ``1 - mean(upper - lower)``.
-
-    Same semantic as ``ConvexCredalSet`` and ``ProbabilityIntervalsCredalSet``:
-    higher = tighter credal set. For TV (L1) distance-based credal sets the
-    per-class envelope bounds ``[max(0, p_k - r), min(1, p_k + r)]`` are tight
-    (no optimization needed; the simplex constraint is automatically satisfied
-    for each individual class).
-    """
-    return _torch_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
-
-
-@coverage.register(TorchProbabilityIntervalsCredalSet)
-def _torch_probability_intervals_coverage(
-    y_pred: TorchProbabilityIntervalsCredalSet, y_true: torch.Tensor, *, epsilon: float = CREDAL_COVERAGE_EPSILON
-) -> float:
-    """Containment coverage for a probability-intervals credal set.
-
-    Args:
-        y_pred: Probability-intervals credal set.
-        y_true: Target probability tensors of shape ``(N, C)``.
-        epsilon: L1 tolerance for probability-vector targets.
-
-    Returns:
-        Fraction of instances whose target lies within L1 distance ``epsilon`` of the intervals.
-    """
-    return _torch_credal_containment_coverage(y_pred.lower(), y_pred.upper(), y_true, epsilon)
-
-
-@efficiency.register(TorchProbabilityIntervalsCredalSet)
-def _torch_probability_intervals_efficiency(y_pred: TorchProbabilityIntervalsCredalSet) -> float:
-    """Interval-width efficiency for a probability-intervals credal set: ``1 - mean(upper - lower)``.
-
-    Returns:
-        Scalar efficiency; higher means a tighter credal set.
-    """
-    return _torch_credal_interval_efficiency(y_pred.lower(), y_pred.upper())
-
-
-@coverage.register(TorchDirichletLevelSetCredalSet)
-def _torch_dirichlet_level_set_coverage(y_pred: TorchDirichletLevelSetCredalSet, y_true: torch.Tensor) -> float:
-    """Interval-dominance coverage for a Dirichlet-level-set credal set.
-
-    The lower/upper envelopes are estimated by Monte-Carlo sampling, so the
-    result is stochastic; pin a torch seed for reproducible values.
-    """
-    return _envelope_coverage(y_pred.lower(), y_pred.upper(), y_true)
-
-
-@efficiency.register(TorchDirichletLevelSetCredalSet)
-def _torch_dirichlet_level_set_efficiency(y_pred: TorchDirichletLevelSetCredalSet) -> float:
-    """Interval-dominance prediction-set cardinality for a Dirichlet-level-set credal set.
-
-    The lower/upper envelopes are estimated by Monte-Carlo sampling, so the
-    result is stochastic; pin a torch seed for reproducible values.
-    """
-    return _envelope_efficiency(y_pred.lower(), y_pred.upper())
-
-
-@average_interval_width.register(TorchConvexCredalSet)
-def _torch_convex_average_interval_width(y_pred: TorchConvexCredalSet) -> float:
-    """Mean per-class width of the vertex-derived envelope of a convex credal set."""
-    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
-
-
-@average_interval_width.register(TorchDistanceBasedCredalSet)
-def _torch_distance_average_interval_width(y_pred: TorchDistanceBasedCredalSet) -> float:
-    """Mean per-class width of the L1-clip envelope of a distance-based credal set."""
-    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
-
-
-@average_interval_width.register(TorchProbabilityIntervalsCredalSet)
-def _torch_probability_intervals_average_interval_width(y_pred: TorchProbabilityIntervalsCredalSet) -> float:
-    """Mean per-class interval width of a probability-intervals credal set."""
-    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
-
-
-@average_interval_width.register(TorchDirichletLevelSetCredalSet)
-def _torch_dirichlet_level_set_average_interval_width(y_pred: TorchDirichletLevelSetCredalSet) -> float:
-    """Mean per-class width of the MC-sampled envelope of a Dirichlet-level-set credal set."""
-    return _envelope_average_interval_width(y_pred.lower(), y_pred.upper())
+@_machine_epsilon.register(torch.Tensor)
+def _torch_machine_epsilon(values: torch.Tensor) -> float:
+    """Return the machine epsilon of the dtype of a floating torch tensor."""
+    return torch.finfo(values.dtype).eps
 
 
 @convex_hull_coverage.register(TorchConvexCredalSet)

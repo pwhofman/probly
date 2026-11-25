@@ -205,12 +205,13 @@ for fold, (train_idx, test_idx) in enumerate(KFold(n_splits=5, shuffle=True, ran
             m_opt.step()
         m.eval()
 
-    for name, conformal_func in [("UACQR", conformal_uacqr), ("CQR (ens)", conformal_cqr), ("CQRr (ens)", conformal_cqr_r)]:
-        calibrated_model = calibrate(conformal_func(ens_net), ALPHA, y_calib_t, X_calib_t)
-        output = representer(calibrated_model).predict(X_test_t)
-        cov = coverage(output, y_test_t)
-        size = efficiency(output)
-        res[name].append((cov, size))
+    with torch.no_grad():
+        for name, conformal_func in [("UACQR", conformal_uacqr), ("CQR (ens)", conformal_cqr), ("CQRr (ens)", conformal_cqr_r)]:
+            calibrated_model = calibrate(conformal_func(ens_net), ALPHA, y_calib_t, X_calib_t)
+            output = representer(calibrated_model).predict(X_test_t)
+            cov = coverage(output, y_test_t)
+            size = efficiency(output)
+            res[name].append((cov, size))
 
 for name, vals in res.items():
     covs, sizes = zip(*vals)
