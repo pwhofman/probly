@@ -134,8 +134,8 @@ def main(cfg: DictConfig) -> None:
     conformal_sets = conformal.predict_conformal_sets(logit_conformalizer, logits)
 
     metrics = {
-        "coverage": float(compute_coverage(conformal_sets, targets)),  # ty: ignore[invalid-argument-type]
-        "efficiency": float(compute_efficiency(conformal_sets)),  # ty: ignore[invalid-argument-type]
+        "coverage": float(compute_coverage(conformal_sets, targets)),
+        "efficiency": float(compute_efficiency(conformal_sets)),
     }
     metrics.update(conformal.extract_conformal_metrics(cfg, logit_conformalizer))
     log_metrics = {f"conformal/{key}": value for key, value in metrics.items()}
