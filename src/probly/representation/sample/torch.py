@@ -33,7 +33,7 @@ class TorchSample[D: AnyTorchLike | torch.Tensor](
         "TorchSample[D] | D",
         "TorchSample[torch.Tensor]",
     ],
-    Sample[D],
+    Sample[D, D],
 ):
     """A sample implementation for torch tensors.
 

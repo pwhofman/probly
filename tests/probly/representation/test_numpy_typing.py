@@ -11,6 +11,7 @@ pytest.importorskip("numpy")
 from tests.probly.representation._typing import check_types
 
 _TYPING_CHECK = """
+from collections.abc import Iterable, Sequence
 from typing import Any, assert_type
 from ndlike.array_like import WeakArrayLike
 from probly.method.efficient_credal_prediction._common import EfficientCredalPredictor
@@ -28,7 +29,19 @@ from probly.representation.distribution.numpy_categorical import NumpyProbabilit
 from probly.representation.distribution.numpy_bernoulli import NumpyProbabilityBernoulliDistribution
 from probly.representation.distribution.numpy_categorical import NumpyLogitCategoricalDistribution
 from probly.representation.distribution.numpy_bernoulli import NumpyLogitBernoulliDistribution
+from probly.representation.sample import ListSample, Sample
 from probly.representation.sample.numpy import NumpySample
+
+def sample_members[Members: Iterable](sample: Sample[np.ndarray, Members]) -> Members:
+    return sample.samples
+
+def check_sample_members(
+    array: NumpySample[np.ndarray], listed: ListSample[np.ndarray], generic: Sample[np.ndarray]
+) -> None:
+    assert_type(sample_members(array), np.ndarray)
+    assert_type(sample_members(listed), Sequence[np.ndarray])
+    assert_type(generic.samples, Iterable[np.ndarray])
+
 
 def check_numpygaussiandistribution(value: NumpyGaussianDistribution) -> None:
     assert_type(value[0], NumpyGaussianDistribution)

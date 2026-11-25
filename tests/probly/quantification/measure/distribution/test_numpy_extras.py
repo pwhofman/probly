@@ -11,11 +11,11 @@ from __future__ import annotations
 
 import numpy as np
 
+from probly.quantification.measure.distribution import conditional_entropy, mutual_information
 from probly.quantification.measure.distribution.numpy import (
     numpy_dirichlet_conditional_entropy,
     numpy_dirichlet_entropy,
     numpy_dirichlet_max_probability_complement_of_expected,
-    numpy_dirichlet_mutual_information,
     numpy_dirichlet_vacuity,
     numpy_gaussian_entropy,
 )
@@ -39,14 +39,6 @@ class TestRawArrayDirichletPaths:
 
         wrapper_result = numpy_dirichlet_conditional_entropy(NumpyDirichletDistribution(alphas=alphas))
         raw_result = numpy_dirichlet_conditional_entropy(alphas)
-        np.testing.assert_allclose(raw_result, wrapper_result, atol=1e-10)
-
-    def test_mutual_information_with_raw_alphas(self) -> None:
-        alphas = np.array([[2.0, 3.0, 5.0]])
-        from probly.representation.distribution.numpy_dirichlet import NumpyDirichletDistribution  # noqa: PLC0415
-
-        wrapper_result = numpy_dirichlet_mutual_information(NumpyDirichletDistribution(alphas=alphas))
-        raw_result = numpy_dirichlet_mutual_information(alphas)
         np.testing.assert_allclose(raw_result, wrapper_result, atol=1e-10)
 
     def test_vacuity_with_raw_alphas(self) -> None:
@@ -101,22 +93,14 @@ class TestGaussianSamplePaths:
         assert np.isfinite(result).all()
 
     def test_conditional_entropy(self) -> None:
-        from probly.quantification.measure.distribution.numpy import (  # noqa: PLC0415
-            numpy_gaussian_sample_conditional_entropy,
-        )
-
         sample = self._gaussian_sample()
-        result = numpy_gaussian_sample_conditional_entropy(sample)
+        result = conditional_entropy(sample)
         assert result.shape == (3,)
         assert np.isfinite(result).all()
 
     def test_mutual_information(self) -> None:
-        from probly.quantification.measure.distribution.numpy import (  # noqa: PLC0415
-            numpy_gaussian_sample_mutual_information,
-        )
-
         sample = self._gaussian_sample()
-        result = numpy_gaussian_sample_mutual_information(sample)
+        result = mutual_information(sample)
         assert result.shape == (3,)
         # MI = total - aleatoric, both finite -> result finite.
         assert np.isfinite(result).all()
