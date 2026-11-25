@@ -41,3 +41,16 @@ class TestArrayOrdinal:
         d = NumpyProbabilityCategoricalDistribution(array=np.array([[0.5, 0.5]]))
         out = ordinal_entropy(d, base="normalize")
         np.testing.assert_allclose(out, [1.0], atol=1e-6)
+
+    def test_entropy_is_finite_when_a_cumulative_probability_rounds_above_one(self) -> None:
+        from probly.quantification.measure.ordinal import ordinal_entropy  # noqa: PLC0415
+        from probly.representation.distribution.numpy_categorical import (  # noqa: PLC0415
+            NumpyProbabilityCategoricalDistribution,
+        )
+
+        # Ten classes of 0.1 accumulate to 1.0000001 in float32 before the empty last class.
+        d = NumpyProbabilityCategoricalDistribution(array=np.array([[0.1] * 10 + [0.0]], dtype=np.float32))
+        out = ordinal_entropy(d)
+        splits = np.arange(1, 10) / 10
+        expected = -(splits * np.log(splits) + (1 - splits) * np.log(1 - splits)).sum()
+        np.testing.assert_allclose(out, [expected], rtol=1e-5)

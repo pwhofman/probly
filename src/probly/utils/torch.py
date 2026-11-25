@@ -8,7 +8,7 @@ from typing import Literal, SupportsIndex
 import torch
 import torch.nn.functional as F
 
-from ._common import entropy, intersection_probability
+from ._common import elementwise_entropy, entropy, intersection_probability
 
 
 def torch_head_dimension(head: torch.nn.Module, name: Literal["in_features", "out_features"]) -> int:
@@ -52,12 +52,26 @@ def torch_temperature_softmax(logits: torch.Tensor, temperature: float | torch.T
     return ts
 
 
+@elementwise_entropy.register(torch.Tensor)
+def torch_elementwise_entropy(p: torch.Tensor) -> torch.Tensor:
+    """Entropy contributions ``-p * log(p)`` computed in torch; 0*log(0) treated as 0.
+
+    The logarithm is fed with the zeros replaced by ones instead of masking its result, so the
+    gradient stays finite for probabilities that are exactly zero.
+
+    Args:
+        p: Probabilities to compute the entropy contributions of.
+
+    Returns:
+        Entropy contributions of the shape of ``p``.
+    """
+    safe_p = torch.where(p > 0, p, torch.ones_like(p))
+    return -(p * safe_p.log())
+
+
 @entropy.register(torch.Tensor)
 def torch_entropy(p: torch.Tensor) -> torch.Tensor:
     """Shannon entropy H(p) computed in torch along the last dim; 0*log(0) treated as 0.
-
-    The logarithm is fed with the zeros replaced by ones instead of masking its result, so the
-    gradient stays finite for probability vectors that contain exact zeros.
 
     Args:
         p: Probabilities to compute entropy of.
@@ -65,8 +79,7 @@ def torch_entropy(p: torch.Tensor) -> torch.Tensor:
     Returns:
         Entropy of probabilities p
     """
-    safe_p = torch.where(p > 0, p, torch.ones_like(p))
-    result = -(p * safe_p.log()).sum(-1)
+    result = torch_elementwise_entropy(p).sum(-1)
     return torch.clamp_min(result, 0.0) + 0.0  # Ensure non-negativity
 
 

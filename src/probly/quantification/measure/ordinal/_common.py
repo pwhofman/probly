@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, cast
+import math
+from typing import TYPE_CHECKING, Literal
 
 from flextype import flexdispatch
 
 from probly.representation.distribution import CategoricalDistribution, CategoricalDistributionSample
+from probly.utils import elementwise_entropy
 
 if TYPE_CHECKING:
     from ndlike.array_like import WeakArrayLike
@@ -176,9 +178,9 @@ def _cumulative_splits(probabilities: NativeArray) -> NativeArray:
     return probabilities.cumsum(-1)[..., :-1]
 
 
-def _member_probabilities(sample: CategoricalDistributionSample) -> NativeArray:
+def _member_probabilities(sample: CategoricalDistributionSample[CategoricalDistribution[NativeArray]]) -> NativeArray:
     """Return the probabilities ``(M, ..., K)`` of the members of a sample, with the sample axis first."""
-    return cast("CategoricalDistribution[NativeArray]", sample.samples).probabilities
+    return sample.samples.probabilities
 
 
 def _binary_variance(binary_probabilities: NativeArray) -> NativeArray:
@@ -222,7 +224,7 @@ def _categorical_ordinal_variance(
 
 @ordinal_variance_of_expected_predictive_distribution.register(CategoricalDistributionSample)
 def _categorical_sample_ordinal_variance_of_expected_predictive_distribution(
-    sample: CategoricalDistributionSample,
+    sample: CategoricalDistributionSample[CategoricalDistribution[NativeArray]],
     base: LogBase = None,  # noqa: ARG001
 ) -> NativeArray:
     """Compute the ordinal variance of the expected value of a categorical sample."""
@@ -231,7 +233,7 @@ def _categorical_sample_ordinal_variance_of_expected_predictive_distribution(
 
 @ordinal_expected_conditional_variance.register(CategoricalDistributionSample)
 def _categorical_sample_ordinal_expected_conditional_variance(
-    sample: CategoricalDistributionSample,
+    sample: CategoricalDistributionSample[CategoricalDistribution[NativeArray]],
     base: LogBase = None,  # noqa: ARG001
 ) -> NativeArray:
     """Compute the ordinal expected conditional variance of a categorical sample."""
@@ -240,7 +242,7 @@ def _categorical_sample_ordinal_expected_conditional_variance(
 
 @ordinal_variance_of_conditional_mean.register(CategoricalDistributionSample)
 def _categorical_sample_ordinal_variance_of_conditional_mean(
-    sample: CategoricalDistributionSample,
+    sample: CategoricalDistributionSample[CategoricalDistribution[NativeArray]],
     base: LogBase = None,  # noqa: ARG001
 ) -> NativeArray:
     """Compute the ordinal variance of the conditional mean of a categorical sample."""
@@ -258,7 +260,7 @@ def _categorical_labelwise_variance(
 
 @labelwise_variance_of_expected_predictive_distribution.register(CategoricalDistributionSample)
 def _categorical_sample_labelwise_variance_of_expected_predictive_distribution(
-    sample: CategoricalDistributionSample,
+    sample: CategoricalDistributionSample[CategoricalDistribution[NativeArray]],
     base: LogBase = None,  # noqa: ARG001
 ) -> NativeArray:
     """Compute the label-wise binary variance of the expected predictive distribution."""
@@ -267,7 +269,7 @@ def _categorical_sample_labelwise_variance_of_expected_predictive_distribution(
 
 @labelwise_expected_conditional_variance.register(CategoricalDistributionSample)
 def _categorical_sample_labelwise_expected_conditional_variance(
-    sample: CategoricalDistributionSample,
+    sample: CategoricalDistributionSample[CategoricalDistribution[NativeArray]],
     base: LogBase = None,  # noqa: ARG001
 ) -> NativeArray:
     """Compute the label-wise expected conditional variance of a categorical sample."""
@@ -276,8 +278,89 @@ def _categorical_sample_labelwise_expected_conditional_variance(
 
 @labelwise_variance_of_conditional_mean.register(CategoricalDistributionSample)
 def _categorical_sample_labelwise_variance_of_conditional_mean(
-    sample: CategoricalDistributionSample,
+    sample: CategoricalDistributionSample[CategoricalDistribution[NativeArray]],
     base: LogBase = None,  # noqa: ARG001
 ) -> NativeArray:
     """Compute the label-wise variance of the conditional mean of a categorical sample."""
     return _variance_of_binary_probabilities(_member_probabilities(sample))
+
+
+def _binary_entropy(binary_probabilities: NativeArray, base: LogBase) -> NativeArray:
+    """Sum the Bernoulli entropies of binary probabilities over the last axis.
+
+    ``base="normalize"`` uses base 2, so that every binary problem contributes an entropy in ``[0, 1]``.
+    """
+    q = binary_probabilities
+    # Clipping keeps a probability that exceeds one by rounding from contributing a negative entropy.
+    entropies = (elementwise_entropy(q) + elementwise_entropy(1 - q)).clip(0.0) + 0.0  # ty: ignore[unsupported-operator]
+    if base == "normalize":
+        base = 2.0
+    if base is not None and base != math.e:
+        entropies = entropies / math.log(base)
+    return entropies.sum(-1)
+
+
+@ordinal_entropy.register(CategoricalDistribution)
+def _categorical_ordinal_entropy(
+    distribution: CategoricalDistribution[NativeArray], base: LogBase = None
+) -> NativeArray:
+    """Compute the ordinal entropy of a categorical distribution."""
+    return _binary_entropy(_cumulative_splits(distribution.probabilities), base)
+
+
+@ordinal_entropy_of_expected_predictive_distribution.register(CategoricalDistributionSample)
+def _categorical_sample_ordinal_entropy_of_expected_predictive_distribution(
+    sample: CategoricalDistributionSample[CategoricalDistribution[NativeArray]], base: LogBase = None
+) -> NativeArray:
+    """Compute the ordinal entropy of the expected value of a categorical sample."""
+    return _binary_entropy(_cumulative_splits(_member_probabilities(sample)).mean(0), base)
+
+
+@ordinal_conditional_entropy.register(CategoricalDistributionSample)
+def _categorical_sample_ordinal_conditional_entropy(
+    sample: CategoricalDistributionSample[CategoricalDistribution[NativeArray]], base: LogBase = None
+) -> NativeArray:
+    """Compute the ordinal conditional entropy of a categorical sample."""
+    return _binary_entropy(_cumulative_splits(_member_probabilities(sample)), base).mean(0)
+
+
+@ordinal_mutual_information_entropy.register(CategoricalDistributionSample)
+def _categorical_sample_ordinal_mutual_information_entropy(
+    sample: CategoricalDistributionSample[CategoricalDistribution[NativeArray]], base: LogBase = None
+) -> NativeArray:
+    """Compute the ordinal mutual information (entropy-based) of a categorical sample."""
+    total = _categorical_sample_ordinal_entropy_of_expected_predictive_distribution(sample, base)
+    return total - _categorical_sample_ordinal_conditional_entropy(sample, base)
+
+
+@labelwise_entropy.register(CategoricalDistribution)
+def _categorical_labelwise_entropy(
+    distribution: CategoricalDistribution[NativeArray], base: LogBase = None
+) -> NativeArray:
+    """Compute the label-wise binary entropy of a categorical distribution."""
+    return _binary_entropy(distribution.probabilities, base)
+
+
+@labelwise_entropy_of_expected_predictive_distribution.register(CategoricalDistributionSample)
+def _categorical_sample_labelwise_entropy_of_expected_predictive_distribution(
+    sample: CategoricalDistributionSample[CategoricalDistribution[NativeArray]], base: LogBase = None
+) -> NativeArray:
+    """Compute the label-wise binary entropy of the expected predictive distribution."""
+    return _binary_entropy(_member_probabilities(sample).mean(0), base)
+
+
+@labelwise_conditional_entropy.register(CategoricalDistributionSample)
+def _categorical_sample_labelwise_conditional_entropy(
+    sample: CategoricalDistributionSample[CategoricalDistribution[NativeArray]], base: LogBase = None
+) -> NativeArray:
+    """Compute the label-wise conditional entropy of a categorical sample."""
+    return _binary_entropy(_member_probabilities(sample), base).mean(0)
+
+
+@labelwise_mutual_information_entropy.register(CategoricalDistributionSample)
+def _categorical_sample_labelwise_mutual_information_entropy(
+    sample: CategoricalDistributionSample[CategoricalDistribution[NativeArray]], base: LogBase = None
+) -> NativeArray:
+    """Compute the label-wise entropy-based mutual information of a categorical sample."""
+    total = _categorical_sample_labelwise_entropy_of_expected_predictive_distribution(sample, base)
+    return total - _categorical_sample_labelwise_conditional_entropy(sample, base)

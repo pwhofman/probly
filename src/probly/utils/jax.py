@@ -7,7 +7,7 @@ from jax.core import Tracer
 import jax.numpy as jnp
 import numpy as np
 
-from ._common import entropy, intersection_probability
+from ._common import elementwise_entropy, entropy, intersection_probability
 
 
 def jax_fresh_prng_key() -> jax.Array:
@@ -23,12 +23,26 @@ def jax_fresh_prng_key() -> jax.Array:
     return jax.random.key(seed)
 
 
+@elementwise_entropy.register((jax.Array, Tracer))
+def jax_elementwise_entropy(p: jnp.ndarray) -> jnp.ndarray:
+    """Entropy contributions ``-p * log(p)`` computed in jax; 0*log(0) treated as 0.
+
+    The logarithm is fed with the zeros replaced by ones instead of masking its result, so the
+    gradient stays finite for probabilities that are exactly zero.
+
+    Args:
+        p: Probabilities to compute the entropy contributions of.
+
+    Returns:
+        Entropy contributions of the shape of ``p``.
+    """
+    safe_p = jnp.where(p > 0, p, jnp.ones_like(p))
+    return -(p * jnp.log(safe_p))
+
+
 @entropy.register((jax.Array, Tracer))
 def jax_entropy(p: jnp.ndarray) -> jnp.ndarray:
     """Shannon entropy H(p) computed in jax along the last dim; 0*log(0) treated as 0.
-
-    The logarithm is fed with the zeros replaced by ones instead of masking its result, so the
-    gradient stays finite for probability vectors that contain exact zeros.
 
     Args:
         p: Probabilities to compute entropy of.
@@ -36,8 +50,7 @@ def jax_entropy(p: jnp.ndarray) -> jnp.ndarray:
     Returns:
         Entropy of probabilities p.
     """
-    safe_p = jnp.where(p > 0, p, jnp.ones_like(p))
-    result = -jnp.sum(p * jnp.log(safe_p), axis=-1)
+    result = jnp.sum(jax_elementwise_entropy(p), axis=-1)
     return jnp.clip(result, min=0.0) + 0.0
 
 
