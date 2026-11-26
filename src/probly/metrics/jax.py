@@ -30,7 +30,6 @@ from ._common import (
     _floating,
     _label_values,
     _log_probabilities,
-    _machine_epsilon,
     _one_hot_argmax,
     _probabilities,
     _validate_labels,
@@ -208,12 +207,6 @@ def _jax_label_values(values: jax.Array, y_true: object) -> jax.Array:
 def _jax_floating(values: jax.Array) -> jax.Array:
     """Cast a JAX array to a floating dtype of at least single precision."""
     return values.astype(jnp.promote_types(values.dtype, jnp.float32))
-
-
-@_machine_epsilon.register((jax.Array, Tracer))
-def _jax_machine_epsilon(values: jax.Array) -> float:
-    """Return the machine epsilon of the dtype of a floating JAX array."""
-    return float(jnp.finfo(values.dtype).eps)
 
 
 @convex_hull_coverage.register(JaxConvexCredalSet)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ._common import _constant_like, _machine_epsilon, _take_along_axis
+from ._common import _constant_like, _take_along_axis
 
 
 @_take_along_axis.register(np.ndarray)
@@ -17,9 +17,3 @@ def _numpy_take_along_axis(values: np.ndarray, indices: np.ndarray) -> np.ndarra
 def _numpy_constant_like(reference: np.ndarray, values: object) -> np.ndarray:
     """Create a NumPy array with the dtype of the reference."""
     return np.array(values, dtype=reference.dtype)
-
-
-@_machine_epsilon.register(np.ndarray)
-def _numpy_machine_epsilon(values: np.ndarray) -> float:
-    """Return the machine epsilon of the dtype of a floating NumPy array."""
-    return float(np.finfo(values.dtype).eps)

@@ -16,7 +16,7 @@ from probly.representation.credal_set._common import (
     DistanceBasedCredalSet,
     ProbabilityIntervalsCredalSet,
 )
-from probly.utils import elementwise_entropy, entropy
+from probly.utils import elementwise_entropy, entropy, machine_epsilon
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -255,7 +255,7 @@ def generalized_hartley(credal_set: CredalSet, base: LogBase = None) -> WeakArra
     raise NotImplementedError(msg)
 
 
-# The measures below are implemented once for every backend. They need three array operations that the backends
+# The measures below are implemented once for every backend. They need two array operations that the backends
 # spell differently.
 @flexdispatch
 def _take_along_axis[A: NativeArray](values: A, indices: object) -> A:
@@ -268,13 +268,6 @@ def _take_along_axis[A: NativeArray](values: A, indices: object) -> A:
 def _constant_like[A: NativeArray](reference: A, values: object) -> A:
     """Create an array of ``values`` with the backend, device and dtype of the array ``reference``."""
     msg = f"Credal set measures are not implemented for arrays of type {type(reference).__name__}."
-    raise NotImplementedError(msg)
-
-
-@flexdispatch
-def _machine_epsilon(values: NativeArray) -> float:
-    """Return the machine epsilon of the dtype of a floating array."""
-    msg = f"Credal set measures are not implemented for arrays of type {type(values).__name__}."
     raise NotImplementedError(msg)
 
 
@@ -397,7 +390,7 @@ def _exact_min_entropy_distribution(lower: _Array, upper: _Array) -> tuple[_Arra
     n_classes = lower.shape[-1]
     capacity = upper - lower
     residual = (1.0 - lower.sum(-1))[..., None]
-    tolerance = 8 * n_classes * _machine_epsilon(lower)
+    tolerance = 8 * n_classes * machine_epsilon(lower)
     lower_terms = elementwise_entropy(lower)
     gain = elementwise_entropy(upper) - lower_terms
     # Candidates that do not fit get a penalty above every entropy, so that they are never selected.

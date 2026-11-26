@@ -14,7 +14,6 @@ from ._common import (
     _floating,
     _label_values,
     _log_probabilities,
-    _machine_epsilon,
     _one_hot_argmax,
     _probabilities,
     accuracy,
@@ -48,7 +47,6 @@ from ._common import (
 @_floating.delayed_register(TORCH_VALUE)
 @_label_values.delayed_register(TORCH_VALUE)
 @_log_probabilities.delayed_register(TORCH_VALUE)
-@_machine_epsilon.delayed_register(TORCH_VALUE)
 @_one_hot_argmax.delayed_register(TORCH_VALUE)
 @_probabilities.delayed_register(TORCH_VALUE)
 @classwise_ece.delayed_register(TORCH_VALUE)
@@ -66,7 +64,6 @@ def _(_: type) -> None:
 @_floating.delayed_register(JAX_VALUE)
 @_label_values.delayed_register(JAX_VALUE)
 @_log_probabilities.delayed_register(JAX_VALUE)
-@_machine_epsilon.delayed_register(JAX_VALUE)
 @_one_hot_argmax.delayed_register(JAX_VALUE)
 @_probabilities.delayed_register(JAX_VALUE)
 @classwise_ece.delayed_register(JAX_VALUE)

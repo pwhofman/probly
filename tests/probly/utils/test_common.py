@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.utils import entropy, intersection_probability
+from probly.utils import entropy, intersection_probability, machine_epsilon
 
 
 def test_utils_dispatchers_reject_unsupported_types() -> None:
@@ -12,3 +12,5 @@ def test_utils_dispatchers_reject_unsupported_types() -> None:
         entropy([0.5, 0.5])
     with pytest.raises(NotImplementedError, match="No intersection probability implementation"):
         intersection_probability([0.1], [0.9])
+    with pytest.raises(NotImplementedError, match="No machine epsilon implementation"):
+        machine_epsilon([0.5, 0.5])

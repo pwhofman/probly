@@ -7,7 +7,7 @@ import torch
 from probly.representation.credal_set.torch import TorchConvexCredalSet
 from probly.utils.torch import torch_entropy
 
-from ._common import LogBase, _apply_base, _constant_like, _machine_epsilon, _take_along_axis, upper_entropy
+from ._common import LogBase, _apply_base, _constant_like, _take_along_axis, upper_entropy
 
 _LBFGS_ITERS = 128
 
@@ -22,12 +22,6 @@ def _torch_take_along_axis(values: torch.Tensor, indices: torch.Tensor) -> torch
 def _torch_constant_like(reference: torch.Tensor, values: object) -> torch.Tensor:
     """Create a torch tensor with the dtype and on the device of the reference."""
     return torch.tensor(values, dtype=reference.dtype, device=reference.device)
-
-
-@_machine_epsilon.register(torch.Tensor)
-def _torch_machine_epsilon(values: torch.Tensor) -> float:
-    """Return the machine epsilon of the dtype of a floating torch tensor."""
-    return torch.finfo(values.dtype).eps
 
 
 @upper_entropy.register(TorchConvexCredalSet)

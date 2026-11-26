@@ -10,7 +10,7 @@ import jax.scipy.optimize
 from probly.representation.credal_set.jax import JaxConvexCredalSet
 from probly.utils.jax import jax_entropy
 
-from ._common import LogBase, _apply_base, _constant_like, _machine_epsilon, _take_along_axis, upper_entropy
+from ._common import LogBase, _apply_base, _constant_like, _take_along_axis, upper_entropy
 
 _BFGS_ITERS = 128
 _FRANK_WOLFE_ITERS = 512
@@ -27,12 +27,6 @@ def _jax_take_along_axis(values: jax.Array, indices: jax.Array) -> jax.Array:
 def _jax_constant_like(reference: jax.Array, values: object) -> jax.Array:
     """Create a JAX array with the dtype of the reference."""
     return jnp.asarray(values, dtype=reference.dtype)
-
-
-@_machine_epsilon.register((jax.Array, Tracer))
-def _jax_machine_epsilon(values: jax.Array) -> float:
-    """Return the machine epsilon of the dtype of a floating JAX array."""
-    return float(jnp.finfo(values.dtype).eps)
 
 
 def _convex_entropy_fallback(vertices: jax.Array, weights: jax.Array) -> jax.Array:
