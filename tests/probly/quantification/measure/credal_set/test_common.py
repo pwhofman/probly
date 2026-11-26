@@ -185,22 +185,22 @@ _TYPING_CHECK = """
 from typing import assert_type
 
 from probly.quantification.measure.credal_set import lower_entropy, upper_entropy
-from ndlike.array_like import ArrayLike
+from ndlike.array_like import WeakArrayLike
 from probly.representation.credal_set import CredalSet
 
 def load_backend(cls: type) -> None:
     pass
 
-def check(credal_set: CredalSet, flag: bool, result: ArrayLike) -> None:
-    def handler(value: CredalSet) -> ArrayLike:
+def check(credal_set: CredalSet, flag: bool, result: WeakArrayLike) -> None:
+    def handler(value: CredalSet) -> WeakArrayLike:
         return result
 
     for measure in (upper_entropy, lower_entropy):
-        assert_type(measure(credal_set), ArrayLike)
-        assert_type(measure(credal_set, base="normalize"), ArrayLike)
-        assert_type(measure(credal_set, return_distribution=False), ArrayLike)
-        assert_type(measure(credal_set, 2.0, return_distribution=True), tuple[ArrayLike, ArrayLike])
-        assert_type(measure(credal_set, return_distribution=flag), ArrayLike | tuple[ArrayLike, ArrayLike])
+        assert_type(measure(credal_set), WeakArrayLike)
+        assert_type(measure(credal_set, base="normalize"), WeakArrayLike)
+        assert_type(measure(credal_set, return_distribution=False), WeakArrayLike)
+        assert_type(measure(credal_set, 2.0, return_distribution=True), tuple[WeakArrayLike, WeakArrayLike])
+        assert_type(measure(credal_set, return_distribution=flag), WeakArrayLike | tuple[WeakArrayLike, WeakArrayLike])
         measure.register(CredalSet, handler)
         measure.register(CredalSet)(handler)
         measure.delayed_register(CredalSet, load_backend)
@@ -212,8 +212,8 @@ def check(credal_set: CredalSet, flag: bool, result: ArrayLike) -> None:
         measure(credal_set, return_distribution="invalid")  # ty: ignore[no-matching-overload]
         measure(credal_set, unsupported=True)  # ty: ignore[no-matching-overload]
 
-    assert_type(lower_entropy.register_approx(CredalSet, handler)(credal_set), ArrayLike)
-    assert_type(lower_entropy.register_approx(CredalSet)(handler)(credal_set), ArrayLike)
+    assert_type(lower_entropy.register_approx(CredalSet, handler)(credal_set), WeakArrayLike)
+    assert_type(lower_entropy.register_approx(CredalSet)(handler)(credal_set), WeakArrayLike)
     lower_entropy.register_approx(CredalSet, handler)(credal_set, unexpected=True)  # ty: ignore[unknown-argument]
     lower_entropy.register_approx(CredalSet)(handler)(credal_set, unexpected=True)  # ty: ignore[unknown-argument]
 """

@@ -207,9 +207,9 @@ def main(cfg: DictConfig) -> float:
     # --- Pool ---
     pool = from_dataset(
         x_train,
-        y_train,  # ty: ignore[invalid-argument-type]
-        x_test,  # ty: ignore[invalid-argument-type]
-        y_test,  # ty: ignore[invalid-argument-type]
+        y_train,
+        x_test,
+        y_test,
         initial_size=cfg.initial_size,
         seed=cfg.seed,
     )

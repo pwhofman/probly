@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from flextype import flexdispatch
 
 if TYPE_CHECKING:
-    from ndlike.array_like import ArrayLike
+    from ndlike.array_like import WeakArrayLike
 
 
 @runtime_checkable
-class ActiveLearningPool(Protocol):
+class ActiveLearningPool[A: WeakArrayLike](Protocol):
     """Protocol for backend-specific active learning pools.
 
     Attributes:
@@ -24,17 +24,17 @@ class ActiveLearningPool(Protocol):
     """
 
     @property
-    def x_labeled(self) -> ArrayLike: ...
+    def x_labeled(self) -> A: ...
     @property
-    def y_labeled(self) -> ArrayLike: ...
+    def y_labeled(self) -> A: ...
     @property
-    def x_unlabeled(self) -> ArrayLike: ...
+    def x_unlabeled(self) -> A: ...
     @property
-    def y_unlabeled(self) -> ArrayLike: ...
+    def y_unlabeled(self) -> A: ...
     @property
-    def x_test(self) -> ArrayLike: ...
+    def x_test(self) -> A: ...
     @property
-    def y_test(self) -> ArrayLike: ...
+    def y_test(self) -> A: ...
 
     @property
     def n_labeled(self) -> int: ...
@@ -50,14 +50,14 @@ def _validate_initial_size(n_samples: int, initial_size: int) -> None:
 
 
 @flexdispatch
-def from_dataset(
-    x: object,
-    y: ArrayLike,
-    x_test: ArrayLike,
-    y_test: ArrayLike,
+def from_dataset[A: WeakArrayLike](
+    x: A,
+    y: A,
+    x_test: A,
+    y_test: A,
     initial_size: int,
     seed: int | None,
-) -> ActiveLearningPool:
+) -> ActiveLearningPool[A]:
     """Create a pool by randomly splitting training data into labeled and unlabeled subsets.
 
     Dispatches on the type of ``x`` to select the appropriate backend.
