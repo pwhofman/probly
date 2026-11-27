@@ -10,8 +10,10 @@ import pytest
 
 pytest.importorskip("scipy")
 import numpy as np
+import scipy.special
 
 from probly.method.efficient_credal_prediction import compute_efficient_credal_prediction_bounds
+from probly.method.efficient_credal_prediction._common import compute_efficient_credal_bounds
 
 
 def _is_torch_available() -> bool:
@@ -88,3 +90,53 @@ class TestNumpyCredalBounds:
             # Ensure the re-dispatch properly converted the result back to numpy
             assert isinstance(lower, np.ndarray)
             assert isinstance(upper, np.ndarray)
+
+
+class TestNumpyCredalIntervalBounds:
+    """Tests the NumPy inference step turning logits and offsets into packed interval bounds."""
+
+    @pytest.fixture
+    def inputs(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        rng = np.random.default_rng(0)
+        logits = rng.standard_normal((6, 4))
+        lower = -rng.uniform(0.1, 2.0, size=4)
+        upper = rng.uniform(0.1, 2.0, size=4)
+        return logits, lower, upper
+
+    def test_zero_offsets_collapse_to_softmax(self, inputs: tuple[np.ndarray, np.ndarray, np.ndarray]) -> None:
+        logits, _, _ = inputs
+        zeros = np.zeros(4)
+
+        packed = compute_efficient_credal_bounds(logits, zeros, zeros)
+
+        probabilities = scipy.special.softmax(logits, axis=-1)
+        np.testing.assert_allclose(packed, np.concatenate([probabilities, probabilities], axis=-1))
+
+    def test_matches_explicit_perturbations(self, inputs: tuple[np.ndarray, np.ndarray, np.ndarray]) -> None:
+        logits, lower, upper = inputs
+        perturbed = []
+        for offsets in (lower, upper):
+            for k in range(4):
+                shifted = logits.copy()
+                shifted[:, k] += offsets[k]
+                perturbed.append(scipy.special.softmax(shifted, axis=-1))
+        stacked = np.stack(perturbed)  # (2K, B, K)
+
+        packed = compute_efficient_credal_bounds(logits, lower, upper)
+
+        assert packed.shape == (6, 8)
+        np.testing.assert_allclose(packed[:, :4], stacked.min(axis=0))
+        np.testing.assert_allclose(packed[:, 4:], stacked.max(axis=0))
+
+    @pytest.mark.skipif(not _is_torch_available(), reason="Requires PyTorch for the cross-backend comparison.")
+    def test_agrees_with_torch(self, inputs: tuple[np.ndarray, np.ndarray, np.ndarray]) -> None:
+        import torch  # noqa: PLC0415
+
+        logits, lower, upper = inputs
+
+        packed = compute_efficient_credal_bounds(logits, lower, upper)
+        torch_packed = compute_efficient_credal_bounds(
+            torch.as_tensor(logits), torch.as_tensor(lower), torch.as_tensor(upper)
+        )
+
+        np.testing.assert_allclose(packed, torch_packed.numpy(), rtol=1e-12)

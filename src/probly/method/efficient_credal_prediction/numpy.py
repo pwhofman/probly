@@ -9,7 +9,7 @@ import scipy.optimize
 import scipy.special
 from tqdm import tqdm
 
-from ._common import _validate_alpha, compute_efficient_credal_prediction_bounds
+from ._common import _validate_alpha, compute_efficient_credal_bounds, compute_efficient_credal_prediction_bounds
 
 
 def _is_torch_available() -> bool:
@@ -113,3 +113,12 @@ def _numpy_compute_bounds(
                 upper[k] = float(res.x[0])
 
     return lower, upper
+
+
+@compute_efficient_credal_bounds.register(np.ndarray)
+def _numpy_compute_credal_bounds(logits: np.ndarray, lower: np.ndarray, upper: np.ndarray) -> np.ndarray:
+    """Compute the packed credal interval bounds via 2K logit perturbations."""
+    eye = np.eye(logits.shape[-1], dtype=logits.dtype)
+    perturbations = np.concatenate([upper[:, np.newaxis] * eye, lower[:, np.newaxis] * eye])  # (2K, K)
+    probs = scipy.special.softmax(logits[..., np.newaxis, :] + perturbations, axis=-1)  # (B, 2K, K)
+    return np.concatenate([probs.min(axis=-2), probs.max(axis=-2)], axis=-1)
