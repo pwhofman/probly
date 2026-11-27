@@ -371,9 +371,11 @@ def _create_probability_intervals_from_bounds(
     return NumpyProbabilityIntervalsCredalSet(lower_bounds=probs - lower, upper_bounds=probs + upper)
 
 
-@create_distance_based_credal_set_from_center_and_radius.register(NumpyCategoricalDistribution)
+@create_distance_based_credal_set_from_center_and_radius.register((NumpyCategoricalDistribution, np.ndarray))
 def _create_distance_based_credal_set_from_center_and_radius(
-    center: NumpyCategoricalDistribution,
+    center: NumpyCategoricalDistribution | np.ndarray,
     radius: np.ndarray,
 ) -> NumpyDistanceBasedCredalSet:
-    return NumpyDistanceBasedCredalSet(nominal=center, radius=np.asarray(radius))
+    return NumpyDistanceBasedCredalSet(
+        nominal=_numpy_ensure_categorical_distribution(center), radius=np.asarray(radius)
+    )
