@@ -10,7 +10,16 @@ import jax.scipy.optimize
 from probly.representation.credal_set.jax import JaxConvexCredalSet
 from probly.utils.jax import jax_entropy
 
-from ._common import LogBase, _apply_base, _constant_like, _take_along_axis, upper_entropy
+from ._common import (
+    LogBase,
+    _amax,
+    _amin,
+    _apply_base,
+    _constant_like,
+    _take_along_axis,
+    _where,
+    upper_entropy,
+)
 
 _BFGS_ITERS = 128
 _FRANK_WOLFE_ITERS = 512
@@ -20,6 +29,7 @@ _FRANK_WOLFE_TOL = 1e-5
 @_take_along_axis.register((jax.Array, Tracer))
 def _jax_take_along_axis(values: jax.Array, indices: jax.Array) -> jax.Array:
     """Gather the entries at the indices along the last axis."""
+    indices = jnp.broadcast_to(indices, (*values.shape[:-1], indices.shape[-1]))
     return jnp.take_along_axis(values, indices, axis=-1)
 
 
@@ -27,6 +37,24 @@ def _jax_take_along_axis(values: jax.Array, indices: jax.Array) -> jax.Array:
 def _jax_constant_like(reference: jax.Array, values: object) -> jax.Array:
     """Create a JAX array with the dtype of the reference."""
     return jnp.asarray(values, dtype=reference.dtype)
+
+
+@_where.register((jax.Array, Tracer))
+def _jax_where(condition: jax.Array, a: jax.Array | float, b: jax.Array | float) -> jax.Array:
+    """Choose between two arrays by a boolean condition."""
+    return jnp.where(condition, a, b)
+
+
+@_amin.register((jax.Array, Tracer))
+def _jax_amin(values: jax.Array) -> jax.Array:
+    """Return the minimum along the last axis."""
+    return values.min(axis=-1)
+
+
+@_amax.register((jax.Array, Tracer))
+def _jax_amax(values: jax.Array) -> jax.Array:
+    """Return the maximum along the last axis."""
+    return values.max(axis=-1)
 
 
 def _convex_entropy_fallback(vertices: jax.Array, weights: jax.Array) -> jax.Array:

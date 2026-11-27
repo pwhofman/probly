@@ -255,11 +255,14 @@ def generalized_hartley(credal_set: CredalSet, base: LogBase = None) -> WeakArra
     raise NotImplementedError(msg)
 
 
-# The measures below are implemented once for every backend. They need two array operations that the backends
-# spell differently.
+# The measures below are implemented once for every backend. They need five array operations that the backends
+# spell differently, each registered with the backend's own function.
 @flexdispatch
 def _take_along_axis[A: NativeArray](values: A, indices: object) -> A:
-    """Return the entries of ``values`` ``(..., K)`` at the integer ``indices`` ``(..., M)`` along the last axis."""
+    """Return the entries of ``values`` ``(..., K)`` at the integer ``indices`` ``(..., M)`` along the last axis.
+
+    The indices broadcast against the leading axes of ``values``.
+    """
     msg = f"Credal set measures are not implemented for arrays of type {type(values).__name__}."
     raise NotImplementedError(msg)
 
@@ -268,6 +271,27 @@ def _take_along_axis[A: NativeArray](values: A, indices: object) -> A:
 def _constant_like[A: NativeArray](reference: A, values: object) -> A:
     """Create an array of ``values`` with the backend, device and dtype of the array ``reference``."""
     msg = f"Credal set measures are not implemented for arrays of type {type(reference).__name__}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def _where[A: NativeArray](condition: A, a: object, b: object) -> A:
+    """Choose ``a`` where the boolean array ``condition`` holds and ``b`` elsewhere."""
+    msg = f"Credal set measures are not implemented for arrays of type {type(condition).__name__}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def _amin[A: NativeArray](values: A) -> A:
+    """Return the minimum of ``values`` along the last axis."""
+    msg = f"Credal set measures are not implemented for arrays of type {type(values).__name__}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def _amax[A: NativeArray](values: A) -> A:
+    """Return the maximum of ``values`` along the last axis."""
+    msg = f"Credal set measures are not implemented for arrays of type {type(values).__name__}."
     raise NotImplementedError(msg)
 
 
@@ -281,26 +305,6 @@ def _apply_base(result: _Array, n_classes: int, base: LogBase) -> _Array:
 def _entropy(p: _Array) -> _Array:
     """Compute the Shannon entropy in nats along the last axis."""
     return cast("Any", entropy(p))
-
-
-def _select(condition: _Array, a: _Array, b: _Array) -> _Array:
-    """Choose ``a`` where the boolean ``condition`` holds and ``b`` elsewhere, exactly for finite values."""
-    return a * condition + b * ~condition
-
-
-def _minimum(a: _Array, b: _Array) -> _Array:
-    """Return the elementwise minimum of two arrays."""
-    return a.clip(None, b)
-
-
-def _min(values: _Array) -> _Array:
-    """Return the minimum along the last axis, which PyTorch returns together with its index."""
-    return _take_along_axis(values, values.argmin(-1)[..., None])[..., 0]
-
-
-def _max(values: _Array) -> _Array:
-    """Return the maximum along the last axis, which PyTorch returns together with its index."""
-    return _take_along_axis(values, values.argmax(-1)[..., None])[..., 0]
 
 
 @cache
@@ -323,12 +327,11 @@ def _box_max_entropy_distribution(lower: _Array, upper: _Array) -> _Array:
     Returns:
         The maximum-entropy distributions of shape ``(..., C)``.
     """
-    low = lower.sum(-1) * 0.0
-    high = low + 1.0
+    low, high = _constant_like(lower, 0.0), _constant_like(lower, 1.0)
     for _ in range(_BISECTION_STEPS):
         level = (low + high) / 2
         too_small = level[..., None].clip(lower, upper).sum(-1) < 1.0
-        low, high = _select(too_small, level, low), _select(too_small, high, level)
+        low, high = _where(too_small, level, low), _where(too_small, high, level)
     level = (low + high) / 2
     return level[..., None].clip(lower, upper)
 
@@ -350,21 +353,18 @@ def _approximate_min_entropy_distribution(lower: _Array, upper: _Array) -> tuple
     n_classes = lower.shape[-1]
     capacity = upper - lower
     residual = (1.0 - lower.sum(-1))[..., None].clip(0.0)
-    best = best_p = None
+    best, best_p = _constant_like(lower, math.inf), lower
     for first in range(n_classes):
         order = [first, *(i for i in range(n_classes) if i != first)]
         position = [order.index(i) for i in range(n_classes)]
         ordered = capacity[..., order]
         filled_before = ordered.cumsum(-1) - ordered
-        fill = _minimum((residual - filled_before).clip(0.0), ordered)
+        fill = (residual - filled_before).clip(0.0).clip(None, ordered)
         p = (lower[..., order] + fill)[..., position]
         h = _entropy(p)
-        if best is None:
-            best, best_p = h, p
-            continue
         improved = h < best
-        best_p = _select(improved[..., None], p, best_p)
-        best = _select(improved, h, best)
+        best_p = _where(improved[..., None], p, best_p)
+        best = _where(improved, h, best)
     return best, best_p
 
 
@@ -393,36 +393,34 @@ def _exact_min_entropy_distribution(lower: _Array, upper: _Array) -> tuple[_Arra
     tolerance = 8 * n_classes * machine_epsilon(lower)
     lower_terms = elementwise_entropy(lower)
     gain = elementwise_entropy(upper) - lower_terms
-    # Candidates that do not fit get a penalty above every entropy, so that they are never selected.
-    penalty = math.log(n_classes) + 1.0
-    best = lower.sum(-1) * 0.0 + (penalty - 0.5)
-    best_p = _select(residual <= 0, lower, upper)
+    classes = _constant_like(lower, list(range(n_classes)))
+    best = _constant_like(lower, math.inf)
+    best_p = _where(residual <= 0, lower, upper)
     # The subsets that leave out the last class; swapping two columns makes them leave out the free class instead.
     without_last = _constant_like(lower, _subsets(n_classes)[: 2 ** (n_classes - 1)])
     for free in range(n_classes):
         columns = list(range(n_classes))
         columns[free], columns[-1] = columns[-1], columns[free]
         raised = without_last[:, columns]  # (S, C)
-        is_free = _constant_like(lower, [float(i == free) for i in range(n_classes)])
         free_capacity = capacity[..., free : free + 1]
         # Mass left for the free class above its lower bound, for every subset.
         mass = residual - capacity @ raised.T
         fits = (mass >= -tolerance) & (mass <= free_capacity + tolerance)
-        mass = _minimum(mass.clip(0.0), free_capacity)
+        mass = mass.clip(0.0).clip(None, free_capacity)
         candidates = (
             lower_terms.sum(-1)[..., None]
             - lower_terms[..., free : free + 1]
             + gain @ raised.T
             + elementwise_entropy(lower[..., free : free + 1] + mass)
         )
-        candidates = candidates + ~fits * penalty
+        candidates = _where(fits, candidates, math.inf)
         index = candidates.argmin(-1)
         value = _take_along_axis(candidates, index[..., None])[..., 0]
         free_mass = _take_along_axis(mass, index[..., None])
-        p = (lower + capacity * raised[index]) * (1.0 - is_free) + (lower + free_mass) * is_free
+        p = _where(classes == free, lower + free_mass, lower + capacity * raised[index])
         improved = value < best
-        best_p = _select(improved[..., None], p, best_p)
-        best = _select(improved, value, best)
+        best_p = _where(improved[..., None], p, best_p)
+        best = _where(improved, value, best)
     return _entropy(best_p), best_p
 
 
@@ -486,18 +484,17 @@ def _envelope_lower_entropy(
 
 
 def _nominal_and_radius(credal_set: DistanceBasedCredalSet) -> tuple[_Array, _Array]:
-    """Return the nominal distributions ``(..., K)`` and the radii ``(..., 1)`` of a distance-based credal set.
+    """Return the nominal distributions ``(..., K)`` and the radii of a distance-based credal set.
 
-    The radius broadcasts as in ``lower()`` and ``upper()``. A negative radius counts as zero and a radius above
-    one as one, the largest total variation distance between two distributions.
+    As in ``lower()`` and ``upper()``, radii with one entry per set get a trailing axis, ``(..., 1)``, and any other
+    radius is left to broadcast. A negative radius counts as zero and a radius above one as one, the largest total
+    variation distance between two distributions.
     """
     nominal: _Array = credal_set.nominal.probabilities
     radius: _Array = credal_set.radius
     if radius.ndim == nominal.ndim - 1:
         radius = radius[..., None]
-    radius = radius.clip(0.0, 1.0)
-    nominal = nominal + 0.0 * radius
-    return nominal, (radius + 0.0 * nominal)[..., :1]
+    return nominal, radius.clip(0.0, 1.0)
 
 
 def _total_variation_max_entropy_distribution(nominal: _Array, radius: _Array) -> _Array:
@@ -519,12 +516,13 @@ def _total_variation_max_entropy_distribution(nominal: _Array, radius: _Array) -
     """
     n_classes = nominal.shape[-1]
     uniform = nominal.sum(-1)[..., None] / n_classes
-    mass = _minimum(radius, (nominal - uniform).clip(0.0).sum(-1)[..., None])
+    distance_to_uniform = (nominal - uniform).clip(0.0).sum(-1)[..., None]
+    mass = radius.clip(None, distance_to_uniform)
     counts = _constant_like(nominal, list(range(1, n_classes + 1)))
     ascending = _take_along_axis(nominal, nominal.argsort(-1))
     descending = _take_along_axis(nominal, (-nominal).argsort(-1))
-    low = _min((mass + ascending.cumsum(-1)) / counts)[..., None]
-    high = _max((descending.cumsum(-1) - mass) / counts)[..., None]
+    low = _amin((mass + ascending.cumsum(-1)) / counts)[..., None]
+    high = _amax((descending.cumsum(-1) - mass) / counts)[..., None]
     return nominal.clip(low, high)
 
 
@@ -548,17 +546,16 @@ def _total_variation_min_entropy_distribution(nominal: _Array, radius: _Array) -
         return nominal
     classes = _constant_like(nominal, list(range(n_classes)))
     is_largest = classes == nominal.argmax(-1)[..., None]
-    # Probabilities are at most one, so adding two sorts the largest class last and the donors before it.
-    order = (nominal + is_largest * 2.0).argsort(-1)
+    # Sort the donors, the classes other than the largest, in ascending order; the largest class comes last.
+    order = _where(is_largest, math.inf, nominal).argsort(-1)
     ascending = _take_along_axis(nominal, order)
     cumulative = ascending.cumsum(-1)
     # The largest class can take at most the mass of the donors, computed from the same cumulative sum that empties
     # them, so that emptied classes are exactly zero.
-    mass = _minimum(radius, cumulative[..., -2:-1])
+    mass = radius.clip(None, cumulative[..., -2:-1])
     # Empty the smallest donors in turn until the mass is taken.
-    kept = _minimum((cumulative - mass).clip(0.0), ascending)
-    is_last = _constant_like(nominal, [0.0] * (n_classes - 1) + [1.0])
-    moved = kept * (1.0 - is_last) + (ascending + mass) * is_last
+    kept = (cumulative - mass).clip(0.0).clip(None, ascending)
+    moved = _where(classes == n_classes - 1, ascending + mass, kept)
     return _take_along_axis(moved, order.argsort(-1))
 
 
@@ -624,11 +621,11 @@ def _convex_lower_entropy(
     del approximate
     vertices = _vertices(credal_set)
     vertex_entropies = _entropy(vertices)  # (..., V)
-    index = vertex_entropies.argmin(-1)[..., None]
-    result = _apply_base(_take_along_axis(vertex_entropies, index)[..., 0], credal_set.num_classes, base)
+    result = _apply_base(_amin(vertex_entropies), credal_set.num_classes, base)
     if return_distribution:
-        is_minimizer = _constant_like(vertices, list(range(vertices.shape[-2]))) == index  # (..., V)
-        return result, (vertices * is_minimizer[..., None]).sum(-2)
+        index = vertex_entropies.argmin(-1)[..., None, None]  # (..., 1, 1)
+        # Gather the minimizing vertex of every set along the vertex axis.
+        return result, _take_along_axis(vertices.swapaxes(-1, -2), index)[..., 0]
     return result
 
 
@@ -654,6 +651,6 @@ def _convex_generalized_hartley(credal_set: ConvexCredalSet, base: LogBase = Non
     vertices = _vertices(credal_set)
     n_classes = credal_set.num_classes
     subset_probabilities = vertices @ _constant_like(vertices, _subsets(n_classes)).T  # (..., V, S)
-    lower_probabilities = _min(subset_probabilities.swapaxes(-1, -2))  # (..., S)
+    lower_probabilities = _amin(subset_probabilities.swapaxes(-1, -2))  # (..., S)
     result = lower_probabilities @ _constant_like(vertices, _generalized_hartley_coefficients(n_classes))
     return _apply_base(result, n_classes, base)

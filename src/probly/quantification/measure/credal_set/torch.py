@@ -7,7 +7,16 @@ import torch
 from probly.representation.credal_set.torch import TorchConvexCredalSet
 from probly.utils.torch import torch_entropy
 
-from ._common import LogBase, _apply_base, _constant_like, _take_along_axis, upper_entropy
+from ._common import (
+    LogBase,
+    _amax,
+    _amin,
+    _apply_base,
+    _constant_like,
+    _take_along_axis,
+    _where,
+    upper_entropy,
+)
 
 _LBFGS_ITERS = 128
 
@@ -15,13 +24,31 @@ _LBFGS_ITERS = 128
 @_take_along_axis.register(torch.Tensor)
 def _torch_take_along_axis(values: torch.Tensor, indices: torch.Tensor) -> torch.Tensor:
     """Gather the entries at the indices along the last dimension."""
-    return values.gather(-1, indices)
+    return values.gather(-1, indices.expand(*values.shape[:-1], indices.shape[-1]))
 
 
 @_constant_like.register(torch.Tensor)
 def _torch_constant_like(reference: torch.Tensor, values: object) -> torch.Tensor:
     """Create a torch tensor with the dtype and on the device of the reference."""
     return torch.tensor(values, dtype=reference.dtype, device=reference.device)
+
+
+@_where.register(torch.Tensor)
+def _torch_where(condition: torch.Tensor, a: torch.Tensor | float, b: torch.Tensor | float) -> torch.Tensor:
+    """Choose between two tensors by a boolean condition."""
+    return torch.where(condition, a, b)
+
+
+@_amin.register(torch.Tensor)
+def _torch_amin(values: torch.Tensor) -> torch.Tensor:
+    """Return the minimum along the last dimension."""
+    return values.amin(dim=-1)
+
+
+@_amax.register(torch.Tensor)
+def _torch_amax(values: torch.Tensor) -> torch.Tensor:
+    """Return the maximum along the last dimension."""
+    return values.amax(dim=-1)
 
 
 @upper_entropy.register(TorchConvexCredalSet)
