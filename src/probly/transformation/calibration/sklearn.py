@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from abc import abstractmethod
 from dataclasses import dataclass
+from typing import Self
 
 import numpy as np
 from packaging.version import Version
@@ -49,6 +51,12 @@ def sklearn_calibrated_classifier_cv_calibrate(
 @dataclass(slots=True)
 class _VectorScalingState:
     temperature: np.ndarray
+    bias: np.ndarray
+
+
+@dataclass(slots=True)
+class _DirichletState:
+    weight: np.ndarray
     bias: np.ndarray
 
 
@@ -108,20 +116,12 @@ BinaryLogitClassifier.register(SklearnIdentityLogitEstimator)
 LogitClassifier.register(SklearnIdentityLogitEstimator)
 
 
-class SklearnVectorScalingPredictor(BaseEstimator, CalibrationPredictor):
-    """sklearn estimator wrapper implementing vector scaling calibration."""
+class _SklearnCalibrationPredictorBase[S](BaseEstimator, CalibrationPredictor):
+    """Shared sklearn estimator interface of the calibration wrappers fitted on logits."""
 
     predictor: BaseEstimator
     classes_: np.ndarray
-    _state: _VectorScalingState | None
-
-    def __init__(self, predictor: BaseEstimator, num_classes: int | None = None, max_iter: int = 256) -> None:
-        """Initialize vector scaling calibrator with unfitted state."""
-        self.predictor = predictor
-        self.num_classes = num_classes
-        self.max_iter = max_iter
-        self.classes_ = np.empty((0,), dtype=np.int64)
-        self._state = None
+    _state: S | None
 
     @property
     def estimator(self) -> BaseEstimator:
@@ -135,31 +135,15 @@ class SklearnVectorScalingPredictor(BaseEstimator, CalibrationPredictor):
 
     @property
     def is_calibrated_(self) -> bool:
-        """Return whether vector scaling state was fitted."""
+        """Return whether the calibration state was fitted."""
         return self._state is not None
 
-    def _require_calibrated(self) -> _VectorScalingState:
+    def _require_calibrated(self) -> S:
         state = self._state
         if state is None:
             msg = "Calibration wrapper is not calibrated. Please call calibrate() or fit() before prediction."
             raise ValueError(msg)
         return state
-
-    @property
-    def temperature(self) -> np.ndarray | None:
-        """Return calibrated temperature parameters if available."""
-        state = self._state
-        if state is None:
-            return None
-        return np.array(state.temperature, copy=True)
-
-    @property
-    def bias(self) -> np.ndarray | None:
-        """Return calibrated bias parameters if available."""
-        state = self._state
-        if state is None:
-            return None
-        return np.array(state.bias, copy=True)
 
     def _extract_logits(self, x: object) -> np.ndarray:
         decision_function = getattr(self.predictor, "decision_function", None)
@@ -197,15 +181,82 @@ class SklearnVectorScalingPredictor(BaseEstimator, CalibrationPredictor):
         return numerator / denominator
 
     @staticmethod
-    def _affine_logits(logits: np.ndarray, temperature: np.ndarray, bias: np.ndarray) -> np.ndarray:
-        return logits / temperature + bias
-
-    @staticmethod
     def _encode_labels(y: np.ndarray, classes: np.ndarray) -> np.ndarray:
         class_to_idx = {label: idx for idx, label in enumerate(classes.tolist())}
         return np.asarray([class_to_idx[label] for label in y], dtype=np.int64)
 
-    def fit(self, x: object, y: object, **_fit_kwargs: object) -> SklearnVectorScalingPredictor:
+    def _encode_calibration_labels(self, y: object, num_logits: int, num_classes: int) -> tuple[np.ndarray, np.ndarray]:
+        """Return the estimator's classes and the calibration labels as indices into them."""
+        y_arr = np.asarray(y)
+        flat_y = y_arr.reshape(-1)
+        if flat_y.size != num_logits:
+            msg = f"Calibration labels must match logits batch shape. Got {flat_y.size} labels for {num_logits} logits."
+            raise ValueError(msg)
+        classes = np.asarray(getattr(self.predictor, "classes_", np.unique(y_arr)))
+        if len(classes) != num_classes:
+            msg = f"Number of estimator classes does not match logits class dimension: {len(classes)} vs {num_classes}."
+            raise ValueError(msg)
+        return classes, self._encode_labels(flat_y, classes)
+
+    @abstractmethod
+    def fit(self, x: object, y: object, **_fit_kwargs: object) -> Self:
+        """Fit the calibration parameters on calibration data."""
+
+    def calibrate(self, y_calib: object, *calib_args: object, **calib_kwargs: object) -> Self:
+        """Calibrate the parameters using probly's generic argument order."""
+        x_calib, y_true = _extract_calibration_inputs(y_calib, calib_args)
+        return self.fit(x_calib, y_true, **calib_kwargs)
+
+    @abstractmethod
+    def predict_logits(self, x: object) -> np.ndarray:
+        """Predict calibrated logits for input samples."""
+
+    def predict_proba(self, x: object) -> np.ndarray:
+        """Predict calibrated probabilities for input samples."""
+        return self._softmax(self.predict_logits(x))
+
+    def predict(self, x: object) -> np.ndarray:
+        """Predict labels based on calibrated probabilities."""
+        probabilities = self.predict_proba(x)
+        if self.classes_.size == 0:
+            msg = "Calibration wrapper is missing classes_."
+            raise ValueError(msg)
+        indices = np.argmax(probabilities, axis=-1)
+        return self.classes_[indices]
+
+
+class SklearnVectorScalingPredictor(_SklearnCalibrationPredictorBase[_VectorScalingState]):
+    """sklearn estimator wrapper implementing vector scaling calibration."""
+
+    def __init__(self, predictor: BaseEstimator, num_classes: int | None = None, max_iter: int = 256) -> None:
+        """Initialize vector scaling calibrator with unfitted state."""
+        self.predictor = predictor
+        self.num_classes = num_classes
+        self.max_iter = max_iter
+        self.classes_ = np.empty((0,), dtype=np.int64)
+        self._state = None
+
+    @property
+    def temperature(self) -> np.ndarray | None:
+        """Return calibrated temperature parameters if available."""
+        state = self._state
+        if state is None:
+            return None
+        return np.array(state.temperature, copy=True)
+
+    @property
+    def bias(self) -> np.ndarray | None:
+        """Return calibrated bias parameters if available."""
+        state = self._state
+        if state is None:
+            return None
+        return np.array(state.bias, copy=True)
+
+    @staticmethod
+    def _affine_logits(logits: np.ndarray, temperature: np.ndarray, bias: np.ndarray) -> np.ndarray:
+        return logits / temperature + bias
+
+    def fit(self, x: object, y: object, **_fit_kwargs: object) -> Self:
         """Fit vector-scaling calibration parameters on calibration data."""
         logits = self._extract_logits(x)
         if logits.ndim < 2:
@@ -220,20 +271,7 @@ class SklearnVectorScalingPredictor(BaseEstimator, CalibrationPredictor):
             raise ValueError(msg)
 
         flat_logits = logits.reshape(-1, num_classes)
-
-        y_arr = np.asarray(y)
-        flat_y = y_arr.reshape(-1)
-        if flat_y.size != flat_logits.shape[0]:
-            msg = (
-                "Calibration labels must match logits batch shape. "
-                f"Got {flat_y.size} labels for {flat_logits.shape[0]} logits."
-            )
-            raise ValueError(msg)
-        classes = np.asarray(getattr(self.predictor, "classes_", np.unique(y_arr)))
-        if len(classes) != num_classes:
-            msg = f"Number of estimator classes does not match logits class dimension: {len(classes)} vs {num_classes}."
-            raise ValueError(msg)
-        encoded_y = self._encode_labels(flat_y, classes)
+        classes, encoded_y = self._encode_calibration_labels(y, flat_logits.shape[0], num_classes)
 
         def objective(params: np.ndarray) -> float:
             log_temperature = params[:num_classes]
@@ -258,29 +296,105 @@ class SklearnVectorScalingPredictor(BaseEstimator, CalibrationPredictor):
         self._state = _VectorScalingState(temperature=temperature, bias=bias)
         return self
 
-    def calibrate(self, y_calib: object, *calib_args: object, **calib_kwargs: object) -> SklearnVectorScalingPredictor:
-        """Calibrate vector-scaling parameters using probly's generic argument order."""
-        x_calib, y_true = _extract_calibration_inputs(y_calib, calib_args)
-        return self.fit(x_calib, y_true, **calib_kwargs)
-
     def predict_logits(self, x: object) -> np.ndarray:
         """Predict calibrated logits for input samples."""
         state = self._require_calibrated()
         logits = self._extract_logits(x)
         return self._affine_logits(logits, state.temperature, state.bias)
 
-    def predict_proba(self, x: object) -> np.ndarray:
-        """Predict calibrated probabilities for input samples."""
-        return self._softmax(self.predict_logits(x))
 
-    def predict(self, x: object) -> np.ndarray:
-        """Predict labels based on calibrated probabilities."""
-        probabilities = self.predict_proba(x)
-        if self.classes_.size == 0:
-            msg = "Calibration wrapper is missing classes_."
+class SklearnDirichletCalibrationPredictor(_SklearnCalibrationPredictorBase[_DirichletState]):
+    """sklearn estimator wrapper implementing Dirichlet calibration."""
+
+    def __init__(
+        self,
+        predictor: BaseEstimator,
+        num_classes: int | None = None,
+        reg_lambda: float = 0.0,
+        reg_mu: float | None = None,
+        max_iter: int = 256,
+    ) -> None:
+        """Initialize Dirichlet calibrator with unfitted state."""
+        self.predictor = predictor
+        self.num_classes = num_classes
+        self.reg_lambda = reg_lambda
+        self.reg_mu = reg_mu
+        self.max_iter = max_iter
+        self.classes_ = np.empty((0,), dtype=np.int64)
+        self._state = None
+
+    @property
+    def weight(self) -> np.ndarray | None:
+        """Return the fitted weight matrix ``W`` if available."""
+        state = self._state
+        if state is None:
+            return None
+        return np.array(state.weight, copy=True)
+
+    @property
+    def bias(self) -> np.ndarray | None:
+        """Return the fitted bias ``b`` if available."""
+        state = self._state
+        if state is None:
+            return None
+        return np.array(state.bias, copy=True)
+
+    def _log_probabilities(self, x: object) -> np.ndarray:
+        logits = self._extract_logits(x)
+        if logits.ndim < 2 or (self.num_classes is not None and logits.shape[-1] != self.num_classes):
+            msg = (
+                "Dirichlet calibration expects logits with an explicit class axis of size "
+                f"{self.num_classes}, got shape {tuple(logits.shape)}."
+            )
             raise ValueError(msg)
-        indices = np.argmax(probabilities, axis=-1)
-        return self.classes_[indices]
+        return logits - logsumexp(logits, axis=-1, keepdims=True)
+
+    def fit(self, x: object, y: object, **_fit_kwargs: object) -> Self:
+        """Fit the Dirichlet calibration map on calibration data with ODIR regularization."""
+        log_p = self._log_probabilities(x)
+        num_classes = int(log_p.shape[-1])
+        flat_log_p = log_p.reshape(-1, num_classes)
+        classes, encoded_y = self._encode_calibration_labels(y, flat_log_p.shape[0], num_classes)
+
+        one_hot = np.eye(num_classes)[encoded_y]  # (N, K)
+        off_diag_mask = ~np.eye(num_classes, dtype=bool)
+        reg_lambda = self.reg_lambda / max(num_classes * (num_classes - 1), 1)
+        reg_mu = (self.reg_lambda if self.reg_mu is None else self.reg_mu) / num_classes
+
+        def objective(params: np.ndarray) -> tuple[float, np.ndarray]:
+            weight = params[: num_classes * num_classes].reshape(num_classes, num_classes)
+            bias = params[num_classes * num_classes :]
+            calibrated = flat_log_p @ weight.T + bias
+            log_probs = calibrated - logsumexp(calibrated, axis=-1, keepdims=True)
+            off_diag_weight = weight * off_diag_mask
+            loss = -np.mean(np.sum(one_hot * log_probs, axis=-1))
+            loss += reg_lambda * np.sum(off_diag_weight**2) + reg_mu * np.sum(bias**2)
+            residual = (np.exp(log_probs) - one_hot) / flat_log_p.shape[0]  # (N, K)
+            grad_weight = residual.T @ flat_log_p + 2 * reg_lambda * off_diag_weight
+            grad_bias = residual.sum(axis=0) + 2 * reg_mu * bias
+            return float(loss), np.concatenate([grad_weight.reshape(-1), grad_bias])
+
+        initial = np.concatenate([np.eye(num_classes).reshape(-1), np.zeros(num_classes)])
+        optimization = minimize(
+            objective,
+            initial,
+            jac=True,
+            method="L-BFGS-B",
+            options={"maxiter": self.max_iter},
+        )
+
+        params = optimization.x
+        self.classes_ = classes
+        self._state = _DirichletState(
+            weight=params[: num_classes * num_classes].reshape(num_classes, num_classes),
+            bias=params[num_classes * num_classes :],
+        )
+        return self
+
+    def predict_logits(self, x: object) -> np.ndarray:
+        """Predict calibrated logits for input samples."""
+        state = self._require_calibrated()
+        return self._log_probabilities(x) @ state.weight.T + state.bias
 
 
 @calibration_generator.register(BaseEstimator)
@@ -297,6 +411,10 @@ def sklearn_calibration_generator(
 
         return CalibratedClassifierCV(estimator=FrozenEstimator(base), method=method)
     if config.method == "dirichlet":
-        msg = "Dirichlet calibration is not implemented for the sklearn backend."
-        raise NotImplementedError(msg)
+        return SklearnDirichletCalibrationPredictor(
+            base,
+            num_classes=config.num_classes,
+            reg_lambda=config.reg_lambda,
+            reg_mu=config.reg_mu,
+        )
     return SklearnVectorScalingPredictor(base, num_classes=config.num_classes)

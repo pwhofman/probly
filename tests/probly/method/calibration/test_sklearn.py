@@ -19,7 +19,10 @@ from probly.method.calibration import (
 )
 from probly.method.conformal import conformal_lac
 from probly.predictor import BinaryLogitClassifier
-from probly.transformation.calibration.sklearn import SklearnVectorScalingPredictor
+from probly.transformation.calibration.sklearn import (
+    SklearnDirichletCalibrationPredictor,
+    SklearnVectorScalingPredictor,
+)
 
 pytest.importorskip("sklearn")
 from sklearn.base import BaseEstimator
@@ -87,10 +90,80 @@ def test_temperature_platt_and_isotonic_return_builtin_calibrated_classifier_cv(
     assert post_calibrated_model.predict_proba(x).shape == (len(x), 2)
 
 
-def test_dirichlet_calibration_raises_not_implemented() -> None:
-    """Dirichlet calibration has no sklearn implementation and must fail fast instead of silently degrading."""
-    with pytest.raises(NotImplementedError, match="not implemented for the sklearn backend"):
-        dirichlet_calibration(sklearn_identity_logit_estimator(), num_classes=3)
+def _overconfident_multiclass_logits(seed: int, num_samples: int, num_classes: int) -> tuple[np.ndarray, np.ndarray]:
+    rng = np.random.default_rng(seed)
+    labels = rng.integers(0, num_classes, size=num_samples)
+    base = rng.standard_normal(size=(num_samples, num_classes))
+    # Push probability mass toward the true class, then sharpen to overconfidence.
+    base[np.arange(num_samples), labels] += 1.5
+    return base * 3.0, labels
+
+
+def test_sklearn_dirichlet_calibration_reduces_nll_and_exposes_state() -> None:
+    """Dirichlet calibration lowers NLL on overconfident logits and exposes the fitted map."""
+    logits, labels = _overconfident_multiclass_logits(seed=31, num_samples=512, num_classes=3)
+
+    wrapper = dirichlet_calibration(sklearn_identity_logit_estimator(), num_classes=3)
+    assert isinstance(wrapper, SklearnDirichletCalibrationPredictor)
+    assert wrapper.weight is None
+    assert wrapper.bias is None
+
+    calibrate(wrapper, labels, logits)
+    assert wrapper.is_calibrated_
+    assert wrapper.weight.shape == (3, 3)
+    assert wrapper.bias.shape == (3,)
+
+    calibrated = wrapper.predict_logits(logits)
+    assert _multiclass_nll(calibrated, labels) < _multiclass_nll(logits, labels)
+    probabilities = wrapper.predict_proba(logits)
+    np.testing.assert_allclose(probabilities.sum(axis=-1), np.ones(len(logits)), atol=1e-6)
+    assert wrapper.predict(logits).shape == labels.shape
+
+
+def test_sklearn_dirichlet_strong_off_diagonal_regularization_shrinks_off_diagonal() -> None:
+    """A large reg_lambda drives the off-diagonal weights toward zero."""
+    logits, labels = _overconfident_multiclass_logits(seed=32, num_samples=512, num_classes=3)
+
+    weak = dirichlet_calibration(sklearn_identity_logit_estimator(), num_classes=3, reg_lambda=0.0)
+    strong = dirichlet_calibration(sklearn_identity_logit_estimator(), num_classes=3, reg_lambda=1e3)
+    calibrate(weak, labels, logits)
+    calibrate(strong, labels, logits)
+
+    off_diag = ~np.eye(3, dtype=bool)
+    assert np.abs(strong.weight[off_diag]).mean() < np.abs(weak.weight[off_diag]).mean()
+
+
+def test_sklearn_dirichlet_predict_before_fit_raises() -> None:
+    """Prediction before calibration is rejected."""
+    logits, _ = _overconfident_multiclass_logits(seed=33, num_samples=32, num_classes=3)
+    wrapper = dirichlet_calibration(sklearn_identity_logit_estimator(), num_classes=3)
+    with pytest.raises(ValueError, match="not calibrated"):
+        wrapper.predict_proba(logits)
+
+
+def test_sklearn_dirichlet_rejects_mismatched_class_axis() -> None:
+    """Logits whose class axis disagrees with num_classes are rejected."""
+    logits, labels = _overconfident_multiclass_logits(seed=34, num_samples=64, num_classes=3)
+    wrapper = dirichlet_calibration(sklearn_identity_logit_estimator(), num_classes=4)
+    with pytest.raises(ValueError, match="class axis"):
+        calibrate(wrapper, labels, logits)
+
+
+def test_sklearn_dirichlet_calibration_agrees_with_torch() -> None:
+    """The sklearn and torch backends minimise the same objective."""
+    torch = pytest.importorskip("torch")
+    from probly.method.calibration import torch_identity_logit_model  # noqa: PLC0415
+    from probly.predictor import predict  # noqa: PLC0415
+
+    logits, labels = _overconfident_multiclass_logits(seed=35, num_samples=512, num_classes=4)
+
+    sklearn_wrapper = dirichlet_calibration(sklearn_identity_logit_estimator(), num_classes=4)
+    calibrate(sklearn_wrapper, labels, logits)
+    torch_wrapper = dirichlet_calibration(torch_identity_logit_model(), num_classes=4)
+    calibrate(torch_wrapper, torch.as_tensor(labels), torch.as_tensor(logits))
+
+    torch_probabilities = predict(torch_wrapper, torch.as_tensor(logits)).probabilities.detach().numpy()
+    np.testing.assert_allclose(sklearn_wrapper.predict_proba(logits), torch_probabilities, atol=1e-3)
 
 
 def test_vector_scaling_wrapper_uses_fit_for_calibration_and_exposes_estimator_alias() -> None:

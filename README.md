@@ -260,7 +260,7 @@ Post-hoc methods that ensure that a model’s predicted probabilities match the 
 | Temperature scaling (`temperature_scaling`) | [Guo et al., 2017](http://proceedings.mlr.press/v70/guo17a.html) | torch · flax · sklearn |
 | Platt scaling (`platt_scaling`) | [Platt, 1999](https://www.semanticscholar.org/paper/Probabilistic-Outputs-for-Support-vector-Machines-Platt/42e5ed832d4310ce4378c44d05570439df28a393) | torch · flax · sklearn |
 | Vector scaling (`vector_scaling`) | [Guo et al., 2017](http://proceedings.mlr.press/v70/guo17a.html) | torch · flax · sklearn |
-| Dirichlet calibration (`dirichlet_calibration`) | [Kull et al., 2019](https://proceedings.neurips.cc/paper/2019/hash/8ca01ea920679a0fe3728441494041b9-Abstract.html) | torch · flax |
+| Dirichlet calibration (`dirichlet_calibration`) | [Kull et al., 2019](https://proceedings.neurips.cc/paper/2019/hash/8ca01ea920679a0fe3728441494041b9-Abstract.html) | torch · flax · sklearn |
 | Isotonic regression (`isotonic_regression`) | [Zadrozny & Elkan, 2002](https://doi.org/10.1145/775047.775151) | torch · flax · sklearn |
 
 </details>
