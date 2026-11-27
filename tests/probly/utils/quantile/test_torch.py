@@ -10,12 +10,7 @@ def _torch():
 
 
 class TestQuantileTorch:
-    """`calculate_quantile` for torch tensors.
-
-    Note: the torch implementation hard-codes ``torch.tensor(1.0)`` for the upper
-    cap on the q-level, which is float32. ``torch.quantile`` requires matching
-    dtypes between its input and the q tensor, so callers must pass float32 input.
-    """
+    """`calculate_quantile` for torch tensors."""
 
     def test_torch_quantile_runs(self) -> None:
         torch = _torch()
@@ -54,3 +49,25 @@ class TestQuantileTorch:
         weights = torch.tensor([1.0, 0.0, 0.0])
         result = calculate_weighted_quantile(values, 0.5, sample_weight=weights)
         assert result == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("dtype_name", ["float32", "float64"])
+    def test_torch_quantile_matches_numpy_for_any_dtype(self, dtype_name: str) -> None:
+        torch = _torch()
+        import numpy as np  # noqa: PLC0415
+
+        from probly.utils.quantile import calculate_quantile  # noqa: PLC0415
+
+        values = [0.31, 0.05, 0.77, 0.12, 0.58, 0.9, 0.44]
+        scores = torch.tensor(values, dtype=getattr(torch, dtype_name))
+
+        assert calculate_quantile(scores, alpha=0.2) == pytest.approx(calculate_quantile(np.array(values), alpha=0.2))
+
+    def test_torch_quantile_on_cuda_scores(self) -> None:
+        torch = _torch()
+        if not torch.cuda.is_available():
+            pytest.skip("CUDA device required")
+        from probly.utils.quantile import calculate_quantile  # noqa: PLC0415
+
+        scores = torch.tensor([0.1, 0.2, 0.3, 0.4, 0.5], device="cuda")
+
+        assert calculate_quantile(scores, alpha=0.1) == calculate_quantile(scores.cpu(), alpha=0.1)
