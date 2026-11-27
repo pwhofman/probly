@@ -210,7 +210,7 @@ Instead of committing to a single second-order distribution, credal methods repr
 | Method                                                                                          | Reference | Backends |
 |:------------------------------------------------------------------------------------------------| :--- | :--- |
 | Credal wrapper (`credal_wrapper`)[¹](#fn-credal-1)                                              | [Wang et al., 2025](https://openreview.net/forum?id=cv2iMNWCsh) | torch |
-| Credal ensembling (`credal_ensembling`)[¹](#fn-credal-1)                                        | [Nguyen et al., 2025](https://doi.org/10.1007/s10994-024-06703-y) | torch |
+| Credal ensembling (`credal_ensembling`)[¹](#fn-credal-1)                                        | [Nguyen et al., 2025](https://doi.org/10.1007/s10994-024-06703-y) | torch · sklearn |
 | Credal Bayesian deep learning (`credal_bnn`)[¹](#fn-credal-1)                                   | [Caprio et al., 2024](https://openreview.net/forum?id=4NHF9AC5ui) | torch |
 | Credal nets (`credal_net`)[¹](#fn-credal-1)                                                     | [Wang et al., 2025](https://doi.org/10.1016/j.neunet.2025.107198) | torch |
 | Relative-likelihood credal prediction (`credal_relative_likelihood`)[¹](#fn-credal-1)           | [Löhr et al., 2025](https://doi.org/10.48550/arXiv.2505.22332) | torch |

@@ -1,5 +1,6 @@
 """Representation builders that create representations from predictor outputs."""
 
+from . import numpy_credal_set as numpy_credal_set
 from ._representer import DummyRepresenter, Representer, representer
 from .credal_set import (
     ConvexCredalSetRepresenter,
