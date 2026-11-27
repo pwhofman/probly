@@ -1,10 +1,10 @@
-"""Torch and jax compute the same credal-set entropies.
+"""Numpy, torch and jax compute the same credal-set entropies.
 
-Both backends implement the same algorithms, so on the same inputs they agree up to
-floating-point rounding. Minimizers can tie, for example when two classes have the same
-bounds, and rounding may break such ties differently, so distributions are compared up to
-a permutation of the classes. This module needs both backends and is skipped otherwise;
-each backend is also checked against the same numpy references in its own test module.
+The backends share one implementation, so on the same inputs they agree up to floating-point
+rounding. Minimizers can tie, for example when two classes have the same bounds, and rounding
+may break such ties differently, so distributions are compared up to a permutation of the
+classes. This module needs torch and jax and is skipped otherwise; each backend is also checked
+against the same numpy references in its own test module.
 """
 
 from __future__ import annotations
@@ -19,8 +19,9 @@ import jax.numpy as jnp
 import numpy as np
 import torch
 
-from probly.quantification.measure.credal_set import lower_entropy
+from probly.quantification.measure.credal_set import lower_entropy, upper_entropy
 from probly.representation.credal_set.jax import JaxProbabilityIntervalsCredalSet
+from probly.representation.credal_set.numpy import NumpyProbabilityIntervalsCredalSet
 from probly.representation.credal_set.torch import TorchProbabilityIntervalsCredalSet
 
 from ._entropy_suite import DTYPES, EXACT_MAX_CLASSES, random_intervals
@@ -38,7 +39,18 @@ def _jax_float64():
 
 
 def _parity_tolerance(dtype: type[np.floating]) -> float:
-    return 1e-12 if dtype == np.float64 else 1e-6
+    # The backends sum the entropy terms in different orders, which costs a few float32 roundings for many classes.
+    return 1e-12 if dtype == np.float64 else 5e-6
+
+
+def _assert_parity(results: dict[str, tuple[np.ndarray, np.ndarray]], dtype: type[np.floating]) -> None:
+    """Compare the entropies and the sorted distributions of torch and jax with those of numpy."""
+    numpy_value, numpy_p = results["numpy"]
+    for backend in ("torch", "jax"):
+        value, p = results[backend]
+        assert value.dtype == numpy_value.dtype == dtype, backend
+        np.testing.assert_allclose(value, numpy_value, atol=_parity_tolerance(dtype), err_msg=backend)
+        np.testing.assert_allclose(np.sort(p), np.sort(numpy_p), atol=10 * _parity_tolerance(dtype), err_msg=backend)
 
 
 @DTYPES
@@ -48,19 +60,37 @@ def test_intervals_lower_entropy_parity(dtype: type[np.floating], n_classes: int
     bounds = [random_intervals(rng, kind, n_classes) for kind in ["ensemble", "dirichlet", "sparse", "box"] * 5]
     lower = np.stack([b[0] for b in bounds]).astype(dtype)
     upper = np.stack([b[1] for b in bounds]).astype(dtype)
+    credal_sets = {
+        "numpy": NumpyProbabilityIntervalsCredalSet(lower, upper),
+        "torch": TorchProbabilityIntervalsCredalSet(torch.as_tensor(lower), torch.as_tensor(upper)),
+        "jax": JaxProbabilityIntervalsCredalSet(jnp.asarray(lower), jnp.asarray(upper)),
+    }
 
     approximate = n_classes > EXACT_MAX_CLASSES
-    torch_value, torch_p = lower_entropy(
-        TorchProbabilityIntervalsCredalSet(torch.as_tensor(lower), torch.as_tensor(upper)),
-        return_distribution=True,
-        approximate=approximate,
-    )
-    jax_value, jax_p = lower_entropy(
-        JaxProbabilityIntervalsCredalSet(jnp.asarray(lower), jnp.asarray(upper)),
-        return_distribution=True,
-        approximate=approximate,
-    )
+    results = {}
+    for backend, credal_set in credal_sets.items():
+        value, p = lower_entropy(credal_set, return_distribution=True, approximate=approximate)
+        results[backend] = (np.asarray(value), np.asarray(p))
 
-    assert jax_value.dtype == torch_value.numpy().dtype == dtype
-    np.testing.assert_allclose(np.asarray(jax_value), torch_value.numpy(), atol=_parity_tolerance(dtype))
-    np.testing.assert_allclose(np.sort(np.asarray(jax_p)), np.sort(torch_p.numpy()), atol=10 * _parity_tolerance(dtype))
+    _assert_parity(results, dtype)
+
+
+@DTYPES
+@pytest.mark.parametrize("n_classes", [3, 6, 40])
+def test_intervals_upper_entropy_parity(dtype: type[np.floating], n_classes: int) -> None:
+    rng = np.random.default_rng(n_classes)
+    bounds = [random_intervals(rng, kind, n_classes) for kind in ["ensemble", "dirichlet", "sparse", "box"] * 5]
+    lower = np.stack([b[0] for b in bounds]).astype(dtype)
+    upper = np.stack([b[1] for b in bounds]).astype(dtype)
+    credal_sets = {
+        "numpy": NumpyProbabilityIntervalsCredalSet(lower, upper),
+        "torch": TorchProbabilityIntervalsCredalSet(torch.as_tensor(lower), torch.as_tensor(upper)),
+        "jax": JaxProbabilityIntervalsCredalSet(jnp.asarray(lower), jnp.asarray(upper)),
+    }
+
+    results = {}
+    for backend, credal_set in credal_sets.items():
+        value, p = upper_entropy(credal_set, return_distribution=True)
+        results[backend] = (np.asarray(value), np.asarray(p))
+
+    _assert_parity(results, dtype)

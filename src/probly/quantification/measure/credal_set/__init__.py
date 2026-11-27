@@ -2,13 +2,20 @@
 
 from probly.lazy_types import JAX_VALUE, TORCH_VALUE
 
+from . import numpy as numpy
 from ._common import (
+    _constant_like,
+    _take_along_axis,
+    _where,
     generalized_hartley,
     lower_entropy,
     upper_entropy,
 )
 
 
+@_constant_like.delayed_register(TORCH_VALUE)
+@_take_along_axis.delayed_register(TORCH_VALUE)
+@_where.delayed_register(TORCH_VALUE)
 @upper_entropy.delayed_register(TORCH_VALUE)
 @lower_entropy.delayed_register(TORCH_VALUE)
 @generalized_hartley.delayed_register(TORCH_VALUE)
@@ -16,6 +23,9 @@ def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
+@_constant_like.delayed_register(JAX_VALUE)
+@_take_along_axis.delayed_register(JAX_VALUE)
+@_where.delayed_register(JAX_VALUE)
 @upper_entropy.delayed_register(JAX_VALUE)
 @lower_entropy.delayed_register(JAX_VALUE)
 @generalized_hartley.delayed_register(JAX_VALUE)
