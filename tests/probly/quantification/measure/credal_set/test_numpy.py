@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+from itertools import chain, combinations
+
 import numpy as np
 import pytest
 from scipy.optimize import linprog
 
 from probly.quantification import quantify
-from probly.quantification.measure.credal_set import lower_entropy, upper_entropy
-from probly.representation.credal_set.numpy import NumpyDistanceBasedCredalSet, NumpyProbabilityIntervalsCredalSet
+from probly.quantification.measure.credal_set import generalized_hartley, lower_entropy, upper_entropy
+from probly.representation.credal_set.numpy import (
+    NumpyConvexCredalSet,
+    NumpyDistanceBasedCredalSet,
+    NumpyProbabilityIntervalsCredalSet,
+)
 from probly.representation.distribution.numpy_categorical import NumpyProbabilityCategoricalDistribution
 
 from ._entropy_suite import (
@@ -43,6 +49,10 @@ class _NumpyBackend:
 @pytest.fixture
 def backend() -> _NumpyBackend:
     return _NumpyBackend()
+
+
+def _convex(vertices: np.ndarray) -> NumpyConvexCredalSet:
+    return NumpyConvexCredalSet(NumpyProbabilityCategoricalDistribution(np.asarray(vertices)))
 
 
 def _gradient(p: np.ndarray) -> np.ndarray:
@@ -141,3 +151,77 @@ def test_quantify_distance_based_uses_the_ball() -> None:
     np.testing.assert_allclose(decomposition.total, expected_total, atol=1e-12)
     np.testing.assert_allclose(decomposition.aleatoric, expected_aleatoric, atol=1e-12)
     np.testing.assert_allclose(decomposition.epistemic, expected_total - expected_aleatoric, atol=1e-12)
+
+
+# ---------------------------------------------------------------------------
+# Convex credal sets
+# ---------------------------------------------------------------------------
+
+
+def _random_vertices(rng: np.random.Generator, kind: str, n_vertices: int, n_classes: int) -> np.ndarray:
+    """Vertices from an ensemble, Dirichlet draws, sparse draws with a class that is always zero, or repeated."""
+    if kind == "ensemble":
+        logits = rng.normal(size=n_classes) * 2 + rng.normal(size=(n_vertices, n_classes))
+        return np.exp(logits) / np.exp(logits).sum(-1, keepdims=True)
+    if kind == "sparse":
+        vertices = rng.dirichlet(np.full(n_classes, 0.3), size=n_vertices)
+        vertices = np.where(vertices < 0.5 / n_classes, 0.0, vertices)
+        vertices[:, -1] = 0.0
+        vertices[vertices.sum(-1) == 0, 0] = 1.0
+        return vertices / vertices.sum(-1, keepdims=True)
+    vertices = rng.dirichlet(np.full(n_classes, 0.5), size=n_vertices)
+    if kind == "repeated":
+        vertices[-1] = vertices[0]
+    return vertices
+
+
+def test_convex_lower_entropy_is_the_smallest_vertex_entropy() -> None:
+    vertices = np.stack([_random_vertices(np.random.default_rng(1), "dirichlet", 5, 4) for _ in range(3)])
+
+    value, p = lower_entropy(_convex(vertices.reshape(3, 1, 5, 4)), return_distribution=True)
+
+    assert value.shape == (3, 1)
+    assert p.shape == (3, 1, 4)
+    np.testing.assert_allclose(value[:, 0], entropy(vertices).min(-1))
+    np.testing.assert_allclose(p[:, 0], vertices[np.arange(3), entropy(vertices).argmin(-1)])
+    np.testing.assert_allclose(lower_entropy(_convex(vertices), base=2.0), entropy(vertices).min(-1) / np.log(2))
+    for approximate in (False, True, "auto"):
+        np.testing.assert_allclose(lower_entropy(_convex(vertices), approximate=approximate), value[:, 0])
+
+
+def _moebius_generalized_hartley(vertices: np.ndarray) -> float:
+    """Generalized Hartley measure by inclusion-exclusion over all subsets, in nats."""
+    n_classes = vertices.shape[-1]
+
+    def lower_probability(subset: tuple[int, ...]) -> float:
+        return float(vertices[:, list(subset)].sum(-1).min()) if subset else 0.0
+
+    result = 0.0
+    for a in chain.from_iterable(combinations(range(n_classes), r) for r in range(1, n_classes + 1)):
+        mass = sum(
+            (-1) ** (len(a) - len(b)) * lower_probability(b) for r in range(len(a) + 1) for b in combinations(a, r)
+        )
+        result += mass * np.log(len(a))
+    return result
+
+
+@pytest.mark.parametrize("n_classes", [1, 2, 3, 5, 7])
+def test_generalized_hartley_matches_inclusion_exclusion(n_classes: int) -> None:
+    rng = np.random.default_rng(n_classes)
+    vertices = np.stack([_random_vertices(rng, kind, 4, n_classes) for kind in ["ensemble", "dirichlet"] * 2])
+    if n_classes == 1:
+        vertices = np.ones((4, 4, 1))
+
+    value = generalized_hartley(_convex(vertices))
+
+    assert value.shape == (4,)
+    np.testing.assert_allclose(value, [_moebius_generalized_hartley(v) for v in vertices], atol=1e-12)
+
+
+def test_generalized_hartley_known_values() -> None:
+    """A single distribution has none; the corners of the simplex have the Hartley measure of the class space."""
+    np.testing.assert_allclose(generalized_hartley(_convex(np.array([[0.3, 0.5, 0.2]]))), 0.0, atol=1e-12)
+    corners = _convex(np.eye(3))
+    np.testing.assert_allclose(generalized_hartley(corners), np.log(3), atol=1e-12)
+    np.testing.assert_allclose(generalized_hartley(corners, base=2.0), np.log2(3), atol=1e-12)
+    np.testing.assert_allclose(generalized_hartley(corners, base="normalize"), 1.0, atol=1e-12)

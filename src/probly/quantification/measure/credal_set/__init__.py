@@ -21,8 +21,6 @@ from ._common import (
 @_take_along_axis.delayed_register(TORCH_VALUE)
 @_where.delayed_register(TORCH_VALUE)
 @upper_entropy.delayed_register(TORCH_VALUE)
-@lower_entropy.delayed_register(TORCH_VALUE)
-@generalized_hartley.delayed_register(TORCH_VALUE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
@@ -33,8 +31,6 @@ def _(_: type) -> None:
 @_take_along_axis.delayed_register(JAX_VALUE)
 @_where.delayed_register(JAX_VALUE)
 @upper_entropy.delayed_register(JAX_VALUE)
-@lower_entropy.delayed_register(JAX_VALUE)
-@generalized_hartley.delayed_register(JAX_VALUE)
 def _(_: type) -> None:
     from . import jax as jax  # noqa: PLC0415
 

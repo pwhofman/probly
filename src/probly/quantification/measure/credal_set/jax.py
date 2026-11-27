@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from itertools import chain, combinations
-import math
-
 import jax
 from jax.core import Tracer
 import jax.numpy as jnp
@@ -14,7 +11,6 @@ from probly.representation.credal_set.jax import JaxConvexCredalSet
 from probly.utils.jax import jax_entropy
 
 from ._common import (
-    Approximate,
     LogBase,
     _amax,
     _amin,
@@ -22,8 +18,6 @@ from ._common import (
     _constant_like,
     _take_along_axis,
     _where,
-    generalized_hartley,
-    lower_entropy,
     upper_entropy,
 )
 
@@ -160,68 +154,4 @@ def jax_convex_upper_entropy(
     result = _apply_base(jax_entropy(p).reshape(batch_shape), credal_set.num_classes, base)
     if return_distribution:
         return result, p.reshape(*batch_shape, n_classes)
-    return result
-
-
-@lower_entropy.register(JaxConvexCredalSet)
-def jax_convex_lower_entropy(
-    credal_set: JaxConvexCredalSet,
-    base: LogBase = None,
-    *,
-    return_distribution: bool = False,
-    approximate: Approximate = "auto",
-) -> jax.Array | tuple[jax.Array, jax.Array]:
-    """Compute the lower entropy of a convex hull credal set.
-
-    Since entropy is concave, the minimum over a convex hull is always at a vertex.
-    The result is exact for every value of ``approximate``.
-    """
-    del approximate
-    vertices = credal_set.tensor.probabilities
-    vertex_entropies = jax_entropy(vertices)
-    if return_distribution:
-        min_idx = jnp.argmin(vertex_entropies, axis=-1)
-        min_h = jnp.min(vertex_entropies, axis=-1)
-        gather_idx = jnp.expand_dims(jnp.expand_dims(min_idx, axis=-1), axis=-1)
-        best_p = jnp.squeeze(jnp.take_along_axis(vertices, gather_idx, axis=-2), axis=-2)
-        return _apply_base(min_h, credal_set.num_classes, base), best_p
-    return _apply_base(jnp.min(vertex_entropies, axis=-1), credal_set.num_classes, base)
-
-
-def _lower_probability(vertices: jax.Array, subset: tuple[int, ...]) -> jax.Array:
-    """Lower probability ``P_*(A) = min_v sum_{i in A} v_i``, shape ``(...)``."""
-    if not subset:
-        return jnp.zeros(vertices.shape[:-2], dtype=vertices.dtype)
-    selected = jnp.take(vertices, jnp.asarray(subset), axis=-1)
-    return jnp.min(jnp.sum(selected, axis=-1), axis=-1)
-
-
-def _moebius(vertices: jax.Array, subset: tuple[int, ...]) -> jax.Array:
-    """Mobius mass ``m(A)`` via inclusion-exclusion over all subsets of ``A``."""
-    result = jnp.zeros(vertices.shape[:-2], dtype=vertices.dtype)
-    for r in range(len(subset) + 1):
-        sign = (-1) ** (len(subset) - r)
-        for b in combinations(list(subset), r):
-            result = result + sign * _lower_probability(vertices, b)
-    return result
-
-
-@generalized_hartley.register(JaxConvexCredalSet)
-def jax_convex_generalized_hartley(
-    credal_set: JaxConvexCredalSet,
-    base: LogBase = None,
-) -> jax.Array:
-    """Compute the generalized Hartley measure of a convex credal set.
-
-    Based on :cite:`abellanDisaggregatedTotal2006`. Computed via the Mobius
-    transform of the lower probability function over all subsets of the class
-    space.
-    """
-    vertices = credal_set.tensor.probabilities
-    n_classes = credal_set.num_classes
-    log_b = None if base is None else math.log(n_classes if base == "normalize" else base)  # type: ignore[arg-type]
-    result = jnp.zeros(vertices.shape[:-2], dtype=vertices.dtype)
-    for a in chain.from_iterable(combinations(range(n_classes), r) for r in range(1, n_classes + 1)):
-        log_a = math.log(len(a)) / log_b if log_b else math.log(len(a))
-        result = result + _moebius(vertices, a) * log_a
     return result

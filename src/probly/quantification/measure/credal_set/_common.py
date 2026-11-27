@@ -11,6 +11,7 @@ from flextype import Flexdispatch, flexdispatch
 import numpy as np
 
 from probly.representation.credal_set._common import (
+    ConvexCredalSet,
     DirichletLevelSetCredalSet,
     DistanceBasedCredalSet,
     ProbabilityIntervalsCredalSet,
@@ -596,3 +597,60 @@ def _distance_based_lower_entropy(
     if return_distribution:
         return result, p
     return result
+
+
+def _vertices(credal_set: ConvexCredalSet) -> _Array:
+    """Return the vertex probabilities ``(..., V, K)`` of a convex credal set."""
+    (vertices,) = cast("Any", credal_set).protected_values().values()
+    return vertices.probabilities
+
+
+@lower_entropy.register(ConvexCredalSet)
+def _convex_lower_entropy(
+    credal_set: ConvexCredalSet,
+    base: LogBase = None,
+    *,
+    return_distribution: bool = False,
+    approximate: Approximate = "auto",
+) -> NativeArray | tuple[NativeArray, NativeArray]:
+    """Compute the lower entropy of a convex hull credal set.
+
+    Since entropy is concave, the minimum over a convex hull is at a vertex. The result is exact for every value of
+    ``approximate``.
+    """
+    del approximate
+    vertices = _vertices(credal_set)
+    vertex_entropies = _entropy(vertices)  # (..., V)
+    result = _apply_base(_amin(vertex_entropies), credal_set.num_classes, base)
+    if return_distribution:
+        index = vertex_entropies.argmin(-1)[..., None, None]  # (..., 1, 1)
+        # Gather the minimizing vertex of every set along the vertex axis.
+        return result, _take_along_axis(vertices.swapaxes(-1, -2), index)[..., 0]
+    return result
+
+
+@cache
+def _generalized_hartley_coefficients(n_classes: int) -> np.ndarray:
+    """Return ``c(B) = sum_{A >= B} (-1)^(|A| - |B|) log|A|`` for every subset ``B``, in the order of ``_subsets``."""
+    codes = np.arange(2**n_classes)
+    coefficients = np.log(np.maximum(_subsets(n_classes).sum(-1), 1.0))
+    for i in range(n_classes):
+        without = (codes >> i) & 1 == 0
+        coefficients[without] -= coefficients[codes[without] | (1 << i)]
+    return coefficients
+
+
+@generalized_hartley.register(ConvexCredalSet)
+def _convex_generalized_hartley(credal_set: ConvexCredalSet, base: LogBase = None) -> NativeArray:
+    """Compute the generalized Hartley measure of a convex credal set.
+
+    Based on :cite:`abellanDisaggregatedTotal2006`. The measure is the sum of ``m(A) log|A|`` over the Moebius masses
+    ``m`` of the lower probability ``P(B) = min_v sum_{i in B} v_i``. The Moebius transform is linear, so the sum
+    equals ``sum_B P(B) c(B)`` with coefficients that depend only on the number of classes.
+    """
+    vertices = _vertices(credal_set)
+    n_classes = credal_set.num_classes
+    subset_probabilities = vertices @ _constant_like(vertices, _subsets(n_classes)).T  # (..., V, S)
+    lower_probabilities = _amin(subset_probabilities.swapaxes(-1, -2))  # (..., S)
+    result = lower_probabilities @ _constant_like(vertices, _generalized_hartley_coefficients(n_classes))
+    return _apply_base(result, n_classes, base)

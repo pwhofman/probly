@@ -2,16 +2,12 @@
 
 from __future__ import annotations
 
-from itertools import chain, combinations
-import math
-
 import torch
 
 from probly.representation.credal_set.torch import TorchConvexCredalSet
 from probly.utils.torch import torch_entropy
 
 from ._common import (
-    Approximate,
     LogBase,
     _amax,
     _amin,
@@ -19,8 +15,6 @@ from ._common import (
     _constant_like,
     _take_along_axis,
     _where,
-    generalized_hartley,
-    lower_entropy,
     upper_entropy,
 )
 
@@ -94,67 +88,4 @@ def torch_convex_upper_entropy(
     result = _apply_base(torch_entropy(p).reshape(batch_shape), credal_set.num_classes, base)
     if return_distribution:
         return result, p.reshape(*batch_shape, n_classes)
-    return result
-
-
-@lower_entropy.register(TorchConvexCredalSet)
-def torch_convex_lower_entropy(
-    credal_set: TorchConvexCredalSet,
-    base: LogBase = None,
-    *,
-    return_distribution: bool = False,
-    approximate: Approximate = "auto",
-) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
-    """Compute the lower entropy of a convex hull credal set.
-
-    Since entropy is concave, the minimum over a convex hull is always at a vertex.
-    The result is exact for every value of ``approximate``.
-    """
-    del approximate
-    vertices = credal_set.tensor.probabilities  # (..., n_vertices, n_classes)
-    vertex_entropies = torch_entropy(vertices)  # (..., n_vertices)
-    if return_distribution:
-        min_h, min_idx = vertex_entropies.min(-1)
-        n_classes = vertices.shape[-1]
-        gather_idx = min_idx.unsqueeze(-1).unsqueeze(-1).expand(*min_idx.shape, 1, n_classes)
-        best_p = vertices.gather(-2, gather_idx).squeeze(-2)
-        return _apply_base(min_h, credal_set.num_classes, base), best_p
-    return _apply_base(vertex_entropies.min(-1).values, credal_set.num_classes, base)
-
-
-def _lower_probability(vertices: torch.Tensor, subset: tuple[int, ...]) -> torch.Tensor:
-    """Upper probability P*(A) = max_v sum_{i in A} v_i, shape (...)."""
-    if not subset:
-        return vertices.new_zeros(vertices.shape[:-2])
-    return vertices[..., list(subset)].sum(-1).min(-1).values
-
-
-def _moebius(vertices: torch.Tensor, subset: tuple[int, ...]) -> torch.Tensor:
-    """Mobius mass m(A) via inclusion-exclusion over all subsets of A."""
-    result = vertices.new_zeros(vertices.shape[:-2])
-    for r in range(len(subset) + 1):
-        sign = (-1) ** (len(subset) - r)
-        for b in combinations(list(subset), r):
-            result = result + sign * _lower_probability(vertices, b)
-    return result
-
-
-@generalized_hartley.register(TorchConvexCredalSet)
-def torch_convex_generalized_hartley(
-    credal_set: TorchConvexCredalSet,
-    base: LogBase = None,
-) -> torch.Tensor:
-    """Compute the generalized Hartley measure of a convex credal set.
-
-    Based on :cite:`abellanDisaggregatedTotal2006`. Computed via the Mobius
-    transform of the lower probability function over all subsets of the class
-    space.
-    """
-    vertices = credal_set.tensor.probabilities  # (..., n_vertices, n_classes)
-    n_classes = credal_set.num_classes
-    log_b = None if base is None else math.log(n_classes if base == "normalize" else base)  # type: ignore[arg-type]
-    result = vertices.new_zeros(vertices.shape[:-2])
-    for a in chain.from_iterable(combinations(range(n_classes), r) for r in range(1, n_classes + 1)):
-        log_a = math.log(len(a)) / log_b if log_b else math.log(len(a))
-        result = result + _moebius(vertices, a) * log_a
     return result
