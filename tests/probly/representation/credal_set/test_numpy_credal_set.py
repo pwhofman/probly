@@ -7,6 +7,7 @@ import pytest
 
 from probly.representation.credal_set import (
     create_discrete_credal_set,
+    create_distance_based_credal_set_from_center_and_radius,
     create_probability_intervals,
     create_probability_intervals_from_bounds,
     create_probability_intervals_from_lower_upper_array,
@@ -141,6 +142,15 @@ class TestNumpyDistanceBasedCredalSet:
         assert isinstance(credal, NumpyDistanceBasedCredalSet)
         # Radius should equal the maximum TV distance to the mean.
         assert credal.radius.shape == (1,)
+
+    @pytest.mark.parametrize("wrap", [False, True])
+    def test_factory_from_center_and_radius(self, *, wrap: bool) -> None:
+        probs = np.array([[0.4, 0.6]])
+        center = NumpyProbabilityCategoricalDistribution(array=probs) if wrap else probs
+        cred = create_distance_based_credal_set_from_center_and_radius(center, np.array([0.1]))
+        assert isinstance(cred, NumpyDistanceBasedCredalSet)
+        np.testing.assert_allclose(cred.nominal.probabilities, probs)
+        np.testing.assert_allclose(cred.radius, [0.1])
 
     def test_lower_upper_barycenter_with_radius(self) -> None:
         cred = NumpyDistanceBasedCredalSet(
