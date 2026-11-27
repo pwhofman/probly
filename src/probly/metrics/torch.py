@@ -27,7 +27,6 @@ from probly.metrics._common import (
     _floating,
     _label_values,
     _log_probabilities,
-    _machine_epsilon,
     _one_hot_argmax,
     _probabilities,
     _validate_labels,
@@ -215,12 +214,6 @@ def _torch_label_values(values: torch.Tensor, y_true: object) -> torch.Tensor:
 def _torch_floating(values: torch.Tensor) -> torch.Tensor:
     """Cast a torch tensor to a floating dtype of at least single precision."""
     return values.to(torch.promote_types(values.dtype, torch.float32))
-
-
-@_machine_epsilon.register(torch.Tensor)
-def _torch_machine_epsilon(values: torch.Tensor) -> float:
-    """Return the machine epsilon of the dtype of a floating torch tensor."""
-    return torch.finfo(values.dtype).eps
 
 
 @convex_hull_coverage.register(TorchConvexCredalSet)

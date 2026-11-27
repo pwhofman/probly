@@ -7,7 +7,7 @@ from jax.core import Tracer
 import jax.numpy as jnp
 import numpy as np
 
-from ._common import elementwise_entropy, entropy, intersection_probability
+from ._common import elementwise_entropy, entropy, intersection_probability, machine_epsilon
 
 
 def jax_fresh_prng_key() -> jax.Array:
@@ -78,3 +78,16 @@ def jax_intersection_probability(lower: jnp.ndarray, upper: jnp.ndarray) -> jnp.
     denominator = jnp.where(slack_sum != 0, slack_sum, jnp.ones_like(slack_sum))
     weights = jnp.where(slack_sum != 0, slack / denominator, jnp.zeros_like(slack))
     return lower + remaining * weights
+
+
+@machine_epsilon.register((jax.Array, Tracer))
+def jax_machine_epsilon(values: jnp.ndarray) -> float:
+    """Machine epsilon of the floating dtype of a jax array.
+
+    Args:
+        values: Array of a floating dtype.
+
+    Returns:
+        Machine epsilon of the dtype of ``values``.
+    """
+    return float(jnp.finfo(values.dtype).eps)

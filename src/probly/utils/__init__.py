@@ -3,12 +3,13 @@
 from probly.lazy_types import JAX_VALUE, TORCH_VALUE
 
 from . import numpy as numpy
-from ._common import elementwise_entropy, entropy, intersection_probability
+from ._common import elementwise_entropy, entropy, intersection_probability, machine_epsilon
 
 
 @elementwise_entropy.delayed_register(TORCH_VALUE)
 @entropy.delayed_register(TORCH_VALUE)
 @intersection_probability.delayed_register(TORCH_VALUE)
+@machine_epsilon.delayed_register(TORCH_VALUE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
@@ -16,6 +17,7 @@ def _(_: type) -> None:
 @elementwise_entropy.delayed_register(JAX_VALUE)
 @entropy.delayed_register(JAX_VALUE)
 @intersection_probability.delayed_register(JAX_VALUE)
+@machine_epsilon.delayed_register(JAX_VALUE)
 def _(_: type) -> None:
     from . import jax as jax  # noqa: PLC0415
 
@@ -24,4 +26,5 @@ __all__ = [
     "elementwise_entropy",
     "entropy",
     "intersection_probability",
+    "machine_epsilon",
 ]

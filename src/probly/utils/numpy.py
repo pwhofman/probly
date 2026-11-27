@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ._common import elementwise_entropy, entropy
+from ._common import elementwise_entropy, entropy, machine_epsilon
 
 
 @elementwise_entropy.register(np.ndarray)
@@ -33,3 +33,16 @@ def numpy_entropy(p: np.ndarray) -> np.ndarray:
     """
     result = numpy_elementwise_entropy(p).sum(axis=-1)
     return np.clip(result, 0.0, None) + 0.0  # Ensure non-negativity
+
+
+@machine_epsilon.register(np.ndarray)
+def numpy_machine_epsilon(values: np.ndarray) -> float:
+    """Machine epsilon of the floating dtype of a numpy array.
+
+    Args:
+        values: Array of a floating dtype.
+
+    Returns:
+        Machine epsilon of the dtype of ``values``.
+    """
+    return float(np.finfo(values.dtype).eps)
