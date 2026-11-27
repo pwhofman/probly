@@ -346,6 +346,7 @@ class NumpySingletonCredalSet(
 
 
 create_probability_intervals.register(NumpyCategoricalDistribution, NumpyProbabilityIntervalsCredalSet.from_sample)
+create_probability_intervals.register(NumpySample, NumpyProbabilityIntervalsCredalSet.from_numpy_sample)
 create_convex_credal_set.register(NumpySample, NumpyConvexCredalSet.from_numpy_sample)
 create_discrete_credal_set.register(NumpySample, NumpyDiscreteCredalSet.from_numpy_sample)
 create_distance_based_credal_set.register(NumpySample, NumpyDistanceBasedCredalSet.from_numpy_sample)
