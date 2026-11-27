@@ -8,10 +8,12 @@ from scipy.optimize import linprog
 
 from probly.quantification import quantify
 from probly.quantification.measure.credal_set import lower_entropy, upper_entropy
-from probly.representation.credal_set.numpy import NumpyProbabilityIntervalsCredalSet
+from probly.representation.credal_set.numpy import NumpyDistanceBasedCredalSet, NumpyProbabilityIntervalsCredalSet
+from probly.representation.distribution.numpy_categorical import NumpyProbabilityCategoricalDistribution
 
 from ._entropy_suite import (
     DTYPES,
+    DistanceBasedEntropySuite,
     IntervalLowerEntropySuite,
     assert_in_intervals,
     entropy,
@@ -26,6 +28,12 @@ class _NumpyBackend:
     @staticmethod
     def intervals(lower: np.ndarray, upper: np.ndarray) -> NumpyProbabilityIntervalsCredalSet:
         return NumpyProbabilityIntervalsCredalSet(lower_bounds=np.asarray(lower), upper_bounds=np.asarray(upper))
+
+    @staticmethod
+    def distance(nominal: np.ndarray, radius: np.ndarray) -> NumpyDistanceBasedCredalSet:
+        return NumpyDistanceBasedCredalSet(
+            nominal=NumpyProbabilityCategoricalDistribution(np.asarray(nominal)), radius=np.asarray(radius)
+        )
 
     @staticmethod
     def numpy(value: np.ndarray) -> np.ndarray:
@@ -99,3 +107,37 @@ def test_intervals_quantify_decomposes_into_upper_and_lower_entropy() -> None:
     np.testing.assert_allclose(decomposition.aleatoric, lower_entropy(credal_set))
     np.testing.assert_allclose(decomposition.epistemic, decomposition.total - decomposition.aleatoric)
     assert np.all(decomposition.epistemic >= 0.0)
+
+
+# ---------------------------------------------------------------------------
+# Distance-based credal sets (total variation balls)
+# ---------------------------------------------------------------------------
+
+
+class TestNumpyDistanceBasedEntropy(DistanceBasedEntropySuite):
+    """Total-variation ball entropies on numpy arrays."""
+
+
+def test_distance_lower_entropy_is_exact_for_every_approximate_value() -> None:
+    credal_set = _NumpyBackend.distance(np.array([0.3, 0.2, 0.5]), np.array(0.1))
+    for approximate in (False, True, "auto"):
+        np.testing.assert_allclose(lower_entropy(credal_set, approximate=approximate), lower_entropy(credal_set))
+
+
+def test_quantify_distance_based_uses_the_ball() -> None:
+    """End to end: quantify on total-variation sets gives the entropies of the ball, not of its box.
+
+    Around (.5, .5, 0, 0) with radius .3 the maximum lowers the two large classes to .35 and
+    raises the empty ones to .15. Around the uniform distribution with radius .25 the minimum
+    moves .25 into one class from one other class.
+    """
+    nominal = np.array([[0.5, 0.5, 0.0, 0.0], [0.25, 0.25, 0.25, 0.25]])
+    credal_set = _NumpyBackend.distance(nominal, np.array([0.3, 0.25]))
+
+    decomposition = quantify(credal_set)
+
+    expected_total = entropy(np.array([[0.35, 0.35, 0.15, 0.15], [0.25, 0.25, 0.25, 0.25]]))
+    expected_aleatoric = entropy(np.array([[0.8, 0.2, 0.0, 0.0], [0.5, 0.25, 0.25, 0.0]]))
+    np.testing.assert_allclose(decomposition.total, expected_total, atol=1e-12)
+    np.testing.assert_allclose(decomposition.aleatoric, expected_aleatoric, atol=1e-12)
+    np.testing.assert_allclose(decomposition.epistemic, expected_total - expected_aleatoric, atol=1e-12)

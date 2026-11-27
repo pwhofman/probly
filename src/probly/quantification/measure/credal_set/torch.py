@@ -7,12 +7,14 @@ import math
 
 import torch
 
-from probly.representation.credal_set.torch import TorchConvexCredalSet, TorchDistanceBasedCredalSet
+from probly.representation.credal_set.torch import TorchConvexCredalSet
 from probly.utils.torch import torch_entropy
 
 from ._common import (
     Approximate,
     LogBase,
+    _amax,
+    _amin,
     _apply_base,
     _constant_like,
     _take_along_axis,
@@ -22,7 +24,6 @@ from ._common import (
     upper_entropy,
 )
 
-_BISECT_ITERS = 64
 _LBFGS_ITERS = 128
 
 
@@ -44,72 +45,16 @@ def _torch_where(condition: torch.Tensor, a: torch.Tensor | float, b: torch.Tens
     return torch.where(condition, a, b)
 
 
-@upper_entropy.register(TorchDistanceBasedCredalSet)
-def torch_distance_based_upper_entropy(
-    credal_set: TorchDistanceBasedCredalSet,
-    base: LogBase = None,
-    *,
-    return_distribution: bool = False,
-) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
-    """Compute the upper entropy of a distance-based credal set.
-
-    The TV ball {p : TV(p, p_hat) <= r} implies per-class bounds
-    lower_i = max(0, p_hat_i - r), upper_i = min(1, p_hat_i + r).
-    Uses bisection on the Lagrange multiplier for sum(p) = 1.
-    """
-    lower = credal_set.lower()
-    upper = credal_set.upper()
-    lo = 1.0 + lower.amin(dim=-1).clamp_min(torch.finfo(lower.dtype).tiny).log()
-    hi = lower.new_ones(lower.shape[:-1])
-    for _ in range(_BISECT_ITERS):
-        mu = (lo + hi) / 2
-        g = torch.clamp((mu.unsqueeze(-1) - 1).exp(), lower, upper).sum(-1) - 1.0
-        lo = torch.where(g < 0, mu, lo)
-        hi = torch.where(g >= 0, mu, hi)
-    mu = (lo + hi) / 2
-    p = torch.clamp((mu.unsqueeze(-1) - 1).exp(), lower, upper)
-    result = _apply_base(torch_entropy(p), credal_set.num_classes, base)
-    if return_distribution:
-        return result, p
-    return result
+@_amin.register(torch.Tensor)
+def _torch_amin(values: torch.Tensor) -> torch.Tensor:
+    """Return the minimum along the last dimension."""
+    return values.amin(dim=-1)
 
 
-@lower_entropy.register_approx(TorchDistanceBasedCredalSet)
-def torch_distance_based_lower_entropy(
-    credal_set: TorchDistanceBasedCredalSet,
-    base: LogBase = None,
-    *,
-    return_distribution: bool = False,
-) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
-    """Compute the lower entropy of a distance-based credal set.
-
-    The TV ball implies per-class bounds. Since entropy is concave, the
-    minimum is at an extreme point of the polytope. Greedy heuristic tries
-    each class as the primary recipient of excess mass.
-    """
-    lower = credal_set.lower()
-    upper = credal_set.upper()
-    n_classes = lower.shape[-1]
-    capacity = upper - lower
-    residual = 1.0 - lower.sum(-1)
-    best = lower.new_full(lower.shape[:-1], float("inf"))
-    best_p = torch.empty_like(lower)
-    for j in range(n_classes):
-        p = lower.detach().clone()
-        rem = residual.clone()
-        for i in [j, *[k for k in range(n_classes) if k != j]]:
-            fill = torch.minimum(rem.clamp(min=0.0), capacity[..., i])
-            p[..., i] = p[..., i] + fill
-            rem = rem - fill
-        h = torch_entropy(p)
-        if return_distribution:
-            improved = h < best
-            best_p = torch.where(improved.unsqueeze(-1), p, best_p)
-        best = torch.minimum(best, h)
-    result = _apply_base(best, credal_set.num_classes, base)
-    if return_distribution:
-        return result, best_p
-    return result
+@_amax.register(torch.Tensor)
+def _torch_amax(values: torch.Tensor) -> torch.Tensor:
+    """Return the maximum along the last dimension."""
+    return values.amax(dim=-1)
 
 
 @upper_entropy.register(TorchConvexCredalSet)

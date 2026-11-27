@@ -10,12 +10,14 @@ from jax.core import Tracer
 import jax.numpy as jnp
 import jax.scipy.optimize
 
-from probly.representation.credal_set.jax import JaxConvexCredalSet, JaxDistanceBasedCredalSet
+from probly.representation.credal_set.jax import JaxConvexCredalSet
 from probly.utils.jax import jax_entropy
 
 from ._common import (
     Approximate,
     LogBase,
+    _amax,
+    _amin,
     _apply_base,
     _constant_like,
     _take_along_axis,
@@ -25,7 +27,6 @@ from ._common import (
     upper_entropy,
 )
 
-_BISECT_ITERS = 64
 _BFGS_ITERS = 128
 _FRANK_WOLFE_ITERS = 512
 _FRANK_WOLFE_TOL = 1e-5
@@ -50,103 +51,16 @@ def _jax_where(condition: jax.Array, a: jax.Array | float, b: jax.Array | float)
     return jnp.where(condition, a, b)
 
 
-def _max_entropy_distribution(lower: jax.Array, upper: jax.Array) -> jax.Array:
-    """Maximize entropy over ``{p : lower <= p <= upper, sum(p) = 1}``.
-
-    The KKT conditions give ``p_i = clip(exp(mu - 1), lower_i, upper_i)`` where
-    ``mu`` is the Lagrange multiplier for ``sum(p) = 1``. Since the sum is
-    monotone in ``mu``, bisection finds the unique root.
-
-    Args:
-        lower: Lower probability envelope of shape ``(..., C)``.
-        upper: Upper probability envelope of shape ``(..., C)``.
-
-    Returns:
-        The maximum-entropy distribution of shape ``(..., C)``.
-    """
-    tiny = float(jnp.finfo(lower.dtype).tiny)
-    lo = 1.0 + jnp.log(jnp.clip(jnp.min(lower, axis=-1), min=tiny))
-    hi = jnp.ones(lower.shape[:-1], dtype=lower.dtype)
-    for _ in range(_BISECT_ITERS):
-        mu = (lo + hi) / 2
-        g = jnp.sum(jnp.clip(jnp.exp(jnp.expand_dims(mu, axis=-1) - 1), lower, upper), axis=-1) - 1.0
-        lo = jnp.where(g < 0, mu, lo)
-        hi = jnp.where(g >= 0, mu, hi)
-    mu = (lo + hi) / 2
-    return jnp.clip(jnp.exp(jnp.expand_dims(mu, axis=-1) - 1), lower, upper)
+@_amin.register((jax.Array, Tracer))
+def _jax_amin(values: jax.Array) -> jax.Array:
+    """Return the minimum along the last axis."""
+    return values.min(axis=-1)
 
 
-def _approximate_min_entropy_distribution(lower: jax.Array, upper: jax.Array) -> tuple[jax.Array, jax.Array]:
-    """Minimize entropy over ``{p : lower <= p <= upper, sum(p) = 1}``.
-
-    Since entropy is concave the minimum is at an extreme point of the polytope.
-    This greedy heuristic tries each class as the primary recipient of excess
-    mass and keeps the configuration with the lowest entropy found.
-
-    Args:
-        lower: Lower probability envelope of shape ``(..., C)``.
-        upper: Upper probability envelope of shape ``(..., C)``.
-
-    Returns:
-        Tuple of ``(entropies, distributions)`` of shapes ``(...)`` and ``(..., C)``.
-    """
-    n_classes = lower.shape[-1]
-    capacity = upper - lower
-    residual = 1.0 - jnp.sum(lower, axis=-1)
-    best = jnp.full(lower.shape[:-1], jnp.inf, dtype=lower.dtype)
-    best_p = jnp.zeros_like(lower)
-    for j in range(n_classes):
-        p = lower
-        rem = residual
-        for i in [j, *[k for k in range(n_classes) if k != j]]:
-            fill = jnp.minimum(jnp.clip(rem, min=0.0), capacity[..., i])
-            p = p.at[..., i].add(fill)
-            rem = rem - fill
-        h = jax_entropy(p)
-        improved = h < best
-        best_p = jnp.where(jnp.expand_dims(improved, axis=-1), p, best_p)
-        best = jnp.minimum(best, h)
-    return best, best_p
-
-
-@upper_entropy.register(JaxDistanceBasedCredalSet)
-def jax_distance_based_upper_entropy(
-    credal_set: JaxDistanceBasedCredalSet,
-    base: LogBase = None,
-    *,
-    return_distribution: bool = False,
-) -> jax.Array | tuple[jax.Array, jax.Array]:
-    """Compute the upper entropy of a distance-based credal set.
-
-    The TV ball ``{p : TV(p, p_hat) <= r}`` implies per-class bounds
-    ``lower_i = max(0, p_hat_i - r)`` and ``upper_i = min(1, p_hat_i + r)``.
-    Uses bisection on the Lagrange multiplier for ``sum(p) = 1``.
-    """
-    p = _max_entropy_distribution(credal_set.lower(), credal_set.upper())
-    result = _apply_base(jax_entropy(p), credal_set.num_classes, base)
-    if return_distribution:
-        return result, p
-    return result
-
-
-@lower_entropy.register_approx(JaxDistanceBasedCredalSet)
-def jax_distance_based_lower_entropy(
-    credal_set: JaxDistanceBasedCredalSet,
-    base: LogBase = None,
-    *,
-    return_distribution: bool = False,
-) -> jax.Array | tuple[jax.Array, jax.Array]:
-    """Compute the lower entropy of a distance-based credal set.
-
-    The TV ball implies per-class bounds. Since entropy is concave, the minimum
-    is at an extreme point of the polytope; a greedy heuristic tries each class
-    as the primary recipient of excess mass.
-    """
-    best, best_p = _approximate_min_entropy_distribution(credal_set.lower(), credal_set.upper())
-    result = _apply_base(best, credal_set.num_classes, base)
-    if return_distribution:
-        return result, best_p
-    return result
+@_amax.register((jax.Array, Tracer))
+def _jax_amax(values: jax.Array) -> jax.Array:
+    """Return the maximum along the last axis."""
+    return values.max(axis=-1)
 
 
 def _convex_entropy_fallback(vertices: jax.Array, weights: jax.Array) -> jax.Array:

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ._common import _constant_like, _take_along_axis, _where
+from ._common import _amax, _amin, _constant_like, _take_along_axis, _where
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike
@@ -30,3 +30,15 @@ def _numpy_constant_like(reference: np.ndarray, values: object) -> np.ndarray:
 def _numpy_where(condition: np.ndarray | np.generic, a: ArrayLike, b: ArrayLike) -> np.ndarray:
     """Choose between two arrays by a boolean condition."""
     return np.where(condition, a, b)
+
+
+@_amin.register(np.ndarray)
+def _numpy_amin(values: np.ndarray) -> np.ndarray:
+    """Return the minimum along the last axis."""
+    return values.min(axis=-1)
+
+
+@_amax.register(np.ndarray)
+def _numpy_amax(values: np.ndarray) -> np.ndarray:
+    """Return the maximum along the last axis."""
+    return values.max(axis=-1)

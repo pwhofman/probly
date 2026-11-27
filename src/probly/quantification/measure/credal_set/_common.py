@@ -12,6 +12,7 @@ import numpy as np
 
 from probly.representation.credal_set._common import (
     DirichletLevelSetCredalSet,
+    DistanceBasedCredalSet,
     ProbabilityIntervalsCredalSet,
 )
 from probly.utils import elementwise_entropy, entropy, machine_epsilon
@@ -202,7 +203,7 @@ def lower_entropy(
     - ``"auto"`` (default): exactly for up to 14 classes, and with the greedy search and a warning for
       more classes.
 
-    Distance-based credal sets only have an approximate lower entropy implementation.
+    Distance-based credal sets have an exact lower entropy for every value of ``approximate``.
     Dirichlet level sets use sampled per-class bounds; their ``approximate`` option
     controls entropy optimization over those bounds, not the sampling approximation.
     """
@@ -253,7 +254,7 @@ def generalized_hartley(credal_set: CredalSet, base: LogBase = None) -> WeakArra
     raise NotImplementedError(msg)
 
 
-# The measures below are implemented once for every backend. They need three array operations that the backends
+# The measures below are implemented once for every backend. They need five array operations that the backends
 # spell differently, each registered with the backend's own function.
 @flexdispatch
 def _take_along_axis[A: NativeArray](values: A, indices: object) -> A:
@@ -276,6 +277,20 @@ def _constant_like[A: NativeArray](reference: A, values: object) -> A:
 def _where[A: NativeArray](condition: A, a: object, b: object) -> A:
     """Choose ``a`` where the boolean array ``condition`` holds and ``b`` elsewhere."""
     msg = f"Credal set measures are not implemented for arrays of type {type(condition).__name__}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def _amin[A: NativeArray](values: A) -> A:
+    """Return the minimum of ``values`` along the last axis."""
+    msg = f"Credal set measures are not implemented for arrays of type {type(values).__name__}."
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def _amax[A: NativeArray](values: A) -> A:
+    """Return the maximum of ``values`` along the last axis."""
+    msg = f"Credal set measures are not implemented for arrays of type {type(values).__name__}."
     raise NotImplementedError(msg)
 
 
@@ -464,4 +479,120 @@ def _envelope_lower_entropy(
     result = _apply_base(best, credal_set.num_classes, base)
     if return_distribution:
         return result, best_p
+    return result
+
+
+def _nominal_and_radius(credal_set: DistanceBasedCredalSet) -> tuple[_Array, _Array]:
+    """Return the nominal distributions ``(..., K)`` and the radii of a distance-based credal set.
+
+    As in ``lower()`` and ``upper()``, radii with one entry per set get a trailing axis, ``(..., 1)``, and any other
+    radius is left to broadcast. A negative radius counts as zero and a radius above one as one, the largest total
+    variation distance between two distributions.
+    """
+    nominal: _Array = credal_set.nominal.probabilities
+    radius: _Array = credal_set.radius
+    if radius.ndim == nominal.ndim - 1:
+        radius = radius[..., None]
+    return nominal, radius.clip(0.0, 1.0)
+
+
+def _total_variation_max_entropy_distribution(nominal: _Array, radius: _Array) -> _Array:
+    """Maximize entropy over the total variation ball ``{p : TV(p, nominal) <= radius}``.
+
+    The maximum moves mass from the largest classes to the smallest: the classes below a level ``low`` rise to
+    ``low`` and the classes above a level ``high`` drop to ``high``, so that the same mass ``m`` is added and removed.
+    Moving more mass raises the entropy until the levels meet at the uniform distribution, so
+    ``m = min(radius, TV(nominal, uniform))``. With the classes sorted, ``low = min_k (m + S_k) / k`` over the sums
+    ``S_k`` of the ``k`` smallest classes and ``high = max_k (T_k - m) / k`` over the sums ``T_k`` of the ``k``
+    largest.
+
+    Args:
+        nominal: Nominal distributions of shape ``(..., K)``.
+        radius: Radii in ``[0, 1]`` of shape ``(..., 1)``.
+
+    Returns:
+        The maximum-entropy distributions of shape ``(..., K)``.
+    """
+    n_classes = nominal.shape[-1]
+    uniform = nominal.sum(-1)[..., None] / n_classes
+    distance_to_uniform = (nominal - uniform).clip(0.0).sum(-1)[..., None]
+    mass = radius.clip(None, distance_to_uniform)
+    counts = _constant_like(nominal, list(range(1, n_classes + 1)))
+    ascending = _take_along_axis(nominal, nominal.argsort(-1))
+    descending = _take_along_axis(nominal, (-nominal).argsort(-1))
+    low = _amin((mass + ascending.cumsum(-1)) / counts)[..., None]
+    high = _amax((descending.cumsum(-1) - mass) / counts)[..., None]
+    return nominal.clip(low, high)
+
+
+def _total_variation_min_entropy_distribution(nominal: _Array, radius: _Array) -> _Array:
+    """Minimize entropy over the total variation ball ``{p : TV(p, nominal) <= radius}``.
+
+    Entropy is concave, so the minimum is at a vertex of the ball, where one class gains mass and the others lose
+    it. Giving the mass to the largest class and taking it from the smallest classes first gives the most
+    concentrated distribution in the ball, so this is the minimum. The largest class can take at most the mass of
+    the other classes, so the mass moved is ``m = min(radius, 1 - max(nominal))``.
+
+    Args:
+        nominal: Nominal distributions of shape ``(..., K)``.
+        radius: Radii in ``[0, 1]`` of shape ``(..., 1)``.
+
+    Returns:
+        The minimum-entropy distributions of shape ``(..., K)``.
+    """
+    n_classes = nominal.shape[-1]
+    if n_classes == 1:
+        return nominal
+    classes = _constant_like(nominal, list(range(n_classes)))
+    is_largest = classes == nominal.argmax(-1)[..., None]
+    # Sort the donors, the classes other than the largest, in ascending order; the largest class comes last.
+    order = _where(is_largest, math.inf, nominal).argsort(-1)
+    ascending = _take_along_axis(nominal, order)
+    cumulative = ascending.cumsum(-1)
+    # The largest class can take at most the mass of the donors, computed from the same cumulative sum that empties
+    # them, so that emptied classes are exactly zero.
+    mass = radius.clip(None, cumulative[..., -2:-1])
+    # Empty the smallest donors in turn until the mass is taken.
+    kept = (cumulative - mass).clip(0.0).clip(None, ascending)
+    moved = _where(classes == n_classes - 1, ascending + mass, kept)
+    return _take_along_axis(moved, order.argsort(-1))
+
+
+@upper_entropy.register(DistanceBasedCredalSet)
+def _distance_based_upper_entropy(
+    credal_set: DistanceBasedCredalSet,
+    base: LogBase = None,
+    *,
+    return_distribution: bool = False,
+) -> NativeArray | tuple[NativeArray, NativeArray]:
+    """Compute the upper entropy of a distance-based credal set.
+
+    Maximize entropy over the total variation ball ``{p : TV(p, nominal) <= radius}`` by moving mass from the largest
+    classes to the smallest. The result is exact.
+    """
+    p = _total_variation_max_entropy_distribution(*_nominal_and_radius(credal_set))
+    result = _apply_base(_entropy(p), credal_set.num_classes, base)
+    if return_distribution:
+        return result, p
+    return result
+
+
+@lower_entropy.register(DistanceBasedCredalSet)
+def _distance_based_lower_entropy(
+    credal_set: DistanceBasedCredalSet,
+    base: LogBase = None,
+    *,
+    return_distribution: bool = False,
+    approximate: Approximate = "auto",
+) -> NativeArray | tuple[NativeArray, NativeArray]:
+    """Compute the lower entropy of a distance-based credal set.
+
+    Minimize entropy over the total variation ball ``{p : TV(p, nominal) <= radius}`` by moving mass into the largest
+    class, taken from the smallest classes first. The result is exact for every value of ``approximate``.
+    """
+    del approximate
+    p = _total_variation_min_entropy_distribution(*_nominal_and_radius(credal_set))
+    result = _apply_base(_entropy(p), credal_set.num_classes, base)
+    if return_distribution:
+        return result, p
     return result

@@ -20,11 +20,14 @@ import numpy as np
 import torch
 
 from probly.quantification.measure.credal_set import lower_entropy, upper_entropy
-from probly.representation.credal_set.jax import JaxProbabilityIntervalsCredalSet
-from probly.representation.credal_set.numpy import NumpyProbabilityIntervalsCredalSet
-from probly.representation.credal_set.torch import TorchProbabilityIntervalsCredalSet
+from probly.representation.credal_set.jax import JaxDistanceBasedCredalSet, JaxProbabilityIntervalsCredalSet
+from probly.representation.credal_set.numpy import NumpyDistanceBasedCredalSet, NumpyProbabilityIntervalsCredalSet
+from probly.representation.credal_set.torch import TorchDistanceBasedCredalSet, TorchProbabilityIntervalsCredalSet
+from probly.representation.distribution.jax_categorical import JaxProbabilityCategoricalDistribution
+from probly.representation.distribution.numpy_categorical import NumpyProbabilityCategoricalDistribution
+from probly.representation.distribution.torch_categorical import TorchProbabilityCategoricalDistribution
 
-from ._entropy_suite import DTYPES, EXACT_MAX_CLASSES, random_intervals
+from ._entropy_suite import DTYPES, EXACT_MAX_CLASSES, random_intervals, random_tv_ball
 
 
 @pytest.fixture(autouse=True)
@@ -91,6 +94,32 @@ def test_intervals_upper_entropy_parity(dtype: type[np.floating], n_classes: int
     results = {}
     for backend, credal_set in credal_sets.items():
         value, p = upper_entropy(credal_set, return_distribution=True)
+        results[backend] = (np.asarray(value), np.asarray(p))
+
+    _assert_parity(results, dtype)
+
+
+@DTYPES
+@pytest.mark.parametrize("n_classes", [2, 4, 10, 50])
+@pytest.mark.parametrize("measure", [upper_entropy, lower_entropy], ids=["upper", "lower"])
+def test_distance_based_entropy_parity(dtype: type[np.floating], n_classes: int, measure) -> None:
+    rng = np.random.default_rng(n_classes)
+    balls = [random_tv_ball(rng, kind, n_classes) for kind in ["softmax", "dirichlet", "sparse"] * 5]
+    nominal = np.stack([b[0] for b in balls]).astype(dtype)
+    radius = np.array([b[1] for b in balls], dtype=dtype)
+    credal_sets = {
+        "numpy": NumpyDistanceBasedCredalSet(NumpyProbabilityCategoricalDistribution(nominal), radius),
+        "torch": TorchDistanceBasedCredalSet(
+            TorchProbabilityCategoricalDistribution(torch.as_tensor(nominal)), torch.as_tensor(radius)
+        ),
+        "jax": JaxDistanceBasedCredalSet(
+            JaxProbabilityCategoricalDistribution(jnp.asarray(nominal)), jnp.asarray(radius)
+        ),
+    }
+
+    results = {}
+    for backend, credal_set in credal_sets.items():
+        value, p = measure(credal_set, return_distribution=True)
         results[backend] = (np.asarray(value), np.asarray(p))
 
     _assert_parity(results, dtype)
