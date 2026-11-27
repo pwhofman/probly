@@ -21,6 +21,7 @@ from probly.representation.credal_set._common import (
     create_distance_based_credal_set,
     create_distance_based_credal_set_from_center_and_radius,
     create_probability_intervals,
+    create_probability_intervals_from_bounds,
     create_probability_intervals_from_lower_upper_array,
     create_singleton_credal_set,
 )
@@ -361,6 +362,13 @@ def _create_singleton_credal_set(distribution: NumpyCategoricalDistribution | np
 def _create_probability_intervals_from_lower_upper_array(bounds: np.ndarray) -> NumpyProbabilityIntervalsCredalSet:
     reshaped = bounds.reshape(*bounds.shape[:-1], 2, -1)
     return NumpyProbabilityIntervalsCredalSet(lower_bounds=reshaped[..., 0, :], upper_bounds=reshaped[..., 1, :])
+
+
+@create_probability_intervals_from_bounds.register(np.ndarray)
+def _create_probability_intervals_from_bounds(
+    probs: np.ndarray, lower: np.ndarray, upper: np.ndarray
+) -> NumpyProbabilityIntervalsCredalSet:
+    return NumpyProbabilityIntervalsCredalSet(lower_bounds=probs - lower, upper_bounds=probs + upper)
 
 
 @create_distance_based_credal_set_from_center_and_radius.register(NumpyCategoricalDistribution)

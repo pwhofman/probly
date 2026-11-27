@@ -8,6 +8,7 @@ import pytest
 from probly.representation.credal_set import (
     create_discrete_credal_set,
     create_probability_intervals,
+    create_probability_intervals_from_bounds,
     create_probability_intervals_from_lower_upper_array,
     create_singleton_credal_set,
 )
@@ -214,6 +215,15 @@ class TestNumpyProbabilityIntervalsCredalSet:
         assert isinstance(cred, NumpyProbabilityIntervalsCredalSet)
         np.testing.assert_allclose(cred.lower(), [[0.1, 0.2, 0.3]])
         np.testing.assert_allclose(cred.upper(), [[0.4, 0.5, 0.6]])
+
+    def test_factory_from_bounds(self) -> None:
+        probs = np.array([[0.4, 0.6]])
+        lower = np.array([[0.1, 0.2]])
+        upper = np.array([[0.3, 0.1]])
+        cred = create_probability_intervals_from_bounds(probs, lower, upper)
+        assert isinstance(cred, NumpyProbabilityIntervalsCredalSet)
+        np.testing.assert_allclose(cred.lower(), [[0.3, 0.4]])
+        np.testing.assert_allclose(cred.upper(), [[0.7, 0.7]])
 
     def test_shape_mismatch_raises(self) -> None:
         with pytest.raises(ValueError, match="same shape"):
