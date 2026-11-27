@@ -37,7 +37,7 @@ jobs:
         id-token: write
     environment:
         name: github-pages
-        url: ${{ steps.deploy.outputs.page_url }}
+        url: ${{ steps.deploy.outputs.page_url || steps.deploy_retry_1.outputs.page_url || steps.deploy_retry_2.outputs.page_url }}
     env:
         GH_TOKEN: ${{ github.token }}
     steps:
@@ -105,6 +105,26 @@ jobs:
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
         with:
             path: 'site'
+      # deploy-pages looks the artifact up once, and the listing can lag the
+      # upload by up to a minute (actions/deploy-pages#451). Retry only the
+      # deploy: a second upload makes the lookup fail on duplicate artifacts.
+      # Drop the retries once actions/deploy-pages#455 is released.
       - name: Deploy to GitHub Pages
         id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        continue-on-error: true
+      - name: Wait for the Pages artifact to be listed
+        if: steps.deploy.outcome == 'failure'
+        run: sleep 10
+      - name: Deploy to GitHub Pages (retry 1)
+        id: deploy_retry_1
+        if: steps.deploy.outcome == 'failure'
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        continue-on-error: true
+      - name: Wait longer for the Pages artifact to be listed
+        if: steps.deploy_retry_1.outcome == 'failure'
+        run: sleep 60
+      - name: Deploy to GitHub Pages (retry 2)
+        id: deploy_retry_2
+        if: steps.deploy_retry_1.outcome == 'failure'
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
