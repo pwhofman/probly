@@ -97,6 +97,20 @@ class TestProbabilityIntervalsRepresenter:
         assert isinstance(sample, NumpySample)
         assert sample.sample_size == len(predictor)
 
+    def test_represent_returns_probability_intervals_numpy(self) -> None:
+        """``represent`` for a NumPy ensemble produces the envelope of the member predictions."""
+        from probly.method.credal_wrapper import CredalWrapperPredictor  # noqa: PLC0415
+        from probly.representation.credal_set import ProbabilityIntervalsCredalSet  # noqa: PLC0415
+
+        predictor = CredalWrapperPredictor.register_instance(_ensemble())
+        rep = ProbabilityIntervalsRepresenter(predictor)
+
+        cset = rep.represent()
+
+        assert isinstance(cset, ProbabilityIntervalsCredalSet)
+        np.testing.assert_allclose(cset.lower(), [0.3, 0.2])
+        np.testing.assert_allclose(cset.upper(), [0.8, 0.7])
+
     def test_represent_returns_probability_intervals_torch(self) -> None:
         """``represent`` for a torch ensemble produces a ProbabilityIntervalsCredalSet (lines 83-84)."""
         torch = pytest.importorskip("torch")

@@ -7,6 +7,7 @@ import pytest
 
 from probly.representation.credal_set import (
     create_discrete_credal_set,
+    create_probability_intervals,
     create_probability_intervals_from_lower_upper_array,
     create_singleton_credal_set,
 )
@@ -194,6 +195,18 @@ class TestNumpyProbabilityIntervalsCredalSet:
         # Should produce intervals from the min/max of the sample probabilities.
         np.testing.assert_allclose(credal.lower_bounds, [[0.3, 0.5]])
         np.testing.assert_allclose(credal.upper_bounds, [[0.5, 0.7]])
+
+    def test_factory_from_numpy_sample(self) -> None:
+        sample = NumpySample(
+            array=NumpyProbabilityCategoricalDistribution(
+                array=np.array([[[0.5, 0.5], [0.3, 0.7]]]),
+            ),
+            sample_axis=1,
+        )
+        credal = create_probability_intervals(sample)
+        assert isinstance(credal, NumpyProbabilityIntervalsCredalSet)
+        np.testing.assert_allclose(credal.lower(), [[0.3, 0.5]])
+        np.testing.assert_allclose(credal.upper(), [[0.5, 0.7]])
 
     def test_factory_from_lower_upper_array(self) -> None:
         bounds = np.array([[0.1, 0.2, 0.3, 0.4, 0.5, 0.6]])
