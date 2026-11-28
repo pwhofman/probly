@@ -4,13 +4,18 @@ from __future__ import annotations
 
 import pytest
 
-from probly.predictor import Predictor
+from probly.predictor import BinaryLogitClassifier, LogitClassifier, Predictor, ProbabilisticClassifier
 from probly.transformation.ensemble._common import EnsemblePredictor, register_ensemble_members
 from probly.transformation.transformation import current_predictor_type, predictor_transformation
 
 
 class PlainPredictor:
     def predict(self, value: object) -> object:
+        return value
+
+
+class ProbabilityPredictor:
+    def predict_proba(self, value: object) -> object:
         return value
 
 
@@ -21,6 +26,41 @@ def test_transformation_rejects_non_registry_predictor_type():
 
     with pytest.raises(TypeError, match="flextype instance registration"):
         identity(PlainPredictor(), predictor_type=PlainPredictor)
+
+
+def test_transformation_types_untyped_base():
+    @predictor_transformation((LogitClassifier,))
+    def identity(base):
+        return base
+
+    base = PlainPredictor()
+    identity(base)
+
+    assert isinstance(base, LogitClassifier)
+
+
+def test_transformation_refines_type_of_base():
+    @predictor_transformation((BinaryLogitClassifier,))
+    def identity(base):
+        return base
+
+    base = LogitClassifier.register_instance(PlainPredictor())
+    identity(base)
+
+    assert isinstance(base, BinaryLogitClassifier)
+
+
+@pytest.mark.parametrize("predictor_type", [LogitClassifier, BinaryLogitClassifier])
+def test_transformation_keeps_unrelated_type_of_base(predictor_type):
+    @predictor_transformation((predictor_type,))
+    def identity(base):
+        return base
+
+    base = ProbabilityPredictor()
+    identity(base)
+
+    assert isinstance(base, ProbabilisticClassifier)
+    assert not isinstance(base, LogitClassifier)
 
 
 def test_ensemble_registration_rejects_non_registry_predictor_type():

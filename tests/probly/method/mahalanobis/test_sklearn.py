@@ -9,6 +9,7 @@ from probly.decider import categorical_from_mean
 from probly.method.mahalanobis import mahalanobis
 from probly.method.mahalanobis.numpy import NumpyMahalanobisRepresentation
 from probly.predictor import predict
+from probly.representation.distribution.numpy_categorical import NumpyProbabilityCategoricalDistribution
 
 pytest.importorskip("sklearn")
 
@@ -169,6 +170,18 @@ class TestFitAndPredict:
         out.fit_mahalanobis_heads(x, y)
         single = categorical_from_mean(predict(out, x))
         np.testing.assert_allclose(single.probabilities, mlp.predict_proba(x), atol=1e-10)
+
+    def test_predict_keeps_base_prediction(self, mlp: MLPClassifier, train_data: tuple[np.ndarray, np.ndarray]) -> None:
+        """Reading the base estimator's logits does not change what predict returns for the estimator itself."""
+        x, y = train_data
+        out = mahalanobis(mlp)
+        out.fit_mahalanobis_heads(x, y)
+        predict(out, x)
+
+        prediction = predict(mlp, x)
+
+        assert isinstance(prediction, NumpyProbabilityCategoricalDistribution)
+        np.testing.assert_allclose(prediction.probabilities, mlp.predict_proba(x))
 
     def test_binary_estimator_keeps_two_classes(self, train_data: tuple[np.ndarray, np.ndarray]) -> None:
         """A binary MLP has a single output unit but still two classes."""

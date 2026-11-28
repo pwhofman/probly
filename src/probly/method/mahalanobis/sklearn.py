@@ -13,7 +13,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 
 from probly.layers.numpy import NumpyMahalanobisHead
-from probly.predictor import LogitClassifier, predict_raw
+from probly.predictor.sklearn import _sklearn_logit_prediction
 from probly.representation.distribution.numpy_categorical import NumpyProbabilityCategoricalDistribution
 
 from ._common import MahalanobisPredictor, mahalanobis_generator
@@ -257,10 +257,7 @@ class SklearnMahalanobisPredictor(
 
     def _logits(self, x: object) -> np.ndarray:
         """Read raw logits from the wrapped estimator, normalised to shape ``(N, num_classes)``."""
-        # The transformation tags the base as a LogitClassifier, but that registration is a weak
-        # per-instance one that does not survive a plain pickle round-trip; re-assert it here.
-        LogitClassifier.register_instance(self.predictor)
-        logits = np.asarray(predict_raw(self.predictor, x), dtype=float)
+        logits = _sklearn_logit_prediction(self.predictor, x)
         if logits.ndim == 1:
             # A binary decision_function returns one margin per sample; expand it to two columns.
             logits = np.stack([np.zeros_like(logits), logits], axis=-1)

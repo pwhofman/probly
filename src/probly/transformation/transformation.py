@@ -66,7 +66,7 @@ def predictor_transformation(
 
 
 @stub_transform_factory("probly.transformation._sigx_transforms:predictor_transformation_transform")
-def predictor_transformation(
+def predictor_transformation(  # noqa: C901
     permitted_predictor_types: Collection[type[Predictor]] | None,
     *,
     preserve_predictor_type: bool = False,
@@ -134,7 +134,14 @@ def predictor_transformation(
                 if not isinstance(predictor_type, RegistryMeta):
                     msg = f"Predictor type {predictor_type} must support flextype instance registration."
                     raise TypeError(msg)
-                base = predictor_type.register_instance(base)
+                named_types = set(predictor_registry.values())
+                has_unrelated_type = predictor_type in named_types and any(
+                    isinstance(base, t) and not issubclass(t, predictor_type) and not issubclass(predictor_type, t)
+                    for t in named_types
+                )
+                # Typing an sklearn classifier with predict_proba as a logit classifier would change its predictions.
+                if not has_unrelated_type:
+                    base = predictor_type.register_instance(base)
 
             tok = current_predictor_type.set((base, predictor_type))
             try:
