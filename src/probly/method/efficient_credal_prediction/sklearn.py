@@ -5,7 +5,8 @@ from __future__ import annotations
 import numpy as np
 from sklearn.base import BaseEstimator
 
-from probly.predictor import LogitClassifier, predict_raw
+from probly.predictor import predict_raw
+from probly.predictor.sklearn import _sklearn_logit_prediction
 
 from ._common import efficient_credal_prediction_generator
 
@@ -37,10 +38,7 @@ def sklearn_efficient_credal_predict_raw(
     predictor: SklearnEfficientCredalPredictor, /, *args: object, **kwargs: object
 ) -> np.ndarray:
     """Return the logits of the wrapped classifier with shape ``(N, num_classes)``."""
-    # The LogitClassifier tag set by the transformation is a per-instance registration, which a
-    # directly constructed or unpickled wrapper lacks.
-    LogitClassifier.register_instance(predictor.predictor)
-    logits = np.asarray(predict_raw(predictor.predictor, *args, **kwargs), dtype=float)
+    logits = _sklearn_logit_prediction(predictor.predictor, *args, **kwargs)
     if logits.ndim == 1:
         # A binary decision_function returns one margin per sample; expand it to two columns.
         logits = np.stack([np.zeros_like(logits), logits], axis=-1)

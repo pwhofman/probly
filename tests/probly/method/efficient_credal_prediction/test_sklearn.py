@@ -13,6 +13,7 @@ from probly.method.efficient_credal_prediction import (
 )
 from probly.predictor import predict
 from probly.representation.credal_set import ProbabilityIntervalsCredalSet
+from probly.representation.distribution.numpy_categorical import NumpyProbabilityCategoricalDistribution
 from probly.representer import representer
 
 pytest.importorskip("sklearn")
@@ -70,6 +71,17 @@ class TestSklearnEfficientCredalPredictor:
         predictor = efficient_credal_prediction(classifier)
 
         np.testing.assert_allclose(softmax(predict(predictor, x).logits, axis=-1), classifier.predict_proba(x))
+
+    def test_predict_keeps_base_prediction(
+        self, classifier: LogisticRegression, data: tuple[np.ndarray, np.ndarray]
+    ) -> None:
+        x, _ = data
+        predict(efficient_credal_prediction(classifier), x)
+
+        prediction = predict(classifier, x)
+
+        assert isinstance(prediction, NumpyProbabilityCategoricalDistribution)
+        np.testing.assert_allclose(prediction.probabilities, classifier.predict_proba(x))
 
     def test_represent_without_bounds_raises(
         self, classifier: LogisticRegression, data: tuple[np.ndarray, np.ndarray]

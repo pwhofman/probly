@@ -47,6 +47,18 @@ class PredictorTransformationDecorator(Protocol):
         """Decorate a predictor transformation."""
 
 
+def _register_base[T](base: T, predictor_type: RegistryMeta) -> T:
+    """Register the base as the predictor type unless it already has an unrelated named predictor type."""
+    named_types = set(predictor_registry.values())
+    if predictor_type in named_types and any(
+        isinstance(base, t) and not issubclass(t, predictor_type) and not issubclass(predictor_type, t)
+        for t in named_types
+    ):
+        # Typing e.g. an sklearn classifier with predict_proba as a logit classifier would change its own predictions.
+        return base
+    return predictor_type.register_instance(base)
+
+
 @overload
 def predictor_transformation(
     permitted_predictor_types: Collection[type[Predictor]] | None,
@@ -134,7 +146,7 @@ def predictor_transformation(
                 if not isinstance(predictor_type, RegistryMeta):
                     msg = f"Predictor type {predictor_type} must support flextype instance registration."
                     raise TypeError(msg)
-                base = predictor_type.register_instance(base)
+                base = _register_base(base, predictor_type)
 
             tok = current_predictor_type.set((base, predictor_type))
             try:
