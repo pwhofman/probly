@@ -162,6 +162,18 @@ class TestScoringRuleInputs:
         result = brier_loss_per_instance(probs, TorchProbabilityCategoricalDistribution(tensor=target))
         torch.testing.assert_close(result, brier_loss_per_instance(probs, target))
 
+    @pytest.mark.parametrize("labels", [[2, 0, 1], (2, 0, 1), "numpy"])
+    def test_labels_from_other_backends(self, labels):
+        import numpy as np  # noqa: PLC0415
+
+        from probly.metrics import brier_loss_per_instance  # noqa: PLC0415
+
+        labels = np.array([2, 0, 1]) if labels == "numpy" else labels
+        probs = torch.tensor([[0.2, 0.5, 0.3], [0.6, 0.3, 0.1], [0.1, 0.1, 0.8]])
+        result = brier_loss_per_instance(probs, labels)
+        assert isinstance(result, torch.Tensor)
+        torch.testing.assert_close(result, brier_loss_per_instance(probs, torch.tensor([2, 0, 1])))
+
     def test_rejects_samples(self):
         from probly.metrics import brier_loss_per_instance  # noqa: PLC0415
         from probly.representation.sample.torch import TorchSample  # noqa: PLC0415
