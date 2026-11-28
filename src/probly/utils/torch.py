@@ -8,7 +8,7 @@ from typing import Literal, SupportsIndex
 import torch
 import torch.nn.functional as F
 
-from ._common import elementwise_entropy, entropy, intersection_probability
+from ._common import elementwise_entropy, entropy, intersection_probability, machine_epsilon
 
 
 def torch_head_dimension(head: torch.nn.Module, name: Literal["in_features", "out_features"]) -> int:
@@ -110,3 +110,16 @@ def torch_intersection_probability(lower: torch.Tensor, upper: torch.Tensor) -> 
     denominator = torch.where(slack_sum != 0, slack_sum, torch.ones_like(slack_sum))
     weights = torch.where(slack_sum != 0, slack / denominator, torch.zeros_like(slack))
     return lower + remaining * weights
+
+
+@machine_epsilon.register(torch.Tensor)
+def torch_machine_epsilon(values: torch.Tensor) -> float:
+    """Machine epsilon of the floating dtype of a torch tensor.
+
+    Args:
+        values: Tensor of a floating dtype.
+
+    Returns:
+        Machine epsilon of the dtype of ``values``.
+    """
+    return torch.finfo(values.dtype).eps

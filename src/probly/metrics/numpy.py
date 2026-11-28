@@ -22,7 +22,6 @@ from ._common import (
     _floating,
     _label_values,
     _log_probabilities,
-    _machine_epsilon,
     _one_hot_argmax,
     _probabilities,
     _validate_epsilon,
@@ -217,12 +216,6 @@ def _numpy_label_values(values: np.ndarray, y_true: object) -> np.ndarray:
 def _numpy_floating(values: np.ndarray) -> np.ndarray:
     """Cast a NumPy array to a floating dtype of at least single precision."""
     return np.asarray(values, dtype=np.result_type(values, np.float32))
-
-
-@_machine_epsilon.register(np.ndarray)
-def _numpy_machine_epsilon(values: np.ndarray) -> float:
-    """Return the machine epsilon of the dtype of a floating NumPy array."""
-    return float(np.finfo(values.dtype).eps)
 
 
 # --- Convex-hull coverage ----------------------------------------------------

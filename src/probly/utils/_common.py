@@ -60,3 +60,20 @@ def intersection_probability(lower: object, upper: object) -> object:
     """
     msg = f"No intersection probability implementation registered for type {type(lower)}"
     raise NotImplementedError(msg)
+
+
+@flexdispatch
+def machine_epsilon(values: NativeArray) -> float:
+    """Return the machine epsilon of the floating dtype of an array.
+
+    Args:
+        values: An array of a floating dtype as a numpy array, a torch tensor or a jax array.
+
+    Returns:
+        The difference between one and the next larger number of the dtype of ``values``.
+
+    Raises:
+        NotImplementedError: If no implementation is registered for the type of ``values``.
+    """
+    msg = f"No machine epsilon implementation registered for type {type(values)}"
+    raise NotImplementedError(msg)

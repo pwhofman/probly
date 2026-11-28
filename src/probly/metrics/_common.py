@@ -19,6 +19,7 @@ from probly.representation.credal_set._common import (
     ProbabilityIntervalsCredalSet,
     SingletonCredalSet,
 )
+from probly.utils import machine_epsilon
 
 if TYPE_CHECKING:
     from probly.lazy_types import NativeArray
@@ -446,7 +447,7 @@ def _validate_epsilon(epsilon: float) -> None:
         raise ValueError(msg)
 
 
-# The predicted-set metrics need four array operations that the backends spell differently.
+# The predicted-set metrics need three array operations that the backends spell differently.
 @flexdispatch
 def _asarray_like[A: NativeArray](reference: A, values: object) -> A:
     """Convert ``values`` to an array of the backend, and on the device, of the array ``reference``."""
@@ -464,13 +465,6 @@ def _label_values[A: NativeArray](values: A, y_true: object) -> A:
 @flexdispatch
 def _floating[A: NativeArray](values: A) -> A:
     """Cast an array to a floating dtype of at least single precision."""
-    msg = f"Predicted-set metrics are not implemented for arrays of type {type(values).__name__}."
-    raise NotImplementedError(msg)
-
-
-@flexdispatch
-def _machine_epsilon(values: NativeArray) -> float:
-    """Return the machine epsilon of the dtype of a floating array."""
     msg = f"Predicted-set metrics are not implemented for arrays of type {type(values).__name__}."
     raise NotImplementedError(msg)
 
@@ -598,7 +592,7 @@ def _envelope_coverage(
     below = (lo - y).clip(0.0).sum(-1)  # ty: ignore[unsupported-operator]
     # Rounding the inputs to their floating precision shifts the distance by at most two machine epsilons, so the
     # slack keeps a distance that equals epsilon on the covered side.
-    tolerance = epsilon + 4.0 * _machine_epsilon(lo)
+    tolerance = epsilon + 4.0 * machine_epsilon(lo)
     return _mean((2.0 * above <= tolerance) & (2.0 * below <= tolerance))
 
 

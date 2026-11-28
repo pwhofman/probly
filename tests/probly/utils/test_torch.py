@@ -52,6 +52,16 @@ def test_elementwise_entropy_dispatches_to_torch() -> None:
     torch.testing.assert_close(elementwise_entropy(p), torch.tensor([0.5 * math.log(2.0), 0.0, 0.0, 0.0]))
 
 
+def test_machine_epsilon_dispatches_to_torch() -> None:
+    from probly.utils import machine_epsilon  # noqa: PLC0415
+    from probly.utils.torch import torch_machine_epsilon  # noqa: PLC0415
+
+    single, double = torch.ones(2, dtype=torch.float32), torch.ones(2, dtype=torch.float64)
+    assert machine_epsilon(single) == torch_machine_epsilon(single) == torch.finfo(torch.float32).eps
+    assert machine_epsilon(double) == torch.finfo(torch.float64).eps
+    assert isinstance(machine_epsilon(single), float)
+
+
 def test_torch_entropy_gradient_is_finite_at_exact_zeros() -> None:
     p = torch.tensor([0.5, 0.5, 0.0], dtype=torch.float64, requires_grad=True)
 
